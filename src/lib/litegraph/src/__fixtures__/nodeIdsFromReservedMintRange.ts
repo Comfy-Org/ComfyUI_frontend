@@ -1,8 +1,9 @@
+import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
+
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 
 // Synthetic reproducer around two observed high-range ID values.
 export const nodeIdsFromReservedMintRange = {

@@ -1,6 +1,7 @@
-import type { BalanceInfo } from '@/platform/billing/composables/types'
 import type { AutoReloadSettings, BillingStatus } from '@comfyorg/billing-core'
+
 import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'
+import type { BalanceInfo } from '@/platform/billing/composables/types'
 
 export interface CreditsCardFacts {
   balance: BalanceInfo | null

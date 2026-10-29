@@ -5,14 +5,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock(import('firebase/auth'))
 
 import {
-  EventType,
-  useCustomerEventsService
-} from '@/services/customerEventsService'
-import {
   WebSessionTokenError,
   webSessionResourceHeader
 } from '@/platform/auth/session/webSessionFetch'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import {
+  EventType,
+  useCustomerEventsService
+} from '@/services/customerEventsService'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 

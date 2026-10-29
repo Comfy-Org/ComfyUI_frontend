@@ -1,14 +1,13 @@
+import type { AgentWorkflowBindSource } from '@comfyorg/telemetry/types'
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { AgentWorkflowBindSource } from '@comfyorg/telemetry/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
@@ -16,6 +15,7 @@ import type {
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '@/workbench/extensions/agent/types/workflowReference'
+
 import type {
   CloudWorkflowLifecycle,
   useAgentWorkflowResolver

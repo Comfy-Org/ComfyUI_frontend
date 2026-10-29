@@ -1,19 +1,18 @@
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import NodeSearchContent from '@/components/searchbox/v2/NodeSearchContent.vue'
 import {
   createMockNodeDef,
   setViewport
 } from '@/components/searchbox/v2/__test__/testUtils'
-import { testI18n } from '@/utils/__tests__/testI18n'
-
+import NodeSearchContent from '@/components/searchbox/v2/NodeSearchContent.vue'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
+import { testI18n } from '@/utils/__tests__/testI18n'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 const DESKTOP_VIEWPORT = { width: 1280, height: 800 }

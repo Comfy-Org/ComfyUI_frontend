@@ -1,15 +1,9 @@
-import { expect } from '@playwright/test'
-import type { Page, Request } from '@playwright/test'
-
 import { isContractIdentifier } from '@comfyorg/billing-contract'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   BillingPlansResponse,
   BillingStatusResponse,
   PreviewSubscribeResponse
 } from '@comfyorg/billing-core'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
@@ -21,6 +15,10 @@ import {
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 /**
  * Hosted billing destination — FE-2218, Layer C of the billing rollout.

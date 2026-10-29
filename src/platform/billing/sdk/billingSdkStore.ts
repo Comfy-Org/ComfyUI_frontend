@@ -1,4 +1,3 @@
-import { openBillingUrl } from '@/platform/billing/billingTab'
 /**
  * The app's single billing SDK instance and the top-up effects the poller
  * performs today, moved onto the lifecycle's state: the progress toast and —
@@ -23,17 +22,6 @@ import {
   toBillingTelemetryEvent,
   validateActionUrl
 } from '@comfyorg/account-core/billing'
-import { until, useEventListener } from '@vueuse/core'
-import { defineStore } from 'pinia'
-import { computed, shallowRef } from 'vue'
-
-import { useToast } from '@/components/ui/toast/toastStore'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { t } from '@/i18n'
-import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import { isCloud } from '@/platform/distribution/types'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesRead,
@@ -44,8 +32,21 @@ import type {
   PreviewSubscribeResponse,
   SavedPaymentMethod
 } from '@comfyorg/billing-core'
-import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
+import type { BillingSdkOptions } from '@comfyorg/billing-core/sdk'
+import { createBillingSdk } from '@comfyorg/billing-core/sdk'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { until, useEventListener } from '@vueuse/core'
+import { defineStore } from 'pinia'
+import { computed, shallowRef } from 'vue'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
+import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { refreshBilling } from '@/platform/billing/billingRefresh'
+import { openBillingUrl } from '@/platform/billing/billingTab'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { provideBillingSdkStore } from '@/platform/billing/composables/useBillingReadRail'
 import type {
   ProgressToast,
   ProgressToastKind
@@ -55,19 +56,18 @@ import {
   needsCustomerAttention,
   progressToastKind
 } from '@/platform/billing/customerAttention'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { provideBillingSdkStore } from '@/platform/billing/composables/useBillingReadRail'
+import { getCheckoutJourneyPaymentIntentSource } from '@/platform/billing/utils/checkoutJourney'
+import { isCloud } from '@/platform/distribution/types'
+import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useWorkspaceSession } from '@/platform/workspace/ports/workspaceSession'
-import { getCheckoutJourneyPaymentIntentSource } from '@/platform/billing/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
 import { fetchWithRetry } from '@/utils/fetchWithRetry'
 
 import { projectBillingCapabilities } from './billingCapabilitiesView'
 import { projectBillingPlans } from './billingPlansView'
 import { projectBillingStatus } from './billingStatusView'
-import type { BillingSdkOptions } from '@comfyorg/billing-core/sdk'
-import { createBillingSdk } from '@comfyorg/billing-core/sdk'
 import type { BillingOperationRecordView } from './operationRecordView'
 import { projectOperationRecord } from './operationRecordView'
 import type {

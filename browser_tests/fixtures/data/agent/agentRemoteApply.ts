@@ -1,7 +1,5 @@
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-
 import type { RenderShape } from '@comfyorg/graph-model/globalEnums'
-
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 
 const LOAD_IMAGE_TYPE = 'LoadImage'

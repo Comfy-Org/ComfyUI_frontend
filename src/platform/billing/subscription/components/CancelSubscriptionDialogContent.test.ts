@@ -1,24 +1,23 @@
+import { useTelemetry } from '@comfyorg/telemetry'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
+
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type {
   CancelRail,
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
-import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
-
-import { useTelemetry } from '@comfyorg/telemetry'
-import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useDialogStore } from '@/stores/dialogStore'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import CancelSubscriptionDialogContent from './CancelSubscriptionDialogContent.vue'
 

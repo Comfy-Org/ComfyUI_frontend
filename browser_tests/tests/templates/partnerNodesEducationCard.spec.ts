@@ -1,12 +1,11 @@
-import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { TemplateHelper } from '@e2e/fixtures/helpers/TemplateHelper'
 import { mockPaidTemplate } from '@e2e/fixtures/helpers/TemplateHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 const PAID_TEMPLATE = 'paid-template'
 const PARTNER_WORKFLOW = 'browser_tests/assets/partner_api_node.json'

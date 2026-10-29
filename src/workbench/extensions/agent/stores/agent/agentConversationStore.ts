@@ -6,7 +6,6 @@ import { computed, ref, shallowReactive, shallowRef } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { AgentTurnTab } from '@/stores/workflowTabActivityStore'
-
 import type {
   AgentMessages,
   RenderedAskKind,
@@ -37,13 +36,13 @@ import {
   normalizeAgentTranscript,
   settleLiveMessage
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
-import { createUndeliverableAskReporter } from '@/workbench/extensions/agent/services/agent/undeliverableAskReporter'
 import type {
   NormalizedAgentTranscript,
   UserAttachment
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
-import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import { createUndeliverableAskReporter } from '@/workbench/extensions/agent/services/agent/undeliverableAskReporter'
 import type { SkillReference } from '@/workbench/extensions/agent/types/skillReference'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 import { parseSkillReferenceText } from '@/workbench/extensions/agent/utils/skillReferenceText'
 
 export type { UserAttachment }

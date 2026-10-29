@@ -1,5 +1,6 @@
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { scanNodeMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'

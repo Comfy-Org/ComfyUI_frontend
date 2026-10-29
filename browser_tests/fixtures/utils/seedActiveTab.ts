@@ -1,10 +1,9 @@
-import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
 import type { WorkflowJSON } from '@comfyorg/comfy-multi-player'
-
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { loadIntoBootWorkflow } from '@e2e/fixtures/agentPanelFixture'
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 function highest(values: readonly unknown[]): number {
   return values.reduce<number>(

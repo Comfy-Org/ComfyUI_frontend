@@ -1,6 +1,12 @@
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type {
+  ClipboardItems,
+  ISerialisedNode,
+  SerialisableGraph
+} from '@comfyorg/graph-model/serialisation'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import {
   LGraph,
   LGraphCanvas,
@@ -8,12 +14,6 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import type {
-  ClipboardItems,
-  ISerialisedNode,
-  SerialisableGraph
-} from '@comfyorg/graph-model/serialisation'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { createUuidv4 } from '@/utils/uuid'
 

@@ -1,10 +1,4 @@
 import type { LGraph } from '@comfyorg/graph-model/entityRegistry'
-
-import type {
-  ISerialisedGroup,
-  ISerialisedNode,
-  SerialisableLLink
-} from '@comfyorg/graph-model/serialisation'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
 import type { GroupId } from '@comfyorg/graph-model/groupId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
@@ -13,6 +7,11 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type {
+  ISerialisedGroup,
+  ISerialisedNode,
+  SerialisableLLink
+} from '@comfyorg/graph-model/serialisation'
 
 export interface LGraphState {
   /** Counter, not an id — brand at the point a group is constructed. */

@@ -1,4 +1,3 @@
-import { useToast } from '@/components/ui/toast/toastStore'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -6,15 +5,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSettingStore } from '@/platform/settings/settingStore'
-
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useModelStore } from '@/stores/modelStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelLibrarySidebarTab from './ModelLibrarySidebarTab.vue'

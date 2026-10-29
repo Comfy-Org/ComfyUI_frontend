@@ -1,19 +1,19 @@
+import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type {
+  ReadOnlyRect,
+  Point2D as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { describe, expect, it, vi } from 'vitest'
 
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
-import type {
-  ReadOnlyRect,
-  Point2D as Point
-} from '@comfyorg/shared-frontend-utils/geometry'
-import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import type { LinkId } from '@comfyorg/graph-model/linkId'
 
 import {
   areSelectedLinksHidden,

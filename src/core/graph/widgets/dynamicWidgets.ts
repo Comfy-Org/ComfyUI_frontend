@@ -1,39 +1,40 @@
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { remove } from 'es-toolkit'
 import { shallowReactive } from 'vue'
 
 import { assert } from '@/base/assert'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { ISlotType } from '@comfyorg/graph-model/interfaces'
-import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
+import {
+  captureInputLayout,
+  replaceNodeInputs
+} from '@/lib/litegraph/src/node/slotLinks'
+import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
 import { commonType } from '@/lib/litegraph/src/utils/type'
 import {
   getWidgetIds,
   resolveNodeRootGraphId
 } from '@/lib/litegraph/src/utils/widget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import {
   zAutogrowOptions,
   zDynamicComboInputSpec,
   zMatchTypeOptions
 } from '@/schemas/nodeDefSchema'
-import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { useApp } from '@/scripts/appInstance'
-import type { ComfyApp } from '@/types/comfy'
-import {
-  captureInputLayout,
-  replaceNodeInputs
-} from '@/lib/litegraph/src/node/slotLinks'
-import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { ComfyApp } from '@/types/comfy'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
+
 import { dynamicGroupWidget } from './dynamicGroupWidget'
 
 type MatchTypeNode = LGraphNode &

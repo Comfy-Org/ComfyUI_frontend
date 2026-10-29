@@ -89,15 +89,15 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Menu from '@comfyorg/design-system/menu/Menu'
-import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
-import Button from '@comfyorg/design-system/button/Button'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   member,

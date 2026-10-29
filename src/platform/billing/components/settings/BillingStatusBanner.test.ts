@@ -1,23 +1,23 @@
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import {
-  canManageBillingFact,
-  runDeniedPaymentPastDueFact
-} from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import type { BillingStatus } from '@comfyorg/billing-core'
+import type { WorkspaceWithRole } from '@comfyorg/ingest-types'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
+import {
+  canManageBillingFact,
+  runDeniedPaymentPastDueFact
+} from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import type {
   BillingPortalOutcome,
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
-import type { BillingStatus } from '@comfyorg/billing-core'
-import type { WorkspaceWithRole } from '@comfyorg/ingest-types'
-import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 interface Subscription {
   hasFunds: boolean

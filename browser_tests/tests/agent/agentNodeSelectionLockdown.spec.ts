@@ -1,7 +1,6 @@
+import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-
-import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 async function centerOf(locator: Locator): Promise<{ x: number; y: number }> {
   const box = await locator.boundingBox()

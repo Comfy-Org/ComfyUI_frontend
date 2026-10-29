@@ -219,21 +219,23 @@
 </template>
 
 <script setup lang="ts">
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import Button from '@comfyorg/design-system/button/Button'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useEventListener } from '@vueuse/core'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 
 import {
   formatCredits,
   formatCreditsFromCents
 } from '@/base/credits/comfyCredits'
-import Button from '@comfyorg/design-system/button/Button'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useSubscriptionCredits } from '@/platform/billing/subscription/composables/useSubscriptionCredits'
 import {
   DEFAULT_TIER_KEY,
@@ -243,12 +245,9 @@ import {
 } from '@/platform/billing/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/billing/subscription/utils/creditsProgress'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry'
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
-import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useCustomerEventsService } from '@/services/customerEventsService'
-import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 const { zeroState = false, inactivePlan } = defineProps<{
   /** Hides the plan breakdown. The total stays the server balance. */

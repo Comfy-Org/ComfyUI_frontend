@@ -47,22 +47,21 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import NotificationPopup from '@comfyorg/design-system/common/NotificationPopup'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import { default as DOMPurify } from 'dompurify'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NotificationPopup from '@comfyorg/design-system/common/NotificationPopup'
-import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
-import Button from '@comfyorg/design-system/button/Button'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { isDesktop } from '@/platform/distribution/types'
-import { formatVersionAnchor } from '@/utils/formatUtil'
-import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
+import { formatVersionAnchor } from '@/utils/formatUtil'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 const { position = 'bottom-left', isVisible = true } = defineProps<{
   position?: 'bottom-left' | 'bottom-right'

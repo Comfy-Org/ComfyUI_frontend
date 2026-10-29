@@ -1,8 +1,7 @@
-import type { Locator, Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 export class PropertiesPanelHelper {
   readonly root: Locator

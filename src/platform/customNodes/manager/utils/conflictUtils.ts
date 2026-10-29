@@ -1,6 +1,5 @@
 import { groupBy, uniqBy } from 'es-toolkit/compat'
 
-import { normalizePackId } from '@/utils/packUtils'
 import type {
   RegistryAccelerator,
   RegistryOS
@@ -15,6 +14,7 @@ import {
   checkOSCompatibility
 } from '@/platform/customNodes/manager/utils/systemCompatibility'
 import { checkVersionCompatibility } from '@/platform/customNodes/manager/utils/versionUtil'
+import { normalizePackId } from '@/utils/packUtils'
 
 /**
  * Checks for banned package status conflicts.

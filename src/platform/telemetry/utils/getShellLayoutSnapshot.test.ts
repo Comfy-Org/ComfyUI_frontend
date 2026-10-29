@@ -1,9 +1,10 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { beforeEach, describe, expect, it } from 'vitest'
 
 import { getShellLayoutSnapshot } from './getShellLayoutSnapshot'
 

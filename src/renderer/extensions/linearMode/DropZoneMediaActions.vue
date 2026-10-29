@@ -1,8 +1,7 @@
 <script setup lang="ts">
+import ImageLightbox from '@comfyorg/design-system/media/ImageLightbox'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import ImageLightbox from '@comfyorg/design-system/media/ImageLightbox'
 
 const { mediaUrl, label, onMaskEdit } = defineProps<{
   mediaUrl: string

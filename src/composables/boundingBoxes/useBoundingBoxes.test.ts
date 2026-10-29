@@ -1,3 +1,6 @@
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref, ShallowRef } from 'vue'
@@ -11,11 +14,9 @@ import {
   shallowRef
 } from 'vue'
 
-import { useBoundingBoxes } from './useBoundingBoxes'
-import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+
+import { useBoundingBoxes } from './useBoundingBoxes'
 
 const appState = vi.hoisted(() => ({
   node: null as MockNode | null,

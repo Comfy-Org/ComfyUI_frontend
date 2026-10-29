@@ -1,6 +1,6 @@
 import type { ComposerInsertionPoint } from './composerPrompt'
-import type { WorkflowReferenceMetadata } from './workflowReference'
 import type { SkillReferenceMetadata } from './skillReference'
+import type { WorkflowReferenceMetadata } from './workflowReference'
 
 export interface PromptEditor {
   insertionPoint?: () => ComposerInsertionPoint

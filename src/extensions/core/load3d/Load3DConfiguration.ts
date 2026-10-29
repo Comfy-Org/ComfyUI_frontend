@@ -1,10 +1,6 @@
-import { effectScope, watch } from 'vue'
-
+import type { Dictionary } from '@comfyorg/graph-model/interfaces'
+import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
 import { LOAD3D_NONE_MODEL } from '@comfyorg/viewport3d/load3d/constants'
-import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { isKeepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
-import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import type {
   CameraConfig,
   CameraState,
@@ -15,9 +11,13 @@ import type {
   SceneConfig,
   StoredModelConfig
 } from '@comfyorg/viewport3d/load3d/interfaces'
-import type { Dictionary } from '@comfyorg/graph-model/interfaces'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
+import { effectScope, watch } from 'vue'
+
+import { isKeepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'

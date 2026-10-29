@@ -1,11 +1,9 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
+import { expect, mergeTests } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, hostTelemetryFixture, webSocketFixture)
 

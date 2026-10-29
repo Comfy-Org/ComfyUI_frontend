@@ -1,5 +1,5 @@
-import { ref, shallowRef } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref, shallowRef } from 'vue'
 
 import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import type { LegacyWorkspaceTokenRailDeps } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'

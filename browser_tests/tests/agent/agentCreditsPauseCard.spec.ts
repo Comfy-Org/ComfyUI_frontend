@@ -1,13 +1,12 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { agentAskTest as test } from '@e2e/fixtures/agentAskTurnFixture'
 import {
   answerPath,
   askIdFor,
   pausedAskFrame
 } from '@e2e/fixtures/data/agent/agentAskFrames'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.describe('Agent credits pause card', { tag: ['@cloud', '@agent'] }, () => {
   test('names a mid-task credits stop and offers a way out', async ({

@@ -1,8 +1,7 @@
-import * as fc from 'fast-check'
-import { describe, expect, it, vi } from 'vitest'
-
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import * as fc from 'fast-check'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   AGENT_RESERVED_BIT,

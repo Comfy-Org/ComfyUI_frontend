@@ -1,8 +1,3 @@
-import { addBreadcrumb, setContext, setUser } from '@sentry/vue'
-
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-
 import type {
   AuthMetadata,
   ExecutionErrorMetadata,
@@ -12,7 +7,11 @@ import type {
   ShellLayoutMetadata,
   TelemetryProvider
 } from '@comfyorg/telemetry/types'
+import { addBreadcrumb, setContext, setUser } from '@sentry/vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 export class SentryTelemetryProvider implements TelemetryProvider {
   private shellLayout: ShellLayoutMetadata | null = null

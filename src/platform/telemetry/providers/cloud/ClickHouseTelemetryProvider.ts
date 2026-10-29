@@ -1,9 +1,9 @@
-import { api } from '@/scripts/api'
-
 import type {
   TelemetryProvider,
   WorkflowImportMetadata
 } from '@comfyorg/telemetry/types'
+
+import { api } from '@/scripts/api'
 
 /**
  * ClickHouse Telemetry Provider - Cloud Build Implementation

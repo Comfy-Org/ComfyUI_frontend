@@ -4,26 +4,25 @@ import type {
   SubgraphInput,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-
-import type { LinkId } from '@comfyorg/graph-model/linkId'
-import { LabelPosition } from '@/lib/litegraph/src/draw'
 import type { OptionalProps } from '@comfyorg/graph-model/interfaces'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+
+import { LabelPosition } from '@/lib/litegraph/src/draw'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import {
   NodeSlot,
   provideNodeInputSlotGuard
 } from '@/lib/litegraph/src/node/NodeSlot'
-import { inputHasLink, inputLink } from '@/lib/litegraph/src/node/slotLinks'
-import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
-
+import { inputHasLink, inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   alwaysVisible?: boolean

@@ -147,18 +147,16 @@
 </template>
 
 <script setup lang="ts">
-import { RovingFocusItem } from 'reka-ui'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Button from '@comfyorg/design-system/button/Button'
 import TableCell from '@comfyorg/design-system/table/TableCell'
 import TableRow from '@comfyorg/design-system/table/TableRow'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import type { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
+import type { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { cn } from '@comfyorg/tailwind-utils'
+import { RovingFocusItem } from 'reka-ui'
 
 import KeybindingList from './KeybindingList.vue'
 import KeyComboDisplay from './KeyComboDisplay.vue'

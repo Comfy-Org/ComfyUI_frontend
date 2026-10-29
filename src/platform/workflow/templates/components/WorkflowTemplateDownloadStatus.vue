@@ -1,12 +1,11 @@
 <script setup lang="ts">
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import WorkflowTemplateDownloadFailure from '@/platform/workflow/templates/components/WorkflowTemplateDownloadFailure.vue'
-import Badge from '@comfyorg/design-system/badge/Badge'
-import Button from '@comfyorg/design-system/button/Button'
 import type { TemplateDetailRow } from '@/platform/workflow/templates/types/templateDetail'
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 import { formatSize } from '@/utils/formatUtil'

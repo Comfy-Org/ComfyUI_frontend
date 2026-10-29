@@ -1,12 +1,13 @@
-import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
+import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
+
+import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
+import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 import type {
   TemplateModelMetadataBatchResult,
   TemplateModelMetadataEntry
 } from '@/platform/workflow/templates/utils/templateModelMetadata'
-import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 import type { TemplateModelRequirementDetail } from '@/platform/workflow/templates/utils/templateModelRequirements'
-import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
-import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
+import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 
 type TemplateModelSetupStatus =
   | 'installed'

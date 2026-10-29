@@ -1,7 +1,3 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import {
   agentTest as test,
   bootAgentApp
@@ -9,6 +5,9 @@ import {
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { thirtyAgentThreadPages } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const expectedChatNames = [
   ...thirtyAgentThreadPages.first.threads,

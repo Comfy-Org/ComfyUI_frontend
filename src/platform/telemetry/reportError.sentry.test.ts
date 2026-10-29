@@ -1,9 +1,8 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ErrorEvent } from '@sentry/vue'
 import { init } from '@sentry/vue'
 import { expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
-
-import { reportError } from '@comfyorg/telemetry/reportError'
 
 import './initErrorReporter'
 

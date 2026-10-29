@@ -1,15 +1,6 @@
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
-import { assert, describe, expect, it } from 'vitest'
-
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
-
-import type { LGraphState } from '@/lib/litegraph/src/LGraph'
 import type {
   ExportedSubgraph,
   ISerialisedGroup,
@@ -17,6 +8,14 @@ import type {
   SerialisableLLink,
   SerialisableReroute
 } from '@comfyorg/graph-model/serialisation'
+import { assert, describe, expect, it } from 'vitest'
+
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import type { LGraphState } from '@/lib/litegraph/src/LGraph'
+import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 
 import {
   deduplicateSubgraphGroupIds,

@@ -262,23 +262,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, useTemplateRef, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
-
-import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import Button from '@comfyorg/design-system/button/Button'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import WorkspaceMenuButton from '@/platform/account/components/dialogs/settings/WorkspaceMenuButton.vue'
-import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
-import MemberUpsellBanner from '@/platform/billing/components/settings/MemberUpsellBanner.vue'
-import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
-import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
-import { useMembersPanel } from '@/platform/account/composables/useMembersPanel'
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed, nextTick, useTemplateRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import WorkspaceMenuButton from '@/platform/account/components/dialogs/settings/WorkspaceMenuButton.vue'
+import { useMembersPanel } from '@/platform/account/composables/useMembersPanel'
+import MemberUpsellBanner from '@/platform/billing/components/settings/MemberUpsellBanner.vue'
+import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
+import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
+import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
 
 const TEAM_PLAN_REQUEST_URL =
   'https://comfysupport.portal.usepylon.com/forms/team-plan-requests'

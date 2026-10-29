@@ -1,10 +1,10 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import WidgetLegacy from './WidgetLegacy.vue'

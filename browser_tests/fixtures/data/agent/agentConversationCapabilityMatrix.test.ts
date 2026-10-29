@@ -12,6 +12,7 @@ import {
   loadAgentConversation
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { agentConversationCapabilityMatrix } from '@e2e/fixtures/data/agent/agentConversationCapabilityMatrix'
+
 import { classifyAssetUrl } from '@/workbench/extensions/agent/utils/replyAssets'
 
 const supported = agentConversationCapabilityMatrix.filter(

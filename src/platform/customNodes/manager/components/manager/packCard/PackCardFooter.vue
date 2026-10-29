@@ -22,13 +22,13 @@
 import { computed, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { components } from '@/types/comfyRegistryTypes'
 import PackEnableToggle from '@/platform/customNodes/manager/components/manager/button/PackEnableToggle.vue'
 import PackInstallButton from '@/platform/customNodes/manager/components/manager/button/PackInstallButton.vue'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import { IsInstallingKey } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import type { ConflictDetail } from '@/platform/customNodes/manager/types/conflictDetectionTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']

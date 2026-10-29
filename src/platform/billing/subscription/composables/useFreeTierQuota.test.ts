@@ -3,6 +3,7 @@ import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+
 import { useFreeTierQuota } from './useFreeTierQuota'
 
 vi.mock(import('@vueuse/core'), () => ({

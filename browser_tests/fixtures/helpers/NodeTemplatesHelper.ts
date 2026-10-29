@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { NodeTemplatesManageDialog } from '@e2e/fixtures/components/NodeTemplatesManageDialog'
 import { DefaultGraphNewMenuPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { UserDataHelper } from '@e2e/fixtures/helpers/UserDataHelper'
+import { expect } from '@playwright/test'
 
 const TEMPLATES_FILE = 'comfy.templates.json'
 

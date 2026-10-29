@@ -14,6 +14,11 @@ import { join } from 'node:path'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { z } from 'zod'
 
+import { HostDoc } from '../browser_tests/fixtures/agentConversationHostDoc'
+import {
+  assertOpsApply,
+  zAgentConversation
+} from '../browser_tests/fixtures/data/agent/agentConversation'
 import { RecordRefusal } from './agentConversationAssemble'
 import type { Observation } from './agentConversationFromLangfuse'
 import {
@@ -25,11 +30,6 @@ import {
   readEnvFile,
   zObservation
 } from './agentConversationFromLangfuse'
-import {
-  assertOpsApply,
-  zAgentConversation
-} from '../browser_tests/fixtures/data/agent/agentConversation'
-import { HostDoc } from '../browser_tests/fixtures/agentConversationHostDoc'
 
 const THREAD = 'thread-1'
 const WORKFLOW = '6f1c2c1e-3b1c-4c88-9d9c-0d6e9b8e1a01'

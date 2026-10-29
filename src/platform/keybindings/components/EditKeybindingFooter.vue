@@ -28,16 +28,15 @@
 </template>
 
 <script setup lang="ts">
-import type { Reactive } from 'vue'
-
 import Button from '@comfyorg/design-system/button/Button'
 import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
-import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
-import { useDialogStore } from '@/stores/dialogStore'
+import type { Reactive } from 'vue'
 
 import type { EditKeybindingDialogState } from '@/platform/keybindings/components/editKeybindingDialogState'
 import { EDIT_KEYBINDING_DIALOG_KEY } from '@/platform/keybindings/components/editKeybindingDialogState'
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const { dialogState, existingKeybindingOnCombo } = defineProps<{
   dialogState: Reactive<EditKeybindingDialogState>

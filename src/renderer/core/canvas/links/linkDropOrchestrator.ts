@@ -1,3 +1,9 @@
+import type { SlotLayout } from '@comfyorg/graph-model/layout'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { parseSlotId } from '@comfyorg/graph-model/slotId'
+import type { SlotId } from '@comfyorg/graph-model/slotId'
+
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
@@ -5,12 +11,7 @@ import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDra
 import { getGraphSlotLayout } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import type { SlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { parseSlotId } from '@comfyorg/graph-model/slotId'
-import type { SlotId } from '@comfyorg/graph-model/slotId'
 
 interface DropResolutionContext {
   adapter: LinkConnectorAdapter | null

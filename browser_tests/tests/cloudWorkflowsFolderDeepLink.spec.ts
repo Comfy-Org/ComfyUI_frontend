@@ -1,12 +1,12 @@
 import { readFileSync } from 'fs'
 
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const FOLDER = 'deploy-build'
 const FOLDER_FILES = ['b-second.json', 'a-first.json']

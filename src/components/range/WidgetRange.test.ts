@@ -1,16 +1,16 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type {
+  IWidgetRangeOptions,
+  RangeValue
+} from '@comfyorg/graph-model/widgets'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type {
-  IWidgetRangeOptions,
-  RangeValue
-} from '@comfyorg/graph-model/widgets'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetRange from './WidgetRange.vue'

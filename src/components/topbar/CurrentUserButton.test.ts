@@ -5,11 +5,11 @@ import type { Component } from 'vue'
 import { computed, defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import type { BalanceInfo } from '@/platform/billing/composables/types'
-import CurrentUserPopoverWorkspace from '@/platform/account/components/CurrentUserPopoverWorkspace.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import CurrentUserPopoverWorkspace from '@/platform/account/components/CurrentUserPopoverWorkspace.vue'
+import type { BalanceInfo } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import CurrentUserButton from './CurrentUserButton.vue'

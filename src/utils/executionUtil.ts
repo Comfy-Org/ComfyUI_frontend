@@ -1,4 +1,10 @@
 import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@comfyorg/graph-model/workflowSchema'
+import { zNodePackMetadata } from '@comfyorg/graph-model/workflowSchema'
+
+import type {
   ExecutableLGraphNode,
   ExecutionId,
   LGraph
@@ -7,12 +13,6 @@ import {
   ExecutableNodeDTO,
   LGraphEventMode
 } from '@/lib/litegraph/src/litegraph'
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON
-} from '@comfyorg/graph-model/workflowSchema'
-
-import { zNodePackMetadata } from '@comfyorg/graph-model/workflowSchema'
 
 import { compressWidgetInputSlots } from './litegraphUtil'
 

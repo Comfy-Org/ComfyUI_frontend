@@ -2,6 +2,7 @@ import { clone } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { BookmarkCustomization } from '@/platform/settings/types'
 import type { TreeNode } from '@/types/treeExplorerTypes'
@@ -11,7 +12,6 @@ import {
   createDummyFolderNodeDef,
   useNodeDefStore
 } from './nodeDefStore'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const BOOKMARK_SETTING_ID = 'Comfy.NodeLibrary.Bookmarks.V2'
 

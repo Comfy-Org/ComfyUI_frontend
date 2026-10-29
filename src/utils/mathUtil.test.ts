@@ -1,6 +1,6 @@
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 import { describe, expect, it } from 'vitest'
 
-import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 import {
   clipRectToBounds,
   computeUnionBounds,

@@ -1,16 +1,17 @@
 vi.mock(import('firebase/auth'))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
-import { fromPartial } from '@total-typescript/shoehorn'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import type {
   WebSessionRequestScope,
   WebSessionRequests
 } from '@/platform/auth/session/webSessionFetch'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
 import { useAgentConsentStore } from './agentConsentStore'
 
 const accountApi = vi.hoisted(() => ({

@@ -3,28 +3,26 @@ import type {
   SubgraphInput,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-import { shallowReactive } from 'vue'
-
-import { MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
-
-import { LabelPosition, SlotShape, SlotType } from '@/lib/litegraph/src/draw'
+import { LinkDirection, RenderShape } from '@comfyorg/graph-model/globalEnums'
 import type {
   CanvasColour,
   DefaultConnectionColors,
   INodeSlot,
   OptionalProps
 } from '@comfyorg/graph-model/interfaces'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   ISubgraphInput
 } from '@comfyorg/graph-model/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import { getCentre } from '@/lib/litegraph/src/measure'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import { shallowReactive } from 'vue'
 
-import { LinkDirection, RenderShape } from '@comfyorg/graph-model/globalEnums'
+import { MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
+import { LabelPosition, SlotShape, SlotType } from '@/lib/litegraph/src/draw'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import { getCentre } from '@/lib/litegraph/src/measure'
 
 import { SlotBase } from './SlotBase'
 

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 
 const {
   mockIsActiveSubscription,

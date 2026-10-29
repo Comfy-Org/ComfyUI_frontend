@@ -1,12 +1,12 @@
-import { render, screen } from '@testing-library/vue'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetBoundingBox from './WidgetBoundingBox.vue'

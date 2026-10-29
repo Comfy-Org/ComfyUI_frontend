@@ -2,7 +2,6 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-
 import {
   deleteSecret as deleteSecretApi,
   listSecretProviders,

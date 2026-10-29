@@ -1,8 +1,6 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { FirebaseError } from 'firebase/app'
 import type { Auth, User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
@@ -18,9 +16,15 @@ import {
 } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useTelemetry } from '@comfyorg/telemetry'
-
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
+import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
 import {
   capturePreservedQuery,
   clearPreservedQuery
@@ -30,22 +34,17 @@ import {
   isSurveyReplayRequested,
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
+import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import {
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
-import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { useDialogService } from '@/services/dialogService'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
+import { useDialogService } from '@/services/dialogService'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
-import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
-import {
-  startDesktopHostSession,
-  stopDesktopHostSession
-} from '@/platform/auth/desktopHost/desktopHostSession'
-import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
-import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
 import type { IdentityObserver } from '@/utils/__tests__/stubAccountIdentityPort'
 import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 

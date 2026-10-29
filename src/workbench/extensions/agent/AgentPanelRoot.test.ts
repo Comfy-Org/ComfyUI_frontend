@@ -1,10 +1,3 @@
-import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
-import { fromPartial } from '@total-typescript/shoehorn'
-import {
-  startDesktopHostSession,
-  stopDesktopHostSession
-} from '@/platform/auth/desktopHost/desktopHostSession'
-import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import { setImmediate } from 'node:timers/promises'
 
 import type {
@@ -15,9 +8,12 @@ import type {
   PaginationInfo,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
-import type { User } from 'firebase/auth'
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useClipboard } from '@vueuse/core'
+import type { User } from 'firebase/auth'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
 import {
@@ -31,81 +27,87 @@ import {
   watch
 } from 'vue'
 import type { Ref } from 'vue'
-import { useClipboard } from '@vueuse/core'
 import { z } from 'zod'
+
+import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/auth/useAuthDialogs'))
 
-import { i18n } from '@/i18n'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { i18n } from '@/i18n'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 
 setupInlinePromptEditorDom()
 
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   toOwningGraphId,
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { AgentConsentTrigger } from '@comfyorg/telemetry/types'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+
 import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.vue'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useAuthStore } from '@/stores/authStore'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
-import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
-import { getFilenameDetails } from '@/utils/formatUtil'
-import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { registerTour } from '@/platform/onboarding/onboardingTours'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
-import { registerTour } from '@/platform/onboarding/onboardingTours'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import {
   saveSelection,
   savedSelectionKeys,
   setCanvasSelection
 } from '@/utils/__tests__/canvasSelectionTestUtils'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useExecutionStore } from '@/stores/executionStore'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestDragAndScale
+} from '@/utils/__tests__/canvasTestUtils'
 import {
   createMockLoadedWorkflow,
   createMockChangeTracker,
   createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
-import {
-  createMockCanvasRenderingContext2D,
-  createTestDragAndScale
-} from '@/utils/__tests__/canvasTestUtils'
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import { getFilenameDetails } from '@/utils/formatUtil'
 
 const getServerFeature = vi.hoisted(() =>
   vi.fn((_name: string, defaultValue?: unknown) => defaultValue)
@@ -290,30 +292,31 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'), {
   spy: true
 })
 
-import type { ComposerReference } from './types/composerPrompt'
-import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
-import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
+import { getMinimapDecorations } from '@/platform/canvas/minimapDecorationRegistry'
+
 import {
   MAX_ATTACHMENT_BYTES,
   MAX_TURN_ATTACHMENTS
 } from './composables/agent/useAttachment'
 import { useBillingIdentity } from './composables/useBillingIdentity'
-import type { AgentChatEvent } from './services/agent/agentEventTransport'
-import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
-import { useAgentConversationStore } from './stores/agent/agentConversationStore'
-import { getMinimapDecorations } from '@/platform/canvas/minimapDecorationRegistry'
-import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
-import { useAgentPanelStore } from './stores/agent/agentPanelStore'
-import { useAgentComposerStore } from './stores/agent/agentComposerStore'
-import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
-import { createAgentEventSource } from './services/agent/agentEventSource'
-import { resolveAgentIdentity } from './services/agent/agentIdentity'
-import type { AgentIdentityState } from './services/agent/agentIdentity'
 import { attachDocOpMinter } from './crdt/docOpMinter'
+import type { DocOpMinter, DocOpMinterDeps } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { recordUnsyncedHumanOps } from './crdt/unsyncedHumanOps'
-import type { DocOpMinter, DocOpMinterDeps } from './crdt/docOpMinter'
+import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
+import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
+import { createAgentEventSource } from './services/agent/agentEventSource'
+import type { AgentChatEvent } from './services/agent/agentEventTransport'
+import { resolveAgentIdentity } from './services/agent/agentIdentity'
+import type { AgentIdentityState } from './services/agent/agentIdentity'
+import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { useAgentComposerStore } from './stores/agent/agentComposerStore'
+import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
+import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import type { ComposerReference } from './types/composerPrompt'
 
 const docOpMinterDeps = vi.hoisted(() => ({
   current: null as DocOpMinterDeps | null

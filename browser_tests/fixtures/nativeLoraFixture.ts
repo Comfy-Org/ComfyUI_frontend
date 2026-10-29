@@ -1,14 +1,14 @@
+import { createCloudAssetsFixture } from '@e2e/fixtures/assetApiFixture'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
+import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
+import { NATIVE_LORA_ASSETS } from '@e2e/fixtures/data/nativeLoraAssets'
+import { WEB_SESSION } from '@e2e/fixtures/data/webSession'
+import { nativeLoraDraftReady } from '@e2e/fixtures/helpers/nativeLoraDraftReady'
 import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
-import { nativeLoraDraftReady } from '@e2e/fixtures/helpers/nativeLoraDraftReady'
-import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
-import { createCloudAssetsFixture } from '@e2e/fixtures/assetApiFixture'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
-import { NATIVE_LORA_ASSETS } from '@e2e/fixtures/data/nativeLoraAssets'
-import { WEB_SESSION } from '@e2e/fixtures/data/webSession'
 
 class NativeLoraHelper {
   constructor(private readonly comfyPage: ComfyPage) {}

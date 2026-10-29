@@ -7,6 +7,7 @@ import type {
   ThreadListing
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import { useAgentChatHistoryStore } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
+
 import { useAgentChatHistoryRefresh } from './useAgentChatHistoryRefresh'
 
 function thread(id: string, workflowId = '', title = id): AgentThreadSummary {

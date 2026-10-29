@@ -1,6 +1,3 @@
-import { assert, describe, expect, it } from 'vitest'
-import { computed } from 'vue'
-
 import {
   toOwningGraphId,
   toRootGraphId
@@ -10,6 +7,8 @@ import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import type { RerouteChain } from '@comfyorg/graph-model/rerouteChain'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import { assert, describe, expect, it } from 'vitest'
+import { computed } from 'vue'
 
 import { useLinkStore } from './linkStore'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from './rerouteStore'

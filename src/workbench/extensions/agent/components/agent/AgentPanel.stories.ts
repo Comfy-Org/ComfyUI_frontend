@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { FREE_USE_VARIANTS } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
+
 import '@/workbench/extensions/agent/agentPanel.css'
 
 import AgentPanel from './AgentPanel.vue'

@@ -13,6 +13,7 @@ import { parseArgs } from 'node:util'
 
 import type { ResponseUsage } from 'openai/resources/responses/responses'
 
+import { isMainModule } from '../isMainModule'
 import type { OutputLocale, TranslationPipelineConfig } from './config'
 import { translationTargets } from './config'
 import { partitionLocale } from './locale-retention'
@@ -47,7 +48,6 @@ import {
   mapWithConcurrency,
   translateLocaleItems
 } from './translate'
-import { isMainModule } from '../isMainModule'
 
 interface SourcePlan {
   filename: string

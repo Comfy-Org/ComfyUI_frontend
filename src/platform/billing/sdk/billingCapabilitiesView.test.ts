@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest'
-
 import type { CapabilitiesSnapshot } from '@comfyorg/account-core/billing'
+import { describe, expect, it } from 'vitest'
 
 import { projectBillingCapabilities } from './billingCapabilitiesView'
 

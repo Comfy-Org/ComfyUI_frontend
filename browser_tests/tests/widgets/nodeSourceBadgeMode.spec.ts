@@ -1,7 +1,7 @@
+import { test } from '@e2e/fixtures/legacyNodeBadgeFixture'
 import { expect } from '@playwright/test'
 
 import { NodeBadgeMode } from '@/types/nodeSource'
-import { test } from '@e2e/fixtures/legacyNodeBadgeFixture'
 
 const CORE_NODE_TITLE = 'Preview Image'
 const CUSTOM_NODE_TITLE = 'Raise Error'

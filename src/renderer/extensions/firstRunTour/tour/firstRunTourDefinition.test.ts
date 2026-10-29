@@ -1,18 +1,18 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   clearCoachmarks,
   targetMounted
 } from '@/platform/onboarding/coachmarkRegistry'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { TOUR_ROLE_PINS } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 import type { RolePin } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
+
 import {
   firstRunTourSteps,
   releaseFirstRunTargets

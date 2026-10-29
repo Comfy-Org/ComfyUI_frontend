@@ -1,9 +1,8 @@
-import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import type { WorkspaceStore } from '@e2e/types/globals'
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 async function graphNodeCount(page: Page): Promise<number> {
   return page.evaluate(() => window.app!.graph.nodes.length)

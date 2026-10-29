@@ -1,7 +1,7 @@
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
 
 class TestNode extends LGraphNode {

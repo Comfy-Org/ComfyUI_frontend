@@ -1,12 +1,12 @@
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { i18n } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
-
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
+
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
 vi.mock(import('@/scripts/api'))

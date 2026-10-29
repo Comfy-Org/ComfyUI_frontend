@@ -1,24 +1,22 @@
-import { expect } from '@playwright/test'
-
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type {
   AgentMessage,
   AgentThreadListResponse,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 const THREAD_ID = '5d0c9a4e-2b1f-4c3d-8e7f-6a5b4c3d2e1f'
 const TURN_ID = '7e1d0b5f-3c2a-4d4e-9f8a-7b6c5d4e3f2a'

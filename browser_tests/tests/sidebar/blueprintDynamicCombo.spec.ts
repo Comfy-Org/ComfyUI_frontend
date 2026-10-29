@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { dynamicComboBlueprints } from '@e2e/fixtures/data/blueprintDynamicCombo'
+import { expect } from '@playwright/test'
 
 test.describe('Blueprint dynamic combo preview', { tag: '@ui' }, () => {
   test.beforeEach(async ({ page }) => {

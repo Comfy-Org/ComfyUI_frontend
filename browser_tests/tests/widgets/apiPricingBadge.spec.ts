@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { test } from '@e2e/fixtures/legacyNodeBadgeFixture'
+import { expect } from '@playwright/test'
 
 const API_NODE_TITLE = 'Flux 1.1 [pro] Ultra Image'
 const PRICE_TEXT = '12.7 credits/Run'

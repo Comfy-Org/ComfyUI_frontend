@@ -1,3 +1,5 @@
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 // oxlint-disable no-misused-spread
 import { describe, expect, it, vi } from 'vitest'
 
@@ -40,8 +42,6 @@ import {
   findSubgraphNodePathById,
   executionIdToNodeLocatorId
 } from '@/utils/graphTraversalUtil'
-import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
 

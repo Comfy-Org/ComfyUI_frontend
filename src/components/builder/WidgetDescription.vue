@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import EditableText from '@comfyorg/design-system/common/EditableText'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import EditableText from '@comfyorg/design-system/common/EditableText'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()

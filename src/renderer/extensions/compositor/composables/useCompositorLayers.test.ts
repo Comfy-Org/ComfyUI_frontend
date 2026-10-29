@@ -1,7 +1,7 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   clearCompositorLayers,

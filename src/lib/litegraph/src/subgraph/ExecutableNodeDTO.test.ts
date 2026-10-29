@@ -1,3 +1,4 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -6,7 +7,6 @@ import {
   LGraphEventMode,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   createNestedSubgraphs,

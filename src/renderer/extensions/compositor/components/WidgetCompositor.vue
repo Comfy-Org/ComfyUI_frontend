@@ -60,22 +60,21 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { CompactSize } from '@comfyorg/shared-frontend-utils/geometry'
-
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { useCompositorEditor } from '@/renderer/extensions/compositor/composables/useCompositorEditor'
 import {
   getCompositorPreviewOverride,
   hasCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import { useCompositorPsdDownload } from '@/renderer/extensions/compositor/composables/useCompositorPsdDownload'
-import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const { nodeId } = defineProps<{
   nodeId: NodeId

@@ -1,22 +1,22 @@
-import { paymentRecoveryAvailableFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { render, screen, waitFor } from '@testing-library/vue'
+import type { TeamCreditStopSummary } from '@comfyorg/billing-core'
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { paymentRecoveryAvailableFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import type {
   BalanceInfo,
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import CreditsTile from '@/platform/billing/subscription/components/CreditsTile.vue'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
-import { useTelemetry } from '@comfyorg/telemetry'
-import type { TeamCreditStopSummary } from '@comfyorg/billing-core'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 
 type Balance = Pick<

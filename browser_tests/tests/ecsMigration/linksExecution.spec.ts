@@ -1,3 +1,5 @@
+import type { ComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -7,9 +9,6 @@ import {
   expectNoVisibleErrors,
   trackVisibleErrors
 } from '@e2e/fixtures/utils/errorSurfaces'
-
-import type { ComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
 
 function getQueuedPrompt(body: unknown): ComfyApiWorkflow {
   if (typeof body !== 'object' || body === null || !('prompt' in body)) {

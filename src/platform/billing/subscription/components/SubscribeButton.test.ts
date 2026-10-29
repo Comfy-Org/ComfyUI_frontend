@@ -1,14 +1,13 @@
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useTelemetry } from '@comfyorg/telemetry'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useTelemetry } from '@comfyorg/telemetry'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 
 import SubscribeButton from './SubscribeButton.vue'
 

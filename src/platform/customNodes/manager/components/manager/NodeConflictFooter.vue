@@ -24,6 +24,7 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
+
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useDialogStore } from '@/stores/dialogStore'
 

@@ -1,4 +1,5 @@
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 /**

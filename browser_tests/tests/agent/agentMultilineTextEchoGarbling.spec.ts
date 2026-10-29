@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { expect } from '@playwright/test'
 
 /**
  * PM-1673: typing into an agent-created multiline text node garbles the input

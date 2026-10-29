@@ -10,9 +10,8 @@ import type {
   PendingBillingOperation
 } from '@comfyorg/account-core/billing'
 import { readBillingErrorCode } from '@comfyorg/account-core/billing'
-import { vi } from 'vitest'
-
 import type { BillingSdk } from '@comfyorg/billing-core/sdk'
+import { vi } from 'vitest'
 
 /** A server code minted the one sanctioned way, so a test cannot invent one. */
 export function serverCode(code: string): BillingServerCode | undefined {

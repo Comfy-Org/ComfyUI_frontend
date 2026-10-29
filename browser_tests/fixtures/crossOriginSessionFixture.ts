@@ -1,6 +1,3 @@
-import type { BrowserContext, TestDetails, TestInfo } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import { SessionTab } from '@e2e/fixtures/helpers/SessionTab'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import type {
@@ -16,6 +13,8 @@ import {
   refusedComfyEgress
 } from '@e2e/fixtures/utils/crossOriginSessionConfig'
 import type { NetworkPolicy } from '@e2e/fixtures/utils/networkPolicy'
+import type { BrowserContext, TestDetails, TestInfo } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 type StringEnvKey = Exclude<
   CrossOriginSessionEnvKey,

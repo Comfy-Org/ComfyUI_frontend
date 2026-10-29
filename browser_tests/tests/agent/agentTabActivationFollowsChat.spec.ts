@@ -1,7 +1,3 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { tabActivationTest as test } from '@e2e/fixtures/agentTabActivationFixture'
 import {
   LANDSCAPE_DRAFT,
@@ -13,6 +9,9 @@ import {
   UNRESTORABLE_THREAD_ID,
   UNBOUND_REQUEST
 } from '@e2e/fixtures/data/agent/tabActivationChats'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.describe(
   'Agent chat follows the active workflow tab',

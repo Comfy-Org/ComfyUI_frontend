@@ -1,10 +1,10 @@
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { trim } from 'es-toolkit'
 import { computed, toValue } from 'vue'
 
-import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { nodeBadges } from '@/systems/badgeSystem'
 import { NodeBadgeMode } from '@/types/nodeSource'

@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
-import SingleSelect from '@comfyorg/design-system/single-select/SingleSelect'
 import type { SingleSelectProps } from '@comfyorg/design-system/lib/single-select/types'
+import SingleSelect from '@comfyorg/design-system/single-select/SingleSelect'
+import { useI18n } from 'vue-i18n'
 
 type TranslatedProps = 'accessibleLabel' | 'searchLabel' | 'emptyText'
 

@@ -115,12 +115,10 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import { ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
-import Button from '@comfyorg/design-system/button/Button'
 
 import { useProgressBarPainter } from '@/platform/cloud/onboarding/composables/useProgressBarPainter'
 import { useVideoCarousel } from '@/platform/cloud/onboarding/composables/useVideoCarousel'

@@ -1,18 +1,17 @@
-import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useQueueStore } from '@/stores/queueStore'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { fromPartial } from '@total-typescript/shoehorn'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, toValue } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueStore } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
   getAssetType: (tags?: string[]) =>

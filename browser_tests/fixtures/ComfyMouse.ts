@@ -1,8 +1,7 @@
 import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
-import type { Locator, Mouse } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position } from '@e2e/fixtures/types'
+import type { Locator, Mouse } from '@playwright/test'
 
 /**
  * Used for drag and drop ops

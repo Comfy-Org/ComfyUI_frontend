@@ -1,3 +1,4 @@
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -5,7 +6,6 @@ import { createI18n } from 'vue-i18n'
 
 import TopBarHeader from '@/renderer/extensions/maskEditor/components/dialog/TopBarHeader.vue'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 

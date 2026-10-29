@@ -1,6 +1,3 @@
-import { FirebaseError } from 'firebase/app'
-import { ref } from 'vue'
-
 import {
   authErrorMessage,
   classifyAuthError,
@@ -10,25 +7,28 @@ import type {
   AuthErrorClassification,
   AuthErrorCopy
 } from '@comfyorg/account-core/firebaseAuthError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AuthFlowAction } from '@comfyorg/telemetry/types'
+import { FirebaseError } from 'firebase/app'
+import { ref } from 'vue'
 
-import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
-import { refreshBilling } from '@/platform/billing/billingRefresh'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { refreshBilling } from '@/platform/billing/billingRefresh'
+import { openBillingUrl } from '@/platform/billing/billingTab'
+import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
+import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry'
-import type { AuthFlowAction } from '@comfyorg/telemetry/types'
 import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
-import { useToast } from '@/components/ui/toast/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   clearAllWorkspaceStorage,
   prepareWorkflowLogoutTransition
 } from '@/platform/workflow/persistence/base/storageIO'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useDialogService } from '@/services/dialogService'
 import { SsoRequiredAuthError, useAuthStore } from '@/stores/authStore'
 import type {
@@ -36,7 +36,6 @@ import type {
   SocialSignInOptions
 } from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
-import { openBillingUrl } from '@/platform/billing/billingTab'
 
 /**
  * The app's own auth.errors table, read through vue-i18n at resolution time.

@@ -58,33 +58,33 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
-import Button from '@comfyorg/design-system/button/Button'
-import Textarea from '@comfyorg/design-system/textarea/Textarea'
-import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { api } from '@/scripts/api'
 import { downloadFile } from '@/base/common/downloadUtil'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type {
   NodeOutputWith,
   ResultItem
 } from '@/platform/remote/comfyui/execution/types'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { api } from '@/scripts/api'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from './layout'
 

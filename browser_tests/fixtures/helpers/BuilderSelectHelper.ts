@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { dragByIndex } from '@e2e/fixtures/utils/dragAndDrop'
+import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 export class BuilderSelectHelper {
   /** All IoItem locators in the current step sidebar. */

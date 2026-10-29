@@ -1,9 +1,9 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { slotDefaultsExtension } from '@/extensions/core/slotDefaults'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { app } from '@/scripts/app'
 
 vi.mock(import('@comfyorg/telemetry/reportError'))

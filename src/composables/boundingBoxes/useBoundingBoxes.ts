@@ -1,3 +1,9 @@
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import {
+  readableTextColor,
+  textOnColor
+} from '@comfyorg/shared-frontend-utils/colorUtil'
 import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { useElementSize, useEventBus } from '@vueuse/core'
 import type { EventBusKey } from '@vueuse/core'
@@ -29,13 +35,7 @@ import {
 } from '@/composables/widgetHistoryScope'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useBoundingBoxesSources } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources'
-import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import {
-  readableTextColor,
-  textOnColor
-} from '@comfyorg/shared-frontend-utils/colorUtil'
 
 const HANDLE_PX = 8
 const DIMENSION_STEP = 16

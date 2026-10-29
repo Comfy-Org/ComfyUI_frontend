@@ -3,9 +3,14 @@ import { computed, ref, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { t } from '@/i18n'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
-import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  FilterOption,
+  OwnershipOption
+} from '@/platform/assets/types/filterTypes'
 import {
   filterItemByBaseModels,
   filterItemByOwnership
@@ -18,16 +23,11 @@ import {
   getAssetUrlFilename,
   getOutputSubfolder
 } from '@/platform/assets/utils/assetMetadataUtils'
-import type {
-  FilterOption,
-  OwnershipOption
-} from '@/platform/assets/types/filterTypes'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
-import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { AssetKind } from '@/types/widgetTypes'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename, parseFilePath } from '@/utils/formatUtil'

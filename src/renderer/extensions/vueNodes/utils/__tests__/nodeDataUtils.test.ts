@@ -3,15 +3,16 @@ import {
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { describe, it } from 'vitest'
+
 import {
   linkedWidgetedInputs,
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { useLinkStore } from '@/stores/linkStore'
-import { describe, it } from 'vitest'
 
 const GRAPH_ID = 'graph-test'
 const GRAPH_SCOPE = {

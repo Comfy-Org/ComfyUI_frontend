@@ -1,11 +1,3 @@
-import { mergeTests } from '@playwright/test'
-import type { z } from 'zod'
-
-import type {
-  RawJobListItem,
-  zJobsListResponse
-} from '@/platform/remote/comfyui/jobs/jobTypes'
-
 import {
   comfyExpect as expect,
   comfyPageFixture
@@ -14,6 +6,13 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { mergeTests } from '@playwright/test'
+import type { z } from 'zod'
+
+import type {
+  RawJobListItem,
+  zJobsListResponse
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
 

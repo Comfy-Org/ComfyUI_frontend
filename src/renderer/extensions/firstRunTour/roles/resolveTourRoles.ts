@@ -1,6 +1,7 @@
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   getExecutionIdByNode,
   getRootParentNode

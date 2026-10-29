@@ -35,10 +35,10 @@
 </template>
 
 <script setup lang="ts">
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SystemStatsPanel from '@/components/common/SystemStatsPanel.vue'
-import Badge from '@comfyorg/design-system/badge/Badge'
 import { useAboutPanelStore } from '@/stores/aboutPanelStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 

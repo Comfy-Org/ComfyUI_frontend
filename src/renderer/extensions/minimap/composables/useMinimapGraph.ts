@@ -1,15 +1,14 @@
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { useThrottleFn } from '@vueuse/core'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { UpdateFlags } from '@/renderer/extensions/minimap/types'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-
-import type { UpdateFlags } from '@/renderer/extensions/minimap/types'
 
 interface GraphCallbacks {
   onConnectionChange?: (node: LGraphNode) => void

@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/vue'
+import type { PreviewSubscribeResponse } from '@comfyorg/billing-core'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import type { PreviewSubscribeResponse } from '@comfyorg/billing-core'
 
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 

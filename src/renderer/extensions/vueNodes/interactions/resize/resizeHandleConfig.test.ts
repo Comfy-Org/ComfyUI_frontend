@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest'
-
 import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
+import { describe, expect, it } from 'vitest'
 
 import { RESIZE_HANDLES, hasNorthEdge, hasWestEdge } from './resizeHandleConfig'
 

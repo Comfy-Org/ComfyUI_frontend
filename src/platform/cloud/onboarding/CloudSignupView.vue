@@ -92,15 +92,15 @@
 </template>
 
 <script setup lang="ts">
+import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
+import Message from '@comfyorg/design-system/message/Message'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
-import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
-
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
-import Message from '@comfyorg/design-system/message/Message'
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
@@ -112,7 +112,6 @@ import {
   CLOUD_AUTH_FIELD_CLASS,
   CLOUD_AUTH_LINK_BUTTON_CLASS
 } from '@/platform/cloud/onboarding/constants/authClasses'
-import { useTelemetry } from '@comfyorg/telemetry'
 import type { SignUpData } from '@/schemas/signInSchema'
 
 const { t } = useI18n()

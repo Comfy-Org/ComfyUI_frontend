@@ -1,9 +1,8 @@
-import { expect, mergeTests } from '@playwright/test'
-
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { subgraphBreadcrumbFixture } from '@e2e/fixtures/helpers/SubgraphBreadcrumbHelper'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { expect, mergeTests } from '@playwright/test'
 
 const test = mergeTests(comfyPageFixture, subgraphBreadcrumbFixture)
 

@@ -2,17 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { api } from '@/scripts/api'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
 import {
   ManagerUIState,
   __resetIncompatibleToastGuard
 } from '@/platform/customNodes/manager/composables/useManagerState'
+import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { api } from '@/scripts/api'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 vi.mock(import('@/i18n'))
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))

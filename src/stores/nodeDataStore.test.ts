@@ -1,16 +1,16 @@
-import { assert, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
-
-import { transferReplacementOwnership } from '@/core/graph/nodeShell/nodeShellState'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import {
   toOwningGraphId,
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
-import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import { assert, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
+
+import { transferReplacementOwnership } from '@/core/graph/nodeShell/nodeShellState'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 import type { UUID } from '@/utils/uuid'
 

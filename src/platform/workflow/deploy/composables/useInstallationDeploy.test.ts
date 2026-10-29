@@ -2,6 +2,7 @@ import type {
   CreateDeployBundleResponse,
   DeployToCloudError
 } from '@comfyorg/ingest-types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,7 +10,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { t } from '@/i18n'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'

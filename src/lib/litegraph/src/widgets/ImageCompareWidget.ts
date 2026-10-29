@@ -1,4 +1,5 @@
 import type { IImageCompareWidget } from '@comfyorg/graph-model/widgets'
+
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**

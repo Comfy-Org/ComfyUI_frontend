@@ -1,22 +1,20 @@
+import type { BillingEventsResponse } from '@comfyorg/billing-core'
+import { useTelemetry } from '@comfyorg/telemetry'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 
-import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
-
-import { testI18n } from '@/utils/__tests__/testI18n'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   EventType,
   useCustomerEventsService
 } from '@/services/customerEventsService'
-
-import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { useTelemetry } from '@comfyorg/telemetry'
-import type { BillingEventsResponse } from '@comfyorg/billing-core'
-import { billingApi } from '@/platform/billing/api/billingApi'
-import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { testI18n } from '@/utils/__tests__/testI18n'
 
 import UsageLogsTable from './UsageLogsTable.vue'
 

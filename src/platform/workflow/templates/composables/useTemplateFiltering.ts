@@ -1,19 +1,19 @@
-import { watchDebounced } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
-import type { Ref } from 'vue'
-
 import {
   createTemplateSearchIndex,
   searchTemplates
 } from '@comfyorg/shared-frontend-utils/templateSearch'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { watchDebounced } from '@vueuse/core'
+import { debounce } from 'es-toolkit/compat'
+import { computed, ref, watch } from 'vue'
+import type { Ref } from 'vue'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
+import { useTemplateRankingStore } from '@/platform/workflow/templates/stores/templateRankingStore'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { useTemplateRankingStore } from '@/platform/workflow/templates/stores/templateRankingStore'
-import { debounce } from 'es-toolkit/compat'
 
 type TemplateBrowseSort =
   | 'default'

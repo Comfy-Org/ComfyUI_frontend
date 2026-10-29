@@ -1,9 +1,9 @@
-import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { t as translate } from '@/i18n'
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 type Translate = (

@@ -1,11 +1,10 @@
 import * as fc from 'fast-check'
 import type { Command } from 'fast-check'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
 import { api } from '@/scripts/api'
 
-import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
 vi.mock(import('@/scripts/api'))

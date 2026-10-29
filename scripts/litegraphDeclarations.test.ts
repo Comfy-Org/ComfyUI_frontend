@@ -1,4 +1,3 @@
-import { Extractor, ExtractorConfig } from '@microsoft/api-extractor'
 import {
   mkdirSync,
   mkdtempSync,
@@ -8,6 +7,8 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
+
+import { Extractor, ExtractorConfig } from '@microsoft/api-extractor'
 import ts from 'typescript'
 import { expect, it, onTestFinished } from 'vitest'
 

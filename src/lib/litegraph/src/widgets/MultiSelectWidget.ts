@@ -1,4 +1,5 @@
 import type { IMultiSelectWidget } from '@comfyorg/graph-model/widgets'
+
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**

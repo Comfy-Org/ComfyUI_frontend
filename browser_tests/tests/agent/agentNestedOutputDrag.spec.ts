@@ -1,5 +1,7 @@
-import { expect } from '@playwright/test'
-
+import {
+  agentTest as test,
+  bootAgentApp
+} from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
 import {
@@ -7,10 +9,7 @@ import {
   MULTI_OUTPUT_JOB_ID,
   MULTI_OUTPUT_SECOND
 } from '@e2e/fixtures/data/assetFixtures'
-import {
-  agentTest as test,
-  bootAgentApp
-} from '@e2e/fixtures/agentPanelFixture'
+import { expect } from '@playwright/test'
 
 // PM-1157/PM-1158: a reporter dragged one generation out of a multi-output job
 // and got a broken chat attachment, while a top-level drag worked. The drag

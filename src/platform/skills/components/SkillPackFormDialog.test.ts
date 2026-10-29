@@ -5,9 +5,9 @@ import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
-
 import { publishSkillPack } from '@/platform/skills/api/skillsApi'
 import type { SkillPack } from '@/platform/skills/types'
+
 import SkillPackFormDialog from './SkillPackFormDialog.vue'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))

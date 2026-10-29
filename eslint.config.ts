@@ -1,21 +1,23 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 
+import path from 'node:path'
+
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
+import type { ESLint } from 'eslint'
+// eslint-config-prettier disables ESLint rules that conflict with formatters (oxfmt)
+import eslintConfigPrettier from 'eslint-config-prettier'
+import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import { getDefaultSelectors } from 'eslint-plugin-better-tailwindcss/api/defaults'
 import {
   MatcherType,
   SelectorKind
 } from 'eslint-plugin-better-tailwindcss/api/types'
-import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
 import oxlint from 'eslint-plugin-oxlint'
-// eslint-config-prettier disables ESLint rules that conflict with formatters (oxfmt)
-import eslintConfigPrettier from 'eslint-config-prettier'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
-import type { ESLint } from 'eslint'
 import { defineConfig } from 'eslint/config'
 import globals from 'globals'
 import {
@@ -23,7 +25,6 @@ import {
   parser as tseslintParser
 } from 'typescript-eslint'
 import vueParser from 'vue-eslint-parser'
-import path from 'node:path'
 
 import {
   tailwindScriptFiles,

@@ -1,10 +1,10 @@
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import type { IComboWidget } from '@comfyorg/graph-model/widgets'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
-import type { IComboWidget } from '@comfyorg/graph-model/widgets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   createMediaNodeDef,
@@ -13,6 +13,11 @@ import {
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+
+import {
+  countMissingMediaReferences,
+  getMissingMediaReferences
+} from './missingMediaGrouping'
 import {
   isMissingMediaCandidateScopeActive,
   scanAllMediaCandidates,
@@ -21,10 +26,6 @@ import {
   groupCandidatesByName,
   groupCandidatesByMediaType
 } from './missingMediaScan'
-import {
-  countMissingMediaReferences,
-  getMissingMediaReferences
-} from './missingMediaGrouping'
 import type { MissingMediaCandidate } from './types'
 
 vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {

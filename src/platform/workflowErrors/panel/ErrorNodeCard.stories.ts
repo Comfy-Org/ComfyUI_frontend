@@ -1,8 +1,9 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
-import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const meta: Meta<typeof ErrorNodeCard> = {
   title: 'RightSidePanel/Errors/ErrorNodeCard',

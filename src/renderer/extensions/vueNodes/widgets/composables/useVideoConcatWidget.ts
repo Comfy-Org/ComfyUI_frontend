@@ -1,9 +1,10 @@
-import { syncConcatOrderWithLinks } from '@/composables/videoConcat/syncConcatOrderWithLinks'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IVideoConcatWidget,
   IWidgetVideoConcatOptions
 } from '@comfyorg/graph-model/widgets'
+
+import { syncConcatOrderWithLinks } from '@/composables/videoConcat/syncConcatOrderWithLinks'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isVideoConcatInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'

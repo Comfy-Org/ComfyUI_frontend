@@ -4,13 +4,14 @@ import * as fs from 'fs'
 import './vite-define-shim'
 
 import {
-  comfyPageFixture as test,
-  comfyExpect as expect
-} from '../browser_tests/fixtures/ComfyPage'
-import {
   formatCamelCase,
   normalizeI18nKey
 } from '@comfyorg/shared-frontend-utils/formatUtil'
+
+import {
+  comfyPageFixture as test,
+  comfyExpect as expect
+} from '../browser_tests/fixtures/ComfyPage'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
 

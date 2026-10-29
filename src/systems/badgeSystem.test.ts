@@ -1,8 +1,8 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
 import { computeBadges, nodeBadges } from './badgeSystem'

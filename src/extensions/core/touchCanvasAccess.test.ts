@@ -1,10 +1,10 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { shallowRef } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { app } from '@/scripts/app'
 
 import { canvasOrReport } from './touchCanvasAccess'

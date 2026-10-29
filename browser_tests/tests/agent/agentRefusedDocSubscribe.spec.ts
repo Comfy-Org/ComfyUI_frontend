@@ -1,13 +1,12 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import {
   AGENT_NODE_IDS,
   addLoadImageNode
 } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { AgentRemoteApplyHarness } from '@e2e/fixtures/helpers/AgentRemoteApplyHarness'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const exhaustedRetryTest = test.extend<{
   exhaustedRetryAgent: AgentRemoteApplyHarness

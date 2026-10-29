@@ -10,6 +10,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+
 import { useSubgraphOperations } from './useSubgraphOperations'
 
 const captureCanvasState = vi.fn()

@@ -34,11 +34,11 @@
 </template>
 
 <script setup lang="ts">
-import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useQueueStore } from '@/stores/queueStore'

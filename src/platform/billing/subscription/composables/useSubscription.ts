@@ -1,45 +1,32 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
-import { computed, onScopeDispose, ref, watch } from 'vue'
+import type { BillingPortalTarget } from '@comfyorg/account-core/billing'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError as reportTelemetryError } from '@comfyorg/telemetry/reportError'
+import type {
+  CheckoutAttributionMetadata,
+  ResubscribeClickMetadata,
+  SubscriptionSuccessMetadata
+} from '@comfyorg/telemetry/types'
 import {
   createSharedComposable,
   defaultDocument,
   defaultWindow,
   useEventListener
 } from '@vueuse/core'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 
-import type { BillingPortalTarget } from '@comfyorg/account-core/billing'
-
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
-import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError as reportTelemetryError } from '@comfyorg/telemetry/reportError'
-import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
-import type {
-  CheckoutAttributionMetadata,
-  ResubscribeClickMetadata,
-  SubscriptionSuccessMetadata
-} from '@comfyorg/telemetry/types'
-import type { BillingStatusResponse } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
-import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { openBillingUrl } from '@/platform/billing/billingTab'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
-import {
-  PaymentPopupBlockedError,
-  categorizeBillingApiError
-} from '@/platform/telemetry/utils/billingFailureCategory'
-import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
-import { platformLink } from '@/platform/workspace/utils/platformLink'
-import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { toTierKey } from '@/platform/billing/subscription/constants/tierPricing'
-import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import type { operations } from '@/types/comfyRegistryTypes'
-import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -56,8 +43,21 @@ import {
   missingCheckoutUrlError,
   runReportedCheckoutAttempt
 } from '@/platform/billing/subscription/utils/subscriptionCheckoutUtil'
+import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
+import { isCloud } from '@/platform/distribution/types'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import {
+  PaymentPopupBlockedError,
+  categorizeBillingApiError
+} from '@/platform/telemetry/utils/billingFailureCategory'
+import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import type { operations } from '@/types/comfyRegistryTypes'
+
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
-import { openBillingUrl } from '@/platform/billing/billingTab'
 
 type CloudSubscriptionCheckoutResponse = NonNullable<
   operations['createCloudSubscriptionCheckout']['responses']['201']['content']['application/json']

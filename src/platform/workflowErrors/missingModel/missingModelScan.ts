@@ -1,43 +1,45 @@
-import type {
-  DeclaredModelFile,
-  ModelFile
-} from '@comfyorg/graph-model/workflowSchema'
-import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
-import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
-import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
-import {
-  getSelectedModelsMetadata,
-  isInactiveWorkflowNodeMode,
-  isNodeAndAncestorsActive
-} from '@/platform/workflow/core/utils/modelRequirements'
-import type { MissingModelCandidate } from './types'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import {
-  inputForWidget,
-  promotedInputWidgets
-} from '@/core/graph/subgraph/promotedInputWidget'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import {
-  buildPromotedWidgetExecutionSources,
-  resolveActivePromotedWidgetConsumers
-} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import type {
   IAssetWidget,
   IBaseWidget,
   IComboWidget
 } from '@comfyorg/graph-model/widgets'
+import type {
+  DeclaredModelFile,
+  ModelFile
+} from '@comfyorg/graph-model/workflowSchema'
+
+import {
+  inputForWidget,
+  promotedInputWidgets
+} from '@/core/graph/subgraph/promotedInputWidget'
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import {
+  buildPromotedWidgetExecutionSources,
+  resolveActivePromotedWidgetConsumers
+} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  getSelectedModelsMetadata,
+  isInactiveWorkflowNodeMode,
+  isNodeAndAncestorsActive
+} from '@/platform/workflow/core/utils/modelRequirements'
+import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
+import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
 import { useAssetsStore } from '@/stores/assetsStore'
-import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import {
   collectAllNodes,
   getExecutionIdByNode,
   isExecutionPathActive
 } from '@/utils/graphTraversalUtil'
 import { resolveComboValues } from '@/utils/litegraphUtil'
+
+import type { MissingModelCandidate } from './types'
 
 export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
   models?: ModelFile[]

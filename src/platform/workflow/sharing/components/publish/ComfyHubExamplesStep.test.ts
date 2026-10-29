@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ExampleImage } from '@/platform/workflow/sharing/types/comfyHubTypes'

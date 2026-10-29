@@ -1,9 +1,8 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { applyTextReplacements } from '@/utils/searchAndReplace'
-
 import { app } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
+import { applyTextReplacements } from '@/utils/searchAndReplace'
 
 const saveNodeTypes = new Set([
   'SaveImage',

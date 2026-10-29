@@ -75,19 +75,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
-import { actionClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
 import {
   lightPositionApplies,
   targetApplies
 } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
 import type { LightInfoType } from '@comfyorg/viewport3d/lightInfo/types'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { actionClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 
 const { compact, lightType } = defineProps<{
   compact: boolean

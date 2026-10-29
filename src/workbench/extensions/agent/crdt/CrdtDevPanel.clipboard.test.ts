@@ -1,8 +1,8 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useClipboard } from '@vueuse/core'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
@@ -21,9 +21,9 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
 }))
 
 import type { AgentCrdtStatus } from './agentCrdtStatus'
-import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
 import * as crdtDebugReport from './crdtDebugReport'
+import CrdtDevPanel from './CrdtDevPanel.vue'
 import {
   clearDevEvents,
   devEvents,

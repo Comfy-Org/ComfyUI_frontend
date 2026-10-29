@@ -1,18 +1,18 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { NodeError } from '@/platform/remote/comfyui/types'
+import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
+import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
+import '@/scripts/changeTracker'
 import type {
   MissingPackGroup,
   SwapNodeGroup
 } from '@/platform/workflowErrors/panel/useErrorGroups'
-import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
-import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
-import '@/scripts/changeTracker'
-import type { NodeError } from '@/platform/remote/comfyui/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 import ErrorOverlay from './ErrorOverlay.vue'

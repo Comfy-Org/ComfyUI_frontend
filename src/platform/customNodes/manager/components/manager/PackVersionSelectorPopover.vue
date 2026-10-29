@@ -90,6 +90,13 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import ContentDivider from '@comfyorg/design-system/common/ContentDivider'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
+import VerifiedIcon from '@comfyorg/design-system/icon/VerifiedIcon'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { whenever } from '@vueuse/core'
 import {
   ListboxContent,
@@ -101,16 +108,7 @@ import { valid as validSemver } from 'semver'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ContentDivider from '@comfyorg/design-system/common/ContentDivider'
-import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
-import VerifiedIcon from '@comfyorg/design-system/icon/VerifiedIcon'
-import Button from '@comfyorg/design-system/button/Button'
 import AppSpinner from '@/components/common/AppSpinner.vue'
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import { useComfyRegistryService } from '@/services/comfyRegistryService'
-import type { components } from '@/types/comfyRegistryTypes'
 import PackStatusMessage from '@/platform/customNodes/manager/components/manager/PackStatusMessage.vue'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
@@ -120,6 +118,8 @@ import {
   getLatestVersion,
   versionStatusFilters
 } from '@/platform/customNodes/manager/utils/nodePackVersionUtil'
+import { useComfyRegistryService } from '@/services/comfyRegistryService'
+import type { components } from '@/types/comfyRegistryTypes'
 
 type ManagerChannel = ManagerComponents['schemas']['ManagerChannel']
 type ManagerDatabaseSource =

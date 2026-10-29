@@ -198,14 +198,14 @@
 </template>
 
 <script setup lang="ts">
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 import { RadioGroupItem, RadioGroupRoot } from 'reka-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
-import Badge from '@comfyorg/design-system/badge/Badge'
-import Button from '@comfyorg/design-system/button/Button'
 import {
   OAuthApiError,
   fetchOAuthConsentChallenge,

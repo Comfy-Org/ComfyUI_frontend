@@ -1,3 +1,5 @@
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
+import type { Position, Size } from '@e2e/fixtures/types'
 import type {
   Locator,
   Page,
@@ -6,9 +8,7 @@ import type {
 import { expect } from '@playwright/test'
 import { isEqual } from 'es-toolkit'
 
-import type { Position, Size } from '@e2e/fixtures/types'
 import { SELECTION_BOUNDS_PADDING } from '@/base/common/selectionBounds'
-import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 
 type PageRect = Position & Size
 

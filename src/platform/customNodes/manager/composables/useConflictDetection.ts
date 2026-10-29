@@ -2,9 +2,6 @@ import { until } from '@vueuse/core'
 import { find } from 'es-toolkit/compat'
 import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
-import { useComfyRegistryService } from '@/services/comfyRegistryService'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/platform/customNodes/manager/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
@@ -30,6 +27,9 @@ import {
 } from '@/platform/customNodes/manager/utils/conflictUtils'
 import { normalizeOSList } from '@/platform/customNodes/manager/utils/systemCompatibility'
 import { getFrontendVersion } from '@/platform/customNodes/manager/utils/versionUtil'
+import { useComfyRegistryService } from '@/services/comfyRegistryService'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import type { components } from '@/types/comfyRegistryTypes'
 
 /**
  * Composable for conflict detection system.

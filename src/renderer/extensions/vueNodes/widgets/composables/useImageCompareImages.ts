@@ -2,8 +2,8 @@ import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { savedImageUrls } from '@/renderer/extensions/vueNodes/widgets/utils/savedImageUrls'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { resolveInputSourceNode } from '@/utils/graphTraversalUtil'
 
 const BEFORE_INPUT = 'image_a'

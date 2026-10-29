@@ -1,12 +1,12 @@
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { Tools, allTools } from '@comfyorg/mask-editor/types'
+import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ToolPanel from '@/renderer/extensions/maskEditor/components/ToolPanel.vue'
-import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
-import { Tools, allTools } from '@comfyorg/mask-editor/types'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 type ToolManager = ReturnType<typeof useToolManager>
 

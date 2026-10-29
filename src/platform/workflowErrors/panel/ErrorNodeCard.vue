@@ -159,15 +159,14 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { cn } from '@comfyorg/tailwind-utils'
 import LocateNodeButton from './LocateNodeButton.vue'
-import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
-
 import type { ErrorCardData, ErrorItem } from './types'
 import { useErrorActions } from './useErrorActions'
 import { useErrorReport } from './useErrorReport'

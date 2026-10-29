@@ -1,8 +1,7 @@
+import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { expect } from '@playwright/test'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-
-import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 
 const NODE_TYPE = 'AgentWidgetFormDriftProbe'
 

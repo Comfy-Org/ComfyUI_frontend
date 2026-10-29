@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
-
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'

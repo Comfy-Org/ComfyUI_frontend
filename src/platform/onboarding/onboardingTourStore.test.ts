@@ -1,20 +1,19 @@
-import { useAppModeStore } from '@/stores/appModeStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import type { DetachedWindowAPI } from 'happy-dom'
-import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
-
-import { useAppMode } from '@/composables/useAppMode'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   OnboardingTourStepStage,
   OnboardingTourStepMetadata
 } from '@comfyorg/telemetry/types'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { DetachedWindowAPI } from 'happy-dom'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useAppMode } from '@/composables/useAppMode'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import type { AppMode } from '@comfyorg/graph-model/appMode'
 
 import {
   clearCoachmarks,

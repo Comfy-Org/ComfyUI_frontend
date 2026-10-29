@@ -1,15 +1,14 @@
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@comfyorg/telemetry'
-
-import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
-import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
-import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 
 import WorkflowActionsDropdown from './WorkflowActionsDropdown.vue'
 

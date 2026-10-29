@@ -1,8 +1,8 @@
-import { render, screen } from '@testing-library/vue'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 

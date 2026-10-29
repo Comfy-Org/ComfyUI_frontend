@@ -1,7 +1,6 @@
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
-
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 async function verifyCustomIconSvg(iconElement: Locator) {
   await expect

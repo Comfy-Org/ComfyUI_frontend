@@ -1,12 +1,11 @@
 import type { ComfyDesktop2AuthState } from '@comfyorg/comfyui-desktop-bridge-types'
 import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
-import { mergeTests } from '@playwright/test'
-
-import type { DesktopHostAuthBridge } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
-
 import { agentConsentTest } from '@e2e/fixtures/agentConsentFixture'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { mergeTests } from '@playwright/test'
+
+import type { DesktopHostAuthBridge } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 
 declare global {
   interface Window {

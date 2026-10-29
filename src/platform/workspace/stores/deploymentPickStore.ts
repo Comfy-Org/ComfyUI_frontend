@@ -1,15 +1,15 @@
 import type { ReleaseUnsupportedPack } from '@comfyorg/ingest-types'
-import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { defineStore } from 'pinia'
 import { computed, shallowRef, watch } from 'vue'
 
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import {
   DEPLOYMENT_LISTING_BACKSTOP_MS,
   DEPLOYMENT_LISTING_RETRY_DELAYS_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
-import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import {
   hasDeploymentLink,

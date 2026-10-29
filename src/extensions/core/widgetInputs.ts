@@ -1,6 +1,9 @@
+import type { IBaseWidget, IWidgetLocator } from '@comfyorg/graph-model/widgets'
+import { CONFIG, GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import { intersection } from 'es-toolkit/compat'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
 import { createWidgetRestorationState } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -12,7 +15,6 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import type { IBaseWidget, IWidgetLocator } from '@comfyorg/graph-model/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import {
@@ -21,16 +23,14 @@ import {
 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetValue } from '@/types/simplifiedWidget'
-import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
 import { ComfyWidgets, isValidWidgetType } from '@/scripts/widgets'
-import { CONFIG, GET_CONFIG } from '@comfyorg/graph-model/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { ComfyExtension } from '@/types/comfy'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
-import type { ComfyExtension } from '@/types/comfy'
 
 const replacePropertyName = 'Run widget replace on values'
 const isPrimitiveNode = (

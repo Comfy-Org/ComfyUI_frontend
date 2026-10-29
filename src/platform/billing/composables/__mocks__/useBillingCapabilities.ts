@@ -2,8 +2,8 @@ import { onTestFinished, vi } from 'vitest'
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { useBillingCapabilities as realUseBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   canTopUp: computed(() => true),

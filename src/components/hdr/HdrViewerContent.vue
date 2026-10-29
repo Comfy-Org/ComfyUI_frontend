@@ -202,11 +202,11 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { computed, onMounted, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import Button from '@comfyorg/design-system/button/Button'
 import type { ChannelMode } from '@/composables/useHdrViewer'
 import { CHANNEL_MODES, useHdrViewer } from '@/composables/useHdrViewer'
 import { GAMUT_NAMES } from '@/renderer/hdr/colorGamut'

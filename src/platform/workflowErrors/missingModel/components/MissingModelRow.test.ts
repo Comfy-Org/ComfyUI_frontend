@@ -1,6 +1,6 @@
-import { getActivePinia } from 'pinia'
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -15,8 +15,8 @@ import {
   fetchModelMetadata,
   openGatedRepoPage
 } from '@/platform/workflowErrors/missingModel/missingModelDownload'
-import type { MissingModelViewModel } from '@/platform/workflowErrors/missingModel/types'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { MissingModelViewModel } from '@/platform/workflowErrors/missingModel/types'
 import { api } from '@/scripts/api'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))

@@ -1,18 +1,18 @@
-import { until } from '@vueuse/core'
-import { defineAsyncComponent, watch } from 'vue'
-import { storeToRefs } from 'pinia'
-
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { i18n } from '@/i18n'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   AgentConsentDecision,
   AgentConsentOfferExit,
   AgentConsentTrigger
 } from '@comfyorg/telemetry/types'
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { until } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
+import { defineAsyncComponent, watch } from 'vue'
+
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { i18n } from '@/i18n'
 import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 import {
@@ -20,8 +20,8 @@ import {
   writePendingSignInAccept
 } from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
-import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import type { ConsentCardError } from '@/workbench/extensions/agent/types/consentCardError'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'

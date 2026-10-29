@@ -5,12 +5,11 @@ import type {
   PromptResponse,
   WebSessionResponse
 } from '@comfyorg/ingest-types'
+import { TEAM_WORKSPACE } from '@e2e/fixtures/data/workspaceSwitcher'
+import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
-
-import { TEAM_WORKSPACE } from '@e2e/fixtures/data/workspaceSwitcher'
-import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 
 export const WEB_SESSION_FEATURES: RemoteConfig = { unified_web_session: true }
 

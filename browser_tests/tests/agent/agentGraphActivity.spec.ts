@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { expect } from '@playwright/test'
 
 // Recorded full-stack source: the agent adds three nodes at x=1845, 2165 and
 // 2485, beyond the visible canvas. See the fixture provenance for cloud SHA,

@@ -3,7 +3,6 @@ import { orderBy } from 'es-toolkit/compat'
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/platform/customNodes/manager/composables/nodePack/useInstalledPacks'
 import { useWorkflowPacks } from '@/platform/customNodes/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
@@ -14,6 +13,7 @@ import {
   getPackSortValue
 } from '@/platform/customNodes/manager/utils/nodePackSort'
 import { getPackUpdateStatus } from '@/platform/customNodes/manager/utils/packUpdateStatus'
+import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 

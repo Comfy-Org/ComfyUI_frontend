@@ -1,6 +1,7 @@
 import { RenderShape } from '@comfyorg/graph-model/globalEnums'
-import { shapeVariantClass } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { describe, expect, it } from 'vitest'
+
+import { shapeVariantClass } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 
 describe('shapeVariantClass', () => {
   const variants = {

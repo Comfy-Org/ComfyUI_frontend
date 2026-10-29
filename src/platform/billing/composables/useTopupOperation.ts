@@ -1,16 +1,15 @@
+import type { BillingClient } from '@comfyorg/account-core/billing'
+import type { CreateTopupResponse } from '@comfyorg/billing-core'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { delay } from 'es-toolkit'
 import { computed } from 'vue'
 
-import type { BillingClient } from '@comfyorg/account-core/billing'
-
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
-import type { CreateTopupResponse } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
-import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 const RETRYABLE_CHECKOUT_REFUSALS: ReadonlyArray<readonly [number, string]> = [
   [409, 'TOPUP_CHECKOUT_BUSY'],

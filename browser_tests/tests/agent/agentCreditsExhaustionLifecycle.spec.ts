@@ -1,9 +1,8 @@
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { test } from '@e2e/tests/agent/agentCreditsExhaustionLifecycleMocks'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { test } from '@e2e/tests/agent/agentCreditsExhaustionLifecycleMocks'
-import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe(
   'Agent standing credits-exhaustion lifecycle',

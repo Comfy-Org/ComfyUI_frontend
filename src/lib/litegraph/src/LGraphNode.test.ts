@@ -1,3 +1,10 @@
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type {
+  PointTuple as Point,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { omit } from 'es-toolkit'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
@@ -5,13 +12,6 @@ import type {
   INodeInputSlot,
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
-import type {
-  PointTuple as Point,
-  Rect
-} from '@comfyorg/shared-frontend-utils/geometry'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
-import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphCanvas,
   LGraphEventMode,
@@ -22,12 +22,12 @@ import {
   NodeInputSlot,
   NodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
 
 import { test } from './__fixtures__/testExtensions'
-import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number

@@ -3,8 +3,8 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { sleep } from '@e2e/fixtures/utils/timing'
 import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { sleep } from '@e2e/fixtures/utils/timing'
 
 const CLIP_NODE_COUNT = 2
 

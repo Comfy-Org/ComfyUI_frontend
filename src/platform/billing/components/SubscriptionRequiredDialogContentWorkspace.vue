@@ -115,12 +115,12 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-import { onMounted } from 'vue'
-
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { cn } from '@comfyorg/tailwind-utils'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
+import { onMounted } from 'vue'
+
 import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
 import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'
 

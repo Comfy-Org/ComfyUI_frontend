@@ -1,5 +1,4 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
-
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import { resolveSubgraphInputLink } from './resolveSubgraphInputLink'

@@ -1,9 +1,9 @@
 import type { TaskItemImpl } from '@/stores/queueStore'
-import { resultItemUrl } from '@/utils/resultItemUrl'
-import { isImageResult } from '@/utils/resultItem'
 import type { JobState } from '@/types/queue'
 import { formatDuration } from '@/utils/formatUtil'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
+import { isImageResult } from '@/utils/resultItem'
+import { resultItemUrl } from '@/utils/resultItemUrl'
 
 export type BuildJobDisplayCtx = {
   t: (k: string, v?: Record<string, unknown>) => string

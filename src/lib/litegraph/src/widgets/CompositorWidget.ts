@@ -1,4 +1,5 @@
 import type { ICompositorWidget } from '@comfyorg/graph-model/widgets'
+
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**

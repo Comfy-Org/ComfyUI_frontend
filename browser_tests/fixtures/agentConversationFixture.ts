@@ -1,51 +1,29 @@
-import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
-import type { Locator, Page, TestInfo } from '@playwright/test'
-import { expect } from '@playwright/test'
 import type { ApplyOutcome, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ListAssetsResponse } from '@comfyorg/ingest-types'
-import { z } from 'zod'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import type { ListAssetsResponse } from '@comfyorg/ingest-types'
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
+import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import type {
-  AgentCancelAccepted,
-  AgentMessages,
-  AgentWsEvent
-} from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import {
-  DOC_PROTOCOL_VERSION,
-  parseServerDocFrame
-} from '@/workbench/extensions/agent/crdt/docFrameClient'
-import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
-import type { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
-
+  ClientDocFrame,
+  HumanOpsHost
+} from '@e2e/fixtures/agentFollowerHostSocket'
 import {
   agentTest,
   bootAgentApp,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
-import { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
   AGENT_FRAME_HANDLED_EVENT,
   announceHandledAgentFrames
 } from '@e2e/fixtures/agentSocket'
+import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import type {
-  ClientDocFrame,
-  HumanOpsHost
-} from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
-import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   AgentConversation,
   AgentConversationTurn,
@@ -53,22 +31,42 @@ import type {
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
+import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import {
   agentHumanAddBlueprint,
   agentNestedSubgraphDefinition
 } from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
-import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
-import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
-import { mockEmptyAgentThreadList } from '@e2e/fixtures/utils/agentThreadList'
-import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
-
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
+import { mockEmptyAgentThreadList } from '@e2e/fixtures/utils/agentThreadList'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
+import type { Locator, Page, TestInfo } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { z } from 'zod'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import {
+  DOC_PROTOCOL_VERSION,
+  parseServerDocFrame
+} from '@/workbench/extensions/agent/crdt/docFrameClient'
+import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
+import type {
+  AgentCancelAccepted,
+  AgentMessages,
+  AgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.

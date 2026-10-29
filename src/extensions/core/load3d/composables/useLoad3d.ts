@@ -1,21 +1,4 @@
-import type { MaybeRef, Ref } from 'vue'
-
-import { toRef, useDebounceFn } from '@vueuse/core'
-import { isEqual } from 'es-toolkit'
-import { getActivePinia } from 'pinia'
-import { ref, toRaw, watch } from 'vue'
-
-import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
-import { load3dHost } from '@/extensions/core/load3d/load3dHost'
-import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
-import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
-import {
-  isAssetPreviewSupported,
-  persistThumbnail
-} from '@/platform/assets/utils/assetPreviewUtil'
 import type {
   AnimationItem,
   CameraConfig,
@@ -32,15 +15,31 @@ import type {
   SceneConfig,
   UpDirection
 } from '@comfyorg/viewport3d/load3d/interfaces'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
+import { toRef, useDebounceFn } from '@vueuse/core'
+import { isEqual } from 'es-toolkit'
+import { getActivePinia } from 'pinia'
+import type { MaybeRef, Ref } from 'vue'
+import { ref, toRaw, watch } from 'vue'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { load3dHost } from '@/extensions/core/load3d/load3dHost'
+import { keepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  isAssetPreviewSupported,
+  persistThumbnail
+} from '@/platform/assets/utils/assetPreviewUtil'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { keepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
 
 type Load3dReadyCallback = (load3d: Load3d) => void
 export const nodeToLoad3dMap = new Map<LGraphNode, Load3d>()

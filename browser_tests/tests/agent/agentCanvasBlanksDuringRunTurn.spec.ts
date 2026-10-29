@@ -1,33 +1,31 @@
-import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type {
   DocResetFrame,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import {
-  STALE_AFTER_MS,
-  SUBSCRIBE_CATCHUP_GRACE_MS
-} from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
-
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
-import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import {
+  STALE_AFTER_MS,
+  SUBSCRIBE_CATCHUP_GRACE_MS
+} from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 /**
  * Regression coverage for the Jo Zhang / PM-1406-shaped report (nightly,

@@ -15,9 +15,10 @@ import type { ComfyExtension } from '@/types/comfy'
 type SaveMeshOutput = NodeOutputWith<{
   '3d'?: ResultItem[]
 }>
-import { app } from '@/scripts/app'
-import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+
+import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
+import { app } from '@/scripts/app'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 function applySaveGLBOutput(node: LGraphNode, fileInfo: ResultItem): void {

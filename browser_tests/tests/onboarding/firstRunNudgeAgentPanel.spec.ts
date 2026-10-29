@@ -1,14 +1,13 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { OnboardingCoachmarks } from '@e2e/fixtures/components/Tour'
+import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const GETTING_STARTED_TITLE = enMessages.gettingStarted.title
 

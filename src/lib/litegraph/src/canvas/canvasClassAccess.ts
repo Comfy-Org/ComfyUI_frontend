@@ -2,8 +2,8 @@ import type {
   ContextMenu,
   LGraphNode
 } from '@comfyorg/graph-model/entityRegistry'
-
 import type { ColorOption } from '@comfyorg/graph-model/interfaces'
+
 import type {
   IContextMenuOptions,
   IContextMenuValue

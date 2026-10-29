@@ -1,6 +1,21 @@
+import { OPERATION_POLL_TIMING } from '@comfyorg/account-core/billing'
+import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account-core/customerRecovery'
+import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
+import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
+import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
+import type {
+  BillingBalanceResponse,
+  BillingCapabilitiesResponse,
+  BillingOpStatusResponse,
+  BillingStatusResponse,
+  CreateTopupResponse
+} from '@comfyorg/ingest-types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { User, UserCredential } from 'firebase/auth'
+import { setActivePinia } from 'pinia'
 import {
   afterEach,
   assert,
@@ -12,87 +27,71 @@ import {
   vi
 } from 'vitest'
 import type { Mock } from 'vitest'
-import { setActivePinia } from 'pinia'
 import { defineComponent, effectScope } from 'vue'
 
-import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
-import type {
-  BillingBalanceResponse,
-  BillingCapabilitiesResponse,
-  BillingOpStatusResponse,
-  BillingStatusResponse,
-  CreateTopupResponse
-} from '@comfyorg/ingest-types'
-import { OPERATION_POLL_TIMING } from '@comfyorg/account-core/billing'
-import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account-core/customerRecovery'
-import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
-import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
-import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
-
-import {
-  clearPreservedQuery,
-  getPreservedQueryParam
-} from '@/platform/navigation/preservedQueryManager'
-import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import {
   bootCloudIdentity,
   cloudSignIn
 } from '@/platform/auth/session/cloudIdentityBoot'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import {
   markInteractiveSignIn,
   takeInteractiveSignIn
 } from '@/platform/auth/session/interactiveSignInMarker'
-import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import {
   readSsoHint,
   rememberSignedInSession
 } from '@/platform/auth/session/ssoReentryStorage'
-import { submitSurvey } from '@/platform/cloud/onboarding/auth'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
-import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
-import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
   WebSessionTokenError,
   webSessionRequests,
   webSessionResourceHeader,
   webSessionSend
 } from '@/platform/auth/session/webSessionFetch'
-import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
+import { submitSurvey } from '@/platform/cloud/onboarding/auth'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import {
+  clearPreservedQuery,
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { NoWorkspaceAccessError } from '@/platform/remote/ingest/ingestApiError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { billingApi } from '@/platform/billing/api/billingApi'
-import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
-import { NoWorkspaceAccessError } from '@/platform/remote/ingest/ingestApiError'
+import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
   getGlobalSetting,
   setGlobalSetting
 } from '@/platform/settings/globalSettingsApi'
-import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
-import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type { ComfyApp } from '@/scripts/app'
-import { useExtensionService } from '@/platform/extensions/services/extensionService'
-import { createDisposablePinia } from '@/testing/pinia'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { NO_PERSONAL_WORKSPACE, useAuthStore } from '@/stores/authStore'
-import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
 import { useDialogStore } from '@/stores/dialogStore'
+import { createDisposablePinia } from '@/testing/pinia'
 import type { ComfyExtension } from '@/types/comfy'
 import {
   resultItemUrl,
   resultItemVhsAdvancedPreviewUrl
 } from '@/utils/resultItemUrl'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 type IdentityObserver = (user: User | null) => void
 

@@ -1,8 +1,7 @@
+import type { DialogContentSize } from '@comfyorg/design-system/lib/dialog/dialog.variants'
 import { defineStore } from 'pinia'
 import { markRaw, ref } from 'vue'
 import type { Component, Ref } from 'vue'
-
-import type { DialogContentSize } from '@comfyorg/design-system/lib/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 export interface DialogComponentProps {

@@ -1,12 +1,12 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { CommandMenuItem } from '@/stores/menuItemStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 

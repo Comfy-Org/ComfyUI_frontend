@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { expect } from '@playwright/test'
 
 test.describe('Agent debug log', { tag: ['@cloud', '@agent', '@ui'] }, () => {
   test.beforeEach(async ({ page }) => {

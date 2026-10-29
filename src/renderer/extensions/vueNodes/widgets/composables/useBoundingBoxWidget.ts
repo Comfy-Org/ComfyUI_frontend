@@ -1,4 +1,3 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IBoundingBoxWidget,
@@ -6,6 +5,8 @@ import type {
   INumericWidget
 } from '@comfyorg/graph-model/widgets'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   BoundingBoxInputSpec,
   InputSpec as InputSpecV2

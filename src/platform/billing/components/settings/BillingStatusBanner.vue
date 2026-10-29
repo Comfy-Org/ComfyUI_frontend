@@ -78,32 +78,32 @@
 </template>
 
 <script setup lang="ts">
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import Button from '@comfyorg/design-system/button/Button'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useLongDate } from '@/platform/billing/composables/useLongDate'
 
-import Button from '@comfyorg/design-system/button/Button'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
-import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useBillingBanner } from '@/platform/billing/composables/useBillingBanner'
 import type {
   BillingBannerAudience,
   BillingBannerKind
 } from '@/platform/billing/composables/useBillingBanner'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { useLongDate } from '@/platform/billing/composables/useLongDate'
+import { pausedBannerCopy } from '@/platform/billing/composables/usePausedBanner'
 import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { pausedBannerCopy } from '@/platform/billing/composables/usePausedBanner'
 import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/billing/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
 import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
-import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
-import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 
 type BannerAction =
   | 'addCredits'

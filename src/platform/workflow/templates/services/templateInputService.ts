@@ -1,15 +1,14 @@
-import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
-import { z } from 'zod'
-
+import { isWidgetValue } from '@comfyorg/graph-model/widgets'
+import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
 } from '@comfyorg/graph-model/workflowSchema'
-import { isWidgetValue } from '@comfyorg/graph-model/widgets'
-import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
-import { api } from '@/scripts/api'
+import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
 import { zTemplateInput } from '@/platform/workflow/templates/schemas/templateSchema'
+import { api } from '@/scripts/api'
 
 const INPUT_BASE =
   'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/'

@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expect } from '@playwright/test'
 
 test.describe('Subgraph viewport restoration', { tag: '@subgraph' }, () => {
   test('keeps a cached subgraph camera when its hidden first-visit fit is queued', async ({

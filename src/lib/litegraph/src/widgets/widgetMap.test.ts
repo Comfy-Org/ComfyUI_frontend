@@ -1,14 +1,14 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 
-import { LegacyWidget } from './LegacyWidget'
 import { ButtonWidget } from './ButtonWidget'
+import { LegacyWidget } from './LegacyWidget'
 import { TextWidget } from './TextWidget'
 import { toConcreteWidget } from './widgetMap'
 

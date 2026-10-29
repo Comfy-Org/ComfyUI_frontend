@@ -1,6 +1,8 @@
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { SettingChangedMetadata } from '@comfyorg/telemetry/types'
+import { createEventHook, until, useAsyncState } from '@vueuse/core'
 import { retry } from 'es-toolkit'
 import { cloneDeep } from 'es-toolkit/compat'
-import { createEventHook, until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { compare, valid } from 'semver'
 import { ref } from 'vue'
@@ -8,8 +10,6 @@ import type { Ref } from 'vue'
 
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import type { SettingParams, Settings } from '@/platform/settings/types'
-import { useTelemetry } from '@comfyorg/telemetry'
-import type { SettingChangedMetadata } from '@comfyorg/telemetry/types'
 import { api } from '@/scripts/api'
 
 export const getSettingInfo = (setting: SettingParams) => {

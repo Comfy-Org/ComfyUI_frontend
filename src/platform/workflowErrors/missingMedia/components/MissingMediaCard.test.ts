@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { testI18n } from '@/utils/__tests__/testI18n'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { testI18n } from '@/utils/__tests__/testI18n'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 import MissingMediaCard from './MissingMediaCard.vue'
 

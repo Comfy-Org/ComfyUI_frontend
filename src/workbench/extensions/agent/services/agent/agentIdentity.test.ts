@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { isRetryableRequestFailure } from '@/workbench/extensions/agent/composables/agent/useAgentSession'
+
 import { resolveAgentIdentity } from './agentIdentity'
 import { AgentApiError } from './agentRestClient'
 

@@ -1,6 +1,5 @@
-import type { Page } from '@playwright/test'
-
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import type { Page } from '@playwright/test'
 
 export async function pinCanvasTransform(page: Page): Promise<void> {
   await page.evaluate(() => {

@@ -50,10 +50,9 @@
 </template>
 
 <script setup lang="ts">
+import type { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import type { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 
 import KeyComboDisplay from './KeyComboDisplay.vue'
 

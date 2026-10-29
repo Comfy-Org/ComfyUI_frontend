@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import WorkflowTemplateDownloadStatus from '@/platform/workflow/templates/components/WorkflowTemplateDownloadStatus.vue'
 import Badge from '@comfyorg/design-system/badge/Badge'
+
+import WorkflowTemplateDownloadStatus from '@/platform/workflow/templates/components/WorkflowTemplateDownloadStatus.vue'
 import type { TemplateDetailRow } from '@/platform/workflow/templates/types/templateDetail'
 
 const { row } = defineProps<{ row: TemplateDetailRow }>()

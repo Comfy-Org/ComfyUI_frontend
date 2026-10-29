@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { autogrowTest as test } from '@e2e/fixtures/agentAutogrowSpareInputFixture'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Agent CRDT autogrow node keeps a free slot across a tab switch',

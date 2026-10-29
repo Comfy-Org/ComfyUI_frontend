@@ -28,8 +28,9 @@
 </template>
 
 <script setup lang="ts">
-import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import Button from '@comfyorg/design-system/button/Button'
+
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionDialogAccess } from '@/platform/billing/subscription/composables/subscriptionDialogAccess'
 import { useDialogStore } from '@/stores/dialogStore'

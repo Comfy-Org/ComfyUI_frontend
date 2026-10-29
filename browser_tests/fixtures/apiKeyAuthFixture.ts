@@ -1,6 +1,3 @@
-import type { Route } from '@playwright/test'
-import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
-
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
@@ -11,10 +8,13 @@ import type {
   ListMembersResponse
 } from '@comfyorg/ingest-types'
 import { formatCreditsFromCents } from '@comfyorg/shared-frontend-utils/creditsUtil'
-import type { operations } from '@/types/comfyRegistryTypes'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { Route } from '@playwright/test'
+
+import type { operations } from '@/types/comfyRegistryTypes'
 
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']

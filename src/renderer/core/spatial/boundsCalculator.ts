@@ -2,6 +2,7 @@ import type {
   SizedExtents as SpatialBounds,
   PositionedRect as PositionedNode
 } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { calculatePositionExtents } from '@/utils/positionBounds'
 
 export type { PositionedRect as PositionedNode } from '@comfyorg/shared-frontend-utils/geometry'

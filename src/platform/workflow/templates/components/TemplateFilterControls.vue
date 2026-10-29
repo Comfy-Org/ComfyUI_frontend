@@ -50,8 +50,9 @@
 </template>
 
 <script setup lang="ts">
-import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
 import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
+
+import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import type { TemplateSortMode } from '@/platform/workflow/templates/composables/useTemplateFiltering'
 

@@ -1,6 +1,6 @@
 import type { Asset } from '@comfyorg/ingest-types'
-
 import { STABLE_LORA } from '@e2e/fixtures/data/assetFixtures'
+
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 export const NATIVE_LORA_ASSETS: (Asset & Pick<AssetItem, 'loader_path'>)[] = [

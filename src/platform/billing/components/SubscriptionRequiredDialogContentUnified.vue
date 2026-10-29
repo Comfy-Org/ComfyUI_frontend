@@ -112,17 +112,17 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { cn } from '@comfyorg/tailwind-utils'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { useEventListener } from '@vueuse/core'
 import { computed, onMounted } from 'vue'
 
-import Button from '@comfyorg/design-system/button/Button'
-import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import { isCloud } from '@/platform/distribution/types'
-import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'
+import { isCloud } from '@/platform/distribution/types'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'

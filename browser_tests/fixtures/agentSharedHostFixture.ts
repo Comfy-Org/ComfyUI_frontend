@@ -1,11 +1,10 @@
-import type { Page } from '@playwright/test'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import type { Page } from '@playwright/test'
+
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 /** One fake document host reached through an independently routed socket per page. */
 export class AgentSharedHostFixture {

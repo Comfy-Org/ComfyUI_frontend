@@ -61,22 +61,22 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { cn } from '@comfyorg/tailwind-utils'
+import { unrefElement } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import { unrefElement } from '@vueuse/core'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
-import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
-import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import Button from '@comfyorg/design-system/button/Button'
-import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
+import { isCloud } from '@/platform/distribution/types'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 

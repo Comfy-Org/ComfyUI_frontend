@@ -15,6 +15,7 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
+
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const sidebarTabStore = useSidebarTabStore()

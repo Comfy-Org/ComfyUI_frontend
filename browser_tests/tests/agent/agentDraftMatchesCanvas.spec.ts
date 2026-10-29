@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-import type { Route } from '@playwright/test'
 import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
-import { z } from 'zod'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { expect } from '@playwright/test'
+import type { Route } from '@playwright/test'
+import { z } from 'zod'
 
 // What the user sees when this contract breaks, from the corpus behind
 // qa/user-story-test-matrix.md (in-app-agent-program), ranks 34, 48 and 49:

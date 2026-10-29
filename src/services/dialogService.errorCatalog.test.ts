@@ -1,3 +1,4 @@
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import {
@@ -13,7 +14,6 @@ import {
 import { i18n, loadLocale } from '@/i18n'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { PromptFailureResponse } from '@/platform/remote/comfyui/types'
-import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { api, PromptExecutionError } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'

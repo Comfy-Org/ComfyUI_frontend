@@ -1,10 +1,10 @@
-import { useDialogService } from '@/services/dialogService'
-import type { DialogComponentProps } from '@/stores/dialogStore'
-import { useDialogStore } from '@/stores/dialogStore'
 import ImportFailedNodeContent from '@/platform/customNodes/manager/components/manager/ImportFailedNodeContent.vue'
 import ImportFailedNodeFooter from '@/platform/customNodes/manager/components/manager/ImportFailedNodeFooter.vue'
 import ImportFailedNodeHeader from '@/platform/customNodes/manager/components/manager/ImportFailedNodeHeader.vue'
 import type { ConflictDetectionResult } from '@/platform/customNodes/manager/types/conflictDetectionTypes'
+import { useDialogService } from '@/services/dialogService'
+import type { DialogComponentProps } from '@/stores/dialogStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'global-import-failed'
 

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { useDialogStore } from '@/stores/dialogStore'
 
 import { useManagerSurveyDialog } from '@/platform/customNodes/manager/composables/useManagerSurveyDialog'
+import { useDialogStore } from '@/stores/dialogStore'
 
 describe('useManagerSurveyDialog', () => {
   it('show() opens the survey dialog under its own key', () => {

@@ -1,19 +1,19 @@
+import userEvent from '@testing-library/user-event'
+import type { UserEvent } from '@testing-library/user-event'
 import {
   getDefaultNormalizer,
   render,
   screen,
   within
 } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import type { UserEvent } from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import { listSkillPacks } from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
-
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 

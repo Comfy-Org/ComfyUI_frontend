@@ -1,5 +1,3 @@
-import { mergeTests } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture
@@ -7,6 +5,7 @@ import {
 import { GraphCanvasMenu } from '@e2e/fixtures/components/GraphCanvasMenu'
 import { subgraphBreadcrumbFixture } from '@e2e/fixtures/helpers/SubgraphBreadcrumbHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { mergeTests } from '@playwright/test'
 
 const test = mergeTests(comfyPageFixture, subgraphBreadcrumbFixture)
 

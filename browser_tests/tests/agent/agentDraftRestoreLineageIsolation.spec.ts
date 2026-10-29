@@ -1,10 +1,5 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import {
   readAgentDraftLineage,
@@ -20,6 +15,8 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 const WORKFLOW_ID = 'd36d561e-c1d0-4c16-83ff-45c2b1be57f1'
 const THREAD_ID = '454616e3-17ce-42dd-973a-10c185b562eb'

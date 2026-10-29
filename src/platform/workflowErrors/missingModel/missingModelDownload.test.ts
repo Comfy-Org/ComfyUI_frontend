@@ -1,8 +1,9 @@
-import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   clearMetadataCache,

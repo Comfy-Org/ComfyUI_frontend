@@ -1,7 +1,4 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -13,8 +10,10 @@ import {
   MISSING_TAG,
   assetService
 } from '@/platform/assets/services/assetService'
-import { api } from '@/scripts/api'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 

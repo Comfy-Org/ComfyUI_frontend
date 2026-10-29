@@ -1,8 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyExpect, comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
@@ -13,6 +10,7 @@ import {
   getPromotedWidgetNames,
   getPromotedWidgets
 } from '@e2e/fixtures/utils/promotedWidgets'
+import { expect } from '@playwright/test'
 
 const DUPLICATE_IDS_WORKFLOW = 'subgraphs/subgraph-nested-duplicate-ids'
 const LEGACY_PREFIXED_WORKFLOW =

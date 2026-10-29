@@ -1,7 +1,6 @@
-import type { BrowserContext, WebSocketRoute } from '@playwright/test'
-
 import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
+import type { BrowserContext, WebSocketRoute } from '@playwright/test'
 
 /**
  * The connections the page opens on one routed socket URL, in order. A

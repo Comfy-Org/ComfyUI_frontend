@@ -1,14 +1,14 @@
 import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 vi.mock(import('@/composables/useFeatureFlags'))

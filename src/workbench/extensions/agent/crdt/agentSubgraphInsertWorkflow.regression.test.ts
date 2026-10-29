@@ -13,6 +13,8 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import * as Y from 'yjs'
 
@@ -27,8 +29,6 @@ import {
   createTestSubgraphNode,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'

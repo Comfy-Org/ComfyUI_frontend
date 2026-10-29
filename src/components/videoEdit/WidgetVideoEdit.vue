@@ -28,22 +28,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, watch } from 'vue'
-
-import VideoEditPanel from '@/components/videoEdit/VideoEditPanel.vue'
-import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
-import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
-import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
-import { useVideoEditModel } from '@/composables/video/useVideoEditModel'
-import { useVideoFilmstrip } from '@/composables/video/useVideoFilmstrip'
-import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
-import { useVideoSourceUrl } from '@/composables/video/useVideoSourceUrl'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   IWidgetVideoEditOptions,
   VideoEditFeature,
   VideoEditValue
 } from '@comfyorg/graph-model/widgets'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { computed, nextTick, watch } from 'vue'
+
+import VideoEditPanel from '@/components/videoEdit/VideoEditPanel.vue'
+import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
+import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
+import { useVideoEditModel } from '@/composables/video/useVideoEditModel'
+import { useVideoFilmstrip } from '@/composables/video/useVideoFilmstrip'
+import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
+import { useVideoSourceUrl } from '@/composables/video/useVideoSourceUrl'
+import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 

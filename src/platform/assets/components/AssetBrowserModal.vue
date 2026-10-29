@@ -89,14 +89,15 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
+import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
-import Button from '@comfyorg/design-system/button/Button'
-import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
-import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
+import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
 import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
@@ -110,7 +111,6 @@ import { getPrimaryCategoryTag } from '@/platform/assets/utils/assetMetadataUtil
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 
 const { t } = useI18n()
 const { flags } = useFeatureFlags()

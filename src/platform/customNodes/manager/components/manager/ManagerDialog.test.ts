@@ -1,22 +1,22 @@
-import { render, screen } from '@testing-library/vue'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, h, ref } from 'vue'
 import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
-import type {
-  SearchPacksOutcome,
-  SearchPacksResult
-} from '@/types/searchServiceTypes'
 import { useInstalledPacks } from '@/platform/customNodes/manager/composables/nodePack/useInstalledPacks'
 import { useWorkflowPacks } from '@/platform/customNodes/manager/composables/nodePack/useWorkflowPacks'
 import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
 import { useComfyManagerService } from '@/platform/customNodes/manager/services/comfyManagerService'
 import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
+import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
+import type {
+  SearchPacksOutcome,
+  SearchPacksResult
+} from '@/types/searchServiceTypes'
 
 type NodePack = SearchPacksResult['nodePacks'][number]
 

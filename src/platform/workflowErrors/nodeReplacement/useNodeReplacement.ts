@@ -1,34 +1,35 @@
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
+
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
 } from '@/core/graph/nodeShell/nodeShellState'
+import { t } from '@/i18n'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
-import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
-import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
+import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
-import { t } from '@/i18n'
-import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import type {
-  MissingNodeType,
-  NodeReplacement
-} from '@/platform/workflowErrors/nodeReplacement/types'
-import { useToast } from '@/components/ui/toast/toastStore'
 import {
   removePendingMissingNodeTypesByType,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import type {
+  MissingNodeType,
+  NodeReplacement
+} from '@/platform/workflowErrors/nodeReplacement/types'
 import { app, sanitizeNodeName } from '@/scripts/app'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import type { EndpointPatch, EndpointUpdate } from '@/stores/linkStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import type { LinkId } from '@comfyorg/graph-model/linkId'
-import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 interface ReplacementGroup {

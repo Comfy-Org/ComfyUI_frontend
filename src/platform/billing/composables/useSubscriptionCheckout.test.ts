@@ -1,47 +1,44 @@
-import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { provideBillingDialogs } from '@/platform/billing/subscription/composables/billingDialogsAccess'
-import SubscriptionRequiredDialogContentUnified from '@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue'
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, nextTick, reactive, ref } from 'vue'
-
-import type { BillingOperationRecordView } from '@/platform/billing/sdk/operationRecordView'
-import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
-import type {
-  SettledSubscribeResponse,
-  SubscriptionRailOutcome
-} from '@/platform/billing/sdk/subscriptionOperationView'
-import { billingOperation } from './billingOperationTestUtils'
-import type { BillingOperation } from './billingOperationTestUtils'
-import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
-import { useAuthStore } from '@/stores/authStore'
-
-import { createI18n } from 'vue-i18n'
-
-import { useTelemetry } from '@comfyorg/telemetry'
-
-import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
-import {
-  clearCheckoutJourney,
-  getActiveCheckoutJourney,
-  resolveCheckoutJourney
-} from '@/platform/billing/utils/checkoutJourney'
-import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import type {
   BillingStatus,
   BillingStatusResponse,
   Plan,
   PreviewSubscribeResponse
 } from '@comfyorg/billing-core'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, nextTick, reactive, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import SubscriptionRequiredDialogContentUnified from '@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import type { BillingOperationRecordView } from '@/platform/billing/sdk/operationRecordView'
+import type {
+  SettledSubscribeResponse,
+  SubscriptionRailOutcome
+} from '@/platform/billing/sdk/subscriptionOperationView'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
+import { provideBillingDialogs } from '@/platform/billing/subscription/composables/billingDialogsAccess'
+import {
+  clearCheckoutJourney,
+  getActiveCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/billing/utils/checkoutJourney'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+
+import { billingOperation } from './billingOperationTestUtils'
+import type { BillingOperation } from './billingOperationTestUtils'
 import {
   findPlanSlug,
   useSubscriptionCheckout
 } from './useSubscriptionCheckout'
-import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
 

@@ -1,35 +1,36 @@
-import { defineAsyncComponent } from 'vue'
-import { useDialogService } from '@/services/dialogService'
-import { openTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getStopDiscountedMonthlyUsd,
   mapApiTeamCreditStops
 } from '@comfyorg/account-ui/billing/catalog'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
+import { defineAsyncComponent } from 'vue'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   SubscriptionCheckoutSelection,
   SubscriptionDialogOptions
 } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
-import { provideSubscriptionDialog } from '@/platform/billing/subscription/composables/subscriptionDialogAccess'
-import { toCurrentTier } from '@/platform/billing/subscription/utils/billingPlanTelemetry'
+import { openTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
-import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { provideSubscriptionDialog } from '@/platform/billing/subscription/composables/subscriptionDialogAccess'
+import { toCurrentTier } from '@/platform/billing/subscription/utils/billingPlanTelemetry'
 import { getWorkspaceTelemetryContext } from '@/platform/billing/telemetry/workspaceTelemetryContext'
-import { useAuthStore } from '@/stores/authStore'
 import {
   clearPendingSubscriptionCheckout,
   clearPendingSubscriptionCheckoutIfTerminal,
   getPendingSubscriptionCheckout
 } from '@/platform/billing/utils/pendingSubscriptionCheckout'
 import type { PendingSubscriptionCheckout } from '@/platform/billing/utils/pendingSubscriptionCheckout'
+import { isCloud } from '@/platform/distribution/types'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { useDialogService } from '@/services/dialogService'
+import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'subscription-required'
 const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'

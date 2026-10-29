@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
 
 import PanelSearchHeader from './PanelSearchHeader.vue'
 

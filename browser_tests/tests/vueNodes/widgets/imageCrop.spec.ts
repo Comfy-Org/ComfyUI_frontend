@@ -1,12 +1,11 @@
-import type { Locator } from '@playwright/test'
-
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import type { Locator } from '@playwright/test'
 
 type CropValue = { x: number; y: number; width: number; height: number } | null
 

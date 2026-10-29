@@ -7,9 +7,8 @@ import type {
   BillingOperationEvent,
   BillingOperationState
 } from '@comfyorg/account-core/billing'
-import { describe, expect, it } from 'vitest'
-
 import type { BillingOpStatusResponse } from '@comfyorg/billing-core'
+import { describe, expect, it } from 'vitest'
 
 import { legacyOperationActionHold } from './customerAttention'
 

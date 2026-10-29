@@ -1,11 +1,11 @@
+import type { CurveInterpolation } from '@comfyorg/graph-model/curve'
+import type { PointTuple as CurvePoint } from '@comfyorg/shared-frontend-utils/geometry'
 import { render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useCurveEditor } from '@/composables/useCurveEditor'
-import type { CurveInterpolation } from '@comfyorg/graph-model/curve'
-import type { PointTuple as CurvePoint } from '@comfyorg/shared-frontend-utils/geometry'
 
 const mockCreateInterpolator = vi.hoisted(() =>
   vi.fn((points: CurvePoint[]) => {

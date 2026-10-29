@@ -61,11 +61,10 @@
 </template>
 
 <script setup lang="ts">
-import { PopoverClose, PopoverRoot, PopoverTrigger } from 'reka-ui'
-import { useI18n } from 'vue-i18n'
-
 import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { PopoverClose, PopoverRoot, PopoverTrigger } from 'reka-ui'
+import { useI18n } from 'vue-i18n'
 
 const { isSelectActive = false } = defineProps<{
   isSelectActive?: boolean

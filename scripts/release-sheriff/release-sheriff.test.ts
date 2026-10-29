@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('node:child_process'), () => ({ execFileSync: vi.fn() }))

@@ -1,27 +1,27 @@
+import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
+import { useExtensionServiceAccess } from '@/platform/extensions/services/extensionServiceAccess'
+import type {
+  StatusWsMessageStatus,
+  TaskOutput
+} from '@/platform/remote/comfyui/execution/types'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type {
   APITaskType,
   JobListItem,
   TaskType
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type {
-  StatusWsMessageStatus,
-  TaskOutput
-} from '@/platform/remote/comfyui/execution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
-import type { AugmentedResultItem } from '@/utils/resultItem'
-import { filterPreviewableResults } from '@/utils/resultItem'
+import { getJobDetail } from '@/services/jobOutputCache'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 import type { ComfyApp } from '@/types/comfy'
-import { useExtensionServiceAccess } from '@/platform/extensions/services/extensionServiceAccess'
-import { getJobDetail } from '@/services/jobOutputCache'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { filterPreviewableResults } from '@/utils/resultItem'
 
 enum TaskItemDisplayStatus {
   Running = 'Running',

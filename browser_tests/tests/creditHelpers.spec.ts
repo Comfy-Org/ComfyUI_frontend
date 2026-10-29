@@ -1,6 +1,6 @@
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 function buildMockApiNode(

@@ -1,16 +1,16 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { watch } from 'vue'
 
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { BaseDOMWidget } from '@/types/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { BaseDOMWidget } from '@/types/domWidget'
 
 type TestWidget = BaseDOMWidget
 

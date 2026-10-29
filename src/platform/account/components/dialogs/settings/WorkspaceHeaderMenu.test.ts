@@ -1,12 +1,11 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, within } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick } from 'vue'
 
 import type { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-
 import WorkspaceHeaderMenu from '@/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 

@@ -1,8 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
-
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { AgentPanelRenderStage } from '@comfyorg/telemetry/types'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { useAgentPanelRenderStore } from './agentPanelRenderStore'
 import { useAgentPanelStore } from './agentPanelStore'

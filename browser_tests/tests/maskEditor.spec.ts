@@ -1,11 +1,10 @@
-import type { Locator } from '@playwright/test'
-import { expect, mergeTests } from '@playwright/test'
-
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { maskEditorTest as test } from '@e2e/fixtures/helpers/MaskEditorHelper'
-import { webSocketFixture } from '@e2e/fixtures/ws'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+import type { Locator } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
 const wstest = mergeTests(test, webSocketFixture)
 

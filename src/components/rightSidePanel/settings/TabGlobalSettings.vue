@@ -1,23 +1,22 @@
 <script setup lang="ts">
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
+import Button from '@comfyorg/design-system/button/Button'
+import FieldSwitch from '@comfyorg/design-system/field/FieldSwitch'
+import LayoutField from '@comfyorg/design-system/field/LayoutField'
+import NumberField from '@comfyorg/design-system/number-field/NumberField'
+import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
+import Slider from '@comfyorg/design-system/slider/Slider'
+import type { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
+import { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import Slider from '@comfyorg/design-system/slider/Slider'
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
-import NumberField from '@comfyorg/design-system/number-field/NumberField'
-import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
-import { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { cn } from '@comfyorg/tailwind-utils'
-
-import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
-import FieldSwitch from '@comfyorg/design-system/field/FieldSwitch'
-import LayoutField from '@comfyorg/design-system/field/LayoutField'
 
 const { t } = useI18n()
 const settingStore = useSettingStore()

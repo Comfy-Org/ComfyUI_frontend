@@ -1,7 +1,14 @@
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
-import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
 import type {
   LGraph,
   LGraphGroup,
@@ -9,13 +16,6 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
 import { useLinkStore } from '@/stores/linkStore'
-import {
-  toOwningGraphId,
-  toRootGraphId
-} from '@comfyorg/graph-model/graphScopeId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createMockLGraph,
   createMockLGraphNode

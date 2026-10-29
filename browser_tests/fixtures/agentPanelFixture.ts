@@ -1,5 +1,4 @@
-import type { Page, Route } from '@playwright/test'
-
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type {
   AgentRunMode,
   BillingStatusResponse,
@@ -7,15 +6,6 @@ import type {
   ListAssetsResponse,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
-import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
 import { mockAgentIdentity } from '@e2e/fixtures/agentSocket'
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -31,6 +21,14 @@ import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import type { WorkspaceStore } from '@e2e/types/globals'
+import type { Page, Route } from '@playwright/test'
+
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 

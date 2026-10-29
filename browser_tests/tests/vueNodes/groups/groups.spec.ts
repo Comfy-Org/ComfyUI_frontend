@@ -3,8 +3,8 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
 import {
   graphItems,
   screenshotRegion

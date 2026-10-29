@@ -82,15 +82,16 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
+
 import { isCloud } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/workflowErrors/missingModel/components/MissingModelRow.vue'
-import Button from '@comfyorg/design-system/button/Button'
 import { useMissingModelDownload } from '@/platform/workflowErrors/missingModel/composables/useMissingModelDownload'
 import { isTrustedHuggingFaceUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { getDownloadableModels } from '@/platform/workflowErrors/missingModel/missingModelViewUtils'
+import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 import { formatSize } from '@/utils/formatUtil'
 
 interface MissingModelRowEntry {

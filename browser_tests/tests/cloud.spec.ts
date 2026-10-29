@@ -1,5 +1,5 @@
-import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expect } from '@playwright/test'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 const SHARE_AUTH_STORAGE_KEY = 'Comfy.PreservedQuery.share_auth'

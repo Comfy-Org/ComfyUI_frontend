@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onUnmounted, ref, useTemplateRef, watch } from 'vue'
 
-import Load3DControls from '@/extensions/core/load3d/components/Load3DControls.vue'
 import AnimationControls from '@/extensions/core/load3d/components/controls/AnimationControls.vue'
+import Load3DControls from '@/extensions/core/load3d/components/Load3DControls.vue'
 import { useLoad3dViewer } from '@/extensions/core/load3d/composables/useLoad3dViewer'
 
 const { modelUrl } = defineProps<{

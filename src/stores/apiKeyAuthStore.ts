@@ -1,12 +1,12 @@
+import { reportError as reportTelemetryError } from '@comfyorg/telemetry/reportError'
 import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, nextTick, ref, watch } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
-import { reportError as reportTelemetryError } from '@comfyorg/telemetry/reportError'
 import type { ApiKeyAuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 

@@ -6,19 +6,18 @@ import type {
   SubgraphInput,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-
-import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 import type { SlotIndex } from '@comfyorg/graph-model/interfaces'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
 import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 
+import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import type { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 
 export interface RenderLink {
   /** The type of link being connected. */

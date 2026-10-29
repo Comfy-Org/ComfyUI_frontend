@@ -37,11 +37,12 @@
 
 <script setup lang="ts">
 import Badge from '@comfyorg/design-system/badge/Badge'
-import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
-import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
 import Button from '@comfyorg/design-system/button/Button'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
+
+import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
 const commandStore = useCommandStore()
 

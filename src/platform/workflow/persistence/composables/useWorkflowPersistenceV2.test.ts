@@ -1,18 +1,19 @@
-import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, createApp, defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { api } from '@/scripts/api'
-import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import '@/scripts/changeTracker'
-import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
+import '@/scripts/changeTracker'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import { api } from '@/scripts/api'
+
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 
 const apiEvents: EventTarget = api

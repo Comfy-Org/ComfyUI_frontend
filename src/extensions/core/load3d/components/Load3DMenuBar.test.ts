@@ -1,5 +1,11 @@
-import { render, screen } from '@testing-library/vue'
+import type {
+  CameraConfig,
+  LightConfig,
+  ModelConfig,
+  SceneConfig
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import {
   createSharedComposable,
@@ -14,12 +20,6 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import Load3DMenuBar from '@/extensions/core/load3d/components/Load3DMenuBar.vue'
-import type {
-  CameraConfig,
-  LightConfig,
-  ModelConfig,
-  SceneConfig
-} from '@comfyorg/viewport3d/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 let mockedTopBarWidth: Ref<number>

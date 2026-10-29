@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { expect } from '@playwright/test'
 
 // Production source: https://linear.app/comfyorg/issue/PM-1931
 // An imported missing-node snapshot may carry the document's private

@@ -1,4 +1,5 @@
 import type { Size2D as ImageDimensions } from '@comfyorg/shared-frontend-utils/geometry'
+
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { isCivitaiUrl } from '@/utils/formatUtil'

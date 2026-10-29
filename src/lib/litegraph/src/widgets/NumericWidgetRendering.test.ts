@@ -1,8 +1,8 @@
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
-import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { GradientSliderWidget } from '@/lib/litegraph/src/widgets/GradientSliderWidget'
 import { KnobWidget } from '@/lib/litegraph/src/widgets/KnobWidget'
 import { SliderWidget } from '@/lib/litegraph/src/widgets/SliderWidget'

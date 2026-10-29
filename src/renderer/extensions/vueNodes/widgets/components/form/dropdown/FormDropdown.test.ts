@@ -1,11 +1,9 @@
-import { getActivePinia } from 'pinia'
-
-import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
 import { reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
 
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 

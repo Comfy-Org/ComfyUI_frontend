@@ -1,4 +1,5 @@
 import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { dist2 } from '@/lib/litegraph/src/measure'
 export type GesturePoint = Readonly<Point2D>
 

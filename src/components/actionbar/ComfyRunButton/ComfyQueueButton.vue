@@ -47,18 +47,19 @@
 </template>
 
 <script setup lang="ts">
+import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
+import Button from '@comfyorg/design-system/button/Button'
+import TinyChevronIcon from '@comfyorg/design-system/icon/TinyChevronIcon'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BatchCountEdit from '@/components/actionbar/BatchCountEdit.vue'
-import TinyChevronIcon from '@comfyorg/design-system/icon/TinyChevronIcon'
-import Button from '@comfyorg/design-system/button/Button'
-import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
@@ -67,7 +68,6 @@ import {
   useQueueSettingsStore
 } from '@/stores/queueSettingsStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const workspaceStore = useWorkspaceStore()
 const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())

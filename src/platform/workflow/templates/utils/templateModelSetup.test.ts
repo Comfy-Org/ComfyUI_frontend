@@ -1,10 +1,11 @@
+import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
-import type { TemplateModelMetadataBatchResult } from '@/platform/workflow/templates/utils/templateModelMetadata'
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
+import type { TemplateModelMetadataBatchResult } from '@/platform/workflow/templates/utils/templateModelMetadata'
 import type { TemplateModelRequirementDetail } from '@/platform/workflow/templates/utils/templateModelRequirements'
-import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
+import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
+
 import {
   deriveTemplateModelSetup,
   isModelDownloadCandidate,

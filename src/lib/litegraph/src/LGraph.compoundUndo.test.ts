@@ -1,11 +1,11 @@
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import type { LLink } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
-import type { LinkId } from '@comfyorg/graph-model/linkId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { createUuidv4 } from '@/utils/uuid'
 
 /**

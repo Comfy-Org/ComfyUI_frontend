@@ -1,14 +1,14 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import { usePreferredReducedMotion, useScroll } from '@vueuse/core'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@comfyorg/design-system/button/Button'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
-
-import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+
 import AttachmentChip from './AttachmentChip.vue'
 
 const { attachments, highlightedIds = [] } = defineProps<{

@@ -1,13 +1,13 @@
-import { describe, expect, it, vi } from 'vitest'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import { createNode } from './createNode'

@@ -1,8 +1,7 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+import type { ISlotType, Positionable } from '@comfyorg/graph-model/interfaces'
 
 import { parseSlotTypes } from '@/lib/litegraph/src/strings'
-
-import type { ISlotType, Positionable } from '@comfyorg/graph-model/interfaces'
 
 let isGraphNode: (item: Positionable) => item is LGraphNode
 

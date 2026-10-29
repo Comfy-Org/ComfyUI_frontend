@@ -9,7 +9,6 @@
 
 <script setup lang="ts">
 import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
-
 import { useRafFn } from '@vueuse/core'
 import { computed, ref } from 'vue'
 

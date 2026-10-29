@@ -38,6 +38,7 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
+
 import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 
 defineEmits<{

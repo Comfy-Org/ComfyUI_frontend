@@ -1,12 +1,12 @@
-import { onMounted, ref } from 'vue'
-
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
+import { onMounted, ref } from 'vue'
+
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 
 /** Opens support through Comfy.ContactSupport, tracks the click, and reports a failure to open it. */
 export function useMessageSupport() {

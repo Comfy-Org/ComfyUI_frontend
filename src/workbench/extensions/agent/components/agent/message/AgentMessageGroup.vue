@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
+
 import type { ActivityPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+
 import ActivityTrace from './ActivityTrace.vue'
+import type { AgentMessageGroup } from './agentMessageGroup'
 import AgentNoticeCard from './AgentNoticeCard.vue'
 import AgentPausedCard from './AgentPausedCard.vue'
 import AgentPaywallCard from './AgentPaywallCard.vue'
@@ -15,7 +18,6 @@ import DeleteApprovalCard from './DeleteApprovalCard.vue'
 import MarkdownStream from './MarkdownStream.vue'
 import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
-import type { AgentMessageGroup } from './agentMessageGroup'
 import WorkSummary from './WorkSummary.vue'
 
 const { group } = defineProps<{

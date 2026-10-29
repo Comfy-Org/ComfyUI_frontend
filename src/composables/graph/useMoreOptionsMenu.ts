@@ -1,3 +1,4 @@
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
@@ -10,7 +11,6 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { filterUnavailableCoreMediaMenuActions } from '@/utils/coreMediaMenuActionUtils'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
@@ -19,11 +19,11 @@ import {
   buildStructuredMenu,
   convertContextMenuToOptions
 } from './contextMenuConverter'
+import type { MenuOption } from './menuOption'
 import { useGroupMenuOptions } from './useGroupMenuOptions'
 import { useImageMenuOptions } from './useImageMenuOptions'
 import { useNodeMenuOptions } from './useNodeMenuOptions'
 import { useSelectionMenuOptions } from './useSelectionMenuOptions'
-import type { MenuOption } from './menuOption'
 import { useSelectionState } from './useSelectionState'
 
 // Global singleton for NodeOptions component reference

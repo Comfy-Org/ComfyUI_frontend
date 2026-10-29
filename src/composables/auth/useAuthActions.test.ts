@@ -1,23 +1,22 @@
-import { useDialogService } from '@/services/dialogService'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { SsoRequiredAuthError, useAuthStore } from '@/stores/authStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import type { UserCredential } from 'firebase/auth'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useTelemetry } from '@comfyorg/telemetry'
-
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import enLocale from '@/locales/en/main.json'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useDialogService } from '@/services/dialogService'
+import { SsoRequiredAuthError, useAuthStore } from '@/stores/authStore'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
 

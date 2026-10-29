@@ -1,8 +1,8 @@
-import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   BoundingBox,
   BoundingBoxMetadata
 } from '@comfyorg/graph-model/boundingBoxes'
+import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
 
 export type HitMode =
   | 'move'

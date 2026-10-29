@@ -1,10 +1,9 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import type { Page, WebSocketRoute } from '@playwright/test'
-import { describe, expect, it } from 'vitest'
-
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import type { HumanOpsHost } from '@e2e/fixtures/agentFollowerHostSocket'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import type { Page, WebSocketRoute } from '@playwright/test'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it } from 'vitest'
 
 const WORKFLOW_ID = 'wf-1'
 const AGENT_EVENTS_URL = 'ws://127.0.0.1:8188/api/agent/events?token=abc'

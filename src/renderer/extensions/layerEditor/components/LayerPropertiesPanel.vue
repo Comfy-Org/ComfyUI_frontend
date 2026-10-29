@@ -189,17 +189,19 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
-import type { AcceptableValue } from 'reka-ui'
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import PropertyNumberField from '@comfyorg/design-system/number-field/PropertyNumberField'
-import AppColorPicker from '@/components/common/AppColorPicker.vue'
 import Select from '@comfyorg/design-system/select/Select'
 import SelectContent from '@comfyorg/design-system/select/SelectContent'
 import SelectItem from '@comfyorg/design-system/select/SelectItem'
 import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
 import SelectValue from '@comfyorg/design-system/select/SelectValue'
+import type { BlendFn } from '@comfyorg/layer-editor/mode'
+import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
+import type { AcceptableValue } from 'reka-ui'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
 import type {
   LayerEditorAlignOp,
   LayerEditorSession
@@ -209,8 +211,6 @@ import {
   CANVAS_SIZE_MIN,
   DEFAULT_BACKGROUND_COLOR
 } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { BlendFn } from '@comfyorg/layer-editor/mode'
-import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
 

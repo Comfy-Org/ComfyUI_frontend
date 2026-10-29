@@ -1,3 +1,11 @@
+import {
+  LinkMarkerShape,
+  LinkRenderType
+} from '@comfyorg/graph-model/globalEnums'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
@@ -10,15 +18,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
-import {
-  LinkMarkerShape,
-  LinkRenderType
-} from '@comfyorg/graph-model/globalEnums'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toGroupId } from '@comfyorg/graph-model/groupId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas

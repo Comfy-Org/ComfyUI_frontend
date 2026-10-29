@@ -3,10 +3,10 @@ import { compare, valid } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/platform/customNodes/manager/composables/nodePack/useInstalledPacks'
 import { useUpdateAvailableNodes } from '@/platform/customNodes/manager/composables/nodePack/useUpdateAvailableNodes'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
+import type { components } from '@/types/comfyRegistryTypes'
 
 // Mock the dependencies
 vi.mock(

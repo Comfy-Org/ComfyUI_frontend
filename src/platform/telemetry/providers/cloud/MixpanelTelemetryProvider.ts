@@ -1,12 +1,5 @@
 import { CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE } from '@comfyorg/account-core/billing'
-import type { OverridedMixpanel } from 'mixpanel-browser'
-import { omit } from 'es-toolkit'
-import { watch } from 'vue'
-
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
-
 import type {
   AuthMetadata,
   CreditTopupMetadata,
@@ -42,12 +35,18 @@ import type {
   WorkflowSavedMetadata,
   WorkspaceInviteMetadata
 } from '@comfyorg/telemetry/types'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import {
   OnboardingTourEvents,
   TelemetryEvents
 } from '@comfyorg/telemetry/types'
+import { omit } from 'es-toolkit'
+import type { OverridedMixpanel } from 'mixpanel-browser'
+import { watch } from 'vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [

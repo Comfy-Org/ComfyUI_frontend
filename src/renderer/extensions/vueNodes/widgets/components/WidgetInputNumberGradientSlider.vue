@@ -38,18 +38,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
-import GradientSlider from '@comfyorg/design-system/slider/GradientSlider'
 import NumberField from '@comfyorg/design-system/number-field/NumberField'
 import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
+import GradientSlider from '@comfyorg/design-system/slider/GradientSlider'
 import type { ColorStop } from '@comfyorg/graph-model/interfaces'
 import type { IWidgetGradientSliderOptions } from '@comfyorg/graph-model/widgets'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 
 import { useNumberStepCalculation } from '@/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetHeight } from '@/types/widgetTypes'
+
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 

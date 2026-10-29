@@ -11,14 +11,14 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { onBeforeUnmount, ref, watch } from 'vue'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   size = 'lg',

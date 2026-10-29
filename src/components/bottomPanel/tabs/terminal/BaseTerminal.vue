@@ -29,17 +29,17 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useElementHover, useEventListener } from '@vueuse/core'
 import type { IDisposable } from '@xterm/xterm'
 import type { Ref } from 'vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
-import { electronAPI } from '@/utils/envUtil'
 import { isDesktop } from '@/platform/distribution/types'
-import { cn } from '@comfyorg/tailwind-utils'
+import { electronAPI } from '@/utils/envUtil'
 
 const { t } = useI18n()
 

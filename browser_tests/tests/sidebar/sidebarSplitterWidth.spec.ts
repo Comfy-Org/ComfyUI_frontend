@@ -1,13 +1,12 @@
-import { expect } from '@playwright/test'
-import type { Locator } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import type { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
+import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.describe('Sidebar splitter width independence', () => {
   test.use({

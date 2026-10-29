@@ -1,5 +1,8 @@
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import type {
   ExportedSubgraphInstance,
   LGraph,
@@ -12,10 +15,7 @@ import {
   LGraphNode as LGraphNodeClass,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import {
   createTestRootGraph,

@@ -80,11 +80,11 @@
 </template>
 
 <script setup lang="ts">
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useMouseInElement } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
 import { useImageCompareImages } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 

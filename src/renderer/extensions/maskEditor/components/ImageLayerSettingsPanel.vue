@@ -128,14 +128,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { useCanvasManager } from '@comfyorg/mask-editor/useCanvasManager'
-import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import type { ImageLayer } from '@comfyorg/mask-editor/types'
 import { MaskBlendMode, Tools } from '@comfyorg/mask-editor/types'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { useCanvasManager } from '@comfyorg/mask-editor/useCanvasManager'
+import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import SliderControl from './controls/SliderControl.vue'
 

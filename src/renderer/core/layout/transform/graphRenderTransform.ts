@@ -1,9 +1,10 @@
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import { createBounds } from '@/lib/litegraph/src/measure'
 import type {
   Bounds,
   Point2D as Point
 } from '@comfyorg/shared-frontend-utils/geometry'
+
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { createBounds } from '@/lib/litegraph/src/measure'
 
 export const RENDER_SCALE_FACTOR = 1.2
 

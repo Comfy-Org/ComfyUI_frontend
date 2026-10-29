@@ -91,15 +91,15 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
-import Button from '@comfyorg/design-system/button/Button'
 import AppSpinner from '@/components/common/AppSpinner.vue'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import SignOutEverywhereButton from '@/platform/auth/session/components/SignOutEverywhereButton.vue'
-import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 
 const { t } = useI18n()

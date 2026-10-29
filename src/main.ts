@@ -1,42 +1,45 @@
+import { flushErrorReports } from '@comfyorg/telemetry/reportError'
 import { captureMessage } from '@sentry/vue'
 import { createPinia } from 'pinia'
-import type { Pinia } from 'pinia'
+
 import 'primeicons/primeicons.css'
+import type { Pinia } from 'pinia'
 import { createApp } from 'vue'
 import type { App as VueApp } from 'vue'
 
 import { setAssertReporter } from '@/base/assert'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
+import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
-import { provideTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { provideTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
+import { stripPaymentReturnParams } from '@/platform/billing/subscription/utils/paymentReturnUrl'
+import { isDesktop, isNightly } from '@/platform/distribution/types'
+import '@/platform/telemetry/initErrorReporter'
 import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
+
+import '@/lib/litegraph/public/css/litegraph.css'
+import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { initSentry } from '@/platform/telemetry/initSentry'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import {
   markStoresPending,
   markStoresReady
 } from '@/platform/telemetry/storeReadiness'
-import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
-import '@/platform/telemetry/initErrorReporter'
-import { flushErrorReports } from '@comfyorg/telemetry/reportError'
-import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
-import '@/lib/litegraph/public/css/litegraph.css'
-import { createAppRouter } from '@/router'
-import { isDesktop, isNightly } from '@/platform/distribution/types'
-import { stripPaymentReturnParams } from '@/platform/billing/subscription/utils/paymentReturnUrl'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
+import { createAppRouter } from '@/router'
 import { api } from '@/scripts/api'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
-import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
 
 import App from './App.vue'
+
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
 import './assets/css/style.css'
 import { i18n, t } from './i18n'

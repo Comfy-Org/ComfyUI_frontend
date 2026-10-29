@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 
 import { useErrorGroups } from './useErrorGroups'
 vi.mock(import('@/services/comfyRegistryService'), () => ({

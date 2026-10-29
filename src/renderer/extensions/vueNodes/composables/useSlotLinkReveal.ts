@@ -1,3 +1,5 @@
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { onScopeDispose } from 'vue'
 
 import {
@@ -8,8 +10,6 @@ import type { LinkRevealKind } from '@/lib/litegraph/src/canvas/linkRevealState'
 import { app } from '@/scripts/app'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 interface SlotLinkRevealOptions {
   nodeId?: NodeId

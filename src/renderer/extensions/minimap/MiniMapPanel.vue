@@ -76,12 +76,12 @@
 </template>
 
 <script setup lang="ts">
-import type { CSSProperties, Ref } from 'vue'
-import type { CheckboxRootEmits } from 'reka-ui'
-
 import Checkbox from '@comfyorg/design-system/checkbox/Checkbox'
-import type { MinimapSettingsKey } from '@/renderer/extensions/minimap/types'
 import { cn } from '@comfyorg/tailwind-utils'
+import type { CheckboxRootEmits } from 'reka-ui'
+import type { CSSProperties, Ref } from 'vue'
+
+import type { MinimapSettingsKey } from '@/renderer/extensions/minimap/types'
 
 defineProps<{
   panelStyles: CSSProperties

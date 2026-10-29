@@ -6,13 +6,13 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError
 }))
 
+import { setCrdtDebugEnabled } from './crdtDebugGate'
 import {
   clearDevEvents,
   devEvents,
   recordDevEvent,
   stringifyDevEvents
 } from './devPanelLog'
-import { setCrdtDebugEnabled } from './crdtDebugGate'
 
 describe('devPanelLog', () => {
   beforeEach(() => {

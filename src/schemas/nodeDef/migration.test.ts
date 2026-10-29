@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import {
   transformInputSpecV1ToV2,
   transformInputSpecV2ToV1,
   transformNodeDefV1ToV2
 } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 describe('NodeDef Migration', () => {
   it('should correctly transform required input specs', () => {

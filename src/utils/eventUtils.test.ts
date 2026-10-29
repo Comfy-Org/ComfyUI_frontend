@@ -1,5 +1,6 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
+
 import {
   extractFilesFromDragEvent,
   fetchDroppedAsset,

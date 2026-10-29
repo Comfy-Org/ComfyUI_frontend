@@ -4,6 +4,11 @@ import {
   OPAQUE_WIDGETS_KEY
 } from '@comfyorg/comfy-multi-player'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import {
   assert,
@@ -17,34 +22,29 @@ import {
 import { markRaw, ref } from 'vue'
 import * as Y from 'yjs'
 
+import { MAX_DYNAMIC_GROUP_ROWS } from '@/core/graph/widgets/dynamicGroupDiagnostics'
+import type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
 import {
   LGraph,
   LGraphCanvas,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { MAX_DYNAMIC_GROUP_ROWS } from '@/core/graph/widgets/dynamicGroupDiagnostics'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { useLitegraphService } from '@/services/litegraphService'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { DocChangeCollector } from '@/workbench/extensions/agent/crdt/docChangeCollector'
 
 import { followedDoc } from './__fixtures__/followedDoc'
-import { LiveGraphApplier } from './liveGraphApplier'
 import { attachDocOpMinter, wireNodeSnapshot } from './docOpMinter'
+import { LiveGraphApplier } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
 
 const appState = vi.hoisted(() => ({

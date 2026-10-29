@@ -26,12 +26,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-
 import InputGroup from '@comfyorg/design-system/input-group/InputGroup'
 import InputGroupAddon from '@comfyorg/design-system/input-group/InputGroupAddon'
 import InputGroupButton from '@comfyorg/design-system/input-group/InputGroupButton'
 import InputGroupInput from '@comfyorg/design-system/input-group/InputGroupInput'
+import { computed, onMounted, ref, watch } from 'vue'
+
 import { isValidUrl } from '@/utils/formatUtil'
 import { checkUrlReachable } from '@/utils/networkUtil'
 import { ValidationState } from '@/utils/validationUtil'

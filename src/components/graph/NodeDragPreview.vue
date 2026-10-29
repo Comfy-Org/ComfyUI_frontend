@@ -20,7 +20,6 @@
 
 <script setup lang="ts">
 import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
-
 import { useMouse, useRafFn } from '@vueuse/core'
 import { computed, shallowRef, watch } from 'vue'
 

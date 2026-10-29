@@ -156,7 +156,9 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from '@/components/ui/toast/toastStore'
+import PuzzleIcon from '@comfyorg/design-system/icon/PuzzleIcon'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { injectConfigProviderContext } from 'reka-ui'
 import {
   computed,
@@ -169,23 +171,21 @@ import {
 import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import PuzzleIcon from '@comfyorg/design-system/icon/PuzzleIcon'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { buildFeedbackTypeformUrl } from '@/platform/support/config'
-import { useTelemetry } from '@comfyorg/telemetry'
-import type { ReleaseNote } from '@/platform/updates/common/releaseService'
-import { useReleaseStore } from '@/platform/updates/common/releaseStore'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
-import { electronAPI } from '@/utils/envUtil'
-import { formatVersionAnchor } from '@/utils/formatUtil'
 import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
 import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
 import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
 import { useComfyManagerService } from '@/platform/customNodes/manager/services/comfyManagerService'
 import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { buildFeedbackTypeformUrl } from '@/platform/support/config'
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
+import { electronAPI } from '@/utils/envUtil'
+import { formatVersionAnchor } from '@/utils/formatUtil'
 
 // Types
 interface MenuItem {

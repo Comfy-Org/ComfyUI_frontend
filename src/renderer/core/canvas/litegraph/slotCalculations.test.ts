@@ -1,17 +1,17 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it } from 'vitest'
-
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { TitleMode } from '@comfyorg/graph-model/globalEnums'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-import { TitleMode } from '@comfyorg/graph-model/globalEnums'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it } from 'vitest'
+
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   calculateInputSlotPosFromSlot,

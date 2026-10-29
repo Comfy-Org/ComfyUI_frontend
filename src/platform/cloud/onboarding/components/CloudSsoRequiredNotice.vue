@@ -22,10 +22,10 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
 import Button from '@comfyorg/design-system/button/Button'
 import Message from '@comfyorg/design-system/message/Message'
+import { useI18n } from 'vue-i18n'
+
 import { useContinueWithSso } from '@/platform/auth/sso/useContinueWithSso'
 
 const { email, returnTo, organizationId } = defineProps<{

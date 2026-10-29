@@ -1,16 +1,4 @@
-import { computed, ref, toRaw, unref } from 'vue'
-import type { MaybeRef } from 'vue'
-
-import { useToast } from '@/components/ui/toast/toastStore'
-import {
-  createSceneHoverHandlers,
-  useViewportNodeWiring
-} from '@/extensions/core/load3d/composables/useViewportNodeWiring'
-import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
-import {
-  getNodeWidgetValue,
-  setNodeWidgetValue
-} from '@/core/graph/widgets/nodeWidgetValues'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { LightInfoViewport } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
 import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
 import { normalizeLightsValue } from '@comfyorg/viewport3d/lightInfo/lightsValue'
@@ -22,10 +10,22 @@ import type {
   LightInfoEntry,
   LightInfoType
 } from '@comfyorg/viewport3d/lightInfo/types'
+import { computed, ref, toRaw, unref } from 'vue'
+import type { MaybeRef } from 'vue'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
+import {
+  getNodeWidgetValue,
+  setNodeWidgetValue
+} from '@/core/graph/widgets/nodeWidgetValues'
+import {
+  createSceneHoverHandlers,
+  useViewportNodeWiring
+} from '@/extensions/core/load3d/composables/useViewportNodeWiring'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 
 const EDITOR_WIDGET_NAME = 'editor_state'

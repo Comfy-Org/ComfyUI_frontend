@@ -1,5 +1,6 @@
-import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useDialogStore } from '@/stores/dialogStore'
 
 const showDialog = vi.hoisted(() => vi.fn())
 

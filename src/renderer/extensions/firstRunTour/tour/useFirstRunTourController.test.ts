@@ -1,24 +1,24 @@
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import type { OnboardingTourSkipReason } from '@comfyorg/telemetry/types'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { DetachedWindowAPI } from 'happy-dom'
 import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref, computed } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 
-import type { TourEnding } from '@/platform/onboarding/onboardingTourStore'
-import type { WorkflowExecutionStatus } from '@/stores/executionStore'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import type {
   CoachStep,
   SpotlightStep
 } from '@/platform/onboarding/onboardingTours'
-import type { OnboardingTourSkipReason } from '@comfyorg/telemetry/types'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import type { TourEnding } from '@/platform/onboarding/onboardingTourStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import type { WorkflowExecutionStatus } from '@/stores/executionStore'
 
 const TOUR_WORKFLOW = fromPartial<
   NonNullable<ReturnType<typeof useWorkflowStore>['activeWorkflow']>

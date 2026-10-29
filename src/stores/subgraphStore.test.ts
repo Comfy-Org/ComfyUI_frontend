@@ -4,13 +4,15 @@ import { ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
+import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
+
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useToast } from '@/components/ui/toast/toastStore'
-import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { GlobalSubgraphData } from '@/scripts/api'
 import { api } from '@/scripts/api'
@@ -19,7 +21,6 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
 
 const mockDistributionTypes = vi.hoisted(() => ({

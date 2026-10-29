@@ -7,22 +7,22 @@
  */
 
 import QuickLRU from '@alloc/quick-lru'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
-import type {
-  JobDetail,
-  JobOutputAsset
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import {
   extractApiPrompt,
   extractWorkflow
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
+import type {
+  JobDetail,
+  JobOutputAsset
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
-import type { AugmentedResultItem } from '@/utils/resultItem'
-import { findResultIndexByUrl } from '@/utils/resultItemUrl'
-import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { filterPreviewableResults } from '@/utils/resultItem'
+import { findResultIndexByUrl } from '@/utils/resultItemUrl'
 
 /** The part of `TaskItemImpl` this cache reads; `queueStore` imports this module. */
 interface OutputsTask {

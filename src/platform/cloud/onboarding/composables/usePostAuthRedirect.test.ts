@@ -1,8 +1,8 @@
-import { useToast } from '@/components/ui/toast/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 
 const query = vi.hoisted(() => ({ value: {} as Record<string, string> }))

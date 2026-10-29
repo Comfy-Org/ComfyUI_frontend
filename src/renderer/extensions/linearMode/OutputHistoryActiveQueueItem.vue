@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import Button from '@comfyorg/design-system/button/Button'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useQueueStore } from '@/stores/queueStore'
 

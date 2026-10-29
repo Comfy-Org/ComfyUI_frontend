@@ -26,10 +26,10 @@
 </template>
 
 <script setup lang="ts">
-import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { ref } from 'vue'
 
-import Button from '@comfyorg/design-system/button/Button'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { capturePreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'

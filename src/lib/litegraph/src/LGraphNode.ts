@@ -1,12 +1,4 @@
 import type {
-  Size2D,
-  PointTuple as Point,
-  ReadOnlyRect,
-  Rect,
-  SizeTuple as Size,
-  CompassCorners
-} from '@comfyorg/shared-frontend-utils/geometry'
-import type {
   ExecutableLGraphNode,
   ExecutionId,
   LGraph,
@@ -17,13 +9,87 @@ import type {
   SubgraphInputNode,
   SubgraphOutputNode
 } from '@comfyorg/graph-model/entityRegistry'
-import type { LGraphNodeConstructor } from '@/lib/litegraph/src/types/nodeConstructor'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import {
+  LGraphEventMode,
+  NodeSlotType,
+  RenderShape,
+  TitleMode
+} from '@comfyorg/graph-model/globalEnums'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import type {
+  ColorOption,
+  DefaultConnectionColors,
+  Dictionary,
+  IColorable,
+  INodeFlags,
+  INodeSlot,
+  IPinnable,
+  ISlotType,
+  Positionable,
+  SlotIndex
+} from '@comfyorg/graph-model/interfaces'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import {
+  UNASSIGNED_NODE_ID,
+  toNodeId,
+  serializeNodeId
+} from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type {
+  ISerialisedNode,
+  SubgraphIO
+} from '@comfyorg/graph-model/serialisation'
+import type {
+  IFoundSlot,
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlotContextItem
+} from '@comfyorg/graph-model/slots'
+import type {
+  IBaseWidget,
+  IWidgetOptions,
+  TWidgetType,
+  TWidgetValue
+} from '@comfyorg/graph-model/widgets'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
+import type { ColorAdjustOptions } from '@comfyorg/shared-frontend-utils/colorUtil'
+import type {
+  Size2D,
+  PointTuple as Point,
+  ReadOnlyRect,
+  Rect,
+  SizeTuple as Size,
+  CompassCorners
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { toValue } from 'vue'
 
 import {
   createNodeShellState,
   setTrackedNodeState
 } from '@/core/graph/nodeShell/nodeShellState'
+import { toSelectableKey } from '@/core/selection/selectionState'
+import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import type { LGraphNodeConstructor } from '@/lib/litegraph/src/types/nodeConstructor'
+import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
+import {
+  commonType,
+  isNodeBindable,
+  toClass
+} from '@/lib/litegraph/src/utils/type'
+import type {
+  NodeExecutionOutput,
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
 import {
   calculateInputSlotPosFromSlot,
   getSlotPosition
@@ -40,58 +106,53 @@ import {
   setNodeSize
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
-import { toSelectableKey } from '@/core/selection/selectionState'
-import type {
-  NodeExecutionOutput,
-  ResultItem
-} from '@/platform/remote/comfyui/execution/types'
-import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
-import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
-import { linkIdReservations, mintLinkId } from './idAllocation'
-import {
-  UNASSIGNED_NODE_ID,
-  toNodeId,
-  serializeNodeId
-} from '@comfyorg/graph-model/nodeId'
-import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
+import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface,
   occupiesCanvasRow
 } from '@/types/widgetVisibility'
-import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
-import type { ColorAdjustOptions } from '@comfyorg/shared-frontend-utils/colorUtil'
 import { zeroUuid } from '@/utils/uuid'
-import {
-  commonType,
-  isNodeBindable,
-  toClass
-} from '@/lib/litegraph/src/utils/type'
-
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
-import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
-import type { DragAndScale } from './DragAndScale'
-
-import { LGraphBadge } from './LGraphBadge'
-import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
-import { isDrawnEmphasized } from './nodeEmphasis'
-import { LGraphButton } from './LGraphButton'
-import type { LGraphButtonOptions } from './LGraphButton'
 
 import { canvasClass } from './canvas/canvasClassAccess'
+import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
+import type { DragAndScale } from './DragAndScale'
+import type { IDrawBoundingOptions } from './draw'
+import type { NodeCanonicalField } from './extensionPersistence'
+import {
+  extensionConfigureView,
+  hydrateExtensionPayload,
+  isNodeCanonicalField,
+  NODE_CANONICAL_FIELDS,
+  runExtensionSerializeHook
+} from './extensionPersistence'
+import { emitNodeFieldWrite } from './graphIntents'
+import { linkIdReservations, mintLinkId } from './idAllocation'
+import { NullGraphError } from './infrastructure/NullGraphError'
+import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
+import { Rectangle } from './infrastructure/Rectangle'
+import { LGraphBadge } from './LGraphBadge'
+import { LGraphButton } from './LGraphButton'
+import type { LGraphButtonOptions } from './LGraphButton'
 import { realignGroupWidgetChildLinks } from './linkDeduplication'
+import { LiteGraph } from './litegraphInstance'
 import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
+import {
+  createBounds,
+  isInRect,
+  isInRectangle,
+  isPointInRect,
+  snapPoint
+} from './measure'
+import { NodeInputSlot } from './node/NodeInputSlot'
+import { NodeOutputSlot } from './node/NodeOutputSlot'
+import {
+  createInputSlotView,
+  createOutputSlotView,
+  resolveInputSlotView
+} from './node/slotDescriptorView'
 import {
   inputHasLink,
   inputLink,
@@ -103,86 +164,22 @@ import {
   outputLinks
 } from './node/slotLinks'
 import {
-  createInputSlotView,
-  createOutputSlotView,
-  resolveInputSlotView
-} from './node/slotDescriptorView'
+  inputAsSerialisable,
+  isWidgetInputSlot,
+  outputAsSerialisable
+} from './node/slotUtils'
 import {
   clearWidgetRestorationSlots,
   getWidgetRestorationSlot,
   initializeWidgetsView
 } from './node/widgetsView'
-import type { NodeCanonicalField } from './extensionPersistence'
-import {
-  extensionConfigureView,
-  hydrateExtensionPayload,
-  isNodeCanonicalField,
-  NODE_CANONICAL_FIELDS,
-  runExtensionSerializeHook
-} from './extensionPersistence'
+import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
+import { isDrawnEmphasized } from './nodeEmphasis'
 import { anchorRerouteChain } from './Reroute'
-import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
-import type { IDrawBoundingOptions } from './draw'
-import { emitNodeFieldWrite } from './graphIntents'
-import { NullGraphError } from './infrastructure/NullGraphError'
-import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
-import { Rectangle } from './infrastructure/Rectangle'
-import type {
-  ColorOption,
-  DefaultConnectionColors,
-  Dictionary,
-  IColorable,
-  INodeFlags,
-  INodeSlot,
-  IPinnable,
-  ISlotType,
-  Positionable,
-  SlotIndex
-} from '@comfyorg/graph-model/interfaces'
-import type { IContextMenuValue } from './types/contextMenu'
-import type {
-  IFoundSlot,
-  INodeInputSlot,
-  INodeOutputSlot,
-  INodeSlotContextItem
-} from '@comfyorg/graph-model/slots'
-import type { Panel } from './types/panel'
-import { LiteGraph } from './litegraphInstance'
 import { isSubgraph } from './subgraph/subgraphTypeGuards'
-
-import {
-  createBounds,
-  isInRect,
-  isInRectangle,
-  isPointInRect,
-  snapPoint
-} from './measure'
-import { NodeInputSlot } from './node/NodeInputSlot'
-import { NodeOutputSlot } from './node/NodeOutputSlot'
-import {
-  inputAsSerialisable,
-  isWidgetInputSlot,
-  outputAsSerialisable
-} from './node/slotUtils'
+import type { IContextMenuValue } from './types/contextMenu'
 import type { NodeLike } from './types/NodeLike'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
-import {
-  LGraphEventMode,
-  NodeSlotType,
-  RenderShape,
-  TitleMode
-} from '@comfyorg/graph-model/globalEnums'
-import type {
-  ISerialisedNode,
-  SubgraphIO
-} from '@comfyorg/graph-model/serialisation'
-import type {
-  IBaseWidget,
-  IWidgetOptions,
-  TWidgetType,
-  TWidgetValue
-} from '@comfyorg/graph-model/widgets'
+import type { Panel } from './types/panel'
 import { findFreeSlotOfType, provideGraphNodeGuard } from './utils/collections'
 import { warnDeprecated } from './utils/feedback'
 import {

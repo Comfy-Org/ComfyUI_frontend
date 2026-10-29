@@ -1,11 +1,10 @@
+import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import { AgentNonValueWidgetRig } from '@e2e/fixtures/agentNonValueWidgetRig'
+import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import { expect } from '@playwright/test'
 
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-
-import { AgentNonValueWidgetRig } from '@e2e/fixtures/agentNonValueWidgetRig'
-import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
-import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 
 /**
  * `preview_text` reaches the minter through an `executed` frame, the node's

@@ -1,14 +1,13 @@
 import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternalScript'
-
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
-
 import type {
   AuthMetadata,
   AuthMethod,
   TelemetryProvider
 } from '@comfyorg/telemetry/types'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
 
 const SYFT_SRC = 'https://cdn.sy-d.io/syftnext/syft.umd.js'
 

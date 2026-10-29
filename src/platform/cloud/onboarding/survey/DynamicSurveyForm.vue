@@ -94,12 +94,12 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { useElementSize } from '@vueuse/core'
 import { useForm } from 'vee-validate'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
 import type {
   OnboardingSurvey,
   OnboardingSurveyField

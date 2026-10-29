@@ -5,7 +5,6 @@ import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
-
 import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { normalizeAgentTranscript } from '@/workbench/extensions/agent/services/agent/agentTranscript'

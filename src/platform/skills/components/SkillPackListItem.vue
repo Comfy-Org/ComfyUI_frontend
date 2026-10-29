@@ -59,12 +59,10 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
-import Button from '@comfyorg/design-system/button/Button'
 
 import type { SkillPack } from '@/platform/skills/types'
 import { packByteSize } from '@/platform/skills/types'

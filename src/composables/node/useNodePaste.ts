@@ -1,5 +1,6 @@
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { partition } from 'es-toolkit'
+
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 type PasteHandler<T> = (files: File[]) => Promise<T>

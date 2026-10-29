@@ -1,11 +1,6 @@
-// `useNodeOutputStore` (and the app bootstrap it pulls in) must finish
-// loading before `useImageUploadWidget` is first imported below: that module
-// also depends on the app bootstrap, and letting it be the one to trigger
-// that load creates a real circular import where `scripts/widgets.ts` calls
-// `useImageUploadWidget()` before this module has finished exporting it.
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
@@ -17,7 +12,12 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+// `useNodeOutputStore` (and the app bootstrap it pulls in) must finish
+// loading before `useImageUploadWidget` is first imported below: that module
+// also depends on the app bootstrap, and letting it be the one to trigger
+// that load creates a real circular import where `scripts/widgets.ts` calls
+// `useImageUploadWidget()` before this module has finished exporting it.
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'

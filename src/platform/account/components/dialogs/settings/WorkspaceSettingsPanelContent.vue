@@ -10,11 +10,11 @@
 </template>
 
 <script setup lang="ts">
-import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
-import PartnerNodeAccessPanel from '@/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue'
 import PlanCreditsPanelContent from '@/platform/account/components/dialogs/settings/PlanCreditsPanelContent.vue'
 import WorkspaceHeaderMenu from '@/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue'
 import WorkspaceMembersPanelContent from '@/platform/account/components/dialogs/settings/WorkspaceMembersPanelContent.vue'
+import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
+import PartnerNodeAccessPanel from '@/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue'
 
 const { section } = defineProps<{
   section: 'planCredits' | 'members' | 'allowlist'

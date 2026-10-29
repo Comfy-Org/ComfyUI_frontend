@@ -21,12 +21,11 @@ export type {
  * `advanced` / `canvasOnly` fields are facades over this component.
  */
 
-import { isPlainObject } from 'es-toolkit'
-
 import {
   WIDGET_SURFACES,
   WIDGET_SURFACE_TIERS
 } from '@comfyorg/graph-model/widgetSurfaces'
+import { isPlainObject } from 'es-toolkit'
 export { WIDGET_SURFACES } from '@comfyorg/graph-model/widgetSurfaces'
 
 function isWidgetSurfaces(value: unknown): value is WidgetSurfaces {

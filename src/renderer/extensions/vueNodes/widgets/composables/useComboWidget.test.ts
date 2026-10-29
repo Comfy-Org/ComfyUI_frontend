@@ -1,25 +1,25 @@
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import axios from 'axios'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
+import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
+import { t } from '@/i18n'
 import {
   LGraph,
   LGraphNode,
   isComboWidget
 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { assetService } from '@/platform/assets/services/assetService'
 import {
   scanNodeModelCandidates,
   verifyAssetSupportedCandidates
 } from '@/platform/workflowErrors/missingModel/missingModelScan'
-import { t } from '@/i18n'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
   return {

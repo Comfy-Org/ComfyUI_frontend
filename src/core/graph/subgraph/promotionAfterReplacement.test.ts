@@ -1,3 +1,4 @@
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -11,7 +12,6 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 vi.mock(import('@/services/litegraphService'))
 

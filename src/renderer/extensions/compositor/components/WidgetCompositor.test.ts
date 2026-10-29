@@ -1,17 +1,17 @@
-import { render, screen } from '@testing-library/vue'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { app } from '@/scripts/app'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-
 import {
   clearCompositorLayers,
   setCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
+import { app } from '@/scripts/app'
+
 import WidgetCompositor from './WidgetCompositor.vue'
 
 vi.mock(import('@/scripts/app'))

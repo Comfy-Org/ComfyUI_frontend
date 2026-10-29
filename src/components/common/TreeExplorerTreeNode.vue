@@ -39,12 +39,11 @@
 
 <script setup lang="ts" generic="T">
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import EditableText from '@comfyorg/design-system/common/EditableText'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, inject, ref } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import EditableText from '@comfyorg/design-system/common/EditableText'
-import Badge from '@comfyorg/design-system/badge/Badge'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable

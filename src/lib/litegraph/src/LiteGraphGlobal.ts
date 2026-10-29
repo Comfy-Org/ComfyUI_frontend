@@ -1,34 +1,3 @@
-import { ContextMenu } from './ContextMenu'
-import { CurveEditor } from './CurveEditor'
-import { DragAndScale } from './DragAndScale'
-import { LGraph } from './LGraph'
-import { LGraphCanvas } from './LGraphCanvas'
-import { LGraphGroup } from './LGraphGroup'
-import { LGraphNode } from './LGraphNode'
-import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
-import { LLink } from './LLink'
-import { Reroute } from './Reroute'
-import { InputIndicators } from './canvas/InputIndicators'
-import { LabelPosition, SlotDirection, SlotShape, SlotType } from './draw'
-import { Rectangle } from './infrastructure/Rectangle'
-import type {
-  Dictionary,
-  INodeFlags,
-  ISlotType,
-  WhenNullish
-} from '@comfyorg/graph-model/interfaces'
-import type {
-  PointTuple as Point,
-  Rect,
-  SizeTuple as Size
-} from '@comfyorg/shared-frontend-utils/geometry'
-import { distance, isInsideRectangle, overlapBounding } from './measure'
-import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
-import { SubgraphSlot } from './subgraph/SubgraphSlotBase'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@comfyorg/graph-model/slots'
 import {
   LGraphEventMode,
   LinkDirection,
@@ -37,7 +6,40 @@ import {
   RenderShape,
   TitleMode
 } from '@comfyorg/graph-model/globalEnums'
+import type {
+  Dictionary,
+  INodeFlags,
+  ISlotType,
+  WhenNullish
+} from '@comfyorg/graph-model/interfaces'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import type {
+  PointTuple as Point,
+  Rect,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
+
 import { createUuidv4 } from '@/utils/uuid'
+
+import { InputIndicators } from './canvas/InputIndicators'
+import { ContextMenu } from './ContextMenu'
+import { CurveEditor } from './CurveEditor'
+import { DragAndScale } from './DragAndScale'
+import { LabelPosition, SlotDirection, SlotShape, SlotType } from './draw'
+import { Rectangle } from './infrastructure/Rectangle'
+import { LGraph } from './LGraph'
+import { LGraphCanvas } from './LGraphCanvas'
+import { LGraphGroup } from './LGraphGroup'
+import { LGraphNode } from './LGraphNode'
+import { LLink } from './LLink'
+import { distance, isInsideRectangle, overlapBounding } from './measure'
+import { Reroute } from './Reroute'
+import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
+import { SubgraphSlot } from './subgraph/SubgraphSlotBase'
 
 /** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
 export interface CreateNodeOptions {

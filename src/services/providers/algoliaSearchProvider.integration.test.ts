@@ -1,5 +1,5 @@
-import type { Mock } from 'vitest'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
+import type { Mock } from 'vitest'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'

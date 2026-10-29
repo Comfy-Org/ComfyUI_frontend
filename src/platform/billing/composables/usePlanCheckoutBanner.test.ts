@@ -1,6 +1,6 @@
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { billingApi } from '@/platform/billing/api/billingApi'

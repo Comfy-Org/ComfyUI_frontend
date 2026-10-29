@@ -1,6 +1,5 @@
-import { useI18n } from 'vue-i18n'
-
 import type { SubscriptionTier } from '@comfyorg/billing-core'
+import { useI18n } from 'vue-i18n'
 
 const tierKeyMap: Record<string, string> = {
   FREE: 'free',

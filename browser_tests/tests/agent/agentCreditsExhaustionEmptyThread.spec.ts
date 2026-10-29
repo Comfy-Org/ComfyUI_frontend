@@ -1,9 +1,8 @@
+import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
+import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
-import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 test.describe(
   'Agent standing credits-exhaustion on an empty thread',

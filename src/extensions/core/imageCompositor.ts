@@ -1,4 +1,7 @@
 import type { CompactSize } from '@comfyorg/shared-frontend-utils/geometry'
+
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeOutputWith } from '@/platform/remote/comfyui/execution/types'
 import type { CompositorBBox } from '@/renderer/extensions/compositor/composables/compositorLayerState'
 import type { ImageFileRef } from '@/renderer/extensions/compositor/composables/compositorPaths'
 import { resetCompositorStateWidgets } from '@/renderer/extensions/compositor/composables/compositorWidgets'
@@ -7,8 +10,6 @@ import {
   clearCompositorPreviewOverride,
   setCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeOutputWith } from '@/platform/remote/comfyui/execution/types'
 import type { ComfyExtension } from '@/types/comfy'
 
 type ImageCompositorOutput = NodeOutputWith<{

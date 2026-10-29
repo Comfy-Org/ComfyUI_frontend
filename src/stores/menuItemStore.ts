@@ -1,14 +1,13 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
-
 import type {
   MenuItem,
   MenuItemAction
 } from '@comfyorg/design-system/lib/menu/types'
-import { CORE_MENU_COMMANDS } from '@/constants/coreMenuCommands'
-import type { ComfyExtension } from '@/types/comfy'
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
+import { CORE_MENU_COMMANDS } from '@/constants/coreMenuCommands'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import type { ComfyExtension } from '@/types/comfy'
 
 export interface CommandMenuItem extends MenuItemAction {
   commandId: string

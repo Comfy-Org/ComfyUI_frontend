@@ -1,7 +1,7 @@
 import { markRaw } from 'vue'
 
-import LogsTerminal from '@/components/bottomPanel/tabs/terminal/LogsTerminal.vue'
 import CommandTerminal from '@/components/bottomPanel/tabs/terminal/CommandTerminal.vue'
+import LogsTerminal from '@/components/bottomPanel/tabs/terminal/LogsTerminal.vue'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
 export function useLogsTerminalTab(): BottomPanelExtension {

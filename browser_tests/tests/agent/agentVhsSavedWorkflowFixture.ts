@@ -1,9 +1,5 @@
-import { expect, mergeTests } from '@playwright/test'
-import type { Page, WebSocketRoute } from '@playwright/test'
 import { OPAQUE_WIDGETS_KEY, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import * as Y from 'yjs'
-
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import {
@@ -26,6 +22,9 @@ import {
   vhsNodeDefs
 } from '@e2e/fixtures/data/agent/agentVhsSavedWorkflow'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expect, mergeTests } from '@playwright/test'
+import type { Page, WebSocketRoute } from '@playwright/test'
+import * as Y from 'yjs'
 
 async function registerKvStateRestore(page: Page): Promise<void> {
   await page.evaluate(() => {

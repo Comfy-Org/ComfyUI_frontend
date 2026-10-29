@@ -1,10 +1,10 @@
-import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
+import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const i18n = createI18n({

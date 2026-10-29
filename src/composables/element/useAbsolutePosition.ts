@@ -1,10 +1,10 @@
+import type { PositionConfig } from '@comfyorg/shared-frontend-utils/geometry'
 import type { CSSProperties, Ref } from 'vue'
 import { ref, watch } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { PositionConfig } from '@comfyorg/shared-frontend-utils/geometry'
 
 interface UseAbsolutePositionReturn {
   style: Ref<CSSProperties>

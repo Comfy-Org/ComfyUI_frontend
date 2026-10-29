@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+
 import '@/workbench/extensions/agent/agentPanel.css'
 
 import ConversationView from './ConversationView.vue'

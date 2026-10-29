@@ -1,14 +1,13 @@
+import type { SsoRequiredTrigger } from '@comfyorg/account-core/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
-
-import type { SsoRequiredTrigger } from '@comfyorg/account-core/telemetry'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { useSsoRequiredInlineHost } from '@/platform/auth/sso/ssoRequiredInline'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/composables/useFeatureFlags'))

@@ -1,7 +1,8 @@
+import { useTelemetry } from '@comfyorg/telemetry'
+
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { ChangeTracker } from '@/scripts/changeTracker'
 
-import { useTelemetry } from '@comfyorg/telemetry'
 import { getCurrentNodeAddSource } from './nodeAddSource'
 
 /**

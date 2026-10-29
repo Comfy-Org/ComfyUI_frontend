@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page, Request, Route } from '@playwright/test'
 import type {
   BillingBalanceResponse,
   BillingEventsResponse,
@@ -9,10 +7,6 @@ import type {
   PreviewSubscribeResponse,
   SavedPaymentMethod
 } from '@comfyorg/ingest-types'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
-
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import {
@@ -22,8 +16,8 @@ import {
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { makeWorkspaceTokenResponse } from '@e2e/fixtures/data/workspaceAuthFixtures'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import {
@@ -31,6 +25,11 @@ import {
   mockWorkspaceList,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+import type { Locator, Page, Request, Route } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
 /**
  * Recovery on the billing SDK rails with the embedded checkout off: a hosted

@@ -73,6 +73,9 @@
 </template>
 
 <script setup lang="ts">
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useResizeObserver } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
 import {
@@ -92,15 +95,12 @@ import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPa
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
 import SidebarIcon from './SidebarIcon.vue'

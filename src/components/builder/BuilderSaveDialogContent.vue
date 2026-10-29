@@ -53,10 +53,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, useId } from 'vue'
-
 import Button from '@comfyorg/design-system/button/Button'
 import DialogDescription from '@comfyorg/design-system/dialog/DialogDescription'
+import { ref, useId } from 'vue'
+
 import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 
 import ViewTypeRadioGroup from './ViewTypeRadioGroup.vue'

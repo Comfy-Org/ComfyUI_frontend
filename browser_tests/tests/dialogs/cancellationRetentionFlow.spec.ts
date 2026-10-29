@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import type { CancellationFlowDialog } from '@e2e/fixtures/components/CancellationFlowDialog'
 import {
@@ -7,6 +5,7 @@ import {
   OFFER_ARM_FLOW
 } from '@e2e/fixtures/data/retentionFlow'
 import { RetentionFlowMockHelper } from '@e2e/fixtures/helpers/RetentionFlowMockHelper'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Cancellation flow from Plan & Credits',

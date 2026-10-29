@@ -1,8 +1,9 @@
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+
 import type {
   ComfyWorkflow,
   WorkflowChangeTracker
 } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 interface ChangeTrackerClass {
   new (

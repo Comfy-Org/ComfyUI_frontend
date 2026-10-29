@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
-import { agentMessageText } from './agentMessageText'
 import type {
   ComposerPrompt,
   ComposerReference
 } from '@/workbench/extensions/agent/types/composerPrompt'
+
+import { agentMessageText } from './agentMessageText'
 import {
   composerPromptForSend,
   composerPromptForSubmission,

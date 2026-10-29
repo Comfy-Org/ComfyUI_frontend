@@ -1,6 +1,6 @@
+import type { IGradientSliderWidget } from '@comfyorg/graph-model/widgets'
 import { clamp } from 'es-toolkit/compat'
 
-import type { IGradientSliderWidget } from '@comfyorg/graph-model/widgets'
 import { coerceNumericWidgetValue } from '@/lib/litegraph/src/utils/widget'
 
 import { BaseWidget } from './BaseWidget'

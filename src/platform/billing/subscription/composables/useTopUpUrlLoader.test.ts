@@ -1,11 +1,11 @@
-import { computed, ref } from 'vue'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw } from 'vue-router'
 
-import { useTelemetry } from '@comfyorg/telemetry'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 import { useTopUpUrlLoader } from './useTopUpUrlLoader'
 

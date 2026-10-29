@@ -1,14 +1,14 @@
 import { mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { assert, describe, expect, it, vi } from 'vitest'
-import * as Y from 'yjs'
-
-import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type {
   ExportedSubgraph,
   ISerialisedNode,
   SerialisableLLink
 } from '@comfyorg/graph-model/serialisation'
+import { assert, describe, expect, it, vi } from 'vitest'
+import * as Y from 'yjs'
+
+import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import {
   readSubgraphDefinitionIds,

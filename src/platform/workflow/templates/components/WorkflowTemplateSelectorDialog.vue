@@ -437,6 +437,27 @@
 </template>
 
 <script setup lang="ts">
+import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-types'
+import Button from '@comfyorg/design-system/button/Button'
+import Tag from '@comfyorg/design-system/chip/Tag'
+import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
+import CardContainer from '@comfyorg/design-system/content-card/CardContainer'
+import CardTop from '@comfyorg/design-system/content-card/CardTop'
+import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
+import type {
+  NavGroupData,
+  NavItemData
+} from '@comfyorg/design-system/lib/navigation/types'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
+import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
+import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
+import { selectCountBadgeClass } from '@comfyorg/design-system/select.variants'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAsyncState } from '@vueuse/core'
 import {
   computed,
@@ -448,45 +469,26 @@ import {
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-types'
 
-import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
-import CardContainer from '@comfyorg/design-system/content-card/CardContainer'
-import CardTop from '@comfyorg/design-system/content-card/CardTop'
-import Tag from '@comfyorg/design-system/chip/Tag'
-import PaidTemplateBadge from '@/platform/workflow/templates/components/PaidTemplateBadge.vue'
-import TemplateFilterControls from '@/platform/workflow/templates/components/TemplateFilterControls.vue'
-import WorkflowTemplateDetail from '@/platform/workflow/templates/components/WorkflowTemplateDetail.vue'
-import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
-import TemplatePreview from '@/platform/workflow/templates/components/thumbnails/TemplatePreview.vue'
-import Button from '@comfyorg/design-system/button/Button'
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import { selectCountBadgeClass } from '@comfyorg/design-system/select.variants'
-import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import AppSpinner from '@/components/common/AppSpinner.vue'
-import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
-import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
+import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
-import { useLazyPagination } from '@/platform/workflow/templates/composables/useLazyPagination'
-import { useTemplateFiltering } from '@/platform/workflow/templates/composables/useTemplateFiltering'
-import type { TemplateSortMode } from '@/platform/workflow/templates/composables/useTemplateFiltering'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import { loadFolderPathsOnce } from '@/platform/workflowErrors/missingModel/folderPathCache'
-import {
-  isModelDownloadable,
-  modelDownloadNeedsFolderPaths
-} from '@/platform/workflowErrors/missingModel/missingModelDownload'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
+import PaidTemplateBadge from '@/platform/workflow/templates/components/PaidTemplateBadge.vue'
+import TemplateFilterControls from '@/platform/workflow/templates/components/TemplateFilterControls.vue'
+import TemplatePreview from '@/platform/workflow/templates/components/thumbnails/TemplatePreview.vue'
+import WorkflowTemplateDetail from '@/platform/workflow/templates/components/WorkflowTemplateDetail.vue'
+import { useLazyPagination } from '@/platform/workflow/templates/composables/useLazyPagination'
+import { useTemplateFiltering } from '@/platform/workflow/templates/composables/useTemplateFiltering'
+import type { TemplateSortMode } from '@/platform/workflow/templates/composables/useTemplateFiltering'
 import { useTemplateModelAvailability } from '@/platform/workflow/templates/composables/useTemplateModelAvailability'
 import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { PreparedWorkflowTemplate } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type {
   TemplateInfo,
   TemplateTypeFilter
@@ -497,16 +499,16 @@ import type {
   TemplateDetailRow,
   TemplateModelSetup
 } from '@/platform/workflow/templates/types/templateDetail'
-import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import {
   filterTemplatesByType,
   getTemplateTags,
   isAppTemplate
 } from '@/platform/workflow/templates/utils/templateDisplay'
+import { resolveTemplateInputAssets } from '@/platform/workflow/templates/utils/templateInputAssets'
+import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 import { resolveTemplateModelMetadata } from '@/platform/workflow/templates/utils/templateModelMetadata'
 import { extractTemplateModelRequirementDetails } from '@/platform/workflow/templates/utils/templateModelRequirements'
 import type { TemplateModelRequirementDetail } from '@/platform/workflow/templates/utils/templateModelRequirements'
-import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 import {
   deriveTemplateModelSetup,
   isModelDownloadCandidate,
@@ -517,14 +519,12 @@ import type {
   TemplateModelSetupResult,
   TemplateModelSetupRow
 } from '@/platform/workflow/templates/utils/templateModelSetup'
-import { resolveTemplateInputAssets } from '@/platform/workflow/templates/utils/templateInputAssets'
-import type {
-  NavGroupData,
-  NavItemData
-} from '@comfyorg/design-system/lib/navigation/types'
-import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
+import { loadFolderPathsOnce } from '@/platform/workflowErrors/missingModel/folderPathCache'
+import {
+  isModelDownloadable,
+  modelDownloadNeedsFolderPaths
+} from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { formatSize } from '@/utils/formatUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 

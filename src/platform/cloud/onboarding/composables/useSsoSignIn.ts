@@ -1,8 +1,3 @@
-import { useEventListener } from '@vueuse/core'
-import { computed, onScopeDispose, readonly, ref } from 'vue'
-import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
-import { useRoute, useRouter } from 'vue-router'
-
 import {
   discoverSso,
   sendsToSso,
@@ -10,13 +5,16 @@ import {
 } from '@comfyorg/account-core/sso'
 import type { SsoSignInVia } from '@comfyorg/account-core/sso'
 import type { SsoSurface } from '@comfyorg/account-core/telemetry'
+import { useEventListener } from '@vueuse/core'
+import { computed, onScopeDispose, readonly, ref } from 'vue'
+import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { toSsoReturnPath } from '@/platform/auth/sso/ssoReturnPath'
 import {
   trackSsoContinueClicked,
   trackSsoSignInFailed
 } from '@/platform/auth/sso/ssoTelemetry'
-
 import {
   captureOAuthRequestId,
   getOAuthRequestId

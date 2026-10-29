@@ -49,6 +49,9 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import type { AssetInfo } from '@comfyorg/ingest-types'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   CollapsibleContent,
   CollapsibleRoot,
@@ -56,10 +59,7 @@ import {
 } from 'reka-ui'
 import { ref } from 'vue'
 
-import type { AssetInfo } from '@comfyorg/ingest-types'
 import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectionList.vue'
-import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@comfyorg/design-system/button/Button'
 
 const { items } = defineProps<{
   items: AssetInfo[]

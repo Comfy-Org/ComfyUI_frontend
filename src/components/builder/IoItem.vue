@@ -1,15 +1,13 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import EditableText from '@comfyorg/design-system/common/EditableText'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import EditableText from '@comfyorg/design-system/common/EditableText'
-import Button from '@comfyorg/design-system/button/Button'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 

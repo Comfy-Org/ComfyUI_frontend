@@ -1,12 +1,13 @@
-import { getActivePinia } from 'pinia'
-import { fromAny } from '@total-typescript/shoehorn'
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
+import { fromAny } from '@total-typescript/shoehorn'
+import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { SwapNodeGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import type { SwapNodeGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
+
 import SwapNodeGroupRow from './SwapNodeGroupRow.vue'
 
 const i18n = createI18n({

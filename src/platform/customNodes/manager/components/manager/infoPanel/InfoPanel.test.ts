@@ -4,10 +4,10 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
-import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
-import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/platform/customNodes/manager/stores/conflictDetectionStore'
+import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import type { components } from '@/types/comfyRegistryTypes'
 
 import InfoPanel from './InfoPanel.vue'
 import InfoPanelMultiItem from './InfoPanelMultiItem.vue'

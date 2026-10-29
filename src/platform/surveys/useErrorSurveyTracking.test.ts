@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
+
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 const trackFeatureUsed = vi.hoisted(() => vi.fn())

@@ -1,11 +1,12 @@
 import fs from 'fs'
 import path from 'path'
-import { z } from 'zod'
 
 import {
   zComfyWorkflow,
   zComfyWorkflow1
 } from '@comfyorg/graph-model/workflowSchema'
+import { z } from 'zod'
+
 import { zComfyNodeDef as zComfyNodeDefV2 } from '../src/schemas/nodeDef/nodeDefSchemaV2'
 import { zComfyNodeDef as zComfyNodeDefV1 } from '../src/schemas/nodeDefSchema'
 

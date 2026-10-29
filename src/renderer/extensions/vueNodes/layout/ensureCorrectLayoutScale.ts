@@ -1,15 +1,16 @@
 import type { PositionedRect as Positioned } from '@comfyorg/shared-frontend-utils/geometry'
+
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
+import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import {
   RENDER_SCALE_FACTOR,
   getGraphRenderAnchor,
   unprojectBounds,
   unprojectPoint
 } from '@/renderer/core/layout/transform/graphRenderTransform'
-import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
-import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 
 /**
  * One-time legacy normalizer for workflows saved with Vue-scaled coordinates.

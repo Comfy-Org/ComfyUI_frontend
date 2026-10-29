@@ -1,13 +1,13 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
 
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { useReleaseStore } from '@/platform/updates/common/releaseStore'
-import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 import { useNodeConflictDialog } from '@/platform/customNodes/manager/composables/useNodeConflictDialog'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
+import { useHelpCenterStore } from '@/stores/helpCenterStore'
 
 export function useHelpCenter() {
   const settingStore = useSettingStore()

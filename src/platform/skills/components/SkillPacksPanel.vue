@@ -53,16 +53,16 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { useEventListener } from '@vueuse/core'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import Button from '@comfyorg/design-system/button/Button'
-import { useDialogStore } from '@/stores/dialogStore'
-
 import { useSkillPacks } from '@/platform/skills/composables/useSkillPacks'
 import type { SkillPack } from '@/platform/skills/types'
+import { useDialogStore } from '@/stores/dialogStore'
+
 import SkillPackFormDialog from './SkillPackFormDialog.vue'
 import SkillPackListItem from './SkillPackListItem.vue'
 

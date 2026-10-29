@@ -1,6 +1,7 @@
 import type { AgentEventSocket } from '@/workbench/extensions/agent/services/agent/agentEventSource'
-import { SERVER_DOC_FRAME_TYPES } from './docFrameCodes'
+
 import type { DocFrameTransport } from './docFrameClient'
+import { SERVER_DOC_FRAME_TYPES } from './docFrameCodes'
 
 const INBOUND_DOC_FRAMES = new Set<string>(SERVER_DOC_FRAME_TYPES)
 

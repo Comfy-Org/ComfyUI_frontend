@@ -1,20 +1,20 @@
+import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
+import Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useLoad3dViewer } from '@/extensions/core/load3d/composables/useLoad3dViewer'
-import Load3d from '@comfyorg/viewport3d/load3d/Load3d'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
-import { load3dHost } from '@/extensions/core/load3d/load3dHost'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useLoad3dViewer } from '@/extensions/core/load3d/composables/useLoad3dViewer'
+import { load3dHost } from '@/extensions/core/load3d/load3dHost'
 import {
   copyLoad3dState,
   handleViewportRefresh
 } from '@/extensions/core/load3d/load3dInstances'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { api } from '@/scripts/api'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/extensions/core/load3d/load3dInstances'))
 

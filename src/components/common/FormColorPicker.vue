@@ -18,10 +18,10 @@
 </template>
 
 <script setup lang="ts">
+import Input from '@comfyorg/design-system/input/Input'
 import { computed, ref, watch } from 'vue'
 
 import AppColorPicker from '@/components/common/AppColorPicker.vue'
-import Input from '@comfyorg/design-system/input/Input'
 
 const modelValue = defineModel<string>('modelValue')
 const {

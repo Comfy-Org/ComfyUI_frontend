@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
+import { expect } from '@playwright/test'
 
 const CADENCE_UPDATES = 20
 const CADENCE_INTERVAL_MS = 110

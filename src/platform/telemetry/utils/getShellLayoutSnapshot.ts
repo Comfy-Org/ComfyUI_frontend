@@ -1,10 +1,11 @@
+import type { ShellLayoutMetadata } from '@comfyorg/telemetry/types'
+
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-import type { ShellLayoutMetadata } from '@comfyorg/telemetry/types'
 import { getActionbarDockState } from './getActionbarDockState'
 
 type ShellLayoutMode = Pick<ShellLayoutMetadata, 'view_mode' | 'is_app_mode'>

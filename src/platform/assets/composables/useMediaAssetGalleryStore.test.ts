@@ -1,8 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-
 import { describe, expect, it } from 'vitest'
 
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
+
 import { useMediaAssetGalleryStore } from './useMediaAssetGalleryStore'
 
 describe('useMediaAssetGalleryStore', () => {

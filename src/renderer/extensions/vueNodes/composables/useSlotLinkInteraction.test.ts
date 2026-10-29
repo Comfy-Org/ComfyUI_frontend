@@ -1,14 +1,14 @@
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { setRevealedLinks } from '@/lib/litegraph/src/canvas/linkRevealState'
+import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import {
   isRerouteVisibleForLinkDrag,
   resolvePointerTarget
 } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 
 describe('isRerouteVisibleForLinkDrag', () => {

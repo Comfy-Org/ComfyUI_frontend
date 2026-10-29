@@ -1,10 +1,9 @@
 import { readFile } from 'node:fs/promises'
 
-import { expect } from '@playwright/test'
-
 import { assetDownloadRedirectTest as test } from '@e2e/fixtures/assetDownloadRedirectFixture'
 import { STABLE_OUTPUT } from '@e2e/fixtures/data/assetFixtures'
 import { WEB_SESSION_COOKIE } from '@e2e/fixtures/data/webSession'
+import { expect } from '@playwright/test'
 
 test.use({
   firebaseLogin: false,

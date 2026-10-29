@@ -1,7 +1,8 @@
-import { useCloudNotificationDialog } from '@/platform/cloud/notification/composables/useCloudNotificationDialog'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
+
+import { useCloudNotificationDialog } from '@/platform/cloud/notification/composables/useCloudNotificationDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { useDesktopCloudNotification } from './useDesktopCloudNotification'

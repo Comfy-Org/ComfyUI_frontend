@@ -13,11 +13,10 @@
 </template>
 
 <script setup lang="ts">
+import Badge from '@comfyorg/design-system/badge/Badge'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import Badge from '@comfyorg/design-system/badge/Badge'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import {
   getProviderBorderStyle,

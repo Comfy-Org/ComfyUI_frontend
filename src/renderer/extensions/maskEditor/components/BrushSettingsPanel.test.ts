@@ -1,3 +1,5 @@
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { BrushShape } from '@comfyorg/mask-editor/types'
 /* oxlint-disable testing-library/no-container, testing-library/no-node-access -- number inputs have no aria labels */
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
@@ -5,8 +7,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import BrushSettingsPanel from '@/renderer/extensions/maskEditor/components/BrushSettingsPanel.vue'
-import { BrushShape } from '@comfyorg/mask-editor/types'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 

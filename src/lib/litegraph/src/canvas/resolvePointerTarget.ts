@@ -8,19 +8,19 @@ import type {
   SubgraphInputNode,
   SubgraphOutputNode
 } from '@comfyorg/graph-model/entityRegistry'
-
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import {
+  LinkMarkerShape,
+  LinkRenderType
+} from '@comfyorg/graph-model/globalEnums'
 import type {
   LinkSegment,
   Positionable
 } from '@comfyorg/graph-model/interfaces'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { isInRectangle } from '@/lib/litegraph/src/measure'
 
-import {
-  LinkMarkerShape,
-  LinkRenderType
-} from '@comfyorg/graph-model/globalEnums'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import {
   findRerouteAtPoint,
   queryRenderedLinkSegmentsAtPoint

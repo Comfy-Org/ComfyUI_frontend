@@ -20,15 +20,15 @@
 </template>
 
 <script setup lang="ts">
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
+import Button from '@comfyorg/design-system/button/Button'
+import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
-import Button from '@comfyorg/design-system/button/Button'
-import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
-import type { components } from '@/types/comfyRegistryTypes'
-import type { ConflictDetail } from '@/platform/customNodes/manager/types/conflictDetectionTypes'
 import { usePackInstall } from '@/platform/customNodes/manager/composables/nodePack/usePackInstall'
+import type { ConflictDetail } from '@/platform/customNodes/manager/types/conflictDetectionTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 

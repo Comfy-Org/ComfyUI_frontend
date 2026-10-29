@@ -1,7 +1,6 @@
+import type { CheckoutAttributionMetadata } from '@comfyorg/telemetry/types'
 import { isPlainObject } from 'es-toolkit'
 import { withTimeout } from 'es-toolkit/promise'
-
-import type { CheckoutAttributionMetadata } from '@comfyorg/telemetry/types'
 
 type GaIdentity = {
   client_id?: string

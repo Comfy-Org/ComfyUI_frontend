@@ -20,7 +20,6 @@
 import { computed } from 'vue'
 
 import { useTextFileContent } from '@/composables/useTextFileContent'
-
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 
 const MAX_SNIPPET_LENGTH = 1000

@@ -1,7 +1,7 @@
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 beforeEach(() => {
   vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockResolvedValue(

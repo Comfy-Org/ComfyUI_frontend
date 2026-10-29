@@ -29,10 +29,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
-
 import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
+import { computed, nextTick, ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'

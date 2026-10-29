@@ -5,10 +5,9 @@
  * See docs/TEMPLATE_RANKING.md for details.
  */
 
+import { searchRankBoost } from '@comfyorg/shared-frontend-utils/templateRanking'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-
-import { searchRankBoost } from '@comfyorg/shared-frontend-utils/templateRanking'
 
 export const useTemplateRankingStore = defineStore('templateRanking', () => {
   const largestUsageScore = ref<number>()

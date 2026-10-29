@@ -1,9 +1,8 @@
-import { render, screen } from '@testing-library/vue'
+import ViewportWidgetShell from '@comfyorg/design-system/common/ViewportWidgetShell'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
-
-import ViewportWidgetShell from '@comfyorg/design-system/common/ViewportWidgetShell'
 
 type ShellInstance = InstanceType<typeof ViewportWidgetShell>
 

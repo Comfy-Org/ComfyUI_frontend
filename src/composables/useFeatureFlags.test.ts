@@ -1,3 +1,4 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import {
   afterEach,
   beforeEach,
@@ -23,7 +24,6 @@ import {
   useRemoteConfigCache
 } from '@/platform/remoteConfig/remoteConfig'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 

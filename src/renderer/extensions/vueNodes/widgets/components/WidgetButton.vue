@@ -15,9 +15,9 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { computed } from 'vue'
 
-import Button from '@comfyorg/design-system/button/Button'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   BADGE_EXCLUDED_PROPS,

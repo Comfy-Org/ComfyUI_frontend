@@ -6,9 +6,9 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
-import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import type { WorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import type { components } from '@/types/comfyRegistryTypes'
 
 import MissingPackGroupRow from './MissingPackGroupRow.vue'

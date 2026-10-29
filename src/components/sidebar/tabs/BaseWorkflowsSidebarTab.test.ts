@@ -11,7 +11,6 @@ import {
   useWorkflowStore,
   useWorkflowBookmarkStore
 } from '@/platform/workflow/management/stores/workflowStore'
-
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { flattenTree } from '@/utils/treeUtil'

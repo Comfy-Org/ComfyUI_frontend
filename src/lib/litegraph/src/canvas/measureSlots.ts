@@ -1,10 +1,10 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
-
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { isInRectangle } from '@/lib/litegraph/src/measure'
 
 export function getNodeInputOnPos(

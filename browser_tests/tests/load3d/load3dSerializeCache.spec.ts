@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
+import { expect } from '@playwright/test'
 
 type Load3dImageInput = {
   image: string

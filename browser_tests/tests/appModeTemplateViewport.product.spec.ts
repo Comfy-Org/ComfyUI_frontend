@@ -1,5 +1,3 @@
-import { mergeTests } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture
@@ -9,6 +7,7 @@ import {
   APP_MODE_TEMPLATE,
   mockAppModeTemplate
 } from '@e2e/fixtures/utils/appModeTemplate'
+import { mergeTests } from '@playwright/test'
 
 const test = mergeTests(comfyPageFixture, templateApiFixture)
 

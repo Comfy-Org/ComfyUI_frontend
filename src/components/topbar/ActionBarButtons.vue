@@ -22,9 +22,9 @@
 </template>
 
 <script lang="ts" setup>
+import Button from '@comfyorg/design-system/button/Button'
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 
 const actionBarButtonStore = useActionBarButtonStore()

@@ -1,16 +1,15 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
-
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 function createNode(): LGraphNode {
   const graph = new LGraph()

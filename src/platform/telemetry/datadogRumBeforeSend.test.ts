@@ -1,4 +1,3 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import type {
   RumActionEvent,
   RumErrorEvent,
@@ -6,6 +5,7 @@ import type {
   RumResourceEvent,
   RumViewEvent
 } from '@datadog/browser-rum'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { setAssertReporter } from '@/base/assert'

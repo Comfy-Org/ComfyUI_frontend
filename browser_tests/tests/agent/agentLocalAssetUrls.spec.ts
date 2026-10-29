@@ -1,6 +1,3 @@
-import { expect, mergeTests } from '@playwright/test'
-import { escapeRegExp } from 'es-toolkit'
-
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -10,6 +7,8 @@ import {
   agentMessageDeltaEvent,
   agentTest
 } from '@e2e/tests/agent/agentPanelMocks'
+import { expect, mergeTests } from '@playwright/test'
+import { escapeRegExp } from 'es-toolkit'
 
 const test = mergeTests(agentTest, webSocketFixture)
 

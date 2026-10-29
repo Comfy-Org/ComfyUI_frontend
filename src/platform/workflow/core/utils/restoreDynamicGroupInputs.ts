@@ -1,6 +1,7 @@
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
+
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyInputsSpec } from '@/schemas/nodeDefSchema'
 import {
   zDynamicComboInputSpec,

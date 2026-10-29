@@ -1,16 +1,16 @@
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type {
   Size2D,
   MinBounds,
   Bounds,
   PanZoom
 } from '@comfyorg/shared-frontend-utils/geometry'
+
 /**
  * Minimap-specific type definitions
  */
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-
 import type { ResolvedMinimapNodeDecoration } from '@/platform/canvas/minimapDecorationRegistry'
 
 /**

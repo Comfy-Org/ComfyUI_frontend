@@ -5,10 +5,10 @@
 </template>
 
 <script setup lang="ts">
+import CreditBadge from '@comfyorg/design-system/badge/CreditBadge'
 import { evaluateNodeDefPricing } from '@comfyorg/shared-frontend-utils/nodePricing'
 import { ref, watch } from 'vue'
 
-import CreditBadge from '@comfyorg/design-system/badge/CreditBadge'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const { nodeDef } = defineProps<{

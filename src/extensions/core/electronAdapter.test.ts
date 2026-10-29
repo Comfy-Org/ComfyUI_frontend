@@ -1,8 +1,8 @@
 import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyApp } from '@/scripts/app'
 
 const mocks = vi.hoisted(() => ({

@@ -1,7 +1,7 @@
 import type { CheckoutJourneyPhaseEvent } from '@comfyorg/account-core/billing'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useTelemetry } from '@comfyorg/telemetry'
 import {
   bindOperationToCheckoutJourney,
   clearCheckoutJourney,

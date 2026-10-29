@@ -1,8 +1,7 @@
+import type { VideoEditValue } from '@comfyorg/graph-model/widgets'
 import { afterEach, describe, expect, it } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope } from 'vue'
-
-import type { VideoEditValue } from '@comfyorg/graph-model/widgets'
 
 import { useVideoEditModel } from './useVideoEditModel'
 

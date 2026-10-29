@@ -3,15 +3,15 @@ import type {
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
 import type { SsoTelemetryEvent } from '@comfyorg/account-core/telemetry'
-import { computed } from 'vue'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { DEFAULT_LIGHT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
-import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
-import { TelemetryEvents } from '@comfyorg/telemetry/types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
 const {

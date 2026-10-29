@@ -1,7 +1,3 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { agentAskTest as test } from '@e2e/fixtures/agentAskTurnFixture'
 import {
   DELETE_APPROVAL_PROMPT,
@@ -16,6 +12,9 @@ import {
   toolCall
 } from '@e2e/fixtures/data/agent/agentAskFrames'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 // The consent contract this suite pins (fire-2, PM-1494 / PM-1450, slack-18):
 // a run_approval ask blocks the run on the user's explicit answer. The server

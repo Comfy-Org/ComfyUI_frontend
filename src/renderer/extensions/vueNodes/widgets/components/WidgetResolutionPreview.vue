@@ -23,18 +23,18 @@
 </template>
 
 <script setup lang="ts">
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { IWidgetResolutionPreviewOptions } from '@comfyorg/graph-model/widgets'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
-import type { IWidgetResolutionPreviewOptions } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { resolveNode } from '@/utils/litegraphUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from './layout'
 

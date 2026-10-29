@@ -6,20 +6,20 @@
  * and a return to the app always refreshes the same state.
  */
 import type { BillingIntent } from '@comfyorg/billing-contract'
-
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
-import { reserveBillingTab } from '@/platform/billing/billingTab'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   readCheckoutOperation,
   refreshBilling
 } from '@/platform/billing/billingRefresh'
+import { reserveBillingTab } from '@/platform/billing/billingTab'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { hostedBillingRoute } from '@/platform/billing/hostedBillingRoutes'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { createJourneyId } from '@/platform/billing/utils/checkoutJourney'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 export interface OpenHostedBillingTabOptions {
   readonly plan?: string

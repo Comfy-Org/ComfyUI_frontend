@@ -1,10 +1,9 @@
-import type { Locator, Page } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
 import { KeybindingPanel } from '@e2e/fixtures/components/KeybindingPanel'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
+import type { Locator, Page } from '@playwright/test'
 
 export class SettingDialog extends BaseDialog {
   public readonly categories: Locator

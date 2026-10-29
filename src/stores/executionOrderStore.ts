@@ -1,11 +1,10 @@
-import { defineStore } from 'pinia'
-
 import type {
   GraphScope,
   OwningGraphId,
   RootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { defineStore } from 'pinia'
 
 export const useExecutionOrderStore = defineStore('executionOrder', () => {
   const orders = new Map<RootGraphId, Map<OwningGraphId, Map<NodeId, number>>>()

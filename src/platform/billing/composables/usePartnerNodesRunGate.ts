@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { createSharedComposable } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
@@ -6,14 +7,12 @@ import {
   scanPartnerNodesInGraph,
   usePartnerNodesInGraph
 } from '@/composables/node/usePartnerNodesInGraph'
+import type { PartnerNodeInfo } from '@/composables/node/usePartnerNodesInGraph'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { isCloud } from '@/platform/distribution/types'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
-
-import type { PartnerNodeInfo } from '@/composables/node/usePartnerNodesInGraph'
 
 type PartnerRunGate = 'sign-in' | 'none'
 type ApiKeyAuthStore = ReturnType<typeof useApiKeyAuthStore>

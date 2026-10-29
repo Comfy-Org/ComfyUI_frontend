@@ -1,8 +1,4 @@
 import type { AgentRunMode, JobsListResponse } from '@comfyorg/ingest-types'
-import { expect } from '@playwright/test'
-
-import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
@@ -18,6 +14,9 @@ import {
   VIRTUAL_NODE_ADDS
 } from '@e2e/fixtures/data/agent/agentVirtualNoteNodes'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect } from '@playwright/test'
+
+import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 
 test.describe(
   'Agent adds frontend-only note nodes',

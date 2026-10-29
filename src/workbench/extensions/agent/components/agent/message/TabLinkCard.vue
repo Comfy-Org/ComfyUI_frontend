@@ -1,20 +1,20 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import { useAgentTargetNavigation } from '@/workbench/extensions/agent/composables/agent/useAgentTargetNavigation'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
+import { useAgentTargetNavigation } from '@/workbench/extensions/agent/composables/agent/useAgentTargetNavigation'
 import { AgentTargetNavigationError } from '@/workbench/extensions/agent/services/agent/targetAwareAgentNavigation'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
 const { workflowId, locatorId, name } = defineProps<{
   workflowId: string

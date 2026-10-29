@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
-import { useToast } from '@/components/ui/toast/toastStore'
 
 describe('useErrorHandling', () => {
   let errorHandler: ReturnType<typeof useErrorHandling>

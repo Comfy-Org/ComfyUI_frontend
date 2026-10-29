@@ -1,11 +1,11 @@
 import { deepStrictEqual } from 'node:assert/strict'
 
-import type { PostMessageInput } from '@/workbench/extensions/agent/services/agent/agentRestClient'
-
 import type {
   AgentRequestResponseScenario,
   AgentResponseStep
 } from '@e2e/fixtures/data/agentRequestResponse'
+
+import type { PostMessageInput } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 
 export class AgentRequestResponseQueue {
   private nextScenarioIndex = 0

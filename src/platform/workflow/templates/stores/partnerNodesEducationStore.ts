@@ -1,8 +1,8 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@comfyorg/telemetry/reportError'
 
 const DISMISSED_SETTING = 'Comfy.PartnerNodesEducation.Dismissed'
 

@@ -1,7 +1,6 @@
+import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
-
-import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
 
 type SubcategoryRule = {
   pattern: string | RegExp

@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
+import Button from '@comfyorg/design-system/button/Button'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { watchDebounced } from '@vueuse/core'
 import {
   computed,
@@ -12,30 +17,24 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
+import { GetNodeParentGroupKey } from '@/components/rightSidePanel/shared'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { getStableWidgetRenderKey } from '@/core/graph/subgraph/widgetRenderKey'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { useTelemetry } from '@comfyorg/telemetry'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { cn } from '@comfyorg/tailwind-utils'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
-import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
-import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
-
-import { GetNodeParentGroupKey } from '@/components/rightSidePanel/shared'
 import WidgetItem from './WidgetItem.vue'
-import { getStableWidgetRenderKey } from '@/core/graph/subgraph/widgetRenderKey'
 
 const {
   label,

@@ -1,8 +1,7 @@
+import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
-
-import { render, screen } from '@testing-library/vue'
 
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import type * as DistributionTypes from '@/platform/distribution/types'

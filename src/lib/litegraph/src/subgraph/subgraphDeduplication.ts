@@ -1,5 +1,16 @@
-import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type {
+  ExportedSubgraph,
+  ExposedWidget,
+  ISerialisedNode,
+  SerialisableLLink
+} from '@comfyorg/graph-model/serialisation'
+
 import {
   mintGroupId,
   mintLinkId,
@@ -15,18 +26,8 @@ import {
   normalizeConfiguredTopology,
   remapLinkReferences
 } from '@/lib/litegraph/src/linkDeduplication'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
+import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { createUuidv4 } from '@/utils/uuid'
-import type {
-  ExportedSubgraph,
-  ExposedWidget,
-  ISerialisedNode,
-  SerialisableLLink
-} from '@comfyorg/graph-model/serialisation'
 
 interface DeduplicationResult<
   Subgraph extends { id: string; nodes?: { type: string }[] } =

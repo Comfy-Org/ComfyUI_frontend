@@ -18,11 +18,11 @@ import { useEventListener } from '@vueuse/core'
 import { computed } from 'vue'
 
 import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import SubscribeToRunButton from '@/platform/billing/subscription/components/SubscribeToRun.vue'
 import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 
 const { showsSubscribeToRunPrompt, subscription, fetchStatus, fetchBalance } =
   useBillingContext()

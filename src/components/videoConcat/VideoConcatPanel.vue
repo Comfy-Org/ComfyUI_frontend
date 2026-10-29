@@ -86,20 +86,20 @@
 </template>
 
 <script setup lang="ts">
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import VideoConcatClipStrip from '@/components/videoConcat/VideoConcatClipStrip.vue'
 import VideoConcatPlaybackBar from '@/components/videoConcat/VideoConcatPlaybackBar.vue'
-import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
-import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import { useVideoEditFormats } from '@/composables/video/useVideoEditFormats'
 import { useSequencePlayback } from '@/composables/videoConcat/useSequencePlayback'
 import type {
   ClipMetadata,
   ConcatClip
 } from '@/composables/videoConcat/useVideoConcatClips'
-import { useVideoEditFormats } from '@/composables/video/useVideoEditFormats'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { clips, resultUrl } = defineProps<{
   clips: ConcatClip[]

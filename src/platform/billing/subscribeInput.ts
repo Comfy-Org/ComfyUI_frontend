@@ -13,7 +13,6 @@
  * workspace billing adapter and the team deep-link checkout — send one body.
  */
 import type { SubscribeInput } from '@comfyorg/account-core/billing'
-
 import type { SubscribeOptions } from '@comfyorg/billing-core'
 
 export function subscribeInputFrom(

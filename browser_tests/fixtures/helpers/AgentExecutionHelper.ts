@@ -1,14 +1,13 @@
-import type { Page } from '@playwright/test'
-
-import type { PromptResponse } from '@/platform/remote/comfyui/types'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-
 import type {
   AgentFollowerHostSocket,
   ExecutionHostFrame
 } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AssetsHelper, createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
+import type { Page } from '@playwright/test'
+
+import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { PromptResponse } from '@/platform/remote/comfyui/types'
 
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 

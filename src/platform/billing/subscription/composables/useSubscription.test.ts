@@ -1,19 +1,16 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, nextTick } from 'vue'
-
-import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { billingApi } from '@/platform/billing/api/billingApi'
-import type { BillingStatusResponse } from '@comfyorg/billing-core'
 import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -21,6 +18,8 @@ import {
 } from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
 import { performSubscriptionCheckout } from '@/platform/billing/subscription/utils/subscriptionCheckoutUtil'
 import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
 const {
   mockGetCheckoutAttribution,

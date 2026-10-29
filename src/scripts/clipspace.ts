@@ -1,4 +1,5 @@
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { useApp } from '@/scripts/appInstance'

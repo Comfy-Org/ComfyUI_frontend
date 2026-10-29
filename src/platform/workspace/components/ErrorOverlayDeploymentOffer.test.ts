@@ -1,14 +1,9 @@
-import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
-import type {
-  MissingPackGroup,
-  SwapNodeGroup
-} from '@/platform/workflowErrors/panel/useErrorGroups'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -16,6 +11,12 @@ import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/s
 import enMessages from '@/locales/en/main.json'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
+import ErrorOverlay from '@/platform/workflowErrors/overlay/ErrorOverlay.vue'
+import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
+import type {
+  MissingPackGroup,
+  SwapNodeGroup
+} from '@/platform/workflowErrors/panel/useErrorGroups'
 import type {
   DeploymentCompatibility,
   WorkspaceDeployment
@@ -25,8 +26,6 @@ import type { DeploymentPickState } from '@/platform/workspace/deploymentPickSta
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-
-import ErrorOverlay from '@/platform/workflowErrors/overlay/ErrorOverlay.vue'
 
 const hoisted = vi.hoisted(() => ({
   rootGraph: undefined as unknown,

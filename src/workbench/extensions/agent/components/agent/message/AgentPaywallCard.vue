@@ -1,8 +1,7 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import Card from '@comfyorg/design-system/card/Card'
 import { computed } from 'vue'
-
-import Button from '@comfyorg/design-system/button/Button'
 
 import {
   DEFAULT_AGENT_PAYWALL_PRESENTATION,

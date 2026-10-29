@@ -254,31 +254,35 @@
 </template>
 
 <script setup lang="ts">
+import { TitleMode } from '@comfyorg/graph-model/globalEnums'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import { isTransparent } from '@comfyorg/shared-frontend-utils/colorUtil'
+import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { storeToRefs } from 'pinia'
 import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
+import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
-import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
-import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
-import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
+import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
+import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -286,6 +290,8 @@ import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
+import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import {
@@ -294,11 +300,12 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { getNodeErrorSeverity } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
-import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import {
   applyLightThemeColor,
   shapeVariantClass
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
+import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
@@ -307,31 +314,23 @@ import {
 } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
   locatorIdFromState
 } from '@/utils/graphTraversalUtil'
-import { cn } from '@comfyorg/tailwind-utils'
-import { isTransparent } from '@comfyorg/shared-frontend-utils/colorUtil'
+import { isVideoOutput } from '@/utils/litegraphUtil'
 
-import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
-import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
-
-import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
-import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
-import LivePreview from './LivePreview.vue'
-import NodeBloodDrips from './NodeBloodDrips.vue'
-import NodeContent from './NodeContent.vue'
-import NodeHeader from './NodeHeader.vue'
-import NodeFooter from './NodeFooter.vue'
-import NodeSlots from './NodeSlots.vue'
-import NodeWidgets from './NodeWidgets.vue'
 import {
   IMAGE_PREVIEW_HEIGHT_RESERVE,
   NODE_CONTENT_GAP
 } from './imagePreviewLayout'
+import LivePreview from './LivePreview.vue'
+import NodeBloodDrips from './NodeBloodDrips.vue'
+import NodeContent from './NodeContent.vue'
+import NodeFooter from './NodeFooter.vue'
+import NodeHeader from './NodeHeader.vue'
+import NodeSlots from './NodeSlots.vue'
+import NodeWidgets from './NodeWidgets.vue'
 
 const { nodeData } = defineProps<{
   nodeData: NodeState

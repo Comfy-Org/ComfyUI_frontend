@@ -1,17 +1,17 @@
-import { getActivePinia } from 'pinia'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import enMessages from '@/locales/en/main.json'
 import type { PartnerNodePolicy } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import PartnerNodeAccessPanel from './PartnerNodeAccessPanel.vue'
 

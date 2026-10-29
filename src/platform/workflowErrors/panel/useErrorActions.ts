@@ -1,6 +1,7 @@
-import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@comfyorg/telemetry'
+
+import { useExternalLink } from '@/composables/useExternalLink'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 export function useErrorActions() {
   const telemetry = useTelemetry()

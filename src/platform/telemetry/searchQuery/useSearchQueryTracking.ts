@@ -1,9 +1,8 @@
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { SearchSurface } from '@comfyorg/telemetry/types'
 import { debounce } from 'es-toolkit/compat'
 import { onScopeDispose, watch } from 'vue'
 import type { Ref } from 'vue'
-
-import { useTelemetry } from '@comfyorg/telemetry'
-import type { SearchSurface } from '@comfyorg/telemetry/types'
 
 const DEBOUNCE_MS = 500
 const MAX_QUERY_CHARS = 100

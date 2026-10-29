@@ -1,6 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   buildInviteLink,

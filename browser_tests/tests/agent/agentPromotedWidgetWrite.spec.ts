@@ -1,8 +1,5 @@
-import { expect } from '@playwright/test'
-
-import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
@@ -23,6 +20,7 @@ import {
   createPromotedWidgetWriteData
 } from '@e2e/fixtures/data/agent/promotedWidgetWrite'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
+import { expect } from '@playwright/test'
 
 const WORKFLOW_ID = '17412000-0000-4000-8000-000000000001'
 const MESSAGE_ID = '17412000-0000-4000-8000-000000000002'

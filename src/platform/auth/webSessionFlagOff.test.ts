@@ -1,39 +1,38 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import type { User, UserCredential } from 'firebase/auth'
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope } from 'vue'
-
 import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account-core/customerRecovery'
+import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import type {
   BillingCapabilities,
   BillingStatusResponse,
   ExchangeTokenResponse
 } from '@comfyorg/ingest-types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { User, UserCredential } from 'firebase/auth'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
-import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import {
   bootCloudIdentity,
   cloudSignIn
 } from '@/platform/auth/session/cloudIdentityBoot'
-import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
 import { useAuthStore } from '@/stores/authStore'
+import type { ComfyExtension } from '@/types/comfy'
 import {
   resultItemPreviewUrl,
   resultItemUrl,
   resultItemVhsAdvancedPreviewUrl
 } from '@/utils/resultItemUrl'
-import { useExtensionService } from '@/platform/extensions/services/extensionService'
-import type { ComfyApp } from '@/scripts/app'
-import type { ComfyExtension } from '@/types/comfy'
 
 type IdentityObserver = (user: User | null) => void
 

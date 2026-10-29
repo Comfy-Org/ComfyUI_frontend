@@ -1,8 +1,8 @@
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
-import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 
 function serialisedNode(
   widgets: readonly { name: string; value: TWidgetValue }[]

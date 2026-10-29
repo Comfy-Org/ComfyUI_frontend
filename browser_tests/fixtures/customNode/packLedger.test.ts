@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest'
 import {
   assertPackLedgerKeys,
   packLedgerFor
 } from '@e2e/fixtures/customNode/packLedger'
+import { describe, expect, it } from 'vitest'
 
 const ledger = {
   'ComfyUI-VideoHelperSuite': {

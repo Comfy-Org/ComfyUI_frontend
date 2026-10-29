@@ -1,9 +1,9 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { LayoutChange } from '@/renderer/core/layout/types'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 
 const GRAPH = createUuidv4()

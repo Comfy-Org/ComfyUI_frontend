@@ -1,3 +1,12 @@
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type {
+  AnimationItem,
+  BackgroundRenderModeType,
+  CameraType,
+  MaterialMode,
+  UpDirection
+} from '@comfyorg/viewport3d/load3d/interfaces'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 /**
  * Load3D Service - provides access to Load3D instances
  *
@@ -7,21 +16,12 @@
  */
 import { toRaw } from 'vue'
 
-import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import {
   cacheNodeToLoad3dMap,
   getNodeToLoad3dMapSync,
   removeLoad3d
 } from '@/extensions/core/load3d/load3dInstances'
-import type {
-  AnimationItem,
-  BackgroundRenderModeType,
-  CameraType,
-  MaterialMode,
-  UpDirection
-} from '@comfyorg/viewport3d/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 // Type for the useLoad3dViewer composable function
 // Using explicit type to avoid import() type annotations (lint rule)

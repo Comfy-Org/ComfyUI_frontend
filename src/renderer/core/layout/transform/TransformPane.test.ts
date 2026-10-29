@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
-
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
+import { defineComponent, h } from 'vue'
+
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'
 

@@ -6,10 +6,9 @@
  * mouseup for its global hook to catch — so the draft kept the previous image.
  */
 import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expect } from '@playwright/test'
 
 test.describe('Load Image upload persistence', { tag: '@widget' }, () => {
   test.describe.configure({ mode: 'default' })

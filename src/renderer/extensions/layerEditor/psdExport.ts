@@ -1,5 +1,3 @@
-import type { Layer, LayerMaskData, LinkedFile, Psd } from 'ag-psd'
-
 import type { Compositor } from '@comfyorg/layer-editor/compositor'
 import type { ContentEntry, ContentStore } from '@comfyorg/layer-editor/content'
 import type { Document } from '@comfyorg/layer-editor/document'
@@ -8,10 +6,12 @@ import type {
   SceneNode,
   Transform
 } from '@comfyorg/layer-editor/node'
-import type { CompactRect as Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import { getNodeKind } from '@comfyorg/layer-editor/nodeKind'
 import type { RenderNodeCtx } from '@comfyorg/layer-editor/nodeKind'
 import { placeBitmap } from '@comfyorg/layer-editor/render/place'
+import type { CompactRect as Rect } from '@comfyorg/shared-frontend-utils/geometry'
+import type { Layer, LayerMaskData, LinkedFile, Psd } from 'ag-psd'
+
 import { PSD_BLEND_MODES, fillToVectorContent } from './psdMapping'
 
 export interface PsdGuides {

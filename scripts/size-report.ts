@@ -1,7 +1,8 @@
-import { markdownTable } from 'markdown-table'
 import { existsSync } from 'node:fs'
 import { readFile, readdir } from 'node:fs/promises'
 import path from 'node:path'
+
+import { markdownTable } from 'markdown-table'
 import prettyBytes from 'pretty-bytes'
 
 import { getCategoryMetadata } from './bundle-categories'

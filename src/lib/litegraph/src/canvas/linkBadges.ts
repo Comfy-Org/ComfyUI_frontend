@@ -1,18 +1,17 @@
 import type { LLink } from '@comfyorg/graph-model/entityRegistry'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
+import { compareNodeIds } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { textOnColor } from '@comfyorg/shared-frontend-utils/colorUtil'
-
 import type {
   HasBoundingRect,
   PointTuple as Point,
   ReadOnlyRect,
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
-import { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
 
-import type { LinkId } from '@comfyorg/graph-model/linkId'
-import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
-import { compareNodeIds } from '@comfyorg/graph-model/nodeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
 import { overlapBounding } from '@/lib/litegraph/src/measure'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 

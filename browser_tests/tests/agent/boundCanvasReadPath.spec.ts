@@ -1,11 +1,6 @@
-import { expect, mergeTests } from '@playwright/test'
 import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
-
 import { webSocketFixture } from '@e2e/fixtures/ws'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import {
   WORKFLOW_ID as BOUND_WORKFLOW_ID,
   MESSAGE_DONE_EVENT,
@@ -13,6 +8,9 @@ import {
   pushAgentEvent,
   refuseDocSubscribePermanently
 } from '@e2e/tests/agent/agentPanelMocks'
+import { expect, mergeTests } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const test = mergeTests(agentTest, webSocketFixture)
 

@@ -1,12 +1,12 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import {
   RUN_APPROVAL_EVENT,
   RUN_APPROVAL_RESOLVED_EVENT,
   agentTurnLockTest as test
 } from '@e2e/fixtures/agentTurnLockFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 // The worst shape a stall can take, from a real user report: they asked for an
 // img2img workflow, then for img2video, and the panel went dead. They restarted

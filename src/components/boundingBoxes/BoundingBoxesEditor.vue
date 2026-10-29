@@ -117,18 +117,17 @@
 </template>
 
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
-import BoundingBoxesRegionForm from '@/components/boundingBoxes/BoundingBoxesRegionForm.vue'
-import BoundingBoxesRegionList from '@/components/boundingBoxes/BoundingBoxesRegionList.vue'
-import { BOUNDING_BOXES_HEADER_ACTIONS_ID } from '@/components/boundingBoxes/boundingBoxesHeaderActionsId'
 import Button from '@comfyorg/design-system/button/Button'
-import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
-import { useBoundingBoxes } from '@/composables/boundingBoxes/useBoundingBoxes'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTemplateRef } from 'vue'
+
+import { BOUNDING_BOXES_HEADER_ACTIONS_ID } from '@/components/boundingBoxes/boundingBoxesHeaderActionsId'
+import BoundingBoxesRegionForm from '@/components/boundingBoxes/BoundingBoxesRegionForm.vue'
+import BoundingBoxesRegionList from '@/components/boundingBoxes/BoundingBoxesRegionList.vue'
+import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
+import { useBoundingBoxes } from '@/composables/boundingBoxes/useBoundingBoxes'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const layouts = {

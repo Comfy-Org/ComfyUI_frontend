@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest'
-
 import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
+import { describe, expect, it } from 'vitest'
 
 import { selectTopupCheckoutBanner } from './topupCheckoutBanner'
 import type { TopupCheckoutBanner } from './topupCheckoutBanner'

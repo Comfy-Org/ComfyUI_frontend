@@ -1,13 +1,15 @@
-import { useAssetsStore } from '@/stores/assetsStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget, IComboWidget } from '@comfyorg/graph-model/widgets'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
 import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
-import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget, IComboWidget } from '@comfyorg/graph-model/widgets'
 import {
   scanAllModelCandidates,
   scanNodeModelCandidates,
@@ -19,10 +21,8 @@ import {
 } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import type { ReleaseModelOptions } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 type TestNode = Omit<LGraphNode, 'constructor'> & {
   _testExecutionId?: string
 }

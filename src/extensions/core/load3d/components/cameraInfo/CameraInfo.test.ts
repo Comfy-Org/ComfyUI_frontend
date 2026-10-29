@@ -1,10 +1,9 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { ComponentWidget } from '@/types/domWidget'
 

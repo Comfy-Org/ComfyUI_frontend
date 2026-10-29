@@ -13,12 +13,13 @@
 </template>
 
 <script setup lang="ts">
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
-import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
+import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
   reportPreloadError,
@@ -29,7 +30,6 @@ import { registerExtensionDialogService } from '@/services/dialogService'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
-import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 
 registerExtensionDialogService(createExtensionDialogService())
 const workspaceStore = useWorkspaceStore()

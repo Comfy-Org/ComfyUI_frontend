@@ -64,16 +64,16 @@
 </template>
 
 <script setup lang="ts">
-import { onUnmounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
-
 import Button from '@comfyorg/design-system/button/Button'
 import Field from '@comfyorg/design-system/field/Field'
 import FieldError from '@comfyorg/design-system/field/FieldError'
 import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
 import Input from '@comfyorg/design-system/input/Input'
 import Message from '@comfyorg/design-system/message/Message'
+import { onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import {
   CLOUD_AUTH_FIELD_CLASS,

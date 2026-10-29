@@ -2,9 +2,9 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import { buildPsdFromEditor } from '@/renderer/extensions/layerEditor/psdExport'
-import { useToast } from '@/components/ui/toast/toastStore'
 
 const PSD_MIME = 'image/vnd.adobe.photoshop'
 

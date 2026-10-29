@@ -31,10 +31,10 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import { useImageQuiet } from '@/composables/useImageQuiet'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   src,

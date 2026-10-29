@@ -1,9 +1,8 @@
-import { clamp } from 'es-toolkit/compat'
-
 import type {
   ReadOnlyRect,
   SizeTuple as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
+import { clamp } from 'es-toolkit/compat'
 
 /**
  * Basic width and height, with min/max constraints.

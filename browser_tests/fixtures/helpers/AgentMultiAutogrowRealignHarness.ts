@@ -1,9 +1,5 @@
-import type { Locator, Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
-import type { JobsListResponse } from '@comfyorg/ingest-types'
-import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
-import type { PromptResponse } from '@/platform/remote/comfyui/types'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   ComfyApiWorkflow,
   WorkflowJSON04
@@ -12,24 +8,12 @@ import {
   zComfyApiWorkflow,
   zComfyWorkflow
 } from '@comfyorg/graph-model/workflowSchema'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type {
-  AgentMessages,
-  AgentRunModePreference,
-  AgentTurnAccepted
-} from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import type { JobsListResponse } from '@comfyorg/ingest-types'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
-import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import {
   CONNECTED_SOCKET_SLOTS,
   EXPECTED_TARGETS,
@@ -48,7 +32,22 @@ import {
   sourceNodeDef
 } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
+import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
+import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
+import type { PromptResponse } from '@/platform/remote/comfyui/types'
+import type {
+  AgentMessages,
+  AgentRunModePreference,
+  AgentTurnAccepted
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 export const SENTINEL_PROMPT = 'multi-autogrow-realign-sentinel-prompt'
 export const SENTINEL_WIDTH = 777

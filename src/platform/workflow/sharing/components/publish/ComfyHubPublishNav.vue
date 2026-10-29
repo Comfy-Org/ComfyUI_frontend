@@ -64,15 +64,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
-import { vAutoAnimate } from '@formkit/auto-animate/vue'
-
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
-import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import { cn } from '@comfyorg/tailwind-utils'
+import { vAutoAnimate } from '@formkit/auto-animate/vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 
 type ComfyHubPrimaryStep = Exclude<ComfyHubPublishStep, 'profileCreation'>
 

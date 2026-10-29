@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { userSelectPageFixture as test } from '@e2e/fixtures/UserSelectPage'
+import { expect } from '@playwright/test'
 
 /**
  * Expects ComfyUI backend to be launched with `--multi-user` flag.

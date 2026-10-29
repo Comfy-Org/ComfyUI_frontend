@@ -1,13 +1,13 @@
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockShouldUseWorkspaceBilling = ref(true)

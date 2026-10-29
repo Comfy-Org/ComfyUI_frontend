@@ -1,8 +1,7 @@
-import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 const ICON_CLASS = 'icon-[lucide--star]'
 const BUTTON_LABEL = 'Test Action'

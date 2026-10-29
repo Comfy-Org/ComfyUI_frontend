@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Page, Request } from '@playwright/test'
 import type {
   BillingBalanceResponse,
   BillingOpStatusResponse,
@@ -7,9 +5,6 @@ import type {
   CreateTopupResponse,
   SavedPaymentMethod
 } from '@comfyorg/ingest-types'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
@@ -21,6 +16,10 @@ import {
   mockWorkspaceList,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 const OPERATION_ID = 'op-e2e-topup-outcome'
 const HOSTED_URL = 'https://pay.stripe.example/invoice/op-e2e-topup-outcome'

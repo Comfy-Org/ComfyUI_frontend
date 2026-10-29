@@ -43,19 +43,19 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { cn } from '@comfyorg/tailwind-utils'
 import { unrefElement, useTimeoutFn } from '@vueuse/core'
 import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import type { HTMLAttributes } from 'vue'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className } = defineProps<{
   class?: HTMLAttributes['class']

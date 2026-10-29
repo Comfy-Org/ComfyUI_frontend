@@ -89,16 +89,16 @@
 </template>
 
 <script setup lang="ts">
-import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { refAutoReset } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import Button from '@comfyorg/design-system/button/Button'
-import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'
 import InviteLinkList from '@/platform/workspace/components/dialogs/InviteLinkList.vue'
 import type { InviteLinkRow } from '@/platform/workspace/components/dialogs/InviteLinkList.vue'
+import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {

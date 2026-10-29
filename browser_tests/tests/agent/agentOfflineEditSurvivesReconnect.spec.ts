@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { agentOfflineEditTest as test } from '@e2e/fixtures/agentOfflineEditFixture'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Human edits made while the agent process is down',

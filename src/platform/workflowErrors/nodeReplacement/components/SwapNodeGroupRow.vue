@@ -161,14 +161,14 @@
 
 <script setup lang="ts">
 import Badge from '@comfyorg/design-system/badge/Badge'
-import { computed, ref } from 'vue'
-import { cn } from '@comfyorg/tailwind-utils'
-
-import { selectionEmphasisClass } from '@/platform/workflowErrors/panel/selectionEmphasis'
-import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import { selectionEmphasisClass } from '@/platform/workflowErrors/panel/selectionEmphasis'
 import type { SwapNodeGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
 
 const { group, highlighted } = defineProps<{

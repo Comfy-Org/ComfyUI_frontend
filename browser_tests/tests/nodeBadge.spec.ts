@@ -1,10 +1,10 @@
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { expect } from '@playwright/test'
 
 import type { ComfyApp } from '@/scripts/app'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 

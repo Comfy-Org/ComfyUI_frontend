@@ -1,7 +1,6 @@
+import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
-
-import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
 
 export class HdrViewerDialog extends BaseDialog {
   readonly resolution: Locator

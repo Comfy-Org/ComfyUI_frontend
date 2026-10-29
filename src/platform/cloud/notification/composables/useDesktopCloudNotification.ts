@@ -1,9 +1,9 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { onMounted, onUnmounted } from 'vue'
 
+import { useCloudNotificationDialog } from '@/platform/cloud/notification/composables/useCloudNotificationDialog'
 import { isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useCloudNotificationDialog } from '@/platform/cloud/notification/composables/useCloudNotificationDialog'
 import { electronAPI } from '@/utils/envUtil'
 
 /** Shows the one-time macOS desktop cloud notification after the host component mounts. */

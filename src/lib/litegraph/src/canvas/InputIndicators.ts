@@ -1,4 +1,5 @@
 import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
+
 import { isMiddleButtonHeld } from '@/base/pointerUtils'
 
 /**

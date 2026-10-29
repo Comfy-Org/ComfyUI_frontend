@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { computed, defineComponent } from 'vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { computed, defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { JobListItem } from '@/composables/queue/useJobList'

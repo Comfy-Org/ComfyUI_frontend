@@ -1,3 +1,4 @@
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -6,7 +7,6 @@ import {
   LGraphNode,
   Reroute
 } from '@/lib/litegraph/src/litegraph'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
 describe('geometry API contracts', () => {
   it('exposes entity-specific geometry write APIs', () => {

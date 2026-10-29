@@ -1,13 +1,13 @@
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { i18n, loadLocale } from '@/i18n'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
 
 import { linkHideSnap } from './linkHideTransition'

@@ -1,25 +1,24 @@
-import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
   agentTest as test,
   bootAgentApp,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
-import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 /**
  * A hand-wired link on an autogrow node's spare slot survives a later agent

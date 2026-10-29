@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
+
 import SkillReference from './SkillReference.vue'
 
 const { skill, scope } = defineProps<{

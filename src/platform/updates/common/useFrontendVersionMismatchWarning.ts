@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+
 import { useVersionCompatibilityStore } from './versionCompatibilityStore'
 
 interface UseFrontendVersionMismatchWarningOptions {

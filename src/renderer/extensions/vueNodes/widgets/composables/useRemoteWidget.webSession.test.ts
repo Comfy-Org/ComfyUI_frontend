@@ -1,9 +1,8 @@
+import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
-import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'

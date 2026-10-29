@@ -48,9 +48,9 @@
 </template>
 
 <script setup lang="ts">
+import Slider from '@comfyorg/design-system/slider/Slider'
 import { useI18n } from 'vue-i18n'
 
-import Slider from '@comfyorg/design-system/slider/Slider'
 import { useVideoEditFormats } from '@/composables/video/useVideoEditFormats'
 
 const { currentTime, totalDuration } = defineProps<{

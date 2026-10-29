@@ -4,42 +4,39 @@ import type {
   SubgraphInput,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-import { remove } from 'es-toolkit'
-import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
+import type {
+  ItemLocator,
+  LinkNetwork
+} from '@comfyorg/graph-model/linkNetwork'
+import type {
+  ConnectingLink,
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import { remove } from 'es-toolkit'
 
-import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-
+import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { EventListeners } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
-import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import type {
-  ConnectingLink,
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@comfyorg/graph-model/slots'
-import type {
-  ItemLocator,
-  LinkNetwork
-} from '@comfyorg/graph-model/linkNetwork'
+import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
 import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-
 import { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
-
 import { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
-import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 
 import { FloatingRenderLink } from './FloatingRenderLink'
 import { MovingInputLink } from './MovingInputLink'

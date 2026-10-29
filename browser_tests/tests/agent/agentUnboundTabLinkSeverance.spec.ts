@@ -1,9 +1,5 @@
-import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
-import { expect, mergeTests } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
-
+import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import defaultWorkflow from '@e2e/assets/default.json' with { type: 'json' }
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import {
@@ -13,6 +9,9 @@ import {
   pushAgentEvent,
   sentTurn
 } from '@e2e/tests/agent/agentPanelMocks'
+import { expect, mergeTests } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const test = mergeTests(agentTest, webSocketFixture)
 

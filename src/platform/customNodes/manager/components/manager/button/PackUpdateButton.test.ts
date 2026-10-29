@@ -1,14 +1,14 @@
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import en from '@/locales/en/main.json'
 import { useToast } from '@/components/ui/toast/toastStore'
+import en from '@/locales/en/main.json'
+import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import * as registry from '@/services/comfyRegistryService'
 import type { components } from '@/types/comfyRegistryTypes'
-import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 
 import PackUpdateButton from './PackUpdateButton.vue'
 

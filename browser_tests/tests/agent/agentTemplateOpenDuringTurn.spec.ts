@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { agentTurnLockTest as test } from '@e2e/fixtures/agentTurnLockFixture'
 import { AgentTemplates } from '@e2e/tests/agent/agentTemplates'
+import { expect } from '@playwright/test'
 
 test.use({ connectWebSocketToServer: false })
 

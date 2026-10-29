@@ -1,26 +1,28 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
-import { useErrorHandling } from '@/composables/useErrorHandling'
-import { t } from '@/i18n'
-import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
-import { computed, onScopeDispose, ref, shallowRef, toValue, watch } from 'vue'
-import { createSharedComposable, until } from '@vueuse/core'
-
-import {
-  KEY_TO_TIER,
-  getTierFeatures
-} from '@/platform/billing/subscription/constants/tierPricing'
-import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
-import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
-import { isCloud } from '@/platform/distribution/types'
 import type {
   PreviewSubscribeOptions,
   SubscribeOptions
 } from '@comfyorg/billing-core'
+import { createSharedComposable, until } from '@vueuse/core'
+import { computed, onScopeDispose, ref, shallowRef, toValue, watch } from 'vue'
+
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { t } from '@/i18n'
 import {
   onBillingRefresh,
   provideCheckoutOperationReader
 } from '@/platform/billing/billingRefresh'
 import type { BillingRefreshScope } from '@/platform/billing/billingRefresh'
+import type { WorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
+import { useWorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
+import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
+import {
+  KEY_TO_TIER,
+  getTierFeatures
+} from '@/platform/billing/subscription/constants/tierPricing'
+import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
+import { isCloud } from '@/platform/distribution/types'
+import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 import type {
@@ -34,8 +36,6 @@ import type {
 } from './types'
 import { useBillingRouting } from './useBillingRouting'
 import { useLegacyBilling } from './useLegacyBilling'
-import type { WorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
-import { useWorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
 
 // Legacy per-member team plans use a hyphenated `team-{tier}-{cycle}` slug; the
 // new credit-slider plan uses an underscore `team_per_credit_{cycle}` slug and

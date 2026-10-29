@@ -1,7 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-
 import type * as VueRouter from 'vue-router'
 
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'

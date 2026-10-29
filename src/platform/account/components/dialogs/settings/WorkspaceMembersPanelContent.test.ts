@@ -1,15 +1,14 @@
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import WorkspaceMembersPanelContent from '@/platform/account/components/dialogs/settings/WorkspaceMembersPanelContent.vue'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-
-import WorkspaceMembersPanelContent from '@/platform/account/components/dialogs/settings/WorkspaceMembersPanelContent.vue'
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))

@@ -1,6 +1,8 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   computed,
   defineAsyncComponent,
@@ -9,19 +11,16 @@ import {
   markRaw,
   ref
 } from 'vue'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
-
-import { testI18n } from '@/utils/__tests__/testI18n'
-import WidgetDynamicGroupRow from '@/renderer/extensions/vueNodes/widgets/components/WidgetDynamicGroupRow.vue'
-import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
-import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
+import WidgetDynamicGroupRow from '@/renderer/extensions/vueNodes/widgets/components/WidgetDynamicGroupRow.vue'
+import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
+import { testI18n } from '@/utils/__tests__/testI18n'
 
 const observers: TestResizeObserver[] = []
 class TestResizeObserver implements ResizeObserver {

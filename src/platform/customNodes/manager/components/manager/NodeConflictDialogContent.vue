@@ -155,12 +155,12 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import ContentDivider from '@comfyorg/design-system/common/ContentDivider'
 import { filter, flatMap, map, some } from 'es-toolkit/compat'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ContentDivider from '@comfyorg/design-system/common/ContentDivider'
-import Button from '@comfyorg/design-system/button/Button'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 import type {
   ConflictDetail,

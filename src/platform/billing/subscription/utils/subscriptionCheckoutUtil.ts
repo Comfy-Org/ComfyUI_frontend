@@ -1,5 +1,14 @@
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type {
+  CheckoutAttributionMetadata,
+  PaymentIntentSource
+} from '@comfyorg/telemetry/types'
+
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
+import { openBillingUrl } from '@/platform/billing/billingTab'
 import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import type {
   PendingSubscriptionCheckoutAttempt,
@@ -10,14 +19,7 @@ import {
   persistPendingSubscriptionCheckoutAttempt,
   withPendingCheckoutAttemptId
 } from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
-import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import type {
-  CheckoutAttributionMetadata,
-  PaymentIntentSource
-} from '@comfyorg/telemetry/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
   BillingFailureError,
@@ -27,9 +29,8 @@ import {
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
-import type { BillingCycle } from './subscriptionTierRank'
 import { loadCheckoutAttributionModule } from './checkoutAttributionLoader'
-import { openBillingUrl } from '@/platform/billing/billingTab'
+import type { BillingCycle } from './subscriptionTierRank'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
 

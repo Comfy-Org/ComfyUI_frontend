@@ -2,10 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
+import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
-
-import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 
 vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 

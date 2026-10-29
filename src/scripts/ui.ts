@@ -1,26 +1,27 @@
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { Point2D as Position2D } from '@comfyorg/shared-frontend-utils/geometry'
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
+import type {
+  WorkflowOpenSource,
+  WorkflowQueueIntent
+} from '@comfyorg/telemetry/types'
+
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type {
   ExecutedWsMessage,
   ExecutionErrorWsMessage,
   StatusWsMessageStatus
 } from '@/platform/remote/comfyui/execution/types'
-import type {
-  WorkflowOpenSource,
-  WorkflowQueueIntent
-} from '@comfyorg/telemetry/types'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 
 import { api } from './api'
 import { ComfyDialog as _ComfyDialog } from './ui/dialog'
-import { $el as _$el } from './ui/utils'
 import { ComfySettingsDialog } from './ui/settings'
 import { toggleSwitch } from './ui/toggleSwitch'
+import { $el as _$el } from './ui/utils'
 
 export const ComfyDialog = _ComfyDialog
 export const $el = _$el

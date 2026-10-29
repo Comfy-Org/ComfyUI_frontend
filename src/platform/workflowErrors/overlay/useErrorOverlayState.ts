@@ -1,17 +1,17 @@
+import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { storeToRefs } from 'pinia'
 
 import { isIssuesTabEnabled } from '@/platform/settings/missingWarningVisibility'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
+import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
+import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
 import { useErrorGroups } from '@/platform/workflowErrors/panel/useErrorGroups'
 import type {
   MissingPackGroup,
   SwapNodeGroup
 } from '@/platform/workflowErrors/panel/useErrorGroups'
-import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
-import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
-import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 type OverlayCopy = { title?: string; message: string }
 

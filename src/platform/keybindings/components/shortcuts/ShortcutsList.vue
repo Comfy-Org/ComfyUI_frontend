@@ -49,10 +49,10 @@
 </template>
 
 <script setup lang="ts">
+import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const { t } = useI18n()

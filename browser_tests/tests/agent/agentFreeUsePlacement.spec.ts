@@ -1,18 +1,17 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import type { BillingStatusResponse } from '@comfyorg/ingest-types'
-
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   agentTest,
   bootAgentApp,
   mockAgentTurnApi
 } from '@e2e/fixtures/agentPanelFixture'
-import { DEFAULT_BILLING_STATUS } from '@e2e/fixtures/utils/cloudBillingMocks'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
+import { DEFAULT_BILLING_STATUS } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expect, mergeTests } from '@playwright/test'
+
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const FLAG = 'agent-free-use-message-placement'
 const PLACEMENT = 'near-composer'

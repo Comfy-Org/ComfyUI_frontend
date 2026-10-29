@@ -24,14 +24,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import FormItem from '@/components/common/FormItem.vue'
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import FormItem from '@/components/common/FormItem.vue'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type {

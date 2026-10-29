@@ -14,10 +14,10 @@
 </template>
 
 <script setup lang="ts">
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import { useRafFn } from '@vueuse/core'
 import { computed, useTemplateRef, watch } from 'vue'
 
-import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'

@@ -1,9 +1,10 @@
-import { useDialogService } from '@/services/dialogService'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import * as utils from '@/scripts/utils'
+import { useDialogService } from '@/services/dialogService'
+
 import { useWorkflowActionsService } from './workflowActionsService'
 
 vi.mock(import('@/services/dialogService'))

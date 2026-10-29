@@ -1,17 +1,16 @@
-import { render, screen, within } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-
-import { i18n } from '@/i18n'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUsePlacement
 } from '@comfyorg/telemetry/types'
-
 import { AGENT_FREE_USE_PLACEMENTS } from '@comfyorg/telemetry/types'
+import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
+
+import { i18n } from '@/i18n'
+import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
 
 import AgentPanel from './AgentPanel.vue'
-import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()

@@ -1,3 +1,15 @@
+import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import {
+  agentTest as test,
+  bootAgentApp
+} from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
@@ -7,19 +19,6 @@ import type {
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import {
-  agentTest as test,
-  bootAgentApp
-} from '@e2e/fixtures/agentPanelFixture'
-import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { nextFrame } from '@e2e/fixtures/utils/timing'
-import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 // Agent template placement (ADR-CRDT-PLACEMENT-0035): when the in-app Comfy
 // Agent inserts a workflow template onto a canvas that already has a node on

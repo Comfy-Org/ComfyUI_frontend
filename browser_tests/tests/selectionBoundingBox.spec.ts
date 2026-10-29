@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { measureSelectionBounds } from '@e2e/fixtures/utils/boundsUtils'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 const SUBGRAPH_ID = '2'
 const REGULAR_ID = '3'

@@ -1,6 +1,7 @@
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+
 import { BaseWidget, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { DrawWidgetOptions } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

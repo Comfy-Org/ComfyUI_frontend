@@ -9,10 +9,10 @@
 </template>
 
 <script setup lang="ts">
+import { useTelemetry } from '@comfyorg/telemetry'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 

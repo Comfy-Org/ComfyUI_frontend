@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
+import { inlineReferencesTest as test } from '@e2e/fixtures/agentInlineReferencesFixture'
 import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { inlineReferencesTest as test } from '@e2e/fixtures/agentInlineReferencesFixture'
 import { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expect } from '@playwright/test'
 
 test(
   'keeps repeated file drops in one tray item while pending and after uploading',

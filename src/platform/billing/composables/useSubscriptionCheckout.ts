@@ -3,35 +3,31 @@ import type {
   CheckoutEntryFlow,
   SubscriptionCheckoutType
 } from '@comfyorg/account-core/billing'
-import { computed, onScopeDispose, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import type { ToastId } from '@/types/toastId'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import type { CheckoutTierKey } from '@/platform/billing/composables/types'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import { useBillingDialogsAccess } from '@/platform/billing/subscription/composables/billingDialogsAccess'
 import { amountDueTodayChanged } from '@comfyorg/account-ui/billing/checkout'
-import { getTeamPlanSlug } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
-import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
-import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
-import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
-import { api } from '@/scripts/api'
-import { useAuthStore } from '@/stores/authStore'
-import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import type {
   Plan,
   PreviewSubscribeOptions,
   PreviewSubscribeResponse
 } from '@comfyorg/billing-core'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
+import { computed, onScopeDispose, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { billingApi } from '@/platform/billing/api/billingApi'
+import { openBillingUrl } from '@/platform/billing/billingTab'
+import { readOnRail } from '@/platform/billing/composables/readOnRail'
+import type { CheckoutTierKey } from '@/platform/billing/composables/types'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { useSubscriptionRail } from '@/platform/billing/composables/useSubscriptionRail'
 import { openHostedBillingTab } from '@/platform/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import type { SettledSubscribeResponse } from '@/platform/billing/sdk/subscriptionOperationView'
@@ -39,13 +35,11 @@ import {
   SettledOperationError,
   billingClientOf
 } from '@/platform/billing/sdk/subscriptionOperationView'
-import { readOnRail } from '@/platform/billing/composables/readOnRail'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
-import { useSubscriptionRail } from '@/platform/billing/composables/useSubscriptionRail'
-import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
-import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { useBillingDialogsAccess } from '@/platform/billing/subscription/composables/billingDialogsAccess'
+import { getTeamPlanSlug } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
+import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
+import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import {
   bindOperationToCheckoutJourney,
   getActiveCheckoutJourney,
@@ -64,7 +58,13 @@ import {
   savePendingSubscriptionCheckout
 } from '@/platform/billing/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/billing/utils/workspaceCheckoutTelemetry'
-import { openBillingUrl } from '@/platform/billing/billingTab'
+import { isCloud } from '@/platform/distribution/types'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
+import type { ToastId } from '@/types/toastId'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
 interface SelectedTeamCheckout {

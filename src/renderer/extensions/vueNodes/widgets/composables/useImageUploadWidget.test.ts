@@ -1,15 +1,15 @@
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { IComboWidget } from '@comfyorg/graph-model/widgets'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IComboWidget } from '@comfyorg/graph-model/widgets'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
+import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 type CapturedImageUploadOptions = Parameters<typeof useNodeImageUpload>[1]
 

@@ -1,23 +1,22 @@
 import { mint, readSchemaVersion } from '@comfyorg/comfy-multi-player'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { DocSubscribedData, DocUpdateData } from '@comfyorg/ingest-types'
+import { render } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import * as Y from 'yjs'
 
-import { render } from '@testing-library/vue'
-
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import {
   DOC_HOST_MINTED_SINK_UPDATE_B64,
   DOC_HOST_MULTI_PLAYER_VERSION,
   DOC_HOST_SCHEMA_VERSION
 } from './__fixtures__/docHostMintedSink'
 import { encodeBase64 } from './docFrameClient'
-import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 const sent: string[] = []

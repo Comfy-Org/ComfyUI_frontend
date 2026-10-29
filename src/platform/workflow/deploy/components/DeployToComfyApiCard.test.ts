@@ -1,3 +1,4 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -8,7 +9,6 @@ import { createI18n } from 'vue-i18n'
 
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
 import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'

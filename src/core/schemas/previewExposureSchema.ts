@@ -1,7 +1,6 @@
-import { z } from 'zod'
-
-import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
+import { z } from 'zod'
 
 import { parseNodePropertyArray } from './parseNodePropertyArray'
 

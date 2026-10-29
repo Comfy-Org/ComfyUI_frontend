@@ -1,10 +1,10 @@
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { beforeEach, describe, expect, test } from 'vitest'
 
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { renameWidget } from '@/utils/widgetUtil'
 
 class LabelledWidgetNode extends LGraphNode {

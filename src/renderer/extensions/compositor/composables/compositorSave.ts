@@ -1,12 +1,13 @@
+import type { SceneNode } from '@comfyorg/layer-editor/node'
 import type { CompactSize } from '@comfyorg/shared-frontend-utils/geometry'
+
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { extractLayerState } from '@/renderer/extensions/compositor/composables/compositorLayerState'
 import { setCompositorWidgetValue } from '@/renderer/extensions/compositor/composables/compositorWidgets'
 import {
   getCompositorInputsFingerprint,
   setCompositorPreviewOverride
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
-import type { SceneNode } from '@comfyorg/layer-editor/node'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 export interface CompositorLayerStateSession {
   canvasSize: { value: CompactSize }

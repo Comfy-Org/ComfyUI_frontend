@@ -150,20 +150,20 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { computed, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
-import Button from '@comfyorg/design-system/button/Button'
-import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import { MONTHLY_SUBSCRIPTION_PRICE } from '@/platform/billing/subscription/constants/subscriptionPricesConfig'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import PricingTable from '@/platform/billing/subscription/components/PricingTable.vue'
 import SubscribeButton from '@/platform/billing/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/billing/subscription/components/SubscriptionBenefits.vue'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { MONTHLY_SUBSCRIPTION_PRICE } from '@/platform/billing/subscription/constants/subscriptionPricesConfig'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
-import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 
 const { onClose, reason, paymentIntentSource, onChooseTeam } = defineProps<{
   onClose: () => void

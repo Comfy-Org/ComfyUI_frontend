@@ -1,14 +1,14 @@
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Locator } from '@playwright/test'
 
 import {
   BADGE_GAP,
   BADGE_ROW_PITCH
 } from '@/lib/litegraph/src/canvas/linkBadges'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
 export class LinkVisibilityHelper {
   public readonly promptInput: Locator

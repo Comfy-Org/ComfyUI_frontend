@@ -1,17 +1,17 @@
-import { computed, effectScope, ref, watch } from 'vue'
-
 import type {
   BillingPlansResponse,
   Plan,
   TeamCreditStops
 } from '@comfyorg/billing-core'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { computed, effectScope, ref, watch } from 'vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { t } from '@/i18n'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { t } from '@/i18n'
 
 const plans = ref<Plan[]>([])
 const currentPlanSlug = ref<string | null>(null)

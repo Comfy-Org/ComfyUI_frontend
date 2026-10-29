@@ -1,14 +1,14 @@
-import { useToast } from '@/components/ui/toast/toastStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
-import type { Mock } from 'vitest'
 
 let mockInvalidateInputs: Mock<
   ReturnType<typeof useAssetsStore>['inputAssets']['invalidate']

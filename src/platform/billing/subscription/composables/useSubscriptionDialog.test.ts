@@ -1,35 +1,34 @@
-import { useDialogStore } from '@/stores/dialogStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { BillingOperationRecordView } from '@/platform/billing/sdk/operationRecordView'
-import { fakeBillingSdk } from '@/platform/billing/sdk/billingSdkTestUtils'
-import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
-import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
-import { useAuthStore } from '@/stores/authStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
-
-import { useTelemetry } from '@comfyorg/telemetry'
-import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
-import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
-import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
-
-import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useDialogService } from '@/services/dialogService'
-import { openTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
-import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import type {
   BillingSubscriptionStatus,
   TeamCreditStops,
   TeamCreditStopSummary
 } from '@comfyorg/billing-core'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { openTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
+import { fakeBillingSdk } from '@/platform/billing/sdk/billingSdkTestUtils'
+import type { BillingOperationRecordView } from '@/platform/billing/sdk/operationRecordView'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import {
   getPendingSubscriptionCheckout,
   savePendingSubscriptionCheckout
 } from '@/platform/billing/utils/pendingSubscriptionCheckout'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useDialogService } from '@/services/dialogService'
+import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import { useSubscriptionDialog } from './useSubscriptionDialog'
 

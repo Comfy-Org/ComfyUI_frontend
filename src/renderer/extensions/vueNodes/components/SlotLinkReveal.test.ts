@@ -1,3 +1,9 @@
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,12 +18,6 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { app } from '@/scripts/app'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
-import {
-  toOwningGraphId,
-  toRootGraphId
-} from '@comfyorg/graph-model/graphScopeId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import InputSlot from './InputSlot.vue'
 import OutputSlot from './OutputSlot.vue'

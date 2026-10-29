@@ -1,5 +1,6 @@
-import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { reportError } from '@comfyorg/telemetry/reportError'
+
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 
 /**
  * Helpers for the shareable per-invite links (DES-1010).

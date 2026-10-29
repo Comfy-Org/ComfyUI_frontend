@@ -1,10 +1,10 @@
-import { getActivePinia } from 'pinia'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import EditableText from '@comfyorg/design-system/common/EditableText'
 import { fireEvent, render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import EditableText from '@comfyorg/design-system/common/EditableText'
-import Badge from '@comfyorg/design-system/badge/Badge'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { InjectKeyHandleEditLabelFunction } from '@/types/treeExplorerTypes'

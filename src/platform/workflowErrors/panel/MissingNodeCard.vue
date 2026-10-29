@@ -92,18 +92,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { compare, valid } from 'semver'
 import Button from '@comfyorg/design-system/button/Button'
 import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
+import { compare, valid } from 'semver'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { isCloud } from '@/platform/distribution/types'
-import { useWorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
 import MissingPackGroupRow from '@/platform/workflowErrors/panel/MissingPackGroupRow.vue'
 import { someNodeTypeInSelection } from '@/platform/workflowErrors/panel/selectionEmphasis'
+import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
+import { useWorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 import MissingNodeDeploymentOffer from '@/platform/workspace/components/MissingNodeDeploymentOffer.vue'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 const { showInfoButton, missingPackGroups } = defineProps<{
   showInfoButton: boolean

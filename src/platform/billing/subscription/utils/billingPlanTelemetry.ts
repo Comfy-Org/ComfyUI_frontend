@@ -2,12 +2,12 @@ import type {
   BillingCycle,
   SubscriptionCheckoutTier
 } from '@comfyorg/account-core/billing'
-
-import { toTierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import type {
   SubscriptionDuration,
   SubscriptionTier
 } from '@comfyorg/billing-core'
+
+import { toTierKey } from '@/platform/billing/subscription/constants/tierPricing'
 
 /** The plan a customer is on, in the telemetry vocabulary; absent when it names none. */
 export function toCurrentTier(

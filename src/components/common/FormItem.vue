@@ -30,11 +30,17 @@
 </template>
 
 <script setup lang="ts">
+import CustomFormValue from '@comfyorg/design-system/common/CustomFormValue'
+import Input from '@comfyorg/design-system/input/Input'
+import Switch from '@comfyorg/design-system/switch/Switch'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { markRaw } from 'vue'
 import type { Component } from 'vue'
 
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import BackgroundImageUpload from '@/components/common/BackgroundImageUpload.vue'
-import CustomFormValue from '@comfyorg/design-system/common/CustomFormValue'
 import FormColorPicker from '@/components/common/FormColorPicker.vue'
 import FormImageUpload from '@/components/common/FormImageUpload.vue'
 import FormNumberField from '@/components/common/FormNumberField.vue'
@@ -42,12 +48,6 @@ import FormRadioGroup from '@/components/common/FormRadioGroup.vue'
 import InputKnob from '@/components/common/InputKnob.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
 import UrlInput from '@/components/common/UrlInput.vue'
-import Input from '@comfyorg/design-system/input/Input'
-import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
-import Switch from '@comfyorg/design-system/switch/Switch'
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { FormItem } from '@/platform/settings/types'
 
 const formValue = defineModel<unknown>('formValue')

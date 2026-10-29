@@ -1,8 +1,6 @@
+import type { reportError } from '@comfyorg/telemetry/reportError'
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { reportError } from '@comfyorg/telemetry/reportError'
-import { api } from '@/scripts/api'
 
 import { createEmptyIndex } from '@/platform/workflow/persistence/base/draftCacheV2'
 import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
@@ -12,6 +10,8 @@ import {
   resetStorageAvailable
 } from '@/platform/workflow/persistence/base/storageIO'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { api } from '@/scripts/api'
+
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
 vi.mock(import('@/scripts/api'))

@@ -1,21 +1,20 @@
-import { computed } from 'vue'
-
-import type { ComputedRef } from 'vue'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
-import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { UUID } from '@/utils/uuid'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-
-import { isCurveData } from '@/components/curve/curveUtils'
 import type { CurveData } from '@comfyorg/graph-model/curve'
-import { createPromotedHostWidgetIdLookup } from '@/core/graph/subgraph/promotionUtils'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
-import { hexToInt } from '@comfyorg/shared-frontend-utils/colorUtil'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { hexToInt } from '@comfyorg/shared-frontend-utils/colorUtil'
+import { computed } from 'vue'
+import type { ComputedRef } from 'vue'
+
+import { isCurveData } from '@/components/curve/curveUtils'
+import { createPromotedHostWidgetIdLookup } from '@/core/graph/subgraph/promotionUtils'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { UUID } from '@/utils/uuid'
 
 interface AutogrowGroup {
   max: number

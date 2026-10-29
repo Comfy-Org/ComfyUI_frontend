@@ -1,7 +1,6 @@
+import { TestIds } from '@e2e/fixtures/selectors'
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
-
-import { TestIds } from '@e2e/fixtures/selectors'
 
 type ToastKind = 'error' | 'success' | 'warning' | 'loading'
 

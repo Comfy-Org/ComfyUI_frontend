@@ -1,12 +1,12 @@
-import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import {
   LayerEditorDialogContent,
   LayerEditorDialogHeader,
   layerEditorDialogProps
 } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
-import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToast } from '@/components/ui/toast/toastStore'
+import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 

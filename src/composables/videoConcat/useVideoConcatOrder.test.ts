@@ -1,8 +1,7 @@
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { VideoConcatValue } from '@comfyorg/graph-model/widgets'
 import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
-
-import type { VideoConcatValue } from '@comfyorg/graph-model/widgets'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
 
 import { useVideoConcatOrder } from './useVideoConcatOrder'
 import type { ConcatClipSlot } from './videoConcatOrder'

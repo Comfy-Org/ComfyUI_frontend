@@ -1,11 +1,11 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 const mockCanvas = vi.hoisted(() => ({

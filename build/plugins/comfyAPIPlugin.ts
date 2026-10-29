@@ -1,4 +1,5 @@
 import path from 'path'
+
 import type { Plugin } from 'vite'
 
 interface ShimResult {

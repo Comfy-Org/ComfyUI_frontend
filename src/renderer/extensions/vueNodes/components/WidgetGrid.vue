@@ -85,19 +85,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, useTemplateRef, watch } from 'vue'
-
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, nextTick, useTemplateRef, watch } from 'vue'
+
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 

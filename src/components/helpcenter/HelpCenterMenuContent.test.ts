@@ -9,10 +9,10 @@ import { createI18n } from 'vue-i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import enCommands from '@/locales/en/commands.json' with { type: 'json' }
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useReleaseStore } from '@/platform/updates/common/releaseStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 
 import HelpCenterMenuContent from './HelpCenterMenuContent.vue'
 

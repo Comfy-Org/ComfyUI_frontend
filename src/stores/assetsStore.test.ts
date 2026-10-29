@@ -2,9 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, toValue, watch } from 'vue'
 
-import { useAssetsStore } from '@/stores/assetsStore'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   AssetItem,
   AssetResponse
@@ -12,6 +10,8 @@ import type {
 import { assetService } from '@/platform/assets/services/assetService'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 vi.mock(import('@/scripts/api'))
 

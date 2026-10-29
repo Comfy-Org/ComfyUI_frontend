@@ -1,10 +1,10 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useEventListener } from '@vueuse/core'
 
 import {
   CANVAS_CLIPBOARD_ID_KEY,
   CANVAS_CLIPBOARD_KEY
 } from '@/lib/litegraph/src/canvas/clipboardStorage'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   hasTextSelection,

@@ -1,13 +1,13 @@
-import { useToast } from '@/components/ui/toast/toastStore'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { api } from '@/scripts/api'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   ManagerUIState,
   __resetIncompatibleToastGuard,
   useManagerState
 } from '@/platform/customNodes/manager/composables/useManagerState'
+import { api } from '@/scripts/api'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 // Mock dependencies that are not stores
 vi.mock(import('@/i18n'))

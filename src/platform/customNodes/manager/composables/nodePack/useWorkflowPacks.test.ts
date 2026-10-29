@@ -1,16 +1,16 @@
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowPacks as useSharedWorkflowPacks } from '@/platform/customNodes/manager/composables/nodePack/useWorkflowPacks'
 import { app } from '@/scripts/app'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { useWorkflowPacks as useSharedWorkflowPacks } from '@/platform/customNodes/manager/composables/nodePack/useWorkflowPacks'
 
 type NodePack = components['schemas']['Node']
 

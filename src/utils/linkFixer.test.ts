@@ -1,18 +1,17 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
-
-import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
-import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
-import { useLinkStore } from '@/stores/linkStore'
-import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   ISerialisedGraph,
   ISerialisedNode
 } from '@comfyorg/graph-model/serialisation'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
 
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
+import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
+import { useLinkStore } from '@/stores/linkStore'
 
 import { fixBadLinks } from './linkFixer'
 

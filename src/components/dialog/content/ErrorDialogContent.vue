@@ -67,21 +67,21 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from '@/components/ui/toast/toastStore'
+import Button from '@comfyorg/design-system/button/Button'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
-import Button from '@comfyorg/design-system/button/Button'
-import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { resolveRunErrorMessage } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
 import type { RunErrorMessageSource } from '@/platform/workflowErrors/errorCatalog/types'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { generateErrorReport } from '@/utils/errorReportUtil'
 import type { ErrorReportData } from '@/utils/errorReportUtil'

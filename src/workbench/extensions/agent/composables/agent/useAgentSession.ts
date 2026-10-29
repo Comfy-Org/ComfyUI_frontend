@@ -1,12 +1,5 @@
-import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
-import { useIntervalFn } from '@vueuse/core'
-import { delay, xor } from 'es-toolkit'
-import { computed, ref, watch } from 'vue'
-import { ZodError } from 'zod'
-
-import { i18n } from '@/i18n'
-import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
@@ -17,6 +10,13 @@ import type {
   AgentThreadStartSource,
   AgentWorkflowBindSource
 } from '@comfyorg/telemetry/types'
+import { useIntervalFn } from '@vueuse/core'
+import { delay, xor } from 'es-toolkit'
+import { computed, ref, watch } from 'vue'
+import { ZodError } from 'zod'
+
+import { i18n } from '@/i18n'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
 import {
   getWorkspaceId,
@@ -40,6 +40,11 @@ import {
   zDisownedWorkflowError,
   zTurnInProgressError
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type {
+  AskUserResolution,
+  AssistantMessage
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { toAskResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   agentRequestFailureFingerprint,
   describeAgentRequestFailure
@@ -55,11 +60,6 @@ import type {
   OpenTabsSnapshot,
   PostMessageInput
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
-import type {
-  AskUserResolution,
-  AssistantMessage
-} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
-import { toAskResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   isAttachmentKind,
   normalizeAgentTranscript

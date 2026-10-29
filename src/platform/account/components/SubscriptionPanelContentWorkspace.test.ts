@@ -1,27 +1,3 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
-import { runDeniedPaymentPastDueFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
-import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { getActivePinia } from 'pinia'
-import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import { computed, nextTick, ref, toRef } from 'vue'
-import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
-
-import type {
-  BillingType,
-  SubscriptionInfo
-} from '@/platform/billing/composables/types'
-import enMessages from '@/locales/en/main.json'
-import * as tierPricing from '@/platform/billing/subscription/constants/tierPricing'
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
@@ -29,11 +5,34 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary
 } from '@comfyorg/billing-core'
-import type { BillingBannerKind } from '@/platform/billing/composables/useBillingBanner'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, nextTick, ref, toRef } from 'vue'
+import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json'
 import SubscriptionPanelContentWorkspace from '@/platform/account/components/SubscriptionPanelContentWorkspace.vue'
+import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
+import { runDeniedPaymentPastDueFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import type {
+  BillingType,
+  SubscriptionInfo
+} from '@/platform/billing/composables/types'
+import type { BillingBannerKind } from '@/platform/billing/composables/useBillingBanner'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
+import * as tierPricing from '@/platform/billing/subscription/constants/tierPricing'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
 const mockBillingBanner = vi.hoisted(() => ({

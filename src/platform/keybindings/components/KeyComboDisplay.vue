@@ -12,10 +12,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import Badge from '@comfyorg/design-system/badge/Badge'
 import type { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
+import { computed } from 'vue'
 
 const { keyCombo, isModified = false } = defineProps<{
   keyCombo: KeyComboImpl

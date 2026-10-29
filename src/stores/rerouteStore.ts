@@ -1,8 +1,3 @@
-import { defineStore } from 'pinia'
-import { computed, reactive, toRaw } from 'vue'
-import type { ComputedRef } from 'vue'
-
-import { useLinkStore } from '@/stores/linkStore'
 import type {
   GraphScope,
   OwningGraphId,
@@ -12,6 +7,11 @@ import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { isFloatingTopology } from '@comfyorg/graph-model/linkTopology'
 import type { RerouteChain } from '@comfyorg/graph-model/rerouteChain'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import { defineStore } from 'pinia'
+import { computed, reactive, toRaw } from 'vue'
+import type { ComputedRef } from 'vue'
+
+import { useLinkStore } from '@/stores/linkStore'
 
 /** The links whose chains pass through a reroute, split by link liveness. */
 export interface RerouteMembership {

@@ -1,11 +1,13 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-import { useTelemetry } from '@comfyorg/telemetry'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -15,12 +17,9 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 import SectionWidgets from './SectionWidgets.vue'

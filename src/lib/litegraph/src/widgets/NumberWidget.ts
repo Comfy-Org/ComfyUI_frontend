@@ -1,4 +1,5 @@
 import type { INumericWidget } from '@comfyorg/graph-model/widgets'
+
 import {
   evaluateInput,
   formatNumericWidgetValue,

@@ -6,21 +6,21 @@ import type { LGraphNode, LGraph } from '@comfyorg/graph-model/entityRegistry'
  * This allows both litegraph nodes and the layout system to use the same
  * calculation logic while providing their own position data.
  */
-
-import type {
-  PointTuple as Point,
-  Point2D as LayoutPoint
-} from '@comfyorg/shared-frontend-utils/geometry'
+import { TitleMode } from '@comfyorg/graph-model/globalEnums'
+import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
+import type {
+  PointTuple as Point,
+  Point2D as LayoutPoint
+} from '@comfyorg/shared-frontend-utils/geometry'
+
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
-import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import { pointInBounds } from '@/renderer/core/layout/utils/layoutMath'
 
 export interface SlotPositionContext {

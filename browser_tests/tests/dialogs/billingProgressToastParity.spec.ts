@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
 import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
@@ -10,9 +8,6 @@ import type {
   SavedPaymentMethod,
   SubscribeResponse
 } from '@comfyorg/ingest-types'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-
 import {
   cloudAppExpect,
   cloudAppFixture as test,
@@ -26,6 +21,10 @@ import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 /**
  * The progress toasts a pending billing operation raises, held equal across

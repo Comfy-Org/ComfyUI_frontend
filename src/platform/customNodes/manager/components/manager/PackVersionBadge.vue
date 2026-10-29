@@ -44,20 +44,19 @@
 </template>
 
 <script setup lang="ts">
-import { valid as validSemver } from 'semver'
-import { unrefElement } from '@vueuse/core'
-import { computed, ref, useTemplateRef, watch } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
-import { PopoverRoot, PopoverTrigger } from 'reka-ui'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import Button from '@comfyorg/design-system/button/Button'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
-import type { components } from '@/types/comfyRegistryTypes'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { cn } from '@comfyorg/tailwind-utils'
+import { unrefElement } from '@vueuse/core'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import { valid as validSemver } from 'semver'
+import { computed, ref, useTemplateRef, watch } from 'vue'
+
 import PackVersionSelectorPopover from '@/platform/customNodes/manager/components/manager/PackVersionSelectorPopover.vue'
 import { usePackUpdateStatus } from '@/platform/customNodes/manager/composables/nodePack/usePackUpdateStatus'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
+import type { components } from '@/types/comfyRegistryTypes'
 
 const TRUNCATED_HASH_LENGTH = 7
 

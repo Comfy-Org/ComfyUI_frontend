@@ -1,22 +1,20 @@
-import { expect } from '@playwright/test'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
-import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 /**
  * Regression test for PM-1343: the in-app agent used to report a turn as

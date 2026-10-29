@@ -68,13 +68,13 @@
 </template>
 
 <script setup lang="ts">
+import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
+import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver } from '@vueuse/core'
 import { DropdownMenuItemIndicator } from 'reka-ui'
 import { computed, onMounted, onUpdated, ref, useId, useTemplateRef } from 'vue'
 
-import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
-import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
 import {
   switcherItemClass,

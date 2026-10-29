@@ -1,9 +1,8 @@
+import { webSocketFixture } from '@e2e/fixtures/ws'
+import { agentTest, pushAgentEvent } from '@e2e/tests/agent/agentPanelMocks'
 import { expect, mergeTests } from '@playwright/test'
 
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import { webSocketFixture } from '@e2e/fixtures/ws'
-import { agentTest, pushAgentEvent } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
 

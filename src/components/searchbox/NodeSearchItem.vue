@@ -57,13 +57,13 @@
 </template>
 
 <script setup lang="ts">
+import Badge from '@comfyorg/design-system/badge/Badge'
+import HighlightedText from '@comfyorg/design-system/common/HighlightedText'
 import { computed } from 'vue'
 
-import HighlightedText from '@comfyorg/design-system/common/HighlightedText'
-import Badge from '@comfyorg/design-system/badge/Badge'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { formatNumberWithSuffix } from '@/utils/formatUtil'

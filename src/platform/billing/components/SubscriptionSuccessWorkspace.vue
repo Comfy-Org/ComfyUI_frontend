@@ -69,18 +69,17 @@
  * that follows a multi-seat upgrade (ADR BILLING-WEB-0038).
  */
 import { CheckoutSuccess } from '@comfyorg/account-ui/billing/checkout'
+import type { PreviewSubscribeResponse } from '@comfyorg/billing-core'
+import Button from '@comfyorg/design-system/button/Button'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { refreshBilling } from '@/platform/billing/billingRefresh'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useCheckoutCopy } from '@/platform/billing/composables/useCheckoutCopy'
 import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import type { PreviewSubscribeResponse } from '@comfyorg/billing-core'
-import { useCheckoutCopy } from '@/platform/billing/composables/useCheckoutCopy'
-
 import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'
 
 const {

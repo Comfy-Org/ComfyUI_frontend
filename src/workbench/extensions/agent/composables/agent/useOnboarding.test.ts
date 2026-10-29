@@ -1,5 +1,5 @@
-import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { nextTick, ref } from 'vue'
 
 import type { CoachStep } from './useOnboarding'
 import {

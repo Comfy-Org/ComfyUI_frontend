@@ -1,12 +1,11 @@
-import { getActivePinia } from 'pinia'
-import { render, screen } from '@testing-library/vue'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const { useAudioRecorderMock, useAudioPlaybackMock, useAudioWaveformMock } =
   vi.hoisted(() => ({
@@ -56,6 +55,7 @@ vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
 import type { useAudioPlayback } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'
 import type { useAudioWaveform } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioWaveform'
+
 import WidgetRecordAudio from './WidgetRecordAudio.vue'
 
 type RecorderOptions = NonNullable<Parameters<typeof useAudioRecorder>[0]>

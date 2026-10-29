@@ -4,8 +4,14 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
-import { has } from 'es-toolkit/compat'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
+import type { WireOpEnvelope } from '@e2e/fixtures/agentWireFrame'
 import { render } from '@testing-library/vue'
+import { has } from 'es-toolkit/compat'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
@@ -17,7 +23,6 @@ import {
 } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV1,
@@ -25,13 +30,7 @@ import type {
 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
-import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
-import type { WireOpEnvelope } from '@e2e/fixtures/agentWireFrame'
 
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { AgentCrdtProjection } from './agentCrdtProjection'

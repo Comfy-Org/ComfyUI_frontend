@@ -1,34 +1,34 @@
+import type { ViewMode } from '@comfyorg/graph-model/appMode'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { isWidgetId, parseWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
-import { useEventListener } from '@vueuse/core'
 
 import { useAppMode } from '@/composables/useAppMode'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   InputWidgetConfig,
   LinearData,
   LinearInput
 } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useApp } from '@/scripts/appInstance'
-import type { ComfyApp } from '@/types/comfy'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import type { ComfyApp } from '@/types/comfy'
 import {
   getWidgetIdForNode,
   resolveNode,
   resolveNodeWidget
 } from '@/utils/litegraphUtil'
-import { parseNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { isWidgetId, parseWidgetId } from '@comfyorg/graph-model/widgetId'
-import type { ViewMode } from '@comfyorg/graph-model/appMode'
 
 function findWidgetByEntityId(
   rootGraph: LGraph,

@@ -1,3 +1,5 @@
+import type { AppMode } from '@comfyorg/graph-model/appMode'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -10,8 +12,6 @@ import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { AppMode } from '@comfyorg/graph-model/appMode'
 
 const mockSave = vi.hoisted(() => vi.fn())
 const mockSaveAs = vi.hoisted(() => vi.fn())

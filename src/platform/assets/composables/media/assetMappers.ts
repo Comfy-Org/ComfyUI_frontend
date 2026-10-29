@@ -1,19 +1,19 @@
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { getOutputSubfolder } from '@/platform/assets/utils/assetMetadataUtils'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
+import { getOutputSubfolder } from '@/platform/assets/utils/assetMetadataUtils'
 import { getAssetType as getAssetSourceType } from '@/platform/assets/utils/assetTypeUtil'
 import { getStoredOutputIdentity } from '@/platform/assets/utils/outputAssetUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 
 /**
  * Extract asset type from tags array

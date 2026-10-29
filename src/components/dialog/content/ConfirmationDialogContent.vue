@@ -110,13 +110,13 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import type { ConfirmationDialogType } from '@/components/dialog/content/confirmationDialogTypes'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const props = defineProps<{

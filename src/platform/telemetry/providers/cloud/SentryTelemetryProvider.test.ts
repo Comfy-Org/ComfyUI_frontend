@@ -1,13 +1,14 @@
-import { computed } from 'vue'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type {
   ExecutionContext,
   ShellLayoutMetadata
 } from '@comfyorg/telemetry/types'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+
 import { SentryTelemetryProvider } from './SentryTelemetryProvider'
 
 const mocks = vi.hoisted(() => ({

@@ -3,10 +3,10 @@ import type {
   CheckoutJourneyPhase,
   CheckoutJourneyPhaseEvent
 } from '@comfyorg/account-core/billing'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useEventListener } from '@vueuse/core'
 import { onScopeDispose } from 'vue'
 
-import { useTelemetry } from '@comfyorg/telemetry'
 import {
   getActiveCheckoutJourney,
   toCheckoutJourneyContext

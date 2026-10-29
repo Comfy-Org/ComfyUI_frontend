@@ -1,10 +1,10 @@
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import { expect } from '@playwright/test'
 
 import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
-import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Properties panel - Info tab', () => {
   let panel: PropertiesPanelHelper

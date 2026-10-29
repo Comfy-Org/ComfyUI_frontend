@@ -1,5 +1,5 @@
-import type { components } from '@/types/comfyRegistryTypes'
 import { SortableAlgoliaField } from '@/platform/customNodes/manager/types/comfyManagerTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 

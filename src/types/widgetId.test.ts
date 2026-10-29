@@ -1,5 +1,4 @@
-import { describe, expect, it } from 'vitest'
-
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   dropUnrenamableDuplicateWidgets,
@@ -8,7 +7,7 @@ import {
   parseWidgetId,
   widgetId
 } from '@comfyorg/graph-model/widgetId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { describe, expect, it } from 'vitest'
 
 describe('ensureUniqueWidgetNames', () => {
   it('renames duplicates without colliding with literal suffixes', () => {

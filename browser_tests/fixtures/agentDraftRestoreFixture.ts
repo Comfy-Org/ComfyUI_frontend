@@ -1,3 +1,4 @@
+import type { WorkspaceStore } from '@e2e/types/globals'
 import type { Page } from '@playwright/test'
 
 import type {
@@ -6,8 +7,6 @@ import type {
 } from '@/platform/workflow/persistence/base/draftTypes'
 import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-
-import type { WorkspaceStore } from '@e2e/types/globals'
 
 export async function seedAgentDraftLineage(
   page: Page,

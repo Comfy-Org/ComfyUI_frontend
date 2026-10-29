@@ -14,10 +14,11 @@
 </template>
 
 <script setup lang="ts">
-import BoundingBoxesEditor from '@/components/boundingBoxes/BoundingBoxesEditor.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+
+import BoundingBoxesEditor from '@/components/boundingBoxes/BoundingBoxesEditor.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const { nodeId, widget } = defineProps<{

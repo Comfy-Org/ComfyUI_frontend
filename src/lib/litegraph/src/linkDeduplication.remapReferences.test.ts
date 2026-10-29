@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest'
-
 import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { describe, expect, it } from 'vitest'
 
 import { duplicateLinksRoot } from './__fixtures__/duplicateLinks'
 import { remapLinkReferences } from './linkDeduplication'

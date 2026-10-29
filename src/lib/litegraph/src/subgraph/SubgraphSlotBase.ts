@@ -6,33 +6,33 @@ import type {
   SubgraphOutput,
   SubgraphOutputNode
 } from '@comfyorg/graph-model/entityRegistry'
-import { canvasClass } from '@/lib/litegraph/src/canvas/canvasClassAccess'
-
+import type {
+  CanvasPointerEvent,
+  Hoverable
+} from '@comfyorg/graph-model/events'
+import type { DefaultConnectionColors } from '@comfyorg/graph-model/interfaces'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import { SlotShape } from '@/lib/litegraph/src/draw'
-import { ConstrainedSize } from '@/lib/litegraph/src/infrastructure/ConstrainedSize'
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import type { DefaultConnectionColors } from '@comfyorg/graph-model/interfaces'
+import type {
+  Serialisable,
+  SubgraphIO
+} from '@comfyorg/graph-model/serialisation'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
 import type {
   PointTuple as Point,
   ReadOnlyRect,
   SizeTuple as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@comfyorg/graph-model/slots'
+
+import { canvasClass } from '@/lib/litegraph/src/canvas/canvasClassAccess'
+import { SlotShape } from '@/lib/litegraph/src/draw'
+import { ConstrainedSize } from '@/lib/litegraph/src/infrastructure/ConstrainedSize'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { SlotBase } from '@/lib/litegraph/src/node/SlotBase'
-import type {
-  CanvasPointerEvent,
-  Hoverable
-} from '@comfyorg/graph-model/events'
-import type {
-  Serialisable,
-  SubgraphIO
-} from '@comfyorg/graph-model/serialisation'
 import type { UUID } from '@/utils/uuid'
 
 interface SubgraphSlotDrawOptions {

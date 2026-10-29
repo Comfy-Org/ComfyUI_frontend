@@ -1,9 +1,9 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 test.describe(
   'ECS bridge history',

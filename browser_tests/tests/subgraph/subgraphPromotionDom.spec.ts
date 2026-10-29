@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { getPromotedWidgetNames } from '@e2e/fixtures/utils/promotedWidgets'
+import { expect } from '@playwright/test'
 
 const TEST_WIDGET_CONTENT = 'Test content that should persist'
 

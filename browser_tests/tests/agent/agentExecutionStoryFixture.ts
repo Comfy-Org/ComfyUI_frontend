@@ -1,21 +1,19 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
 import type { AgentCancelAccepted } from '@comfyorg/ingest-types'
-
-import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
-
-import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
-import { AgentExecutionHelper } from '@e2e/fixtures/helpers/AgentExecutionHelper'
-import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
-import { AgentMultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/AgentMultiAutogrowRealignHarness'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import {
   MESSAGE_ID,
   THREAD_ID
 } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
+import { AgentExecutionHelper } from '@e2e/fixtures/helpers/AgentExecutionHelper'
+import { AgentMultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/AgentMultiAutogrowRealignHarness'
+import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 const JOB_CANCEL_ROUTE_PATTERN =
   /\/api\/(?:interrupt|jobs\/(?:[^/]+\/)?cancel)$/

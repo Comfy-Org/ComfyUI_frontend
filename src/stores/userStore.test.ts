@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useUserStore } from './userStore'
 import { api } from '@/scripts/api'
+
+import { useUserStore } from './userStore'
 
 vi.mock(import('@/scripts/api'))
 

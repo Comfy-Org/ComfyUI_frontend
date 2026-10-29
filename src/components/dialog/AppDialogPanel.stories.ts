@@ -1,7 +1,6 @@
+import Button from '@comfyorg/design-system/button/Button'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { fn } from 'storybook/test'
-
-import Button from '@comfyorg/design-system/button/Button'
 
 import AppDialogPanel from './AppDialogPanel.vue'
 

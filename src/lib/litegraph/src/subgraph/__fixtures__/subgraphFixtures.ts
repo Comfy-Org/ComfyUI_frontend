@@ -1,3 +1,4 @@
+import { test as baseTest } from '@/lib/litegraph/src/__fixtures__/testExtensions'
 // oxlint-disable no-empty-pattern
 /**
  * Vitest Fixtures for Subgraph Testing
@@ -12,8 +13,6 @@ import type {
   SubgraphEventMap,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-
-import { test as baseTest } from '@/lib/litegraph/src/__fixtures__/testExtensions'
 
 const test = baseTest.extend({
   subgraphState: [

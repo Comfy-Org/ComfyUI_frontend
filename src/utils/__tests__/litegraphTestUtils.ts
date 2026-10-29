@@ -1,10 +1,19 @@
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { vi } from 'vitest'
+
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   ISerialisedGraph,
@@ -18,16 +27,8 @@ import {
   LGraphNode,
   LLink
 } from '@/lib/litegraph/src/litegraph'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ChangeTracker } from '@/scripts/changeTracker'
-import type { LinkId } from '@comfyorg/graph-model/linkId'
-import { toGroupId } from '@comfyorg/graph-model/groupId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { zeroUuid } from '@/utils/uuid'

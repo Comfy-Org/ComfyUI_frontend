@@ -1,12 +1,14 @@
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import { describe, expect, it, beforeEach } from 'vitest'
+
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { Positionable } from '@comfyorg/graph-model/interfaces'
-import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { toGroupId } from '@comfyorg/graph-model/groupId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { deriveWidgetVisibility } from '@/types/widgetVisibility'
-import { describe, expect, it, beforeEach } from 'vitest'
+
 import {
   computedSectionDataList,
   flatAndCategorizeSelectedItems,

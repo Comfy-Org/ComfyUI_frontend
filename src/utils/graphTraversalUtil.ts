@@ -4,8 +4,9 @@ import type {
   Subgraph,
   SubgraphNode
 } from '@comfyorg/graph-model/entityRegistry'
-
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   NodeExecutionId,
   NodeLocatorId
@@ -17,11 +18,10 @@ import {
   getParentExecutionIds,
   parseNodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
-import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import type { UUID } from '@/utils/uuid'
+
 import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { UUID } from '@/utils/uuid'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
 

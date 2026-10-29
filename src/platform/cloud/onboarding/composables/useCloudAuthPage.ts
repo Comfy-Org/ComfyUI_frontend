@@ -1,16 +1,15 @@
+import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 import { ref } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { useRoute, useRouter } from 'vue-router'
-
-import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 import { useSsoRequiredInlineHost } from '@/platform/auth/sso/ssoRequiredInline'
-import { resolveSsoReturnTo } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
+import { resolveSsoReturnTo } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
 import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
 import { useAuthStore } from '@/stores/authStore'
 

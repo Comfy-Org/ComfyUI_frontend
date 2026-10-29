@@ -120,14 +120,14 @@
 </template>
 
 <script setup lang="ts">
-import { createReusableTemplate } from '@vueuse/core'
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-import type { ComponentProps } from 'vue-component-type-helpers'
-
-import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import Video from '@comfyorg/design-system/media/Video'
+import { createReusableTemplate } from '@vueuse/core'
+import { computed, ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
+import { useI18n } from 'vue-i18n'
+
 import { useExternalLink } from '@/composables/useExternalLink'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import DeployInstallationButton from '@/platform/workflow/deploy/components/DeployInstallationButton.vue'

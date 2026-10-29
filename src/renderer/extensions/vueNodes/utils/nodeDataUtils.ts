@@ -1,8 +1,9 @@
-import type { INodeSlot } from '@comfyorg/graph-model/interfaces'
-import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import { useLinkStore } from '@/stores/linkStore'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import type { INodeSlot } from '@comfyorg/graph-model/interfaces'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+
+import { useLinkStore } from '@/stores/linkStore'
 import { isSlotObject } from '@/utils/typeGuardUtil'
 
 function coerceINodeSlot(input: INodeInputSlot): INodeSlot {

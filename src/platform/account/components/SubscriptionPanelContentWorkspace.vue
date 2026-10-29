@@ -388,25 +388,34 @@
 </template>
 
 <script setup lang="ts">
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
-
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
-import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import { cn } from '@comfyorg/tailwind-utils'
 import { createReusableTemplate, useTimestamp } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useWorkspaceMenuItems } from '@/platform/account/composables/useWorkspaceMenuItems'
+import {
+  formatSubscriptionDate,
+  resolveSubscriptionTierKey
+} from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
+import { useBillingBanner } from '@/platform/billing/composables/useBillingBanner'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { useResubscribe } from '@/platform/billing/composables/useResubscribe'
+import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
+import { useSubscriptionOperationView } from '@/platform/billing/composables/useSubscriptionRail'
+import { useWorkspacePlanPricing } from '@/platform/billing/composables/useWorkspacePlanPricing'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import CreditsTile from '@/platform/billing/subscription/components/CreditsTile.vue'
 import SubscriptionFooterLinks from '@/platform/billing/subscription/components/SubscriptionFooterLinks.vue'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import Badge from '@comfyorg/design-system/badge/Badge'
-import Button from '@comfyorg/design-system/button/Button'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
-import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import {
   isSalesManagedTier,
   isWithinEnterpriseEndingNotice
@@ -414,20 +423,10 @@ import {
 import type { TierBenefit } from '@/platform/billing/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/billing/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
-import { useBillingBanner } from '@/platform/billing/composables/useBillingBanner'
-import { useResubscribe } from '@/platform/billing/composables/useResubscribe'
-import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useSubscriptionOperationView } from '@/platform/billing/composables/useSubscriptionRail'
-import { useWorkspaceMenuItems } from '@/platform/account/composables/useWorkspaceMenuItems'
-import { useWorkspacePlanPricing } from '@/platform/billing/composables/useWorkspacePlanPricing'
-import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
-import {
-  formatSubscriptionDate,
-  resolveSubscriptionTierKey
-} from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
 
 const { handlePanelScroll } = useSettingsHeaderCollapse()
 

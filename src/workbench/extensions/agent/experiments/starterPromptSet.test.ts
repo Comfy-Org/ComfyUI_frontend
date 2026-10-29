@@ -1,11 +1,11 @@
-import { nextTick } from 'vue'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import {
   authenticatedRemoteConfigState,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 

@@ -1,13 +1,13 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { api } from '@/scripts/api'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { nextTick, reactive } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, reactive } from 'vue'
+
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import {
   LGraphNode as LGraphNodeClass,
   SubgraphNode
@@ -17,8 +17,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   InputWidgetConfig,
   LinearInput,
@@ -26,6 +25,8 @@ import type {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import {
@@ -33,7 +34,6 @@ import {
   createNodeState
 } from '@/utils/__tests__/litegraphTestUtils'
 import { resolveNode } from '@/utils/litegraphUtil'
-import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {

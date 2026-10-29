@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest'
-
 import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { describe, expect, it } from 'vitest'
 
 describe('toLinkId', () => {
   it('preserves the numeric value', () => {

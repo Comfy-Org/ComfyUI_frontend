@@ -1,9 +1,8 @@
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
+import type { TelemetryDispatcher } from '@comfyorg/telemetry/types'
+import { defaultWindow, useEventListener, useTimeoutFn } from '@vueuse/core'
 import { onScopeDispose, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
-import { defaultWindow, useEventListener, useTimeoutFn } from '@vueuse/core'
-
-import type { TelemetryDispatcher } from '@comfyorg/telemetry/types'
-import type { BillingStatusResponse } from '@comfyorg/billing-core'
 
 const MAX_CANCELLATION_ATTEMPTS = 4
 const CANCELLATION_BASE_DELAY_MS = 5000

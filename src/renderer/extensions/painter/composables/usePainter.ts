@@ -1,27 +1,27 @@
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
-import type { Ref } from 'vue'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useElementSize } from '@vueuse/core'
-import { useI18n } from 'vue-i18n'
-
 import {
   getEffectiveBrushSize,
   getEffectiveHardness
 } from '@comfyorg/mask-editor/brushUtils'
 import { StrokeProcessor } from '@comfyorg/mask-editor/StrokeProcessor'
-import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import { hexToRgb } from '@comfyorg/shared-frontend-utils/colorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useElementSize } from '@vueuse/core'
+import type { Ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
+import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 type PainterTool = 'brush' | 'eraser'
 

@@ -1,16 +1,16 @@
+import type {
+  BillingStatus,
+  Plan,
+  TeamCreditStops
+} from '@comfyorg/billing-core'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'
-import type {
-  BillingStatus,
-  Plan,
-  TeamCreditStops
-} from '@comfyorg/billing-core'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 
 import WorkspaceInvoicesContent from './WorkspaceInvoicesContent.vue'
 

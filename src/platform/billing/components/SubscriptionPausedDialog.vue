@@ -32,10 +32,10 @@
 </template>
 
 <script setup lang="ts">
-import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { computed } from 'vue'
 
-import Button from '@comfyorg/design-system/button/Button'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 
 const {
   canManage,

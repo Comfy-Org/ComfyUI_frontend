@@ -1,4 +1,3 @@
-import type { Page } from '@playwright/test'
 import type {
   BillingOpStatusResponse,
   CancelSubscriptionRequest,
@@ -9,7 +8,6 @@ import type {
   RetentionFlowEventRequest,
   RetentionFlowResponse
 } from '@comfyorg/ingest-types'
-
 import { CancellationFlowDialog } from '@e2e/fixtures/components/CancellationFlowDialog'
 import {
   CANCELLATION_SURVEY_REMOTE_CONFIG,
@@ -18,6 +16,7 @@ import {
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import type { Page } from '@playwright/test'
 
 /** How `/api/billing/retention/accept` answers: start a discount, or refuse a session that expired. */
 type RetentionAcceptMock = 'applies' | 'expired'

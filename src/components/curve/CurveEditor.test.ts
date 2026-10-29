@@ -1,7 +1,6 @@
+import type { PointTuple as CurvePoint } from '@comfyorg/shared-frontend-utils/geometry'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
-
-import type { PointTuple as CurvePoint } from '@comfyorg/shared-frontend-utils/geometry'
 
 import CurveEditor from './CurveEditor.vue'
 

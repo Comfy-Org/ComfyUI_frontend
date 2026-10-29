@@ -1,3 +1,4 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -6,11 +7,10 @@ import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useAuthStore } from '@/stores/authStore'
 
 import CloudSurveyView from './CloudSurveyView.vue'

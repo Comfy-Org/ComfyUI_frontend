@@ -1,7 +1,7 @@
-import type { Component } from 'vue'
-
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import type { Component } from 'vue'
+
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 export interface BaseDOMWidget<

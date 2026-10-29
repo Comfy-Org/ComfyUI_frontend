@@ -48,18 +48,17 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import { default as DOMPurify } from 'dompurify'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
-import Button from '@comfyorg/design-system/button/Button'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { formatVersionAnchor } from '@/utils/formatUtil'
-import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
+import { formatVersionAnchor } from '@/utils/formatUtil'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 const { buildDocsUrl } = useExternalLink()
 const releaseStore = useReleaseStore()

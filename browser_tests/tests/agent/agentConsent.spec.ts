@@ -1,14 +1,13 @@
 import type { DesktopLoginCodeRedeemResponse } from '@comfyorg/ingest-types'
+import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
+import { agentConsentTelemetryTest as telemetryTest } from '@e2e/fixtures/agentConsentTelemetryFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import frMessages from '@/locales/fr/main.json' with { type: 'json' }
-
-import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
-import { agentConsentTelemetryTest as telemetryTest } from '@e2e/fixtures/agentConsentTelemetryFixture'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 async function requestConsentFromOpenPanel(page: Page): Promise<void> {
   const openButton = page.getByRole('button', {

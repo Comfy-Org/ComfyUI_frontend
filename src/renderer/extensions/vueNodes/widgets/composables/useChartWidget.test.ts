@@ -1,7 +1,7 @@
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChartWidget'
 import type {
   ChartInputSpec,

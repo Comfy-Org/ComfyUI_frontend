@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 describe('flattenInputSpecs', () => {
   it('includes a dynamic combo input alongside its nested per-option inputs', () => {

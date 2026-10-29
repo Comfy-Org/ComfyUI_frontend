@@ -1,8 +1,7 @@
 import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import * as Y from 'yjs'
-
-import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { DocFrameTransport, ServerDocFrame } from './docFrameClient'
 import {

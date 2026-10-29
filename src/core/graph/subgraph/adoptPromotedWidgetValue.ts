@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
+
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 /**

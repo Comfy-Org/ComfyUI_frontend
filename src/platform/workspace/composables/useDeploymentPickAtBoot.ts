@@ -1,7 +1,7 @@
 import { until } from '@vueuse/core'
 
-import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
 import { useBootDeploymentFullLabel } from '@/platform/workspace/composables/useDeploymentLabels'
 import { takeDeploymentSwitchLanding } from '@/platform/workspace/deploymentSwitchReload'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'

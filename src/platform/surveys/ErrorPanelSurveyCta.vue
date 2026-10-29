@@ -24,10 +24,9 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import Button from '@comfyorg/design-system/button/Button'
 
 import { getSurveyConfig } from './surveyRegistry'
 import { useErrorSurveyPopoverState } from './useErrorSurveyPopoverState'

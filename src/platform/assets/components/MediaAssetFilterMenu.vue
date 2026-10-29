@@ -134,6 +134,9 @@
 </template>
 
 <script setup lang="ts">
+import { menuItemClass } from '@comfyorg/design-system/lib/menu/menuStyles'
+import MenuSub from '@comfyorg/design-system/menu/MenuSub'
+import MenuSubContent from '@comfyorg/design-system/menu/MenuSubContent'
 import {
   DropdownMenuCheckboxItem,
   DropdownMenuItemIndicator,
@@ -143,12 +146,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuSubTrigger
 } from 'reka-ui'
-import MenuSub from '@comfyorg/design-system/menu/MenuSub'
-import MenuSubContent from '@comfyorg/design-system/menu/MenuSubContent'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { menuItemClass } from '@comfyorg/design-system/lib/menu/menuStyles'
 import {
   dateFilterOptions,
   mediaTypeFilterOptions

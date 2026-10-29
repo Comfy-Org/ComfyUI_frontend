@@ -1,3 +1,5 @@
+import type { NavGroupData } from '@comfyorg/design-system/lib/navigation/types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, expect, it, vi } from 'vitest'
@@ -6,9 +8,7 @@ import type { Ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { NavGroupData } from '@comfyorg/design-system/lib/navigation/types'
 
 import SettingDialog from './SettingDialog.vue'
 

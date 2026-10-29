@@ -1,11 +1,10 @@
-import { setTelemetryRegistry } from '@comfyorg/telemetry'
-import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type {
   BillingOpStatusResponse,
   SavedPaymentMethod
 } from '@comfyorg/billing-core'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockAxiosInstance } = vi.hoisted(() => ({
   mockAxiosInstance: {
@@ -38,11 +37,12 @@ vi.mock(import('@/platform/remote/ingest/ingestApiUrl'), () => ({
   ingestApiUrl: (path: string) => `/api${path}`
 }))
 
-import { workspaceApi } from './workspaceApi'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { setIngestApiAuth } from '@/platform/remote/ingest/ingestApi'
 import type { IngestApiAuth } from '@/platform/remote/ingest/ingestApi'
 import { NoWorkspaceAccessError } from '@/platform/remote/ingest/ingestApiError'
+
+import { workspaceApi } from './workspaceApi'
 const auth = {
   getWorkspaceAuthHeader: vi.fn<IngestApiAuth['getWorkspaceAuthHeader']>(),
   getFirebaseAuthHeader: vi.fn<IngestApiAuth['getFirebaseAuthHeader']>(),

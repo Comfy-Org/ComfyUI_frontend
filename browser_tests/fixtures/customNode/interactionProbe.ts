@@ -1,5 +1,3 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-
 import type { SYNTH_PRODUCERS } from '@e2e/fixtures/customNode/autoRun'
 import type {
   LogicalShape,
@@ -7,6 +5,8 @@ import type {
 } from '@e2e/fixtures/customNode/interactionProfiles'
 import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 import { normalizeNodeDefs } from '@e2e/fixtures/customNode/typePairing'
+
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 export const INTERACTION_PROBE_CHUNK = 40
 

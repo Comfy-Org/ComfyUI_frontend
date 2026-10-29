@@ -1,8 +1,7 @@
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { expect } from '@playwright/test'
 
 import type { PromptResponse } from '@/platform/remote/comfyui/types'
-
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 const queueModeLabels = ['Run', 'Run (On Change)', 'Run (Instant)']
 const runOnChangeLabel = queueModeLabels[1]

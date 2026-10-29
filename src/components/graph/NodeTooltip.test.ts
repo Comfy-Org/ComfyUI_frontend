@@ -1,8 +1,8 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { cloneDeep } from 'es-toolkit'
-import userEvent from '@testing-library/user-event'
-import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import {

@@ -1,7 +1,6 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
-
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import { usePreviewExposureStore } from './previewExposureStore'
 import { useWidgetValueStore } from './widgetValueStore'

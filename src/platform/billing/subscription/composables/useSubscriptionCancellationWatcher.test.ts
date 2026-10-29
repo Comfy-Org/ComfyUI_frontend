@@ -1,10 +1,10 @@
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
+import type { TelemetryDispatcher } from '@comfyorg/telemetry/types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { useSubscriptionCancellationWatcher } from '@/platform/billing/subscription/composables/useSubscriptionCancellationWatcher'
-import type { TelemetryDispatcher } from '@comfyorg/telemetry/types'
-import type { BillingStatusResponse } from '@comfyorg/billing-core'
 
 describe('useSubscriptionCancellationWatcher', () => {
   const trackMonthlySubscriptionCancelled = vi.fn()

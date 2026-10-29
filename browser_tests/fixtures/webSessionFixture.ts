@@ -1,13 +1,8 @@
-import type { Request } from '@playwright/test'
-
 import type {
   ExchangeTokenRequest,
   ListMembersResponse
 } from '@comfyorg/ingest-types'
 import { zExchangeTokenRequest } from '@comfyorg/ingest-types/zod'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   WEB_SESSION,
@@ -24,6 +19,9 @@ import {
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
+import type { Request } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 

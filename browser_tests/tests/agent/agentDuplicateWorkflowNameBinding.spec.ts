@@ -1,15 +1,8 @@
-import { expect } from '@playwright/test'
-
 import type {
   AgentMessage,
   AgentThreadListResponse,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-
 import {
   agentTest as test,
   bootAgentApp
@@ -18,6 +11,11 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import type { WorkspaceStore } from '@e2e/types/globals'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 const BINDING_KEY = StorageKeys.agentWorkflowTabBindings('personal')
 const THREAD_KEY = StorageKeys.agentThread('personal')

@@ -58,38 +58,37 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener, useWindowSize } from '@vueuse/core'
-import { cn } from '@comfyorg/tailwind-utils'
-import { storeToRefs } from 'pinia'
-import { computed, ref, toRaw, watch, watchEffect } from 'vue'
-
-import { revealDynamicInputSlot } from '@/core/graph/widgets/revealDynamicInputSlot'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
 import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
 import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
 import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useEventListener, useWindowSize } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
+import { computed, ref, toRaw, watch, watchEffect } from 'vue'
+
+import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
+import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { revealDynamicInputSlot } from '@/core/graph/widgets/revealDynamicInputSlot'
 import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
-import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
-
-import NodeSearchContent from './v2/NodeSearchContent.vue'
 import NodeSearchBox from './NodeSearchBox.vue'
+import NodeSearchContent from './v2/NodeSearchContent.vue'
 
 let triggerEvent: CanvasPointerEvent | null = null
 let listenerController: AbortController | null = null

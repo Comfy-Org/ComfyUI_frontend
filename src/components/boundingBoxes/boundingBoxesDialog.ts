@@ -1,8 +1,9 @@
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+
 import BoundingBoxesDialogContent from '@/components/boundingBoxes/BoundingBoxesDialogContent.vue'
 import BoundingBoxesDialogHeader from '@/components/boundingBoxes/BoundingBoxesDialogHeader.vue'
 import type { DialogComponentProps } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const BOUNDING_BOXES_DIALOG_KEY = 'global-bounding-boxes-editor'

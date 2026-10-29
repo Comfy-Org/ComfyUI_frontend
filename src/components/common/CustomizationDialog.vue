@@ -63,10 +63,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, useId, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import ColorCustomizationSelector from '@/components/common/ColorCustomizationSelector.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
 import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
@@ -78,8 +74,12 @@ import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
-import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { cn } from '@comfyorg/tailwind-utils'
+import { ref, useId, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import ColorCustomizationSelector from '@/components/common/ColorCustomizationSelector.vue'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 
 const { t } = useI18n()
 

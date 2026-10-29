@@ -1,11 +1,11 @@
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import type { usePanAndZoom } from '@comfyorg/mask-editor/usePanAndZoom'
+import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import PointerZone from '@/renderer/extensions/maskEditor/components/PointerZone.vue'
-import type { usePanAndZoom } from '@comfyorg/mask-editor/usePanAndZoom'
-import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 type ToolManager = ReturnType<typeof useToolManager>
 type PanZoom = ReturnType<typeof usePanAndZoom>

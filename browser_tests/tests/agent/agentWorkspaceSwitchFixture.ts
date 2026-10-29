@@ -4,10 +4,6 @@ import type {
   ExchangeTokenRequest,
   ListMembersResponse
 } from '@comfyorg/ingest-types'
-import { mergeTests } from '@playwright/test'
-
-import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
-
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
@@ -24,6 +20,9 @@ import {
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { mergeTests } from '@playwright/test'
+
+import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 
 interface AgentIdentityRead {
   workspaceId: string

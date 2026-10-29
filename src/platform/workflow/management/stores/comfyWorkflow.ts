@@ -1,16 +1,16 @@
+import type { AppMode } from '@comfyorg/graph-model/appMode'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { markRaw } from 'vue'
 
 import { assert } from '@/base/assert'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
-import { UserFile } from '@/stores/userFileStore'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
-import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { AppMode } from '@comfyorg/graph-model/appMode'
-import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { UserFile } from '@/stores/userFileStore'
 import { generateUUID } from '@/utils/formatUtil'
 
 export interface InputWidgetConfig {

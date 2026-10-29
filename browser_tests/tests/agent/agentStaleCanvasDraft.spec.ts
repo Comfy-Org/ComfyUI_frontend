@@ -1,9 +1,7 @@
-import { expect } from '@playwright/test'
 import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
-
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
   agentTest as test,
   bootAgentApp,
@@ -11,18 +9,19 @@ import {
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import {
   AGENT_NODE_IDS,
   addLoadImageNode,
   catalog,
   emptySeed
 } from '@e2e/fixtures/data/agent/agentRemoteApply'
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect } from '@playwright/test'
+
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const WORKFLOW_ID = '720f3de6-b8a2-4ed2-833b-e5c55cb9e001'
 const THREAD_ID = '720f3de6-b8a2-4ed2-833b-e5c55cb9e002'

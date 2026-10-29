@@ -31,14 +31,14 @@
 </template>
 
 <script setup lang="ts">
+import AudioPreview from '@comfyorg/design-system/media/AudioPreview'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { computed, onErrorCaptured, ref } from 'vue'
 
-import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
-
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
-import AudioPreview from '@comfyorg/design-system/media/AudioPreview'
+
 import ImagePreview from './ImagePreview.vue'
 import { IMAGE_PREVIEW_MARGIN_TOP } from './imagePreviewLayout'
 

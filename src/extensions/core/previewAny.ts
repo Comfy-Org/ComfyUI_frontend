@@ -1,16 +1,16 @@
-import type { ComfyExtension } from '@/types/comfy'
+import {
+  addTextPreviewWidgets,
+  updateTextPreviewWidgets
+} from '@/extensions/core/textPreviewWidgets'
 /*
 Preview Any - original implement from
 https://github.com/rgthree/rgthree-comfy/blob/main/py/display_any.py
 upstream requested in https://github.com/Kosinkadink/rfcs/blob/main/rfcs/0000-corenodes.md#preview-nodes
  */
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import {
-  addTextPreviewWidgets,
-  updateTextPreviewWidgets
-} from '@/extensions/core/textPreviewWidgets'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
+import type { ComfyExtension } from '@/types/comfy'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 export const previewAnyExtension: ComfyExtension = {

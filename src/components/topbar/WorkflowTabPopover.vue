@@ -34,13 +34,12 @@
 </template>
 
 <script setup lang="ts">
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { useTimeoutFn } from '@vueuse/core'
 import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { ref, toRefs, watch } from 'vue'
-
-import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 
 const POPOVER_WIDTH = 250
 

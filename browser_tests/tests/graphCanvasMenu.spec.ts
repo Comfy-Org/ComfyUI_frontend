@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
+import { expect } from '@playwright/test'
 
 test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
   test.use({

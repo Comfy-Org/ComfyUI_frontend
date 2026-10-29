@@ -1,11 +1,12 @@
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
+
 import CatalogSkillReference from './CatalogSkillReference.vue'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))

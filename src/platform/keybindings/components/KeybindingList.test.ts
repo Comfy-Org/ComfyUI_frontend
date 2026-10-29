@@ -1,8 +1,7 @@
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
-
-import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 
 import KeybindingList from './KeybindingList.vue'
 

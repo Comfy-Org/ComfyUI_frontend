@@ -2,11 +2,11 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import {
   openContextMenu,
   openMultiNodeContextMenu
 } from '@e2e/fixtures/utils/contextMenuTestHelpers'
-import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe(
   'Vue Node Context Menu — Extended Coverage',

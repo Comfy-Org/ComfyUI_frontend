@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
@@ -16,7 +17,6 @@ import {
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
 import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 

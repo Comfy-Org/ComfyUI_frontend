@@ -1,5 +1,6 @@
-import { isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget, IComboWidget } from '@comfyorg/graph-model/widgets'
+
+import { isComboWidget } from '@/lib/litegraph/src/litegraph'
 import { findComboValueIndex } from '@/lib/litegraph/src/utils/widget'
 import type { ControlOptions } from '@/types/simplifiedWidget'
 import { isControlOption } from '@/types/simplifiedWidget'

@@ -1,8 +1,8 @@
 import { computed } from 'vue'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 import { useTeamPlan } from '@/platform/billing/composables/useTeamPlan'
+import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 
 export function usePlanEnded() {
   const { subscription, subscriptionStatus, canAccessSubscriptionFeatures } =

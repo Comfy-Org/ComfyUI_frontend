@@ -81,21 +81,22 @@
 </template>
 
 <script setup lang="ts">
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { computed, ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import ComfyHubCreateProfileForm from '@/platform/workflow/sharing/components/profile/ComfyHubCreateProfileForm.vue'
+import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+
 import ComfyHubDescribeStep from './ComfyHubDescribeStep.vue'
 import ComfyHubExamplesStep from './ComfyHubExamplesStep.vue'
 import ComfyHubFinishStep from './ComfyHubFinishStep.vue'
 import ComfyHubProfilePromptPanel from './ComfyHubProfilePromptPanel.vue'
-import ComfyHubThumbnailStep from './ComfyHubThumbnailStep.vue'
 import ComfyHubPublishFooter from './ComfyHubPublishFooter.vue'
+import ComfyHubThumbnailStep from './ComfyHubThumbnailStep.vue'
 
 const {
   currentStep,

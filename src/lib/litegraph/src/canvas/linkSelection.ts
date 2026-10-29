@@ -1,27 +1,27 @@
-import { partition } from 'es-toolkit'
-
-import { getLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
-import {
-  pointInBounds,
-  polylineIntersectsBounds
-} from '@/renderer/core/layout/utils/layoutMath'
+import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type {
   Bounds,
   Point2D as Point,
   ReadOnlyRect
 } from '@comfyorg/shared-frontend-utils/geometry'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { partition } from 'es-toolkit'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
-import { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
 import { inputLinkId, outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
-import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
+import { Reroute } from '@/lib/litegraph/src/Reroute'
+import { getLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
+import {
+  pointInBounds,
+  polylineIntersectsBounds
+} from '@/renderer/core/layout/utils/layoutMath'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
+
 import { deleteLinks, hideLinks, showLinks } from './linkVisibility'
 import type { LinkMutationHost } from './linkVisibility'
 

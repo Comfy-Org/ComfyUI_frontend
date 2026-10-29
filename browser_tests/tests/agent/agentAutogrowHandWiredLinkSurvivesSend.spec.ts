@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import {
   GPT_NODE_ID,
   IMAGE_1_NAME,
@@ -11,6 +9,7 @@ import {
   autogrowHandWiredLinkTest as test,
   sendSecondTurnAndReconnectFirstSlot
 } from '@e2e/fixtures/agentAutogrowHandWiredLinkFixture'
+import { expect } from '@playwright/test'
 
 interface SerializedLink {
   originNodeId: string

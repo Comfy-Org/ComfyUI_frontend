@@ -1,3 +1,4 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { describe, expect, test, vi } from 'vitest'
 
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
@@ -8,7 +9,6 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/services/litegraphService'))
 

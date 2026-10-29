@@ -1,12 +1,3 @@
-import { computed } from 'vue'
-import { describe, expect, it } from 'vitest'
-
-import { toSelectableKey } from '@/core/selection/selectionState'
-import type {
-  SelectableKey,
-  SelectionCommand
-} from '@/core/selection/selectionState'
-import { useSelectionStore } from '@/core/selection/selectionStore'
 import {
   toOwningGraphId,
   toRootGraphId
@@ -14,6 +5,15 @@ import {
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { describe, expect, it } from 'vitest'
+import { computed } from 'vue'
+
+import { toSelectableKey } from '@/core/selection/selectionState'
+import type {
+  SelectableKey,
+  SelectionCommand
+} from '@/core/selection/selectionState'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 
 const root = toRootGraphId('root')
 const rootScope: GraphScope = {

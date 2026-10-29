@@ -1,12 +1,11 @@
-import { expect } from '@playwright/test'
-
-import { test } from '@e2e/tests/agent/agentVhsSavedWorkflowFixture'
 import {
   VHS_LOAD_ID,
   editedVhsCanvas,
   editedVhsLoadRecord,
   restoredVhsCanvas
 } from '@e2e/fixtures/data/agent/agentVhsSavedWorkflow'
+import { test } from '@e2e/tests/agent/agentVhsSavedWorkflowFixture'
+import { expect } from '@playwright/test'
 
 test.describe(
   'A saved custom-node workflow opened by the Agent (PM-2018)',

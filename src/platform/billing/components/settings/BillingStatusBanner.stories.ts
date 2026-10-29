@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { i18n } from '@/i18n'
-import type { BillingContextMockState } from '@/storybook/mocks/useBillingContext'
-import { setBillingContextMock } from '@/storybook/mocks/useBillingContext'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import {
   setCanSubscribeSelfServeMock,
   setCanTopUpMock
 } from '@/storybook/mocks/useBillingCapabilities'
+import type { BillingContextMockState } from '@/storybook/mocks/useBillingContext'
+import { setBillingContextMock } from '@/storybook/mocks/useBillingContext'
 import type { WorkspaceUIMockState } from '@/storybook/mocks/useBillingUI'
 import { setWorkspaceUIMock } from '@/storybook/mocks/useBillingUI'
 

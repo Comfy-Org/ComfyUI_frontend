@@ -1,16 +1,16 @@
-import { groupBy } from 'es-toolkit/compat'
 import { createSharedComposable, useEventListener } from '@vueuse/core'
+import { groupBy } from 'es-toolkit/compat'
 import { computed, ref, watch } from 'vue'
 
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowPacks } from '@/platform/customNodes/manager/composables/nodePack/useWorkflowPacks'
+import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
-import { useWorkflowPacks } from '@/platform/customNodes/manager/composables/nodePack/useWorkflowPacks'
-import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 
 /**
  * Composable to find missing NodePacks from workflow

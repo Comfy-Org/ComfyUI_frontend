@@ -1,11 +1,11 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { fromPartial } from '@total-typescript/shoehorn'
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 

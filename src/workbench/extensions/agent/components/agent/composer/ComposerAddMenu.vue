@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
-import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import MenuContent from '@comfyorg/design-system/menu/MenuContent'
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
@@ -12,6 +9,10 @@ import MenuSubTrigger from '@comfyorg/design-system/menu/MenuSubTrigger'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import type { WorkflowReferenceOption } from '@/workbench/extensions/agent/types/workflowReference'
 
 const {

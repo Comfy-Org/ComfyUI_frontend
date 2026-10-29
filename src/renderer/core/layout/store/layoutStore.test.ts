@@ -1,13 +1,11 @@
 import { toGroupId } from '@comfyorg/graph-model/groupId'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-
+import type { NodeLayout } from '@comfyorg/graph-model/layout'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import { createUuidv4 } from '@/utils/uuid'
-import type { UUID } from '@/utils/uuid'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -16,7 +14,8 @@ import type {
   LayoutChange,
   LayoutOperation
 } from '@/renderer/core/layout/types'
-import type { NodeLayout } from '@comfyorg/graph-model/layout'
+import { createUuidv4 } from '@/utils/uuid'
+import type { UUID } from '@/utils/uuid'
 
 const mockReportError = vi.hoisted(() => vi.fn())
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({

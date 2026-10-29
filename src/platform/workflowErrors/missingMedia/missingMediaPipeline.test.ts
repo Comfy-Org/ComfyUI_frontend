@@ -1,9 +1,11 @@
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   createPromotedMediaRuntime,
   createPromotedMissingMediaCandidate,
@@ -13,8 +15,6 @@ import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/
 import * as missingMediaScan from '@/platform/workflowErrors/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
-import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { t } from '@/i18n'
 
 let activeWorkflow: ComfyWorkflow
 

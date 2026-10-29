@@ -1,9 +1,5 @@
-import { expect } from '@playwright/test'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
@@ -13,8 +9,8 @@ import {
   mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { WidgetSelectDefaultFixture } from '@e2e/fixtures/components/WidgetSelectDefault'
 import {
   DYNAMIC_COMBO_CLASS,
@@ -22,6 +18,9 @@ import {
 } from '@e2e/fixtures/data/agent/dynamicComboNode'
 import { pinCanvasTransform } from '@e2e/fixtures/utils/pinCanvasTransform'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { expect } from '@playwright/test'
+
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 const WORKFLOW_ID = 'fe347000-0000-4000-8000-000000000001'
 const MESSAGE_ID = 'fe347000-0000-4000-8000-000000000003'

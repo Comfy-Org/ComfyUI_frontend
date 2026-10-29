@@ -1,8 +1,7 @@
-import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 /** Locate a workflow label in whatever panel is visible (browse or search). */
 function findWorkflow(page: Page, name: string) {

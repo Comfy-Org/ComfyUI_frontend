@@ -1,4 +1,3 @@
-import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -9,8 +8,8 @@ import {
   persistThumbnail,
   resolvePreviewUrl
 } from '@/platform/assets/utils/assetPreviewUtil'
-
 import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 const mockUploadAssetFromBase64 = vi.hoisted(() => vi.fn())
 const mockUpdateAsset = vi.hoisted(() => vi.fn())

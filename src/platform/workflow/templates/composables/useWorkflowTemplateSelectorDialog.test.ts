@@ -1,7 +1,8 @@
-import { useDialogService } from '@/services/dialogService'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useDialogStore } from '@/stores/dialogStore'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useDialogService } from '@/services/dialogService'
+import { useDialogStore } from '@/stores/dialogStore'
 
 let mockDialogStore: ReturnType<typeof useDialogStore>
 

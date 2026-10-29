@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest'
-
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
+import { describe, expect, it } from 'vitest'
+
 import { extractTemplateModelRequirementDetails } from './templateModelRequirements'
 
 function model(name: string, directory: string, urlSuffix = name): ModelFile {

@@ -28,11 +28,11 @@
 </template>
 
 <script setup lang="ts">
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useImageQuiet } from '@/composables/useImageQuiet'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { name, previewUrl } = defineProps<{
   name: string

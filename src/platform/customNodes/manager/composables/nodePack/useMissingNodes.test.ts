@@ -1,17 +1,17 @@
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
-import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
 import { useMissingNodes as useSharedMissingNodes } from '@/platform/customNodes/manager/composables/nodePack/useMissingNodes'
 import { useWorkflowPacks } from '@/platform/customNodes/manager/composables/nodePack/useWorkflowPacks'
 import type { WorkflowPack } from '@/platform/customNodes/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 function useMissingNodes() {
   const scope = effectScope()

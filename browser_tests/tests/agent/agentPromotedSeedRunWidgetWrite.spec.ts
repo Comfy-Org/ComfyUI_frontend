@@ -1,10 +1,4 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { PromptResponse } from '@/platform/remote/comfyui/types'
-
 import subgraphWorkflow from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
@@ -15,13 +9,18 @@ import {
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import {
   AGENT_SUBGRAPH_HOST_ID,
   AGENT_SUBGRAPH_INITIAL_SEED,
   agentSubgraphNodeDefs
 } from '@e2e/fixtures/data/agent/agentSubgraphFollower'
+import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { PromptResponse } from '@/platform/remote/comfyui/types'
 
 const WORKFLOW_ID = 'c2003000-0000-4000-8000-000000000001'
 const MESSAGE_ID = 'c2003000-0000-4000-8000-000000000002'

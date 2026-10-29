@@ -1,5 +1,6 @@
 import type { AxiosInstance } from 'axios'
 import axios from 'axios'
+
 import {
   webSessionRequests,
   webSessionSend
@@ -9,13 +10,14 @@ import {
   errorResponseFromBody
 } from '@/platform/remote/comfyui/errors'
 import type { AuthHeader } from '@/types/authTypes'
-import { createWebSessionAdapter } from './webSessionAdapter'
+
 import { attachCapabilityRevisionInterceptor } from './capabilityRevision'
 import {
   NO_WORKSPACE_ACCESS,
   NoWorkspaceAccessError,
   WorkspaceApiError
 } from './ingestApiError'
+import { createWebSessionAdapter } from './webSessionAdapter'
 export interface IngestApiAuth {
   getWorkspaceAuthHeader(): Promise<AuthHeader>
   getFirebaseAuthHeader(): Promise<AuthHeader>

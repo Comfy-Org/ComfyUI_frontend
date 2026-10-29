@@ -1,6 +1,7 @@
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 
 export function augmentToCanvasPointerEvent(
   e: PointerEvent,

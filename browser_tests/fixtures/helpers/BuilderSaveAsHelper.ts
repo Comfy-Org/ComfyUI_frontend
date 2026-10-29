@@ -1,6 +1,5 @@
-import type { Locator, Page } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Locator, Page } from '@playwright/test'
 
 export class BuilderSaveAsHelper {
   /** The save-as dialog (scoped by its stable dialog key). */

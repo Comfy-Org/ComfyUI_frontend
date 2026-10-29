@@ -17,6 +17,7 @@
 
 <script setup lang="ts">
 import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
+
 import SettingGroup from '@/platform/settings/components/SettingGroup.vue'
 import type { ISettingGroup } from '@/platform/settings/types'
 

@@ -1,8 +1,7 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { useStorage } from '@vueuse/core'
 import { computed } from 'vue'
-
-import Button from '@comfyorg/design-system/button/Button'
 
 import RunNoticeAction from './RunNoticeAction.vue'
 

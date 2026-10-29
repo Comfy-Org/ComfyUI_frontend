@@ -1,7 +1,7 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 function createNode(): LGraphNode {

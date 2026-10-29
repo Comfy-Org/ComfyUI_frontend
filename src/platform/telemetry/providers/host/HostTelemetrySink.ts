@@ -82,6 +82,7 @@ import {
   CANCELLATION_STAGE_EVENTS,
   TelemetryEvents
 } from '@comfyorg/telemetry/types'
+
 import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<

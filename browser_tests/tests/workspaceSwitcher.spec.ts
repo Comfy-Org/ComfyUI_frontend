@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import {
   LONG_WORKSPACE_NAME,
   OFF_SCREEN_WORKSPACE_NAME,
@@ -7,9 +5,10 @@ import {
   TEAM_WORKSPACE_NAME,
   createManyWorkspacesResponse
 } from '@e2e/fixtures/data/workspaceSwitcher'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 import { workspaceSwitcherTest as test } from '@e2e/fixtures/workspaceSwitcherFixture'
-import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { expect } from '@playwright/test'
 
 // text-sm rows render a single 20px line; a wrapped name is 40px+.
 const SINGLE_LINE_MAX_HEIGHT_PX = 28

@@ -1,8 +1,4 @@
-import { expect, mergeTests } from '@playwright/test'
-
-import { webSocketFixture } from '@e2e/fixtures/ws'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
-
+import subgraphWorkflow from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
 import {
   agentTest,
   bootAgentApp,
@@ -10,7 +6,6 @@ import {
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { pushHostFrames } from '@e2e/tests/agent/agentPanelMocks'
 import {
   AGENT_INNER_HOST_ID,
   AGENT_NESTED_SUBGRAPH_ID,
@@ -33,7 +28,10 @@ import {
 } from '@e2e/fixtures/data/agent/agentSubgraphFollower'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
-import subgraphWorkflow from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+import { pushHostFrames } from '@e2e/tests/agent/agentPanelMocks'
+import { expect, mergeTests } from '@playwright/test'
 
 const test = mergeTests(agentTest, webSocketFixture)
 

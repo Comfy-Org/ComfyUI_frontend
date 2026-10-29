@@ -3,6 +3,7 @@ import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/format
 
 import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { SkillReference } from '@/workbench/extensions/agent/types/skillReference'
+
 import { promptReferenceParts } from './promptReferenceParts'
 
 export function nodeReferenceText(name: string): string {

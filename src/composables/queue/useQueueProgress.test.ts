@@ -1,10 +1,10 @@
 import { render } from '@testing-library/vue'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, it, expect, beforeEach } from 'vitest'
-import { useExecutionStore } from '@/stores/executionStore'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
+import { useExecutionStore } from '@/stores/executionStore'
 import { formatPercent0 } from '@/utils/numberUtil'
 
 const i18n = createI18n({

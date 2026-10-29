@@ -1,26 +1,24 @@
-import { expect } from '@playwright/test'
-
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type {
   AgentMessage,
   AgentThreadListResponse,
   WorkflowListResponse,
   WorkflowResponse
 } from '@comfyorg/ingest-types'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
-import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { emptySeed } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { emptySeed } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 const DRAFT_THREAD_ID = 'c4a7e2d1-5b3f-4e6a-9c8d-1f2a3b4c5d6e'
 const OTHER_THREAD_ID = 'e1f2a3b4-6c5d-4e7f-8a9b-0c1d2e3f4a5b'

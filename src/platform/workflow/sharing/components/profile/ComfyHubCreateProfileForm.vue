@@ -132,22 +132,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { useI18n } from 'vue-i18n'
-import { useObjectUrl } from '@vueuse/core'
-
-import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@comfyorg/design-system/button/Button'
 import Input from '@comfyorg/design-system/input/Input'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useObjectUrl } from '@vueuse/core'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
+import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import {
   isFileTooLarge,
   MAX_IMAGE_SIZE_MB
 } from '@/platform/workflow/sharing/utils/validateFileSize'
-import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
-import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
-import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const {
   onProfileCreated,

@@ -1,14 +1,13 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import { toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Slider from '@comfyorg/design-system/slider/Slider'
-import Button from '@comfyorg/design-system/button/Button'
 import { useWaveAudioPlayer } from '@/composables/useWaveAudioPlayer'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
-
-import { resolveReplyAssetDownload } from '@/workbench/extensions/agent/utils/resolveReplyAssetDownload'
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
+import { resolveReplyAssetDownload } from '@/workbench/extensions/agent/utils/resolveReplyAssetDownload'
 
 const { asset, title } = defineProps<{ asset: ReplyAsset; title: string }>()
 

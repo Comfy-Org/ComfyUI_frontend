@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   isFirstRunReplayRequested,
   isSurveyReplayRequested
 } from '@/platform/onboarding/onboardingReplay'
-import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'

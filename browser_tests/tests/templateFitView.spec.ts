@@ -1,8 +1,6 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expect } from '@playwright/test'
 
 /**
  * Tests that templates are automatically fitted to view when loaded.

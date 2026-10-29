@@ -1,11 +1,10 @@
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import type { BrowserContext, Page } from '@playwright/test'
 
 import type {
   Member,
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
-
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 export function workspace(
   type: 'personal' | 'team',

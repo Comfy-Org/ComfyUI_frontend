@@ -1,14 +1,13 @@
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, onMounted, onUnmounted } from 'vue'
-
 import { createI18n } from 'vue-i18n'
 
+import WorkspaceSettingsPanelContent from '@/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import WorkspaceSettingsPanelContent from '@/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const mockBannerMounted = vi.fn()
 const mockBannerUnmounted = vi.fn()

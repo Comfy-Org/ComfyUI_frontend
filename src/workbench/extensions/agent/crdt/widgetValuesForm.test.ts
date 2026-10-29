@@ -1,10 +1,10 @@
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { setAssertReporter } from '@/base/assert'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 

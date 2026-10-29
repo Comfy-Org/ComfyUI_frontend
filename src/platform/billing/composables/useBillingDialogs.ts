@@ -1,31 +1,31 @@
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { watch } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
-import TopUpCreditsDialogContentLegacy from '@/platform/billing/components/TopUpCreditsDialogContentLegacy.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
+import InsufficientCreditsMemberDialog from '@/platform/billing/components/InsufficientCreditsMemberDialog.vue'
+import TopUpCreditsDialogContentLegacy from '@/platform/billing/components/TopUpCreditsDialogContentLegacy.vue'
+import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import type {
   DowngradeToPersonalResult,
   SubscriptionDialogOptions,
   TopUpCreditsDialogOptions
 } from '@/platform/billing/composables/types'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { t } from '@/i18n'
-import { provideBillingDialogs } from '@/platform/billing/subscription/composables/billingDialogsAccess'
-import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
-import type { CancellationFlowDialogOptions } from '@/platform/billing/subscription/launchCancellationFlow'
-import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry'
-import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
-import InsufficientCreditsMemberDialog from '@/platform/billing/components/InsufficientCreditsMemberDialog.vue'
-import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { provideBillingDialogs } from '@/platform/billing/subscription/composables/billingDialogsAccess'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+import type { CancellationFlowDialogOptions } from '@/platform/billing/subscription/launchCancellationFlow'
+import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 export function useBillingDialogs() {
   const dialogStore = useDialogStore()

@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import Video from '@comfyorg/design-system/media/Video'
+import Message from '@comfyorg/design-system/message/Message'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   createReusableTemplate,
   useMediaQuery,
@@ -7,12 +12,6 @@ import {
 import { computed, onMounted, ref, watch } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import Video from '@comfyorg/design-system/media/Video'
-import Button from '@comfyorg/design-system/button/Button'
-import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import Message from '@comfyorg/design-system/message/Message'
 import { applyDarkPaletteTheme } from '@/utils/colorPaletteTheme'
 import { openFeedbackDialog } from '@/workbench/extensions/agent/feedback'
 import type { ConsentCardError } from '@/workbench/extensions/agent/types/consentCardError'

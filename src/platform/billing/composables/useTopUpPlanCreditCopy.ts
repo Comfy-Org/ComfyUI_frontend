@@ -1,10 +1,10 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { topUpPlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
+import { topUpPlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
 import { isCloud } from '@/platform/distribution/types'
 
 const LINE_KEYS = {

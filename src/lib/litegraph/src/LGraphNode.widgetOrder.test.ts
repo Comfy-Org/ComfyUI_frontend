@@ -1,10 +1,10 @@
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
-import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { sortWidgetValuesByInputOrder } from '@/workbench/utils/nodeDefOrderingUtil'
 
 describe('LGraphNode widget ordering', () => {

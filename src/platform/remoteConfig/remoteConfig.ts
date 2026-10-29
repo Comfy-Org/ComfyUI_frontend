@@ -1,7 +1,5 @@
 import { StorageSerializers, createGlobalState, useStorage } from '@vueuse/core'
-
-import type { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
-
+import { computed, ref } from 'vue'
 /**
  * Remote configuration service
  *
@@ -14,7 +12,7 @@ import type { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFla
  * This module is tree-shaken in OSS builds.
  */
 
-import { computed, ref } from 'vue'
+import type { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 
 import type { RemoteConfig } from './types'
 

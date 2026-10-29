@@ -1,5 +1,3 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
@@ -9,6 +7,8 @@ import {
 } from '@e2e/fixtures/jobsRouteFixture'
 import type { JobsScenario } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expect, mergeTests } from '@playwright/test'
+
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 const historyJobs: RawJobListItem[] = [

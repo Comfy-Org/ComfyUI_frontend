@@ -19,11 +19,11 @@
 </template>
 
 <script setup lang="ts">
+import EditableText from '@comfyorg/design-system/common/EditableText'
 import { useEventListener } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import type { CSSProperties } from 'vue'
 
-import EditableText from '@comfyorg/design-system/common/EditableText'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import {
   LGraphGroup,

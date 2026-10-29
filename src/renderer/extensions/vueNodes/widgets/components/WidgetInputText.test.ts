@@ -1,9 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
-
 import Input from '@comfyorg/design-system/input/Input'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
+
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputText from './WidgetInputText.vue'

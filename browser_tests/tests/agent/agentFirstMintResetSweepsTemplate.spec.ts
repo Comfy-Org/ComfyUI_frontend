@@ -1,12 +1,8 @@
-import { expect } from '@playwright/test'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { DocResetFrame } from '@comfyorg/ingest-types'
-
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-
-import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import type { DocResetFrame } from '@comfyorg/ingest-types'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
   agentTest as test,
   bootAgentApp,
@@ -16,6 +12,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { expect } from '@playwright/test'
 
 /**
  * The backend mints a workflow's CRDT doc lazily on the first agent turn that

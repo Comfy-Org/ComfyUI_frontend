@@ -1,5 +1,3 @@
-import { assert, describe, expect, it } from 'vitest'
-
 import {
   toOwningGraphId,
   toRootGraphId
@@ -9,9 +7,11 @@ import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { RerouteChain } from '@comfyorg/graph-model/rerouteChain'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { assert, describe, expect, it } from 'vitest'
+
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 import type { UUID } from '@/utils/uuid'
 

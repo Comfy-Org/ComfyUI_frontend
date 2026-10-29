@@ -1,10 +1,10 @@
 import { DownloadStatus } from '@comfyorg/comfyui-electron-types'
 import type { DownloadState } from '@comfyorg/comfyui-electron-types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { isDesktop } from '@/platform/distribution/types'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { electronAPI } from '@/utils/envUtil'
 
 export interface ElectronDownload extends Pick<

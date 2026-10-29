@@ -1,13 +1,12 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { AgentStarterPromptAssignment } from '@comfyorg/telemetry/types'
 import { computed, onMounted, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@comfyorg/design-system/button/Button'
 import { FALLBACK_LOCALE } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
-import type { AgentStarterPromptAssignment } from '@comfyorg/telemetry/types'
-
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 

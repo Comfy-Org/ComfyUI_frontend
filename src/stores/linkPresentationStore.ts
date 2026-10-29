@@ -1,7 +1,3 @@
-import { defineStore } from 'pinia'
-import { reactive } from 'vue'
-
-import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   GraphScope,
   OwningGraphId,
@@ -9,6 +5,9 @@ import type {
 } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { defineStore } from 'pinia'
+import { reactive } from 'vue'
 
 const EMPTY_LINK_IDS: readonly LinkId[] = []
 

@@ -3,11 +3,10 @@ import { fileURLToPath } from 'node:url'
 
 import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
 import type { OpBase } from '@comfyorg/comfy-multi-player'
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { z } from 'zod'
 
 import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 
 export const mintedIds: { thread_id: true; message_id: true } = {
   thread_id: true,

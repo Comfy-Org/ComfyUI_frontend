@@ -1,10 +1,8 @@
-import { expect } from '@playwright/test'
-
-import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   cloudAppFixture as test,
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
+import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import {
   SECRETS_BOOT_FEATURES,
@@ -12,6 +10,7 @@ import {
   mockSecretsBackend,
   openSecretsPanel
 } from '@e2e/fixtures/utils/cloudSecretsMocks'
+import { expect } from '@playwright/test'
 
 /**
  * End-to-end coverage for the user-secrets (API keys) surface in the cloud app:

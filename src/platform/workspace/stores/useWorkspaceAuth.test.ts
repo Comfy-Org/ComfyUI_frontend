@@ -1,41 +1,38 @@
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useAuthStore } from '@/stores/authStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useToast } from '@/components/ui/toast/toastStore'
 import type { User } from 'firebase/auth'
-
 import { storeToRefs } from 'pinia'
-import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { nextTick } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import type {
   WebSessionRequestScope,
   WebSessionRequests
 } from '@/platform/auth/session/webSessionFetch'
 import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { t } from '@/i18n'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS,
   useWorkspaceAuthStore,
   WorkspaceAuthError
 } from '@/platform/workspace/stores/workspaceAuthStore'
-
-import {
-  getWorkspaceId,
-  StorageKeys
-} from '@/platform/workflow/persistence/base/storageKeys'
 import {
   TOKEN_REFRESH_BUFFER_MS,
   WORKSPACE_STORAGE_KEYS
 } from '@/platform/workspace/workspaceConstants'
+import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import {
   replayIdentityPort,
   stubFirebaseAuthHarness

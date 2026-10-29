@@ -45,20 +45,18 @@
 </template>
 
 <script lang="ts" setup>
+import Button from '@comfyorg/design-system/button/Button'
+import TinyChevronIcon from '@comfyorg/design-system/icon/TinyChevronIcon'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
-import { cn } from '@comfyorg/tailwind-utils'
-
-import TinyChevronIcon from '@comfyorg/design-system/icon/TinyChevronIcon'
 
 const { t } = useI18n()
 

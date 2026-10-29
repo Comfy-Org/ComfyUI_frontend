@@ -81,18 +81,18 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
-import Button from '@comfyorg/design-system/button/Button'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemUrl } from '@/utils/resultItemUrl'
 import {
   isAudioResult,
   isImageResult,
   isTextResult,
   isVideoResult
 } from '@/utils/resultItem'
+import { resultItemUrl } from '@/utils/resultItemUrl'
 
 import ResultAudio from './ResultAudio.vue'
 import ResultText from './ResultText.vue'

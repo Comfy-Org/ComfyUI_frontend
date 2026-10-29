@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Button from '@comfyorg/design-system/button/Button'
-import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useI18n } from 'vue-i18n'
+
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
+import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 
 const { t } = useI18n()

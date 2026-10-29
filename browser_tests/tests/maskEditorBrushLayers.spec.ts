@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { maskEditorTest as test } from '@e2e/fixtures/helpers/MaskEditorHelper'
+import { expect } from '@playwright/test'
 
 const RGB_PAINT_TOOL_INDEX = 1 // RGB / color paint tool
 const ERASER_TOOL_INDEX = 2 // Eraser tool

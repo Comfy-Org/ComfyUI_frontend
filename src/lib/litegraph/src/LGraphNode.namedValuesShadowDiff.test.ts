@@ -1,8 +1,8 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ISerialisedNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { useTelemetry } from '@comfyorg/telemetry'
 
 vi.mock(import('@comfyorg/telemetry'))
 

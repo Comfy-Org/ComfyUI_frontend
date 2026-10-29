@@ -1,18 +1,18 @@
-import { AuthStoreError, useAuthStore } from '@/stores/authStore'
-import { render, screen } from '@testing-library/vue'
+import Button from '@comfyorg/design-system/button/Button'
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import PricingTable from '@/platform/billing/subscription/components/PricingTable.vue'
-import Button from '@comfyorg/design-system/button/Button'
 import type { IngestSubscriptionTier } from '@/platform/billing/subscription/constants/tierPricing'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))

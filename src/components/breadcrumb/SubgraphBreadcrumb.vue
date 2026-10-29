@@ -66,18 +66,18 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import type { BreadcrumbItem } from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
-import Button from '@comfyorg/design-system/button/Button'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
-import { useTelemetry } from '@comfyorg/telemetry'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { forEachSubgraphNode } from '@/utils/graphTraversalUtil'

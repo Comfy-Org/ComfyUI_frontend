@@ -20,16 +20,16 @@
  * See docs/adr/WIDGET-SERIALIZATION-0047-agent-wire-widget-form-is-proven-not-derived.md
  */
 import type { WidgetValuesForm } from '@comfyorg/comfy-multi-player'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { assert } from '@/base/assert'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetState } from '@comfyorg/graph-model/widgetState'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 /** The post-hook halves of a serialized node this module reads. */
 type SerializedWidgetValues = Pick<ISerialisedNode, 'widgets_values_named'>

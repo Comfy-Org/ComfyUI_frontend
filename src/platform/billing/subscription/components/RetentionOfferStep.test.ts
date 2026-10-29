@@ -5,13 +5,13 @@ import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { billingApi } from '@/platform/billing/api/billingApi'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { RetentionOfferOutcome } from '@/platform/billing/subscription/utils/retentionOffer'
-import { billingApi } from '@/platform/billing/api/billingApi'
-import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
+import type { RetentionOfferOutcome } from '@/platform/billing/subscription/utils/retentionOffer'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import RetentionOfferStep from './RetentionOfferStep.vue'
 

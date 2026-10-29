@@ -1,10 +1,10 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { loadCompositorSession } from './compositorSession'
 

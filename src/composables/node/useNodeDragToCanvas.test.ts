@@ -1,16 +1,17 @@
-import { useToast } from '@/components/ui/toast/toastStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
-import { useNodeDragToCanvas } from './useNodeDragToCanvas'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { fromPartial } from '@total-typescript/shoehorn'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import { startModelLoaderDrag } from './startModelNodeDragFromAsset'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+
+import { startModelLoaderDrag } from './startModelNodeDragFromAsset'
+import { useNodeDragToCanvas } from './useNodeDragToCanvas'
 
 const { mockConvertEventToCanvasOffset, mockSelectItems, mockCanvas } =
   vi.hoisted(() => {

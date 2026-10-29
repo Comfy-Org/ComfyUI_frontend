@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   breakpointsTailwind,
   createSharedComposable,
@@ -8,20 +9,18 @@ import { computed, ref, watch } from 'vue'
 
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import {
   consumeFirstRunReplayRequest,
   isFirstRunReplayRequested
 } from '@/platform/onboarding/onboardingReplay'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
+import { useFirstRunTourController } from '@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'
 import { useNewUserService } from '@/services/useNewUserService'
 import { useAuthStore } from '@/stores/authStore'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
-
-import { useFirstRunTourController } from '@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'
 
 const STARTUP_DECISION_TIMEOUT_MS = 60_000
 

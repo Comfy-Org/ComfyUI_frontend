@@ -1,8 +1,7 @@
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
-
-import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 
 import { useCropBoxEditor } from './useCropBoxEditor'
 import type { CropDragMode } from './useCropBoxEditor'

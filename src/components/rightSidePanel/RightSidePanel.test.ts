@@ -1,5 +1,6 @@
-import { getActivePinia } from 'pinia'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -11,15 +12,14 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 const mockApp = vi.hoisted(() => ({

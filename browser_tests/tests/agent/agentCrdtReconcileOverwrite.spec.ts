@@ -1,11 +1,10 @@
-import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 /**
  * The color and title specs cover a follower rebind: returning to a workflow

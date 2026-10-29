@@ -1,3 +1,11 @@
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
+import type { Op } from '@comfyorg/comfy-multi-player'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { reportError as reportErrorFn } from '@comfyorg/telemetry/reportError'
+import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 /**
  * Composable-owned behavior only (plan 3.5's subscribe-robustness probes):
  * the bridge/client mechanics have their own suites
@@ -9,26 +17,16 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
-import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
-import type { Op } from '@comfyorg/comfy-multi-player'
-
-import { render } from '@testing-library/vue'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-
-import { useTelemetry } from '@comfyorg/telemetry'
-import type { reportError as reportErrorFn } from '@comfyorg/telemetry/reportError'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
-import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 
 const bridgeState = (() => {
   const liveSubscriptions = new Map<object, Set<string>>()
@@ -175,6 +173,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
+import type { AgentCrdtStatus } from './agentCrdtStatus'
 import { clearDevEvents, devEvents } from './devPanelLog'
 import {
   STALE_AFTER_MS,
@@ -182,7 +181,6 @@ import {
   useAgentCrdtFollower
 } from './useAgentCrdtFollower'
 import type { AgentCrdtFollowerOptions } from './useAgentCrdtFollower'
-import type { AgentCrdtStatus } from './agentCrdtStatus'
 
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
 const TEARDOWN_ERROR_TYPE = 'failure_tearing_down_agent_crdt_follower'

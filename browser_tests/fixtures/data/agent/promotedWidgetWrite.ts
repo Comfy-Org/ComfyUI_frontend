@@ -1,9 +1,8 @@
-import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import fs from 'node:fs'
 import path from 'node:path'
 
+import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
-
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 
 export const PROMOTED_WIDGET_SUBGRAPH_TYPE =

@@ -3,6 +3,7 @@ import { nextTick } from 'vue'
 
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+
 import { useAgentPanelStore } from './agentPanelStore'
 
 vi.mock(import('@comfyorg/telemetry'), () => ({

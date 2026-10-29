@@ -1,7 +1,10 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { getActivePinia } from 'pinia'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { cleanup, fireEvent, render, screen } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { getActivePinia } from 'pinia'
 import {
   assert,
   beforeEach,
@@ -16,12 +19,12 @@ import { createI18n } from 'vue-i18n'
 
 import type { Toast } from '@/components/ui/toast/toastStore'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   DEPLOYMENT_LISTING_BACKSTOP_MS,
   DEPLOYMENT_LISTING_NO_HINT_WAIT_MS
@@ -30,16 +33,13 @@ import {
   hasDeploymentLink,
   readDeploymentHint
 } from '@/platform/workspace/deploymentHint'
-import { useReleaseStore } from '@/platform/updates/common/releaseStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
-import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import GraphCanvas from './GraphCanvas.vue'
 const distribution = vi.hoisted(() => ({ isCloud: false }))

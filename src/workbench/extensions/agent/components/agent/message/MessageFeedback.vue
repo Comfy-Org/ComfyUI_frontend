@@ -1,19 +1,19 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useClipboard } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@comfyorg/design-system/button/Button'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-import { resolveReplyAssetDownload } from '@/workbench/extensions/agent/utils/resolveReplyAssetDownload'
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
+import { resolveReplyAssetDownload } from '@/workbench/extensions/agent/utils/resolveReplyAssetDownload'
 
 const { markdown, assets = [] } = defineProps<{
   markdown: string

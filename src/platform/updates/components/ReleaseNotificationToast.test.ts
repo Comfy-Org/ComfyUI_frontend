@@ -9,17 +9,17 @@ beforeEach(() => {
   Object.assign(useReleaseStore(), { releases: [] })
   vi.mocked(useReleaseStore().fetchReleases).mockResolvedValue(undefined)
 })
-import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useErrorHandling } from '@/composables/useErrorHandling'
-
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+
 import ReleaseNotificationToast from './ReleaseNotificationToast.vue'
 
 vi.hoisted(() => {

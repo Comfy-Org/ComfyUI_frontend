@@ -21,13 +21,14 @@
 
 <script setup lang="ts">
 import type { RetentionFlowResponse } from '@comfyorg/ingest-types'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { onMounted, onUnmounted, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import CancelSubscriptionDialogContent from '@/platform/billing/subscription/components/CancelSubscriptionDialogContent.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import CancellationSurveyStep from '@/platform/billing/subscription/components/CancellationSurveyStep.vue'
+import CancelSubscriptionDialogContent from '@/platform/billing/subscription/components/CancelSubscriptionDialogContent.vue'
 import RetentionOfferStep from '@/platform/billing/subscription/components/RetentionOfferStep.vue'
 import { recordRetentionFlowEvent } from '@/platform/billing/subscription/launchCancellationFlow'
 import type { CancellationSurveyExit } from '@/platform/billing/subscription/utils/cancellationSurvey'
@@ -36,7 +37,6 @@ import {
   createCancelFlowReporter,
   getSubscriptionCancellationMetadata
 } from '@/platform/billing/subscription/utils/subscriptionCancellationTelemetry'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 type CancellationFlowStep = 'survey' | 'offer' | 'confirm'

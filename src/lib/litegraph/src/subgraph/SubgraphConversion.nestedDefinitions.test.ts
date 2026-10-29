@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   assert,
   beforeEach,
@@ -8,6 +9,7 @@ import {
   vi
 } from 'vitest'
 
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import type {
   LGraph,
   Positionable,
@@ -15,8 +17,6 @@ import type {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
-import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {
   createTestRootGraph,

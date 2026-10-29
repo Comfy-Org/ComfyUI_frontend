@@ -1,12 +1,12 @@
-import { runWhenGlobalIdle } from '@/base/common/async'
-import type { SlotTypeDefaultNodeOpts } from '@/lib/litegraph/src/LiteGraphGlobal'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { collectRegistrableSlotTypes } from '@/extensions/core/slotDefaultTypes'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { ComfyExtension } from '@/types/comfy'
 
+import { runWhenGlobalIdle } from '@/base/common/async'
+import { collectRegistrableSlotTypes } from '@/extensions/core/slotDefaultTypes'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { SlotTypeDefaultNodeOpts } from '@/lib/litegraph/src/LiteGraphGlobal'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
+import type { ComfyExtension } from '@/types/comfy'
 
 interface SlotDefaultsExtension extends ComfyExtension {
   suggestionsNumber: { value: number } | null

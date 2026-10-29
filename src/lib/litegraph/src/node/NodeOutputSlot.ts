@@ -4,21 +4,20 @@ import type {
   SubgraphInput,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-
-import type { LinkId } from '@comfyorg/graph-model/linkId'
-import { LabelPosition } from '@/lib/litegraph/src/draw'
 import type { OptionalProps } from '@comfyorg/graph-model/interfaces'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+
+import { LabelPosition } from '@/lib/litegraph/src/draw'
 import { createArrayMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-
 import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 

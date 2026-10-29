@@ -1,15 +1,16 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { DialogPortal } from 'reka-ui'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { DialogPortal } from 'reka-ui'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import { FuseFilter } from '@/utils/fuseUtil'
+
 import NodeSearchBox from './NodeSearchBox.vue'
 
 vi.mock(import('@comfyorg/telemetry'))

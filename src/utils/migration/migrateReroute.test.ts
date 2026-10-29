@@ -1,8 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { describe, expect, it } from 'vitest'
 
 import type { WorkflowJSON04 } from '@comfyorg/graph-model/workflowSchema'
+import { describe, expect, it } from 'vitest'
+
 import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
 
 describe('migrateReroute', () => {

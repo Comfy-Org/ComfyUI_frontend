@@ -1,3 +1,4 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -7,7 +8,6 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { resolveTourRoles } from './resolveTourRoles'
 import { TOUR_ROLE_PINS } from './tourRolePins'

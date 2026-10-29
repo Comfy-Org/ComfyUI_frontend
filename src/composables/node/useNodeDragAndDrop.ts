@@ -1,5 +1,6 @@
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { partition } from 'es-toolkit'
+
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'

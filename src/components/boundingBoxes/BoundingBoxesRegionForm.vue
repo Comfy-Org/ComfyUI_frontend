@@ -68,14 +68,13 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import PaletteSwatchRow from '@/components/palette/PaletteSwatchRow.vue'
-import Button from '@comfyorg/design-system/button/Button'
-import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import type { Region } from '@/composables/boundingBoxes/boundingBoxesUtil'
 
 const textareaClass =

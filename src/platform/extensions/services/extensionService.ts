@@ -1,21 +1,21 @@
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { once } from 'es-toolkit'
 import type { WatchHandle } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { provideExtensionService } from '@/platform/extensions/services/extensionServiceAccess'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
-import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
-import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useApp } from '@/scripts/appInstance'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
-import { useApp } from '@/scripts/appInstance'
-import { provideExtensionService } from '@/platform/extensions/services/extensionServiceAccess'
+import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
   return (

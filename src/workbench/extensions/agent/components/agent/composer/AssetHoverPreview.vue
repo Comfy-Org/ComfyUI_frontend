@@ -1,17 +1,17 @@
 <script setup lang="ts">
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useElementHover } from '@vueuse/core'
 import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import { computed, onBeforeUnmount, useId, useTemplateRef, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { ComponentInstance } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
-import AssetMediaPreview from './AssetMediaPreview.vue'
-
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
+
+import AssetMediaPreview from './AssetMediaPreview.vue'
 
 const { name, previewUrl, mediaUrl, mediaKind } = defineProps<{
   name: string

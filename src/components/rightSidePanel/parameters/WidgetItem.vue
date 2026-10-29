@@ -1,20 +1,22 @@
 <script setup lang="ts">
+import EditableText from '@comfyorg/design-system/common/EditableText'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, customRef, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import EditableText from '@comfyorg/design-system/common/EditableText'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { draggableItemClass } from '@/scripts/ui/draggableList'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { draggableItemClass } from '@/scripts/ui/draggableList'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   stripGraphPrefix,
@@ -26,9 +28,7 @@ import type {
   SimplifiedWidget,
   WidgetValue as SimplifiedWidgetValue
 } from '@/types/simplifiedWidget'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 import { renameWidget } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 

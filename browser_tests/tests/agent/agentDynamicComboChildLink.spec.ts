@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
 import {
   CHILD,
   dynamicComboChildLinkTest as test
 } from '@e2e/fixtures/agentDynamicComboChildLinkFixture'
+import { expect } from '@playwright/test'
 
 test.describe(
   'A human link into a dynamic-combo child input the document lacks',

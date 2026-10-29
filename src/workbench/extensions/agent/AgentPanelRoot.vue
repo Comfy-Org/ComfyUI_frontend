@@ -1,7 +1,23 @@
 <script setup lang="ts">
 import './agentPanel.css'
-
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type {
+  AgentErrorMetadata,
+  AgentMessageSentMetadata,
+  AgentPaywallSurface,
+  AgentRunApprovalDecision,
+  AgentStopMethod
+} from '@comfyorg/telemetry/types'
 import { useClipboard, useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -16,21 +32,22 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useAppMode } from '@/composables/useAppMode'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import type {
-  AgentErrorMetadata,
-  AgentMessageSentMetadata,
-  AgentPaywallSurface,
-  AgentRunApprovalDecision,
-  AgentStopMethod
-} from '@comfyorg/telemetry/types'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { findServerPreviewUrl } from '@/platform/assets/utils/assetPreviewUtil'
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
+import type { MinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
+import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
+import { isCloud } from '@/platform/distribution/types'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
-import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import {
   readWorkflowDraftLineage,
   useWorkflowService,
@@ -38,58 +55,64 @@ import {
 } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useAppMode } from '@/composables/useAppMode'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { findServerPreviewUrl } from '@/platform/assets/utils/assetPreviewUtil'
-import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
-import type { DroppedAsset } from '@/utils/eventUtils'
-import { useAssetsStore } from '@/stores/assetsStore'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
-import { useAuthStore } from '@/stores/authStore'
-import {
-  AGENT_ATTACH_ACCEPT,
-  agentAttachRefVerdict,
-  agentAttachVerdict,
-  isValidAgentAttachment
-} from './utils/attachableFiles'
-import type { AgentAttachVerdict } from './utils/attachableFiles'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { MinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
-import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 // The composition root injects the renderer-owned layout port; follower core
 // stays independent of renderer and LiteGraph runtime values.
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
+import type { DroppedAsset } from '@/utils/eventUtils'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { useToast } from '@/components/ui/toast/toastStore'
+import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
+import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
+
+import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
+import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
+import AgentPanel from './components/agent/AgentPanel.vue'
+import OnboardingCoach from './components/agent/OnboardingCoach.vue'
+import RunNoticeBanner from './components/agent/RunNoticeBanner.vue'
+import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
+import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
+import { useAgentConsent } from './composables/agent/useAgentConsent'
+import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
+import type {
+  TurnOrigin,
+  WorkflowTurnContext
+} from './composables/agent/useAgentSession'
 import {
-  toOwningGraphId,
-  toRootGraphId
-} from '@comfyorg/graph-model/graphScopeId'
-import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
-import { isCloud } from '@/platform/distribution/types'
-import { parseNodeId } from '@comfyorg/graph-model/nodeId'
-import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+  isRetryableRequestFailure,
+  trackAgentError,
+  useAgentSession
+} from './composables/agent/useAgentSession'
+import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
+import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
+import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
+import {
+  MAX_ATTACHMENT_BYTES,
+  MAX_TURN_ATTACHMENTS,
+  useAttachment
+} from './composables/agent/useAttachment'
+import type { SelectedNode } from './composables/agent/useCanvasSelection'
+import {
+  selectedNodeKey,
+  useCanvasSelection
+} from './composables/agent/useCanvasSelection'
 import {
   adoptSharedOnboardingFlag,
   hasSeenCoach,
@@ -97,92 +120,9 @@ import {
   scopedOnboardingKey,
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
-
-import { useFreeUsePlacement } from './experiments/freeUsePlacement'
-import { useStarterPromptSet } from './experiments/starterPromptSet'
-import AgentPanel from './components/agent/AgentPanel.vue'
-import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
-import RunNoticeBanner from './components/agent/RunNoticeBanner.vue'
-import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
-import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
-import OnboardingCoach from './components/agent/OnboardingCoach.vue'
-import {
-  MAX_ATTACHMENT_BYTES,
-  MAX_TURN_ATTACHMENTS,
-  useAttachment
-} from './composables/agent/useAttachment'
-import type { ActiveTab } from './types/activeTab'
-import type { SelectedNode } from './composables/agent/useCanvasSelection'
-import {
-  selectedNodeKey,
-  useCanvasSelection
-} from './composables/agent/useCanvasSelection'
-import type {
-  AgentActiveTabData,
-  AgentWsEvent,
-  TurnId
-} from './schemas/agentApiSchema'
-import { toTurnId } from './schemas/agentApiSchema'
-import type {
-  ConversationEntry,
-  TurnTab
-} from './stores/agent/agentConversationStore'
-import { useAgentConversationStore } from './stores/agent/agentConversationStore'
-import type {
-  TurnOrigin,
-  WorkflowTurnContext
-} from './composables/agent/useAgentSession'
 import type { CoachStep } from './composables/agent/useOnboarding'
 import { useBillingIdentity } from './composables/useBillingIdentity'
-import { useAgentConsent } from './composables/agent/useAgentConsent'
-import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
-import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
-import {
-  isRetryableRequestFailure,
-  trackAgentError,
-  useAgentSession
-} from './composables/agent/useAgentSession'
-import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
-import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import {
-  agentRequestFailureFingerprint,
-  describeAgentRequestFailure
-} from './services/agent/agentRequestFailure'
-import { createAgentRestClient } from './services/agent/agentRestClient'
-import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
-import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
-import {
-  agentSocketAuthParams,
-  ensureSignedIn,
-  hasAgentCredential
-} from './services/agent/agentAuth'
-import type { DraftSnapshot } from './services/agent/agentRestClient'
-import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
-import {
-  DEFAULT_AGENT_PAYWALL_PRESENTATION,
-  resolveAgentPaywallPresentation,
-  toAgentPaywallCta,
-  toAgentPaywallReason
-} from './services/agent/agentPaywallPresentation'
-import { isCreditsStopPart } from './services/agent/agentMessageParts'
-import type { CanvasConfirmation } from './services/agent/agentEventTransport'
-import { toolCanClaimCanvasContent } from './services/agent/agentToolClassification'
-import { areAgentWorkflowIdsEquivalent } from './services/agent/agentWorkflowId'
-import { createAgentEventSource } from './services/agent/agentEventSource'
-import { resolveAgentIdentity } from './services/agent/agentIdentity'
-import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
-import { useAgentNodeDefinitionRefreshStore } from './stores/agent/agentNodeDefinitionRefreshStore'
-import { agentMessageText } from './utils/agentMessageText'
-import {
-  deriveSessionTitle,
-  withCurrentSessionTitle
-} from './utils/sessionTitle'
-import { useAgentComposerStore } from './stores/agent/agentComposerStore'
-import { useAgentConsentStore } from './stores/agent/agentConsentStore'
-import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNoticeState'
-import { useAgentPanelStore } from './stores/agent/agentPanelStore'
-import { useAgentPanelRenderStore } from './stores/agent/agentPanelRenderStore'
-import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
+import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'
 import {
   isCrdtDebugEnabled,
   resolveDebugPanelEnabled,
@@ -191,7 +131,65 @@ import {
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
-import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'
+import { useFreeUsePlacement } from './experiments/freeUsePlacement'
+import { useStarterPromptSet } from './experiments/starterPromptSet'
+import type {
+  AgentActiveTabData,
+  AgentWsEvent,
+  TurnId
+} from './schemas/agentApiSchema'
+import { toTurnId } from './schemas/agentApiSchema'
+import {
+  agentSocketAuthParams,
+  ensureSignedIn,
+  hasAgentCredential
+} from './services/agent/agentAuth'
+import { createAgentEventSource } from './services/agent/agentEventSource'
+import type { CanvasConfirmation } from './services/agent/agentEventTransport'
+import { resolveAgentIdentity } from './services/agent/agentIdentity'
+import { isCreditsStopPart } from './services/agent/agentMessageParts'
+import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
+import {
+  DEFAULT_AGENT_PAYWALL_PRESENTATION,
+  resolveAgentPaywallPresentation,
+  toAgentPaywallCta,
+  toAgentPaywallReason
+} from './services/agent/agentPaywallPresentation'
+import {
+  agentRequestFailureFingerprint,
+  describeAgentRequestFailure
+} from './services/agent/agentRequestFailure'
+import { createAgentRestClient } from './services/agent/agentRestClient'
+import type { DraftSnapshot } from './services/agent/agentRestClient'
+import { toolCanClaimCanvasContent } from './services/agent/agentToolClassification'
+import { areAgentWorkflowIdsEquivalent } from './services/agent/agentWorkflowId'
+import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { useAgentComposerStore } from './stores/agent/agentComposerStore'
+import { useAgentConsentStore } from './stores/agent/agentConsentStore'
+import type {
+  ConversationEntry,
+  TurnTab
+} from './stores/agent/agentConversationStore'
+import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
+import { useAgentNodeDefinitionRefreshStore } from './stores/agent/agentNodeDefinitionRefreshStore'
+import { useAgentPanelRenderStore } from './stores/agent/agentPanelRenderStore'
+import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNoticeState'
+import type { ActiveTab } from './types/activeTab'
+import { agentMessageText } from './utils/agentMessageText'
+import {
+  AGENT_ATTACH_ACCEPT,
+  agentAttachRefVerdict,
+  agentAttachVerdict,
+  isValidAgentAttachment
+} from './utils/attachableFiles'
+import type { AgentAttachVerdict } from './utils/attachableFiles'
+import {
+  deriveSessionTitle,
+  withCurrentSessionTitle
+} from './utils/sessionTitle'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')

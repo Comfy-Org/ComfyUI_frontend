@@ -5,6 +5,7 @@
  * Integrates with the layout system to ensure proper visual ordering.
  */
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'

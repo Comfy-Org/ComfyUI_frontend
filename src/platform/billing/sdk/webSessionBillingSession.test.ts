@@ -1,7 +1,6 @@
+import type { WebSessionErrorCode } from '@comfyorg/account-core/webSession'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
-
-import type { WebSessionErrorCode } from '@comfyorg/account-core/webSession'
 
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { createWebSessionBillingSession } from '@/platform/billing/sdk/webSessionBillingSession'

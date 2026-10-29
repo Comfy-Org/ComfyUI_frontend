@@ -1,5 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import type { Mock } from 'vitest'
@@ -7,11 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
-
 import SsoRequiredDialogContent from '@/platform/auth/sso/SsoRequiredDialogContent.vue'
 import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('firebase/auth'))

@@ -1,14 +1,14 @@
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { isWidgetId, parseWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useEventListener } from '@vueuse/core'
 import { computed, shallowRef, triggerRef } from 'vue'
 
 import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { InputWidgetConfig } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
-import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { isWidgetId, parseWidgetId } from '@comfyorg/graph-model/widgetId'
 
 export type ResolvedSelection =
   | {

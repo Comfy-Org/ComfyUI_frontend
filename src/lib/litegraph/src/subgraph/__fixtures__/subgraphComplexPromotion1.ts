@@ -1,8 +1,9 @@
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
+
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 
 export const subgraphComplexPromotion1 = {
   id: 'e49902fa-ee3e-40e6-a59e-c8931888ad0e',

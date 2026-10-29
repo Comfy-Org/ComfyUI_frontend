@@ -1,7 +1,8 @@
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { getParentExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 import type { DeclaredModelFile } from '@comfyorg/graph-model/workflowSchema'
 import { zDeclaredModelFile } from '@comfyorg/graph-model/workflowSchema'
-import { getParentExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
+
 import type { FlattenableWorkflowNode } from './workflowFlattening'
 
 type NodeModelMetadata = {

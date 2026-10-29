@@ -73,13 +73,13 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import { onClickOutside, usePointerSwipe, whenever } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { useWidgetHeight } from '@/types/widgetTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   min = -Number.MAX_VALUE,

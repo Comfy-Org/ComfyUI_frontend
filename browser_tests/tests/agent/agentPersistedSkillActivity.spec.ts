@@ -1,6 +1,6 @@
+import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import { expect } from '@playwright/test'
 
-import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import type { PersistedToolCallSummary } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 test.describe.configure({ timeout: 120_000 })

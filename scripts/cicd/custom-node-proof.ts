@@ -7,6 +7,7 @@ import {
   writeFileSync
 } from 'node:fs'
 import { join } from 'node:path'
+
 import { isMainModule } from '../isMainModule'
 
 const SOURCE_TIER_SWITCH = '__COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__'

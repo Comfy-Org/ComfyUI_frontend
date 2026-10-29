@@ -29,19 +29,19 @@
   </div>
 </template>
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import Switch from '@comfyorg/design-system/switch/Switch'
 import { debounce } from 'es-toolkit/compat'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import Switch from '@comfyorg/design-system/switch/Switch'
-import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
 import { useImportFailedDetection } from '@/platform/customNodes/manager/composables/useImportFailedDetection'
-import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import { useNodeConflictDialog } from '@/platform/customNodes/manager/composables/useNodeConflictDialog'
+import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/platform/customNodes/manager/stores/conflictDetectionStore'
 import type { components as ManagerComponents } from '@/platform/customNodes/manager/types/generatedManagerTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 
 const TOGGLE_DEBOUNCE_MS = 256
 

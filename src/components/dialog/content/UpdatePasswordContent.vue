@@ -13,11 +13,11 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { useForm } from 'vee-validate'
 import { ref } from 'vue'
 
 import PasswordFields from '@/components/dialog/content/signin/PasswordFields.vue'
-import Button from '@comfyorg/design-system/button/Button'
 import { useUpdatePassword } from '@/composables/auth/useUpdatePassword'
 import { updatePasswordSchema } from '@/schemas/signInSchema'
 

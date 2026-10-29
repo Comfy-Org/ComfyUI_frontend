@@ -1,3 +1,4 @@
+import type { VideoConcatValue } from '@comfyorg/graph-model/widgets'
 import { isEqual } from 'es-toolkit'
 import { computed } from 'vue'
 import type { Ref } from 'vue'
@@ -7,7 +8,6 @@ import {
   moveItem
 } from '@/composables/videoConcat/videoConcatOrder'
 import type { ConcatClipSlot } from '@/composables/videoConcat/videoConcatOrder'
-import type { VideoConcatValue } from '@comfyorg/graph-model/widgets'
 
 export function useVideoConcatOrder<T extends ConcatClipSlot>(
   modelValue: Ref<VideoConcatValue>,

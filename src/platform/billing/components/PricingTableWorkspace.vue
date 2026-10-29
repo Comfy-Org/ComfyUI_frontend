@@ -253,17 +253,17 @@
 </template>
 
 <script setup lang="ts">
-import PricingTierHeading from '@/platform/billing/components/PricingTierHeading.vue'
-import { planCtaActionName } from '@/platform/telemetry/billingActionNames'
-import { cn } from '@comfyorg/tailwind-utils'
+import type { Plan } from '@comfyorg/billing-core'
+import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import { cn } from '@comfyorg/tailwind-utils'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
-import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import PricingTierHeading from '@/platform/billing/components/PricingTierHeading.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import {
   TIER_PRICING,
@@ -277,8 +277,8 @@ import type {
   TierPricing
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import type { Plan } from '@comfyorg/billing-core'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { planCtaActionName } from '@/platform/telemetry/billingActionNames'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 

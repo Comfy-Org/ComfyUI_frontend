@@ -85,14 +85,14 @@
   </Tooltip>
 </template>
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverRoot, PopoverTrigger } from 'reka-ui'
-import { computed, ref, useTemplateRef } from 'vue'
-
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { cn } from '@comfyorg/tailwind-utils'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import { computed, ref, useTemplateRef } from 'vue'
+
 import type { TopbarBadge } from '@/types/comfy'
 
 const {

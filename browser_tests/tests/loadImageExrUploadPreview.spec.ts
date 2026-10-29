@@ -1,11 +1,10 @@
-import type { Locator, Page } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import type { Locator, Page } from '@playwright/test'
 
 const EXR_FILENAME = 'test_upload_image.exr'
 const PREVIEW_ID = '3f2c9a4e-8d1b-4c6f-9e7a-5b0d2c1f8a63'

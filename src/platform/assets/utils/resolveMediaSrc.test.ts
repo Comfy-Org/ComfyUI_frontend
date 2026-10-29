@@ -1,9 +1,9 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { resolveMediaSrc } from '@/platform/assets/utils/assetUrlUtil'
 import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import { resolveMediaSrc } from '@/platform/assets/utils/assetUrlUtil'
 
 describe('resolveMediaSrc', () => {
   let release: (() => void) | undefined

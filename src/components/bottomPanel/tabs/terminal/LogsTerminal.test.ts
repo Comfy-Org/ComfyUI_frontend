@@ -5,8 +5,8 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import LogsTerminal from '@/components/bottomPanel/tabs/terminal/LogsTerminal.vue'
-import { useExecutionStore } from '@/stores/executionStore'
 import { api } from '@/scripts/api'
+import { useExecutionStore } from '@/stores/executionStore'
 
 vi.mock(import('@/scripts/api'))
 

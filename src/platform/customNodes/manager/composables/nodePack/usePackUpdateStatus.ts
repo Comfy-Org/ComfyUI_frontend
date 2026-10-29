@@ -1,9 +1,9 @@
 import type { MaybeRefOrGetter } from 'vue'
 import { computed, toValue } from 'vue'
 
-import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import { getPackUpdateStatus } from '@/platform/customNodes/manager/utils/packUpdateStatus'
+import type { components } from '@/types/comfyRegistryTypes'
 
 export const usePackUpdateStatus = (
   nodePackSource: MaybeRefOrGetter<components['schemas']['Node']>

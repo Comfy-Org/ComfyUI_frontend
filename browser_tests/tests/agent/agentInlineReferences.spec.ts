@@ -1,16 +1,16 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { WorkflowsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
-import { Topbar } from '@e2e/fixtures/components/Topbar'
 import {
   inlineReferencesTest as test,
   referenceNode,
   referenceWorkflow
 } from '@e2e/fixtures/agentInlineReferencesFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { WorkflowsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.use({
   connectWebSocketToServer: false,

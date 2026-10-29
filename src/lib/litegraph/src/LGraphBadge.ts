@@ -1,4 +1,5 @@
 import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { LGraphIcon } from './LGraphIcon'
 import type { LGraphIconOptions } from './LGraphIcon'
 import { cachedMeasureText } from './utils/textMeasureCache'

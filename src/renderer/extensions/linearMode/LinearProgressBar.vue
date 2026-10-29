@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useExecutionStore } from '@/stores/executionStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   class: className,

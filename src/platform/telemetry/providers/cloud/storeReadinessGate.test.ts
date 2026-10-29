@@ -80,11 +80,12 @@ vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
+
 import {
   markStoresPending,
   markStoresReady
 } from '@/platform/telemetry/storeReadiness'
-import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 import { CustomerIoTelemetryProvider } from './CustomerIoTelemetryProvider'
 import { MixpanelTelemetryProvider } from './MixpanelTelemetryProvider'

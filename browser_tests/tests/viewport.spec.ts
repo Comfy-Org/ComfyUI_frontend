@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { expect } from '@playwright/test'
 
 test.describe('Viewport', { tag: ['@screenshot', '@smoke', '@canvas'] }, () => {
   test('Fits view to nodes when saved viewport position is offscreen', async ({

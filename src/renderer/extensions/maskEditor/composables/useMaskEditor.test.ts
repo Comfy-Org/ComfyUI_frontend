@@ -1,7 +1,7 @@
-import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useDialogStore } from '@/stores/dialogStore'
 
 let mockDialogStore: ReturnType<typeof useDialogStore>
 

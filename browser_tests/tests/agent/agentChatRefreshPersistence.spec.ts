@@ -1,10 +1,10 @@
+import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { TestIds } from '@e2e/fixtures/selectors'
 
 // PM-679: the transcript must survive a browser refresh with its content and
 // order intact. `promptHistory` mocks `/api/agent/threads*` statefully (POST

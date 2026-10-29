@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { recordMeasurement } from '@e2e/fixtures/utils/perfReporter'
+import { expect } from '@playwright/test'
 
 const FRAME_COUNT = 120
 const REFRESH_INTERVAL = 30

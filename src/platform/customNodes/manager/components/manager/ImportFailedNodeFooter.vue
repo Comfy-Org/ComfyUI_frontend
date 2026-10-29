@@ -9,9 +9,9 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { computed } from 'vue'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { ConflictDetectionResult } from '@/platform/customNodes/manager/types/conflictDetectionTypes'
 

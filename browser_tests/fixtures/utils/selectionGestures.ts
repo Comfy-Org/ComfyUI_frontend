@@ -1,8 +1,7 @@
-import type { Locator } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position } from '@e2e/fixtures/types'
 import { sleep } from '@e2e/fixtures/utils/timing'
+import type { Locator } from '@playwright/test'
 
 export async function titleCenter(title: Locator): Promise<Position> {
   const box = await title.boundingBox()

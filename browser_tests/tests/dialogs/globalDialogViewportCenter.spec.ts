@@ -1,10 +1,10 @@
-import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { Locator } from '@playwright/test'
+
+import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
 
 const PANEL_INSET = 240
 

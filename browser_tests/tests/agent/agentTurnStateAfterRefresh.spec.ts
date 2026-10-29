@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { agentTurnLockTest as test } from '@e2e/fixtures/agentTurnLockFixture'
+import { expect } from '@playwright/test'
 
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })

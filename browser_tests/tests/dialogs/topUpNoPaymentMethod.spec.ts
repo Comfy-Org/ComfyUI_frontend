@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { workspaceRailAuthFixture as test } from '@e2e/fixtures/workspaceRailAuthFixture'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 const CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_test_fe1908'
 

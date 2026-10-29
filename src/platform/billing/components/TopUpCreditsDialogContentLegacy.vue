@@ -92,26 +92,27 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@comfyorg/design-system/card/Card'
 import { getTopupAmountPreset } from '@comfyorg/account-core/billing'
+import Button from '@comfyorg/design-system/button/Button'
+import Card from '@comfyorg/design-system/card/Card'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
-import Button from '@comfyorg/design-system/button/Button'
-import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import TopUpAmountFields from './TopUpAmountFields.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useTelemetry } from '@comfyorg/telemetry'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
-import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
-import { describeBillingFailure } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { describeBillingFailure } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useDialogStore } from '@/stores/dialogStore'
+
+import TopUpAmountFields from './TopUpAmountFields.vue'
 
 const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean

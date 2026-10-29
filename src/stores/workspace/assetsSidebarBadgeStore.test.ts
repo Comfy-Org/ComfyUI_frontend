@@ -1,5 +1,5 @@
-import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 

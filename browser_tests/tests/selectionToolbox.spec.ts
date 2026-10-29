@@ -1,6 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -8,6 +5,8 @@ import {
   expectRegionScreenshot,
   screenshotRegion
 } from '@e2e/fixtures/utils/screenshotRegion'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 const test = comfyPageFixture
 

@@ -67,23 +67,22 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import Tabs from '@comfyorg/design-system/tabs/Tabs'
+import TabsList from '@comfyorg/design-system/tabs/TabsList'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
-import TopbarActions from '@/components/TopbarActions.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
-
-import Button from '@comfyorg/design-system/button/Button'
-import Tabs from '@comfyorg/design-system/tabs/Tabs'
-import TabsList from '@comfyorg/design-system/tabs/TabsList'
-import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
+import TopbarActions from '@/components/TopbarActions.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
+import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { isDesktop } from '@/platform/distribution/types'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'

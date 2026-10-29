@@ -47,10 +47,10 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
 import type { PlanCheckoutBanner } from '@/platform/billing/components/billingTab/planCheckoutBanner'
 
 const { banner } = defineProps<{

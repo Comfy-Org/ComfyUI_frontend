@@ -1,28 +1,28 @@
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type {
-  ComfyWorkflow,
-  LoadedComfyWorkflow
-} from '@/platform/workflow/management/stores/comfyWorkflow'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { app } from '@/scripts/app'
-import { api } from '@/scripts/api'
-import '@/scripts/changeTracker'
-import { defaultGraph } from '@/scripts/defaultGraph'
-import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import {
-  createNodeExecutionId,
-  createNodeLocatorId
-} from '@comfyorg/graph-model/nodeIdentification'
-import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
+import type {
+  ComfyWorkflow,
+  LoadedComfyWorkflow
+} from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import '@/scripts/changeTracker'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { defaultGraph } from '@/scripts/defaultGraph'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
+import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
 const apiEvents: EventTarget = api
 
@@ -32,8 +32,9 @@ const defaultWorkflowExecutionIntent = {
 
 vi.mock(import('@/composables/useAppMode'))
 
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true

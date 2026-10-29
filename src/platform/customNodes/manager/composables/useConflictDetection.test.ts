@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
-import { useComfyRegistryService } from '@/services/comfyRegistryService'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/platform/customNodes/manager/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
@@ -17,6 +14,9 @@ import {
   checkOSCompatibility
 } from '@/platform/customNodes/manager/utils/systemCompatibility'
 import { checkVersionCompatibility } from '@/platform/customNodes/manager/utils/versionUtil'
+import { useComfyRegistryService } from '@/services/comfyRegistryService'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import type { components } from '@/types/comfyRegistryTypes'
 
 // Mock dependencies
 vi.mock(

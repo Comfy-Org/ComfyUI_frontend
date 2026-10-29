@@ -118,24 +118,23 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import Tab from '@comfyorg/design-system/tab/Tab'
+import TabList from '@comfyorg/design-system/tab/TabList'
+import TabPanel from '@comfyorg/design-system/tab/TabPanel'
+import { cn } from '@comfyorg/tailwind-utils'
 import { take, uniqBy } from 'es-toolkit'
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import Tab from '@comfyorg/design-system/tab/Tab'
-import TabList from '@comfyorg/design-system/tab/TabList'
-import TabPanel from '@comfyorg/design-system/tab/TabPanel'
-import Button from '@comfyorg/design-system/button/Button'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
+import { useFirstRunEntry } from './firstRunEntry'
 import GettingStartedCard from './GettingStartedCard.vue'
 import GettingStartedTemplateCard from './GettingStartedTemplateCard.vue'
-import { useFirstRunEntry } from './firstRunEntry'
 import type { TutorialCard } from './tutorialCards'
 import {
   CURATED_TEMPLATE_IDS,

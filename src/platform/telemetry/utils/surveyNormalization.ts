@@ -1,3 +1,7 @@
+import type {
+  SurveyResponses,
+  SurveyResponsesNormalized
+} from '@comfyorg/telemetry/types'
 /**
  * Survey Response Normalization Utilities
  *
@@ -6,10 +10,6 @@
  * Uses Fuse.js for fuzzy matching against category keywords.
  */
 import Fuse from 'fuse.js'
-import type {
-  SurveyResponses,
-  SurveyResponsesNormalized
-} from '@comfyorg/telemetry/types'
 
 interface CategoryMapping {
   name: string

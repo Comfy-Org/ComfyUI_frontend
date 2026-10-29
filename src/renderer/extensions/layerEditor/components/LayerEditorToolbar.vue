@@ -90,21 +90,21 @@
 </template>
 
 <script setup lang="ts">
+import {
+  menuContentClass,
+  menuButtonClass
+} from '@comfyorg/design-system/lib/menu/menuStyles'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import { cn } from '@comfyorg/tailwind-utils'
 import type { AcceptableValue } from 'reka-ui'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import {
-  menuContentClass,
-  menuButtonClass
-} from '@comfyorg/design-system/lib/menu/menuStyles'
-import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
-import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useLayerEditorExport } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
 

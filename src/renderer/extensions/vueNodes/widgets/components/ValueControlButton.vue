@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useI18n } from 'vue-i18n'
 
 import type { ControlOptions } from '@/types/simplifiedWidget'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { mode, variant = 'badge' } = defineProps<{
   mode: ControlOptions

@@ -1,8 +1,7 @@
+import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 
 test.describe(
   'Promoted widget edit on a human-added subgraph blueprint with Agent bound',

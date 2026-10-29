@@ -1,17 +1,16 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTemplateRankingStore } from '@/platform/workflow/templates/stores/templateRankingStore'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { until } from '@vueuse/core'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 
-import { useTelemetry } from '@comfyorg/telemetry'
-
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTemplateFiltering } from '@/platform/workflow/templates/composables/useTemplateFiltering'
+import { useTemplateRankingStore } from '@/platform/workflow/templates/stores/templateRankingStore'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
-import { useTemplateFiltering } from '@/platform/workflow/templates/composables/useTemplateFiltering'
 import { api } from '@/scripts/api'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 let defaultSettingStore: ReturnType<typeof useSettingStore>
 

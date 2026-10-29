@@ -88,14 +88,6 @@
 </template>
 
 <script setup lang="ts">
-import { debounce } from 'es-toolkit/compat'
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
-import NodePreview from '@/components/node/NodePreview.vue'
-import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
-import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
 import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
@@ -105,15 +97,22 @@ import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
 import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import SearchAutocomplete from '@comfyorg/design-system/search-input/SearchAutocomplete'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
+import { debounce } from 'es-toolkit/compat'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import SearchFilterChip from '@/components/common/SearchFilterChip.vue'
+import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
+import NodePreview from '@/components/node/NodePreview.vue'
+import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
+import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
-
-import SearchFilterChip from '@/components/common/SearchFilterChip.vue'
 
 const settingStore = useSettingStore()
 const { t } = useI18n()

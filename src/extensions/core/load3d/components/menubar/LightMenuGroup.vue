@@ -39,6 +39,12 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import Slider from '@comfyorg/design-system/slider/Slider'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { LightConfig } from '@comfyorg/viewport3d/load3d/interfaces'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -47,13 +53,7 @@ import {
   formPanelClass
 } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/extensions/core/load3d/components/menubar/usePopoverExclusivity'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import Slider from '@comfyorg/design-system/slider/Slider'
-import Button from '@comfyorg/design-system/button/Button'
-import type { LightConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 
 const { compact = false, isOriginalMaterial = false } = defineProps<{
   compact?: boolean

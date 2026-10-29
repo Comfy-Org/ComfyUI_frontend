@@ -1,7 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
-
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   AgentApiError,
@@ -9,6 +8,7 @@ import {
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+
 import {
   MAX_ATTACHMENT_BYTES,
   MAX_TURN_ATTACHMENTS,

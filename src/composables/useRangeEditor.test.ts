@@ -1,10 +1,10 @@
+import type { RangeValue } from '@comfyorg/graph-model/widgets'
 import { render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useRangeEditor } from '@/composables/useRangeEditor'
-import type { RangeValue } from '@comfyorg/graph-model/widgets'
 
 const TRACK_RECT: DOMRect = {
   left: 0,

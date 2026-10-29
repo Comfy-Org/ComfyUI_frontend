@@ -58,14 +58,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
-import AppColorPicker from '@/components/common/AppColorPicker.vue'
 import Switch from '@comfyorg/design-system/switch/Switch'
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   LIGHT_TYPES,
   LIGHT_TYPE_LABEL_KEYS
@@ -74,7 +70,11 @@ import type {
   LightInfoEntry,
   LightInfoType
 } from '@comfyorg/viewport3d/lightInfo/types'
-import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
+import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 
 type NumberField =
   | 'intensity'

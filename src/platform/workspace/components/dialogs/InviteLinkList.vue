@@ -35,12 +35,12 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import { refAutoReset } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { copyTextSilently } from '@/platform/workspace/utils/inviteLinks'
-import { cn } from '@comfyorg/tailwind-utils'
 
 export interface InviteLinkRow {
   id: string

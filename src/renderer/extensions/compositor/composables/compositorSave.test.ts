@@ -1,11 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { defaultMode } from '@comfyorg/layer-editor/mode'
-import type { RasterData } from '@comfyorg/layer-editor/node'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { defaultMode } from '@comfyorg/layer-editor/mode'
+import type { RasterData } from '@comfyorg/layer-editor/node'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import {

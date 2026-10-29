@@ -162,6 +162,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   ComboboxPortal,
   ComboboxAnchor,
@@ -180,7 +181,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { useWidgetHeight } from '@/types/widgetTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'

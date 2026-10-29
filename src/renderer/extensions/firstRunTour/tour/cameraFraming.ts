@@ -1,3 +1,4 @@
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   Size2D as Viewport,
   ReadOnlyRect
@@ -11,7 +12,6 @@ import {
   topSafeInset
 } from '@/platform/onboarding/coachmarkLayout'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const FOCUS_DURATION_MS = 450
 /** Never magnify past this: the aim is a node that reads, not one that dominates. */

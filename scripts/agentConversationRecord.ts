@@ -4,7 +4,6 @@
 // Vite defines (__DISTRIBUTION__ via reportError). tsx is not Vite, so the shim
 // has to run before those modules evaluate.
 import './vite-define-shim'
-
 import { execFileSync, spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -16,6 +15,10 @@ import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
 import {
+  zAgentTurnAccepted,
+  zAgentWsEvent
+} from '../src/workbench/extensions/agent/schemas/agentApiSchema'
+import {
   RecordRefusal,
   assembleConversation,
   parseOrRefuse,
@@ -25,11 +28,6 @@ import {
   zRowsDump,
   zSeedFixture
 } from './agentConversationAssemble'
-import { splitCommandLine } from './dev-agent-options'
-import {
-  zAgentTurnAccepted,
-  zAgentWsEvent
-} from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   NormalizedRows,
   RawCapture,
@@ -38,6 +36,7 @@ import type {
   TurnAck,
   TurnIds
 } from './agentConversationAssemble'
+import { splitCommandLine } from './dev-agent-options'
 
 const USAGE =
   'usage: pnpm exec tsx scripts/agentConversationRecord.ts <caseId> <seedFixture.json> --prompt "<turn 1>" [--prompt "<turn 2>" ...] --out <fixture.json> [--work <dir>] [--cancel-turn <k> --cancel-after-ms <n>]'

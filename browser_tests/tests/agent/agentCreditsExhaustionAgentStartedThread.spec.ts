@@ -1,7 +1,3 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import {
   AGENT_OPENING_LINE,
   EARLIER_USER_MESSAGE,
@@ -9,6 +5,9 @@ import {
   NO_FUNDS_MESSAGE,
   test
 } from '@e2e/tests/agent/agentCreditsExhaustionAgentStartedMocks'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.describe(
   'Agent standing credits-exhaustion on a thread the agent started',

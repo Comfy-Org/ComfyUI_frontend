@@ -1,7 +1,3 @@
-import type { Request } from '@playwright/test'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-
 import { makeWorkspaceTokenResponse } from '@e2e/fixtures/data/workspaceAuthFixtures'
 import {
   WORKSPACE_SWITCHER_REMOTE_CONFIG,
@@ -9,6 +5,9 @@ import {
 } from '@e2e/fixtures/data/workspaceSwitcher'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { workspaceSwitcherTest } from '@e2e/fixtures/workspaceSwitcherFixture'
+import type { Request } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 export const HOST_WORKSPACE_ID = 'ws-personal'
 export const HOST_OAUTH_TOKEN = 'host-oauth-token'

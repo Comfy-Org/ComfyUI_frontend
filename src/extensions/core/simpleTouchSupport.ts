@@ -1,11 +1,10 @@
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-
 import { app } from '@/scripts/app'
+import type { ComfyExtension } from '@/types/comfy'
 
 import { canvasOrReport } from './touchCanvasAccess'
 import { touchGesture } from './touchPointerGuards'
-import type { ComfyExtension } from '@/types/comfy'
 
 type TouchPoint = { clientX: number; clientY: number }
 

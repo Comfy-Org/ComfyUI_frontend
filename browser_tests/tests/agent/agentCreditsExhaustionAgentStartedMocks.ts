@@ -1,8 +1,4 @@
 import type { AgentMessage } from '@comfyorg/ingest-types'
-
-import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import {
   agentThreadPage,
@@ -10,6 +6,9 @@ import {
 } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
+
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const WORKSPACE_ID = 'personal'
 const THREAD_ID = 'b0f1b6d6-94ad-4d0f-9f0c-7f0b2f9a1d31'

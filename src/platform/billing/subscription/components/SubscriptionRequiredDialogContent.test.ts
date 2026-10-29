@@ -1,9 +1,9 @@
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import SubscriptionRequiredDialogContent from './SubscriptionRequiredDialogContent.vue'

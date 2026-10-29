@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest'
-
 import type { BillingStatusData } from '@comfyorg/account-core/billing'
+import { describe, expect, it } from 'vitest'
 
 import { projectBillingStatus } from './billingStatusView'
 

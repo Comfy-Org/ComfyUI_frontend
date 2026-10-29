@@ -1,8 +1,7 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
-import { expect } from '@playwright/test'
-
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
+import { expect } from '@playwright/test'
 
 const ATTACHMENT_COUNT = 25
 

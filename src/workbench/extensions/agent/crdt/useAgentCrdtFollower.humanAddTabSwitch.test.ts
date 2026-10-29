@@ -4,6 +4,8 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import type { DocSubscribedData, DocUpdateData } from '@comfyorg/ingest-types'
 import { render } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
@@ -12,15 +14,13 @@ import { defineComponent, nextTick, ref } from 'vue'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { encodeBase64 } from './docFrameClient'
 import { attachDocOpMinter } from './docOpMinter'
 import { mintWireOps } from './opEnvelope'
-import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 const WORKFLOW_ID = 'wf-human-add'

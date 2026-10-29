@@ -4,8 +4,6 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
-import { api } from '@/scripts/api'
-
 import type {
   SecretCreateRequest,
   SecretErrorCode,
@@ -14,6 +12,7 @@ import type {
   SecretUpdateRequest
 } from '@/platform/secrets/types'
 import { SECRET_ERROR_CODES } from '@/platform/secrets/types'
+import { api } from '@/scripts/api'
 
 export class SecretsApiError extends Error {
   constructor(

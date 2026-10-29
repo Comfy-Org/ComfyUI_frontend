@@ -81,6 +81,9 @@
 </template>
 
 <script setup lang="ts">
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, getCurrentInstance, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -89,13 +92,11 @@ import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import { renderNodePreview } from '@/components/node/renderNodePreview'
-import Badge from '@comfyorg/design-system/badge/Badge'
-import Button from '@comfyorg/design-system/button/Button'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import type {
   RenderedTreeExplorerNode,
@@ -103,7 +104,6 @@ import type {
   TreeExplorerNode,
   TreeNode
 } from '@/types/treeExplorerTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const instance = getCurrentInstance()!
 const appContext = instance.appContext

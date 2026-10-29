@@ -1,15 +1,14 @@
-import type { BrowserContext, Locator, Page } from '@playwright/test'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
-
-import { agentTest } from '@e2e/fixtures/agentPanelFixture'
-import { AgentExecutionHelper } from '@e2e/fixtures/helpers/AgentExecutionHelper'
-import { AgentMultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/AgentMultiAutogrowRealignHarness'
 import { COMFY_SOCKET_SID } from '@e2e/fixtures/agentFollowerHostSocket'
+import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import {
   SOURCE_NODE_ID,
   TARGET_ID
 } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
+import { AgentExecutionHelper } from '@e2e/fixtures/helpers/AgentExecutionHelper'
+import { AgentMultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/AgentMultiAutogrowRealignHarness'
+import type { BrowserContext, Locator, Page } from '@playwright/test'
+import type { z } from 'zod'
 
 /** A stale `sessionStorage` client id that must never reach the wire. */
 export const STALE_SESSION_CLIENT_ID = '9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d'

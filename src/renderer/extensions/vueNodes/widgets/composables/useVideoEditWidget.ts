@@ -1,9 +1,10 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IVideoEditWidget,
   IWidgetVideoEditOptions,
   VideoEditValue
 } from '@comfyorg/graph-model/widgets'
+
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   InputSpec as InputSpecV2,
   VideoEditInputSpec

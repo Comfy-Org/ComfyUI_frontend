@@ -1,9 +1,9 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const LEGACY_TITLE_HEIGHT = 30
 

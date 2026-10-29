@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { ApiSignin } from '@e2e/fixtures/components/ApiSignin'
+import { expect } from '@playwright/test'
 
 test.describe('API Nodes sign-in dialog', { tag: '@ui' }, () => {
   test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })

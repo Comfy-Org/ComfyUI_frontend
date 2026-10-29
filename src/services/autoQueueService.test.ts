@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
-import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 

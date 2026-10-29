@@ -9,19 +9,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { IColorWidgetOptions } from '@comfyorg/graph-model/widgets'
 import {
   hexToInt,
   intToHex,
   isColorFormat,
   toHexFromFormat
 } from '@comfyorg/shared-frontend-utils/colorUtil'
-
-import type { IColorWidgetOptions } from '@comfyorg/graph-model/widgets'
+import { ref, watch } from 'vue'
 
 import AppColorPicker from '@/components/common/AppColorPicker.vue'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 

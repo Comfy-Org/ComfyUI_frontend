@@ -1,7 +1,7 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import { CUSTOM_NODE_FAILURES_TRUNCATED_FIELD } from '@/platform/telemetry/customNodeLoadTelemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { CustomNodeLoadFailure } from './customNodeScripts'
 import {

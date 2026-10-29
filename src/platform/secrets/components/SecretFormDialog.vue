@@ -162,9 +162,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useId, useTemplateRef } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import Button from '@comfyorg/design-system/button/Button'
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
 import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
@@ -178,14 +175,16 @@ import FieldDescription from '@comfyorg/design-system/field/FieldDescription'
 import FieldError from '@comfyorg/design-system/field/FieldError'
 import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
 import Input from '@comfyorg/design-system/input/Input'
-import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
 import Select from '@comfyorg/design-system/select/Select'
 import SelectContent from '@comfyorg/design-system/select/SelectContent'
 import SelectItem from '@comfyorg/design-system/select/SelectItem'
 import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
 import SelectValue from '@comfyorg/design-system/select/SelectValue'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
+import { computed, useId, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
 import { useSecretForm } from '@/platform/secrets/composables/useSecretForm'
 import type {
   SecretMetadata,

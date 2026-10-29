@@ -137,19 +137,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toValue, useId } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { useImageQuiet } from '@/composables/useImageQuiet'
-import IconGroup from '@comfyorg/design-system/button-group/IconGroup'
 import Badge from '@comfyorg/design-system/badge/Badge'
-import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
+import IconGroup from '@comfyorg/design-system/button-group/IconGroup'
 import Button from '@comfyorg/design-system/button/Button'
-import Menu from '@comfyorg/design-system/menu/Menu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, ref, toValue, useId } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
+import { useImageQuiet } from '@/composables/useImageQuiet'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -157,7 +158,6 @@ import { getAssetCardTitle } from '@/platform/assets/utils/assetMetadataUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { asset, interactive, focused } = defineProps<{
   asset: AssetDisplayItem

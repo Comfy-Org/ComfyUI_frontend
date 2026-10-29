@@ -1,17 +1,17 @@
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { DEBOUNCE_MS } from '@/renderer/glsl/glslPreviewUtils'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 /**
  * Guards the writer/reader store contract behind the GLSL live preview: the

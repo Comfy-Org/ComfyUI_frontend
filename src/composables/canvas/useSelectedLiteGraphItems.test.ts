@@ -1,6 +1,8 @@
-import { markRaw } from 'vue'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { markRaw } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import type { Positionable } from '@/lib/litegraph/src/litegraph'
@@ -12,8 +14,6 @@ import {
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 
 vi.mock(import('@/scripts/app'))
 

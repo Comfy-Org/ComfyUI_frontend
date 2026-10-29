@@ -19,11 +19,11 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { useAsyncState } from '@vueuse/core'
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import Button from '@comfyorg/design-system/button/Button'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'

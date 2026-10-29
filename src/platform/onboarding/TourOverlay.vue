@@ -32,8 +32,8 @@
 
 <script setup lang="ts">
 import CoachmarkLanding from './CoachmarkLanding.vue'
-import TourSpotlight from './TourSpotlight.vue'
 import { useOnboardingTourStore } from './onboardingTourStore'
+import TourSpotlight from './TourSpotlight.vue'
 
 const tour = useOnboardingTourStore()
 </script>

@@ -1,8 +1,8 @@
-import type * as Litegraph from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { NodeLayout } from '@comfyorg/graph-model/layout'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import * as VueUse from '@vueuse/core'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import {
   computed,
   effectScope,
@@ -12,11 +12,11 @@ import {
   shallowRef
 } from 'vue'
 
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createUuidv4 } from '@/utils/uuid'
+import type * as Litegraph from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
-import type { NodeLayout } from '@comfyorg/graph-model/layout'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { canvasNodeTarget } from './canvasCoachTarget'
 

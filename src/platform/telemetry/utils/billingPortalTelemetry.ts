@@ -3,10 +3,10 @@ import type {
   BillingPortalTarget,
   BillingTelemetryFailure
 } from '@comfyorg/account-core/billing'
-
 import type { TelemetryDispatcher } from '@comfyorg/telemetry/types'
-import { describeBillingFailure } from '@/platform/telemetry/utils/billingFailureCategory'
+
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
+import { describeBillingFailure } from '@/platform/telemetry/utils/billingFailureCategory'
 
 const PORTAL_TAB_BLOCKED: BillingTelemetryFailure = {
   failure_category: 'redirect',

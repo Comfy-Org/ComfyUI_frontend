@@ -1,13 +1,12 @@
-import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
-import { storeToRefs } from 'pinia'
-import { computed, getCurrentScope, onScopeDispose } from 'vue'
-import { v4 as uuidv4 } from 'uuid'
-
 import { useTelemetry } from '@comfyorg/telemetry'
+import { storeToRefs } from 'pinia'
+import { v4 as uuidv4 } from 'uuid'
+import { computed, getCurrentScope, onScopeDispose } from 'vue'
 
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
-import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 
 export interface UseComposerOptions {
   onSend: (text: string, attachments: ComposerAttachment[]) => void

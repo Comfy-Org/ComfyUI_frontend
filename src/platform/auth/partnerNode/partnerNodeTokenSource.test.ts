@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -6,7 +7,6 @@ import {
   createPartnerNodeTokenSource
 } from '@/platform/auth/partnerNode/partnerNodeTokenSource'
 import type { PartnerNodeTokenTarget } from '@/platform/auth/partnerNode/partnerNodeTokenSource'
-import { reportError } from '@comfyorg/telemetry/reportError'
 
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()

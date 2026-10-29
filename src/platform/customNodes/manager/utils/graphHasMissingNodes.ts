@@ -1,12 +1,12 @@
 import { unref } from 'vue'
 import type { MaybeRef } from 'vue'
 
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type {
   LGraph,
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 export type NodeDefLookup = Record<string, ComfyNodeDefImpl | undefined>

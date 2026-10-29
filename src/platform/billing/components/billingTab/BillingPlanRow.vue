@@ -48,20 +48,20 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
 import BillingPlanLifecycle from '@/platform/billing/components/billingTab/BillingPlanLifecycle.vue'
 import {
   CONTACT_SALES_URL,
   formatPlanDate
 } from '@/platform/billing/components/billingTab/planRow'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 import type {
   PlanRowAction,
   PlanRowState
 } from '@/platform/billing/components/billingTab/planRow'
+import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 
 const {
   state,

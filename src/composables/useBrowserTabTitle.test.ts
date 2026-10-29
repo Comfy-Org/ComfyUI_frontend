@@ -1,14 +1,14 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { t } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 vi.mock(import('firebase/auth'))
 

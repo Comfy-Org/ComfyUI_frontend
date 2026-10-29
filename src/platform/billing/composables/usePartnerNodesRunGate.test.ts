@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { User } from 'firebase/auth'
 import { fromPartial } from '@total-typescript/shoehorn'
+import type { User } from 'firebase/auth'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, nextTick, ref } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 

@@ -1,12 +1,12 @@
-import { assetRequestIncludesTag } from '@e2e/fixtures/assetApiFixture'
-import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
-import type { Page } from '@playwright/test'
 import type {
   Asset,
   ImportPublishedAssetsRequest,
   ListAssetsResponse,
   AssetInfo
 } from '@comfyorg/ingest-types'
+import { assetRequestIncludesTag } from '@e2e/fixtures/assetApiFixture'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
+import type { Page } from '@playwright/test'
 import type { z } from 'zod'
 
 import type { zSharedWorkflowResponse } from '@/platform/workflow/sharing/schemas/shareSchemas'

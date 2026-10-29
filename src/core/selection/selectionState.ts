@@ -1,8 +1,7 @@
-import { z } from 'zod'
-
 import type { GroupId } from '@comfyorg/graph-model/groupId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import { z } from 'zod'
 
 const selectableKindSchema = z.enum(['node', 'group', 'reroute', 'io'])
 export type SelectableKind = z.infer<typeof selectableKindSchema>

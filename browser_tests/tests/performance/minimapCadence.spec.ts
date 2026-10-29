@@ -1,11 +1,10 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   expectFramesToSpanMeasurementWindow,
   measureCadence
 } from '@e2e/fixtures/helpers/MinimapCadenceHelper'
 import { recordMeasurement } from '@e2e/fixtures/utils/perfReporter'
+import { expect } from '@playwright/test'
 
 test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
   test.use({ initialSettings: { 'Comfy.Minimap.Visible': true } })

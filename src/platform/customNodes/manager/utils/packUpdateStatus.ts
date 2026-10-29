@@ -1,7 +1,7 @@
 import { compare, valid } from 'semver'
 
-import type { components } from '@/types/comfyRegistryTypes'
 import type { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
+import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 type ComfyManagerStore = ReturnType<typeof useComfyManagerStore>

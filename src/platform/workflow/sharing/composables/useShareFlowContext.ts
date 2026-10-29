@@ -1,7 +1,7 @@
+import type { ShareFlowMetadata } from '@comfyorg/telemetry/types'
 import { computed } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-import type { ShareFlowMetadata } from '@comfyorg/telemetry/types'
 
 type ShareFlowContext = Pick<
   ShareFlowMetadata,

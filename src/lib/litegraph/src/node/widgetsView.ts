@@ -1,22 +1,20 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
-import { shallowReactive } from 'vue'
-
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { RefusedWidget } from '@comfyorg/graph-model/widgetId'
 import {
   dropUnrenamableDuplicateWidgets,
   isWidgetNameUnreadable,
   widgetId
 } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { shallowReactive } from 'vue'
 
 import { createArrayMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
-import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
+import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 export type WidgetRefusalReport =
   | { kind: 'refusal'; finding: RefusedWidget<IBaseWidget> }

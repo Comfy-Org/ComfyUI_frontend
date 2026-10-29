@@ -1,11 +1,10 @@
 import type { AgentRunMode, JobsListResponse } from '@comfyorg/ingest-types'
-import { expect } from '@playwright/test'
-
-import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { RestoredBindingReloadDriver } from '@e2e/tests/agent/agentRestoredBindingReloadDriver'
+import { expect } from '@playwright/test'
+
+import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 
 test.describe(
   'Agent follower after a restored-target reload',

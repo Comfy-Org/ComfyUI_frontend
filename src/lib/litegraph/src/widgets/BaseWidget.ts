@@ -2,28 +2,29 @@ import type {
   LGraphCanvas,
   LGraphNode
 } from '@comfyorg/graph-model/entityRegistry'
-import { t } from '@/i18n'
-import { drawTextInArea } from '@/lib/litegraph/src/draw'
-import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import type {
-  PointTuple as Point,
-  SizeTuple as Size
-} from '@comfyorg/shared-frontend-utils/geometry'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { NodeBindable } from '@/lib/litegraph/src/utils/type'
-import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   ensureUniqueWidgetNames,
   widgetId
 } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
+import type {
+  PointTuple as Point,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
+
+import { t } from '@/i18n'
+import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import { drawTextInArea } from '@/lib/litegraph/src/draw'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
+import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
+import type { NodeBindable } from '@/lib/litegraph/src/utils/type'
+import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
   applyLegacyAdvancedWrite,
   applyLegacyCanvasOnlyWrite,

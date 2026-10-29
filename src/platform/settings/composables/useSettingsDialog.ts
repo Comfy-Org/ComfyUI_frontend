@@ -1,12 +1,11 @@
-import type { Component } from 'vue'
-
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { useDialogStore } from '@/stores/dialogStore'
+import type { Component } from 'vue'
 
 import type {
   SettingDialogProps,
   SettingPanelType
 } from '@/platform/settings/types'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'global-settings'
 

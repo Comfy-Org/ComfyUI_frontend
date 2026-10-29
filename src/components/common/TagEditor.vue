@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import type { TagsInputRootProps } from 'reka-ui'
-import type { HTMLAttributes } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import TagsInput from '@comfyorg/design-system/tags-input/TagsInput'
 import TagsInputInput from '@comfyorg/design-system/tags-input/TagsInputInput'
 import TagsInputItem from '@comfyorg/design-system/tags-input/TagsInputItem'
 import TagsInputItemDelete from '@comfyorg/design-system/tags-input/TagsInputItemDelete'
 import TagsInputItemText from '@comfyorg/design-system/tags-input/TagsInputItemText'
+import type { TagsInputRootProps } from 'reka-ui'
+import type { HTMLAttributes } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const { placeholder, itemClass, ...rootProps } = defineProps<
   Omit<TagsInputRootProps<string>, 'modelValue' | 'defaultValue'> & {

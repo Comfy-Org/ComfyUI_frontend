@@ -1,10 +1,9 @@
 <script setup lang="ts" generic="T extends WidgetValue">
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { defineAsyncComponent, ref, watch } from 'vue'
 import type { Component } from 'vue'
 
-import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
-
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import type {
   SimplifiedControlWidget,
   WidgetValue

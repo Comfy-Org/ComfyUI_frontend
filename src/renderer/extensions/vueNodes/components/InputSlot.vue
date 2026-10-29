@@ -64,12 +64,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref } from 'vue'
-
 import EditableText from '@comfyorg/design-system/common/EditableText'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, onErrorCaptured, ref } from 'vue'
+
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -78,8 +80,6 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
-import { cn } from '@comfyorg/tailwind-utils'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 

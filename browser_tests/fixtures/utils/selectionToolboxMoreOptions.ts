@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { expect } from '@playwright/test'
 
 export async function openMoreOptionsMenu(
   comfyPage: ComfyPage,

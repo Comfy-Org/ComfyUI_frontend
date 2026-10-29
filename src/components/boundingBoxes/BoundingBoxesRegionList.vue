@@ -51,18 +51,17 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { textOnColor } from '@comfyorg/shared-frontend-utils/colorUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useTemplateRef, watch } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import BoundingBoxesRegionForm from '@/components/boundingBoxes/BoundingBoxesRegionForm.vue'
-import Button from '@comfyorg/design-system/button/Button'
 import {
   regionColor,
   regionTag
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
 import type { Region } from '@/composables/boundingBoxes/boundingBoxesUtil'
-import { textOnColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 const { regions, activeIndex, maxColors } = defineProps<{
   regions: readonly Region[]

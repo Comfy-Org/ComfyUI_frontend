@@ -1,10 +1,9 @@
-import { z } from 'zod'
-
 import type {
   CameraState,
   LoadFolder,
   Model3DInfo
 } from '@comfyorg/viewport3d/load3d/interfaces'
+import { z } from 'zod'
 
 export interface Model3DOutput {
   filePath: string

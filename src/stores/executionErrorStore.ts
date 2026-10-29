@@ -1,30 +1,3 @@
-import { defineStore } from 'pinia'
-import { computed, ref, toRaw, watch } from 'vue'
-import { whenever } from '@vueuse/core'
-
-import { classifyPanelErrors } from '@/utils/errorSeverityClassification'
-import { classifyValidationErrorAbsorption } from '@/utils/missingResourceAbsorption'
-import type { MissingResourceAbsorption } from '@/utils/missingResourceAbsorption'
-
-import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
-import {
-  getLiftedErrorSource,
-  liftNodeErrorsToBoundary,
-  resolveLiftChain
-} from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
-import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
-import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
-import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
-import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
-import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useApp } from '@/scripts/appInstance'
-import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
-import { useDialogService } from '@/services/dialogService'
-import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
-import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
 import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId
@@ -33,13 +6,31 @@ import type {
   NodeExecutionId,
   NodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
+import { whenever } from '@vueuse/core'
+import { defineStore } from 'pinia'
+import { computed, ref, toRaw, watch } from 'vue'
+
+import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import {
-  executionIdToNodeLocatorId,
-  getExecutionIdByNode,
-  getNodeByExecutionId
-} from '@/utils/graphTraversalUtil'
-import type { UUID } from '@/utils/uuid'
-import { zeroUuid } from '@/utils/uuid'
+  getLiftedErrorSource,
+  liftNodeErrorsToBoundary,
+  resolveLiftChain
+} from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
+import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useApp } from '@/scripts/appInstance'
+import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
+import { useDialogService } from '@/services/dialogService'
+import { classifyPanelErrors } from '@/utils/errorSeverityClassification'
 import {
   SIMPLE_ERROR_TYPES,
   errorsForSlot,
@@ -49,7 +40,15 @@ import {
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
-import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import {
+  executionIdToNodeLocatorId,
+  getExecutionIdByNode,
+  getNodeByExecutionId
+} from '@/utils/graphTraversalUtil'
+import { classifyValidationErrorAbsorption } from '@/utils/missingResourceAbsorption'
+import type { MissingResourceAbsorption } from '@/utils/missingResourceAbsorption'
+import type { UUID } from '@/utils/uuid'
+import { zeroUuid } from '@/utils/uuid'
 
 interface SlotNodeErrorClearTarget {
   executionId: NodeExecutionId

@@ -26,9 +26,9 @@
 </template>
 
 <script setup lang="ts">
+import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
 import { useLoad3dDrag } from '@/extensions/core/load3d/composables/useLoad3dDrag'
 
 const props = defineProps<{

@@ -1,21 +1,20 @@
-import { expect } from '@playwright/test'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
-import type { AgentRunModePreference } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
   agentTest as test,
   bootAgentApp,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { expect } from '@playwright/test'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { AgentRunModePreference } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 /**
  * BE-16625 on node creation: the initial document already carries the

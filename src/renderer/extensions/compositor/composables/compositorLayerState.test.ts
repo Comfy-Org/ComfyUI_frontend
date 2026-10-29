@@ -1,5 +1,3 @@
-import { describe, expect, it, vi } from 'vitest'
-
 import type { FillSpec } from '@comfyorg/layer-editor/fill'
 import { defaultMode } from '@comfyorg/layer-editor/mode'
 import type { BlendFn } from '@comfyorg/layer-editor/mode'
@@ -8,6 +6,7 @@ import type {
   RasterData,
   Transform
 } from '@comfyorg/layer-editor/node'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   applyLayerState,

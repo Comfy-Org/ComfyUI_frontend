@@ -2,6 +2,8 @@ import { useIntervalFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 
+import { t } from '@/i18n'
+import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type {
   TaskResponse,
   TaskStatus
@@ -16,9 +18,7 @@ import {
   parseDownloadFileResult,
   taskService
 } from '@/platform/tasks/services/taskService'
-import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
-import { t } from '@/i18n'
 
 export type AssetDownloadStatus =
   | TaskStatus

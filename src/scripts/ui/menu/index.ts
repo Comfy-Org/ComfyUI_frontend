@@ -1,5 +1,6 @@
-import { $el } from '@/scripts/ui/utils'
 import { ComfyButtonGroup } from '@/scripts/ui/components/buttonGroup'
+import { $el } from '@/scripts/ui/utils'
+
 import './menu.css'
 
 // Export to make sure following components are shimmed and exported by vite

@@ -1,4 +1,5 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   afterEach,
   beforeEach,
@@ -10,7 +11,6 @@ import {
 } from 'vitest'
 import type { Mock } from 'vitest'
 
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 import type { DocOp } from './docFrameClient'

@@ -1,23 +1,23 @@
 import { cloneDeep, uniq } from 'es-toolkit/compat'
 
+import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { resolveNodeDefText } from '@/i18n'
-import {
-  collectSearchableInputTypes,
-  collectSearchableOutputTypes
-} from '@/schemas/nodeDef/searchableSlotTypes'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
   InputSpec as InputSpecV2,
   OutputSpec as OutputSpecV2
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import {
+  collectSearchableInputTypes,
+  collectSearchableOutputTypes
+} from '@/schemas/nodeDef/searchableSlotTypes'
 import type {
   ComfyInputsSpec as ComfyInputSpecV1,
   ComfyNodeDef as ComfyNodeDefV1,
   ComfyOutputTypesSpec as ComfyOutputSpecV1,
   PriceBadge
 } from '@/schemas/nodeDefSchema'
-import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'

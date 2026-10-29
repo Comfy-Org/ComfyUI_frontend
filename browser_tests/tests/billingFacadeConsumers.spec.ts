@@ -1,24 +1,23 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import {
-  PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
-  PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
-} from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse
 } from '@comfyorg/billing-core'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import {
+  PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
+  PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+} from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 /**
  * Billing facade consumers — FE-933 (B3) regression.

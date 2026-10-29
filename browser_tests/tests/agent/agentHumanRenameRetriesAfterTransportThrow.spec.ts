@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest } from '@e2e/fixtures/agentConversationFixture'
 import {
   INJECTED_DOC_OPS_THROWS_ATTR,
   throwOnFirstDocOpsSend
 } from '@e2e/fixtures/utils/throwOnFirstDocOpsSend'
+import { expect } from '@playwright/test'
 
 const CASE = 'agent-rec-text-only-answer'
 const RENAMED_NODE_ID = '4'

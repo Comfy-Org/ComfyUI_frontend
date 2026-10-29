@@ -1,7 +1,7 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 
 vi.mock(import('@comfyorg/telemetry'))

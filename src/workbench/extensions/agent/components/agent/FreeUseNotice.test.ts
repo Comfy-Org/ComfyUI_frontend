@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/vue'
+import type { AgentFreeUsePlacement } from '@comfyorg/telemetry/types'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
-import type { AgentFreeUsePlacement } from '@comfyorg/telemetry/types'
 
 import FreeUseNotice from './FreeUseNotice.vue'
 import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'

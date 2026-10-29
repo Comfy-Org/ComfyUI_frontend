@@ -1,6 +1,5 @@
-import { useDialogStore } from '@/stores/dialogStore'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -8,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import SecretsPanel from '@/platform/secrets/components/SecretsPanel.vue'
 import type { SecretMetadata } from '@/platform/secrets/types'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_HANDLE = { key: 'confirm-delete-secret' }
 const mockDeleteSecret = vi.fn().mockResolvedValue(undefined)

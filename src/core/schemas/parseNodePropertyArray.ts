@@ -1,7 +1,6 @@
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import type { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
-
-import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 
 /**
  * @param property - Raw node property value.

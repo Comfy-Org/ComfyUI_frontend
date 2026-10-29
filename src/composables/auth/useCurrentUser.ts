@@ -3,8 +3,8 @@ import { computed, watch } from 'vue'
 
 import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
 import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthUserInfo } from '@/types/authTypes'
 

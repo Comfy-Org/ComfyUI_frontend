@@ -46,8 +46,9 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionActions } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { isCloud } from '@/platform/distribution/types'
 import { platformLink } from '@/platform/workspace/utils/platformLink'

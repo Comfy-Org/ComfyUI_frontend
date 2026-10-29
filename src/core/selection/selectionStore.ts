@@ -1,3 +1,8 @@
+import type {
+  GraphScope,
+  OwningGraphId,
+  RootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
 import { isEqual } from 'es-toolkit'
 import { defineStore, getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
@@ -7,11 +12,6 @@ import type {
   SelectableKey,
   SelectionCommand
 } from '@/core/selection/selectionState'
-import type {
-  GraphScope,
-  OwningGraphId,
-  RootGraphId
-} from '@comfyorg/graph-model/graphScopeId'
 
 type SelectionRoots = ReadonlyMap<
   RootGraphId,

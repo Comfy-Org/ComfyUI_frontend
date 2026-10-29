@@ -71,10 +71,10 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 
 interface Props {

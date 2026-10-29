@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { LoginButton } from '@e2e/fixtures/components/LoginButton'
 import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expect } from '@playwright/test'
 
 test.describe('Login Button', { tag: ['@ui'] }, () => {
   test.describe('Visibility', () => {

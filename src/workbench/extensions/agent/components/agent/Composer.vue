@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { AgentStopMethod } from '@comfyorg/telemetry/types'
 import {
   computed,
   nextTick,
@@ -10,37 +14,32 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
-import type { AgentStopMethod } from '@comfyorg/telemetry/types'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useNodeEmphasisSource } from '@/systems/nodeEmphasisSystem'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-
-import InlinePromptEditor from './composer/InlinePromptEditor.vue'
-import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
-import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+import type { MentionSection } from '@/workbench/extensions/agent/composables/agent/mentionPickerState'
 import { useAgentMentionPicker } from '@/workbench/extensions/agent/composables/agent/useAgentMentionPicker'
+import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import { useComposer } from '@/workbench/extensions/agent/composables/agent/useComposer'
 import { useSkillMenuDescription } from '@/workbench/extensions/agent/composables/agent/useSkillMenuDescription'
 import { useWorkflowReferencePicker } from '@/workbench/extensions/agent/composables/agent/useWorkflowReferencePicker'
 import type {
   AttachmentValidationError,
   ComposerAttachment
 } from '@/workbench/extensions/agent/types/composerAttachment'
-import type { MentionSection } from '@/workbench/extensions/agent/composables/agent/mentionPickerState'
-import { useComposer } from '@/workbench/extensions/agent/composables/agent/useComposer'
-import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import type {
   PromptSnapshot,
   WorkflowReference,
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '@/workbench/extensions/agent/types/workflowReference'
-import { cn } from '@comfyorg/tailwind-utils'
+import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 
 import AssetTray from './composer/AssetTray.vue'
 import ComposerAddMenu from './composer/ComposerAddMenu.vue'
 import ComposerPlaceholder from './composer/ComposerPlaceholder.vue'
+import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import MentionMenuItem from './composer/MentionMenuItem.vue'
 import MentionMenuStatus from './composer/MentionMenuStatus.vue'
 import RunModePopover from './composer/RunModePopover.vue'

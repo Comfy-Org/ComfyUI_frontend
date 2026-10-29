@@ -1,7 +1,8 @@
-import { ref, shallowRef } from 'vue'
-import { createSharedComposable } from '@vueuse/core'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { createSharedComposable } from '@vueuse/core'
+import { ref, shallowRef } from 'vue'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 function hasV2DraftHistory(raw: string | null): boolean {
   if (!raw) return false

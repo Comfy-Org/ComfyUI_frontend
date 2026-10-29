@@ -3,11 +3,11 @@ import { computed } from 'vue'
 
 import { useExternalLink } from '@/composables/useExternalLink'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import type { AboutPageBadge } from '@/types/comfy'
 import { electronAPI } from '@/utils/envUtil'
 import { formatCommitHash } from '@/utils/formatUtil'
 
-import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useSystemStatsStore } from './systemStatsStore'
 
 export const useAboutPanelStore = defineStore('aboutPanel', () => {

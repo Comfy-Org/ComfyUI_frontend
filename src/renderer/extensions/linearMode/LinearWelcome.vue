@@ -1,13 +1,13 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useEnterBuilder } from '@/components/builder/useEnterBuilder'
-import Button from '@comfyorg/design-system/button/Button'
 import { useAppMode } from '@/composables/useAppMode'
-import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()

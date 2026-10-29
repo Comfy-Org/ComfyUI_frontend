@@ -1,6 +1,6 @@
+import type { CurveData } from '@comfyorg/graph-model/curve'
 import { describe, expect, it } from 'vitest'
 
-import type { CurveData } from '@comfyorg/graph-model/curve'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { graphToPrompt } from './executionUtil'

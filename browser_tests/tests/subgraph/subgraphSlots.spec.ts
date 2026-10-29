@@ -1,17 +1,16 @@
-import { expect } from '@playwright/test'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import {
   expectSlotsWithinBounds,
   measureNodeSlotOffsets
 } from '@e2e/fixtures/utils/slotBoundsUtil'
-import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { expect } from '@playwright/test'
 
 const RENAMED_INPUT_NAME = 'renamed_input'
 const RENAMED_SLOT_NAME = 'renamed_slot_name'

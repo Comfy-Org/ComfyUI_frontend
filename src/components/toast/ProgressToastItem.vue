@@ -1,14 +1,14 @@
 <script setup lang="ts">
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import Badge from '@comfyorg/design-system/badge/Badge'
-import Button from '@comfyorg/design-system/button/Button'
 import type { TaskId } from '@/platform/tasks/services/taskService'
 import type { AssetDownload } from '@/stores/assetDownloadStore'
 import { isDownloadCancelled } from '@/stores/assetDownloadStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { job, isCancelling = false } = defineProps<{
   job: AssetDownload

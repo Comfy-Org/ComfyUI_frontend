@@ -1,5 +1,3 @@
-import type { Locator } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -9,6 +7,7 @@ import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
+import type { Locator } from '@playwright/test'
 
 test.describe(
   'Widget value persistence',

@@ -1,10 +1,10 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
-
 import { openFeedbackDialog } from '@/workbench/extensions/agent/feedback'
+
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
 
 vi.mock(import('@/workbench/extensions/agent/feedback'), () => ({

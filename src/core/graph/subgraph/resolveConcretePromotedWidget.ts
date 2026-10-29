@@ -3,17 +3,17 @@ import type {
   SubgraphNode,
   SubgraphInput
 } from '@comfyorg/graph-model/entityRegistry'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+
 import type {
   PromotedWidgetExecutionSource,
   ResolvedPromotedWidget
 } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-
-import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
-import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { hasPromotedWidgetTarget } from './hasPromotedWidgetTarget'
 

@@ -1,14 +1,12 @@
+import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 import type {
   ListInvitesResponse,
   ListMembersResponse
 } from '@comfyorg/ingest-types'
-import { computed, nextTick } from 'vue'
-
+import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, nextTick } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -20,17 +18,17 @@ import {
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
-
 import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
-import { trackSsoSignInCompleted } from '@/platform/auth/sso/ssoTelemetry'
 import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
-import { useTelemetry } from '@comfyorg/telemetry'
+import { trackSsoSignInCompleted } from '@/platform/auth/sso/ssoTelemetry'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import {
   NoWorkspaceAccessError,
   WorkspaceApiError as mockWorkspaceApiError
 } from '@/platform/remote/ingest/ingestApiError'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
 

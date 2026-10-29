@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest'
-
 import type { PointTuple as CurvePoint } from '@comfyorg/shared-frontend-utils/geometry'
+import { describe, expect, it } from 'vitest'
 
 import {
   createLinearInterpolator,

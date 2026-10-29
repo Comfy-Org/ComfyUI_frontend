@@ -1,14 +1,13 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
-
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import {
   AGENT_NODE_IDS,
   addLoadImageNode
 } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { AgentRemoteApplyHarness } from '@e2e/fixtures/helpers/AgentRemoteApplyHarness'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
 
 const COPY = enMessages.agent
 

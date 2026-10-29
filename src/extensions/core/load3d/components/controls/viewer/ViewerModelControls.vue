@@ -39,9 +39,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import Select from '@comfyorg/design-system/select/Select'
 import SelectContent from '@comfyorg/design-system/select/SelectContent'
 import SelectItem from '@comfyorg/design-system/select/SelectItem'
@@ -51,6 +48,8 @@ import type {
   MaterialMode,
   UpDirection
 } from '@comfyorg/viewport3d/load3d/interfaces'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const { materialModes = ['original', 'normal', 'wireframe'] } = defineProps<{

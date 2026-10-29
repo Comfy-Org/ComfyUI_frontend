@@ -1,13 +1,14 @@
-import { useAppMode } from '@/composables/useAppMode'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   ExecutionTriggerSource,
   RunButtonProperties
 } from '@comfyorg/telemetry/types'
+
+import { useAppMode } from '@/composables/useAppMode'
+import { getWorkspaceTelemetryContext } from '@/platform/billing/telemetry/workspaceTelemetryContext'
 import { getActionbarDockState } from '@/platform/telemetry/utils/getActionbarDockState'
 import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
-import { getWorkspaceTelemetryContext } from '@/platform/billing/telemetry/workspaceTelemetryContext'
 
 type RunButtonTelemetryOptions = {
   subscribe_to_run?: boolean

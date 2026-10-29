@@ -65,13 +65,13 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useNextInvoice } from '@/platform/billing/composables/useNextInvoice'
-import { useErrorHandling } from '@/composables/useErrorHandling'
 import { formatUsdCents } from '@/utils/numberUtil'
 
 const { locale } = useI18n()

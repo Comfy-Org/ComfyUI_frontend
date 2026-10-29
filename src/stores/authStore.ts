@@ -1,24 +1,26 @@
-import { useMemoize } from '@vueuse/core'
-import { FirebaseError } from 'firebase/app'
-import { AuthErrorCodes, getAdditionalUserInfo } from 'firebase/auth'
-import type { User, UserCredential } from 'firebase/auth'
-
-import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
-import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
-
 import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account-core/customerRecovery'
-import {
-  isSsoRequiredRefusal,
-  ssoRequiredOrganizationId
-} from '@comfyorg/account-core/sso'
+import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
 import {
   signUpWithProvisioning,
   socialSignInWithProvisioning
 } from '@comfyorg/account-core/provisioning'
+import {
+  isSsoRequiredRefusal,
+  ssoRequiredOrganizationId
+} from '@comfyorg/account-core/sso'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useMemoize } from '@vueuse/core'
+import { FirebaseError } from 'firebase/app'
+import { AuthErrorCodes, getAdditionalUserInfo } from 'firebase/auth'
+import type { User, UserCredential } from 'firebase/auth'
+import { defineStore } from 'pinia'
+import { computed, ref, watch } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { provideAuthStore } from '@/platform/auth/authStoreAccess'
 import {
   desktopHostUser,
   desktopHostWorkspaceToken,
@@ -36,25 +38,21 @@ import {
 } from '@/platform/auth/session/webSessionFetch'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
-import { clearOnboardingReplay } from '@/platform/onboarding/onboardingReplay'
 import {
   clearPreservedQuery,
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { clearOnboardingReplay } from '@/platform/onboarding/onboardingReplay'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { invalidateRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { api } from '@/scripts/api'
-import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { api } from '@/scripts/api'
+import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { provideAuthStore } from '@/platform/auth/authStoreAccess'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
-import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 const BILLING_PORTAL_REQUEST_TIMEOUT_MS = 30_000
 

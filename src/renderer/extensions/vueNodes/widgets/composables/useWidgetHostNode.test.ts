@@ -1,11 +1,11 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { useWidgetHostNode } from './useWidgetHostNode'

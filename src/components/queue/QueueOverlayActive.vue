@@ -90,9 +90,8 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
 import Button from '@comfyorg/design-system/button/Button'
+import { useI18n } from 'vue-i18n'
 
 defineProps<{
   totalProgressStyle: Record<string, string>

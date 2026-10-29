@@ -1,5 +1,6 @@
 import { readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
+
 import type { RuleTester } from 'oxlint/plugins-dev'
 import * as ts from 'typescript'
 

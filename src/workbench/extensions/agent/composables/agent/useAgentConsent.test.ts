@@ -1,25 +1,27 @@
-import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
-import { cleanup, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { cleanup, render, screen } from '@testing-library/vue'
+
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 vi.mock(import('firebase/auth'))
+import { setImmediate } from 'node:timers/promises'
+
 import type { GlobalSetting } from '@comfyorg/ingest-types'
-import { useAuthStore } from '@/stores/authStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { computed, defineComponent, h, reactive, ref } from 'vue'
-import { setImmediate } from 'node:timers/promises'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { i18n } from '@/i18n'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { DialogInstance } from '@/stores/dialogStore'
-import { i18n } from '@/i18n'
-import { api } from '@/scripts/api'
-import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
-import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
 import { useAgentConsent } from './useAgentConsent'
 

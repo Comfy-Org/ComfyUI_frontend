@@ -109,17 +109,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-
-import CameraControls from '@/extensions/core/load3d/components/controls/CameraControls.vue'
-import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
-import ExportControls from '@/extensions/core/load3d/components/controls/ExportControls.vue'
-import GizmoControls from '@/extensions/core/load3d/components/controls/GizmoControls.vue'
-import HDRIControls from '@/extensions/core/load3d/components/controls/HDRIControls.vue'
-import LightControls from '@/extensions/core/load3d/components/controls/LightControls.vue'
-import ModelControls from '@/extensions/core/load3d/components/controls/ModelControls.vue'
-import SceneControls from '@/extensions/core/load3d/components/controls/SceneControls.vue'
 import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import type {
   CameraConfig,
   GizmoMode,
@@ -128,7 +119,16 @@ import type {
   ModelConfig,
   SceneConfig
 } from '@comfyorg/viewport3d/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
+import { computed, ref, watch } from 'vue'
+
+import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
+import CameraControls from '@/extensions/core/load3d/components/controls/CameraControls.vue'
+import ExportControls from '@/extensions/core/load3d/components/controls/ExportControls.vue'
+import GizmoControls from '@/extensions/core/load3d/components/controls/GizmoControls.vue'
+import HDRIControls from '@/extensions/core/load3d/components/controls/HDRIControls.vue'
+import LightControls from '@/extensions/core/load3d/components/controls/LightControls.vue'
+import ModelControls from '@/extensions/core/load3d/components/controls/ModelControls.vue'
+import SceneControls from '@/extensions/core/load3d/components/controls/SceneControls.vue'
 
 const {
   canUseGizmo = true,

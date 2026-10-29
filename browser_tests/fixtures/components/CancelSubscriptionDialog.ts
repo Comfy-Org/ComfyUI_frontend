@@ -1,7 +1,6 @@
-import type { Locator, Page } from '@playwright/test'
-
-import type { WorkspaceStore } from '@e2e/types/globals'
 import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
+import type { WorkspaceStore } from '@e2e/types/globals'
+import type { Locator, Page } from '@playwright/test'
 
 export class CancelSubscriptionDialog extends BaseDialog {
   readonly heading: Locator

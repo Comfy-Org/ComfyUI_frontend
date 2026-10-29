@@ -15,11 +15,11 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { computed, reactive, watch } from 'vue'
 
-import Button from '@comfyorg/design-system/button/Button'
-import { useMembersPanel } from '@/platform/account/composables/useMembersPanel'
 import MembersPanelContent from '@/platform/account/components/dialogs/settings/MembersPanelContent.vue'
+import { useMembersPanel } from '@/platform/account/composables/useMembersPanel'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 

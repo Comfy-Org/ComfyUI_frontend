@@ -1,5 +1,3 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -10,6 +8,7 @@ import {
 import type { SharedWorkflowImportMocks } from '@e2e/fixtures/sharedWorkflowImportFixture'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import type { WorkspaceStore } from '@e2e/types/globals'
+import { expect, mergeTests } from '@playwright/test'
 
 const IMPORT_ORDER_TIMEOUT_MS = 5_000
 

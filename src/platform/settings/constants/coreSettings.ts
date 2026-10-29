@@ -1,3 +1,6 @@
+import type { Keybinding } from '@comfyorg/keybindings/types'
+import { breakpointsTailwind } from '@vueuse/core'
+
 import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   getDefaultLocale,
@@ -8,10 +11,8 @@ import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
-import type { Keybinding } from '@comfyorg/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
-import { breakpointsTailwind } from '@vueuse/core'
 
 /**
  * Core settings are essential configuration parameters required for ComfyUI's basic functionality.

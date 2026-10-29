@@ -1,14 +1,14 @@
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
-
-import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const cropHolder = vi.hoisted(() => ({
   state: null as Record<string, unknown> | null,

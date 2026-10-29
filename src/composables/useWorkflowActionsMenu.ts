@@ -5,18 +5,18 @@ import { useI18n } from 'vue-i18n'
 import { useEnterBuilder } from '@/components/builder/useEnterBuilder'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { isCloud } from '@/platform/distribution/types'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import { DEPLOY_TO_COMFY_API_ACTION_ID } from '@/platform/workflow/deploy/constants'
-import { openShareDialog } from '@/platform/workflow/sharing/composables/lazyShareDialog'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { useSubgraphStore } from '@/stores/subgraphStore'
+import { openShareDialog } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import type {
   WorkflowMenuAction,
   WorkflowMenuItem

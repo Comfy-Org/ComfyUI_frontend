@@ -15,18 +15,17 @@
 </template>
 
 <script setup lang="ts">
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
-import { registerSubscribeToRunPrompt } from '@/platform/billing/subscription/composables/useSubscribeCtaPresence'
-
+import Button from '@comfyorg/design-system/button/Button'
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
-import { isCloud } from '@/platform/distribution/types'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
+import { registerSubscribeToRunPrompt } from '@/platform/billing/subscription/composables/useSubscribeCtaPresence'
+import { isCloud } from '@/platform/distribution/types'
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 
 const { t } = useI18n()
 

@@ -1,6 +1,7 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { readFileSync } from 'fs'
 import path from 'path'
+
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { comfyAPIPlugin } from './comfyAPIPlugin'

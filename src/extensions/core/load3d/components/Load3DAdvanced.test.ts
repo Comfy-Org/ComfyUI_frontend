@@ -1,8 +1,7 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
-
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const lastProps = ref<Record<string, unknown> | null>(null)
 

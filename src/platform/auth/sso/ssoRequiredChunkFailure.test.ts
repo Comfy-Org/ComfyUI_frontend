@@ -1,9 +1,9 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { describe, expect, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useToast } from '@/components/ui/toast/toastStore'
 
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/auth/sso/SsoRequiredDialogContent.vue'), () => {

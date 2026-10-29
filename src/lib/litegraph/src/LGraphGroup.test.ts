@@ -1,5 +1,8 @@
-import { reactive } from 'vue'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import * as colorUtil from '@comfyorg/shared-frontend-utils/colorUtil'
 import { afterEach, describe, expect, vi } from 'vitest'
+import { reactive } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import {
@@ -11,9 +14,6 @@ import {
 import { containsRect } from '@/lib/litegraph/src/measure'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { GroupId } from '@comfyorg/graph-model/groupId'
-import { toGroupId } from '@comfyorg/graph-model/groupId'
-import * as colorUtil from '@comfyorg/shared-frontend-utils/colorUtil'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { test } from './__fixtures__/testExtensions'

@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { expect } from '@playwright/test'
 
 const PLACEMENT = { x: 400, y: 400 }
 

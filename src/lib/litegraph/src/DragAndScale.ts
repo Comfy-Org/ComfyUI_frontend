@@ -1,12 +1,13 @@
+import { EaseFunction } from '@comfyorg/graph-model/globalEnums'
 import type {
   PanZoom as DragAndScaleState,
   PointTuple as Point,
   ReadOnlyRect,
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { readBrowserDpr } from '@/renderer/core/canvas/canvasViewport'
 
-import { EaseFunction } from '@comfyorg/graph-model/globalEnums'
 import { Rectangle } from './infrastructure/Rectangle'
 
 export type AnimationOptions = {

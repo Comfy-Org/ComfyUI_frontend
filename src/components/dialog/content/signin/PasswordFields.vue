@@ -43,16 +43,16 @@
 </template>
 
 <script setup lang="ts">
+import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
+import Field from '@comfyorg/design-system/field/Field'
+import FieldError from '@comfyorg/design-system/field/FieldError'
+import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
 import { useFocusWithin } from '@vueuse/core'
 import { Field as VeeField } from 'vee-validate'
 import { computed, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
-import Field from '@comfyorg/design-system/field/Field'
-import FieldError from '@comfyorg/design-system/field/FieldError'
-import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
 import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
 
 const { fieldClass } = defineProps<{

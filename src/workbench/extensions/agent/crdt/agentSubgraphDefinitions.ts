@@ -3,9 +3,8 @@ import {
   WIDGET_FORM_KEY,
   nodesMap
 } from '@comfyorg/comfy-multi-player'
-import * as Y from 'yjs'
-
 import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
+import * as Y from 'yjs'
 
 /**
  * Root map the op layer mints `definitions.subgraphs` into, keyed by

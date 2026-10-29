@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
-import type { TopbarBadge } from '@/types/comfy'
-
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import type { TopbarBadge } from '@/types/comfy'
 
 export const useTopbarBadgeStore = defineStore('topbarBadge', () => {
   const extensionStore = useExtensionStore()

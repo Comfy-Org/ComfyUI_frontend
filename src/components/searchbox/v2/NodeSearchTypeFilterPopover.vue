@@ -92,11 +92,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-import type { AcceptableValue } from 'reka-ui'
-
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { AcceptableValue } from 'reka-ui'
 import {
   ListboxContent,
   ListboxFilter,
@@ -105,10 +103,11 @@ import {
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { FilterChip } from '@/components/searchbox/v2/filterChip'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { chip, selectedValues } = defineProps<{
   chip: FilterChip

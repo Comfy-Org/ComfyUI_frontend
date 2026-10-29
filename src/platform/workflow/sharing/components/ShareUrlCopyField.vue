@@ -22,12 +22,12 @@
 </template>
 
 <script setup lang="ts">
-import { refAutoReset } from '@vueuse/core'
-
 import Button from '@comfyorg/design-system/button/Button'
 import Input from '@comfyorg/design-system/input/Input'
-import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { refAutoReset } from '@vueuse/core'
+
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
 
 const { url, shareId } = defineProps<{

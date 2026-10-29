@@ -1,15 +1,15 @@
+import { fakeWebSessionUser } from '@comfyorg/account-core/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
-import { fakeWebSessionUser } from '@comfyorg/account-core/testing'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useAuthStore } from '@/stores/authStore'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import { useCurrentUser } from './useCurrentUser'
 

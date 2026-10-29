@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
+import { expect } from '@playwright/test'
 
 const WIDGET_NAME = '__proto__'
 const TYPED_VALUE = 'survives the reload'

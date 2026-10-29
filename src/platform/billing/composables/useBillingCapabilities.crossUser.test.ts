@@ -9,8 +9,8 @@ import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
-import type { BillingReadRail } from './useBillingReadRail'
 import { useBillingCapabilities } from './useBillingCapabilities'
+import type { BillingReadRail } from './useBillingReadRail'
 
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/billing/api/billingApi'))

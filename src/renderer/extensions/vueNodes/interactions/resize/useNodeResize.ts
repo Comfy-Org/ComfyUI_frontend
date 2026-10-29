@@ -1,22 +1,22 @@
-import { useEventListener } from '@vueuse/core'
-import { ref } from 'vue'
-
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   CompassCorners,
   Point2D as Point,
   Size2D as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
+import { useEventListener } from '@vueuse/core'
+import { ref } from 'vue'
+
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
-import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import {
   hasNorthEdge,
   hasWestEdge
 } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 export interface ResizeCallbackPayload {
   size: Size

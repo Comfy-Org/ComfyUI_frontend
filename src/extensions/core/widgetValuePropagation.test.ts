@@ -1,16 +1,16 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
-
-import type { INodeInputSlot } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { useLinkStore } from '@/stores/linkStore'
 import {
   toOwningGraphId,
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
+
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { INodeInputSlot } from '@/lib/litegraph/src/litegraph'
+import { useLinkStore } from '@/stores/linkStore'
 import type { UUID } from '@/utils/uuid'
 
 vi.mock(import('@/scripts/app'))

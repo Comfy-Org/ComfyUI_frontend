@@ -1,29 +1,30 @@
-import { fromPartial, fromAny } from '@total-typescript/shoehorn'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { useToast } from '@/components/ui/toast/toastStore'
-import { st, t } from '@/i18n'
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
-import {
-  canTransferReplacementOwnership,
-  transferReplacementOwnership
-} from '@/core/graph/nodeShell/nodeShellState'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
-import { useLinkStore } from '@/stores/linkStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
   toOwningGraphId,
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { fromPartial, fromAny } from '@total-typescript/shoehorn'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import {
+  canTransferReplacementOwnership,
+  transferReplacementOwnership
+} from '@/core/graph/nodeShell/nodeShellState'
+import { st, t } from '@/i18n'
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useLinkStore } from '@/stores/linkStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { UUID } from '@/utils/uuid'
+
 import type { MissingNodeType, NodeReplacement } from './types'
 
 vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
@@ -52,9 +53,10 @@ vi.mock(import('@/utils/graphTraversalUtil'), () => ({
 
 vi.mock(import('@/i18n'))
 
-import { app } from '@/scripts/app'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { app } from '@/scripts/app'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
+
 import { useNodeReplacement } from './useNodeReplacement'
 
 beforeEach(() => {

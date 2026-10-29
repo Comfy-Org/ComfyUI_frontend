@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest'
-
 import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 import {
   isTypeCompatible,
@@ -7,6 +5,7 @@ import {
   packOf,
   planPairs
 } from '@e2e/fixtures/customNode/typePairing'
+import { describe, expect, it } from 'vitest'
 
 function node(
   input: Record<string, unknown> = {},

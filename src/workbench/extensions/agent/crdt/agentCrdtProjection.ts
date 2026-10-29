@@ -1,9 +1,9 @@
 import { nodesMap } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type * as Y from 'yjs'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import { recordDevEvent } from './devPanelLog'
 import { DocChangeCollector, groupIds } from './docChangeCollector'

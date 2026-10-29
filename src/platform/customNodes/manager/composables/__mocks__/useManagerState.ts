@@ -1,5 +1,6 @@
-import { computed } from 'vue'
 import { onTestFinished, vi } from 'vitest'
+import { computed } from 'vue'
+
 import type { useManagerState as realUseManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
 
 type ManagerState = ReturnType<typeof realUseManagerState>

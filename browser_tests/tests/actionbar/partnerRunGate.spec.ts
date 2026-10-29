@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { apiKeyAuthFixture } from '@e2e/fixtures/apiKeyAuthFixture'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { ApiSignin } from '@e2e/fixtures/components/ApiSignin'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { WorkspaceStore } from '@e2e/types/globals'
+import { expect } from '@playwright/test'
 
 declare global {
   interface Window {

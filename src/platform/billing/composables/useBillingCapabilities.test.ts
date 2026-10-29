@@ -1,24 +1,23 @@
+import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
 import { setTelemetryRegistry } from '@comfyorg/telemetry'
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useAuthStore } from '@/stores/authStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import axios, { AxiosError, AxiosHeaders } from 'axios'
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { projectBillingCapabilities } from '@/platform/billing/sdk/billingCapabilitiesView'
 import { attachCapabilityRevisionInterceptor } from '@/platform/remote/ingest/capabilityRevision'
-import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
-
-import { useBillingCapabilities } from './useBillingCapabilities'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { describeServerFactGate } from '@/utils/__tests__/serverFactGate'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+
+import { useBillingCapabilities } from './useBillingCapabilities'
 
 vi.mock(import('firebase/auth'), { spy: true })
 

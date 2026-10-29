@@ -4,7 +4,6 @@
 // Vite defines (__DISTRIBUTION__ via reportError). tsx is not Vite, so the shim
 // has to run before those modules evaluate.
 import './vite-define-shim'
-
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -12,6 +11,7 @@ import { pathToFileURL } from 'node:url'
 
 import { z } from 'zod'
 
+import { zAgentTurnAccepted } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   RecordRefusal,
   assembleConversation,
@@ -19,7 +19,6 @@ import {
   refuse,
   zSeedFixture
 } from './agentConversationAssemble'
-import { zAgentTurnAccepted } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   RawCapture,
   RecordedFrame,

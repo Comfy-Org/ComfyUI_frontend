@@ -1,13 +1,12 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
-
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { Position } from '@e2e/fixtures/types'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 type NodeGeometry = {
   inputs: Point[]

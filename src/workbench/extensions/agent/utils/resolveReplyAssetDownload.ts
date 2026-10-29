@@ -1,3 +1,4 @@
+import type { FetchedAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import {
   findOutputAsset,
   isAssetPreviewSupported
@@ -5,7 +6,6 @@ import {
 import { api } from '@/scripts/api'
 import { getFilenameDetails, getPathDetails } from '@/utils/formatUtil'
 
-import type { FetchedAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import type { ReplyAsset } from './replyAssets'
 
 function preserveExtension(name: string, filename: string): string {

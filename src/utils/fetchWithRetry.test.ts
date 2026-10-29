@@ -1,6 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { useTelemetry } from '@comfyorg/telemetry'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { fetchWithRetry } from '@/utils/fetchWithRetry'
 import { DEFAULT_RETRY_POLICY, NO_RETRY_POLICY } from '@/utils/retryPolicy'

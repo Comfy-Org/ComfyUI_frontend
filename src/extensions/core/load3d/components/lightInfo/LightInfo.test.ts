@@ -1,18 +1,18 @@
-import { fromAny } from '@total-typescript/shoehorn'
-import { render, screen } from '@testing-library/vue'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createDefaultLight } from '@comfyorg/viewport3d/lightInfo/types'
+import type { LightInfoEntry } from '@comfyorg/viewport3d/lightInfo/types'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { createDefaultLight } from '@comfyorg/viewport3d/lightInfo/types'
-import type { LightInfoEntry } from '@comfyorg/viewport3d/lightInfo/types'
+import { useLightInfo } from '@/extensions/core/load3d/composables/useLightInfo'
 import enMessages from '@/locales/en/main.json'
 import type { ComfyApp } from '@/scripts/app'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import LightInfo from './LightInfo.vue'
-import { useLightInfo } from '@/extensions/core/load3d/composables/useLightInfo'
 
 vi.mock(
   import('@/extensions/core/load3d/composables/useLightInfo'),

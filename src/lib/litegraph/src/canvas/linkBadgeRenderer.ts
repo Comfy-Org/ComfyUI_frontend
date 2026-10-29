@@ -1,15 +1,16 @@
 import type { LGraph, LLink } from '@comfyorg/graph-model/entityRegistry'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+
+import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 
 import type { HiddenLinkBadge } from './linkBadges'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import {
   layoutHiddenLinkBadges,
   queryLinkBadgeAtPoint,
   queryLinkBadgeHitAtPoint
 } from './linkBadges'
 import { getLinkEndpointPositions } from './linkGeometry'
-import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 
 export function queryHiddenLinkBadgeAtPoint(
   host: object,

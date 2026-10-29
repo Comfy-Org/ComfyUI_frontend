@@ -1,7 +1,7 @@
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { describe, expect, test, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   addWidget,
   ComponentWidgetImpl,

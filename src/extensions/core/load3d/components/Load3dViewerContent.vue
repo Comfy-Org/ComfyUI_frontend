@@ -102,6 +102,7 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { onBeforeUnmount, onMounted, ref, toRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -112,11 +113,10 @@ import GizmoControls from '@/extensions/core/load3d/components/controls/viewer/V
 import LightControls from '@/extensions/core/load3d/components/controls/viewer/ViewerLightControls.vue'
 import ModelControls from '@/extensions/core/load3d/components/controls/viewer/ViewerModelControls.vue'
 import SceneControls from '@/extensions/core/load3d/components/controls/viewer/ViewerSceneControls.vue'
-import Button from '@comfyorg/design-system/button/Button'
 import { useLoad3dDrag } from '@/extensions/core/load3d/composables/useLoad3dDrag'
 import { useLoad3dViewer } from '@/extensions/core/load3d/composables/useLoad3dViewer'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { t } = useI18n()

@@ -5,7 +5,6 @@ import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
-
 import {
   toTurnId,
   zAgentWsEvent
@@ -22,11 +21,11 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError
 }))
 
-import CrdtDevPanel from './CrdtDevPanel.vue'
+import type { AgentCrdtStatus } from './agentCrdtStatus'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
 import * as crdtDebugReport from './crdtDebugReport'
+import CrdtDevPanel from './CrdtDevPanel.vue'
 import { clearDevEvents, recordDevEvent } from './devPanelLog'
-import type { AgentCrdtStatus } from './agentCrdtStatus'
 
 const STATUS: AgentCrdtStatus = {
   enabled: true,

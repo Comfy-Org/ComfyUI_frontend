@@ -1,6 +1,12 @@
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import type { Modifiers } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import {
   addGroup,
@@ -10,9 +16,7 @@ import {
   pointerEvent,
   selectedTitles
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
-import type { Positionable } from '@comfyorg/graph-model/interfaces'
-import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'
 import {
   LGraph,
   LGraphCanvas,
@@ -20,18 +24,14 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import {
   resolveSelectable,
   selectableKeyOf
 } from '@/renderer/core/canvas/litegraph/selectionAdapter'
-import { useSelectionStore } from '@/core/selection/selectionStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import type { LLink } from '@/lib/litegraph/src/LLink'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
-import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'
-import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 

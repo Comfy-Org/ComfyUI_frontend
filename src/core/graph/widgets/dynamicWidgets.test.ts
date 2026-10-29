@@ -1,3 +1,6 @@
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 import {
   afterEach,
   assert,
@@ -7,20 +10,18 @@ import {
   test,
   vi
 } from 'vitest'
+
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import {
   addAutogrow,
   addDynamicCombo
 } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { realignGroupWidgetChildLinks } from '@/lib/litegraph/src/linkDeduplication'
-import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const originalNamedValuesRestore = LiteGraph.namedValuesRestore
 afterEach(() => {

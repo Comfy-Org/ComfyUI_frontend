@@ -13,9 +13,9 @@
 </template>
 
 <script setup lang="ts">
+import Slider from '@comfyorg/design-system/slider/Slider'
 import { computed } from 'vue'
 
-import Slider from '@comfyorg/design-system/slider/Slider'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 const lightIntensity = defineModel<number>('lightIntensity')

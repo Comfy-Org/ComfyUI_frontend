@@ -186,6 +186,11 @@
 import Button from '@comfyorg/design-system/button/Button'
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useDropZone, useObjectUrl } from '@vueuse/core'
+import { computed, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { useSliderFromMouse } from '@/platform/workflow/sharing/composables/useSliderFromMouse'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import {
@@ -193,10 +198,6 @@ import {
   MAX_IMAGE_SIZE_MB,
   MAX_VIDEO_SIZE_MB
 } from '@/platform/workflow/sharing/utils/validateFileSize'
-import { cn } from '@comfyorg/tailwind-utils'
-import { useDropZone, useObjectUrl } from '@vueuse/core'
-import { computed, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const {
   thumbnailType = 'image',

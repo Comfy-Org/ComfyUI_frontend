@@ -1,16 +1,16 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import log from 'loglevel'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { PYTHON_MIRROR } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
-import { useToast } from '@/components/ui/toast/toastStore'
+import { isDesktop } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
-import { isDesktop } from '@/platform/distribution/types'
 import { electronAPI as getElectronAPI } from '@/utils/envUtil'
-import { reportError } from '@comfyorg/telemetry/reportError'
 
 export async function registerElectronAdapterExtension(): Promise<boolean> {
   if (!isDesktop) return false

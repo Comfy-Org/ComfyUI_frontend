@@ -5,6 +5,23 @@ import {
   readStamps,
   WIDGET_FORM_KEY
 } from '@comfyorg/comfy-multi-player'
+import type { INodeFlags } from '@comfyorg/graph-model/interfaces'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type {
+  ExportedSubgraph,
+  ISerialisableNodeInput,
+  ISerialisableNodeOutput,
+  ISerialisedNode
+} from '@comfyorg/graph-model/serialisation'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { isWidgetValue } from '@comfyorg/graph-model/widgets'
+import { zComfyNode } from '@comfyorg/graph-model/workflowSchema'
+import type { Bounds as PlacementRect } from '@comfyorg/shared-frontend-utils/geometry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { isEqual, isPlainObject, omit } from 'es-toolkit'
 import * as Y from 'yjs'
 import { z } from 'zod'
@@ -17,30 +34,14 @@ import {
   reportRemoteDynamicGroupRowMismatch
 } from '@/core/graph/widgets/dynamicGroupDiagnostics'
 import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
-import type { INodeFlags } from '@comfyorg/graph-model/interfaces'
-import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
+import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
-import type {
-  ExportedSubgraph,
-  ISerialisableNodeInput,
-  ISerialisableNodeOutput,
-  ISerialisedNode
-} from '@comfyorg/graph-model/serialisation'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { isWidgetValue } from '@comfyorg/graph-model/widgets'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { zComfyNode } from '@comfyorg/graph-model/workflowSchema'
 import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
-import type { LinkId } from '@comfyorg/graph-model/linkId'
-import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import {
@@ -48,7 +49,6 @@ import {
   readSubgraphDefinitions,
   readSubgraphInteriorWidgets
 } from './agentSubgraphDefinitions'
-import type { Bounds as PlacementRect } from '@comfyorg/shared-frontend-utils/geometry'
 import { placementOffset } from './batchPlacement'
 
 export type NodeChange = 'add' | 'update' | 'delete'

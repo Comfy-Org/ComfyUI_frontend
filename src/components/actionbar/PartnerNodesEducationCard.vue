@@ -169,21 +169,21 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import VideoCompareSlider from '@comfyorg/design-system/common/VideoCompareSlider'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed, ref, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import VideoCompareSlider from '@comfyorg/design-system/common/VideoCompareSlider'
-import Button from '@comfyorg/design-system/button/Button'
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import { usePartnerNodesRunGate } from '@/platform/billing/composables/usePartnerNodesRunGate'
-import { usePartnerNodesInGraph } from '@/composables/node/usePartnerNodesInGraph'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
-import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
+import { usePartnerNodesInGraph } from '@/composables/node/usePartnerNodesInGraph'
+import { usePartnerNodesRunGate } from '@/platform/billing/composables/usePartnerNodesRunGate'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { cn } from '@comfyorg/tailwind-utils'
+import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 
 interface ComparisonRow {
   key: string

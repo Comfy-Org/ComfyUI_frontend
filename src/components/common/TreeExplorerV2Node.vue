@@ -98,23 +98,23 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import {
+  treeItemClass,
+  treeItemIndent
+} from '@comfyorg/design-system/lib/tree/treeStyles'
+import { cn } from '@comfyorg/tailwind-utils'
 import type { FlattenedItem } from 'reka-ui'
 import { TreeItem } from 'reka-ui'
 import { computed, inject, useTemplateRef } from 'vue'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
-import Button from '@comfyorg/design-system/button/Button'
-import {
-  treeItemClass,
-  treeItemIndent
-} from '@comfyorg/design-system/lib/tree/treeStyles'
-import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
   inheritAttrs: false

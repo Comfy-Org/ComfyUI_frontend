@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import WorkflowTemplateDetail from '@/platform/workflow/templates/components/WorkflowTemplateDetail.vue'
 import { t } from '@/i18n'
+import WorkflowTemplateDetail from '@/platform/workflow/templates/components/WorkflowTemplateDetail.vue'
 import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
 
 const meta: Meta<typeof WorkflowTemplateDetail> = {

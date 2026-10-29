@@ -1,14 +1,13 @@
-import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import enMessages from '@/locales/en/main.json'
-
 import { useWorkspaceMenuItems as createWorkspaceMenuItems } from '@/platform/account/composables/useWorkspaceMenuItems'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 const state = vi.hoisted(() => ({
   billingStatus: 'paid',

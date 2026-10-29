@@ -1,3 +1,8 @@
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { ExportedSubgraphInstance } from '@comfyorg/graph-model/serialisation'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { fromPartial } from '@total-typescript/shoehorn'
 /**
  * SubgraphNode Tests
  *
@@ -13,7 +18,6 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
   LegacyWidget,
@@ -23,11 +27,7 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
-import type { ExportedSubgraphInstance } from '@comfyorg/graph-model/serialisation'
-import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {

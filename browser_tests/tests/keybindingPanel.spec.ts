@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expect } from '@playwright/test'
 
 const MULTI_BINDING_COMMAND = 'Comfy.Canvas.DeleteSelectedItems'
 const SINGLE_BINDING_COMMAND = 'Comfy.SaveWorkflow'

@@ -1,10 +1,10 @@
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 const foreignBehavior = Symbol('foreignBehavior')
 

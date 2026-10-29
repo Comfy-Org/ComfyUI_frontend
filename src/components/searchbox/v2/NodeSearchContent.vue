@@ -106,23 +106,24 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NodeSearchFilterBar from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import NodeSearchCategorySidebar, {
   DEFAULT_CATEGORY
 } from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
+import NodeSearchFilterBar from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import NodeSearchInput from '@/components/searchbox/v2/NodeSearchInput.vue'
 import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue'
 import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   BLUEPRINT_CATEGORY,
   isCustomNode,
@@ -130,7 +131,6 @@ import {
   NodeSourceType
 } from '@/types/nodeSource'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const sourceCategoryFilters: Record<string, (n: ComfyNodeDefImpl) => boolean> =
   {

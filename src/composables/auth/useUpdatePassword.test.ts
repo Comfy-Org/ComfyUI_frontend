@@ -1,9 +1,8 @@
+import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import { describe, expect, it, vi } from 'vitest'
-
-import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'

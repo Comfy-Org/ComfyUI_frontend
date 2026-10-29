@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
@@ -5,7 +6,6 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { cloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
 import { createAppRouter } from '@/router'
 import { useAuthStore } from '@/stores/authStore'
-import { reportError } from '@comfyorg/telemetry/reportError'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   DISTRIBUTION: 'cloud' as const,

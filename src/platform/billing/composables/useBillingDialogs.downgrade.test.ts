@@ -1,10 +1,10 @@
-import { computed } from 'vue'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import type { Component } from 'vue'
-import type DowngradeContent from '@/platform/billing/components/dialogs/DowngradeRemoveMembersDialogContent.vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import type DowngradeContent from '@/platform/billing/components/dialogs/DowngradeRemoveMembersDialogContent.vue'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
  * showDowngradeToPersonalDialog must refresh members before the no-members

@@ -1,3 +1,4 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -5,7 +6,6 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { CancellationSurveyExit } from '@/platform/billing/subscription/utils/cancellationSurvey'
-import { useTelemetry } from '@comfyorg/telemetry'
 
 import CancellationSurveyStep from './CancellationSurveyStep.vue'
 

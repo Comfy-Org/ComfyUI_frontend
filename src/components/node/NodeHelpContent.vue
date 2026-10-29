@@ -70,13 +70,13 @@
 </template>
 
 <script setup lang="ts">
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import { computed } from 'vue'
 
-import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
-import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 
 const { node } = defineProps<{
   node: ComfyNodeDefImpl

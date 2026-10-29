@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
 
 describe('createCanvasInteractionMode', () => {
   it.for([{ picking: false }, { picking: true }])(

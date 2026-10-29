@@ -1,10 +1,10 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { getActivePinia } from 'pinia'
-import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { defineComponent, nextTick } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useIntersectionObserver, useResizeObserver } from '@vueuse/core'
+import { getActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick } from 'vue'
 
 const intersectionCallbacks = vi.hoisted(
   () => [] as ((entries: { isIntersecting: boolean }[]) => void)[]
@@ -27,9 +27,9 @@ vi.mocked(useResizeObserver).mockImplementation((_target, callback) => {
 })
 
 import { i18n } from '@/i18n'
+import { listSkillPacks } from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { listSkillPacks } from '@/platform/skills/api/skillsApi'
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 import {
   toTurnId,

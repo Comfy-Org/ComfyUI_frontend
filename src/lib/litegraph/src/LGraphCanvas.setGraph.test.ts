@@ -1,7 +1,8 @@
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SelectableKey } from '@/core/selection/selectionState'
-
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -9,8 +10,6 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
-import { useSelectionStore } from '@/core/selection/selectionStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))

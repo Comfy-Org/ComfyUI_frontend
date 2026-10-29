@@ -56,11 +56,11 @@
 </template>
 
 <script setup lang="ts">
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
-import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'

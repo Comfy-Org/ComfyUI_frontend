@@ -1,7 +1,7 @@
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { useElementBounding } from '@vueuse/core'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 let sharedConverter: ReturnType<typeof useCanvasPositionConversion> | null =

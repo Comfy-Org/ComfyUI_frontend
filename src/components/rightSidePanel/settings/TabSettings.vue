@@ -21,6 +21,8 @@
 </template>
 
 <script setup lang="ts">
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 /**
  * If we only need to show settings for Nodes,
  * there's no need to wrap them in PropertiesAccordionItem,
@@ -34,10 +36,8 @@ import type { Raw } from 'vue'
 
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
-import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
 import NodeSettings from './NodeSettings.vue'
 
 const props = defineProps<{

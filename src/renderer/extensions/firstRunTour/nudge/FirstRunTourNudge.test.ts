@@ -1,28 +1,27 @@
-import { useDialogStore } from '@/stores/dialogStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { fromPartial } from '@total-typescript/shoehorn'
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import {
   clearCoachmarks,
   registerCoachmark,
   unregisterCoachmark
 } from '@/platform/onboarding/coachmarkRegistry'
 import { laidOut } from '@/platform/onboarding/fixtures/coachmarkTargets'
-import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import {
   FIRST_RUN_COACH_IDS,
   TOUR_SEEN_SETTING,
   registerTour
 } from '@/platform/onboarding/onboardingTours'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useDialogStore } from '@/stores/dialogStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import FirstRunTourNudge from './FirstRunTourNudge.vue'
 

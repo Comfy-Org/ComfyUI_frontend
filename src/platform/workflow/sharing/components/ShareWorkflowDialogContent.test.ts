@@ -1,14 +1,13 @@
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { render, screen } from '@testing-library/vue'
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@comfyorg/telemetry'
-
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
 
 vi.mock(import('@comfyorg/telemetry'))

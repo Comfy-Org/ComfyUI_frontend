@@ -71,21 +71,20 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
-
-import { useBrushPersistence } from '@/renderer/extensions/maskEditor/composables/useBrushPersistence'
-import { useImageLoader } from '@/renderer/extensions/maskEditor/composables/useImageLoader'
+import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { useKeyboard } from '@comfyorg/mask-editor/useKeyboard'
-import { useMaskEditorLoader } from '@/renderer/extensions/maskEditor/composables/useMaskEditorLoader'
 import { usePanAndZoom } from '@comfyorg/mask-editor/usePanAndZoom'
 import { useToolManager } from '@comfyorg/mask-editor/useToolManager'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useDialogStore } from '@/stores/dialogStore'
+import { useBrushPersistence } from '@/renderer/extensions/maskEditor/composables/useBrushPersistence'
+import { useImageLoader } from '@/renderer/extensions/maskEditor/composables/useImageLoader'
+import { useMaskEditorLoader } from '@/renderer/extensions/maskEditor/composables/useMaskEditorLoader'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
-
-import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import BrushCursor from './BrushCursor.vue'
 import PointerZone from './PointerZone.vue'

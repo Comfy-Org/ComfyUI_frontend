@@ -1,18 +1,17 @@
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
-
+import { useAccountUI } from '@/platform/account/composables/useAccountUI'
+import { useDeleteWorkspaceGate } from '@/platform/account/composables/useDeleteWorkspaceGate'
+import { useLeaveWorkspaceGate } from '@/platform/account/composables/useLeaveWorkspaceGate'
+import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useDeleteWorkspaceGate } from '@/platform/account/composables/useDeleteWorkspaceGate'
-import { useLeaveWorkspaceGate } from '@/platform/account/composables/useLeaveWorkspaceGate'
-import { useAccountUI } from '@/platform/account/composables/useAccountUI'
-import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 
 interface GatedItem {
   label: string

@@ -205,12 +205,13 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Button from '@comfyorg/design-system/button/Button'
+
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 

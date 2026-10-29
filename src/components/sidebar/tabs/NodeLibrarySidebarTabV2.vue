@@ -99,9 +99,17 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import Tab from '@comfyorg/design-system/tab/Tab'
+import TabList from '@comfyorg/design-system/tab/TabList'
+import TabPanel from '@comfyorg/design-system/tab/TabPanel'
 import { useLocalStorage } from '@vueuse/core'
 import { mapValues } from 'es-toolkit'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import {
   computed,
   nextTick,
@@ -113,24 +121,17 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import FilterDropdown from '@/components/common/FilterDropdown.vue'
-import Tab from '@comfyorg/design-system/tab/Tab'
-import TabList from '@comfyorg/design-system/tab/TabList'
-import TabPanel from '@comfyorg/design-system/tab/TabPanel'
-import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
-import Button from '@comfyorg/design-system/button/Button'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { usePerTabState } from '@/composables/usePerTabState'
 import { ESSENTIAL_SECTIONS } from '@/constants/essentialsNodes'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import {
   DEFAULT_SORTING_ID,
   DEFAULT_TAB_ID,
   nodeOrganizationService
 } from '@/services/nodeOrganizationService'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { buildNodeDefTree, useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   NodeCategoryId,
@@ -149,7 +150,6 @@ import { flattenTree, sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 import AllNodesPanel from './nodeLibrary/AllNodesPanel.vue'
 import EssentialNodesPanel from './nodeLibrary/EssentialNodesPanel.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
-import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
 
 const { flags } = useFeatureFlags()
 

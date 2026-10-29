@@ -1,12 +1,11 @@
 <script setup lang="ts">
+import { getStopDiscountedMonthlyUsd } from '@comfyorg/account-ui/billing/catalog'
+import Slider from '@comfyorg/design-system/slider/Slider'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import Slider from '@comfyorg/design-system/slider/Slider'
-import { getStopDiscountedMonthlyUsd } from '@comfyorg/account-ui/billing/catalog'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
   TEAM_PLAN_CREDIT_STOPS

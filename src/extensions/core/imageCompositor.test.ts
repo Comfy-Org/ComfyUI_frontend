@@ -1,6 +1,9 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import {
   clearCompositorLayers,
   getCompositorBBoxes,
@@ -8,10 +11,7 @@ import {
   getCompositorInputsFingerprint,
   getCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyApp } from '@/scripts/app'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { imageCompositorExtension } from './imageCompositor'
 

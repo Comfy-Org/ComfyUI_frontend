@@ -1,10 +1,11 @@
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 /* oxlint-disable testing-library/no-container */
 /* oxlint-disable testing-library/no-node-access */
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
-import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import {
   assert,
   beforeEach,
@@ -18,25 +19,23 @@ import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
-
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type {
   JobListItem,
   JobStatus
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
+import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
 vi.mock(import('firebase/auth'))
 
 const mockData = vi.hoisted(() => ({

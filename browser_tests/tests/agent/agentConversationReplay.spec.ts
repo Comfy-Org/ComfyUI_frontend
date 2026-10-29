@@ -1,14 +1,6 @@
-import { expect } from '@playwright/test'
-
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { assetPath } from '@e2e/fixtures/utils/paths'
-import {
-  expectElementScreenshot,
-  screenshotRegion
-} from '@e2e/fixtures/utils/screenshotRegion'
-
 import {
   BYTEDANCE_REFERENCE_NODE_TYPE,
   byteDanceReferenceNodeDef
@@ -19,6 +11,12 @@ import {
   nodesWithoutGeometry,
   overlappingNodePairs
 } from '@e2e/fixtures/utils/nodeLayoutGeometry'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+import {
+  expectElementScreenshot,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
+import { expect } from '@playwright/test'
 
 // A recording whose second turn wires two nodes; the first turn only adds.
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'

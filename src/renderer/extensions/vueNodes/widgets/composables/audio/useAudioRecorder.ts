@@ -1,8 +1,8 @@
+import { toError } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
 import { onUnmounted, ref } from 'vue'
 
 import { useAudioService } from '@/services/audioService'
-import { toError } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 interface AudioRecorderOptions {
   onRecordingComplete?: (audioBlob: Blob) => Promise<void>

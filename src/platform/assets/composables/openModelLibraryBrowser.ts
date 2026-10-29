@@ -1,9 +1,10 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
+import { useToast } from '@/components/ui/toast/toastStore'
 import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useToast } from '@/components/ui/toast/toastStore'
 
 export async function openModelLibraryBrowser(): Promise<void> {
   if (!useFeatureFlags().flags.assetsEnabled) return

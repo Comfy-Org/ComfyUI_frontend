@@ -1,11 +1,11 @@
-import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useSubscriptionActions } from '@/platform/billing/subscription/composables/useSubscriptionActions'
-import { useTelemetry } from '@comfyorg/telemetry'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 const { mockReportError } = vi.hoisted(() => ({

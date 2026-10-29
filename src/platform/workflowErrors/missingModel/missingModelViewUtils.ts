@@ -1,6 +1,6 @@
-import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 import { isModelDownloadable } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
+import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 
 export function toDownloadableModel(
   model: MissingModelGroup['models'][number]

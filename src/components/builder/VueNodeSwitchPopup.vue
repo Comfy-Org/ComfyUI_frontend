@@ -38,10 +38,10 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import NotificationPopup from '@comfyorg/design-system/common/NotificationPopup'
 import { ref } from 'vue'
 
-import NotificationPopup from '@comfyorg/design-system/common/NotificationPopup'
-import Button from '@comfyorg/design-system/button/Button'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAppModeStore } from '@/stores/appModeStore'

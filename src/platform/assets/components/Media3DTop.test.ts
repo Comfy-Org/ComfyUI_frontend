@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
+
 import Media3DTop from './Media3DTop.vue'
 
 const {

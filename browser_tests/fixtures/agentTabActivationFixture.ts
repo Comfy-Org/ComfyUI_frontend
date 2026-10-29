@@ -1,6 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -10,6 +7,8 @@ import { tabActivationChats } from '@e2e/fixtures/data/agent/tabActivationChats'
 import { AgentWorkflowChatsMock } from '@e2e/fixtures/helpers/agentWorkflowChats'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 class TabActivationChats {
   readonly panel: AgentPanel

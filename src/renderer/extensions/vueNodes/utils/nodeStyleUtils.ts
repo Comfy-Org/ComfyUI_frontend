@@ -1,6 +1,7 @@
 import { RenderShape } from '@comfyorg/graph-model/globalEnums'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
+
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 /** Lightness litegraph applies to node colors in a light color scheme. */
 export const LIGHT_THEME_NODE_LIGHTNESS = 0.5

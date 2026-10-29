@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import VideoPlayOverlay from '@comfyorg/design-system/media/VideoPlayOverlay'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import {
@@ -7,9 +9,6 @@ import {
 } from '@/renderer/extensions/linearMode/mediaTypes'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
-import { cn } from '@comfyorg/tailwind-utils'
-
-import VideoPlayOverlay from '@comfyorg/design-system/media/VideoPlayOverlay'
 
 const { output } = defineProps<{
   output: AugmentedResultItem

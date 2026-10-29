@@ -1,6 +1,10 @@
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 // TODO: Fix these tests after migration
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import {
   LinkConnector,
   MovingOutputLink,
@@ -8,18 +12,13 @@ import {
   LGraphNode,
   LLink
 } from '@/lib/litegraph/src/litegraph'
-import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import type {
   CanvasPointerEvent,
   NodeInputSlot
 } from '@/lib/litegraph/src/litegraph'
-import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { createMockNodeInputSlot } from '@/utils/__tests__/litegraphTestUtils'
 import { createMockCanvasPointerEvent } from '@/utils/__tests__/canvasTestUtils'
+import { createMockNodeInputSlot } from '@/utils/__tests__/litegraphTestUtils'
 
 type MockPointerEvent = CanvasPointerEvent
 type MockRenderLink = ToOutputRenderLink

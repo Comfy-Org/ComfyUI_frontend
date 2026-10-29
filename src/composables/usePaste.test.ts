@@ -1,5 +1,3 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   afterEach,
   beforeEach,
@@ -11,6 +9,10 @@ import {
 } from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useCopy } from '@/composables/useCopy'
+import { CANVAS_CLIPBOARD_KEY } from '@/lib/litegraph/src/canvas/clipboardStorage'
 import type {
   LGraphCanvas,
   LGraph,
@@ -18,13 +20,13 @@ import type {
   LGraphNode,
   Positionable
 } from '@/lib/litegraph/src/litegraph'
-import { useCopy } from '@/composables/useCopy'
-import { CANVAS_CLIPBOARD_KEY } from '@/lib/litegraph/src/canvas/clipboardStorage'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useToast } from '@/components/ui/toast/toastStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createNode } from '@/utils/createNode'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
+
 import {
   cloneDataTransfer,
   pasteAudioNode,

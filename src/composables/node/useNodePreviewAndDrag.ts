@@ -2,8 +2,8 @@ import type { ComputedRef, CSSProperties, MaybeRefOrGetter, Ref } from 'vue'
 import { computed, ref, toValue } from 'vue'
 
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const PREVIEW_WIDTH = 200
 const PREVIEW_MARGIN = 16

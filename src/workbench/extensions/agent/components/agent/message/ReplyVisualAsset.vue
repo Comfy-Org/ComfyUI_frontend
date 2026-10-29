@@ -1,8 +1,7 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ReplyVisualAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 

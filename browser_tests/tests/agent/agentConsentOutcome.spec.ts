@@ -1,9 +1,8 @@
+import { agentConsentTelemetryTest as test } from '@e2e/fixtures/agentConsentTelemetryFixture'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
-
-import { agentConsentTelemetryTest as test } from '@e2e/fixtures/agentConsentTelemetryFixture'
 
 /**
  * A card that was shown and then went quiet used to cover three endings at

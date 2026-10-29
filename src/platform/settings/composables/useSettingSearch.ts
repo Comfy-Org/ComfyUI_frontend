@@ -1,5 +1,6 @@
 import { computed, ref, watch } from 'vue'
 
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { st } from '@/i18n'
 import {
   getSettingInfo,
@@ -8,7 +9,6 @@ import {
 import type { ISettingGroup, SettingParams } from '@/platform/settings/types'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 
 export type SettingTreeNode = TreeNode<SettingParams>
 

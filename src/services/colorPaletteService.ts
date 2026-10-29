@@ -8,10 +8,10 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { comfyBaseSchema, paletteSchema } from '@/schemas/colorPaletteSchema'
 import type { Colors, Palette } from '@/schemas/colorPaletteSchema'
 import { useApp } from '@/scripts/appInstance'
-import { applyPaletteTheme, isCorePaletteId } from '@/utils/colorPaletteTheme'
 import { uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { applyPaletteTheme, isCorePaletteId } from '@/utils/colorPaletteTheme'
 
 const THEME_ALIASED_LEGACY_KEYS: ReadonlySet<string> = new Set([
   'fg-color',

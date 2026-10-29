@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-import type { Locator } from '@playwright/test'
 import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
-
 import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 /** DOM-centric helper for a single Vue-rendered node on the canvas. */
 export class VueNodeFixture {

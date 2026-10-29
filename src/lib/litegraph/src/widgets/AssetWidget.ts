@@ -1,5 +1,4 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
-
 import type { IAssetWidget } from '@comfyorg/graph-model/widgets'
 
 import { BaseWidget, extensionValue } from './BaseWidget'

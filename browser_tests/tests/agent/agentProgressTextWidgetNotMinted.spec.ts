@@ -1,13 +1,12 @@
-import { expect } from '@playwright/test'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-
 import {
   AgentNonValueWidgetRig,
   progressTextFrame
 } from '@e2e/fixtures/agentNonValueWidgetRig'
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
+import { expect } from '@playwright/test'
+
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 /**
  * `$$node-text-preview` is a `serialize: false` widget written by binary

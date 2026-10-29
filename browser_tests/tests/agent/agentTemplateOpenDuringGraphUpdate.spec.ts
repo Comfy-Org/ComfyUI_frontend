@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import type { ClickedTemplate } from '@e2e/tests/agent/agentTemplates'
 import { AgentTemplates } from '@e2e/tests/agent/agentTemplates'
+import { expect } from '@playwright/test'
 
 test.describe(
   'PM-2126: opening a template while the agent is updating the graph',

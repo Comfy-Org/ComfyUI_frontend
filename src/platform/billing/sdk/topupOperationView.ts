@@ -18,13 +18,13 @@ import {
   declineDetailKey,
   unwrapServerCode
 } from '@comfyorg/account-core/billing'
-
-import { t } from '@/i18n'
 import type {
   BillingAuthenticationState,
   BillingOperationPhase,
   CreateTopupResponse
 } from '@comfyorg/billing-core'
+
+import { t } from '@/i18n'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 export interface TopupOperationView {

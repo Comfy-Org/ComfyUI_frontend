@@ -1,33 +1,33 @@
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { describe, expect, it } from 'vitest'
 
 import { liftNodeErrorsToBoundary } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import {
   createBoundaryLinkedSubgraph,
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
-import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
-import { scanAllModelCandidates } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import {
   createMissingMediaCandidate,
   createPromotedMediaRuntime,
   seedMediaNodeDefs
 } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
 import { scanAllMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { scanAllModelCandidates } from '@/platform/workflowErrors/missingModel/missingModelScan'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import type { NodeValidationError } from '@/utils/executionErrorUtil'
 import {
   getExecutionIdByNode,
   isCandidateScopeActive
 } from '@/utils/graphTraversalUtil'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
 import { classifyPanelErrors } from './errorSeverityClassification'
 import { classifyValidationErrorAbsorption } from './missingResourceAbsorption'

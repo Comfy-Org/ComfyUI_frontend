@@ -51,18 +51,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-
 import Button from '@comfyorg/design-system/button/Button'
 import Slider from '@comfyorg/design-system/slider/Slider'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import type {
   HDRIConfig,
   MaterialMode
 } from '@comfyorg/viewport3d/load3d/interfaces'
+import { computed, ref } from 'vue'
+
+import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 const lightIntensity = defineModel<number>('lightIntensity')

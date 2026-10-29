@@ -1,4 +1,5 @@
 import type { IImageCropWidget } from '@comfyorg/graph-model/widgets'
+
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 

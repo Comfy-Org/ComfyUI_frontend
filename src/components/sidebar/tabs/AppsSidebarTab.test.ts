@@ -5,12 +5,12 @@ import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import {
   useWorkflowStore,
   useWorkflowBookmarkStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import AppsSidebarTab from './AppsSidebarTab.vue'
 vi.mock(import('firebase/auth'))

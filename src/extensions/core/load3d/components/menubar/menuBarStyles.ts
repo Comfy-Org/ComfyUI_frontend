@@ -1,6 +1,5 @@
-import { cn } from '@comfyorg/tailwind-utils'
-
 import { menuContentClass } from '@comfyorg/design-system/lib/menu/menuStyles'
+import { cn } from '@comfyorg/tailwind-utils'
 
 export const chipClass =
   'shrink-0 gap-1.5 rounded-lg bg-popover px-2.5 py-1 hover:bg-muted'

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { TaskResponse } from '@/platform/tasks/services/taskSchema'
 import type {
   CancelTaskOutcome,
@@ -9,12 +10,11 @@ import {
   TaskNotFoundError,
   taskService
 } from '@/platform/tasks/services/taskService'
-import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
+import { api } from '@/scripts/api'
 import {
   isDownloadCancelled,
   useAssetDownloadStore
 } from '@/stores/assetDownloadStore'
-import { api } from '@/scripts/api'
 
 vi.mock(import('@/scripts/api'))
 

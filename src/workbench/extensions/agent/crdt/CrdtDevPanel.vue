@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { resolveDeployEnv } from '@comfyorg/telemetry/rumContext'
 import { useClipboard, useEventListener } from '@vueuse/core'
 import {
   computed,
@@ -14,18 +16,17 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { resolveDeployEnv } from '@comfyorg/telemetry/rumContext'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useQueueStore } from '@/stores/queueStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useQueueStore } from '@/stores/queueStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
-
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+
+import type { AgentCrdtStatus } from './agentCrdtStatus'
 import type { CrdtLogLevel } from './crdtDebugGate'
 import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
 import type {
@@ -33,11 +34,11 @@ import type {
   ReportIdentifiers,
   ReportSources
 } from './crdtDebugReport'
-import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import {
   DEFAULT_REPORT_SOURCES,
   collectCrdtDebugReport
 } from './crdtDebugReport'
+import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { CrdtLogScope, DevEvent, DevEventKind } from './devPanelLog'
 import {
   DEV_EVENT_KINDS,
@@ -46,12 +47,11 @@ import {
   devEvents,
   stringifyDevEvents
 } from './devPanelLog'
+import { collectMediaUiDiagnostics } from './mediaUiDiagnostics'
 import type { MergeScenario, MergeSimulation } from './mergeScenarios'
 import { getMergeScenarios, runScenario } from './mergeScenarios'
 import type { MergeTraceEntry, NodeLifecycleRow } from './mergeTrace'
 import { MERGE_VOCABULARY, groupByRegister, nodeLifecycle } from './mergeTrace'
-import { collectMediaUiDiagnostics } from './mediaUiDiagnostics'
-import type { AgentCrdtStatus } from './agentCrdtStatus'
 
 /**
  * The CRDT debug instrument.

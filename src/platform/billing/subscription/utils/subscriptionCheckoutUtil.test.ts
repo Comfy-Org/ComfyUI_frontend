@@ -1,13 +1,13 @@
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
-
-import { useAuthStore } from '@/stores/authStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
-import { useTelemetry } from '@comfyorg/telemetry'
+import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { useAuthStore } from '@/stores/authStore'
+
 import { performSubscriptionCheckout } from './subscriptionCheckoutUtil'
 
 const {

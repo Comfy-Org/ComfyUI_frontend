@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
-import type { Locator } from '@playwright/test'
-
 import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 // The assets sidebar's sort options live inside the settings popover and are
 // only rendered in cloud mode (`MediaAssetFilterBar.vue`:

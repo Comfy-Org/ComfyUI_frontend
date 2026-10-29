@@ -1,7 +1,3 @@
-import { expect, mergeTests } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import {
   MESSAGE_DELTA_EVENT,
@@ -13,6 +9,9 @@ import {
   pushAgentEvent,
   thinkingEvent
 } from '@e2e/tests/agent/agentPanelMocks'
+import { expect, mergeTests } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const test = mergeTests(agentTest, webSocketFixture)
 

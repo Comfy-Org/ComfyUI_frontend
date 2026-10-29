@@ -1,11 +1,11 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, assert, describe, expect, it, vi } from 'vitest'
-
-import type { ComfyApp } from '@/scripts/app'
-import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import nativeWorkflow from '@e2e/assets/inputs/native_lora_model.json'
 import { nativeLoraDraftReady } from '@e2e/fixtures/helpers/nativeLoraDraftReady'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { afterEach, assert, describe, expect, it, vi } from 'vitest'
+
+import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
+import type { ComfyApp } from '@/scripts/app'
 
 const path = 'workflows/native-draft-readiness.json'
 const pointerKey = 'Comfy.Workflow.ActivePath:draft-readiness-test'

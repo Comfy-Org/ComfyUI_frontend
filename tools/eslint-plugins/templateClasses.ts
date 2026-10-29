@@ -1,15 +1,6 @@
-import type { Rule } from 'eslint'
 import { existsSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
-import type { AST } from 'vue-eslint-parser'
-
-import {
-  FOR_STORIES,
-  buttonVariants
-} from '@comfyorg/design-system/button.variants'
-import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Category } from '@comfyorg/design-system-audits/textCategories'
 import {
@@ -18,6 +9,14 @@ import {
   RELATIVE_SIZE,
   classifyToken
 } from '@comfyorg/design-system-audits/textCategories'
+import {
+  FOR_STORIES,
+  buttonVariants
+} from '@comfyorg/design-system/button.variants'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { Rule } from 'eslint'
+import type { AST } from 'vue-eslint-parser'
 
 type VElement = AST.VElement
 type VAttribute = AST.VAttribute

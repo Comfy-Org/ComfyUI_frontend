@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 import TeamWorkspacesDialogContent from '@/platform/account/components/dialogs/TeamWorkspacesDialogContent.vue'
+import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
 
 describe('useWorkspaceDialogs', () => {

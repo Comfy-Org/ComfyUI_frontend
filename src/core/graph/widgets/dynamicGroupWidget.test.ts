@@ -1,9 +1,6 @@
 import axios, { AxiosHeaders } from 'axios'
 import type { AxiosResponse } from 'axios'
 import { cloneDeep } from 'es-toolkit'
-import { useLinkStore } from '@/stores/linkStore'
-import { api } from '@/scripts/api'
-
 import {
   afterEach,
   assert,
@@ -14,23 +11,24 @@ import {
   vi
 } from 'vitest'
 
-import { i18n } from '@/i18n'
-
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { useLitegraphService } from '@/services/litegraphService'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { useWidgetStore } from '@/stores/widgetStore'
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
-import { multiClone } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
+import { i18n } from '@/i18n'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { multiClone } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { graphToPrompt } from '@/utils/executionUtil'
+import { api } from '@/scripts/api'
+import { useLitegraphService } from '@/services/litegraphService'
+import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWidgetStore } from '@/stores/widgetStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
+import { graphToPrompt } from '@/utils/executionUtil'
 import { renameWidget } from '@/utils/widgetUtil'
 
 function setup(min = 0, max = 3) {

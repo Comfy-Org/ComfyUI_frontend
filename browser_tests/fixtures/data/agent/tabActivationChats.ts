@@ -1,5 +1,4 @@
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-
 import {
   agentThreadSummary,
   agentUserTranscript

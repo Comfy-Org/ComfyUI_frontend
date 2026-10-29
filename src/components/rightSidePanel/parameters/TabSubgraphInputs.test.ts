@@ -1,3 +1,5 @@
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -5,14 +7,12 @@ import { createI18n } from 'vue-i18n'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import TabSubgraphInputs from './TabSubgraphInputs.vue'
 

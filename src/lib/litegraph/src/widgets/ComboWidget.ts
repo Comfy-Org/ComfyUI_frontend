@@ -1,14 +1,13 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
-import { clamp } from 'es-toolkit/compat'
-
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
-
-import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import type {
   ComboWidgetValues,
   IComboWidget,
   IStringComboWidget
 } from '@comfyorg/graph-model/widgets'
+import { clamp } from 'es-toolkit/compat'
+
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import { findComboValueIndex } from '@/lib/litegraph/src/utils/widget'
 

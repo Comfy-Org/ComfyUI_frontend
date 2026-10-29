@@ -1,7 +1,6 @@
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-
-import { render, screen } from '@testing-library/vue'
 
 const initializeStandaloneViewer = vi.fn()
 const cleanup = vi.fn()

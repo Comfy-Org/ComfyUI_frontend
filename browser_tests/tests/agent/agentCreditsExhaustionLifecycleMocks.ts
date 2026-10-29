@@ -1,18 +1,17 @@
+import type { AgentMessage } from '@comfyorg/ingest-types'
+import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+import type { AgentFundingState } from '@e2e/tests/agent/agentPanelMocks'
+import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 import type { Page, WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
-
-import type { AgentMessage } from '@comfyorg/ingest-types'
 
 import type {
   AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { webSocketFixture } from '@e2e/fixtures/ws'
-import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
-import type { AgentFundingState } from '@e2e/tests/agent/agentPanelMocks'
-import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 interface CompletedTurn {
   prompt: string

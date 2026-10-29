@@ -1,10 +1,10 @@
-import { render, screen } from '@testing-library/vue'
+import type { CameraConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import CameraMenuGroup from '@/extensions/core/load3d/components/menubar/CameraMenuGroup.vue'
-import type { CameraConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const i18n = createI18n({

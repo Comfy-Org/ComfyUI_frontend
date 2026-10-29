@@ -5,13 +5,11 @@ import type {
   Subgraph,
   SubgraphNode
 } from '@comfyorg/graph-model/entityRegistry'
-
-import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
-
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { ConnectingLink } from '@comfyorg/graph-model/slots'
 
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
 
 export interface LGraphCanvasEventMap {
   /** The active graph has changed. */

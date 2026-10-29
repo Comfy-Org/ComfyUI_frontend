@@ -3,7 +3,6 @@ import type {
   SsoDiscoverResponse,
   WebSessionResponse
 } from '@comfyorg/ingest-types'
-
 import { WEB_SESSION } from '@e2e/fixtures/data/webSession'
 
 export const SSO_EMAIL = 'ada@acme.example'

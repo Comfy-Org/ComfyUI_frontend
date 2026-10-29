@@ -1,4 +1,5 @@
 import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { computed, reactive, readonly, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
@@ -12,7 +13,6 @@ import {
   useRemoteConfigCache
 } from '@/platform/remoteConfig/remoteConfig'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'

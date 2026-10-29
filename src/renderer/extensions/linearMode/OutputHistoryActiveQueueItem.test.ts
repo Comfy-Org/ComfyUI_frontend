@@ -1,8 +1,8 @@
-import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { render, screen } from '@testing-library/vue'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import OutputHistoryActiveQueueItem from './OutputHistoryActiveQueueItem.vue'
 

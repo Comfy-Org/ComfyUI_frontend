@@ -1,16 +1,22 @@
-import { computed, ref } from 'vue'
-import type { Ref } from 'vue'
+import type {
+  NavGroupData,
+  NavItemData
+} from '@comfyorg/design-system/lib/navigation/types'
 import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
 import { storeToRefs } from 'pinia'
+import { computed, ref } from 'vue'
+import type { Ref } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { MODELS_TAG } from '@/platform/assets/services/assetService'
 import type {
   AssetFilterState,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import {
   filterByBaseModels,
   filterByCategory,
@@ -23,14 +29,8 @@ import {
   getAssetFilename,
   getAssetTypeBadges
 } from '@/platform/assets/utils/assetMetadataUtils'
-import { MODELS_TAG } from '@/platform/assets/services/assetService'
 import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
-import type {
-  NavGroupData,
-  NavItemData
-} from '@comfyorg/design-system/lib/navigation/types'
 
 type NavId = 'all' | 'imported' | (string & {})
 

@@ -1,13 +1,11 @@
-import type { Page } from '@playwright/test'
-
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Page } from '@playwright/test'
 
 const CONDITIONING_INPUTS = ['positive', 'negative']
 

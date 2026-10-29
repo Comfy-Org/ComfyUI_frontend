@@ -1,9 +1,8 @@
-import type { Locator } from '@playwright/test'
-
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { Locator } from '@playwright/test'
 
 /** Minimum height gain (px) a reflow must produce to count as a grow. */
 export const REFLOW_GROWTH_THRESHOLD = 40

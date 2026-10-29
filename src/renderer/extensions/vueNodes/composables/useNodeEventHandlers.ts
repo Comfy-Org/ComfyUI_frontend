@@ -1,9 +1,9 @@
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { createSharedComposable } from '@vueuse/core'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()

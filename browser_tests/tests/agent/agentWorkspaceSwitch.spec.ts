@@ -1,9 +1,9 @@
-import { expect } from '@playwright/test'
 import {
   PERSONAL_WORKSPACE_NAME,
   TEAM_WORKSPACE_NAME
 } from '@e2e/fixtures/data/workspaceSwitcher'
 import { agentWorkspaceSwitcherTest as test } from '@e2e/tests/agent/agentWorkspaceSwitchFixture'
+import { expect } from '@playwright/test'
 
 test.describe('Agent workspace switching', { tag: '@ui' }, () => {
   test('retires the old socket and recovers the panel under the new workspace identity', async ({

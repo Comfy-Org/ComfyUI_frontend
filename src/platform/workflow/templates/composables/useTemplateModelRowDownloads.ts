@@ -1,12 +1,7 @@
-import { DownloadStatus } from '@comfyorg/comfyui-electron-types'
 import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
+import { DownloadStatus } from '@comfyorg/comfyui-electron-types'
 import { shallowReactive } from 'vue'
 
-import { dispatchModelDownload } from '@/platform/workflowErrors/missingModel/missingModelDownload'
-import type {
-  ModelDownloadDispatchOutcome,
-  ModelWithUrl
-} from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import {
   createTemplateModelDownloadState,
   getTemplateModelDownloadIdentity,
@@ -17,6 +12,11 @@ import type {
   TemplateModelDownloadHostEvent,
   TemplateModelDownloadState
 } from '@/platform/workflow/templates/utils/templateModelDownloadState'
+import { dispatchModelDownload } from '@/platform/workflowErrors/missingModel/missingModelDownload'
+import type {
+  ModelDownloadDispatchOutcome,
+  ModelWithUrl
+} from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import type { ElectronDownload } from '@/stores/electronDownloadStore'
 

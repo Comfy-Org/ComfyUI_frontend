@@ -1,10 +1,10 @@
-import type { ResolvedErrorMessage, RunErrorMessageSource } from './types'
+import { st } from '@/i18n'
 
 import type { ErrorResolveContext } from './catalogI18n'
 import { translateCatalogMessage } from './catalogI18n'
 import { resolveRuntimeCatalogCopy } from './runtimeErrorCopy'
 import { resolveRuntimeCatalogMatch } from './runtimeErrorMatcher'
-import { st } from '@/i18n'
+import type { ResolvedErrorMessage, RunErrorMessageSource } from './types'
 
 // Resolves prompt-level errors and non-node-scoped failures before falling
 // back to prompt-specific catalog keys.

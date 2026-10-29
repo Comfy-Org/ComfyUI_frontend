@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { expect } from '@playwright/test'
 
 /**
  * A widget register is one last-writer-wins value, so a remote frame that

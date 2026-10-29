@@ -1,7 +1,8 @@
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+
 import type { ConcatClipSlot } from '@/composables/videoConcat/videoConcatOrder'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 interface LinkedSlot extends ConcatClipSlot {
   inputName: string

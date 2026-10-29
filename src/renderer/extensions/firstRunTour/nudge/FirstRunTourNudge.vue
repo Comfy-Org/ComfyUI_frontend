@@ -80,7 +80,9 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
 import {
   breakpointsTailwind,
   useBreakpoints,
@@ -91,20 +93,17 @@ import {
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { cursorEdgeClass } from '@/platform/onboarding/coachmarkLayout'
-import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import type { SpotlightStep } from '@/platform/onboarding/onboardingTours'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useCoachmarkTarget } from '@/platform/onboarding/useCoachmarkTarget'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@comfyorg/telemetry'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useFirstRunTourController } from '@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-
-import { useFirstRunTourController } from '@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'
 
 const NUDGE_IMAGE = '/assets/images/og-image.png'
 

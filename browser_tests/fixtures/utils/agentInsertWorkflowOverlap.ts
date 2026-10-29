@@ -1,6 +1,4 @@
-import type { Page, WebSocketRoute } from '@playwright/test'
-import { expect } from '@playwright/test'
-
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import {
   BLANK_WORKFLOW,
   bootAgentApp,
@@ -8,7 +6,6 @@ import {
   mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   EXISTING_NODES,
@@ -20,6 +17,8 @@ import {
   Z_IMAGE_TEMPLATE_NODES
 } from '@e2e/fixtures/data/agentInsertWorkflowOverlap'
 import { subscribeAgentWorkflow } from '@e2e/fixtures/utils/subscribeAgentWorkflow'
+import type { Page, WebSocketRoute } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 function readNodeRects(page: Page) {
   return page.evaluate(() =>

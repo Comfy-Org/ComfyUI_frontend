@@ -1,3 +1,4 @@
+import type { PositionConfig } from '@comfyorg/shared-frontend-utils/geometry'
 /**
  * Stores all DOM widgets that are used in the canvas.
  */
@@ -5,7 +6,6 @@ import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
 import type { Raw } from 'vue'
 
-import type { PositionConfig } from '@comfyorg/shared-frontend-utils/geometry'
 import type { BaseDOMWidget } from '@/types/domWidget'
 
 export interface DomWidgetState extends PositionConfig {

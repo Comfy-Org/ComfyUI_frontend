@@ -1,5 +1,8 @@
 import { mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
+import { render, screen, within } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import {
   assert,
@@ -13,13 +16,9 @@ import { computed, defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import * as Y from 'yjs'
 
-import { render, screen, within } from '@testing-library/vue'
-
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { AgentCrdtProjection } from '@/workbench/extensions/agent/crdt/agentCrdtProjection'
 import { FollowerDoc } from '@/workbench/extensions/agent/crdt/followerDoc'
 

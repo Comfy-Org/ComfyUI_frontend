@@ -70,25 +70,25 @@
 </template>
 
 <script setup lang="ts">
-import { useAsyncState } from '@vueuse/core'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { computed, ref, useId } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import Button from '@comfyorg/design-system/button/Button'
-import TagEditor from '@/components/common/TagEditor.vue'
-import TagsInputInput from '@comfyorg/design-system/tags-input/TagsInputInput'
-import { useTelemetry } from '@comfyorg/telemetry'
-import type { WorkspaceInviteMetadata } from '@comfyorg/telemetry/types'
-import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   EMAIL_DELIMITER,
   isValidEmail,
   normalizeEmail,
   sanitizeInviteEmails
 } from '@comfyorg/account-ui/billing/checkout'
+import Button from '@comfyorg/design-system/button/Button'
+import TagsInputInput from '@comfyorg/design-system/tags-input/TagsInputInput'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { WorkspaceInviteMetadata } from '@comfyorg/telemetry/types'
+import { useAsyncState } from '@vueuse/core'
+import { computed, ref, useId } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import TagEditor from '@/components/common/TagEditor.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const MAX_INVITES_PER_BATCH = 30
 

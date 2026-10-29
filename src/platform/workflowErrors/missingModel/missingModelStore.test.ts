@@ -1,15 +1,14 @@
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { st, t } from '@/i18n'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import { st, t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 
 const mockNodeLocatorIdToNodeExecutionId = vi.hoisted(() =>
   vi.fn((nodeLocatorId: string) => nodeLocatorId)
@@ -21,10 +20,12 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-import { useMissingModelStore } from './missingModelStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+
 import { useToast } from '@/components/ui/toast/toastStore'
 import { app } from '@/scripts/app'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+
+import { useMissingModelStore } from './missingModelStore'
 
 function makeModelCandidate(
   name: string,

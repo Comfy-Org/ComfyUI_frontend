@@ -50,19 +50,19 @@
 </template>
 
 <script setup lang="ts">
-import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import SubscriptionPanelContentWorkspace from '@/platform/account/components/SubscriptionPanelContentWorkspace.vue'
 import CreditsPanel from '@/platform/billing/components/settings/CreditsPanel.vue'
 import UsageLogsTable from '@/platform/billing/components/settings/UsageLogsTable.vue'
-import Button from '@comfyorg/design-system/button/Button'
-import SubscriptionFooterLinks from '@/platform/billing/subscription/components/SubscriptionFooterLinks.vue'
-import { isCloud } from '@/platform/distribution/types'
-import SubscriptionPanelContentWorkspace from '@/platform/account/components/SubscriptionPanelContentWorkspace.vue'
 import WorkspaceInvoicesContent from '@/platform/billing/components/settings/WorkspaceInvoicesContent.vue'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import SubscriptionFooterLinks from '@/platform/billing/subscription/components/SubscriptionFooterLinks.vue'
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 
 type View = 'overview' | 'activity' | 'invoices'
 

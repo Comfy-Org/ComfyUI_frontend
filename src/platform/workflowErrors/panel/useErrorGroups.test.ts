@@ -1,21 +1,21 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
 import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import '@/scripts/changeTracker'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import '@/scripts/changeTracker'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
-import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import type { useComfyRegistryService } from '@/services/comfyRegistryService'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   nodeError,
   runtimeError,
@@ -30,8 +30,8 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
-import { useErrorGroups } from './useErrorGroups'
 import { createUnnormalisableModelErrorFixture } from './__tests__/absorptionFixtures'
+import { useErrorGroups } from './useErrorGroups'
 import { useHasBlockingError } from './useHasBlockingError'
 
 vi.mock(import('@/services/comfyRegistryService'), () => ({

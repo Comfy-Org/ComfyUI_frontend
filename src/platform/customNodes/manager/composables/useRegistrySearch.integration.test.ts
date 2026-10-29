@@ -1,10 +1,10 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { until } from '@vueuse/core'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
 import type { AxiosAdapter } from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 import { toValue } from 'vue'
 
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useRegistrySearch } from '@/platform/customNodes/manager/composables/useRegistrySearch'
 
 const registryAdapter = await vi.hoisted(async () => {

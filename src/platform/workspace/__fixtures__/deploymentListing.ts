@@ -1,7 +1,6 @@
 import { vi } from 'vitest'
 
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
-
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 

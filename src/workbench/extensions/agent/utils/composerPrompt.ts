@@ -8,6 +8,7 @@ import {
   composerReferenceName
 } from '@/workbench/extensions/agent/types/composerPrompt'
 import type { PromptSnapshot } from '@/workbench/extensions/agent/types/workflowReference'
+
 import { assetReferenceText, nodeReferenceText } from './agentMessageText'
 import { promptReferenceParts } from './promptReferenceParts'
 import { serializeSkillReference } from './skillReferenceText'

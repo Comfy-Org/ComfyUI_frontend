@@ -1,14 +1,13 @@
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useQueueNotificationBanners } from '@/composables/queue/useQueueNotificationBanners'
+import { api as mockApi } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import { fromPartial } from '@total-typescript/shoehorn'
-
-import { api as mockApi } from '@/scripts/api'
 
 const apiEvents: EventTarget = mockApi
 

@@ -1,8 +1,7 @@
 import type { NodeBindable } from '@comfyorg/graph-model/nodeBindable'
 export type { NodeBindable } from '@comfyorg/graph-model/nodeBindable'
-import { without } from 'es-toolkit'
-
 import type { IColorable, ISlotType } from '@comfyorg/graph-model/interfaces'
+import { without } from 'es-toolkit'
 
 /**
  * Converts a plain object to a class instance if it is not already an instance of the class.

@@ -1,6 +1,5 @@
-import type { Locator } from '@playwright/test'
-
 import type { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
+import type { Locator } from '@playwright/test'
 
 /** The usage log on Settings ▸ Plan & Credits ▸ Activity. */
 export class UsageLogsTable {

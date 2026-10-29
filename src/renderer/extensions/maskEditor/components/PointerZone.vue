@@ -17,11 +17,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
-
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import type { usePanAndZoom } from '@comfyorg/mask-editor/usePanAndZoom'
 import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { onMounted, ref, watch } from 'vue'
 
 const { toolManager, panZoom } = defineProps<{
   toolManager: ReturnType<typeof useToolManager>

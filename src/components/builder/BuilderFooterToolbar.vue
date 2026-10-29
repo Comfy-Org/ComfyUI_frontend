@@ -108,19 +108,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
+import Button from '@comfyorg/design-system/button/Button'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
+
 import BuilderOpensAsPopover from './BuilderOpensAsPopover.vue'
 import { setWorkflowDefaultView } from './builderViewOptions'
 import ConnectOutputPopover from './ConnectOutputPopover.vue'

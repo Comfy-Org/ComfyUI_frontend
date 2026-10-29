@@ -1,5 +1,6 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IGalleriaWidget } from '@comfyorg/graph-model/widgets'
+
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isGalleriaInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type {
   GalleriaInputSpec,

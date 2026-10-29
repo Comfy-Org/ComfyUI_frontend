@@ -59,13 +59,13 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import Slider from '@comfyorg/design-system/slider/Slider'
 import {
   MAX_ARRANGE_GAP,
   MIN_ARRANGE_GAP

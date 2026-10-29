@@ -35,10 +35,10 @@
 </template>
 
 <script setup lang="ts">
+import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import { ref } from 'vue'
 
-import Menu from '@comfyorg/design-system/menu/Menu'
-import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
 import type {
   JobGroup,
   JobListItem,
@@ -48,9 +48,9 @@ import type {
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 
-import QueueOverlayHeader from './QueueOverlayHeader.vue'
 import JobAssetsList from './job/JobAssetsList.vue'
 import JobFiltersBar from './job/JobFiltersBar.vue'
+import QueueOverlayHeader from './QueueOverlayHeader.vue'
 
 defineProps<{
   headerTitle: string

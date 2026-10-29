@@ -45,14 +45,14 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import Menu from '@comfyorg/design-system/menu/Menu'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
 import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
@@ -67,8 +67,8 @@ import {
   deploymentStatusTone,
   useDeploymentLabels
 } from '@/platform/workspace/composables/useDeploymentLabels'
-import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
+import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
 import {
   confirmUnsavedWorkBeforeSwitch,
   unsavedWorkflows

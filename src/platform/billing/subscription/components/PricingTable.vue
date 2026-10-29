@@ -217,21 +217,25 @@
 
 <script setup lang="ts">
 import Badge from '@comfyorg/design-system/badge/Badge'
-import PricingTierHeading from '@/platform/billing/components/PricingTierHeading.vue'
-import { planCtaActionName } from '@/platform/telemetry/billingActionNames'
-import { cn } from '@comfyorg/tailwind-utils'
-import { storeToRefs } from 'pinia'
+import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type {
+  CheckoutAttributionMetadata,
+  PaymentIntentSource
+} from '@comfyorg/telemetry/types'
+import { storeToRefs } from 'pinia'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
-import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import PricingTierHeading from '@/platform/billing/components/PricingTierHeading.vue'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import {
   TIER_PRICING,
   amountForBillingCycle,
@@ -253,14 +257,10 @@ import {
 import { isPlanDowngrade } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry'
-import type {
-  CheckoutAttributionMetadata,
-  PaymentIntentSource
-} from '@comfyorg/telemetry/types'
+import { planCtaActionName } from '@/platform/telemetry/billingActionNames'
 import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
-import { useAuthStore } from '@/stores/authStore'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { useAuthStore } from '@/stores/authStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`

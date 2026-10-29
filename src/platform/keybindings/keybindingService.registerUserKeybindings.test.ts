@@ -1,9 +1,9 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
-import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 describe('keybindingService - registerUserKeybindings', () => {
   beforeEach(() => {

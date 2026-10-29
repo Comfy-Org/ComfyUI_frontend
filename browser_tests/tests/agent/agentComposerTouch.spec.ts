@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
+import { inlineReferencesTest as test } from '@e2e/fixtures/agentInlineReferencesFixture'
 import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { inlineReferencesTest as test } from '@e2e/fixtures/agentInlineReferencesFixture'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expect } from '@playwright/test'
 
 test.use({ hasTouch: true, viewport: { width: 1024, height: 768 } })
 

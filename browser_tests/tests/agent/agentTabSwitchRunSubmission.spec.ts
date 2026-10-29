@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
-
+import type { ComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import type { ComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { expect } from '@playwright/test'
 
 // Same recording agentTabSwitchCatchUp.spec.ts uses for its canvas-only
 // coverage: one turn sets the KSampler's steps (20 -> 30) and cfg (7 -> 5) on

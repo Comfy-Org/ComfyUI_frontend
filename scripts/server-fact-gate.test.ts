@@ -9,15 +9,16 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+
 import { afterEach, describe, expect, it } from 'vitest'
 
 import type { ChangedRange } from './server-fact-gate-core'
-import { lintSnapshot } from './server-fact-oxlint'
 import {
   changedRanges,
   findingsOnChangedLines,
   isGatedPath
 } from './server-fact-gate-core'
+import { lintSnapshot } from './server-fact-oxlint'
 
 const fileText = [
   "const label = '역할'",

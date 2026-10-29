@@ -3,21 +3,22 @@ import { effectScope } from 'vue'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
-import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   BillingStatusResponse,
   PreviewSubscribeResponse
 } from '@comfyorg/billing-core'
+import type { BillingSdk } from '@comfyorg/billing-core/sdk'
+import { useTelemetry } from '@comfyorg/telemetry'
+
 import { billingApi } from '@/platform/billing/api/billingApi'
-import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { useWorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
 import {
   fakeBillingSdk,
   serverCode,
   settledOperation
 } from '@/platform/billing/sdk/billingSdkTestUtils'
-import type { BillingSdk } from '@comfyorg/billing-core/sdk'
-import { useWorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const flagState = vi.hoisted(() => ({

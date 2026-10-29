@@ -1,10 +1,11 @@
-// TODO: Fix these tests after migration
-import { test as baseTest } from 'vitest'
-
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 import type {
   PointTuple as Point,
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
+// TODO: Fix these tests after migration
+import { test as baseTest } from 'vitest'
+
 import {
   addDirectionalOffset,
   containsCentre,
@@ -23,7 +24,6 @@ import {
   rotateLink,
   snapPoint
 } from '@/lib/litegraph/src/measure'
-import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 
 const test = baseTest.extend({})
 

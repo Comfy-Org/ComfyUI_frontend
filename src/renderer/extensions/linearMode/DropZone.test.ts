@@ -1,9 +1,8 @@
-import { render, screen } from '@testing-library/vue'
+import Button from '@comfyorg/design-system/button/Button'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
-
-import Button from '@comfyorg/design-system/button/Button'
 
 import DropZone from './DropZone.vue'
 

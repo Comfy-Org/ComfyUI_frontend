@@ -1,9 +1,9 @@
-import { getActivePinia } from 'pinia'
 import { render } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
-import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
+import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 

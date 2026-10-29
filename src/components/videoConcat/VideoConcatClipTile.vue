@@ -43,13 +43,13 @@
 </template>
 
 <script setup lang="ts">
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { cn } from '@comfyorg/tailwind-utils'
 import { toRef, watch } from 'vue'
 
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useVideoEditFormats } from '@/composables/video/useVideoEditFormats'
 import { useVideoFilmstrip } from '@/composables/video/useVideoFilmstrip'
 import type { ClipMetadata } from '@/composables/videoConcat/useVideoConcatClips'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   name,

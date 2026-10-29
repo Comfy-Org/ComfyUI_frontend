@@ -1,7 +1,6 @@
-import { describe, expect, it } from 'vitest'
-
 import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { describe, expect, it } from 'vitest'
 
 describe('useKeybindingStore', () => {
   it('should add and retrieve default keybindings', () => {

@@ -1,7 +1,8 @@
 import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
-import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
+
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import { MinimapDataSource } from './data/MinimapDataSource'

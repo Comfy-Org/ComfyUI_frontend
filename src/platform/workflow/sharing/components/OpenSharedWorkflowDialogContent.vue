@@ -155,6 +155,9 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useAsyncState } from '@vueuse/core'
 import {
   CollapsibleContent,
@@ -163,13 +166,10 @@ import {
 } from 'reka-ui'
 import { computed, ref } from 'vue'
 
-import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectionList.vue'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
-import Button from '@comfyorg/design-system/button/Button'
-import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
-import { cn } from '@comfyorg/tailwind-utils'
+import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 
 type OpeningAction = 'copy-and-open' | 'open-only'
 

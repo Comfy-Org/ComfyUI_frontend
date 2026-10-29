@@ -3,8 +3,8 @@ import {
   desktopHostUser,
   desktopHostWorkspaceToken
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import type { PartnerNodeTokenTarget } from '@/platform/auth/partnerNode/partnerNodeTokenSource'
 import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
+import type { PartnerNodeTokenTarget } from '@/platform/auth/partnerNode/partnerNodeTokenSource'
 import { isCloud } from '@/platform/distribution/types'
 import { useAuthStore } from '@/stores/authStore'
 

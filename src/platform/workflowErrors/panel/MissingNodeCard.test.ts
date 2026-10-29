@@ -6,10 +6,10 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
-import { api } from '@/scripts/api'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { WorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
+import { api } from '@/scripts/api'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 import MissingNodeCard from './MissingNodeCard.vue'
 

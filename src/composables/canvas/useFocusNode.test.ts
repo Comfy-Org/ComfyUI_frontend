@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -7,7 +8,6 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 const viewport = [0, 0, 900, 700] as const
 const routeHash = await vi.hoisted(async () => {

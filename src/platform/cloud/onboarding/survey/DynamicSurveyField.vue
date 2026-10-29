@@ -92,13 +92,13 @@
 </template>
 
 <script setup lang="ts">
+import Input from '@comfyorg/design-system/input/Input'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Input from '@comfyorg/design-system/input/Input'
-import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
-import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import type {
   LocalizedString,
   OnboardingSurveyField,

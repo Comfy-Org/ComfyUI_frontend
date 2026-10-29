@@ -1,8 +1,3 @@
-import { defineStore } from 'pinia'
-import { reactive, ref } from 'vue'
-
-import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
-import type { UUID } from '@/utils/uuid'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import {
@@ -11,11 +6,18 @@ import {
   widgetId as createWidgetId
 } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type {
   WidgetState,
   WidgetStateInit
 } from '@comfyorg/graph-model/widgetState'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
+import { defineStore } from 'pinia'
+import { reactive, ref } from 'vue'
+
+import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/restoredWidgetValue'
+import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import {
   applyLegacyHiddenWrite,
   deriveWidgetVisibility,
@@ -23,9 +25,7 @@ import {
   setWidgetHiddenInPanel
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
-import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
-import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
-import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/restoredWidgetValue'
+import type { UUID } from '@/utils/uuid'
 
 export interface WidgetRenderState {
   hasLayoutSize?: boolean

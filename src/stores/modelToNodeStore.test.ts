@@ -1,12 +1,12 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import {
   ModelNodeProvider,
   useModelToNodeStore
 } from '@/stores/modelToNodeStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const EXPECTED_DEFAULT_TYPES = [
   'checkpoints',

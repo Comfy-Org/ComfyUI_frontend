@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
-
 import RadioGroup from '@comfyorg/design-system/radio-group/RadioGroup'
 import RadioGroupItem from '@comfyorg/design-system/radio-group/RadioGroupItem'
+import { computed, useId } from 'vue'
+
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ControlOptions } from '@/types/simplifiedWidget'
 

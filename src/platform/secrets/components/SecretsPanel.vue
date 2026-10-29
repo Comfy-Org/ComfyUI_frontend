@@ -65,16 +65,16 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import Button from '@comfyorg/design-system/button/Button'
 import AppSpinner from '@/components/common/AppSpinner.vue'
-import { useDialogStore } from '@/stores/dialogStore'
-
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import { useSecrets } from '@/platform/secrets/composables/useSecrets'
 import type { SecretMetadata } from '@/platform/secrets/types'
+import { useDialogStore } from '@/stores/dialogStore'
+
 import SecretFormDialog from './SecretFormDialog.vue'
 import SecretListItem from './SecretListItem.vue'
 

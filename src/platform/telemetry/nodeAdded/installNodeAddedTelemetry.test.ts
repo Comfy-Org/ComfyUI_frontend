@@ -1,10 +1,10 @@
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { useTelemetry } from '@comfyorg/telemetry'
 
 import { installNodeAddedTelemetry } from './installNodeAddedTelemetry'
 import { withNodeAddSource } from './nodeAddSource'

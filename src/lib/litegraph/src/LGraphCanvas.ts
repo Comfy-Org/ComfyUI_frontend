@@ -1,3 +1,4 @@
+import type { CanvasInteractionModeReader } from '@comfyorg/graph-model/CanvasInteractionMode'
 import type {
   ContextMenu,
   LGraph,
@@ -5,27 +6,82 @@ import type {
   SlotTypeDefaultNodeOpts,
   Subgraph
 } from '@comfyorg/graph-model/entityRegistry'
+import type {
+  CanvasPointerEvent,
+  CanvasPointerExtensions
+} from '@comfyorg/graph-model/events'
+import {
+  CanvasItem,
+  LGraphEventMode,
+  LinkDirection,
+  LinkMarkerShape,
+  LinkRenderType,
+  RenderShape,
+  TitleMode
+} from '@comfyorg/graph-model/globalEnums'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type {
+  CanvasColour,
+  ColorOption,
+  DefaultConnectionColors,
+  Dictionary,
+  IColorable,
+  INodeSlot,
+  ISlotType,
+  LinkSegment,
+  NullableProperties,
+  Positionable
+} from '@comfyorg/graph-model/interfaces'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { parseNodeId, serializeNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type {
+  ClipboardItems,
+  ISerialisedNode,
+  SubgraphIO
+} from '@comfyorg/graph-model/serialisation'
+import type {
+  ConnectingLink,
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlotContextItem
+} from '@comfyorg/graph-model/slots'
+import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
+import type {
+  RectSide as Direction,
+  PointTuple as Point,
+  ReadOnlyRect,
+  Rect,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { default as DOMPurify } from 'dompurify'
 import { cloneDeep, toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
-import { provideCanvasClass } from './canvas/canvasClassAccess'
 
 import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import {
+  applyMarqueeSelection,
+  resolveClickSelection,
+  resolveMarqueeSelection
+} from '@/core/selection/selectionIntent'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
-import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
+import {
+  applyLogicalCanvasStyle,
+  applyViewport,
+  measureViewport,
+  readBrowserDpr
+} from '@/renderer/core/canvas/canvasViewport'
+import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
-import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
-import {
-  getSlotLayoutAtPoint,
-  getSlotPosition
-} from '@/renderer/core/canvas/litegraph/slotCalculations'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   applyCanvasSelection,
   applyClickSelection,
@@ -40,31 +96,34 @@ import {
   resolveSelectable
 } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import {
-  applyMarqueeSelection,
-  resolveClickSelection,
-  resolveMarqueeSelection
-} from '@/core/selection/selectionIntent'
-import { useSelectionStore } from '@/core/selection/selectionStore'
+  getSlotLayoutAtPoint,
+  getSlotPosition
+} from '@/renderer/core/canvas/litegraph/slotCalculations'
+import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import {
-  applyLogicalCanvasStyle,
-  applyViewport,
-  measureViewport,
-  readBrowserDpr
-} from '@/renderer/core/canvas/canvasViewport'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { forEachNode } from '@/utils/graphTraversalUtil'
+import { createUuidv4 } from '@/utils/uuid'
 
-import { CanvasPointer } from './CanvasPointer'
+import { provideCanvasClass } from './canvas/canvasClassAccess'
 import {
-  clearRevealedLinks,
-  clearRootLinkReveals,
-  isLinkRevealed,
-  setRevealedLinks
-} from './canvas/linkRevealState'
+  CANVAS_CLIPBOARD_ID_KEY,
+  CANVAS_CLIPBOARD_KEY
+} from './canvas/clipboardStorage'
+import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
+import { findRerouteAtPoint } from './canvas/hitTesting'
+import { layoutGraphLinkBadges } from './canvas/linkBadgeRenderer'
+import {
+  clearLinkBadgeHitAreas,
+  collapseLinkBadgeStacks,
+  drawHiddenLinkBadges,
+  queryLinkBadgeHitAtPoint,
+  toggleLinkBadgeStack
+} from './canvas/linkBadges'
+import { LinkConnector } from './canvas/LinkConnector'
 import {
   cancelLinkHideTransition,
   clearRootLinkHideTransitions,
@@ -73,44 +132,23 @@ import {
   linkHideSnap
 } from './canvas/linkHideTransition'
 import {
+  clearRevealedLinks,
+  clearRootLinkReveals,
+  isLinkRevealed,
+  setRevealedLinks
+} from './canvas/linkRevealState'
+import {
+  clearLinkSelection,
+  getSelectedLinkIds,
+  hasModifierKey,
+  selectLinksInMarquee,
+  selectSlotLinks
+} from './canvas/linkSelection'
+import {
   chainHead,
   chainTail,
   linkSplineChain
 } from './canvas/linkSnapGeometry'
-import { SelectedItemsView } from './canvas/SelectedItemsView'
-import {
-  CANVAS_CLIPBOARD_ID_KEY,
-  CANVAS_CLIPBOARD_KEY
-} from './canvas/clipboardStorage'
-
-import { createCursorCache } from './cursorCache'
-import { DragAndScale } from './DragAndScale'
-import type { AnimationOptions } from './DragAndScale'
-
-import { LGraphGroup } from './LGraphGroup'
-
-import { LGraphNode } from './LGraphNode'
-import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
-import { detachSerialisedLinks } from './linkDeduplication'
-import { parseNodeId, serializeNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import { LLink, slotFloatingLinks } from './LLink'
-import { inputHasLink, nodeLinkIds, outputLinks } from './node/slotLinks'
-import type { LinkId } from '@comfyorg/graph-model/linkId'
-import { Reroute } from './Reroute'
-import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import type { CanvasInteractionModeReader } from '@comfyorg/graph-model/CanvasInteractionMode'
-import { LinkConnector } from './canvas/LinkConnector'
-import { findRerouteAtPoint } from './canvas/hitTesting'
-import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
-import {
-  clearLinkBadgeHitAreas,
-  collapseLinkBadgeStacks,
-  drawHiddenLinkBadges,
-  queryLinkBadgeHitAtPoint,
-  toggleLinkBadgeStack
-} from './canvas/linkBadges'
-import { layoutGraphLinkBadges } from './canvas/linkBadgeRenderer'
 import {
   getLinkMenuOptions,
   getLinkStackMenuOptions,
@@ -121,24 +159,17 @@ import {
   showLink,
   showLinks
 } from './canvas/linkVisibility'
-import {
-  clearLinkSelection,
-  getSelectedLinkIds,
-  hasModifierKey,
-  selectLinksInMarquee,
-  selectSlotLinks
-} from './canvas/linkSelection'
+import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import {
   resolvePointerTarget,
   resolveSelectableTarget
 } from './canvas/resolvePointerTarget'
-import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
+import { SelectedItemsView } from './canvas/SelectedItemsView'
+import { CanvasPointer } from './CanvasPointer'
+import { createCursorCache } from './cursorCache'
+import { DragAndScale } from './DragAndScale'
+import type { AnimationOptions } from './DragAndScale'
 import { strokeShape } from './draw'
-import { defineDeprecatedProperty, warnDeprecated } from './utils/feedback'
-import {
-  cachedMeasureText,
-  clearTextMeasureCache
-} from './utils/textMeasureCache'
 import type {
   CustomEventDispatcher,
   ICustomEventTarget
@@ -146,45 +177,11 @@ import type {
 import type { LGraphCanvasEventMap } from './infrastructure/LGraphCanvasEventMap'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import { Rectangle } from './infrastructure/Rectangle'
-import type {
-  CanvasColour,
-  ColorOption,
-  DefaultConnectionColors,
-  Dictionary,
-  IColorable,
-  INodeSlot,
-  ISlotType,
-  LinkSegment,
-  NullableProperties,
-  Positionable
-} from '@comfyorg/graph-model/interfaces'
-import type {
-  RectSide as Direction,
-  PointTuple as Point,
-  ReadOnlyRect,
-  Rect,
-  SizeTuple as Size
-} from '@comfyorg/shared-frontend-utils/geometry'
-import type {
-  ConnectingLink,
-  INodeInputSlot,
-  INodeOutputSlot,
-  INodeSlotContextItem
-} from '@comfyorg/graph-model/slots'
-import type {
-  ContextMenuDivElement,
-  IContextMenuOptions,
-  IContextMenuValue
-} from './types/contextMenu'
-import type { IBoundaryNodes, NewNodePosition } from './utils/arrange'
-import type {
-  Panel,
-  PanelButton,
-  PanelWidget,
-  PanelWidgetCallback,
-  PanelWidgetOptions
-} from './types/panel'
+import { LGraphGroup } from './LGraphGroup'
+import { LGraphNode } from './LGraphNode'
+import { detachSerialisedLinks } from './linkDeduplication'
 import { LiteGraph } from './litegraphInstance'
+import { LLink, slotFloatingLinks } from './LLink'
 import {
   containsRect,
   createBounds,
@@ -196,37 +193,36 @@ import {
   snapPoint
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
-
-import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
+import { inputHasLink, nodeLinkIds, outputLinks } from './node/slotLinks'
+import { Reroute } from './Reroute'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
+import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphNode } from './subgraph/SubgraphNode'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import { isSubgraphInput, isSubgraphOutput } from './subgraph/subgraphUtils'
 import type {
-  CanvasPointerEvent,
-  CanvasPointerExtensions
-} from '@comfyorg/graph-model/events'
-import {
-  CanvasItem,
-  LGraphEventMode,
-  LinkDirection,
-  LinkMarkerShape,
-  LinkRenderType,
-  RenderShape,
-  TitleMode
-} from '@comfyorg/graph-model/globalEnums'
+  ContextMenuDivElement,
+  IContextMenuOptions,
+  IContextMenuValue
+} from './types/contextMenu'
 import type {
-  ClipboardItems,
-  ISerialisedNode,
-  SubgraphIO
-} from '@comfyorg/graph-model/serialisation'
+  Panel,
+  PanelButton,
+  PanelWidget,
+  PanelWidgetCallback,
+  PanelWidgetOptions
+} from './types/panel'
 import type { NeverNever, PickNevers } from './types/utility'
-import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
+import type { IBoundaryNodes, NewNodePosition } from './utils/arrange'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getDraggedItems } from './utils/collections'
+import { defineDeprecatedProperty, warnDeprecated } from './utils/feedback'
 import { resolveConnectingLinkColor } from './utils/linkColors'
+import {
+  cachedMeasureText,
+  clearTextMeasureCache
+} from './utils/textMeasureCache'
 import { slotTypeKey } from './utils/type'
-import { createUuidv4 } from '@/utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 

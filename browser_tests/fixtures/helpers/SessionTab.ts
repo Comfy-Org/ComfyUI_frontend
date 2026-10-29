@@ -1,7 +1,6 @@
+import { FIREBASE_AUTH_ORIGINS } from '@e2e/fixtures/utils/crossOriginSessionConfig'
 import type { Page, Request, WebSocket } from '@playwright/test'
 import { expect } from '@playwright/test'
-
-import { FIREBASE_AUTH_ORIGINS } from '@e2e/fixtures/utils/crossOriginSessionConfig'
 
 const SESSION_PATH = '/api/auth/session'
 const WORKSPACE_HEADER = 'x-comfy-workspace-id'

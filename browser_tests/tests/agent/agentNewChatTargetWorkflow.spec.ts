@@ -1,11 +1,10 @@
+import { agentTest } from '@e2e/fixtures/agentPanelFixture'
+import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { expect, mergeTests } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-
-import { agentTest } from '@e2e/fixtures/agentPanelFixture'
-import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 
 const test = mergeTests(agentTest, workflowSelectionTest)
 

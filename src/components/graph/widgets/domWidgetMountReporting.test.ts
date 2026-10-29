@@ -1,6 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
-
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { describe, expect, it, vi } from 'vitest'
 
 const mockReportError = vi.hoisted(() => vi.fn())
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({

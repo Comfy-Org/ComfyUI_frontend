@@ -1,7 +1,7 @@
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 /**

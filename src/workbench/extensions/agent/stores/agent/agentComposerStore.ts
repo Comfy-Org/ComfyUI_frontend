@@ -1,14 +1,12 @@
+import type { AgentInputMethod } from '@comfyorg/telemetry/types'
 import { defineStore } from 'pinia'
 import { computed, onScopeDispose, ref, shallowReactive, shallowRef } from 'vue'
 
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-
-import type { AgentInputMethod } from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-
-import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import type {
   ComposerInsertionPoint,
   ComposerPrompt,
@@ -21,8 +19,8 @@ import type {
 } from '@/workbench/extensions/agent/types/workflowReference'
 import { insertComposerReference } from '@/workbench/extensions/agent/utils/composerPrompt'
 import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
-import { createVideoThumbnail } from '@/workbench/extensions/agent/utils/videoThumbnail'
 import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
+import { createVideoThumbnail } from '@/workbench/extensions/agent/utils/videoThumbnail'
 
 interface ComposerDraft extends PromptSnapshot {
   attachments: ComposerAttachment[]

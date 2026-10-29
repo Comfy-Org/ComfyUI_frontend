@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { WorkflowActionsDropdown } from '@e2e/fixtures/components/WorkflowActionsDropdown'
 import { deployToComfyApiTest as test } from '@e2e/fixtures/deployToComfyApiFixture'
+import { expect } from '@playwright/test'
 
 test.describe('Deploy to Comfy API', () => {
   test('opens the deploy card from the workflow actions menu', async ({

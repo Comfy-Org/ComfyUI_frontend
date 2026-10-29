@@ -1,3 +1,5 @@
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   fireEvent,
   render,
@@ -17,14 +19,13 @@ import {
 } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import BoundingBoxesDialogContent from './BoundingBoxesDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import { openBoundingBoxesDialog } from './boundingBoxesDialog'
 import messages from '@/locales/en/main.json'
 import { useDialogStore } from '@/stores/dialogStore'
-import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+
+import { openBoundingBoxesDialog } from './boundingBoxesDialog'
+import BoundingBoxesDialogContent from './BoundingBoxesDialogContent.vue'
 
 const { appState } = vi.hoisted(() => {
   const appState: {

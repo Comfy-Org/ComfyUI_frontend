@@ -1,18 +1,18 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { readonly, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { t } from '@/i18n'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { recordRetentionFlowEvent } from '@/platform/billing/subscription/launchCancellationFlow'
 import type {
   RetentionOfferEvent,
   RetentionOfferPhase
 } from '@/platform/billing/subscription/utils/retentionOffer'
 import { reduceRetentionOffer } from '@/platform/billing/subscription/utils/retentionOffer'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
-import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 
 type RedemptionResult = Exclude<
   RetentionOfferEvent,

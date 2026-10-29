@@ -4,7 +4,6 @@ import { createApp, defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useAssetFilterOptions as createAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
-
 import {
   createAssetWithSpecificBaseModel,
   createAssetWithSpecificExtension,

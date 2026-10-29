@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+
 import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('firebase/auth'), { spy: true })
@@ -10,8 +10,9 @@ beforeEach(() => {
   stubFirebaseAuthHarness()
 })
 
-import { syncHostUserIdWithFirebaseAuth } from './hostUserIdSync'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+
+import { syncHostUserIdWithFirebaseAuth } from './hostUserIdSync'
 
 const stopHandles: Array<() => void> = []
 

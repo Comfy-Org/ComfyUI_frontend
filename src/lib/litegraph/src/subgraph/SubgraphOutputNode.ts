@@ -5,30 +5,27 @@ import type {
   SubgraphInput,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-
-import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-
-import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type {
   DefaultConnectionColors,
   ISlotType,
   Positionable
 } from '@comfyorg/graph-model/interfaces'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { SubgraphIO } from '@comfyorg/graph-model/serialisation'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
+
+import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
-import type { SubgraphIO } from '@comfyorg/graph-model/serialisation'
 import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 
 import { EmptySubgraphOutput } from './EmptySubgraphOutput'
 import { SubgraphIONodeBase } from './SubgraphIONodeBase'
-
 import { provideSubgraphOutputGuard } from './subgraphTypeGuards'
 
 export class SubgraphOutputNode

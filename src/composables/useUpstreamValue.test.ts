@@ -1,7 +1,6 @@
-import { describe, expect, it } from 'vitest'
-
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
+import { describe, expect, it } from 'vitest'
 
 import { boundsExtractor, singleValueExtractor } from './useUpstreamValue'
 

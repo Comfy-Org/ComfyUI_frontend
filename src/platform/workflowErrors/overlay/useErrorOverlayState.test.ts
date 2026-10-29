@@ -1,22 +1,23 @@
-import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useErrorOverlayState } from './useErrorOverlayState'
-import '@/scripts/changeTracker'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import type { NodeError } from '@/platform/remote/comfyui/types'
+import '@/scripts/changeTracker'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
+import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
+import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
 import type {
   MissingPackGroup,
   SwapNodeGroup
 } from '@/platform/workflowErrors/panel/useErrorGroups'
-import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
-import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
-import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+
+import { useErrorOverlayState } from './useErrorOverlayState'
 
 const mockErrorGroups = vi.hoisted(() => ({
   allErrorGroups: { value: [] as ErrorGroup[] },

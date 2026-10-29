@@ -1,11 +1,10 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import { agentConversationTest } from '@e2e/fixtures/agentConversationFixture'
 import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { STABLE_CHECKPOINT } from '@e2e/fixtures/data/assetFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expect, mergeTests } from '@playwright/test'
 
 const test = mergeTests(agentConversationTest, assetApiFixture)
 

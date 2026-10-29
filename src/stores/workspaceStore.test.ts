@@ -1,9 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromAny } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { Toast } from '@/components/ui/toast/toastStore'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ToastMessageOptions } from '@/types/extensionTypes'
 
 import { useWorkspaceStore } from './workspaceStore'

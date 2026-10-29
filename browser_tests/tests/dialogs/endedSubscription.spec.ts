@@ -1,6 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Locator } from '@playwright/test'
-
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import {
   DEFAULT_TEAM_MEMBERS,
@@ -12,6 +9,8 @@ import {
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { recordOpenedUrl } from '@e2e/fixtures/utils/recordOpenedUrl'
+import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 test.describe('Ended workspace subscription', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })

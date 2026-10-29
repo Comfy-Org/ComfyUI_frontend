@@ -1,12 +1,12 @@
-import type { NodeReplacementResponse } from './types'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+
 import { fetchNodeReplacements } from './nodeReplacementService'
 import { useNodeReplacementStore } from './nodeReplacementStore'
+import type { NodeReplacementResponse } from './types'
 
 vi.mock(import('./nodeReplacementService'), () => ({
   fetchNodeReplacements: vi.fn()

@@ -1,10 +1,10 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import type { ServerFact } from '@/platform/serverFacts/serverFact'
 import { formatSubscriptionDate } from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import type { ServerFact } from '@/platform/serverFacts/serverFact'
 
 type DeleteWorkspaceGate =
   | { status: 'hidden' }

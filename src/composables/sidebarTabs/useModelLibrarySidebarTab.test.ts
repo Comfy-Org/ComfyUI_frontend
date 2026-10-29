@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
-import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({

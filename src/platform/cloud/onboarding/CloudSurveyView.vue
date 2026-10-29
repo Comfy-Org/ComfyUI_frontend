@@ -15,6 +15,8 @@
 </template>
 
 <script setup lang="ts">
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { isNavigationFailure, useRouter } from 'vue-router'
@@ -30,12 +32,10 @@ import {
   restoreSurveyReplayRequest
 } from '@/platform/onboarding/onboardingReplay'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAuthStore } from '@/stores/authStore'
 
-import DynamicSurveyForm from './survey/DynamicSurveyForm.vue'
 import { defaultOnboardingSurvey } from './survey/defaultSurveySchema'
+import DynamicSurveyForm from './survey/DynamicSurveyForm.vue'
 
 const router = useRouter()
 const { t } = useI18n()

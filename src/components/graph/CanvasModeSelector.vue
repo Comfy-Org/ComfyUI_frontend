@@ -90,21 +90,21 @@
 </template>
 
 <script setup lang="ts">
-import { unrefElement } from '@vueuse/core'
-import { PopoverRoot, PopoverTrigger } from 'reka-ui'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import type { ComponentPublicInstance } from 'vue'
-import { computed, nextTick, ref } from 'vue'
-
 import Button from '@comfyorg/design-system/button/Button'
-import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import {
   menuButtonClass,
   menuContentClass
 } from '@comfyorg/design-system/lib/menu/menuStyles'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { cn } from '@comfyorg/tailwind-utils'
+import { unrefElement } from '@vueuse/core'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import type { ComponentPublicInstance } from 'vue'
+import { computed, nextTick, ref } from 'vue'
+
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 interface Props {
   buttonStyles?: Record<string, string>

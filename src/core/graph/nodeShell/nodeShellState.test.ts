@@ -1,3 +1,6 @@
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toRaw } from 'vue'
 
@@ -8,9 +11,6 @@ import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { createInputSlotView } from '@/lib/litegraph/src/node/slotDescriptorView'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
-import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 
 import { createNodeShellState, unregisterNodeState } from './nodeShellState'

@@ -1,9 +1,9 @@
 import { computed } from 'vue'
 import type { Ref } from 'vue'
 
-import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import { isNightlyVersion } from '@/platform/customNodes/manager/utils/packUpdateStatus'
+import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 

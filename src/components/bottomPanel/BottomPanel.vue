@@ -56,19 +56,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import Tabs from '@comfyorg/design-system/tabs/Tabs'
 import TabsContent from '@comfyorg/design-system/tabs/TabsContent'
 import TabsList from '@comfyorg/design-system/tabs/TabsList'
 import TabsTrigger from '@comfyorg/design-system/tabs/TabsTrigger'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const bottomPanelStore = useBottomPanelStore()
 const settingsDialog = useSettingsDialog()

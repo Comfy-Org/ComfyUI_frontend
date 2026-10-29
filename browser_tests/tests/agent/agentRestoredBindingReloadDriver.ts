@@ -1,14 +1,12 @@
+import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
+import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
-import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
-
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const PANEL_MOUNT_TIMEOUT = 30_000
 

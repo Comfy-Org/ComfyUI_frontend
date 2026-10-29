@@ -1,7 +1,6 @@
-import { getCurrentScope, onScopeDispose, ref, toValue, watch } from 'vue'
-
-import type { MaybeRefOrGetter, Ref, WatchStopHandle } from 'vue'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { getCurrentScope, onScopeDispose, ref, toValue, watch } from 'vue'
+import type { MaybeRefOrGetter, Ref, WatchStopHandle } from 'vue'
 
 export interface SelectedNode {
   id: string

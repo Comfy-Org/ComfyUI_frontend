@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
 import {
   crossOriginSessionFixture as test,
   SERVED_LOCALLY_HEADER,
   signInOnCloud
 } from '@e2e/fixtures/crossOriginSessionFixture'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Cross-origin session harness',

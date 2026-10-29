@@ -1,5 +1,5 @@
-import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 

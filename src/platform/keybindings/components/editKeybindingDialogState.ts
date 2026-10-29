@@ -1,5 +1,5 @@
-import type { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
 import type { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import type { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
 
 export const EDIT_KEYBINDING_DIALOG_KEY = 'edit-keybinding'
 

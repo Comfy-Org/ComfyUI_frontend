@@ -10,8 +10,8 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 
 describe('useNodeDefStore', () => {
   let store: ReturnType<typeof useNodeDefStore>

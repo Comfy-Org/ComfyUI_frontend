@@ -1,13 +1,13 @@
-import { render, screen, waitFor } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
-
-import ViewerModelControls from '@/extensions/core/load3d/components/controls/viewer/ViewerModelControls.vue'
 import type {
   MaterialMode,
   UpDirection
 } from '@comfyorg/viewport3d/load3d/interfaces'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import ViewerModelControls from '@/extensions/core/load3d/components/controls/viewer/ViewerModelControls.vue'
 
 const i18n = createI18n({
   legacy: false,

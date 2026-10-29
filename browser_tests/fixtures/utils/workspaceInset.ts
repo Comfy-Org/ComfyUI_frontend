@@ -1,7 +1,7 @@
+import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
 import type { Locator, Page } from '@playwright/test'
 
 import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
-import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
 
 export async function expectDialogBoundsWithDockedPanel(
   page: Page,

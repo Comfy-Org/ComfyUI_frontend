@@ -1,15 +1,15 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { storeToRefs } from 'pinia'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { useAppMode } from '@/composables/useAppMode'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 const { t } = useI18n()
 const { setMode } = useAppMode()

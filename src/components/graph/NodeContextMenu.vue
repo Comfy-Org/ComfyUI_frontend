@@ -27,11 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-
-import Menu from '@comfyorg/design-system/menu/Menu'
 import { getMenuAnchorPosition } from '@comfyorg/design-system/lib/menu/menuAnchor'
-import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
 import type {
   MenuItem,
   MenuItemAction,
@@ -39,11 +35,15 @@ import type {
   MenuItemSeparator,
   MenuItemSubmenu
 } from '@comfyorg/design-system/lib/menu/types'
+import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+
+import type { MenuOption } from '@/composables/graph/menuOption'
 import {
   registerNodeOptionsInstance,
   useMoreOptionsMenu
 } from '@/composables/graph/useMoreOptionsMenu'
-import type { MenuOption } from '@/composables/graph/menuOption'
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 

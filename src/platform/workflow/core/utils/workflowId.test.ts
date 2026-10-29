@@ -1,8 +1,9 @@
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { isValidUuid } from '@/utils/formatUtil'
+
 import {
   areWorkflowIdsEquivalent,
   ensureWorkflowId,

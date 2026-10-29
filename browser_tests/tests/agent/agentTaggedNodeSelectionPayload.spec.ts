@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
 import {
   addNodeBesideAgentPanel,
   agentTest as test,
   sentTurn
 } from '@e2e/tests/agent/agentPanelMocks'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Agent tagged node selection payload',

@@ -1,20 +1,20 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Mock } from 'vitest'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import * as VueUse from '@vueuse/core'
+import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, shallowRef } from 'vue'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import {
-  toOwningGraphId,
-  toRootGraphId
-} from '@comfyorg/graph-model/graphScopeId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createMockCanvasRenderingContext2D,
   createMockMinimapCanvas

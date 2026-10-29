@@ -1,13 +1,11 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
-
-import type { AgentRunModePreference } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { zAgentRunMode } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { expect, mergeTests } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { AgentRunModePreference } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { zAgentRunMode } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 // Covers a P1 from Test Plan: 1.54 — Comfy Agent, reproduced 3x by hand:
 // "The Run permissions popover does not dismiss on Escape ... It overlays the

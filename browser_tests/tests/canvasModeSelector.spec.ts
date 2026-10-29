@@ -1,8 +1,7 @@
-import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { CanvasModeSelector } from '@e2e/fixtures/components/CanvasModeSelector'
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 const getLocators = (page: Page) => ({
   trigger: page.getByRole('button', { name: 'Canvas Mode' }),

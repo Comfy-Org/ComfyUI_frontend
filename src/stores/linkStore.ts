@@ -1,6 +1,3 @@
-import { defineStore } from 'pinia'
-import { reactive, shallowRef, toRaw } from 'vue'
-
 import type {
   GraphScope,
   OwningGraphId,
@@ -10,6 +7,8 @@ import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { isFloatingTopology } from '@comfyorg/graph-model/linkTopology'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { defineStore } from 'pinia'
+import { reactive, shallowRef, toRaw } from 'vue'
 
 export type EndpointPatch = Partial<
   Pick<

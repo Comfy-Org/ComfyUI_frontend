@@ -25,15 +25,14 @@
 </template>
 
 <script setup lang="ts">
-import { useElementBounding } from '@vueuse/core'
-import { computed, watch } from 'vue'
-
 import {
   getEffectiveBrushSize,
   getEffectiveHardness
 } from '@comfyorg/mask-editor/brushUtils'
-import { BrushShape } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { BrushShape } from '@comfyorg/mask-editor/types'
+import { useElementBounding } from '@vueuse/core'
+import { computed, watch } from 'vue'
 
 const { containerRef } = defineProps<{
   containerRef?: HTMLElement

@@ -1,9 +1,5 @@
 import { z } from 'zod'
 
-import { matchesWidgetName } from '@/utils/widgetBinding'
-
-import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
-import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import {
   collectReachableSubgraphDefinitions,
   parseFlattenableSubgraphDefinitions
@@ -12,6 +8,9 @@ import type {
   FlattenableSubgraphDefinition,
   FlattenableWorkflowNode
 } from '@/platform/workflow/core/utils/workflowFlattening'
+import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
+import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { matchesWidgetName } from '@/utils/widgetBinding'
 
 export interface NodePack {
   readonly id: string

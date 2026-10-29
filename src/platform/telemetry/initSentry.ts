@@ -1,4 +1,8 @@
-import type { App } from 'vue'
+import {
+  REDACTION_SENTINEL,
+  redactTelemetryUrls,
+  redactTelemetryValues
+} from '@comfyorg/telemetry/redactTelemetryUrls'
 import {
   browserApiErrorsIntegration,
   eventFiltersIntegration,
@@ -12,13 +16,9 @@ import type {
   EventHint,
   Exception
 } from '@sentry/vue'
+import type { App } from 'vue'
 
 import { sentryBeforeSend } from './sentryBeforeSend'
-import {
-  REDACTION_SENTINEL,
-  redactTelemetryUrls,
-  redactTelemetryValues
-} from '@comfyorg/telemetry/redactTelemetryUrls'
 
 /** `@sentry/vue` re-exports neither `TransactionEvent` nor `SpanJSON`. */
 type SentryOptions = NonNullable<Parameters<typeof sentryInit>[0]>

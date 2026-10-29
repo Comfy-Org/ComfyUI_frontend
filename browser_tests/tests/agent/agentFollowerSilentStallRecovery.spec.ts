@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
-import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
-
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import { addLoadImageNode } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { AgentRemoteApplyHarness } from '@e2e/fixtures/helpers/AgentRemoteApplyHarness'
+import { expect } from '@playwright/test'
+
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
 
 test.describe(
   'Agent follower stale-document recovery',

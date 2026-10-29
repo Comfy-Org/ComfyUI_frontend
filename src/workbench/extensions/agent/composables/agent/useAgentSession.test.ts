@@ -5,24 +5,24 @@ import type {
   UploadImageResponse
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useTelemetry } from '@comfyorg/telemetry'
 import { listSkillPacks } from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { api } from '@/scripts/api'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-
 import type {
   AgentAnswerAccepted,
   AgentAnswerReceipt,
@@ -37,6 +37,7 @@ import {
   zAgentTurnAccepted,
   zAgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { AskUserResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   AgentApiError,
   AgentResponseUnreadableError,
@@ -47,14 +48,13 @@ import type {
   DraftSnapshot,
   PostMessageInput
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
-import type { AskUserResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
-import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
+import type { SelectedNode } from './useCanvasSelection'
 
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 const distribution = vi.hoisted(() => ({ isCloud: true }))

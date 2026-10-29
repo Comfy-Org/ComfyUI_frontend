@@ -1,15 +1,20 @@
-import { useDialogService } from '@/services/dialogService'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
-import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
-import { useDomWidgetStore } from '@/stores/domWidgetStore'
-
+import type { AppMode } from '@comfyorg/graph-model/appMode'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { fromAny } from '@total-typescript/shoehorn'
-
-import { useTelemetry } from '@comfyorg/telemetry'
-
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useAppMode } from '@/composables/useAppMode'
+import { t } from '@/i18n'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { nodeTypesMayStillArrive } from '@/platform/customNodes/lateLoading/lateNodeTypes'
+import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/waitingNodes'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  resetWorkflowLoadQueueForTests,
+  useWorkflowService
+} from '@/platform/workflow/core/services/workflowService'
 import type {
   LoadedComfyWorkflow,
   PendingWarnings
@@ -18,33 +23,25 @@ import {
   ComfyWorkflow as ComfyWorkflowClass,
   resetReportedWorkflowStateAnomaliesForTests
 } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { defaultGraph } from '@/scripts/defaultGraph'
-import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import {
-  resetWorkflowLoadQueueForTests,
-  useWorkflowService
-} from '@/platform/workflow/core/services/workflowService'
-import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { nodeTypesMayStillArrive } from '@/platform/customNodes/lateLoading/lateNodeTypes'
-import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/waitingNodes'
-import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { useAppMode } from '@/composables/useAppMode'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { defaultGraph } from '@/scripts/defaultGraph'
+import { useDialogService } from '@/services/dialogService'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
-import type { AppMode } from '@comfyorg/graph-model/appMode'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 import { isValidUuid } from '@/utils/formatUtil'
 import { zeroUuid } from '@/utils/uuid'
-import { t } from '@/i18n'
-import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
 

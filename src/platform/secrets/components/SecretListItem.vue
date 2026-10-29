@@ -59,16 +59,15 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@comfyorg/design-system/card/Card'
 import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
+import Card from '@comfyorg/design-system/card/Card'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
-
 import { getProviderLabel, getProviderLogo } from '@/platform/secrets/providers'
 import type { SecretMetadata } from '@/platform/secrets/types'
+import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 
 const {
   secret,

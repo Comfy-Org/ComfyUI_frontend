@@ -1,9 +1,9 @@
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { storeToRefs } from 'pinia'
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { useExecutionStore } from '@/stores/executionStore'
-import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 /**
  * Composable for managing execution state of Vue-based nodes

@@ -1,8 +1,7 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
-
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 /** Matches interior node-level errors that are not lifted to the host. */
 export interface PromotedWidgetExecutionSource {

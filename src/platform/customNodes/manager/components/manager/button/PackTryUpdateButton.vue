@@ -17,14 +17,14 @@
 </template>
 
 <script setup lang="ts">
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
+import Button from '@comfyorg/design-system/button/Button'
+import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
-import Button from '@comfyorg/design-system/button/Button'
-import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
-import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
+import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 

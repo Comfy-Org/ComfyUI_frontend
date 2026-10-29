@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
 import { useEnterBuilder } from '@/components/builder/useEnterBuilder'
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
-import Button from '@comfyorg/design-system/button/Button'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 

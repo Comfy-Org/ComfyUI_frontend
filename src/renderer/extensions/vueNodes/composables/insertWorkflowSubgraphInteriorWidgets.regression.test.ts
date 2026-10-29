@@ -3,6 +3,7 @@ import type {
   InsertWorkflowOp,
   WidgetCatalog
 } from '@comfyorg/comfy-multi-player'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { assert, beforeEach, expect, it, onTestFinished } from 'vitest'
 import * as Y from 'yjs'
 
@@ -21,7 +22,6 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { AgentCrdtProjection } from '@/workbench/extensions/agent/crdt/agentCrdtProjection'
 import { FollowerDoc } from '@/workbench/extensions/agent/crdt/followerDoc'
 

@@ -1,12 +1,12 @@
+import type {
+  IBaseWidget,
+  IVideoConcatWidget
+} from '@comfyorg/graph-model/widgets'
 import { assert, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IVideoConcatWidget
-} from '@comfyorg/graph-model/widgets'
 import { useVideoConcatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useVideoConcatWidget'
 
 function isVideoConcatWidget(

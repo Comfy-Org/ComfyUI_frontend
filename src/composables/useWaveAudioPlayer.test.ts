@@ -1,10 +1,11 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { useMediaControls } from '@vueuse/core'
-import { nextTick, ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
+
+import { api } from '@/scripts/api'
 
 import { useWaveAudioPlayer } from './useWaveAudioPlayer'
-import { api } from '@/scripts/api'
 
 vi.mock(import('@vueuse/core'), { spy: true })
 

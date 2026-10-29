@@ -1,10 +1,10 @@
+import type { LightConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import LightMenuGroup from '@/extensions/core/load3d/components/menubar/LightMenuGroup.vue'
-import type { LightConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
 

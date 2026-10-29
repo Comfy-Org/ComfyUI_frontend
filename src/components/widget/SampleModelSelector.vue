@@ -118,25 +118,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-
+import Button from '@comfyorg/design-system/button/Button'
+import Tag from '@comfyorg/design-system/chip/Tag'
 import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
 import CardContainer from '@comfyorg/design-system/content-card/CardContainer'
 import CardTop from '@comfyorg/design-system/content-card/CardTop'
-import Tag from '@comfyorg/design-system/chip/Tag'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
-import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
-import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
-import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
-import Button from '@comfyorg/design-system/button/Button'
 import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
-import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import type {
   NavGroupData,
   NavItemData
 } from '@comfyorg/design-system/lib/navigation/types'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 import { createGridStyle } from '@/utils/gridUtil'
 

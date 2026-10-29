@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   expectDevicePixelBackingStore,
   readCanvasBox
 } from '@e2e/fixtures/utils/canvasMeasurements'
+import { expect } from '@playwright/test'
 
 const DPR = 2
 

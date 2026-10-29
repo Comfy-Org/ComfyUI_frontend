@@ -43,17 +43,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import Switch from '@comfyorg/design-system/switch/Switch'
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'

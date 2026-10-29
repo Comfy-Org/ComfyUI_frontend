@@ -20,12 +20,11 @@
 </template>
 
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-
 import NumberField from '@comfyorg/design-system/number-field/NumberField'
 import NumberFieldDecrement from '@comfyorg/design-system/number-field/NumberFieldDecrement'
 import NumberFieldIncrement from '@comfyorg/design-system/number-field/NumberFieldIncrement'
 import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
+import type { HTMLAttributes } from 'vue'
 
 const { class: className = 'w-32' } = defineProps<{
   class?: HTMLAttributes['class']

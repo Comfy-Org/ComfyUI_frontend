@@ -16,16 +16,15 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
+import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import type { DocSubscribedData, DocUpdateData } from '@comfyorg/ingest-types'
+import type { WireOpEnvelope } from '@e2e/fixtures/agentWireFrame'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import * as Y from 'yjs'
 
-import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
-
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
-import type { WireOpEnvelope } from '@e2e/fixtures/agentWireFrame'
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
 const HOST_ACTOR = 'agent:comfy:host'

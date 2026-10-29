@@ -1,3 +1,6 @@
+import { readSsoError, ssoStartUrl } from '@comfyorg/account-core/sso'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { until } from '@vueuse/core'
 import { delay } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
@@ -13,8 +16,7 @@ import type {
   Router
 } from 'vue-router'
 
-import { readSsoError, ssoStartUrl } from '@comfyorg/account-core/sso'
-
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { CloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
 import { cloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
@@ -25,27 +27,23 @@ import {
   readSsoHint
 } from '@/platform/auth/session/ssoReentryStorage'
 import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
-import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
-import { useAuthStore } from '@/stores/authStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useUserStore } from '@/stores/userStore'
-import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
-
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
-import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
-import { decideSsoReentry } from '@/platform/cloud/onboarding/sso/ssoReentry'
 import {
   hasPendingDesktopLoginCode,
   installDesktopLoginRedemption
 } from '@/platform/cloud/onboarding/desktopLoginRedemption'
+import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
+import { decideSsoReentry } from '@/platform/cloud/onboarding/sso/ssoReentry'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { PRESERVED_QUERY_DEFINITIONS } from '@/platform/navigation/preservedQueryDefinitions'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { unmatchedRouteRedirect } from '@/platform/navigation/unmatchedRoute'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { preserveLoggedOutShareAuthAttribution } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
+import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useUserStore } from '@/stores/userStore'
+import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 /**
  * Determine base path for the router.

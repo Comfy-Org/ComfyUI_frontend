@@ -1,7 +1,7 @@
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { matchPromotedInput } from './matchPromotedInput'
 
 type MockInput = {

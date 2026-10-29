@@ -10,6 +10,9 @@
 //   - async evaluation + cache,
 //   - reactive tick to update UI when async evaluation completes.
 
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   formatPricingResult,
   getCompiledRuleForNodeType,
@@ -23,13 +26,11 @@ import type {
 } from '@comfyorg/shared-frontend-utils/nodePricing'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
+
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { PriceBadge } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const getNodeConstructorData = (node: LGraphNode) => node.constructor.nodeData
 

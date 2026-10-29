@@ -1,4 +1,18 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
+import type {
+  BillingClient,
+  BillingTelemetryFailure,
+  PreviewSubscribeInput
+} from '@comfyorg/account-core/billing'
+import type {
+  BillingBalanceResponse,
+  BillingStatusResponse,
+  CreateTopupResponse,
+  PreviewSubscribeOptions,
+  PreviewSubscribeResponse,
+  SubscribeOptions
+} from '@comfyorg/billing-core'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   computed,
   getCurrentScope,
@@ -8,31 +22,23 @@ import {
   watch
 } from 'vue'
 
-import type {
-  BillingClient,
-  BillingTelemetryFailure,
-  PreviewSubscribeInput
-} from '@comfyorg/account-core/billing'
-
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
-import { useBillingPlans } from '@/platform/billing/subscription/composables/useBillingPlans'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
-import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
-import type {
-  BillingBalanceResponse,
-  BillingStatusResponse,
-  CreateTopupResponse,
-  PreviewSubscribeOptions,
-  PreviewSubscribeResponse,
-  SubscribeOptions
-} from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
-import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
+import { readOnRail } from '@/platform/billing/composables/readOnRail'
+import type {
+  BalanceInfo,
+  BillingActions,
+  BillingPortalOutcome,
+  BillingState,
+  SubscriptionInfo
+} from '@/platform/billing/composables/types'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import { useSubscriptionRail } from '@/platform/billing/composables/useSubscriptionRail'
 import { openHostedBillingTabOutcome } from '@/platform/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
@@ -41,22 +47,14 @@ import type {
   SubscriptionRailOutcome
 } from '@/platform/billing/sdk/subscriptionOperationView'
 import { SettledOperationError } from '@/platform/billing/sdk/subscriptionOperationView'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { readOnRail } from '@/platform/billing/composables/readOnRail'
-import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
-import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
-import { useSubscriptionRail } from '@/platform/billing/composables/useSubscriptionRail'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { subscribeInputFrom } from '@/platform/billing/subscribeInput'
+import { useBillingPlans } from '@/platform/billing/subscription/composables/useBillingPlans'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
-
-import type {
-  BalanceInfo,
-  BillingActions,
-  BillingPortalOutcome,
-  BillingState,
-  SubscriptionInfo
-} from '@/platform/billing/composables/types'
 
 export class CancellationScopeChangedError extends Error {
   constructor(message: string) {

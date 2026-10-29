@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { createMemoryHistory, createRouter, useRouter } from 'vue-router'
+
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import {
   capturePreservedQuery,
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 
 import { useUrlActionLoaders } from './useUrlActionLoaders'
 

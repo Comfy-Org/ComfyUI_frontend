@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
 
 test.describe('Sign In dialog', { tag: '@ui' }, () => {
   let dialog: SignInDialog

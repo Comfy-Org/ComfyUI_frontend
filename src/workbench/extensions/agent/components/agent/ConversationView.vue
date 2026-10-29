@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import { cn } from '@comfyorg/tailwind-utils'
 import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
 import {
   useEventListener,
@@ -9,11 +11,8 @@ import {
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
+import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
@@ -21,7 +20,6 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
-import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { PromptSnapshot } from '@/workbench/extensions/agent/types/workflowReference'
 
 import AgentMessage from './message/AgentMessage.vue'

@@ -1,13 +1,13 @@
 import { watch } from 'vue'
 import type { Router } from 'vue-router'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import {
   clearPreservedQuery,
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'

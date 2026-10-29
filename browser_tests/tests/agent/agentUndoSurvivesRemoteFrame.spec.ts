@@ -1,11 +1,10 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import {
   ADDITIVE_CANVAS_CASE,
   ADDITIVE_READINESS_NODE_ID,
   ADDITIVE_READINESS_WIDGET
 } from '@e2e/fixtures/data/agent/agentCanvasAdditive'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Agent undo survives a remote frame',

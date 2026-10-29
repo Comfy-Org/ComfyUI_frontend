@@ -1,19 +1,19 @@
+import type { IComboWidget } from '@comfyorg/graph-model/widgets'
+
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IComboWidget } from '@comfyorg/graph-model/widgets'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useToast } from '@/components/ui/toast/toastStore'
-import type { ComfyWidgetConstructor } from '@/types/comfy'
+import type { InputSpec } from '@/schemas/nodeDefSchema'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { ComfyWidgetConstructor } from '@/types/comfy'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { addToComboValues } from '@/utils/litegraphUtil'
-
 import {
   ACCEPTED_IMAGE_TYPES,
   ACCEPTED_VIDEO_TYPES,

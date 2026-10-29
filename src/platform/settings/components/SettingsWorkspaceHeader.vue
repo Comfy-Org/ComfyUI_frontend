@@ -25,10 +25,10 @@
 </template>
 
 <script setup lang="ts">
+import type { SubscriptionTier } from '@comfyorg/billing-core'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import type { SubscriptionTier } from '@comfyorg/billing-core'
 
 const {
   workspaceName,

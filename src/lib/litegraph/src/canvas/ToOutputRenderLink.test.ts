@@ -1,11 +1,11 @@
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import {
   LinkDirection,
   ToOutputRenderLink
 } from '@/lib/litegraph/src/litegraph'
-import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
 import {
   createMockLGraphNode,
   createMockLinkNetwork,

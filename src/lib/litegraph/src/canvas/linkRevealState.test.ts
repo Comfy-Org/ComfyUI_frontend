@@ -1,7 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-
 import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
   clearRevealedLinks,

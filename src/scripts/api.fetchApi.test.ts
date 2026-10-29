@@ -1,3 +1,4 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { fromPartial } from '@total-typescript/shoehorn'
 import {
   afterEach,
@@ -17,7 +18,6 @@ import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useAuthStore } from '@/stores/authStore'
 import { DEFAULT_RETRY_POLICY, NO_RETRY_POLICY } from '@/utils/retryPolicy'
 

@@ -1,7 +1,6 @@
+import { clamp } from 'es-toolkit'
 import { onScopeDispose, ref } from 'vue'
 import type { Ref } from 'vue'
-
-import { clamp } from 'es-toolkit'
 
 import { denormalize } from '@/utils/mathUtil'
 

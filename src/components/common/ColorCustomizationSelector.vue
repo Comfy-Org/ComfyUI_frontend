@@ -29,12 +29,12 @@
 </template>
 
 <script setup lang="ts">
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppColorPicker from '@/components/common/AppColorPicker.vue'
-import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
-import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 
 const { t } = useI18n()
 

@@ -2,49 +2,46 @@ import type {
   BillingTelemetryEvent,
   TopupResult
 } from '@comfyorg/account-core/billing'
+import type { CreateTopupResponse } from '@comfyorg/billing-core'
+import type { BillingSdk } from '@comfyorg/billing-core/sdk'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { computed, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { BalanceInfo } from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
+import type { BillingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
+import type { BalanceInfo } from '@/platform/billing/composables/types'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import {
   failedTopup,
   fakeBillingSdk,
   settledTopup
 } from '@/platform/billing/sdk/billingSdkTestUtils'
-import type { BillingSdk } from '@comfyorg/billing-core/sdk'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   clearCheckoutJourney,
   getActiveCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/billing/utils/checkoutJourney'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { render, screen, waitFor } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
-
-import { useTelemetry } from '@comfyorg/telemetry'
-import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
-import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { billingApi } from '@/platform/billing/api/billingApi'
-import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
-import type { CreateTopupResponse } from '@comfyorg/billing-core'
-import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
-import type { BillingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
-import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const mockReportError = vi.hoisted(() => vi.fn())
 const mockRumAddAction = vi.hoisted(() => vi.fn())

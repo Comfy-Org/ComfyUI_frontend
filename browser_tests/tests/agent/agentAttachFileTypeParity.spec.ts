@@ -1,15 +1,13 @@
 import { truncate, writeFile } from 'node:fs/promises'
 
-import { expect } from '@playwright/test'
-
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
+import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
-import { assetPath } from '@e2e/fixtures/utils/paths'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const PINNED_UPLOAD_LIMIT_BYTES = 1024 * 1024
 

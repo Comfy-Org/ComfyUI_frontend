@@ -1,5 +1,4 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { fromPartial } from '@total-typescript/shoehorn'
 /**
  * Lifecycle tests for the minimap's change-detection interval, run against the
@@ -9,20 +8,21 @@ import { fromPartial } from '@total-typescript/shoehorn'
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
+
 import type {
   LGraph,
   LGraphNode,
   LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-
-import { createMockLinks } from '@/utils/__tests__/litegraphTestUtils'
 import {
   createMockCanvasRenderingContext2D,
   createMockMinimapCanvas
 } from '@/utils/__tests__/canvasTestUtils'
+import { createMockLinks } from '@/utils/__tests__/litegraphTestUtils'
 
 const mockNodes = fromPartial<LGraphNode[]>([
   {

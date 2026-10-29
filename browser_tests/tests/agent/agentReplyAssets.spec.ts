@@ -1,19 +1,17 @@
-import type { Page, Route } from '@playwright/test'
-import { expect, mergeTests } from '@playwright/test'
-
 import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
-
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { transparentPng } from '@e2e/fixtures/utils/viewFileMocks'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import {
   MESSAGE_DONE_EVENT,
   agentTest,
   agentMessageDeltaEvent,
   pushAgentEvent
 } from '@e2e/tests/agent/agentPanelMocks'
+import type { Page, Route } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 interface ReplyAssetPreviewOptions {
   previewMissesBefore?: Record<string, number>

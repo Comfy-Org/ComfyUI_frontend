@@ -1,6 +1,6 @@
-import type { RectTarget } from '@/platform/onboarding/coachmarkRegistry'
 import type { Ref } from 'vue'
 
+import type { RectTarget } from '@/platform/onboarding/coachmarkRegistry'
 import {
   registerCoachmark,
   unregisterCoachmark
@@ -11,12 +11,12 @@ import type {
   CoachStep,
   TourResolution
 } from '@/platform/onboarding/onboardingTours'
-import { app } from '@/scripts/app'
-
 import { resolveTourRoles } from '@/renderer/extensions/firstRunTour/roles/resolveTourRoles'
 import type { ResolvedRoles } from '@/renderer/extensions/firstRunTour/roles/resolveTourRoles'
 import { sequenceBuilder } from '@/renderer/extensions/firstRunTour/roles/tourSequence'
 import type { TourStep } from '@/renderer/extensions/firstRunTour/roles/tourSequence'
+import { app } from '@/scripts/app'
+
 import { frameNode } from './cameraFraming'
 import { canvasNodeTarget } from './canvasCoachTarget'
 

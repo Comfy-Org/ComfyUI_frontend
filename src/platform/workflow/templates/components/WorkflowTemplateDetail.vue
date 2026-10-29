@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowTemplateDescription from '@/platform/workflow/templates/components/WorkflowTemplateDescription.vue'
 import WorkflowTemplateDetailGroup from '@/platform/workflow/templates/components/WorkflowTemplateDetailGroup.vue'
-import Button from '@comfyorg/design-system/button/Button'
 import type {
   TemplateDetailGroup,
   TemplateModelSetup

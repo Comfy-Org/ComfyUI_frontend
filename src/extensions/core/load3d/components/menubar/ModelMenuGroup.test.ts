@@ -1,10 +1,10 @@
-import { render, screen } from '@testing-library/vue'
+import type { ModelConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ModelMenuGroup from '@/extensions/core/load3d/components/menubar/ModelMenuGroup.vue'
-import type { ModelConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const i18n = createI18n({

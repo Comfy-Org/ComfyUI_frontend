@@ -1,12 +1,28 @@
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type {
+  ExportedSubgraphInstance,
+  ISerialisableNodeInput,
+  ISerialisableNodeOutput,
+  ISerialisedNode
+} from '@comfyorg/graph-model/serialisation'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { pick, zip } from 'es-toolkit/compat'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
-import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
+import { provideLitegraphService } from '@/core/graph/litegraphServiceAccess'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import {
   addWidgetPromotionOptions,
   isPreviewPseudoWidget
@@ -30,24 +46,12 @@ import type {
   INodeInputSlot,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
-import type {
-  ExportedSubgraphInstance,
-  ISerialisableNodeInput,
-  ISerialisableNodeOutput,
-  ISerialisedNode
-} from '@comfyorg/graph-model/serialisation'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useDialogService } from '@/services/dialogService'
-import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
-import type { SubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
+import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
@@ -63,32 +67,29 @@ import {
   zDynamicGroupInputSpec
 } from '@/schemas/nodeDefSchema'
 import { useApp } from '@/scripts/appInstance'
-import { provideLitegraphService } from '@/core/graph/litegraphServiceAccess'
 import {
   clipspace,
   copyToClipspace,
   pasteFromClipspace
 } from '@/scripts/clipspace'
 import { $el } from '@/scripts/ui/utils'
+import { useDialogService } from '@/services/dialogService'
+import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
+import type { SubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useWidgetStore } from '@/stores/widgetStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { useWidgetStore } from '@/stores/widgetStore'
-import { parseNodeId } from '@comfyorg/graph-model/nodeId'
-import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
-import { getImageFileUrl } from '@/utils/hdrFormatUtil'
-import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
-import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import { getImageFileUrl } from '@/utils/hdrFormatUtil'
 import {
   isAnimatedOutput,
   isVideoNode,
@@ -96,8 +97,6 @@ import {
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
-
-import { useExtensionService } from '@/platform/extensions/services/extensionService'
 
 async function reencodeAsPngBlob(
   blob: Blob,

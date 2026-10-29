@@ -1,10 +1,10 @@
-import { getActivePinia } from 'pinia'
-import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
+import { createI18n } from 'vue-i18n'
 
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
 

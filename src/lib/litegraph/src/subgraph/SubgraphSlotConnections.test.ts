@@ -1,3 +1,4 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -18,7 +19,6 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 beforeEach(() => {
   resetSubgraphFixtureState()

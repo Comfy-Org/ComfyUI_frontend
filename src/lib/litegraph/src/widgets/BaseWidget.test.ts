@@ -1,9 +1,11 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
 // oxlint-disable no-misused-spread -- spreading a widget is the compatibility contract under test
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
 import {
   BaseWidget,
   extensionValue
@@ -14,8 +16,6 @@ import type {
 } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { isWidgetHidden } from '@/types/widgetVisibility'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 

@@ -1,18 +1,17 @@
-import { expect, mergeTests } from '@playwright/test'
-import type { Route } from '@playwright/test'
 import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
+import { agentTest } from '@e2e/fixtures/agentPanelFixture'
+import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect, mergeTests } from '@playwright/test'
+import type { Route } from '@playwright/test'
 import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import { agentTest } from '@e2e/fixtures/agentPanelFixture'
-import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
-import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
-import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 // Story 33 of qa/user-story-test-matrix.md (in-app-agent-program):
 // "Agent refuses the tab I am looking at: 'no workflow selected'. Fresh or

@@ -1,9 +1,8 @@
-import { describe, expect, it } from 'vitest'
-
+import type { NodeLayout } from '@comfyorg/graph-model/layout'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { describe, expect, it } from 'vitest'
 
-import type { NodeLayout } from '@comfyorg/graph-model/layout'
 import {
   REROUTE_RADIUS,
   boundsIntersect,

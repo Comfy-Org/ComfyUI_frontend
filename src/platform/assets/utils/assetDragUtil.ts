@@ -1,3 +1,11 @@
+import {
+  getAssetType,
+  isGeneratedTempOutput
+} from '@/platform/assets/composables/media/assetMappers'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { api } from '@/scripts/api'
 /**
  * The drag half of the application-wide asset drag/drop contract.
  *
@@ -9,15 +17,7 @@
  * row that starts a drag carrying nothing.
  */
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import { api } from '@/scripts/api'
 
-import {
-  getAssetType,
-  isGeneratedTempOutput
-} from '@/platform/assets/composables/media/assetMappers'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { getAssetUrlFilename, getOutputSubfolder } from './assetMetadataUtils'
 import { resolvePreviewUrl } from './assetPreviewUtil'
 import { getAssetFileUrl } from './assetUrlUtil'

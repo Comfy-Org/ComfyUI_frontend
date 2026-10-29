@@ -8,12 +8,12 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'

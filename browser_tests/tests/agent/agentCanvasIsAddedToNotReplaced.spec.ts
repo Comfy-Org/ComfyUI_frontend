@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import {
   ADDITIVE_CANVAS_CASE,
@@ -9,6 +7,7 @@ import {
   INSERT_WORKFLOW,
   USER_NOTE_POSITION
 } from '@e2e/fixtures/data/agent/agentCanvasAdditive'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Agent work adds to the canvas instead of replacing it',

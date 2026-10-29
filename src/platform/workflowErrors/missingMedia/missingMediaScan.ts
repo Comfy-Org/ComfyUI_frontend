@@ -1,3 +1,5 @@
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import type { IBaseWidget, IComboWidget } from '@comfyorg/graph-model/widgets'
 import { groupBy } from 'es-toolkit'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -7,28 +9,27 @@ import {
   resolveActivePromotedWidgetConsumers
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type {
-  MissingMediaCandidate,
-  MissingMediaViewModel,
-  MissingMediaGroup,
-  MediaType
-} from './types'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget, IComboWidget } from '@comfyorg/graph-model/widgets'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import {
   collectAllNodes,
   getExecutionIdByNode,
   getNodeByExecutionId,
   isExecutionPathActive
 } from '@/utils/graphTraversalUtil'
-import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
-import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
+
+import type {
+  MissingMediaCandidate,
+  MissingMediaViewModel,
+  MissingMediaGroup,
+  MediaType
+} from './types'
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'

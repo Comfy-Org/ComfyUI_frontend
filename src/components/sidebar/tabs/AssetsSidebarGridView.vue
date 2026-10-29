@@ -29,9 +29,9 @@
 </template>
 
 <script setup lang="ts">
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 import { computed } from 'vue'
 
-import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import {
   getMediaAssetGridColumns,

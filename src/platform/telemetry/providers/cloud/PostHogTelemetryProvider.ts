@@ -13,24 +13,11 @@ import type {
   SsoTelemetryEvent,
   WebSessionTelemetryEvent
 } from '@comfyorg/account-core/telemetry'
-import type { CaptureResult, PostHog } from 'posthog-js'
-import { watch } from 'vue'
-import type { WatchStopHandle } from 'vue'
-
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 import {
   COMFY_POSTHOG_OPTIONS,
   DEFAULT_POSTHOG_API_HOST
 } from '@comfyorg/shared-frontend-utils/telemetry'
-
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
-import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
-
 import type {
   AddCreditsClickMetadata,
   AgentAttachButtonClickedMetadata,
@@ -123,6 +110,17 @@ import {
   OnboardingTourEvents,
   TelemetryEvents
 } from '@comfyorg/telemetry/types'
+import type { CaptureResult, PostHog } from 'posthog-js'
+import { watch } from 'vue'
+import type { WatchStopHandle } from 'vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
+import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
+import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 const EXECUTION_EVENT_SOURCE = 'web-sdk'

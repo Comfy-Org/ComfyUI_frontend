@@ -1,15 +1,15 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { app } from '@/scripts/app'
+
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
-
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { app } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 
-import { isThreeJsNode } from './nodeTypes'
 import { load3dSettings } from './load3dSettings'
 import { load3dWidgets } from './load3dWidgets'
+import { isThreeJsNode } from './nodeTypes'
 
 interface GraphNodeTypes {
   nodes?: readonly { type?: unknown }[]

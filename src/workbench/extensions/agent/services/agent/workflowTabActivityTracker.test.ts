@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import { registerWorkflowTabActivityTracker } from './workflowTabActivityTracker'

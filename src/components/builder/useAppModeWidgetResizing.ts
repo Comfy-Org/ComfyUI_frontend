@@ -1,6 +1,6 @@
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { onScopeDispose } from 'vue'
 
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { InputWidgetConfig } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 const RESIZABLE_SELECTOR = 'textarea, [data-slot="drop-zone-indicator"]'

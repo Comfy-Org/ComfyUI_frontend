@@ -1,8 +1,7 @@
-import { computed, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
+import { computed, watch } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-
 import type {
   WorkspaceRole,
   WorkspaceType

@@ -3,6 +3,8 @@ import type {
   LGraphNode,
   LLink
 } from '@comfyorg/graph-model/entityRegistry'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 /**
  * Graph mutations announced as commands from the graph-API funnel they run
  * through (`LGraph.add/remove/_addLink/_removeLink/clear`, the widget value
@@ -14,8 +16,6 @@ import type {
  * every other caller is `local` by default.
  */
 import { reportError } from '@comfyorg/telemetry/reportError'
-import type { LinkId } from '@comfyorg/graph-model/linkId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 export type GraphIntentSource = 'local' | 'agent-remote' | 'load'
 

@@ -1,3 +1,10 @@
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
+import type { Op } from '@comfyorg/comfy-multi-player'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { AgentGraphProjectionStage } from '@comfyorg/telemetry/types'
 import {
   computed,
   effectScope,
@@ -9,23 +16,10 @@ import {
 } from 'vue'
 import type { Ref } from 'vue'
 
-import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
-import type { Op } from '@comfyorg/comfy-multi-player'
-
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import type { AgentGraphProjectionStage } from '@comfyorg/telemetry/types'
-import { parseNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import type {
-  AgentCrdtOutcomeCounters,
-  AgentCrdtTerminalState,
-  AgentCrdtStatus
-} from './agentCrdtStatus'
 import {
   AgentCrdtDocLifecycle,
   STALE_AFTER_MS,
@@ -33,11 +27,20 @@ import {
 } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
+import type {
+  AgentCrdtOutcomeCounters,
+  AgentCrdtTerminalState,
+  AgentCrdtStatus
+} from './agentCrdtStatus'
 import { createLoggedTransport } from './agentCrdtTransport'
 import type { AgentDocFrameTransport } from './agentDocFrameTransport'
-import { recordDevEvent } from './devPanelLog'
+import {
+  readDocPromotedWidgets,
+  readSubgraphDefinitionIds
+} from './agentSubgraphDefinitions'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
+import { recordDevEvent } from './devPanelLog'
 import { DocFrameClient } from './docFrameClient'
 import {
   RESEED_CONFLICT,
@@ -48,10 +51,6 @@ import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge, isLiveAgentUpdate } from './layoutFollowerBridge'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
-import {
-  readDocPromotedWidgets,
-  readSubgraphDefinitionIds
-} from './agentSubgraphDefinitions'
 import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'

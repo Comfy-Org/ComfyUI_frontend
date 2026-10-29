@@ -23,12 +23,12 @@
 </template>
 
 <script setup lang="ts">
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { nextTick } from 'vue'
 
 import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import PaletteSwatchRow from './PaletteSwatchRow.vue'

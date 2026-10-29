@@ -1,9 +1,6 @@
-import type {
-  WorkflowReference,
-  WorkflowReferenceMetadata,
-  WorkflowReferenceOption
-} from '@/workbench/extensions/agent/types/workflowReference'
-import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { useTelemetry } from '@comfyorg/telemetry'
+import userEvent from '@testing-library/user-event'
 import {
   isInaccessible,
   render,
@@ -11,22 +8,26 @@ import {
   waitFor,
   within
 } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import type { ShallowRef } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
+import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
+import type {
+  WorkflowReference,
+  WorkflowReferenceMetadata,
+  WorkflowReferenceOption
+} from '@/workbench/extensions/agent/types/workflowReference'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 

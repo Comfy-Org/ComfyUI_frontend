@@ -2,9 +2,9 @@ import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { useFrameNodes } from './useFrameNodes'
 import { BadgeVariant } from './menuOption'
 import type { MenuOption } from './menuOption'
+import { useFrameNodes } from './useFrameNodes'
 import { useNodeArrangement } from './useNodeArrangement'
 import { useSelectionOperations } from './useSelectionOperations'
 import { useSubgraphOperations } from './useSubgraphOperations'

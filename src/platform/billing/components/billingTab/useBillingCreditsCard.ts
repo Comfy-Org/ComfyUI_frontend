@@ -1,10 +1,10 @@
 import { computed } from 'vue'
 import type { Ref } from 'vue'
 
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { getPlanCreditGrant } from '@/platform/billing/subscription/utils/planCreditGrant'
 import { deriveCreditsCard } from '@/platform/billing/components/billingTab/creditsCard'
 import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { getPlanCreditGrant } from '@/platform/billing/subscription/utils/planCreditGrant'
 
 export function useBillingCreditsCard(planRow: Ref<PlanRowState>) {
   const {

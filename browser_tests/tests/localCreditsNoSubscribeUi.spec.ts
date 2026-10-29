@@ -1,9 +1,9 @@
-import { expect } from '@playwright/test'
-
-import type { operations } from '@/types/comfyRegistryTypes'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { localAuthFixture as test } from '@e2e/fixtures/localAuthFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expect } from '@playwright/test'
+
+import type { operations } from '@/types/comfyRegistryTypes'
 
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']

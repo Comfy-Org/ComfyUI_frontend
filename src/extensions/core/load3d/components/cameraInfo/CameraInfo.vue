@@ -66,6 +66,11 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import ViewportWidgetShell from '@comfyorg/design-system/common/ViewportWidgetShell'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { TransformGizmoMode } from '@comfyorg/viewport3d/cameraInfo/CameraInfoViewport'
 import { useElementSize } from '@vueuse/core'
 import {
   computed,
@@ -77,16 +82,10 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import ViewportWidgetShell from '@comfyorg/design-system/common/ViewportWidgetShell'
-import { actionClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
-import Button from '@comfyorg/design-system/button/Button'
-import { useCameraInfo } from '@/extensions/core/load3d/composables/useCameraInfo'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
-import type { TransformGizmoMode } from '@comfyorg/viewport3d/cameraInfo/CameraInfoViewport'
+import { actionClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
+import { useCameraInfo } from '@/extensions/core/load3d/composables/useCameraInfo'
 import type { ComponentWidget } from '@/types/domWidget'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 

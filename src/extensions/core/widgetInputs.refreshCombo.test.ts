@@ -1,15 +1,15 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
-
-import type { LGraph, LLink } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
-import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
-import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
+
+import type { LGraph, LLink } from '@/lib/litegraph/src/litegraph'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import { useLinkStore } from '@/stores/linkStore'
 import {
   createMockLGraph,
   createMockLGraphNode,

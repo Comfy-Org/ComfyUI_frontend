@@ -1,4 +1,5 @@
 import { assert, describe, expect, it, vi } from 'vitest'
+
 import { api } from '@/scripts/api'
 
 vi.mock(import('@/scripts/api'))

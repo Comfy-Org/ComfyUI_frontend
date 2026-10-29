@@ -12,13 +12,6 @@ import type {
   SsoTelemetryEvent,
   WebSessionTelemetryEvent
 } from '@comfyorg/account-core/telemetry'
-// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
-import { datadogRum } from '@datadog/browser-rum'
-
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-
 import type {
   AuthMetadata,
   BootstrapCompleteMetadata,
@@ -33,6 +26,12 @@ import type {
   WorkspaceTelemetryContext
 } from '@comfyorg/telemetry/types'
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
+// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
+import { datadogRum } from '@datadog/browser-rum'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
   private isWatchingLogout = false

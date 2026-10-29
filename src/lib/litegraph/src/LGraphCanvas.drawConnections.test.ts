@@ -1,5 +1,21 @@
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  BADGE_GAP,
+  queryLinkBadgeAtPoint
+} from '@/lib/litegraph/src/canvas/linkBadges'
+import {
+  clearRootLinkHideTransitions,
+  startLinkHideTransitions
+} from '@/lib/litegraph/src/canvas/linkHideTransition'
+import {
+  clearRootLinkReveals,
+  isLinkRevealed,
+  setRevealedLinks
+} from '@/lib/litegraph/src/canvas/linkRevealState'
 import {
   LGraph,
   LGraphCanvas,
@@ -8,31 +24,15 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import {
-  BADGE_GAP,
-  queryLinkBadgeAtPoint
-} from '@/lib/litegraph/src/canvas/linkBadges'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import {
-  clearRootLinkReveals,
-  isLinkRevealed,
-  setRevealedLinks
-} from '@/lib/litegraph/src/canvas/linkRevealState'
-import {
-  clearRootLinkHideTransitions,
-  startLinkHideTransitions
-} from '@/lib/litegraph/src/canvas/linkHideTransition'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
 } from '@/utils/__tests__/canvasTestUtils'
+import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 

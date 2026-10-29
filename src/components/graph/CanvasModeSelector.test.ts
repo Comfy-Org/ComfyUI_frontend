@@ -5,8 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import CanvasModeSelector from '@/components/graph/CanvasModeSelector.vue'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 beforeEach(() => {
   useCanvasStore().canvas = fromPartial({ read_only: false })

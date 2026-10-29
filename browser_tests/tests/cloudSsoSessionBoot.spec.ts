@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
-
 import { SSO_WEB_SESSION } from '@e2e/fixtures/data/sso'
-import { webSessionTest } from '@e2e/fixtures/webSessionFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { webSessionTest } from '@e2e/fixtures/webSessionFixture'
+import { expect } from '@playwright/test'
 
 /** The session of a person who signed in through their organization's SSO. */
 const test = webSessionTest.extend({

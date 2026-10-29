@@ -28,21 +28,21 @@
  * whether the change reactivates a cancelled plan (ADR BILLING-WEB-0038).
  */
 import { CheckoutTransitionConfirm } from '@comfyorg/account-ui/billing/checkout'
+import type {
+  BillingAuthenticationState,
+  PreviewSubscribeResponse
+} from '@comfyorg/billing-core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useCheckoutCopy } from '@/platform/billing/composables/useCheckoutCopy'
 import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import type { IngestSubscriptionTier } from '@/platform/billing/subscription/constants/tierPricing'
 import {
   getTierCredits,
   toTierKey
 } from '@/platform/billing/subscription/constants/tierPricing'
-import type {
-  BillingAuthenticationState,
-  PreviewSubscribeResponse
-} from '@comfyorg/billing-core'
-import { useCheckoutCopy } from '@/platform/billing/composables/useCheckoutCopy'
 
 const {
   previewData,

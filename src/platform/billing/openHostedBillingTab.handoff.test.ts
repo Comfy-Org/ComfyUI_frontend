@@ -1,12 +1,12 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useTelemetry } from '@comfyorg/telemetry'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   clearCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/billing/utils/checkoutJourney'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import {
   disarmHostedBillingReturnRefresh,

@@ -87,17 +87,17 @@
 
 <script setup lang="ts">
 import type { AutoTopUpCardAction } from '@comfyorg/account-core/billing'
+import type { AutoReloadSettings } from '@comfyorg/billing-core'
+import Button from '@comfyorg/design-system/button/Button'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCredits, formatUsdFromCents } from '@/base/credits/comfyCredits'
-import Button from '@comfyorg/design-system/button/Button'
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
-import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import { formatPlanDate } from '@/platform/billing/components/billingTab/planRow'
-import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTopUpCardViewed'
+import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 

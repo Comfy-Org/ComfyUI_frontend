@@ -1,13 +1,12 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { HdrViewerDialog } from '@e2e/fixtures/components/HdrViewerDialog'
 import {
   createRouteMockJob,
   jobsRouteFixture,
   routeMockJobTimestamp
 } from '@e2e/fixtures/jobsRouteFixture'
-import { HdrViewerDialog } from '@e2e/fixtures/components/HdrViewerDialog'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
+import { expect, mergeTests } from '@playwright/test'
 
 const hdrJob = createRouteMockJob({
   id: 'hdr-job',

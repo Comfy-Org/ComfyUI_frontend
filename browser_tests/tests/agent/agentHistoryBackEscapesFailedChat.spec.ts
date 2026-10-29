@@ -1,8 +1,3 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-
 import {
   agentTest as test,
   bootAgentApp
@@ -10,6 +5,10 @@ import {
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { agentHistoryBackFailure } from '@e2e/fixtures/data/agent/agentHistoryBackFailure'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 test.describe(
   'Agent chat history exit path',

@@ -16,6 +16,7 @@ import { parseArgs } from 'node:util'
 
 import { applyEdits, modify, parse } from 'jsonc-parser'
 import type { FormattingOptions, ParseError } from 'jsonc-parser'
+
 import { isMainModule } from '../isMainModule'
 
 type SettingValue = boolean | string

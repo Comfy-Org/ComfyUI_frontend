@@ -1,28 +1,28 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
-import { useCurrentUserAccess } from '@/platform/auth/currentUserAccess'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useCurrentUserAccess } from '@/platform/auth/currentUserAccess'
 import {
   desktopHostUser,
   isDesktopHostSignedIn,
   requestDesktopHostWorkspaceSwitch
 } from '@/platform/auth/desktopHost/desktopHostSession'
+import { ensureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { trackSsoWorkspaceLanded } from '@/platform/auth/sso/ssoTelemetry'
-import { ensureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import { isCloud } from '@/platform/distribution/types'
-import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { reportError } from '@comfyorg/telemetry/reportError'
+import {
+  NoWorkspaceAccessError,
+  WorkspaceApiError
+} from '@/platform/remote/ingest/ingestApiError'
 import {
   clearWorkflowRestoreState,
   prepareWorkflowWorkspaceTransition
 } from '@/platform/workflow/persistence/base/storageIO'
-import { provideTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStoreAccess'
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-
 import type {
   CurrentWorkspaceResponse,
   ListMembersParams,
@@ -32,10 +32,9 @@ import type {
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import {
-  NoWorkspaceAccessError,
-  WorkspaceApiError
-} from '@/platform/remote/ingest/ingestApiError'
+import { provideTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStoreAccess'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 export interface WorkspaceMember {
   id: string

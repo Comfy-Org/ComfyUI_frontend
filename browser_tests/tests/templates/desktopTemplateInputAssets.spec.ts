@@ -1,13 +1,12 @@
 import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-types'
-import type { Page } from '@playwright/test'
-import { expect, mergeTests } from '@playwright/test'
-
 import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
 import { desktopTemplateInputsFixture } from '@e2e/fixtures/desktopTemplateInputsFixture'
 import { withIndex, withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
 import type { WorkspaceStore } from '@e2e/types/globals'
+import type { Page } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
 const test = mergeTests(desktopTemplateInputsFixture, templateApiFixture)
 

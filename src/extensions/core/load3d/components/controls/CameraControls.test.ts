@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/vue'
+import type { CameraType } from '@comfyorg/viewport3d/load3d/interfaces'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import CameraControls from '@/extensions/core/load3d/components/controls/CameraControls.vue'
-import type { CameraType } from '@comfyorg/viewport3d/load3d/interfaces'
 
 vi.mock<unknown>(
   import('@/extensions/core/load3d/components/controls/PopupSlider.vue'),

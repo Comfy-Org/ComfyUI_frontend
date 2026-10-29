@@ -1,9 +1,4 @@
-import { getActivePinia, setActivePinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
-
-import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
-import { useLinkStore } from '@/stores/linkStore'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import {
   graphScopeOf,
   toOwningGraphId
@@ -11,7 +6,12 @@ import {
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
+import { getActivePinia, setActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
+
+import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import { useLinkStore } from '@/stores/linkStore'
 
 import {
   registerLinkTopology,

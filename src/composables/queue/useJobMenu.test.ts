@@ -1,17 +1,17 @@
-import { useDialogService } from '@/services/dialogService'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useQueueStore } from '@/stores/queueStore'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { fromPartial } from '@total-typescript/shoehorn'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useDialogService } from '@/services/dialogService'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useQueueStore } from '@/stores/queueStore'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false

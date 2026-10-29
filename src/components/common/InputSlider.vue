@@ -32,6 +32,7 @@
 
 <script setup lang="ts">
 import Slider from '@comfyorg/design-system/slider/Slider'
+
 import FormNumberField from '@/components/common/FormNumberField.vue'
 
 defineProps<{

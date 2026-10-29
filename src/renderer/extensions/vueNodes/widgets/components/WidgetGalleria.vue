@@ -88,11 +88,10 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
+import { RovingFocusGroup, RovingFocusItem } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RovingFocusGroup, RovingFocusItem } from 'reka-ui'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({ inheritAttrs: false })
 

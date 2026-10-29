@@ -1,8 +1,7 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import type { BrowserContext, CDPSession, Page } from '@playwright/test'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-
 import { PerformanceHelper } from '@e2e/fixtures/helpers/PerformanceHelper'
+import type { BrowserContext, CDPSession, Page } from '@playwright/test'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 async function createInitializedHarness() {
   const send = vi.fn(async () => ({ metrics: [] }))

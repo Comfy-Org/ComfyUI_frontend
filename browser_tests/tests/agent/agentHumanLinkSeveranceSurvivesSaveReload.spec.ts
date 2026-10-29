@@ -1,10 +1,9 @@
+import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
+import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { expect } from '@playwright/test'
 import type { Page, Request } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
-import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 
 const CASE = 'agent-rec-text-only-answer'
 // [1, 4, 1, 6, 0, 'CLIP'] in the seed: node 4's CLIP output into node 6's first

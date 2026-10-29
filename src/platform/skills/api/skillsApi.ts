@@ -4,13 +4,12 @@ import {
 } from '@comfyorg/ingest-types/zod'
 
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
-import { api } from '@/scripts/api'
-
 import type {
   SkillPack,
   SkillPackPublishRequest
 } from '@/platform/skills/types'
 import { MAX_NAME_LENGTH, PACK_NAME_PATTERN } from '@/platform/skills/types'
+import { api } from '@/scripts/api'
 
 /**
  * 400 is corrective; 409 is capacity. List/publish 404 hides the feature,

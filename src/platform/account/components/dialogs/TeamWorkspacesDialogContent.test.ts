@@ -1,18 +1,17 @@
-import type { Pinia } from 'pinia'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { getActivePinia } from 'pinia'
-import { useDialogStore } from '@/stores/dialogStore'
+import userEvent from '@testing-library/user-event'
 /* oxlint-disable testing-library/no-container */
 /* oxlint-disable testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
+import type { Pinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-
+import { useToast } from '@/components/ui/toast/toastStore'
 import TeamWorkspacesDialogContent from '@/platform/account/components/dialogs/TeamWorkspacesDialogContent.vue'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))

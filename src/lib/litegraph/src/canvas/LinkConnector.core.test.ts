@@ -1,3 +1,8 @@
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { ConnectingLink } from '@comfyorg/graph-model/slots'
 // oxlint-disable no-empty-pattern
 import { test as baseTest, describe, expect, vi } from 'vitest'
 
@@ -16,18 +21,12 @@ import {
   ToInputRenderLink,
   LinkDirection
 } from '@/lib/litegraph/src/litegraph'
-import type { ConnectingLink } from '@comfyorg/graph-model/slots'
-import type { LinkId } from '@comfyorg/graph-model/linkId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import { registerLinkTopology } from '@/lib/litegraph/src/LLink'
+import { registerRerouteChain } from '@/lib/litegraph/src/Reroute'
 import {
   createMockNodeInputSlot,
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
-
-import { registerLinkTopology } from '@/lib/litegraph/src/LLink'
-import { registerRerouteChain } from '@/lib/litegraph/src/Reroute'
 
 interface TestContext {
   network: LinkNetwork & {

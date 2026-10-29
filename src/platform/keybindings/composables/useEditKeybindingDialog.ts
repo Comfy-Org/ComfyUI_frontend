@@ -1,13 +1,13 @@
+import type { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import type { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
 import { computed, reactive } from 'vue'
 
 import EditKeybindingContent from '@/platform/keybindings/components/EditKeybindingContent.vue'
-import EditKeybindingFooter from '@/platform/keybindings/components/EditKeybindingFooter.vue'
-import EditKeybindingHeader from '@/platform/keybindings/components/EditKeybindingHeader.vue'
 import { EDIT_KEYBINDING_DIALOG_KEY } from '@/platform/keybindings/components/editKeybindingDialogState'
 import type { EditKeybindingDialogState } from '@/platform/keybindings/components/editKeybindingDialogState'
-import type { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
-import type { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
-import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import EditKeybindingFooter from '@/platform/keybindings/components/EditKeybindingFooter.vue'
+import EditKeybindingHeader from '@/platform/keybindings/components/EditKeybindingHeader.vue'
 import { useDialogService } from '@/services/dialogService'
 
 export function useEditKeybindingDialog() {

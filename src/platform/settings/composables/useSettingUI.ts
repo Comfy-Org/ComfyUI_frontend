@@ -1,3 +1,4 @@
+import type { NavGroupData } from '@comfyorg/design-system/lib/navigation/types'
 import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -6,18 +7,17 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
 import {
   getSettingInfo,
   useSettingStore
 } from '@/platform/settings/settingStore'
-import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
 import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
-import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-import type { NavGroupData } from '@comfyorg/design-system/lib/navigation/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
 

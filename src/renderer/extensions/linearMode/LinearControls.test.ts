@@ -1,23 +1,23 @@
-import { getActivePinia } from 'pinia'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { render, screen, within } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import * as distributionModule from '@/platform/distribution/types'
+import type { NodeError } from '@/platform/remote/comfyui/types'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import type { NodeError } from '@/platform/remote/comfyui/types'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const overlayMock = vi.hoisted(() => ({
   overlayMessage: 'KSampler is missing a required input: model',

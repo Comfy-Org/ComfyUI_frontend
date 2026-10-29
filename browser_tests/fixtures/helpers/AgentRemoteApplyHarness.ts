@@ -1,13 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
-import { escapeRegExp } from 'es-toolkit'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type {
-  AgentTurnAccepted,
-  AgentWsEvent
-} from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
@@ -19,11 +9,20 @@ import {
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
-import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import { catalog, emptySeed } from '@e2e/fixtures/data/agent/agentRemoteApply'
+import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
+import { escapeRegExp } from 'es-toolkit'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type {
+  AgentTurnAccepted,
+  AgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const WORKFLOW_ID = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
 const THREAD_ID = '5c4b3a29-8d7e-4f60-9a1b-2c3d4e5f6a7b'

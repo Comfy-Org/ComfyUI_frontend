@@ -1,7 +1,7 @@
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { Request } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { PromptResponse } from '@/platform/remote/comfyui/types'
 
 // Repro fixture for https://github.com/Comfy-Org/ComfyUI/issues/15060 (FE-1456):

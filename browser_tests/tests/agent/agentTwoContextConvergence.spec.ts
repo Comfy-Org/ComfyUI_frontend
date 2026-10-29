@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import {
   agentTest as test,
   bootAgentApp,
@@ -8,6 +6,7 @@ import {
 import { AgentSharedHostFixture } from '@e2e/fixtures/agentSharedHostFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { expect } from '@playwright/test'
 
 const WORKFLOW_ID = '16e93c08-e115-478d-aace-0df97ff3ab87'
 const THREAD_ID = 'ab4bc091-c995-4f39-8cad-9f90805e76bd'

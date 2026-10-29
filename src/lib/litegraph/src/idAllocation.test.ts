@@ -1,3 +1,7 @@
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -15,10 +19,6 @@ import {
   observeNodeId,
   observeRerouteId
 } from '@/lib/litegraph/src/idAllocation'
-import { toGroupId } from '@comfyorg/graph-model/groupId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
 describe('idAllocation', () => {
   it('mints increasing ids for each entity kind', () => {

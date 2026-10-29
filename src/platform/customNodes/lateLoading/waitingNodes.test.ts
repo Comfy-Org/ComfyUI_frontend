@@ -1,3 +1,4 @@
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -6,7 +7,6 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { showPlaceholdersAsWaiting } from './waitingNodes'

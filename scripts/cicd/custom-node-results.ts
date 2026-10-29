@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+
 import { isMainModule } from '../isMainModule'
 
 interface ResultStats {

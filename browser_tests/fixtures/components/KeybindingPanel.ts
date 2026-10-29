@@ -1,8 +1,7 @@
 import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 export class KeybindingPanel {
   public readonly editDialog: Locator

@@ -79,28 +79,27 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import {
+  menuButtonClass,
+  selectedMenuButtonClass
+} from '@comfyorg/design-system/lib/menu/menuStyles'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { cn } from '@comfyorg/tailwind-utils'
+import type {
+  MaterialMode,
+  ModelConfig,
+  UpDirection
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import {
   actionClass,
   menuPanelClass
 } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/extensions/core/load3d/components/menubar/usePopoverExclusivity'
-import Button from '@comfyorg/design-system/button/Button'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import {
-  menuButtonClass,
-  selectedMenuButtonClass
-} from '@comfyorg/design-system/lib/menu/menuStyles'
-import type {
-  MaterialMode,
-  ModelConfig,
-  UpDirection
-} from '@comfyorg/viewport3d/load3d/interfaces'
 
 const {
   compact = false,

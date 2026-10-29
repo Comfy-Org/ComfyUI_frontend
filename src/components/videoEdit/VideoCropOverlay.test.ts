@@ -1,10 +1,9 @@
-﻿/* oxlint-disable testing-library/prefer-user-event -- crop dragging needs low-level pointer events */
+﻿import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+/* oxlint-disable testing-library/prefer-user-event -- crop dragging needs low-level pointer events */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 
 import VideoCropOverlay from './VideoCropOverlay.vue'
 

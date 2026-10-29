@@ -1,7 +1,10 @@
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import { describe, expect, it, onTestFinished } from 'vitest'
 
-import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
 import {
   createTestRootGraph,
@@ -10,9 +13,6 @@ import {
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 
 function makeLink(id = 1): LLink {
   return new LLink(toLinkId(id), 'MODEL', 4, 0, 5, 0)

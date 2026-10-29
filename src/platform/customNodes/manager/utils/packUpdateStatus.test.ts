@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import type { components } from '@/types/comfyRegistryTypes'
 import type { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import {
   getPackUpdateStatus,
   isNightlyVersion
 } from '@/platform/customNodes/manager/utils/packUpdateStatus'
+import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 type ComfyManagerStore = ReturnType<typeof useComfyManagerStore>

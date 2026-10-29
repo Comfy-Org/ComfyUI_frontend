@@ -1,6 +1,6 @@
+import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 import {
   ComfyModelDef,
   ModelFolder,

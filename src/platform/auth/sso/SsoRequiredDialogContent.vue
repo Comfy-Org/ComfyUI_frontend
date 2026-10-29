@@ -30,10 +30,10 @@
 </template>
 
 <script setup lang="ts">
-import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { useContinueWithSso } from '@/platform/auth/sso/useContinueWithSso'
 import { useDialogStore } from '@/stores/dialogStore'

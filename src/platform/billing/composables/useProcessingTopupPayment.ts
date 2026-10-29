@@ -1,15 +1,15 @@
 import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { onScopeDispose, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
-import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
-import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import type { ProcessingTopupPayment } from '@/platform/billing/processingTopupPayment'
 import { processingTopupPayment } from '@/platform/billing/processingTopupPayment'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 interface ProcessingTopupRead {
   checkouts: HostedTopupCheckout[]

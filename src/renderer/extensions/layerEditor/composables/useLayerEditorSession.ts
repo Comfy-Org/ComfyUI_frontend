@@ -1,12 +1,3 @@
-import type {
-  CompactSize,
-  Point2D,
-  CompactRect as Rect,
-  Point2D as Vec2
-} from '@comfyorg/shared-frontend-utils/geometry'
-import { clamp } from 'es-toolkit'
-import { computed, reactive, ref } from 'vue'
-
 import {
   BakeRasterCommand,
   snapshotRaster
@@ -17,8 +8,8 @@ import type { Compositor } from '@comfyorg/layer-editor/compositor'
 import { filterTopmost, findNode } from '@comfyorg/layer-editor/document'
 import type { AlphaSampler } from '@comfyorg/layer-editor/editor/pickOps'
 import { pickLayerAt } from '@comfyorg/layer-editor/editor/pickOps'
-import { Dirty } from '@comfyorg/layer-editor/history'
 import type { FillSpec } from '@comfyorg/layer-editor/fill'
+import { Dirty } from '@comfyorg/layer-editor/history'
 import { fillKind, rasterKind } from '@comfyorg/layer-editor/kinds'
 import type { BlendFn } from '@comfyorg/layer-editor/mode'
 import { LAYER_MODES, defaultMode } from '@comfyorg/layer-editor/mode'
@@ -32,11 +23,20 @@ import type { OutsideCanvasPreviewLayer } from '@comfyorg/layer-editor/render/ou
 import { drawOutsideCanvasPreview } from '@comfyorg/layer-editor/render/outsideCanvasPreview'
 import { createSession } from '@comfyorg/layer-editor/session'
 import type { CanvasItem } from '@comfyorg/layer-editor/tool'
-import { canTransformNode } from '@comfyorg/layer-editor/tools/transformTool'
 import {
   hitHandle,
   unionBounds
 } from '@comfyorg/layer-editor/tools/transformMath'
+import { canTransformNode } from '@comfyorg/layer-editor/tools/transformTool'
+import type {
+  CompactSize,
+  Point2D,
+  CompactRect as Rect,
+  Point2D as Vec2
+} from '@comfyorg/shared-frontend-utils/geometry'
+import { clamp } from 'es-toolkit'
+import { computed, reactive, ref } from 'vue'
+
 import { createPanZoom } from '@/renderer/extensions/layerEditor/panZoom'
 
 export type LayerEditorPointerMode = 'pointer' | 'hand'

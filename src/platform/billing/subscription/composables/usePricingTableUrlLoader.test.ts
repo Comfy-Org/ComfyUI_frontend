@@ -1,11 +1,11 @@
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { computed, ref } from 'vue'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import type { TeamCreditStops } from '@comfyorg/billing-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw } from 'vue-router'
 
-import type { TeamCreditStops } from '@comfyorg/billing-core'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import { usePricingTableUrlLoader } from './usePricingTableUrlLoader'
@@ -23,8 +23,8 @@ vi.mock(
 
 vi.mock(import('vue-router'))
 
-import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 
 vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionDialog')

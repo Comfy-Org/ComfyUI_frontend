@@ -1,53 +1,52 @@
 <script setup lang="ts">
-import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
-import { useTimeout, useTimeoutFn } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
-import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import Button from '@comfyorg/design-system/button/Button'
 import Input from '@comfyorg/design-system/input/Input'
-import Menu from '@comfyorg/design-system/menu/Menu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
   AgentStarterPromptAssignment,
   AgentStopMethod
 } from '@comfyorg/telemetry/types'
+import { useTimeout, useTimeoutFn } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
+import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
-import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
-import type {
-  WorkflowReference,
-  WorkflowReferenceMetadata,
-  WorkflowReferenceOption
-} from '@/workbench/extensions/agent/types/workflowReference'
-import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
+import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
-import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
+import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import type { AgentPanelView } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import type {
+  WorkflowReference,
+  WorkflowReferenceMetadata,
+  WorkflowReferenceOption
+} from '@/workbench/extensions/agent/types/workflowReference'
 import { deriveSessionTitle } from '@/workbench/extensions/agent/utils/sessionTitle'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
 import AgentSyncRetryAlert from './AgentSyncRetryAlert.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
+import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
 import ConversationView from './ConversationView.vue'
 import EmptyState from './EmptyState.vue'
 import FreeUseNotice from './FreeUseNotice.vue'
+import AgentPaywallCard from './message/AgentPaywallCard.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
-import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
-import AgentPaywallCard from './message/AgentPaywallCard.vue'
 
 const {
   entries,

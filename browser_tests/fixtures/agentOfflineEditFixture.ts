@@ -1,21 +1,16 @@
-import type { APIRequestContext, Locator, Page } from '@playwright/test'
-
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
-
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
   agentTest,
   bootAgentApp,
   mockAgentTurnApi
 } from '@e2e/fixtures/agentPanelFixture'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import {
   AGENT_NODE_IDS,
@@ -24,6 +19,9 @@ import {
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
+import type { APIRequestContext, Locator, Page } from '@playwright/test'
+
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const WORKFLOW_ID = '5a41f0b2-9c6e-4a71-8f03-2b6de4c10001'
 const THREAD_ID = '5a41f0b2-9c6e-4a71-8f03-2b6de4c10002'

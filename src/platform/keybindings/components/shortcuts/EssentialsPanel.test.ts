@@ -1,8 +1,8 @@
+import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCommandStore } from '@/platform/keybindings/commandStore'
-import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
 
 beforeEach(() => {
   useCommandStore().registerCommands(mockCommands)

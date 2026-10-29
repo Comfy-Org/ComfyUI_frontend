@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { injectTreeRootContext } from 'reka-ui'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'

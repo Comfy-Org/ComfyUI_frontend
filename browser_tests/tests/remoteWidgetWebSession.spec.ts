@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
-import { webSessionTest } from '@e2e/fixtures/webSessionFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { webSessionTest } from '@e2e/fixtures/webSessionFixture'
+import { expect } from '@playwright/test'
 
 const TEAM_WORKSPACE_ID = 'ws-team'
 const TEAM_OPTIONS = ['team-checkpoint.safetensors']

@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest'
-
 import {
   allowedOrigins,
   mappedOrigins,
@@ -7,6 +5,7 @@ import {
   parseCrossOriginSessionEnv,
   refusedComfyEgress
 } from '@e2e/fixtures/utils/crossOriginSessionConfig'
+import { describe, expect, it } from 'vitest'
 
 describe('parseCrossOriginSessionEnv', () => {
   it('accepts an empty environment so the suite can be listed', () => {

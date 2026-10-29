@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest'
 
 import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import type { MenuOption } from './menuOption'
 import {
   buildStructuredMenu,
   convertContextMenuToOptions
 } from './contextMenuConverter'
+import type { MenuOption } from './menuOption'
 
 describe('contextMenuConverter', () => {
   describe('buildStructuredMenu', () => {

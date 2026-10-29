@@ -1,18 +1,17 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import Button from '@comfyorg/design-system/button/Button'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
-import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
-import { getPricingCheckoutSelection } from '@/platform/billing/subscription/composables/usePricingTableUrlLoader'
 import type { CheckoutTierKey } from '@/platform/billing/composables/types'
-
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { getPricingCheckoutSelection } from '@/platform/billing/subscription/composables/usePricingTableUrlLoader'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 
 function isBillingCycle(value: string): value is BillingCycle {

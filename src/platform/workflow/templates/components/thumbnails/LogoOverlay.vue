@@ -56,15 +56,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, ref } from 'vue'
+
 import type { LogoInfo } from '@/platform/workflow/templates/types/template'
 import type { ProviderBadge } from '@/platform/workflow/templates/utils/templateDisplay'
 import { getProviderBadges } from '@/platform/workflow/templates/utils/templateDisplay'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   logos,

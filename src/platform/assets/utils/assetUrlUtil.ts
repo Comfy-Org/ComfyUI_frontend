@@ -3,6 +3,8 @@
  */
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   isMediaRoute,
   scopeMediaRoute
@@ -11,8 +13,7 @@ import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { isResultItemType } from '@/utils/typeGuardUtil'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+
 import { getAssetType } from './assetTypeUtil'
 
 /**

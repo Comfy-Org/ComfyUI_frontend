@@ -123,21 +123,21 @@
 
 <script setup lang="ts">
 import Badge from '@comfyorg/design-system/badge/Badge'
+import HighlightedText from '@comfyorg/design-system/common/HighlightedText'
+import TextTicker from '@comfyorg/design-system/common/TextTicker'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
-import TextTicker from '@comfyorg/design-system/common/TextTicker'
 import NodePricingBadge from '@/components/node/NodePricingBadge.vue'
 import NodeProviderBadge from '@/components/node/NodeProviderBadge.vue'
-import HighlightedText from '@comfyorg/design-system/common/HighlightedText'
 import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import { CORE_NODE_MODULES, NodeSourceType } from '@/types/nodeSource'
 import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
 import { formatNumberWithSuffix } from '@/utils/formatUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   nodeDef,

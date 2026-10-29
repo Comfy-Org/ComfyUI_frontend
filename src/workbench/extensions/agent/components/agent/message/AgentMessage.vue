@@ -4,6 +4,7 @@ import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import type {
   ActivityPart,
   AssistantMessage,
@@ -13,18 +14,17 @@ import {
   askIdOf,
   isOpenAskPart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
-import { htmlReplyAssets } from '@/workbench/extensions/agent/utils/replyAssets'
-import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-
-import AgentMessageGroup from './AgentMessageGroup.vue'
-import MessageFeedback from './MessageFeedback.vue'
-import type { AgentMessageGroup as Group } from './agentMessageGroup'
-import { groupMessageParts } from './agentMessageGroup'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import { htmlReplyAssets } from '@/workbench/extensions/agent/utils/replyAssets'
+
+import type { AgentMessageGroup as Group } from './agentMessageGroup'
+import { groupMessageParts } from './agentMessageGroup'
+import AgentMessageGroup from './AgentMessageGroup.vue'
+import MessageFeedback from './MessageFeedback.vue'
 
 const {
   message,

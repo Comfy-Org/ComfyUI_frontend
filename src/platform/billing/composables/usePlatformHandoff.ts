@@ -1,8 +1,8 @@
 import type { PlatformHandoffDestination } from '@comfyorg/account-core/billing'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { computed, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { useTelemetry } from '@comfyorg/telemetry'
 import { createJourneyId } from '@/platform/billing/utils/checkoutJourney'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 

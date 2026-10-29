@@ -1,10 +1,3 @@
-import type {
-  Size2D,
-  Point2D as Point,
-  Size2D as Size,
-  Bounds
-} from '@comfyorg/shared-frontend-utils/geometry'
-import type { NodeLayout, GroupLayout } from '@comfyorg/graph-model/layout'
 /**
  * Layout System - Type Definitions
  *
@@ -12,9 +5,17 @@ import type { NodeLayout, GroupLayout } from '@comfyorg/graph-model/layout'
  * that manages node positions, bounds, spatial data, and operations.
  */
 import type { GroupId } from '@comfyorg/graph-model/groupId'
+import type { NodeLayout, GroupLayout } from '@comfyorg/graph-model/layout'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type {
+  Size2D,
+  Point2D as Point,
+  Size2D as Size,
+  Bounds
+} from '@comfyorg/shared-frontend-utils/geometry'
+
 import type { UUID } from '@/utils/uuid'
 
 // Enum for layout source types

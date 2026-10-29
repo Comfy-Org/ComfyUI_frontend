@@ -1,9 +1,9 @@
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
-import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useImageLoader } from '@/renderer/extensions/maskEditor/composables/useImageLoader'
+import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 
 const mockCanvasManager = {
   invalidateCanvas: vi.fn().mockResolvedValue(undefined),

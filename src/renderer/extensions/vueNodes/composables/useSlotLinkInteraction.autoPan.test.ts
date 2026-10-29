@@ -1,8 +1,7 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
-
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
   capturedOnPan,

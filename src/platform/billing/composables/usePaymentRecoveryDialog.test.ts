@@ -1,16 +1,16 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import type { BillingPortalOutcome } from '@/platform/billing/composables/types'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   canManageBillingFact,
   paymentRecoveryAvailableFact,
   runWorkflowsDenialFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import type { BillingPortalOutcome } from '@/platform/billing/composables/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'

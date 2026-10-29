@@ -2,17 +2,17 @@ import type {
   LGraphCanvas,
   LGraphGroup
 } from '@comfyorg/graph-model/entityRegistry'
-
-import { LLink } from '@/lib/litegraph/src/LLink'
-import { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
-import { isInRectangle } from '@/lib/litegraph/src/measure'
 import {
   LinkMarkerShape,
   LinkRenderType
 } from '@comfyorg/graph-model/globalEnums'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
+
+import { LLink } from '@/lib/litegraph/src/LLink'
+import { isInRectangle } from '@/lib/litegraph/src/measure'
+import { Reroute } from '@/lib/litegraph/src/Reroute'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 
 import { findRerouteAtPoint } from './hitTesting'
 import {

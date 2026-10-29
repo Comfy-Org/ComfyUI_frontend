@@ -1,13 +1,13 @@
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ZoomControlsModal from '@/components/graph/modals/ZoomControlsModal.vue'
-import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
-import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 beforeEach(() => {
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)

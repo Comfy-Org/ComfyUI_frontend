@@ -1,8 +1,4 @@
 import type { PendingInvite } from '@comfyorg/ingest-types'
-import { expect } from '@playwright/test'
-
-import type { Member } from '@/platform/workspace/api/workspaceApi'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { MembersSettingsPanel } from '@e2e/fixtures/components/MembersSettingsPanel'
 import {
@@ -16,8 +12,11 @@ import {
   VIEWER
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
-import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+
+import type { Member } from '@/platform/workspace/api/workspaceApi'
 
 // Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
 // against fully mocked endpoints; `comfyPage` would try to reach the OSS

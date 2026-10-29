@@ -1,3 +1,6 @@
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
@@ -6,14 +9,11 @@ import type { EffectScope } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type {

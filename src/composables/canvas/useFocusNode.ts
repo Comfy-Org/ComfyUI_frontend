@@ -1,9 +1,9 @@
 import { nextTick } from 'vue'
 
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 

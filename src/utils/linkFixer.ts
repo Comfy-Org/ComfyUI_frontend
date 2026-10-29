@@ -1,3 +1,10 @@
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type {
+  ISerialisedGraph,
+  ISerialisedNode
+} from '@comfyorg/graph-model/serialisation'
 /**
  * This code is adapted from rgthree-comfy's link_fixer.ts
  * @see https://github.com/rgthree/rgthree-comfy/blob/b84f39c7c224de765de0b54c55b967329011819d/src_web/common/link_fixer.ts
@@ -25,18 +32,12 @@
  * SOFTWARE.
  */
 import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
+
+import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { parseNodeId } from '@comfyorg/graph-model/nodeId'
-import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
-import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
-import type {
-  ISerialisedGraph,
-  ISerialisedNode
-} from '@comfyorg/graph-model/serialisation'
 
 type FixableSerialisedGraph = Omit<ISerialisedGraph, 'links'> & {
   links: (SerialisedLLinkArray | null)[]

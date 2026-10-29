@@ -1,10 +1,10 @@
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { testI18n } from '@/utils/__tests__/testI18n'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { testI18n } from '@/utils/__tests__/testI18n'
 
 import ExtensionPanel from './ExtensionPanel.vue'
 

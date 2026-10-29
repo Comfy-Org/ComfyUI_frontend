@@ -42,12 +42,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-
 import Button from '@comfyorg/design-system/button/Button'
 import Input from '@comfyorg/design-system/input/Input'
 import Message from '@comfyorg/design-system/message/Message'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import type { User } from '@/stores/userStore'
 import { useUserStore } from '@/stores/userStore'

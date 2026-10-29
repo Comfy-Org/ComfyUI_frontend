@@ -1,6 +1,6 @@
+import Button from '@comfyorg/design-system/button/Button'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
 
 import AppToaster from './AppToaster.vue'

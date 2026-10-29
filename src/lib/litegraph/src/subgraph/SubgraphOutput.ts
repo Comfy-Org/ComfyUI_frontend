@@ -3,24 +3,24 @@ import type {
   SubgraphInput,
   SubgraphOutputNode
 } from '@comfyorg/graph-model/entityRegistry'
-
-import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
-import {
-  linkIdReservations,
-  mintLinkId
-} from '@/lib/litegraph/src/idAllocation'
-import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import type {
-  PointTuple as Point,
-  ReadOnlyRect
-} from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
+import type {
+  PointTuple as Point,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
+
+import {
+  linkIdReservations,
+  mintLinkId
+} from '@/lib/litegraph/src/idAllocation'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
-import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
+import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
+import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
 
 import { SubgraphSlot } from './SubgraphSlotBase'
 import { isNodeSlot, isSubgraphInput } from './subgraphTypeGuards'

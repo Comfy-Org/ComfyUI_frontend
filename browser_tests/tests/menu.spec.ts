@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expect } from '@playwright/test'
 
 test.describe('Menu', { tag: '@ui' }, () => {
   test('Can register sidebar tab', async ({ comfyPage }) => {

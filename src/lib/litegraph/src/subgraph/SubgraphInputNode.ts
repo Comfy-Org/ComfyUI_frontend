@@ -4,35 +4,33 @@ import type {
   SubgraphInput,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-import {
-  linkIdReservations,
-  mintLinkId
-} from '@/lib/litegraph/src/idAllocation'
-import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-
-import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type {
   DefaultConnectionColors,
   ISlotType,
   Positionable
 } from '@comfyorg/graph-model/interfaces'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
-import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
-import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
+
+import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import {
+  linkIdReservations,
+  mintLinkId
+} from '@/lib/litegraph/src/idAllocation'
+import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
+import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 
 import { EmptySubgraphInput } from './EmptySubgraphInput'
 import { SubgraphIONodeBase } from './SubgraphIONodeBase'
-
 import { provideSubgraphInputGuard } from './subgraphTypeGuards'
 
 export class SubgraphInputNode

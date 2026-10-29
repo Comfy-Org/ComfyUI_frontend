@@ -1,22 +1,22 @@
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { getActivePinia } from 'pinia'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type {
   BalanceInfo,
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'

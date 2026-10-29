@@ -12,39 +12,40 @@ import {
 import type { Mocked } from 'vitest'
 import { computed, defineComponent, effectScope, nextTick, ref } from 'vue'
 import type { EffectScope } from 'vue'
+
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 let setupScope: EffectScope
-import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
-import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
-import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AgentConsentTrigger } from '@comfyorg/telemetry/types'
 
-import type { ComfyExtension } from '@/types/comfy'
-import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { useExtensionService } from '@/platform/extensions/services/extensionService'
 import type { EntryPath } from '@/platform/onboarding/onboardingTours'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
+import { useDialogStore } from '@/stores/dialogStore'
+import type { ComfyExtension } from '@/types/comfy'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvas
+} from '@/utils/__tests__/canvasTestUtils'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import {
   CONSENT_DIALOG_KEY,
   useAgentConsent
 } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import type { ConsentOfferHooks } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
-import { useTelemetry } from '@comfyorg/telemetry'
-import type { AgentConsentTrigger } from '@comfyorg/telemetry/types'
-import type { useExtensionService } from '@/platform/extensions/services/extensionService'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
-import {
-  createMockCanvasRenderingContext2D,
-  createTestCanvas
-} from '@/utils/__tests__/canvasTestUtils'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 let agentStore: Mocked<ReturnType<typeof useAgentPanelStore>>
 let workflowStore: ReturnType<typeof useWorkflowStore>

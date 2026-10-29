@@ -1,8 +1,7 @@
-import { readonly, shallowRef } from 'vue'
-
-import { reportError } from '@comfyorg/telemetry/reportError'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { readonly, shallowRef } from 'vue'
 
 interface MinimapDecorationTarget extends GraphScope {
   readonly nodeId: NodeId

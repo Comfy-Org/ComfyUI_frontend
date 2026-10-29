@@ -1,11 +1,11 @@
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { ColorComparisonMethod } from '@comfyorg/mask-editor/types'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ColorSelectSettingsPanel from '@/renderer/extensions/maskEditor/components/ColorSelectSettingsPanel.vue'
-import { ColorComparisonMethod } from '@comfyorg/mask-editor/types'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 

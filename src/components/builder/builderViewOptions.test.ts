@@ -1,6 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { useTelemetry } from '@comfyorg/telemetry'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { app } from '@/scripts/app'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'

@@ -153,15 +153,14 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import CoachmarkCard from '@comfyorg/design-system/card/CoachmarkCard'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useWindowSize } from '@vueuse/core'
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, ref, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-
-import CoachmarkCard from '@comfyorg/design-system/card/CoachmarkCard'
 import {
   CARD_WIDTH,
   SPOTLIGHT_PAD,

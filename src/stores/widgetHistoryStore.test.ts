@@ -1,7 +1,6 @@
-import { describe, expect, it } from 'vitest'
-
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { describe, expect, it } from 'vitest'
 
 import {
   WIDGET_HISTORY_LIMIT,

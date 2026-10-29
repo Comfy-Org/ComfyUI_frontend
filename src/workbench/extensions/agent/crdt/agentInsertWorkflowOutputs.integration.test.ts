@@ -15,6 +15,9 @@ import type {
   InsertWorkflowOp,
   WidgetCatalog
 } from '@comfyorg/comfy-multi-player'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -29,13 +32,10 @@ import {
   createTestSubgraphNode,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'

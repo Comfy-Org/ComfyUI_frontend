@@ -1,8 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { desktopAgentConsentTest as test } from '@e2e/fixtures/desktopAgentConsentFixture'
 import {
   AGENT_COACH_SEEN_KEY,
@@ -10,6 +5,10 @@ import {
   agentMessageDeltaEvent,
   pushAgentEvent
 } from '@e2e/tests/agent/agentPanelMocks'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
   test.use({

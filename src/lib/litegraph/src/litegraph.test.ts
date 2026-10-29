@@ -1,6 +1,7 @@
 import { clamp } from 'es-toolkit/compat'
 import { describe, expect, vi } from 'vitest'
 
+import { LGraph as DirectLGraph } from '@/lib/litegraph/src/LGraph'
 import {
   LiteGraphGlobal,
   LGraphCanvas,
@@ -8,8 +9,6 @@ import {
   LGraph,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-
-import { LGraph as DirectLGraph } from '@/lib/litegraph/src/LGraph'
 
 import { test } from './__fixtures__/testExtensions'
 

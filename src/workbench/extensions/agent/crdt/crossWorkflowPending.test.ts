@@ -1,8 +1,8 @@
+import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { render } from '@testing-library/vue'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { DocOp } from './docFrameClient'
@@ -127,8 +127,8 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 import { api } from '@/scripts/api'
 
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
-import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './agentCrdtStatus'
+import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 function deleteNode(nodeId: string): GraphOperation {
   return {

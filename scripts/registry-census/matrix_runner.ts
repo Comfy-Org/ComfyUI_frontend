@@ -1,3 +1,8 @@
+import fs from 'node:fs'
+
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 /**
  * Matrix runner — executed once per pack in an isolated vitest file.
  * Loads the pack's real JS, then runs the user-operation battery and drives
@@ -6,22 +11,19 @@
  */
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import fs from 'node:fs'
 import { vi } from 'vitest'
 
-import defaultWorkflow from '../../browser_tests/assets/default.json'
 import type {
   ISerialisedNode,
   LGraph,
   LGraphCanvas,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type * as WidgetValuesForm from '@/workbench/extensions/agent/crdt/widgetValuesForm'
+
+import defaultWorkflow from '../../browser_tests/assets/default.json'
 
 const S = (v: unknown) => JSON.stringify(v)
 const errMsg = (e: unknown) =>

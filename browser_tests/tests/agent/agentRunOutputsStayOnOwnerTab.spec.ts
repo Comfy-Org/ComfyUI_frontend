@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import { agentExecutionTest as test } from '@e2e/fixtures/agentExecutionFixture'
 import { SOURCE_NODE_ID } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
 import {
@@ -8,6 +6,7 @@ import {
   SHOWN_OUTPUT,
   runSuccessFrame
 } from '@e2e/fixtures/data/agent/agentRunOutputOwner'
+import { expect } from '@playwright/test'
 
 test.describe(
   'PM-2275: an Agent run keeps its outputs on the tab it ran for',

@@ -180,6 +180,10 @@
 </template>
 
 <script setup lang="ts">
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useLocalStorage, useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -191,39 +195,35 @@ import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
-import ErrorOverlay from '@/platform/workflowErrors/overlay/ErrorOverlay.vue'
-import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
-import Badge from '@comfyorg/design-system/badge/Badge'
-import Button from '@comfyorg/design-system/button/Button'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { app } from '@/scripts/app'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
-import { useQueueUIStore } from '@/stores/queueStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isCloud } from '@/platform/distribution/types'
-import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
-import {
-  openShareDialog,
-  prefetchShareDialog
-} from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
 import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
 import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
 import { useManagerSurveyDialog } from '@/platform/customNodes/manager/composables/useManagerSurveyDialog'
 import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
-import { cn } from '@comfyorg/tailwind-utils'
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
+import {
+  openShareDialog,
+  prefetchShareDialog
+} from '@/platform/workflow/sharing/composables/lazyShareDialog'
+import ErrorOverlay from '@/platform/workflowErrors/overlay/ErrorOverlay.vue'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
+import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useQueueUIStore } from '@/stores/queueStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()

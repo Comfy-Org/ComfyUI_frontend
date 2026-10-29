@@ -66,24 +66,24 @@
 </template>
 
 <script setup lang="ts">
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
+import Button from '@comfyorg/design-system/button/Button'
+import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
+import ModelInfoField from '@comfyorg/design-system/field/ModelInfoField'
 import { useAsyncState } from '@vueuse/core'
 import { computed, onUnmounted, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
-import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
-import Button from '@comfyorg/design-system/button/Button'
-import ModelInfoField from '@comfyorg/design-system/field/ModelInfoField'
-import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
-import type { components } from '@/types/comfyRegistryTypes'
-import PackStatusMessage from '@/platform/customNodes/manager/components/manager/PackStatusMessage.vue'
 import PackInstallButton from '@/platform/customNodes/manager/components/manager/button/PackInstallButton.vue'
 import PackUninstallButton from '@/platform/customNodes/manager/components/manager/button/PackUninstallButton.vue'
+import PackStatusMessage from '@/platform/customNodes/manager/components/manager/PackStatusMessage.vue'
 import { usePacksSelection } from '@/platform/customNodes/manager/composables/nodePack/usePacksSelection'
 import { usePacksStatus } from '@/platform/customNodes/manager/composables/nodePack/usePacksStatus'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import type { ConflictDetail } from '@/platform/customNodes/manager/types/conflictDetectionTypes'
+import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import type { components } from '@/types/comfyRegistryTypes'
 
 const { nodePacks } = defineProps<{
   nodePacks: components['schemas']['Node'][]

@@ -1,13 +1,12 @@
+import { useTelemetry } from '@comfyorg/telemetry'
+import userEvent from '@testing-library/user-event'
 /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
 /* oxlint-disable testing-library/prefer-user-event */
 import { render, screen, fireEvent } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-import { useTelemetry } from '@comfyorg/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'

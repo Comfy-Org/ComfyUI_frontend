@@ -9,6 +9,7 @@ import {
   zUploadImageResponse,
   zWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
+import { markErrorReported, reportError } from '@comfyorg/telemetry/reportError'
 import { z } from 'zod'
 
 import type {
@@ -19,19 +20,8 @@ import {
   authRejectionTags,
   isAuthRejectionStatus
 } from '@/platform/auth/authRejection'
-import { markErrorReported, reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
-
-import { refusedAttachmentsMessage } from '@/workbench/extensions/agent/utils/attachmentMessages'
-import { withAgentAuth } from './agentAuth'
-
-import {
-  agentRequestFailureFingerprint,
-  describeAgentRequestFailure,
-  rememberAgentRequestFailure
-} from './agentRequestFailure'
-import type { AgentRequestFailureDiagnostics } from './agentRequestFailure'
 import {
   RENDERED_ASK_KINDS,
   zAgentAnswerReceipt,
@@ -54,6 +44,15 @@ import type {
   AgentTurnAccepted,
   CloudWorkflowEntry
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { refusedAttachmentsMessage } from '@/workbench/extensions/agent/utils/attachmentMessages'
+
+import { withAgentAuth } from './agentAuth'
+import {
+  agentRequestFailureFingerprint,
+  describeAgentRequestFailure,
+  rememberAgentRequestFailure
+} from './agentRequestFailure'
+import type { AgentRequestFailureDiagnostics } from './agentRequestFailure'
 
 const LIST_PAGE_SIZE = 100
 

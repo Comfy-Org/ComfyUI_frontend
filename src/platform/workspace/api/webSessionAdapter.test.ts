@@ -2,7 +2,6 @@ import axios, { AxiosError } from 'axios'
 import { expect, it, vi } from 'vitest'
 
 import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
-
 import { createWebSessionAdapter } from '@/platform/remote/ingest/webSessionAdapter'
 
 it('reports a web-session timeout as a timeout instead of a cancellation', async () => {

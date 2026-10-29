@@ -1,15 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { api } from '@/scripts/api'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   listSkillPacks,
   SkillPacksApiError
 } from '@/platform/skills/api/skillsApi'
 import type { SkillPack } from '@/platform/skills/types'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { api } from '@/scripts/api'
+
 import { useSkillPacksStore } from './skillPacksStore'
 
 const mocks = vi.hoisted(() => ({

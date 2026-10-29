@@ -2,10 +2,10 @@
 import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { searchWidgets } from '@/components/rightSidePanel/shared'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import type { ValidFavoritedWidget } from '@/stores/workspace/favoritedWidgetsStore'
 
-import { searchWidgets } from '@/components/rightSidePanel/shared'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 

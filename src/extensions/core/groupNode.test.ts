@@ -1,22 +1,21 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+
+import type { ComfyNode } from '@comfyorg/graph-model/workflowSchema'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, test, vi } from 'vitest'
 
 import { t } from '@/i18n'
-
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyNode } from '@comfyorg/graph-model/workflowSchema'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { ComfyWidgets } from '@/scripts/widgets'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-
-import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import type { GroupNodeLink, GroupNodeWorkflowData } from './groupNode'
 

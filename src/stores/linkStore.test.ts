@@ -1,7 +1,3 @@
-import { describe, expect, it } from 'vitest'
-import { computed } from 'vue'
-
-import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import {
   toOwningGraphId,
   toRootGraphId
@@ -9,6 +5,10 @@ import {
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import { describe, expect, it } from 'vitest'
+import { computed } from 'vue'
+
+import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 
 import { useLinkStore } from './linkStore'
 

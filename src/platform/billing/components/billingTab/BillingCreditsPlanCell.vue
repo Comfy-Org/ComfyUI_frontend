@@ -72,6 +72,7 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { clamp } from 'es-toolkit'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -81,7 +82,6 @@ import {
   formatCredits,
   formatCreditsFromCents
 } from '@/base/credits/comfyCredits'
-import Button from '@comfyorg/design-system/button/Button'
 import type { PlanCreditsState } from '@/platform/billing/components/billingTab/creditsCard'
 import { useLongDate } from '@/platform/billing/composables/useLongDate'
 

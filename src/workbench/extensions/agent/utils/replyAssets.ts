@@ -2,10 +2,10 @@ import type { Token } from 'marked'
 
 import { isMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
 import { api } from '@/scripts/api'
-import { isLoopbackHost } from '@/utils/hostWhitelist'
-import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isLoopbackHost } from '@/utils/hostWhitelist'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 type ReplyAssetKind = Extract<MediaType, 'image' | 'video' | 'audio' | '3D'>
 

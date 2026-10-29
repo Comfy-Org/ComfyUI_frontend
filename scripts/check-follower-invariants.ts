@@ -1,6 +1,7 @@
 import { globSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
 import ts from 'typescript'
 
 export interface Violation {

@@ -1,6 +1,5 @@
-import { expect, it, vi } from 'vitest'
-
 import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
+import { expect, it, vi } from 'vitest'
 
 vi.mock<unknown>(import('@comfyorg/account-core/firebase'), () => ({
   createFirebaseIdentity: vi.fn(() => ({}))

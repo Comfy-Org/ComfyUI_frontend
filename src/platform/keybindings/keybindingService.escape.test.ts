@@ -1,18 +1,18 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { markRaw } from 'vue'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { markRaw } from 'vue'
 
+import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { CORE_KEYBINDINGS } from '@/platform/keybindings/defaults'
 import {
   clearEscapeOverrides,
   registerEscapeOverride
 } from '@/platform/keybindings/escapeOverride'
-import { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
-import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
-import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
-import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 

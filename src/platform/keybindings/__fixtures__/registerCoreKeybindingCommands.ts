@@ -1,5 +1,5 @@
-import { CORE_KEYBINDINGS } from '@/platform/keybindings/defaults'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { CORE_KEYBINDINGS } from '@/platform/keybindings/defaults'
 
 export function registerCoreKeybindingCommands() {
   const commandStore = useCommandStore()

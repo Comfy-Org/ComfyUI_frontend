@@ -1,18 +1,4 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
-import { ComfyApp, app as singletonApp } from './app'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAuthStore } from '@/stores/authStore'
-import {
-  startDesktopHostSession,
-  stopDesktopHostSession
-} from '@/platform/auth/desktopHost/desktopHostSession'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import {
   afterEach,
   assert,
@@ -24,15 +10,51 @@ import {
   vi
 } from 'vitest'
 import { markRaw, ref } from 'vue'
-import { useLitegraphService } from '@/services/litegraphService'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import { useLitegraphService } from '@/services/litegraphService'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+
+import { ComfyApp, app as singletonApp } from './app'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
-import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import type { CurveData } from '@comfyorg/graph-model/curve'
-import type { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@comfyorg/graph-model/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
+
+import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
+import {
+  pasteAudioNode,
+  pasteAudioNodes,
+  pasteImageNode,
+  pasteImageNodes,
+  pasteVideoNode,
+  pasteVideoNodes
+} from '@/composables/usePaste'
+import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
@@ -42,83 +64,63 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import * as keybindingServiceModule from '@/platform/keybindings/keybindingService'
-import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON
-} from '@comfyorg/graph-model/workflowSchema'
-import {
-  ComfyWorkflow,
-  useWorkflowStore
-} from '@/platform/workflow/management/stores/workflowStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
-import { ChangeTracker } from '@/scripts/changeTracker'
-import {
-  createTestCanvasElement,
-  createTestDragAndScale,
-  setCanvasVisible
-} from '@/utils/__tests__/canvasTestUtils'
-import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
-import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
-import type { NodeReplacement } from '@/platform/workflowErrors/nodeReplacement/types'
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
-import type { NodeError } from '@/platform/remote/comfyui/types'
-import * as litegraphUtil from '@/utils/litegraphUtil'
-import { createNode } from '@/utils/createNode'
-import { executeWidgetsCallback } from '@/utils/litegraphUtil'
-import { graphToPrompt } from '@/utils/executionUtil'
-import { applyTextReplacements } from '@/utils/searchAndReplace'
-import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import {
-  pasteAudioNode,
-  pasteAudioNodes,
-  pasteImageNode,
-  pasteImageNodes,
-  pasteVideoNode,
-  pasteVideoNodes
-} from '@/composables/usePaste'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { runMissingModelPipeline } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
-import * as missingMediaPipeline from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
-import * as missingMediaScan from '@/platform/workflowErrors/missingMedia/missingMediaScan'
-import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
-import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
-import { createMissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
-import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
-import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
-import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import { setTelemetryRegistry } from '@comfyorg/telemetry'
-import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
-import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
-import { isCloud } from '@/platform/distribution/types'
-
-import { PromptExecutionError, api } from '@/scripts/api'
-import { useApp } from '@/scripts/appRegistry'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { isCloud } from '@/platform/distribution/types'
+import type { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import * as keybindingServiceModule from '@/platform/keybindings/keybindingService'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { NodeError } from '@/platform/remote/comfyui/types'
+import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
+import { createMissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
+import * as missingMediaPipeline from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
+import * as missingMediaScan from '@/platform/workflowErrors/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { runMissingModelPipeline } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+import type { NodeReplacement } from '@/platform/workflowErrors/nodeReplacement/types'
+import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { PromptExecutionError, api } from '@/scripts/api'
+import { useApp } from '@/scripts/appRegistry'
+import { ChangeTracker } from '@/scripts/changeTracker'
+import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import {
+  createTestCanvasElement,
+  createTestDragAndScale,
+  setCanvasVisible
+} from '@/utils/__tests__/canvasTestUtils'
+import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { createNode } from '@/utils/createNode'
+import { extractFilesFromDragEvent } from '@/utils/eventUtils'
+import { graphToPrompt } from '@/utils/executionUtil'
+import * as litegraphUtil from '@/utils/litegraphUtil'
+import { executeWidgetsCallback } from '@/utils/litegraphUtil'
+import { applyTextReplacements } from '@/utils/searchAndReplace'
 import { zeroUuid } from '@/utils/uuid'
+
 import type { importA1111 } from './pnginfo'
 
 type WorkflowService = ReturnType<typeof useWorkflowService>

@@ -1,5 +1,6 @@
-import type { ResolvedErrorMessage } from '@/platform/workflowErrors/errorCatalog/types'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+
+import type { ResolvedErrorMessage } from '@/platform/workflowErrors/errorCatalog/types'
 
 export interface ErrorItem extends ResolvedErrorMessage {
   /** Raw source/API-compatible message. */

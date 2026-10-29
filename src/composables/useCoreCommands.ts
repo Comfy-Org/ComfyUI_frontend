@@ -1,5 +1,14 @@
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { ExecutionTriggerSource } from '@comfyorg/telemetry/types'
+
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
@@ -10,52 +19,52 @@ import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
-
 import { tryToggleWidgetPromotion } from '@/core/graph/subgraph/promotionUtils'
 import { t } from '@/i18n'
+import {
+  deleteSelectedLinks,
+  hideSelectedLinks,
+  showSelectedLinks
+} from '@/lib/litegraph/src/canvas/linkSelection'
 import {
   LGraphEventMode,
   LGraphGroup,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import {
-  deleteSelectedLinks,
-  hideSelectedLinks,
-  showSelectedLinks
-} from '@/lib/litegraph/src/canvas/linkSelection'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
-import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
 import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
+import {
+  ManagerUIState,
+  useManagerState
+} from '@/platform/customNodes/manager/composables/useManagerState'
+import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import { isCloud } from '@/platform/distribution/types'
-import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildSupportUrl } from '@/platform/support/config'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import type { ExecutionTriggerSource } from '@comfyorg/telemetry/types'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import {
   useCanvasStore,
   useTitleEditorStore
 } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useAssetsStore } from '@/stores/assetsStore'
-import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useModelStore } from '@/stores/modelStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
+import { useModelStore } from '@/stores/modelStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -71,17 +80,6 @@ import {
   getExecutionIdsForSelectedNodes
 } from '@/utils/graphTraversalUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
-import {
-  ManagerUIState,
-  useManagerState
-} from '@/platform/customNodes/manager/composables/useManagerState'
-import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
-import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
-
-import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
-
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
-import { useDialogStore } from '@/stores/dialogStore'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 let onboardingReplayInProgress: Promise<void> | undefined

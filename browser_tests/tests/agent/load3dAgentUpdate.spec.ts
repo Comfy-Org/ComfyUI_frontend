@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
-import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
-
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { load3dAgentTest as test } from '@e2e/fixtures/load3dAgentFixture'
 import { Load3DViewerHelper } from '@e2e/tests/load3d/Load3DViewerHelper'
+import { expect } from '@playwright/test'
+
+import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
 
 const PIXEL_SLACK = 1
 

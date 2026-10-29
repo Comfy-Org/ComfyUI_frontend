@@ -1,11 +1,10 @@
 import type { LGraph } from '@comfyorg/graph-model/entityRegistry'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
 import {
   clearGraphSelection,
   updateGraphSelection
 } from '@/renderer/core/canvas/litegraph/selectionAdapter'
-
-import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
 /**
  * Snapshot of the selection store exposed through the legacy

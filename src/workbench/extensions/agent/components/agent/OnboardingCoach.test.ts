@@ -1,12 +1,12 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 
 import OnboardingCoach from './OnboardingCoach.vue'

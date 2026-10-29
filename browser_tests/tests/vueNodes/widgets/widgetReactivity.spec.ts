@@ -1,8 +1,8 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 test.describe('Vue Widget Reactivity', { tag: '@vue-nodes' }, () => {
   test('Should display added widgets', async ({ comfyPage }) => {

@@ -1,8 +1,7 @@
+import { tabChatTransitionsTest as test } from '@e2e/fixtures/agentTabChatTransitionsFixture'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { tabChatTransitionsTest as test } from '@e2e/fixtures/agentTabChatTransitionsFixture'
 
 test.describe(
   'Workflow tab chat transitions',

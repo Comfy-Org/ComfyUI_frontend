@@ -1,12 +1,11 @@
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 /**
  * BE-11470 C1.4 smoke: one real turn through /api/agent against the local

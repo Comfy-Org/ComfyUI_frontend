@@ -1,11 +1,10 @@
-import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
-
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 
 export type PromotedWidgetEntry = [string, string]
 

@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import { agentTwoSessionCrdtTest as test } from '@e2e/fixtures/agentTwoSessionCrdtFixture'
 import type {
   AgentBoundWorkflow,
@@ -7,6 +5,7 @@ import type {
 } from '@e2e/fixtures/agentTwoSessionCrdtFixture'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import { expect } from '@playwright/test'
 
 const WORKFLOW_A = { id: '11111111-1111-4111-8111-111111111111', name: 'Alpha' }
 const WORKFLOW_B = { id: '22222222-2222-4222-8222-222222222222', name: 'Bravo' }

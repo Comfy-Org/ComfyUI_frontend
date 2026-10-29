@@ -1,9 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fromPartial } from '@total-typescript/shoehorn'
-
 import type { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import type { SharedRendererHandle } from '@comfyorg/viewport3d/three/sharedWebGLRenderer'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const load3dModule = vi.hoisted(() => {
   const deferred = () => {

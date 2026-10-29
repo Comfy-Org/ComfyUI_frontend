@@ -19,13 +19,13 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { nextTick, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
-import Button from '@comfyorg/design-system/button/Button'
-import { usePartnerNodesRunGate } from '@/platform/billing/composables/usePartnerNodesRunGate'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { usePartnerNodesRunGate } from '@/platform/billing/composables/usePartnerNodesRunGate'
 
 const { t } = useI18n()
 const { gate, partnerNodes } = usePartnerNodesRunGate()

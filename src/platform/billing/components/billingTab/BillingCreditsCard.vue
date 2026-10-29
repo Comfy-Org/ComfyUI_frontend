@@ -124,6 +124,7 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -133,7 +134,6 @@ import {
   centsToCredits,
   formatCreditsFromCents
 } from '@/base/credits/comfyCredits'
-import Button from '@comfyorg/design-system/button/Button'
 import BillingCreditsPlanCell from '@/platform/billing/components/billingTab/BillingCreditsPlanCell.vue'
 import type { CreditsCardState } from '@/platform/billing/components/billingTab/creditsCard'
 

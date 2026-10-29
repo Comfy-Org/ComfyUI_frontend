@@ -1,4 +1,4 @@
-import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
@@ -6,15 +6,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import * as runGateModule from '@/platform/billing/composables/usePartnerNodesRunGate'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import * as partnerNodesInGraphModule from '@/composables/node/usePartnerNodesInGraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import * as runGateModule from '@/platform/billing/composables/usePartnerNodesRunGate'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { api } from '@/scripts/api'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
+import { api } from '@/scripts/api'
 
 import PartnerNodesEducationCard from './PartnerNodesEducationCard.vue'
 

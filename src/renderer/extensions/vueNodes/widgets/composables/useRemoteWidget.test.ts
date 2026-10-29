@@ -1,9 +1,8 @@
+import type { WebSession } from '@comfyorg/account-core/webSession'
 import { fromPartial } from '@total-typescript/shoehorn'
 import axios, { AxiosHeaders } from 'axios'
 import type { AxiosResponse } from 'axios'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { WebSession } from '@comfyorg/account-core/webSession'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import {
@@ -16,12 +15,12 @@ import type {
   WebSessionRequests
 } from '@/platform/auth/session/webSessionFetch'
 import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import { api } from '@/scripts/api'
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
-import { useAuthStore } from '@/stores/authStore'
 
 function createMockWidget(overrides: Partial<IWidget> = {}): IWidget {
   const widget = fromPartial<IWidget>({

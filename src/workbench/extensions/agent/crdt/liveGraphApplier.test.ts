@@ -9,6 +9,9 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { isPlainObject } from 'es-toolkit'
 import {
@@ -22,21 +25,18 @@ import {
 } from 'vitest'
 import * as Y from 'yjs'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
-import {
-  createTestSubgraph,
-  createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisedNode,
   LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@comfyorg/telemetry/reportError'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { followedDoc } from './__fixtures__/followedDoc'

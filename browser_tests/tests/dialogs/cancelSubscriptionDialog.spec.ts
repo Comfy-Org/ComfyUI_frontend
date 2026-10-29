@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscriptionDialog'
+import { expect } from '@playwright/test'
 
 test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
   let dialog: CancelSubscriptionDialog

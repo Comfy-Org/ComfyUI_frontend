@@ -1,9 +1,8 @@
+import { TestIds } from '@e2e/fixtures/selectors'
+import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { TestIds } from '@e2e/fixtures/selectors'
-import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
   test('PM-1373 shows fewer cold-start suggestions below the compact panel breakpoint', async ({

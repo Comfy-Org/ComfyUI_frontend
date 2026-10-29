@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
+
 import { lt, maxSatisfying, prerelease, valid, validRange } from 'semver'
 import { z } from 'zod'
 

@@ -1,9 +1,8 @@
-import type { Locator, Page } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { WidgetSelectDefaultFixture } from '@e2e/fixtures/components/WidgetSelectDefault'
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
+import { TestIds } from '@e2e/fixtures/selectors'
+import type { Locator, Page } from '@playwright/test'
 
 /**
  * Helper for interacting with widgets rendered in app mode (linear view).

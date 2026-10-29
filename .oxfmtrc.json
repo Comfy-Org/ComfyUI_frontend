@@ -5,6 +5,7 @@
   "semi": false,
   "trailingComma": "none",
   "printWidth": 80,
+  "sortImports": true,
   "ignorePatterns": [
     "oxlint-suppressions.json",
     "packages/registry-types/src/comfyRegistryTypes.ts",

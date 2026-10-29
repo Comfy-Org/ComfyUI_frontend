@@ -1,8 +1,7 @@
-import { describe, expect, expectTypeOf, it } from 'vitest'
-
 import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 
 import type { SelectableKey, SelectableKind } from './selectionState'
 import { parseSelectableKey, toSelectableKey } from './selectionState'

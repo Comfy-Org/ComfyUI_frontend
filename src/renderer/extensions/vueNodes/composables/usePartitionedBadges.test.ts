@@ -1,16 +1,16 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { LGraphBadge, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
 const NODE_ID = toNodeId(5)

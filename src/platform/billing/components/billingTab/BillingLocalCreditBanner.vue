@@ -64,29 +64,29 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import {
   centsToCredits,
   formatCreditsFromCents
 } from '@/base/credits/comfyCredits'
-import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useLongDate } from '@/platform/billing/composables/useLongDate'
-
-import Button from '@comfyorg/design-system/button/Button'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import BillingAutoTopUpBanner from '@/platform/billing/components/billingTab/BillingAutoTopUpBanner.vue'
+import { deriveLocalCreditBanner } from '@/platform/billing/composables/deriveLocalCreditBanner'
 import { useAutoTopUpBannerKind } from '@/platform/billing/composables/useAutoTopUpBannerKind'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isCloud } from '@/platform/distribution/types'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { deriveLocalCreditBanner } from '@/platform/billing/composables/deriveLocalCreditBanner'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { useLongDate } from '@/platform/billing/composables/useLongDate'
 import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
-import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { isCloud } from '@/platform/distribution/types'
 
 type BannerAction = 'addCredits' | 'updatePayment'
 

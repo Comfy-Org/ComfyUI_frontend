@@ -1,6 +1,5 @@
-import type { Locator, Page } from '@playwright/test'
-
 import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
+import type { Locator, Page } from '@playwright/test'
 
 /**
  * The stepped cancellation dialog opened by Cancel plan: the reason survey,

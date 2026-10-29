@@ -1,8 +1,8 @@
-import type { Mock } from 'vitest'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
+import type { Mock } from 'vitest'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
 import { useComfyRegistrySearchProvider } from '@/services/providers/registrySearchProvider'

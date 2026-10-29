@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { computed, onScopeDispose, ref, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
@@ -6,7 +7,6 @@ import {
   PACK_SEARCHABLE_ATTRIBUTES,
   USER_SEARCH_ANALYTICS_TAG
 } from '@/constants/searchConstants'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type {
   SearchAttribute,

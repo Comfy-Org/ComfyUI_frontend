@@ -1,12 +1,11 @@
+import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-
-import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { assetPath } from '@e2e/fixtures/utils/paths'
-import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 test.use({ connectWebSocketToServer: false })
 

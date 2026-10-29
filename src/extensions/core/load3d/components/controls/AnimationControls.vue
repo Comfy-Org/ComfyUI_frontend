@@ -78,10 +78,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-import { computed } from 'vue'
-
-import { formatAnimationTime } from '@/extensions/core/load3d/components/formatAnimationTime'
 import Button from '@comfyorg/design-system/button/Button'
 import Select from '@comfyorg/design-system/select/Select'
 import SelectContent from '@comfyorg/design-system/select/SelectContent'
@@ -89,6 +85,10 @@ import SelectItem from '@comfyorg/design-system/select/SelectItem'
 import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
 import SelectValue from '@comfyorg/design-system/select/SelectValue'
 import Slider from '@comfyorg/design-system/slider/Slider'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
+
+import { formatAnimationTime } from '@/extensions/core/load3d/components/formatAnimationTime'
 
 type Animation = { name: string; index: number }
 

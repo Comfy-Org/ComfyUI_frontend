@@ -1,11 +1,10 @@
-import type { Page } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { WorkspaceStore } from '@e2e/types/globals'
+import type { Page } from '@playwright/test'
 
 /**
  * Production crashes CLOUD-FRONTEND-PROD-2Z2, -2Z3, -28Y and -233

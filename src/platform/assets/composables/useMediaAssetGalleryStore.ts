@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 
-import type { AugmentedResultItem } from '@/utils/resultItem'
-
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 export const useMediaAssetGalleryStore = defineStore(
   'mediaAssetGallery',

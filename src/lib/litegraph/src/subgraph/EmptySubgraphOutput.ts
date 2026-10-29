@@ -3,10 +3,10 @@ import type {
   LLink,
   SubgraphOutputNode
 } from '@comfyorg/graph-model/entityRegistry'
-
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { zeroUuid } from '@/utils/uuid'
 

@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
 import {
   driveCollision,
   idCollisionTest as test
 } from '@e2e/fixtures/agentCrdtIdCollisionFixture'
+import { expect } from '@playwright/test'
 
 /**
  * Two node-id failure modes, one fixed here and one NOT.

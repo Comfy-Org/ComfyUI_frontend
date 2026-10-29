@@ -1,30 +1,30 @@
 <script setup lang="ts">
-import { useClipboard, useClipboardItems } from '@vueuse/core'
-import { computed, useTemplateRef } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@comfyorg/design-system/button/Button'
 import Tag from '@comfyorg/design-system/chip/Tag'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useClipboard, useClipboardItems } from '@vueuse/core'
+import { computed, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
-
+import CatalogSkillReference from '@/workbench/extensions/agent/components/agent/CatalogSkillReference.vue'
 import type { UserAttachment } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type { SkillReference as SkillReferenceData } from '@/workbench/extensions/agent/types/skillReference'
 import type {
   PromptSnapshot,
   WorkflowReference
 } from '@/workbench/extensions/agent/types/workflowReference'
-import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
-import { isReplyAssetKind } from '@/workbench/extensions/agent/utils/replyAssets'
 import { agentMessageText } from '@/workbench/extensions/agent/utils/agentMessageText'
 import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
-import type { SkillReference as SkillReferenceData } from '@/workbench/extensions/agent/types/skillReference'
-import CatalogSkillReference from '@/workbench/extensions/agent/components/agent/CatalogSkillReference.vue'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
+import { isReplyAssetKind } from '@/workbench/extensions/agent/utils/replyAssets'
+
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 import {
   selectedUserMessageClipboard,

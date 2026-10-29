@@ -51,12 +51,12 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import type { Component } from 'vue'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { st } from '@/i18n'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   icon = '',

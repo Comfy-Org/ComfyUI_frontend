@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { maskEditorTest as test } from '@e2e/fixtures/helpers/MaskEditorHelper'
+import { expect } from '@playwright/test'
 
 interface UploadResponse {
   name: string

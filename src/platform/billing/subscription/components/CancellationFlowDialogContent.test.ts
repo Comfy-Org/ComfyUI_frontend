@@ -1,4 +1,5 @@
 import type { RetentionFlowResponse } from '@comfyorg/ingest-types'
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,12 +8,11 @@ import { computed, defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { CancellationSurveyExit } from '@/platform/billing/subscription/utils/cancellationSurvey'
 import type { RetentionOfferOutcome } from '@/platform/billing/subscription/utils/retentionOffer'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { billingApi } from '@/platform/billing/api/billingApi'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import CancellationFlowDialogContent from './CancellationFlowDialogContent.vue'

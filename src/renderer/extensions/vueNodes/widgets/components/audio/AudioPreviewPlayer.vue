@@ -122,18 +122,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { whenever } from '@vueuse/core'
-
-import { useToast } from '@/components/ui/toast/toastStore'
-
-import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import MenuItemContent from '@comfyorg/design-system/menu/MenuItemContent'
 import Slider from '@comfyorg/design-system/slider/Slider'
+import { whenever } from '@vueuse/core'
+import { computed, ref, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { downloadFile } from '@/base/common/downloadUtil'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { formatTime } from '@/utils/formatUtil'
 
 const { t } = useI18n()

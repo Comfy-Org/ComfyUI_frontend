@@ -3,7 +3,6 @@ import {
   calculateMinimapScale,
   calculateNodeBounds
 } from '@/renderer/core/spatial/boundsCalculator'
-
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 
 /**

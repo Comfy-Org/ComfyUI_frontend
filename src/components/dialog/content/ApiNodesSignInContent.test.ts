@@ -3,10 +3,10 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { i18n as appI18n } from '@/i18n'
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { i18n as appI18n } from '@/i18n'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 

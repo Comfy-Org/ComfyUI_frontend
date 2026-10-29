@@ -1,29 +1,32 @@
+import { serializeNodeId } from '@comfyorg/graph-model/nodeId'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useDebounceFn } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 
 import { assert } from '@/base/assert'
-import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import {
+  collectSubgraphDefinitions,
+  parseFlattenableSubgraphDefinitions
+} from '@/platform/workflow/core/utils/workflowFlattening'
 import type {
   ComfyWorkflow,
   WorkflowChangeTracker
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { reportWorkflowStateAnomaly } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import {
-  collectSubgraphDefinitions,
-  parseFlattenableSubgraphDefinitions
-} from '@/platform/workflow/core/utils/workflowFlattening'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
+import { useApp } from '@/scripts/appInstance'
+import { provideChangeTracker } from '@/scripts/changeTrackerAccess'
+import { clipspace } from '@/scripts/clipspace'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
-import { serializeNodeId } from '@comfyorg/graph-model/nodeId'
 import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
 
@@ -33,9 +36,6 @@ import {
   nodeHistoryValuesChanged,
   withNodeHistoryValuesFrom
 } from './nodeHistoryWidgetValues'
-import { useApp } from '@/scripts/appInstance'
-import { provideChangeTracker } from '@/scripts/changeTrackerAccess'
-import { clipspace } from '@/scripts/clipspace'
 
 function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))

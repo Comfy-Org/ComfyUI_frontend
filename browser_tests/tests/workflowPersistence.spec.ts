@@ -1,13 +1,11 @@
 import { readFileSync } from 'fs'
 
-import { expect } from '@playwright/test'
-
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
-
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { expect } from '@playwright/test'
 
 const generateUniqueFilename = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`

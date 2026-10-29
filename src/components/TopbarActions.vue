@@ -46,19 +46,19 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { computed, ref } from 'vue'
 
 import AgentEntryButton from '@/components/topbar/AgentEntryButton.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
-import TopbarSubscribeButton from '@/platform/billing/components/TopbarSubscribeButton.vue'
-import Button from '@comfyorg/design-system/button/Button'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import TopbarSubscribeButton from '@/platform/billing/components/TopbarSubscribeButton.vue'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { openFeedbackDialog } from '@/platform/support/feedbackDialog'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'

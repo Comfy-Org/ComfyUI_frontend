@@ -1,4 +1,5 @@
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+
 import { generateUUID, isValidUuid } from '@/utils/formatUtil'
 
 type WorkflowWithId = ComfyWorkflowJSON & { id: string }

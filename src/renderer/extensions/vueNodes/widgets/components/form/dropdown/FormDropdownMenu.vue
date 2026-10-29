@@ -1,8 +1,7 @@
 <script setup lang="ts">
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 import type { CSSProperties } from 'vue'
 import { computed } from 'vue'
-
-import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 
 import type {
   FilterOption,

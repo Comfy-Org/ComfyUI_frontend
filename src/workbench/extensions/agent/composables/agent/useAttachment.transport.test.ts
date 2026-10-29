@@ -1,8 +1,9 @@
 import { assert, expect, it, onTestFinished, vi } from 'vitest'
 
 import { createAgentRestClient } from '@/workbench/extensions/agent/services/agent/agentRestClient'
-import { useAttachment } from './useAttachment'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+
+import { useAttachment } from './useAttachment'
 
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 

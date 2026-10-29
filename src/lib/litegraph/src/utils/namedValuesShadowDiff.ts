@@ -1,6 +1,5 @@
-import { isEqual } from 'es-toolkit'
-
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { isEqual } from 'es-toolkit'
 
 export interface NamedValuesShadowDiffResult {
   mismatchWidgetCount: number

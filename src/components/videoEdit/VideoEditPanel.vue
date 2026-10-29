@@ -243,16 +243,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Size2D, Bounds } from '@comfyorg/shared-frontend-utils/geometry'
-
-import { useEventListener } from '@vueuse/core'
-import { computed, ref, toRef, useId, useTemplateRef, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { clamp } from 'es-toolkit'
-
-import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
-import Loader from '@/components/loader/Loader.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import Select from '@comfyorg/design-system/select/Select'
 import SelectContent from '@comfyorg/design-system/select/SelectContent'
@@ -260,6 +250,16 @@ import SelectItem from '@comfyorg/design-system/select/SelectItem'
 import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
 import SelectValue from '@comfyorg/design-system/select/SelectValue'
 import Slider from '@comfyorg/design-system/slider/Slider'
+import type { VideoEditFeature } from '@comfyorg/graph-model/widgets'
+import type { Size2D, Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useEventListener } from '@vueuse/core'
+import { clamp } from 'es-toolkit'
+import { computed, ref, toRef, useId, useTemplateRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
+import Loader from '@/components/loader/Loader.vue'
 import VideoCropOverlay from '@/components/videoEdit/VideoCropOverlay.vue'
 import VideoFilmstripTrim from '@/components/videoEdit/VideoFilmstripTrim.vue'
 import { useCropRatioLock } from '@/composables/video/useCropRatioLock'
@@ -267,11 +267,9 @@ import { useTrimPlayback } from '@/composables/video/useTrimPlayback'
 import { useVideoEditFormats } from '@/composables/video/useVideoEditFormats'
 import { DEFAULT_VIDEO_FPS } from '@/composables/video/useVideoFilmstrip'
 import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
-import type { VideoEditFeature } from '@comfyorg/graph-model/widgets'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { frameToTime, timeToFrame } from '@/utils/videoFrameUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   features,

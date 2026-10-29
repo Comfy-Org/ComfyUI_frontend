@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 
 import type { IContextMenuValue } from './contextMenu'
-import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 
 /**
  * Callback for panel widget value changes.

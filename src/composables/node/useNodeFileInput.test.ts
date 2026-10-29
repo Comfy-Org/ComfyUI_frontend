@@ -2,6 +2,7 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
 import { useNodeFileInput } from './useNodeFileInput'
 
 function createNode(overrides: Record<string, unknown> = {}): LGraphNode {

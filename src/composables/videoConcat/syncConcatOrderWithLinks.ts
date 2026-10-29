@@ -1,3 +1,4 @@
+import type { IVideoConcatWidget } from '@comfyorg/graph-model/widgets'
 import { isEqual } from 'es-toolkit'
 import { effectScope, watch } from 'vue'
 import type { EffectScope } from 'vue'
@@ -6,7 +7,6 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { linkedConcatSlots } from '@/composables/videoConcat/linkedConcatSlots'
 import { translateOrder } from '@/composables/videoConcat/videoConcatOrder'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IVideoConcatWidget } from '@comfyorg/graph-model/widgets'
 
 export function syncConcatOrderWithLinks(
   node: LGraphNode,

@@ -1,21 +1,19 @@
 import { fakeWebSessionUser } from '@comfyorg/account-core/testing'
-import type { User } from 'firebase/auth'
-
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
-import { useAuthStore } from '@/stores/authStore'
-import { useToast } from '@/components/ui/toast/toastStore'
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import type { User } from 'firebase/auth'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useInviteUrlLoader as createInviteUrlLoader } from '@/platform/account/composables/useInviteUrlLoader'
+import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
 
 /**
  * Unit tests for useInviteUrlLoader composable

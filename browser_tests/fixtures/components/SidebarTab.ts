@@ -1,10 +1,9 @@
+import type { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
+import type { WorkspaceStore } from '@e2e/types/globals'
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-
-import type { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
-import type { WorkspaceStore } from '@e2e/types/globals'
-import { TestIds } from '@e2e/fixtures/selectors'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 export class SidebarTab {
   public readonly tabButton: Locator

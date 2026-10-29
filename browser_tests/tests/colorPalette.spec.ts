@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   expectElementScreenshot,
@@ -7,6 +5,7 @@ import {
   screenshotRegion
 } from '@e2e/fixtures/utils/screenshotRegion'
 import type { WorkspaceStore } from '@e2e/types/globals'
+import { expect } from '@playwright/test'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 

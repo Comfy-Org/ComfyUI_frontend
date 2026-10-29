@@ -1,3 +1,9 @@
+import {
+  LGraphEventMode,
+  NodeSlotType
+} from '@comfyorg/graph-model/globalEnums'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -10,10 +16,6 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
-  LGraphEventMode,
-  NodeSlotType
-} from '@comfyorg/graph-model/globalEnums'
-import {
   createMissingMediaCandidate,
   createPromotedMediaRuntime,
   createPromotedMissingMediaCandidate,
@@ -21,19 +23,17 @@ import {
 } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
 import * as missingMediaScan from '@/platform/workflowErrors/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import * as missingModelScan from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
-import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { cloudReleaseModelOptions } from '@/platform/workflowErrors/missingModel/releaseModelOptions'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
-import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 
 vi.mock(
   import('@/platform/workflowErrors/missingModel/releaseModelOptions'),

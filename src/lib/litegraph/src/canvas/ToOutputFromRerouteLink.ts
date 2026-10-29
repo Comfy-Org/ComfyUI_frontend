@@ -3,15 +3,15 @@ import type {
   Reroute,
   LinkConnector
 } from '@comfyorg/graph-model/entityRegistry'
-import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
+
+import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 
 import { ToInputRenderLink } from './ToInputRenderLink'
 import { ToOutputRenderLink } from './ToOutputRenderLink'

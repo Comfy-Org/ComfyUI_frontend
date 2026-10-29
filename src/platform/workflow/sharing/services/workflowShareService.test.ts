@@ -1,10 +1,9 @@
-import { useAssetsStore } from '@/stores/assetsStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type { AssetInfo, HubWorkflowDetail } from '@comfyorg/ingest-types'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 const mockApp = vi.hoisted(() => ({
   rootGraph: {} as object | null,

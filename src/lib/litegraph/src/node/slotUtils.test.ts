@@ -1,9 +1,9 @@
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
 import { describe, expect, it } from 'vitest'
 
-import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
 
 import { outputAsSerialisable } from './slotUtils'
 

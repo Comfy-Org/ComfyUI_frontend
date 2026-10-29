@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { app } from '@/scripts/app'
+import { useLitegraphService } from '@/services/litegraphService'
 import {
   useSubgraphNavigationStore,
   VIEWPORT_CACHE_MAX_SIZE

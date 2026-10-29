@@ -1,11 +1,10 @@
-import { describe, expect, it } from 'vitest'
-
 import {
   compareNodeIds,
   parseNodeId,
   serializeNodeId,
   toNodeId
 } from '@comfyorg/graph-model/nodeId'
+import { describe, expect, it } from 'vitest'
 
 describe('nodeId', () => {
   it('normalizes serialized node ids to strings', () => {

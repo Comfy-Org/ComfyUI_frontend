@@ -1,5 +1,5 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { nextTick } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -7,8 +7,8 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { graphCreditsBadges, nodeBadges } from './badgeSystem'
 

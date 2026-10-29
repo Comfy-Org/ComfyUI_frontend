@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
 import {
   createMockRelease,
   helpCenterFixture as test,
   waitForPopup
 } from '@e2e/fixtures/helpers/HelpCenterHelper'
+import { expect } from '@playwright/test'
 
 test.describe('Help Center', () => {
   test.describe('popup visibility', () => {

@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { expect } from '@playwright/test'
 
 // Static workflow with two sibling subgraph instances (ids 2 and 4) plus a
 // normal node (EmptyLatentImage, id 3). Using a premade fixture keeps these

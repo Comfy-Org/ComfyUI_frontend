@@ -1,10 +1,9 @@
-import type { Locator } from '@playwright/test'
-
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { dragByIndex } from '@e2e/fixtures/utils/dragAndDrop'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+import type { Locator } from '@playwright/test'
 
 export class SubgraphEditor {
   public readonly root: Locator

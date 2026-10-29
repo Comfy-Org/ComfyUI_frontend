@@ -1,9 +1,3 @@
-import { computed, ref } from 'vue'
-
-import { t } from '@/i18n'
-import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
-import { isWorkspaceBillingRequiredError } from '@/platform/remote/comfyui/errors'
 import type {
   BillingStatus,
   BillingStatusResponse,
@@ -13,6 +7,12 @@ import type {
   SubscribeOptions,
   SubscribeResponse
 } from '@comfyorg/billing-core'
+import { computed, ref } from 'vue'
+
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { t } from '@/i18n'
+import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
+import { isWorkspaceBillingRequiredError } from '@/platform/remote/comfyui/errors'
 import { useAuthStore } from '@/stores/authStore'
 
 import type {

@@ -1,10 +1,10 @@
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position } from '@e2e/fixtures/types'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 type NodeSnapshot = { id: NodeId } & Position
 

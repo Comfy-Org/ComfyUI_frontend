@@ -2,7 +2,6 @@ import { readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 
 import type { ListAssetsResponse } from '@comfyorg/ingest-types'
-
 import { STABLE_OUTPUT } from '@e2e/fixtures/data/assetFixtures'
 import { WEB_SESSION_COOKIE } from '@e2e/fixtures/data/webSession'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'

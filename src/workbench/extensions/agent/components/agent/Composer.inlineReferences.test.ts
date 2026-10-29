@@ -7,6 +7,7 @@ import { i18n } from '@/i18n'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { useCanvasSelection } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 

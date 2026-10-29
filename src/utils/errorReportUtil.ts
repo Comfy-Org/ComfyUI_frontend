@@ -1,6 +1,7 @@
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 import type { SystemStats } from '@/platform/remote/comfyui/types'
-import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
 export interface ErrorReportData {
   exceptionType: string

@@ -136,9 +136,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useId } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import Button from '@comfyorg/design-system/button/Button'
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
 import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
@@ -149,6 +146,8 @@ import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import Input from '@comfyorg/design-system/input/Input'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
+import { computed, useId } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useSkillPackForm } from '@/platform/skills/composables/useSkillPackForm'
 import type { SkillPack } from '@/platform/skills/types'

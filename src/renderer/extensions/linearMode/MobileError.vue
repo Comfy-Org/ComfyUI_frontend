@@ -1,15 +1,15 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import Dialogue from '@comfyorg/design-system/dialog/Dialogue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Dialogue from '@comfyorg/design-system/dialog/Dialogue'
-import { useErrorGroups } from '@/platform/workflowErrors/panel/useErrorGroups'
-import Button from '@comfyorg/design-system/button/Button'
 import { useAppMode } from '@/composables/useAppMode'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { resolveRunErrorMessage } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
 import { buildSupportUrl } from '@/platform/support/config'
+import { resolveRunErrorMessage } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
+import { useErrorGroups } from '@/platform/workflowErrors/panel/useErrorGroups'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 

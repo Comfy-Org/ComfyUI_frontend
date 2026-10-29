@@ -1,11 +1,11 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import type * as NodePreviewModule from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import { useExecutionStore } from '@/stores/executionStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import TextPreviewWidget from './TextPreviewWidget.vue'
 vi.mock(import('@/scripts/app'))

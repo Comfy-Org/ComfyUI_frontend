@@ -116,33 +116,33 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-
-import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
-import SettingsWorkspaceHeader from '@/platform/settings/components/SettingsWorkspaceHeader.vue'
-import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
 import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
 import NavItem from '@comfyorg/design-system/navigation/NavItem'
 import NavTitle from '@comfyorg/design-system/navigation/NavTitle'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import { cn } from '@comfyorg/tailwind-utils'
+import { storeToRefs } from 'pinia'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+
+import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
+import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
-import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
-import { cn } from '@comfyorg/tailwind-utils'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
+import SettingsWorkspaceHeader from '@/platform/settings/components/SettingsWorkspaceHeader.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
-import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
-import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
+import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
 import type {
   ISettingGroup,
   SettingDialogProps,
   SettingParams
 } from '@/platform/settings/types'
-import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { flattenTree } from '@/utils/treeUtil'
 
 const { onClose, defaultPanel, scrollToSettingId } =

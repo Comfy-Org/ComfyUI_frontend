@@ -1,7 +1,6 @@
-import { describe, expect, it } from 'vitest'
-
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { parseSlotId, slotId } from '@comfyorg/graph-model/slotId'
+import { describe, expect, it } from 'vitest'
 
 describe('slotId', () => {
   it('uses the legacy slot key format', () => {

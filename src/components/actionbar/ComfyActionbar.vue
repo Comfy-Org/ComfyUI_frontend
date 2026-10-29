@@ -91,6 +91,12 @@
 </template>
 
 <script lang="ts" setup>
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
 import {
   useDraggable,
   useEventListener,
@@ -104,24 +110,18 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaption.vue'
-import Badge from '@comfyorg/design-system/badge/Badge'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
-import Button from '@comfyorg/design-system/button/Button'
-import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useInterruptibleJob } from '@/components/queue/useInterruptibleJob'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { useExecutionStore } from '@/stores/executionStore'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import ComfyRunButton from './ComfyRunButton/ComfyRunButton.vue'
 

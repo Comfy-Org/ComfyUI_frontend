@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyApp } from '@/scripts/app'
-import { graphToPrompt } from '@/utils/executionUtil'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
 } from '@/types/widgetVisibility'
+import { graphToPrompt } from '@/utils/executionUtil'
 
 import { cameraAngleExtension as extension } from './cameraAngle'
 import { load3dWidgets } from './load3dWidgets'

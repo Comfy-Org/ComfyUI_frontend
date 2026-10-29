@@ -1,13 +1,13 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it } from 'vitest'
-
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   ISerialisedGraph,
   SerialisableGraph
 } from '@comfyorg/graph-model/serialisation'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it } from 'vitest'
+
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 /**
  * A saved workflow carries two views of every connection: the link records in

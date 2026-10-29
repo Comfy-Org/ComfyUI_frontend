@@ -1,7 +1,24 @@
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { UNASSIGNED_NODE_ID, parseNodeId } from '@comfyorg/graph-model/nodeId'
+import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type {
+  ExportedSubgraph,
+  ISerialisableNodeInput,
+  ISerialisedGraph
+} from '@comfyorg/graph-model/serialisation'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import {
+  ensureUniqueWidgetNames,
+  widgetId
+} from '@comfyorg/graph-model/widgetId'
+import type {
+  IBaseWidget,
+  IComboWidget,
+  WidgetCallbackOptions
+} from '@comfyorg/graph-model/widgets'
 import { every, filter, head, isEmpty, isEqual, map } from 'es-toolkit/compat'
 
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import {
   LGraphCanvas,
   LGraphGroup,
@@ -9,27 +26,10 @@ import {
   LiteGraph,
   isColorable
 } from '@/lib/litegraph/src/litegraph'
-import type {
-  ExportedSubgraph,
-  ISerialisableNodeInput,
-  ISerialisedGraph
-} from '@comfyorg/graph-model/serialisation'
-import type {
-  IBaseWidget,
-  IComboWidget,
-  WidgetCallbackOptions
-} from '@comfyorg/graph-model/widgets'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
+import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useApp } from '@/scripts/appInstance'
-import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import { UNASSIGNED_NODE_ID, parseNodeId } from '@comfyorg/graph-model/nodeId'
-import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import {
-  ensureUniqueWidgetNames,
-  widgetId
-} from '@comfyorg/graph-model/widgetId'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {

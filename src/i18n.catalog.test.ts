@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import mainMessages from './locales/en/main.json' with { type: 'json' }
-
 import { i18n, t, te } from './i18n'
+import mainMessages from './locales/en/main.json' with { type: 'json' }
 
 // Deliberately unmocked, unlike i18n.test.ts: these assertions are only
 // meaningful against the real src/locales catalog.

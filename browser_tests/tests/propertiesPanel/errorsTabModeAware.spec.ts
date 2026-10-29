@@ -1,13 +1,10 @@
-import { expect } from '@playwright/test'
-import type { Locator } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import {
   cleanupFakeModel,
   openErrorsTab,
   loadWorkflowAndOpenErrorsTab
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import {
   appendComboInputOptions,
   routeObjectInfoFromSetupApi
@@ -25,6 +22,8 @@ import {
   selectVueComboPromotedModelByTitle,
   setLegacyPromotedComboModel
 } from '@e2e/fixtures/utils/promotedMissingModel'
+import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 const FAKE_MODEL_NAME = 'fake_model.safetensors'
 const RESOLVED_PROMOTED_MODEL_NAME = 'resolved_model.safetensors'

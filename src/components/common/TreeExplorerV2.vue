@@ -47,6 +47,9 @@
 </template>
 
 <script setup lang="ts">
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import ContextMenuContent from '@comfyorg/design-system/menu/ContextMenuContent'
+import MenuItems from '@comfyorg/design-system/menu/MenuItems'
 import {
   ContextMenuRoot,
   ContextMenuTrigger,
@@ -57,11 +60,8 @@ import type { FlattenedItem } from 'reka-ui'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MenuItems from '@comfyorg/design-system/menu/MenuItems'
-import ContextMenuContent from '@comfyorg/design-system/menu/ContextMenuContent'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
-import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'

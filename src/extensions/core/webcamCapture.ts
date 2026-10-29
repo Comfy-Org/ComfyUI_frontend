@@ -1,10 +1,9 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { uploadTempFile } from '@/services/uploadTempFile'
-
 import { app } from '@/scripts/app'
+import { uploadTempFile } from '@/services/uploadTempFile'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 const webcamReady = new WeakMap<LGraphNode, Promise<HTMLVideoElement>>()

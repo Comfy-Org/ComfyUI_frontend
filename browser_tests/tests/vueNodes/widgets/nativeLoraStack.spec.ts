@@ -1,12 +1,10 @@
-import { expect } from '@playwright/test'
-
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import { NATIVE_LORA_ASSETS } from '@e2e/fixtures/data/nativeLoraAssets'
+import { nativeLoraTest as test } from '@e2e/fixtures/nativeLoraFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { getConnectedInputs } from '@e2e/fixtures/utils/nodeInputLinks'
 import { getPromotedWidgetNames } from '@e2e/fixtures/utils/promotedWidgets'
-
-import { nativeLoraTest as test } from '@e2e/fixtures/nativeLoraFixture'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Native LoRA stack assets',

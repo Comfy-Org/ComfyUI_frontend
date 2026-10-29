@@ -1,5 +1,5 @@
-import { api } from '@/scripts/api'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { api } from '@/scripts/api'
 import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
 import { extractCustomNodeName } from '@/workbench/utils/nodeHelpUtil'
 

@@ -1,11 +1,10 @@
-import type { ConsoleMessage } from '@playwright/test'
-import { expect } from '@playwright/test'
-
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { getPseudoPreviewWidgets } from '@e2e/fixtures/utils/promotedWidgets'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { ConsoleMessage } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 const domPreviewSelector = '.image-preview'
 

@@ -1,38 +1,38 @@
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { nextTick, reactive } from 'vue'
-
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
-import {
-  ComfyWorkflow,
-  useWorkflowBookmarkStore,
-  useWorkflowStore
-} from '@/platform/workflow/management/stores/workflowStore'
-import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
-import { api } from '@/scripts/api'
-import { app as comfyApp } from '@/scripts/app'
-import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
-import '@/scripts/changeTracker'
-import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { isValidUuid } from '@/utils/formatUtil'
-import { syncEntities } from '@/utils/syncUtil'
-import { isSubgraph } from '@/utils/typeGuardUtil'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, reactive } from 'vue'
+
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import '@/scripts/changeTracker'
+import {
+  ComfyWorkflow,
+  useWorkflowBookmarkStore,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
+import { api } from '@/scripts/api'
+import { app as comfyApp } from '@/scripts/app'
+import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
+import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
+import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 import {
   createMockChangeTracker,
   createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
-import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
+import { isValidUuid } from '@/utils/formatUtil'
+import { syncEntities } from '@/utils/syncUtil'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 
 vi.mock(import('@/scripts/api'))
 

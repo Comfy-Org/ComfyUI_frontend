@@ -1,24 +1,14 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia, storeToRefs } from 'pinia'
 import type { Pinia } from 'pinia'
-import { render, screen, waitFor, within } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryHistory, createRouter } from 'vue-router'
 import { defineComponent, provide } from 'vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
-import { testI18n } from '@/utils/__tests__/testI18n'
-import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
-import {
-  createTestCanvasElement,
-  createTestDragAndScale
-} from '@/utils/__tests__/canvasTestUtils'
-import { app } from '@/scripts/app'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { isLGraphNode } from '@/utils/litegraphUtil'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -26,13 +16,22 @@ import type {
   LGraphCanvas,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import { useFocusNode } from '@/composables/canvas/useFocusNode'
-import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
 import { createWorkflowErrorManager } from '@/platform/customNodes/manager/composables/workflowErrorManager'
-
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import ErrorGroupList from '@/platform/workflowErrors/panel/ErrorGroupList.vue'
+import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import {
+  createTestCanvasElement,
+  createTestDragAndScale
+} from '@/utils/__tests__/canvasTestUtils'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { testI18n } from '@/utils/__tests__/testI18n'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 vi.mock<unknown>(import('@/scripts/app'), () => {
   const rootGraph = {

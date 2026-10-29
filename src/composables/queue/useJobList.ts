@@ -3,6 +3,7 @@ import { orderBy } from 'es-toolkit/array'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { JobTab } from '@/composables/queue/jobTabs'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -21,8 +22,6 @@ import {
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { buildJobDisplay } from '@/utils/queueDisplay'
 import { jobStateFromTask } from '@/utils/queueUtil'
-
-import type { JobTab } from '@/composables/queue/jobTabs'
 
 export type { JobTab } from '@/composables/queue/jobTabs'
 

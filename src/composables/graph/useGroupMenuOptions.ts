@@ -6,8 +6,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
-import { useCanvasRefresh } from './useCanvasRefresh'
 import type { MenuOption } from './menuOption'
+import { useCanvasRefresh } from './useCanvasRefresh'
 import { useNodeCustomization } from './useNodeCustomization'
 
 /**

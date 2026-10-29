@@ -1,26 +1,82 @@
 import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
+import { Alignment, LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { graphScopeOf, toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import type {
+  LGraphTriggerAction,
+  LGraphTriggerEvent,
+  LGraphTriggerHandler,
+  LGraphTriggerParam
+} from '@comfyorg/graph-model/graphTriggers'
+import { LGraphTriggerActions } from '@comfyorg/graph-model/graphTriggers'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import type {
+  DefaultConnectionColors,
+  Dictionary,
+  LinkSegment,
+  MethodNames,
+  OptionalProps,
+  Positionable
+} from '@comfyorg/graph-model/interfaces'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
+import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
+import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
+import { isFloatingTopology } from '@comfyorg/graph-model/linkTopology'
+import {
+  UNASSIGNED_NODE_ID,
+  compareNodeIds,
+  parseNodeId,
+  serializeNodeId,
+  toNodeId
+} from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type {
+  ExportedSubgraph,
+  ExposedWidget,
+  ISerialisedGraph,
+  ISerialisedNode,
+  RendererType,
+  Serialisable,
+  SerialisableGraph,
+  SerialisableReroute
+} from '@comfyorg/graph-model/serialisation'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import type { SubgraphEventMap } from '@comfyorg/graph-model/SubgraphEventMap'
+import type {
+  PanZoom as DragAndScaleState,
+  HasBoundingRect,
+  PointTuple as Point,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
-import { adoptPromotedWidgetValue } from '@/core/graph/subgraph/adoptPromotedWidgetValue'
-import { toSelectableKey } from '@/core/selection/selectionState'
-import {
-  getAgreedLinkPresentation,
-  transferLinkPresentation
-} from '@/core/graph/transferLinkPresentation'
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
 import {
   attachNodeToStores,
   detachAllNodesFromStores,
   detachNodeFromStores
 } from '@/core/graph/nodeShell/nodeShellLifecycle'
-import type { UUID } from '@/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/utils/uuid'
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { adoptPromotedWidgetValue } from '@/core/graph/subgraph/adoptPromotedWidgetValue'
+import {
+  getAgreedLinkPresentation,
+  transferLinkPresentation
+} from '@/core/graph/transferLinkPresentation'
+import { toSelectableKey } from '@/core/selection/selectionState'
+import { useSelectionStore } from '@/core/selection/selectionStore'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import { changeCanvasSelection } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import {
   attachGroupLayout,
   attachNodeLayout,
@@ -30,22 +86,38 @@ import {
   detachRerouteLayout,
   materializeRerouteLayout
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
-import { useSelectionStore } from '@/core/selection/selectionStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
-import { changeCanvasSelection } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
+import { useEntityIdStore } from '@/stores/entityIdStore'
+import { useExecutionOrderStore } from '@/stores/executionOrderStore'
+import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { rekeyGraphId } from '@/stores/rekeyGraphId'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
-import { isFloatingTopology } from '@comfyorg/graph-model/linkTopology'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import { graphScopeOf, toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
+import type { UUID } from '@/utils/uuid'
+import { createUuidv4, zeroUuid } from '@/utils/uuid'
+
+import { canvasClass } from './canvas/canvasClassAccess'
+import { isRootGraphDocBound } from './docBoundGraphs'
+import type { GraphCanonicalField } from './extensionPersistence'
+import {
+  extensionConfigureView,
+  GRAPH_CANONICAL_FIELDS,
+  hydrateExtensionPayload,
+  isGraphCanonicalField,
+  runExtensionSerializeHook
+} from './extensionPersistence'
+import {
+  collectingSeveredLinks,
+  emitGraphIntent,
+  withGraphIntentSource
+} from './graphIntents'
 import {
   collectReservedGroupIds,
   collectReservedLinkIds,
@@ -68,58 +140,16 @@ import type {
   NodeIdMintMode,
   ReservedIdIndex
 } from './idAllocation'
-import { isRootGraphDocBound } from './docBoundGraphs'
-import {
-  collectingSeveredLinks,
-  emitGraphIntent,
-  withGraphIntentSource
-} from './graphIntents'
-import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
-import {
-  captureWidgetRestorationSlots,
-  normalizeWidgetsView
-} from './node/widgetsView'
-import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
-import { useEntityIdStore } from '@/stores/entityIdStore'
-import { useExecutionOrderStore } from '@/stores/executionOrderStore'
-import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
-import { rekeyGraphId } from '@/stores/rekeyGraphId'
-import { toGroupId } from '@comfyorg/graph-model/groupId'
-import {
-  UNASSIGNED_NODE_ID,
-  compareNodeIds,
-  parseNodeId,
-  serializeNodeId,
-  toNodeId
-} from '@comfyorg/graph-model/nodeId'
-import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
-
+import { CustomEventTarget } from './infrastructure/CustomEventTarget'
+import { Rectangle } from './infrastructure/Rectangle'
+import { LGraphGroup } from './LGraphGroup'
+import { LGraphNode } from './LGraphNode'
 import {
   normalizeConfiguredTopology,
   realignInputLinkSlots
 } from './linkDeduplication'
-import {
-  countRequestedNodeIds,
-  getRemintedEndpointPatch,
-  recordUnambiguousRemint
-} from './remintLinkRemap'
-import {
-  beginNamedValuesShadowDiffLoad,
-  endNamedValuesShadowDiffLoad
-} from './utils/namedValuesShadowDiffTelemetry'
-
-import type {
-  PanZoom as DragAndScaleState,
-  HasBoundingRect,
-  PointTuple as Point,
-  SizeTuple as Size
-} from '@comfyorg/shared-frontend-utils/geometry'
-
-import { canvasClass } from './canvas/canvasClassAccess'
-import { Rectangle } from './infrastructure/Rectangle'
-import { LGraphGroup } from './LGraphGroup'
-import { LGraphNode } from './LGraphNode'
+import { LinkMap } from './LinkMap'
+import { LiteGraph } from './litegraphInstance'
 import {
   LLink,
   registerLinkTopology,
@@ -127,53 +157,39 @@ import {
   unregisterAllLinkTopologies,
   unregisterLinkTopology
 } from './LLink'
-import { LinkMap } from './LinkMap'
-import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { MapProxyHandler } from './MapProxyHandler'
-import {
-  registerRerouteChain,
-  Reroute,
-  unregisterAllRerouteChains,
-  unregisterRerouteChain
-} from './Reroute'
-import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import { CustomEventTarget } from './infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
-import type { SubgraphEventMap } from '@comfyorg/graph-model/SubgraphEventMap'
-import type {
-  DefaultConnectionColors,
-  Dictionary,
-  LinkSegment,
-  MethodNames,
-  OptionalProps,
-  Positionable
-} from '@comfyorg/graph-model/interfaces'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@comfyorg/graph-model/slots'
-import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
-import { LiteGraph } from './litegraphInstance'
-import { SubgraphNode } from './subgraph/SubgraphNode'
 import {
   alignOutsideContainer,
   alignToContainer,
   createBounds,
   snapPoint
 } from './measure'
-import { warnDeprecated } from './utils/feedback'
+import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
+import {
+  captureWidgetRestorationSlots,
+  normalizeWidgetsView
+} from './node/widgetsView'
+import {
+  countRequestedNodeIds,
+  getRemintedEndpointPatch,
+  recordUnambiguousRemint
+} from './remintLinkRemap'
+import {
+  registerRerouteChain,
+  Reroute,
+  unregisterAllRerouteChains,
+  unregisterRerouteChain
+} from './Reroute'
+import {
+  normalizeSubgraphDefinitions,
+  topologicalSortSubgraphs
+} from './subgraph/subgraphDeduplication'
 import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
+import { SubgraphNode } from './subgraph/SubgraphNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import { provideSubgraphGuard } from './subgraph/subgraphTypeGuards'
-import {
-  captureUnpackedTargetInput,
-  findUnavailableSubgraphNodeType,
-  materializeSubgraphNodes,
-  resolveUnpackedTargetInput
-} from './subgraph/unpackSubgraph'
-import type { UnpackedTargetInput } from './subgraph/unpackSubgraph'
 import {
   findUnresolvableSubgraphLink,
   findOrphanedSubgraphs,
@@ -186,37 +202,19 @@ import {
   multiClone,
   splitPositionables
 } from './subgraph/subgraphUtils'
-import { Alignment, LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
-import type {
-  LGraphTriggerAction,
-  LGraphTriggerEvent,
-  LGraphTriggerHandler,
-  LGraphTriggerParam
-} from '@comfyorg/graph-model/graphTriggers'
-import { LGraphTriggerActions } from '@comfyorg/graph-model/graphTriggers'
-import type {
-  ExportedSubgraph,
-  ExposedWidget,
-  ISerialisedGraph,
-  ISerialisedNode,
-  RendererType,
-  Serialisable,
-  SerialisableGraph,
-  SerialisableReroute
-} from '@comfyorg/graph-model/serialisation'
+import {
+  captureUnpackedTargetInput,
+  findUnavailableSubgraphNodeType,
+  materializeSubgraphNodes,
+  resolveUnpackedTargetInput
+} from './subgraph/unpackSubgraph'
+import type { UnpackedTargetInput } from './subgraph/unpackSubgraph'
 import { getAllNestedItems } from './utils/collections'
-import type { GraphCanonicalField } from './extensionPersistence'
+import { warnDeprecated } from './utils/feedback'
 import {
-  extensionConfigureView,
-  GRAPH_CANONICAL_FIELDS,
-  hydrateExtensionPayload,
-  isGraphCanonicalField,
-  runExtensionSerializeHook
-} from './extensionPersistence'
-import {
-  normalizeSubgraphDefinitions,
-  topologicalSortSubgraphs
-} from './subgraph/subgraphDeduplication'
+  beginNamedValuesShadowDiffLoad,
+  endNamedValuesShadowDiffLoad
+} from './utils/namedValuesShadowDiffTelemetry'
 
 export type {
   LGraphTriggerAction,

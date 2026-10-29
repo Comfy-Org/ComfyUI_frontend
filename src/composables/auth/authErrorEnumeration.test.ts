@@ -1,10 +1,9 @@
-import { describe, expect, it } from 'vitest'
-
 import {
   authErrorMessage,
   classifyAuthError
 } from '@comfyorg/account-core/firebaseAuthError'
 import { ENUMERATION_ORACLE } from '@comfyorg/account-core/testing'
+import { describe, expect, it } from 'vitest'
 
 import { localizedAuthErrorCopy } from '@/composables/auth/useAuthActions'
 

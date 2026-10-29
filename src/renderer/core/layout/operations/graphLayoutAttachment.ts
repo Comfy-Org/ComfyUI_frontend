@@ -4,19 +4,19 @@ import type {
   LGraphNode,
   Reroute
 } from '@comfyorg/graph-model/entityRegistry'
-
-import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import type {
   PointTuple as LegacyPoint,
   SizeTuple as LegacySize,
   Point2D as Point,
   Size2D as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
+
+import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { LayoutOperation } from '@/renderer/core/layout/types'
-import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 type GraphLayoutOwner = Pick<

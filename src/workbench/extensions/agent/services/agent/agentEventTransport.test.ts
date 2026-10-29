@@ -4,18 +4,16 @@ import type {
   AgentAskResolvedData,
   AgentPendingAskUser
 } from '@comfyorg/ingest-types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@comfyorg/telemetry/reportError'
-
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
 import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   toTurnId,
   zAgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { normalizeAgentTranscript } from './agentTranscript'
 
-import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
 import type { AgentChatEvent, CanvasSyncEvidence } from './agentEventTransport'
 import { createAgentEventTransport } from './agentEventTransport'
 import type {
@@ -25,6 +23,7 @@ import type {
   ToolPart
 } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
+import { normalizeAgentTranscript } from './agentTranscript'
 import { createUndeliverableAskReporter } from './undeliverableAskReporter'
 
 const fixtureText = import.meta.glob(

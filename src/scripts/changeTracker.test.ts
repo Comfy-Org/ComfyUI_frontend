@@ -1,7 +1,4 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   afterEach,
   assert,
@@ -14,8 +11,20 @@ import {
 } from 'vitest'
 import { markRaw, ref } from 'vue'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+
+import type { Subgraph } from '@/lib/litegraph/src/LGraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   createNestedSubgraphs,
   createTestRootGraph,
@@ -23,19 +32,12 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { Subgraph } from '@/lib/litegraph/src/LGraph'
-import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
 import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
@@ -47,8 +49,8 @@ vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/scripts/api'))
 
-import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 
 let nodeIdCounter = 0

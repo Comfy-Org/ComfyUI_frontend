@@ -1,3 +1,6 @@
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 /**
  * Test Helper Functions for Subgraph Testing
  *
@@ -7,19 +10,16 @@
  */
 import { expect } from 'vitest'
 
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import type {
   ExportedSubgraph,
   ExportedSubgraphInstance,
   ISlotType,
   UUID
 } from '@/lib/litegraph/src/litegraph'
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
-import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
-import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   LGraph,
   LGraphNode,

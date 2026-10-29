@@ -1,10 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { render } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-import { api } from '@/scripts/api'
-import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {
   listSkillPacks,
@@ -13,6 +11,8 @@ import {
 } from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
+import { api } from '@/scripts/api'
+
 import { useSkillPackForm } from './useSkillPackForm'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))

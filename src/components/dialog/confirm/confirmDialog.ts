@@ -1,9 +1,10 @@
 import ConfirmBody from '@comfyorg/design-system/confirm/ConfirmBody'
 import ConfirmFooter from '@comfyorg/design-system/confirm/ConfirmFooter'
 import ConfirmHeader from '@comfyorg/design-system/confirm/ConfirmHeader'
+import type { ComponentAttrs, ComponentProps } from 'vue-component-type-helpers'
+
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import type { ComponentAttrs, ComponentProps } from 'vue-component-type-helpers'
 
 interface ConfirmDialogOptions {
   key?: string

@@ -1,9 +1,7 @@
-import { expect } from '@playwright/test'
-
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
-
-import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { expect } from '@playwright/test'
 
 const workflowName = `duplicate-widget-names-${Date.now()}`
 

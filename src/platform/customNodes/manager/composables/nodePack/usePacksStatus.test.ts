@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 
-import type { components } from '@/types/comfyRegistryTypes'
 import { usePacksStatus } from '@/platform/customNodes/manager/composables/nodePack/usePacksStatus'
 import { useConflictDetectionStore } from '@/platform/customNodes/manager/stores/conflictDetectionStore'
 import type { ConflictDetectionResult } from '@/platform/customNodes/manager/types/conflictDetectionTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 type NodeStatus = components['schemas']['NodeStatus']

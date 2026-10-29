@@ -1,15 +1,14 @@
-import { useToast } from '@/components/ui/toast/toastStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@comfyorg/telemetry'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import InviteMembersForm from './InviteMembersForm.vue'
-
-import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 vi.mock(import('@comfyorg/telemetry'))
 

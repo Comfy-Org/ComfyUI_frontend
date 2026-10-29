@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict'
 
-import { expect } from '@playwright/test'
-
 import {
   agentTest as test,
   bootAgentApp
@@ -13,6 +11,7 @@ import {
   AGENT_VIDEO_ASSET
 } from '@e2e/fixtures/data/assetFixtures'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expect } from '@playwright/test'
 
 test.describe('Single asset tray preview', { tag: '@cloud' }, () => {
   test.beforeEach(async ({ page, agentFlagEnabled }) => {

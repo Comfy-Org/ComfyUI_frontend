@@ -1,11 +1,11 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
-import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
-import { useKeybindingService } from '@/platform/keybindings/keybindingService'
-import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 function createTestKeyboardEvent(

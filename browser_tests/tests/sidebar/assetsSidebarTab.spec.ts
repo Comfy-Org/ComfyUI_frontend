@@ -1,6 +1,3 @@
-import { expect, mergeTests } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   PM_1150_JOB_ID,
@@ -17,6 +14,9 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { expect, mergeTests } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
 import type {
   JobDetail,
   RawJobListItem

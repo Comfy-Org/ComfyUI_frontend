@@ -1,12 +1,13 @@
-import { omitBy } from 'es-toolkit'
-
-import type { SsoRequiredTrigger } from '@comfyorg/account-core/telemetry'
 import {
   isAccountOutsideOrganizationRefusal,
   isSsoRequiredRefusal,
   ssoRequiredOrganizationId
 } from '@comfyorg/account-core/sso'
+import type { SsoRequiredTrigger } from '@comfyorg/account-core/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { omitBy } from 'es-toolkit'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import type { SsoRequiredContext } from '@/platform/auth/sso/ssoRequiredContext'
@@ -19,8 +20,6 @@ import {
   abandonSsoFlow,
   trackSsoRequiredShown
 } from '@/platform/auth/sso/ssoTelemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 /**

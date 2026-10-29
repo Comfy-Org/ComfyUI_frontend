@@ -1,6 +1,4 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   Asset,
   AssetCreated,
@@ -14,6 +12,7 @@ import {
   cleanupFakeModel,
   loadWorkflowAndOpenErrorsTab
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import {
   NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
   expectNoMissingModelUi,
@@ -22,9 +21,9 @@ import {
   selectSectionAssetPromotedModel,
   selectVueAssetPromotedModel
 } from '@e2e/fixtures/utils/promotedMissingModel'
-import { TestIds } from '@e2e/fixtures/selectors'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 

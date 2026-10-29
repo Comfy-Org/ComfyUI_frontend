@@ -3,17 +3,16 @@ import type {
   LGraphNode,
   LLink
 } from '@comfyorg/graph-model/entityRegistry'
-import { useLinkStore } from '@/stores/linkStore'
-import type { EndpointUpdateError } from '@/stores/linkStore'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 
-import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
+import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { useLinkStore } from '@/stores/linkStore'
+import type { EndpointUpdateError } from '@/stores/linkStore'
 /**
  * Store-backed reads over the links attached to a node's slots.
  * These replace the `output.links[]` / `input.link` mirrors: the link

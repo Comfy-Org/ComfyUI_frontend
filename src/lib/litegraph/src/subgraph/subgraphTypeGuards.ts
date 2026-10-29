@@ -3,7 +3,6 @@ import type {
   SubgraphInput,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-
 import type {
   INodeInputSlot,
   INodeOutputSlot

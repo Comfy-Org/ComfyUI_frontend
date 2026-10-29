@@ -58,11 +58,11 @@
 </template>
 
 <script setup lang="ts">
+import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useId } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { cn } from '@comfyorg/tailwind-utils'
 
-import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
 import type { ErrorGroupSeverity } from '@/platform/workflowErrors/panel/types'
 
 const {

@@ -1,5 +1,3 @@
-import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
-
 import type {
   AuthMetadata,
   BeginCheckoutMetadata,
@@ -33,6 +31,8 @@ import type {
   WorkspaceInviteMetadata
 } from '@comfyorg/telemetry/types'
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
+
+import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
 
 /**
  * Google Tag Manager telemetry provider.

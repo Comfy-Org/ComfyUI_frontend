@@ -12,6 +12,7 @@ import {
   AgentApiError,
   createAgentRestClient
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
+
 import { useAgentSendGateStore } from './agentSendGateStore'
 
 const DEFAULT_PREFERENCE: AgentRunModePreference = {

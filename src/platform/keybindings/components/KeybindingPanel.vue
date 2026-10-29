@@ -99,18 +99,15 @@
 </template>
 
 <script setup lang="ts">
-import type { ComponentProps } from 'vue-component-type-helpers'
-import { computed, onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { RovingFocusGroup } from 'reka-ui'
-
-import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@comfyorg/design-system/button/Button'
-import { useToast } from '@/components/ui/toast/toastStore'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import {
+  filterByQuery,
+  sortByText
+} from '@comfyorg/design-system/lib/table/tableUtils'
+import type { TableSortDirection } from '@comfyorg/design-system/lib/table/tableUtils'
 import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
 import Menu from '@comfyorg/design-system/menu/Menu'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
-import AppPagination from '@/components/common/AppPagination.vue'
 import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import Table from '@comfyorg/design-system/table/Table'
 import TableBody from '@comfyorg/design-system/table/TableBody'
@@ -118,18 +115,21 @@ import TableHead from '@comfyorg/design-system/table/TableHead'
 import TableHeader from '@comfyorg/design-system/table/TableHeader'
 import TableRow from '@comfyorg/design-system/table/TableRow'
 import TableSortHead from '@comfyorg/design-system/table/TableSortHead'
-import {
-  filterByQuery,
-  sortByText
-} from '@comfyorg/design-system/lib/table/tableUtils'
-import type { TableSortDirection } from '@comfyorg/design-system/lib/table/tableUtils'
-import { useEditKeybindingDialog } from '@/platform/keybindings/composables/useEditKeybindingDialog'
 import type { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
-import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { RovingFocusGroup } from 'reka-ui'
+import { computed, onMounted, ref, watch } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
+import { useI18n } from 'vue-i18n'
+
+import AppPagination from '@/components/common/AppPagination.vue'
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useEditKeybindingDialog } from '@/platform/keybindings/composables/useEditKeybindingDialog'
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 

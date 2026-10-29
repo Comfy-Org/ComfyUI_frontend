@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { useId } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { useId } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 
 const { state, rowName } = defineProps<{

@@ -1,29 +1,28 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { escapeRegExp } from 'es-toolkit'
-import { render, screen, waitFor, within } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import type {
-  DeploymentCompatibility,
-  WorkspaceDeploymentList
-} from '@/platform/workspace/api/workspaceApi'
-
-import enMessages from '@/locales/en/main.json'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import enMessages from '@/locales/en/main.json'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { takeLeavePromptSkip } from '@/platform/workflow/management/leavePrompt'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
-import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import type {
+  DeploymentCompatibility,
+  WorkspaceDeploymentList
+} from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'

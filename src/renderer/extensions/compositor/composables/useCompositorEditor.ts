@@ -1,5 +1,7 @@
 import { useI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import {
   getCompositorInputsFingerprint,
   hasCompositorLayers
@@ -10,8 +12,6 @@ import {
   layerEditorDialogProps
 } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
 import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 export function useCompositorEditor() {

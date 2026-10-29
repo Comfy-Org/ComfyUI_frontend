@@ -1,7 +1,3 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { test } from '@e2e/fixtures/agentInputOrderFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
@@ -14,6 +10,9 @@ import {
   threadId
 } from '@e2e/fixtures/data/agent/inputOrder'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.describe(
   'Agent follower input mapping after saved autogrow inputs',

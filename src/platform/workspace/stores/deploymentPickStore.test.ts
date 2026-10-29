@@ -2,23 +2,18 @@ import type {
   ReleaseUnsupportedPack,
   ReleaseUnsupportedPacks
 } from '@comfyorg/ingest-types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@comfyorg/telemetry/reportError'
-
-import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
-
-import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
-
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
-
+import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 import {
   readDeploymentHint,
   setDeploymentHint,
   setUnconfirmedCloudHint
 } from '@/platform/workspace/deploymentHint'
-
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { useDeploymentPickStore } from './deploymentPickStore'

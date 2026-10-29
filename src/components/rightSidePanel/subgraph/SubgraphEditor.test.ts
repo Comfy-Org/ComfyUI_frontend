@@ -1,24 +1,24 @@
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
+import type DraggableList from '@/components/common/DraggableList.vue'
+import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
-import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
-import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import SubgraphEditor from './SubgraphEditor.vue'
-import type { ComponentProps } from 'vue-component-type-helpers'
-import type DraggableList from '@/components/common/DraggableList.vue'
 
 type DraggableListProps = ComponentProps<typeof DraggableList>
 type PromotedRow =

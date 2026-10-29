@@ -1,13 +1,12 @@
+import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
 import type { Component } from 'vue'
 
-import type { ToastId } from '@/types/toastId'
-import type { ToastAction, ToastOptions } from '@/types/toastOptions'
-
-import type { WorkflowStore } from '@/platform/workflow/management/stores/workflowStoreTypes'
 import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
+import type { WorkflowStore } from '@/platform/workflow/management/stores/workflowStoreTypes'
 import type { ExtensionDialogService } from '@/services/dialogServiceTypes'
-import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
+import type { ToastId } from '@/types/toastId'
+import type { ToastAction, ToastOptions } from '@/types/toastOptions'
 
 export interface ExtensionProvenance {
   createdBy: 'comfy-agent'

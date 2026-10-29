@@ -145,13 +145,16 @@
 </template>
 
 <script setup lang="ts">
+import VerticalDivider from '@comfyorg/design-system/common/VerticalDivider'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
+import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { computed, ref } from 'vue'
 
 import ArrangeButton from '@/components/graph/selectionToolbox/ArrangeButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
 import ToolboxButton from '@/components/graph/selectionToolbox/ToolboxButton.vue'
-import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import { useFrameNodes } from '@/composables/graph/useFrameNodes'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
@@ -159,17 +162,13 @@ import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useRefreshableSelection } from '@/composables/useRefreshableSelection'
 import { st } from '@/i18n'
 import { areSelectedLinksHidden } from '@/lib/litegraph/src/canvas/linkSelection'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
-import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-
-import VerticalDivider from '@comfyorg/design-system/common/VerticalDivider'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()

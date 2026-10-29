@@ -1,14 +1,14 @@
+import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 
 import { useLitegraphSettings } from './useLitegraphSettings'

@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
 import TagRemoveButton from '@comfyorg/design-system/chip/TagRemoveButton'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import type { AttachmentValidationError } from '@/workbench/extensions/agent/types/composerAttachment'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
+import type { AttachmentValidationError } from '@/workbench/extensions/agent/types/composerAttachment'
+
 import AssetHoverPreview from './AssetHoverPreview.vue'
 import AssetThumbnail from './AssetThumbnail.vue'
 

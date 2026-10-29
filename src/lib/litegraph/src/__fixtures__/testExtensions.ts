@@ -1,11 +1,11 @@
-// oxlint-disable no-empty-pattern
-import { test as baseTest } from 'vitest'
-
-import { LGraph } from '@/lib/litegraph/src/LGraph'
 import type {
   ISerialisedGraph,
   SerialisableGraph
 } from '@comfyorg/graph-model/serialisation'
+// oxlint-disable no-empty-pattern
+import { test as baseTest } from 'vitest'
+
+import { LGraph } from '@/lib/litegraph/src/LGraph'
 
 import floatingBranch from './assets/floatingBranch.json' with { type: 'json' }
 import floatingLink from './assets/floatingLink.json' with { type: 'json' }

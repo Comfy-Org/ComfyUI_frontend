@@ -41,9 +41,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-
 import Button from '@comfyorg/design-system/button/Button'
+import { ref } from 'vue'
 
 defineProps<{
   modelValue: string

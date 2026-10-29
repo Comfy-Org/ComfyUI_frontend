@@ -1,14 +1,5 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Vector3 } from 'three'
-import { nextTick, reactive } from 'vue'
-
-import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
-import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
-import { keepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
-import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
+import type { Dictionary } from '@comfyorg/graph-model/interfaces'
+import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
 import type {
   CameraConfig,
   GizmoConfig,
@@ -17,13 +8,22 @@ import type {
   SceneConfig,
   StoredModelConfig
 } from '@comfyorg/viewport3d/load3d/interfaces'
-import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
-import type { Dictionary } from '@comfyorg/graph-model/interfaces'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { Vector3 } from 'three'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, reactive } from 'vue'
+
+import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import { keepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { Settings } from '@/platform/settings/types'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 
 vi.mock(import('@/scripts/api'), () => ({
   api: fromPartial({ apiURL: (path: string) => path })

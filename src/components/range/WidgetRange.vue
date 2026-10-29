@@ -19,21 +19,21 @@
 </template>
 
 <script setup lang="ts">
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type {
+  IWidgetRangeOptions,
+  RangeValue
+} from '@comfyorg/graph-model/widgets'
 import { computed, nextTick, watch } from 'vue'
 
+import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
 import {
   singleValueExtractor,
   useUpstreamValue
 } from '@/composables/useUpstreamValue'
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
-import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
-import type {
-  IWidgetRangeOptions,
-  RangeValue
-} from '@comfyorg/graph-model/widgets'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import RangeEditor from './RangeEditor.vue'

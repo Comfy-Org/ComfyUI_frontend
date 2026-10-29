@@ -1,20 +1,20 @@
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
-import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import type { resolveTemplateModelMetadata } from '@/platform/workflow/templates/utils/templateModelMetadata'
-import type { useTemplateFiltering } from '@/platform/workflow/templates/composables/useTemplateFiltering'
 import type { useLazyPagination } from '@/platform/workflow/templates/composables/useLazyPagination'
-import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
+import type { useTemplateFiltering } from '@/platform/workflow/templates/composables/useTemplateFiltering'
 import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
+import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
-import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
+import type { resolveTemplateModelMetadata } from '@/platform/workflow/templates/utils/templateModelMetadata'
 
 const fixtures = vi.hoisted(() => {
   const activeModel = {

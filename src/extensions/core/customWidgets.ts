@@ -1,20 +1,20 @@
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import { clamp } from 'es-toolkit'
 import { computed, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { ComfyExtension } from '@/types/comfy'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
-import type { ComfyExtension } from '@/types/comfy'
 
 function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
   applyFirstWidgetValueToGraph(this, extraLinks)

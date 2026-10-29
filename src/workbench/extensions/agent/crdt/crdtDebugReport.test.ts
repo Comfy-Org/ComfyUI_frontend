@@ -1,12 +1,11 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { api } from '@/scripts/api'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AssistantMessage,
@@ -32,9 +31,9 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
 }))
 
 import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
+import { collectCrdtDebugReport } from './crdtDebugReport'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { DevEvent } from './devPanelLog'
-import { collectCrdtDebugReport } from './crdtDebugReport'
 import { collectMediaUiDiagnostics } from './mediaUiDiagnostics'
 
 const ALL_SOURCES: ReportSources = {

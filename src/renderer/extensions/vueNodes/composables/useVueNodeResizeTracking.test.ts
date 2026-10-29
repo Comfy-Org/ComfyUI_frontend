@@ -1,15 +1,14 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { NodeLayout } from '@comfyorg/graph-model/layout'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
-import { render, screen } from '@testing-library/vue'
-
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeLayout } from '@comfyorg/graph-model/layout'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { ComfyApp } from '@/scripts/app'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 type ResizeEntryLike = Pick<

@@ -1,9 +1,7 @@
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import { clamp } from 'es-toolkit'
 import { onScopeDispose } from 'vue'
 import type { Ref } from 'vue'
-
-import { clamp } from 'es-toolkit'
-
-import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 
 export const MIN_CROP_SIZE = 16
 

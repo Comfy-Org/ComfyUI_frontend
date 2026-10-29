@@ -1,10 +1,10 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import type { WorkspaceDeploymentCpuServer } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import type { WorkspaceDeploymentCpuServer } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 

@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-
 import { AgentNonValueWidgetRig } from '@e2e/fixtures/agentNonValueWidgetRig'
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
+import { expect } from '@playwright/test'
+
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 /**
  * The sibling `agentProgressTextWidgetNotMinted` spec covers the ephemeral

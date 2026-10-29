@@ -1,21 +1,18 @@
-import { computed, ref } from 'vue'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { render, screen, waitFor } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
-
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import InviteMemberDialogContent from '@/platform/account/components/dialogs/InviteMemberDialogContent.vue'
-
-import { buildInviteLink } from '@/platform/workspace/utils/inviteLinks'
-
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { buildInviteLink } from '@/platform/workspace/utils/inviteLinks'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const mockMaxSeats = ref<number | null>(73)
 const mockOccupiedSeats = ref<number | null>(0)

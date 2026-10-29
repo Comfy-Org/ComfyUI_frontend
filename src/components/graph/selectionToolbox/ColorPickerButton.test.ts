@@ -1,22 +1,22 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { render, screen } from '@testing-library/vue'
+import type { CanvasEventDetail } from '@comfyorg/graph-model/events'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import type { Positionable } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphCanvas,
   LGraphGroup
 } from '@/lib/litegraph/src/litegraph'
-import type { CanvasEventDetail } from '@comfyorg/graph-model/events'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSelectionStore } from '@/core/selection/selectionStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import {
   createMockCanvasRenderingContext2D,

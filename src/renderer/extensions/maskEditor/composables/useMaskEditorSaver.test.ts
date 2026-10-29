@@ -1,17 +1,18 @@
-import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { markRaw } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { decodePng } from '@/utils/__fixtures__/decodePng'
+
 import { useMaskEditorSaver } from './useMaskEditorSaver'
 
 let mockDataStore: ReturnType<typeof useMaskEditorDataStore>

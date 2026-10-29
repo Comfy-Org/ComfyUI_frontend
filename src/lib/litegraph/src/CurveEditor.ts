@@ -1,10 +1,9 @@
 import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
-import { clamp } from 'es-toolkit/compat'
-
 import type {
   PointTuple as Point,
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
+import { clamp } from 'es-toolkit/compat'
 
 import { distance } from './measure'
 

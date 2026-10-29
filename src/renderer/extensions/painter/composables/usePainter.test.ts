@@ -1,5 +1,8 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { render } from '@testing-library/vue'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useElementSize } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, toRaw } from 'vue'
@@ -11,12 +14,9 @@ import {
   LGraph,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import { usePainter } from './usePainter'
 

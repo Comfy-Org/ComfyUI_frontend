@@ -1,3 +1,10 @@
+import type {
+  CompositeInput,
+  Compositor,
+  CompositorInit,
+  FBOHandle
+} from '@comfyorg/layer-editor/compositor'
+import type { ChannelData, RasterData } from '@comfyorg/layer-editor/node'
 import {
   afterAll,
   beforeAll,
@@ -13,13 +20,6 @@ import {
   extractLayerState,
   parseLayerState
 } from '@/renderer/extensions/compositor/composables/compositorLayerState'
-import type {
-  CompositeInput,
-  Compositor,
-  CompositorInit,
-  FBOHandle
-} from '@comfyorg/layer-editor/compositor'
-import type { ChannelData, RasterData } from '@comfyorg/layer-editor/node'
 
 import { reorderDropIndex } from './layerPanelDnd'
 import { useLayerEditorSession } from './useLayerEditorSession'

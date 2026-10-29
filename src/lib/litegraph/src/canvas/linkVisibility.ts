@@ -3,19 +3,19 @@ import type {
   LLink,
   Reroute
 } from '@comfyorg/graph-model/entityRegistry'
-import { st, t } from '@/i18n'
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 
-import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import { st, t } from '@/i18n'
 import {
   cancelLinkHideTransition,
   startLinkHideTransitions
 } from '@/lib/litegraph/src/canvas/linkHideTransition'
+import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 
 export interface LinkMutationHost {
   emitBeforeChange(): void

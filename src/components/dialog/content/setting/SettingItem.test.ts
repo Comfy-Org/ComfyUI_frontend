@@ -1,11 +1,10 @@
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { render } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
-import { defineComponent, h } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-import Badge from '@comfyorg/design-system/badge/Badge'
 
 import SettingItem from '@/platform/settings/components/SettingItem.vue'
 import type { SettingParams } from '@/platform/settings/types'

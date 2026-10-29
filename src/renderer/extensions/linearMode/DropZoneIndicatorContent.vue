@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import AudioPreviewPlayer from '@/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import AudioPreviewPlayer from '@/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue'
 
 const {
   mediaType,

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import SplitterGroup from '@comfyorg/design-system/splitter/SplitterGroup'
+import SplitterPanel from '@comfyorg/design-system/splitter/SplitterPanel'
+import SplitterResizeHandle from '@comfyorg/design-system/splitter/SplitterResizeHandle'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   breakpointsTailwind,
@@ -9,24 +12,13 @@ import {
 import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef } from 'vue'
 
-import AppBuilder from '@/components/builder/AppBuilder.vue'
 import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
+import AppBuilder from '@/components/builder/AppBuilder.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import SplitterGroup from '@comfyorg/design-system/splitter/SplitterGroup'
-import SplitterPanel from '@comfyorg/design-system/splitter/SplitterPanel'
-import SplitterResizeHandle from '@comfyorg/design-system/splitter/SplitterResizeHandle'
-import { usePanelSizing } from '@/composables/usePanelSizing'
-import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
-import { vCoachmark } from '@/platform/onboarding/vCoachmark'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
-import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
-import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
-import MobileDisplay from '@/renderer/extensions/linearMode/MobileDisplay.vue'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAppMode } from '@/composables/useAppMode'
+import { usePanelSizing } from '@/composables/usePanelSizing'
 import {
   BUILDER_MIN_SIZE,
   SIDEBAR_MIN_SIZE,
@@ -34,7 +26,15 @@ import {
   SIDE_PANEL_SIZE,
   SIDE_TOOLBAR_WIDTH
 } from '@/constants/splitterConstants'
+import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
+import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
+import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
+import MobileDisplay from '@/renderer/extensions/linearMode/MobileDisplay.vue'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 
 const settingStore = useSettingStore()

@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Agent turn on an unsaved tab, switched away mid-turn',

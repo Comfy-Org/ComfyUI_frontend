@@ -1,3 +1,5 @@
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
@@ -9,8 +11,6 @@ import {
 import { linkedWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 describe('Node Reactivity', () => {
   function createTestGraph() {

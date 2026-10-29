@@ -1,8 +1,8 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { slotId } from '@comfyorg/graph-model/slotId'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { slotId } from '@comfyorg/graph-model/slotId'
 import type { UUID } from '@/utils/uuid'
 
 import { syncSlotOffsets } from './syncSlotOffsets'

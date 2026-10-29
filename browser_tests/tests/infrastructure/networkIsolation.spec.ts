@@ -1,11 +1,10 @@
-import { expect } from '@playwright/test'
-
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { apiKeyAuthFixture } from '@e2e/fixtures/apiKeyAuthFixture'
 import { cloudAppFixture } from '@e2e/fixtures/cloudAppFixture'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { localAuthFixture } from '@e2e/fixtures/localAuthFixture'
 import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
 import { workspaceRailAuthFixture } from '@e2e/fixtures/workspaceRailAuthFixture'
+import { expect } from '@playwright/test'
 
 test.describe('Network isolation', { tag: '@smoke' }, () => {
   test.beforeEach(async ({ page }) => {

@@ -1,41 +1,42 @@
 import type { LGraph, LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
-import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
-import { setGroupBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
-import { toSelectableKey } from '@/core/selection/selectionState'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import type { GroupId } from '@comfyorg/graph-model/groupId'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
-import {
-  hexToRgb,
-  luminance,
-  readableTextColor
-} from '@comfyorg/shared-frontend-utils/colorUtil'
-
-import { canvasClass } from './canvas/canvasClassAccess'
-import { LGraphNode } from './LGraphNode'
-import { strokeShape } from './draw'
-import { createMutationView } from './infrastructure/createMutationView'
-import {
-  defineAbsorbingBuffer,
-  defineGuardedCollection
-} from './infrastructure/externalWriteGuards'
 import type {
   ColorOption,
   IColorable,
   IPinnable,
   Positionable
 } from '@comfyorg/graph-model/interfaces'
+import type { ISerialisedGroup } from '@comfyorg/graph-model/serialisation'
+import {
+  hexToRgb,
+  luminance,
+  readableTextColor
+} from '@comfyorg/shared-frontend-utils/colorUtil'
 import type {
   PointTuple as Point,
   Rect,
   SizeTuple as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
-import type { IContextMenuValue } from './types/contextMenu'
-import { LiteGraph } from './litegraphInstance'
+
+import { toSelectableKey } from '@/core/selection/selectionState'
+import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
+import { setGroupBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+
+import { canvasClass } from './canvas/canvasClassAccess'
+import { strokeShape } from './draw'
+import { createMutationView } from './infrastructure/createMutationView'
+import {
+  defineAbsorbingBuffer,
+  defineGuardedCollection
+} from './infrastructure/externalWriteGuards'
 import { Rectangle } from './infrastructure/Rectangle'
+import { LGraphNode } from './LGraphNode'
+import { LiteGraph } from './litegraphInstance'
 import {
   containsCentre,
   containsRect,
@@ -46,7 +47,7 @@ import {
   isPointInRect,
   snapPoint
 } from './measure'
-import type { ISerialisedGroup } from '@comfyorg/graph-model/serialisation'
+import type { IContextMenuValue } from './types/contextMenu'
 
 export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true

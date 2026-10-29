@@ -1,6 +1,6 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { computed } from 'vue'
 
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 

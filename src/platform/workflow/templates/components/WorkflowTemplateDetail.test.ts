@@ -1,7 +1,7 @@
-import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { defineComponent } from 'vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
+import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }

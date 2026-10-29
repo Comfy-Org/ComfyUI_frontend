@@ -9,7 +9,6 @@ import type {
   ActivePathPointer,
   OpenPathsPointer
 } from '@/platform/workflow/persistence/base/draftTypes'
-import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
 import {
   clearActivePath,
   readActivePath,
@@ -17,6 +16,7 @@ import {
   writeActivePath,
   writeOpenPaths
 } from '@/platform/workflow/persistence/base/storageIO'
+import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
 import { api } from '@/scripts/api'
 
 /**

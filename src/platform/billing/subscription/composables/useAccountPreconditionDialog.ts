@@ -1,8 +1,9 @@
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import type { AccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
+
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import type { AccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 
 interface AccountPreconditionContext {
   /** Node type that triggered the precondition, used as modal context. */

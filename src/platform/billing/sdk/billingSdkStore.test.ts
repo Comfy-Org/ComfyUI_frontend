@@ -1,23 +1,30 @@
+import type {
+  BillingOperationKind,
+  BillingOperationTelemetryEvent,
+  HostedBillingDestination
+} from '@comfyorg/account-core/billing'
+import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account-core/billing'
+import type { BillingSdk, BillingSdkOptions } from '@comfyorg/billing-core/sdk'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
-import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import {
   bindOperationToCheckoutJourney,
   clearCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/billing/utils/checkoutJourney'
-import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import { useBillingSdkStore } from './billingSdkStore'
 import {
@@ -29,13 +36,6 @@ import {
   settledOperation,
   settledTopup
 } from './billingSdkTestUtils'
-import type {
-  BillingOperationKind,
-  BillingOperationTelemetryEvent,
-  HostedBillingDestination
-} from '@comfyorg/account-core/billing'
-import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account-core/billing'
-import type { BillingSdk, BillingSdkOptions } from '@comfyorg/billing-core/sdk'
 
 const mockCreateBillingSdk = vi.hoisted(() =>
   vi.fn<(options: BillingSdkOptions) => BillingSdk>()

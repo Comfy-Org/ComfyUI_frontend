@@ -1,6 +1,3 @@
-import { expect } from '@playwright/test'
-
-import { NodeBadgeMode } from '@/types/nodeSource'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
@@ -10,6 +7,9 @@ import {
   graphItems,
   screenshotRegion
 } from '@e2e/fixtures/utils/screenshotRegion'
+import { expect } from '@playwright/test'
+
+import { NodeBadgeMode } from '@/types/nodeSource'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 

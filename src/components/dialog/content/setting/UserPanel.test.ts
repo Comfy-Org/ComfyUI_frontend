@@ -1,23 +1,22 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import type { WebSessionCommandResult } from '@comfyorg/account-core/webSession'
+import type { WebSessionIdentityState } from '@comfyorg/account-core/webSessionIdentity'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
-import type { WebSessionCommandResult } from '@comfyorg/account-core/webSession'
-import type { WebSessionIdentityState } from '@comfyorg/account-core/webSessionIdentity'
-
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
-import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 

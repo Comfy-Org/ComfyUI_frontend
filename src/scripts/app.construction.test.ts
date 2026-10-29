@@ -1,7 +1,7 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { api } from '@/scripts/api'
 import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
+import { api } from '@/scripts/api'
 import { ComfyApp } from '@/scripts/app'
 
 const bodyAfterImport = document.body.innerHTML

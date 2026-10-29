@@ -1,32 +1,5 @@
-import { union } from 'es-toolkit/compat'
-import { createEventHook, until, useAsyncState } from '@vueuse/core'
-import { defineStore } from 'pinia'
-import { computed, markRaw, ref, shallowRef, watch } from 'vue'
-import type { Raw } from 'vue'
-
-import { t } from '@/i18n'
-import type {
-  LGraph,
-  LGraphNode,
-  Subgraph
-} from '@/lib/litegraph/src/litegraph'
-import {
-  areWorkflowIdsEquivalent,
-  ensureWorkflowId,
-  getLegacyWorkflowId
-} from '@/platform/workflow/core/utils/workflowId'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
-// oxlint-disable-next-line comfy/no-restricted-paths
-import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
-import { api } from '@/scripts/api'
-import { useApp } from '@/scripts/appInstance'
-import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
-import { defaultGraph } from '@/scripts/defaultGraph'
-import { useDialogService } from '@/services/dialogService'
-import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   NodeExecutionId,
   NodeLocatorId
@@ -38,11 +11,39 @@ import {
   parseNodeLocatorId,
   tryNormalizeNodeExecutionId
 } from '@comfyorg/graph-model/nodeIdentification'
-import { parseNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { createEventHook, until, useAsyncState } from '@vueuse/core'
+import { union } from 'es-toolkit/compat'
+import { defineStore } from 'pinia'
+import { computed, markRaw, ref, shallowRef, watch } from 'vue'
+import type { Raw } from 'vue'
+
+import { t } from '@/i18n'
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  areWorkflowIdsEquivalent,
+  ensureWorkflowId,
+  getLegacyWorkflowId
+} from '@/platform/workflow/core/utils/workflowId'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
+// oxlint-disable-next-line comfy/no-restricted-paths
+import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
+import { api } from '@/scripts/api'
+import { useApp } from '@/scripts/appInstance'
+import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
+import { defaultGraph } from '@/scripts/defaultGraph'
+import { useDialogService } from '@/services/dialogService'
+import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
+
 import {
   ComfyWorkflow,
   registerWorkflowRuntime,

@@ -7,12 +7,25 @@ import type {
   SubgraphInput,
   SubgraphNode
 } from '@comfyorg/graph-model/entityRegistry'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type {
+  ISerialisedNode,
+  SerialisableLLink,
+  SubgraphIO
+} from '@comfyorg/graph-model/serialisation'
+import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
 import { isEqual } from 'es-toolkit'
 
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-
 import {
   captureInputLayout,
   inputLinkId,
@@ -20,25 +33,10 @@ import {
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
-import type { Positionable } from '@comfyorg/graph-model/interfaces'
-import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
-import { createUuidv4 } from '@/utils/uuid'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
-import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
-import type {
-  ISerialisedNode,
-  SerialisableLLink,
-  SubgraphIO
-} from '@comfyorg/graph-model/serialisation'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { SubgraphInputNode } from './SubgraphInputNode'
-
 import { SubgraphOutputNode } from './SubgraphOutputNode'
 
 interface FilteredItems {

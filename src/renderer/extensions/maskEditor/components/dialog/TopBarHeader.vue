@@ -149,15 +149,15 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { useCanvasTools } from '@comfyorg/mask-editor/useCanvasTools'
+import { useCanvasTransform } from '@comfyorg/mask-editor/useCanvasTransform'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import { useCanvasTools } from '@comfyorg/mask-editor/useCanvasTools'
-import { useCanvasTransform } from '@comfyorg/mask-editor/useCanvasTransform'
 import { useMaskEditorSaver } from '@/renderer/extensions/maskEditor/composables/useMaskEditorSaver'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 const { t } = useI18n()
 const store = useMaskEditorStore()

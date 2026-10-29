@@ -35,16 +35,15 @@
 </template>
 
 <script setup lang="ts">
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import type { Tools } from '@comfyorg/mask-editor/types'
+import { allTools } from '@comfyorg/mask-editor/types'
+import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import MaskEditorToolIcon from '@/renderer/extensions/maskEditor/components/MaskEditorToolIcon.vue'
-import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
-import type { Tools } from '@comfyorg/mask-editor/types'
-import { allTools } from '@comfyorg/mask-editor/types'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 const { toolManager } = defineProps<{
   toolManager: ReturnType<typeof useToolManager>

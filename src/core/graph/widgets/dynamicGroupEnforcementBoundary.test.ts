@@ -1,12 +1,12 @@
 import { MAX_OVERFLOW_WIDGETS, nodesMap } from '@comfyorg/comfy-multi-player'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useLitegraphService } from '@/services/litegraphService'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { followedDoc } from '@/workbench/extensions/agent/crdt/__fixtures__/followedDoc'
 import { LiveGraphApplier } from '@/workbench/extensions/agent/crdt/liveGraphApplier'
 

@@ -49,16 +49,15 @@
 </template>
 
 <script setup lang="ts">
-import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
+import Button from '@comfyorg/design-system/button/Button'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import { useEventListener } from '@vueuse/core'
 import type { Raw } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
-import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
-import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import type {
   ColorOption as CanvasColorOption,
   LiteGraphCanvasEvent,
@@ -71,6 +70,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { getItemsColorOption } from '@/utils/litegraphUtil'
 

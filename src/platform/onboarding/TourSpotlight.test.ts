@@ -1,15 +1,15 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
+import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { clearCoachmarks } from './coachmarkRegistry'
-import TourSpotlight from './TourSpotlight.vue'
 import type { SpotlightStep } from './onboardingTours'
+import TourSpotlight from './TourSpotlight.vue'
 
 const i18n = createI18n({
   legacy: false,

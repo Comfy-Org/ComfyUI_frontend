@@ -1,11 +1,11 @@
 import '@/types'
+import type { App } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { ComfyApp } from '@/scripts/app'
 import type { useWorkspaceStore } from '@/stores/workspaceStore'
-import type { App } from 'vue'
 
 /**
  * Helper type for accessing nodes by ID in browser tests.

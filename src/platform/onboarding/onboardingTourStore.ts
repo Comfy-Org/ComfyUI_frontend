@@ -1,15 +1,15 @@
-import { defineStore } from 'pinia'
-import { computed, readonly, shallowRef, watch } from 'vue'
-
-import { t, te } from '@/i18n'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   OnboardingTourNotStartedReason,
   OnboardingTourSkipReason,
   OnboardingTourStepStage
 } from '@comfyorg/telemetry/types'
+import { defineStore } from 'pinia'
+import { computed, readonly, shallowRef, watch } from 'vue'
+
 import { useToast } from '@/components/ui/toast/toastStore'
+import { t, te } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { targetMounted, waitForTarget } from './coachmarkRegistry'

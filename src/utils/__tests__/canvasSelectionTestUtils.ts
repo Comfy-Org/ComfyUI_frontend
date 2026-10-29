@@ -1,10 +1,11 @@
-import type { SelectableKey } from '@/core/selection/selectionState'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
+
+import type { SelectableKey } from '@/core/selection/selectionState'
+import { useSelectionStore } from '@/core/selection/selectionStore'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
-import { useSelectionStore } from '@/core/selection/selectionStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 /**
  * Overrides the derived `canvasStore.selectedItems` for tests whose items

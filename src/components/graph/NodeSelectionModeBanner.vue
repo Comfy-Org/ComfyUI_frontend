@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import CanvasBanner from '@comfyorg/design-system/common/CanvasBanner'
 import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
-import CanvasBanner from '@comfyorg/design-system/common/CanvasBanner'
-import Button from '@comfyorg/design-system/button/Button'
-import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { t } = useI18n()

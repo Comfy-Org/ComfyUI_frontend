@@ -1,5 +1,6 @@
-import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { reportError } from '@comfyorg/telemetry/reportError'
+
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { app } from '@/scripts/app'
 
 const reportedEntryPoints = new Set<string>()

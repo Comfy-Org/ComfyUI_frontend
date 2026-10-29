@@ -1,19 +1,19 @@
-import type { InjectionKey, MaybeRefOrGetter } from 'vue'
-import { computed, toValue } from 'vue'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
+import type { InjectionKey, MaybeRefOrGetter } from 'vue'
+import { computed, toValue } from 'vue'
 
-import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
 } from '@/types/widgetVisibility'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
-import { useSettingStore } from '@/platform/settings/settingStore'
 
 export const GetNodeParentGroupKey: InjectionKey<
   (node: LGraphNode) => LGraphGroup | null

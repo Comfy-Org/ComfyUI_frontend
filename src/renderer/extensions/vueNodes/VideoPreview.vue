@@ -125,15 +125,15 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
-import { useToast } from '@/components/ui/toast/toastStore'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { cn } from '@comfyorg/tailwind-utils'
 
 interface VideoPreviewProps {
   /** Array of video URLs to display */

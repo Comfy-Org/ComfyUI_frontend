@@ -1,5 +1,4 @@
 import type { Plan } from '@comfyorg/ingest-types'
-
 import { CREDITS_PER_USD } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 const MONTHS_PER_DURATION = {

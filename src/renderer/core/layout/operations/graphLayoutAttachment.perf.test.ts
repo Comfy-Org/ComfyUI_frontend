@@ -1,5 +1,5 @@
-import { effect, stop } from 'vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { effect, stop } from 'vue'
 
 import {
   LGraph,

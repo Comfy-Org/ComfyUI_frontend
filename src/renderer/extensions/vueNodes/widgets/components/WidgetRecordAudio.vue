@@ -82,20 +82,19 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useIntervalFn } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
-import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { app } from '@/scripts/app'
-import { isDOMWidget } from '@/scripts/domWidget'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { useAudioPlayback } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'
 import { useAudioWaveform } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioWaveform'
+import { app } from '@/scripts/app'
+import { isDOMWidget } from '@/scripts/domWidget'
 import { formatTime } from '@/utils/formatUtil'
 
 const { t } = useI18n()

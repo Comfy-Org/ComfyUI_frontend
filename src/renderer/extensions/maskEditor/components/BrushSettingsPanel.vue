@@ -172,12 +172,11 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { BrushShape } from '@comfyorg/mask-editor/types'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { BrushShape } from '@comfyorg/mask-editor/types'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import SliderControl from './controls/SliderControl.vue'
 

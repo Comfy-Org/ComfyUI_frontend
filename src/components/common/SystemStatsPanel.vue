@@ -59,6 +59,12 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import Tabs from '@comfyorg/design-system/tabs/Tabs'
+import TabsContent from '@comfyorg/design-system/tabs/TabsContent'
+import TabsList from '@comfyorg/design-system/tabs/TabsList'
+import TabsTrigger from '@comfyorg/design-system/tabs/TabsTrigger'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import DeviceInfo from '@/components/common/DeviceInfo.vue'
@@ -67,14 +73,8 @@ import {
   getColumnDisplayValue,
   systemStatsColumns
 } from '@/components/common/systemStatsColumns'
-import Button from '@comfyorg/design-system/button/Button'
-import Tabs from '@comfyorg/design-system/tabs/Tabs'
-import TabsContent from '@comfyorg/design-system/tabs/TabsContent'
-import TabsList from '@comfyorg/design-system/tabs/TabsList'
-import TabsTrigger from '@comfyorg/design-system/tabs/TabsTrigger'
 import { useCopySystemInfo } from '@/composables/useCopySystemInfo'
 import type { SystemStats } from '@/platform/remote/comfyui/types'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { stats } = defineProps<{
   stats: SystemStats

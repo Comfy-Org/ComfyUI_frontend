@@ -1,13 +1,13 @@
 import type { BillingOpStatusResponse } from '@comfyorg/ingest-types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useDocumentVisibility } from '@vueuse/core'
 import { computed, shallowRef, watch } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isCloud } from '@/platform/distribution/types'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { planCheckoutBannerFor } from '@/platform/billing/components/billingTab/planCheckoutBanner'
 import type { PlanCheckoutBanner } from '@/platform/billing/components/billingTab/planCheckoutBanner'
+import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 export function usePlanCheckoutBanner() {

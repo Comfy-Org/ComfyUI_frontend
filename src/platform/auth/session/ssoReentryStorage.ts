@@ -1,6 +1,5 @@
-import { z } from 'zod'
-
 import type { WebSession } from '@comfyorg/account-core/webSession'
+import { z } from 'zod'
 
 const HINT_KEY = 'Comfy.WebSession.SsoHint'
 const ATTEMPT_KEY = 'Comfy.WebSession.SsoReentryAt'

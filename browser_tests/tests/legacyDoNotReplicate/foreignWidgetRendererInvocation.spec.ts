@@ -1,10 +1,10 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 for (const vueNodesEnabled of [false, true] as const) {
   const renderer = vueNodesEnabled ? 'Vue' : 'classic'

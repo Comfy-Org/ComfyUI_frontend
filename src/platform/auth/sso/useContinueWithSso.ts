@@ -1,14 +1,13 @@
+import { ssoStartUrl } from '@comfyorg/account-core/sso'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { ssoStartUrl } from '@comfyorg/account-core/sso'
-
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
 import type { SsoRequiredContext } from '@/platform/auth/sso/ssoRequiredContext'
 import { toSsoReturnPath } from '@/platform/auth/sso/ssoReturnPath'
 import { trackSsoContinueClicked } from '@/platform/auth/sso/ssoTelemetry'
 import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
-import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
 
 /** Signs out of Firebase and leaves for the refusing organization's SSO. */
 export function useContinueWithSso(context: () => SsoRequiredContext) {

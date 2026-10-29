@@ -1,7 +1,6 @@
+import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { expect } from '@playwright/test'
 import type { WebSocketRoute } from '@playwright/test'
-
-import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 interface SubscribeAgentWorkflowInput {
   agentPanel: AgentPanel

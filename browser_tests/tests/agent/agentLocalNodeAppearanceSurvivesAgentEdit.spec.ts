@@ -1,15 +1,13 @@
-import { expect } from '@playwright/test'
-
 import { RenderShape } from '@comfyorg/graph-model/globalEnums'
-
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
-import { NodeAppearanceEditor } from '@e2e/tests/agent/NodeAppearanceEditor'
 import {
   APPEARANCE_PIN,
   addLoadImageNode,
   setNodeTitle
 } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { AgentRemoteApplyHarness } from '@e2e/fixtures/helpers/AgentRemoteApplyHarness'
+import { NodeAppearanceEditor } from '@e2e/tests/agent/NodeAppearanceEditor'
+import { expect } from '@playwright/test'
 
 const {
   nodeId: NODE_ID,

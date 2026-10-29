@@ -1,3 +1,4 @@
+import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { watch, watchEffect } from 'vue'
 
 import { clearLinkSelection } from '@/lib/litegraph/src/canvas/linkSelection'
@@ -6,7 +7,6 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

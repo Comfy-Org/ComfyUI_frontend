@@ -1,8 +1,7 @@
+import CoachmarkCard from '@comfyorg/design-system/card/CoachmarkCard'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { h } from 'vue'
-
-import CoachmarkCard from '@comfyorg/design-system/card/CoachmarkCard'
 
 describe('CoachmarkCard', () => {
   it('renders the title, message and subtitle', () => {

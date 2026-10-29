@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Mobile Baseline Snapshots',

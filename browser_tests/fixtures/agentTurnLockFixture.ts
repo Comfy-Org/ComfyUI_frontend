@@ -1,6 +1,3 @@
-import { expect, mergeTests } from '@playwright/test'
-import type { Locator, Page, WebSocketRoute } from '@playwright/test'
-
 import type {
   AgentAnswerAccepted,
   AgentCancelAccepted,
@@ -14,6 +11,14 @@ import {
   zAgentPendingAsk,
   zAgentPostMessageRequest
 } from '@comfyorg/ingest-types/zod'
+import { agentTest } from '@e2e/fixtures/agentPanelFixture'
+import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expect, mergeTests } from '@playwright/test'
+import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { escapeRegExp } from 'es-toolkit'
 import { z } from 'zod'
 
@@ -22,13 +27,6 @@ import type {
   AgentWsEvent,
   zTurnInProgressError
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import { agentTest } from '@e2e/fixtures/agentPanelFixture'
-import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { TestIds } from '@e2e/fixtures/selectors'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const zAnswerRequest = z.object({ selected: z.array(z.string()) })
 const zWireInteger = z.coerce.number().int().safe()

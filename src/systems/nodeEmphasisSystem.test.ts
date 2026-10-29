@@ -1,5 +1,5 @@
-import { effectScope } from 'vue'
 import { describe, expect, it, onTestFinished } from 'vitest'
+import { effectScope } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {

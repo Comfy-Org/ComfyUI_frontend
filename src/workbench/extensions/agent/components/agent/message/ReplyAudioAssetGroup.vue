@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
 import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useI18n } from 'vue-i18n'
 
 import type { ReplyAudioAsset } from '@/workbench/extensions/agent/utils/replyAssets'
+
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
 const { assets, assetNames, collapsible, expanded } = defineProps<{

@@ -1,13 +1,13 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { assert, describe, expect, it, vi } from 'vitest'
-
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
 import type {
   PointTuple as Point,
   ReadOnlyRect
 } from '@comfyorg/shared-frontend-utils/geometry'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { assert, describe, expect, it, vi } from 'vitest'
+
 import { LLink } from '@/lib/litegraph/src/LLink'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 import type { HiddenLinkBadge } from './linkBadges'

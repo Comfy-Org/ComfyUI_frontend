@@ -23,9 +23,10 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+
 import NodeHelpContent from '@/components/node/NodeHelpContent.vue'
 import SidebarTabCloseButton from '@/components/sidebar/tabs/SidebarTabCloseButton.vue'
-import Button from '@comfyorg/design-system/button/Button'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const { node } = defineProps<{ node: ComfyNodeDefImpl }>()

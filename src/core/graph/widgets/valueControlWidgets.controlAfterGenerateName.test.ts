@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec, IntInputSpec } from '@/schemas/nodeDefSchema'
-import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 import {
   addValueControlWidget,
   addValueControlWidgets
 } from '@/core/graph/widgets/valueControlWidgets'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { InputSpec, IntInputSpec } from '@/schemas/nodeDefSchema'
+import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 
 function intNode() {
   const graph = new LGraph()

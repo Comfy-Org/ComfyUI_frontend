@@ -1,12 +1,11 @@
-import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import {
   HOST_OAUTH_TOKEN,
   HOST_WORKSPACE_ID,
   PARTNER_NODE_TOKEN,
   hostSessionPartnerNodeTest as test
 } from '@e2e/fixtures/hostSessionPartnerNodeFixture'
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 async function queuedAuthToken(page: Page): Promise<string | undefined> {
   const promptRequest = page.waitForRequest(

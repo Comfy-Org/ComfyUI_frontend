@@ -1,15 +1,14 @@
+import type { BillingStatus } from '@comfyorg/billing-core'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
-
 import { createI18n } from 'vue-i18n'
 
-import TopbarSubscribeButton from '@/platform/billing/components/TopbarSubscribeButton.vue'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { BillingStatus } from '@comfyorg/billing-core'
+import TopbarSubscribeButton from '@/platform/billing/components/TopbarSubscribeButton.vue'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 
 import CloudRunButtonWrapper from './CloudRunButtonWrapper.vue'

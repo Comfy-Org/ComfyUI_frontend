@@ -1,16 +1,17 @@
 import { nodesMap } from '@comfyorg/comfy-multi-player'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
-import { applyRemoteDynamicGroupRowCount } from './dynamicGroupDiagnostics'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { followedDoc } from '@/workbench/extensions/agent/crdt/__fixtures__/followedDoc'
 import { LiveGraphApplier } from '@/workbench/extensions/agent/crdt/liveGraphApplier'
+
+import { applyRemoteDynamicGroupRowCount } from './dynamicGroupDiagnostics'
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 

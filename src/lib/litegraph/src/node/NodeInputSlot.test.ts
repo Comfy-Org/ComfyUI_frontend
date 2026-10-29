@@ -1,12 +1,12 @@
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { LinkId } from '@/lib/litegraph/src/LLink'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 /** `isConnected` is on the class, not the INodeInputSlot interface. */
 function inputSlot(node: LGraphNode, index: number): NodeInputSlot | null {
   const slot = node.inputs[index]

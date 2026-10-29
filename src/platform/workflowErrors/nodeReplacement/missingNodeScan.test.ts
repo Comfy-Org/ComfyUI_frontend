@@ -1,9 +1,9 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import '@/scripts/changeTracker'
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
@@ -23,17 +23,19 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
 
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+
+import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   collectAllNodes,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
-import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+
 import { rescanAndSurfaceMissingNodes } from './missingNodeScan'
-import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 function mockNode(
   id: number,

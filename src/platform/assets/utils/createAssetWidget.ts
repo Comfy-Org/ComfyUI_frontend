@@ -1,19 +1,19 @@
-import { fromZodError } from 'zod-validation-error'
-
-import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IWidgetAssetOptions
 } from '@comfyorg/graph-model/widgets'
+import { fromZodError } from 'zod-validation-error'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import {
   assetFilenameSchema,
   assetItemSchema
 } from '@/platform/assets/schemas/assetSchema'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 type WidgetWithNode = IBaseWidget & { node: LGraphNode }
 

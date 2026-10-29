@@ -1,10 +1,8 @@
-import type { Page } from '@playwright/test'
 import type {
   BillingCapabilities,
   BillingPlansResponse,
   Plan
 } from '@comfyorg/ingest-types'
-
 import {
   cloudAppExpect,
   cloudAppFixture as test
@@ -14,6 +12,7 @@ import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import type { Page } from '@playwright/test'
 
 const OWNER = workspace('personal', 'owner')
 

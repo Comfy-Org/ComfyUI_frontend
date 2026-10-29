@@ -3,7 +3,6 @@ import {
   LiteGraph,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-
 import { app } from '@/scripts/app'
 import { ComfyWidgets } from '@/scripts/widgets'
 import type { ComfyExtension } from '@/types/comfy'

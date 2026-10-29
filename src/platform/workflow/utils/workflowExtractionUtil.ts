@@ -4,8 +4,9 @@
  */
 
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { getJobApiPrompt, getJobWorkflow } from '@/services/jobOutputCache'

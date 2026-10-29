@@ -1,14 +1,14 @@
-import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
-import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { trackElementFlash } from '@e2e/fixtures/utils/flashDetector'
 import { assetPath } from '@e2e/fixtures/utils/paths'
-import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
+
+import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 
 async function checkTemplateFileExists(
   page: Page,

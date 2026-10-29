@@ -1,3 +1,9 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type {
+  Bounds,
+  Size2D as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
+import { useDocumentVisibility } from '@vueuse/core'
 /**
  * Generic Vue Element Tracking System
  *
@@ -17,19 +23,12 @@ import {
   watch
 } from 'vue'
 
-import { useDocumentVisibility } from '@vueuse/core'
-
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
-import type {
-  Bounds,
-  Size2D as Size
-} from '@comfyorg/shared-frontend-utils/geometry'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeId } from '@/renderer/core/layout/types'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { isSizeEqual } from '@/renderer/core/layout/utils/geometry'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import type { UUID } from '@/utils/uuid'

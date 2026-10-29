@@ -1,14 +1,14 @@
 import type { Point2D as Position } from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeAddSource } from '@comfyorg/telemetry/types'
 import { ref, shallowRef } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
-import type { NodeAddSource } from '@comfyorg/telemetry/types'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { matchesWidgetName } from '@/utils/widgetBinding'
 import type { WidgetValueBinding } from '@/utils/widgetBinding'
 

@@ -33,12 +33,11 @@
 </template>
 
 <script setup lang="ts">
+import VideoPlayOverlay from '@comfyorg/design-system/media/VideoPlayOverlay'
 import { computed, ref } from 'vue'
 
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
-
-import VideoPlayOverlay from '@comfyorg/design-system/media/VideoPlayOverlay'
 
 const { asset, showNativeControls = true } = defineProps<{
   asset: AssetMeta

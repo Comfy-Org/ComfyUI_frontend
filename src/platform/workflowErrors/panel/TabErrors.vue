@@ -41,13 +41,13 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
-import Button from '@comfyorg/design-system/button/Button'
-import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 
 import ErrorGroupList from './ErrorGroupList.vue'
 import { useErrorActions } from './useErrorActions'

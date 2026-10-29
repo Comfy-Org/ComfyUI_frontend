@@ -1,12 +1,12 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import userEvent from '@testing-library/user-event'
-import { createI18n } from 'vue-i18n'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useToast } from '@/components/ui/toast/toastStore'
-import { reportError } from '@comfyorg/telemetry/reportError'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 
 import ModelImportProgressDialog from './ModelImportProgressDialog.vue'

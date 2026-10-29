@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 

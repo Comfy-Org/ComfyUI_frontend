@@ -13,9 +13,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import Badge from '@comfyorg/design-system/badge/Badge'
+import { computed } from 'vue'
 
 export interface SearchFilter {
   text: string

@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
-
 import type { SkillPack } from '@/platform/skills/types'
+
 import SkillPackListItem from './SkillPackListItem.vue'
 
 const pack: SkillPack = {

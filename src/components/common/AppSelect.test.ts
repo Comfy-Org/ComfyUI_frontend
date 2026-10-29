@@ -1,10 +1,10 @@
-import { render, screen } from '@testing-library/vue'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import en from '@/locales/en/main.json'
 
 import AppMultiSelect from './AppMultiSelect.vue'

@@ -6,8 +6,8 @@ import {
   makeFetchTransport
 } from '@sentry/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { createApp } from 'vue'
 import { assert, beforeEach, expect, it, vi } from 'vitest'
+import { createApp } from 'vue'
 
 vi.mock(import('@sentry/vue'), { spy: true })
 

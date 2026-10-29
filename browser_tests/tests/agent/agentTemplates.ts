@@ -1,10 +1,8 @@
-import { expect } from '@playwright/test'
-import { z } from 'zod'
-
+import { zComfyNode } from '@comfyorg/graph-model/workflowSchema'
 import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { TestIds } from '@e2e/fixtures/selectors'
-
-import { zComfyNode } from '@comfyorg/graph-model/workflowSchema'
+import { expect } from '@playwright/test'
+import { z } from 'zod'
 
 const zTemplateRootNodes = z.object({
   nodes: z.array(zComfyNode.pick({ id: true, type: true })).min(1)

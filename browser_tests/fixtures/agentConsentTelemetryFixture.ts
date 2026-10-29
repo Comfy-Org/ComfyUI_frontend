@@ -1,11 +1,10 @@
-import { mergeTests } from '@playwright/test'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-
 import { agentConsentTest } from '@e2e/fixtures/agentConsentFixture'
 import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 import type { CapturedTelemetryEvent } from '@e2e/fixtures/hostTelemetryFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { mergeTests } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 /**
  * Reads the consent surface's telemetry from inside a real browser.

@@ -1,12 +1,10 @@
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { render, screen, waitFor } from '@testing-library/vue'
-
 import enMessages from '@/locales/en/main.json'
-
 import PlanCreditsPanelContent from '@/platform/account/components/dialogs/settings/PlanCreditsPanelContent.vue'
 
 const mockDistribution = vi.hoisted(() => ({ cloud: true }))

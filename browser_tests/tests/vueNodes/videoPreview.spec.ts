@@ -1,10 +1,10 @@
-import type { Locator } from '@playwright/test'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { VideoPreview } from '@e2e/fixtures/components/VideoPreview'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import type { Locator } from '@playwright/test'
 
 const file1 = 'workflow.mp4' as const
 const file2 = 'video-preview-wide.webm' as const

@@ -76,30 +76,30 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
+import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { useAsyncState } from '@vueuse/core'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
-import Button from '@comfyorg/design-system/button/Button'
-import Input from '@comfyorg/design-system/input/Input'
+import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import ComfyHubPublishNav from '@/platform/workflow/sharing/components/publish/ComfyHubPublishNav.vue'
 import ComfyHubPublishWizardContent from '@/platform/workflow/sharing/components/publish/ComfyHubPublishWizardContent.vue'
+import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import { useComfyHubPublishSubmission } from '@/platform/workflow/sharing/composables/useComfyHubPublishSubmission'
 import {
   cachePublishPrefill,
   getCachedPrefill,
   useComfyHubPublishWizard
 } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
-import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
-import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { appendJsonExt } from '@/utils/formatUtil'
-import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 
 const { onClose } = defineProps<{
   onClose: () => void

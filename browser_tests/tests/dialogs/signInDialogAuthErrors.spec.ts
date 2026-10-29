@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { localSignedOutFixture as test } from '@e2e/fixtures/localSignedOutFixture'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 /**
  * Firebase error codes beyond the generic `invalid-credential` case

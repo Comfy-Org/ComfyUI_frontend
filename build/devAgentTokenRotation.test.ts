@@ -5,9 +5,10 @@ import type { IncomingMessage, Server } from 'node:http'
 import { createServer, request } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+
 import { createServer as createViteServer } from 'vite'
 import type { ViteDevServer } from 'vite'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import { createDevAgentConfig } from './devAgentConfig.ts'
 

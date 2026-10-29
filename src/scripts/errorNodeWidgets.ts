@@ -1,7 +1,8 @@
-import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+
+import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
 import { useFloatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'

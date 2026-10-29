@@ -1,10 +1,10 @@
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import BoundingBoxesDialogHeader from './BoundingBoxesDialogHeader.vue'
-import Dialog from '@comfyorg/design-system/dialog/Dialog'
 
 const i18n = createI18n({
   legacy: false,

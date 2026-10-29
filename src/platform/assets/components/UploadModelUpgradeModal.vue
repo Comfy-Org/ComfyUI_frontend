@@ -12,9 +12,9 @@
 </template>
 
 <script setup lang="ts">
-import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import UploadModelUpgradeModalBody from '@/platform/assets/components/UploadModelUpgradeModalBody.vue'
 import UploadModelUpgradeModalFooter from '@/platform/assets/components/UploadModelUpgradeModalFooter.vue'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()

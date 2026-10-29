@@ -1,20 +1,3 @@
-import { createEventHook, until } from '@vueuse/core'
-import type { User } from 'firebase/auth'
-import { defineStore } from 'pinia'
-import { computed, onScopeDispose, shallowRef, watch } from 'vue'
-
-import type {
-  WebSessionAccountChange,
-  WebSessionIdentity,
-  WebSessionIdentityState,
-  WebSessionSharedMessage
-} from '@comfyorg/account-core/webSessionIdentity'
-import type {
-  WebSession,
-  WebSessionCommandResult,
-  WebSessionErrorCode,
-  WebSessionOptions
-} from '@comfyorg/account-core/webSession'
 import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import type {
@@ -25,28 +8,40 @@ import {
   createSessionTokenMint,
   SessionTokenError
 } from '@comfyorg/account-core/sessionTokenMint'
-import {
-  readWebSession,
-  revokeAllWebSessions
-} from '@comfyorg/account-core/webSession'
-import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import { webSessionTelemetryHooks } from '@comfyorg/account-core/telemetry'
 import {
   createWebCrossTabRefreshPort,
   createWebVisibilityPort
 } from '@comfyorg/account-core/web'
+import type {
+  WebSession,
+  WebSessionCommandResult,
+  WebSessionErrorCode,
+  WebSessionOptions
+} from '@comfyorg/account-core/webSession'
+import {
+  readWebSession,
+  revokeAllWebSessions
+} from '@comfyorg/account-core/webSession'
+import type {
+  WebSessionAccountChange,
+  WebSessionIdentity,
+  WebSessionIdentityState,
+  WebSessionSharedMessage
+} from '@comfyorg/account-core/webSessionIdentity'
+import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { createEventHook, until } from '@vueuse/core'
+import type { User } from 'firebase/auth'
+import { defineStore } from 'pinia'
+import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
-import { isCloud } from '@/platform/distribution/types'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
-import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
-import {
-  endSsoFlow,
-  trackSsoSignInCompleted
-} from '@/platform/auth/sso/ssoTelemetry'
-import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import { getDesktopInstallId } from '@/platform/auth/session/desktopInstallId'
 import {
   clearInteractiveSignIn,
@@ -64,9 +59,13 @@ import {
   provideWebSessionRequests,
   WebSessionTokenError
 } from '@/platform/auth/session/webSessionFetch'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useToast } from '@/components/ui/toast/toastStore'
+import { webSessionUser } from '@/platform/auth/session/webSessionUser'
+import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import {
+  endSsoFlow,
+  trackSsoSignInCompleted
+} from '@/platform/auth/sso/ssoTelemetry'
+import { isCloud } from '@/platform/distribution/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'

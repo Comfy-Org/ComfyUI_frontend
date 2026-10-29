@@ -1,16 +1,15 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { computed, defineComponent } from 'vue'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { computed, defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-import LinearPreview from './LinearPreview.vue'
 import type { OutputSelection } from './linearModeTypes'
+import LinearPreview from './LinearPreview.vue'
 
 const outputHistoryState = vi.hoisted(() => ({
   isWorkflowActive: false

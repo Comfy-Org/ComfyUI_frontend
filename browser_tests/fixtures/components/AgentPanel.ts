@@ -1,10 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
-import { escapeRegExp } from 'es-toolkit'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import frMessages from '@/locales/fr/main.json' with { type: 'json' }
-
 import type { AgentAdmissionDenialMock } from '@e2e/fixtures/data/agent/agentAdmissionDenials'
 import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
 import type { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
@@ -12,6 +5,12 @@ import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
+import { escapeRegExp } from 'es-toolkit'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 type AgentAttachmentOutcome =
   | 'attached'

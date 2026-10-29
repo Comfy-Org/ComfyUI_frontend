@@ -1,12 +1,11 @@
-import { cloneDeep, keyBy, omit } from 'es-toolkit/compat'
-
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   ComfyLinkObject,
   ComfyNode,
   Reroute,
   WorkflowJSON04
 } from '@comfyorg/graph-model/workflowSchema'
-import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { cloneDeep, keyBy, omit } from 'es-toolkit/compat'
 
 type RerouteNode = ComfyNode & {
   type: 'Reroute'

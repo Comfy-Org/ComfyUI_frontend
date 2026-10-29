@@ -1,7 +1,12 @@
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type {
+  ClipboardItems,
+  ExportedSubgraph,
+  ISerialisedNode
+} from '@comfyorg/graph-model/serialisation'
 import {
   afterEach,
   beforeEach,
@@ -16,9 +21,9 @@ import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxy
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import {
-  createTestRootGraph,
-  enableSubgraphNodeCreation
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import {
   LGraph,
   LGraphCanvas,
@@ -27,19 +32,14 @@ import {
   SubgraphNode,
   createUuidv4
 } from '@/lib/litegraph/src/litegraph'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type {
-  ClipboardItems,
-  ExportedSubgraph,
-  ISerialisedNode
-} from '@comfyorg/graph-model/serialisation'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { useRerouteStore } from '@/stores/rerouteStore'
+import {
+  createTestRootGraph,
+  enableSubgraphNodeCreation
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useRerouteStore } from '@/stores/rerouteStore'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/services/litegraphService'))

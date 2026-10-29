@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 const { label, visible, nodeReferenceDisabledReason } = defineProps<{
   label: string
   visible: boolean

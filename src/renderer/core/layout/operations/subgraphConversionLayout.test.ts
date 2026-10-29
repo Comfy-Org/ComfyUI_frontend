@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import type {
   LGraph,
   Positionable,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import {
   createTestRootGraph,
   enableSubgraphNodeCreation,

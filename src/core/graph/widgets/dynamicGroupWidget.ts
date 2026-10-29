@@ -1,23 +1,24 @@
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+
+import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { t } from '@/i18n'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { VueOnlyWidget } from '@/lib/litegraph/src/widgets/VueOnlyWidget'
 import {
   captureInputLayout,
   inputLink,
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import {
   getWidgetIds,
   resolveNodeRootGraphId
 } from '@/lib/litegraph/src/utils/widget'
+import { VueOnlyWidget } from '@/lib/litegraph/src/widgets/VueOnlyWidget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { zDynamicGroupInputSpec } from '@/schemas/nodeDefSchema'
-import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { deriveWidgetSurfaces } from '@/types/widgetVisibility'

@@ -1,15 +1,13 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
-
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   drawStroke,
   hasCanvasContent,
   triggerSerialization
 } from '@e2e/fixtures/utils/painter'
-import type { TestGraphAccess } from '@e2e/types/globals'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import type { TestGraphAccess } from '@e2e/types/globals'
+import { expect } from '@playwright/test'
 
 const HIDDEN_PAINTER_WIDGET_NAMES = ['width', 'height', 'bg_color'] as const
 const HIDDEN_PAINTER_NUMBER_WIDGET_NAMES = ['width', 'height'] as const

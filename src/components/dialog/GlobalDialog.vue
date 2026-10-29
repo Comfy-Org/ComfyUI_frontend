@@ -103,8 +103,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
 import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
 import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
@@ -114,6 +112,8 @@ import DialogMaximize from '@comfyorg/design-system/dialog/DialogMaximize'
 import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
 import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'

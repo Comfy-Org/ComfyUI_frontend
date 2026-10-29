@@ -1,17 +1,19 @@
 <script setup lang="ts">
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, shallowRef, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
+import { searchWidgets } from '@/components/rightSidePanel/shared'
+import type { NodeWidgetsList } from '@/components/rightSidePanel/shared'
 import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import {
   isWidgetPromotedOnSubgraphNode,
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import {
@@ -19,8 +21,6 @@ import {
   isWidgetVisibleOnSurface
 } from '@/types/widgetVisibility'
 
-import { searchWidgets } from '@/components/rightSidePanel/shared'
-import type { NodeWidgetsList } from '@/components/rightSidePanel/shared'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 

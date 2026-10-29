@@ -1,6 +1,6 @@
+import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 import { describe, expect, it } from 'vitest'
 
-import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 import { resolveTemplateModelAvailability } from './templateModelAvailability'
 
 function model(name: string, directory: string): ModelFile {

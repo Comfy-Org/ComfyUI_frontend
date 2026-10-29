@@ -2,6 +2,7 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@comfyorg/graph-model/workflowSchema'
+
 import { ASCII, ComfyMetadataTags } from '@/types/metadataTypes'
 import type {
   ComfyMetadata,

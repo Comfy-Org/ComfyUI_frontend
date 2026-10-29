@@ -1,12 +1,13 @@
-import { getActivePinia } from 'pinia'
 import { render, screen, fireEvent } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
+
 import { createMockWidget } from './widgetTestUtils'
 
 const i18n = createI18n({

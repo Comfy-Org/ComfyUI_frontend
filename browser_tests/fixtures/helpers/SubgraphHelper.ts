@@ -1,15 +1,6 @@
-import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
-import { expect } from '@playwright/test'
-import type { ConsoleMessage, Locator, Page } from '@playwright/test'
-
-import type {
-  CanvasPointerEvent,
-  Subgraph
-} from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
-
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -18,6 +9,14 @@ import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { getAllHostPromotedWidgets } from '@e2e/fixtures/utils/promotedWidgets'
 import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
+import { expect } from '@playwright/test'
+import type { ConsoleMessage, Locator, Page } from '@playwright/test'
+
+import type {
+  CanvasPointerEvent,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 interface SubgraphDefinitionRow {
   name: string

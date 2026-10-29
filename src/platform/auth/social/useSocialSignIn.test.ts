@@ -1,12 +1,11 @@
+import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { UserCredential } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
-import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
-
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
-import { reportError } from '@comfyorg/telemetry/reportError'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 

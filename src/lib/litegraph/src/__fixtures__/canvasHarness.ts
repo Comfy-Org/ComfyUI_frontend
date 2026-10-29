@@ -1,11 +1,12 @@
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
+
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphCanvas,
   LGraphGroup,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 export type Modifiers = Partial<

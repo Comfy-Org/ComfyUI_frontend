@@ -7,11 +7,10 @@
 </template>
 
 <script setup lang="ts">
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { Tools } from '@comfyorg/mask-editor/types'
 import { computed } from 'vue'
 import type { Component } from 'vue'
-
-import { Tools } from '@comfyorg/mask-editor/types'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 import BrushSettingsPanel from './BrushSettingsPanel.vue'
 import ColorSelectSettingsPanel from './ColorSelectSettingsPanel.vue'

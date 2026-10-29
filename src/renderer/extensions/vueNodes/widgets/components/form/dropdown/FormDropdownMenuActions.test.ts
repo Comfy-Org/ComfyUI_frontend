@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import {
   fireEvent,
   render,
@@ -5,7 +6,6 @@ import {
   waitFor,
   within
 } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'

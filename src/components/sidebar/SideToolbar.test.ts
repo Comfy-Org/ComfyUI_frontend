@@ -1,13 +1,12 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@comfyorg/telemetry'
-
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useUserStore } from '@/stores/userStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'

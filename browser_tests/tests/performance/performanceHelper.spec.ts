@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { PerformanceHelper } from '@e2e/fixtures/helpers/PerformanceHelper'
+import { expect } from '@playwright/test'
 
 test.describe('PerformanceHelper', { tag: '@perf' }, () => {
   test('captures an immediate blocking workload in frame timing', async ({

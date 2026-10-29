@@ -1,15 +1,15 @@
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
   getMinimapDecorations,
   registerMinimapDecorationLayer
 } from '@/platform/canvas/minimapDecorationRegistry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import {
-  toOwningGraphId,
-  toRootGraphId
-} from '@comfyorg/graph-model/graphScopeId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const scopeA = {
   rootGraphId: toRootGraphId('workflow-a'),

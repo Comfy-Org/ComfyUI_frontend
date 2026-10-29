@@ -1,7 +1,9 @@
+import type * as Entities from '@comfyorg/graph-model/entityRegistry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeBindable } from '@comfyorg/graph-model/widgets'
 import { expectTypeOf, it } from 'vitest'
 
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-
+import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { BaseLGraph } from '@/lib/litegraph/src/LGraph'
 import type {
   ContextMenu,
@@ -11,10 +13,8 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import type { GraphOrSubgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import type * as Entities from '@comfyorg/graph-model/entityRegistry'
+
 import type { LGraphNodeConstructor as NodeConstructor } from './nodeConstructor'
-import type { NodeBindable } from '@comfyorg/graph-model/widgets'
 
 it('preserves concrete graph, node, constructor, and generic menu contracts', () => {
   expectTypeOf<Entities.LGraph>().toEqualTypeOf<LGraph>()

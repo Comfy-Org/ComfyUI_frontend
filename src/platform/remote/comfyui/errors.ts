@@ -1,6 +1,5 @@
-import { isPlainObject } from 'es-toolkit'
-
 import type { ErrorResponse } from '@comfyorg/ingest-types'
+import { isPlainObject } from 'es-toolkit'
 
 /** Code reported when an error payload carries no machine-readable code. */
 export const UNKNOWN_ERROR_CODE = 'UNKNOWN_ERROR'

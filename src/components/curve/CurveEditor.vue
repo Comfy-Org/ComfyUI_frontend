@@ -84,14 +84,12 @@
 </template>
 
 <script setup lang="ts">
+import type { CurveInterpolation } from '@comfyorg/graph-model/curve'
+import type { PointTuple as CurvePoint } from '@comfyorg/shared-frontend-utils/geometry'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, toRef, useTemplateRef } from 'vue'
 
 import { useCurveEditor } from '@/composables/useCurveEditor'
-import { cn } from '@comfyorg/tailwind-utils'
-
-import type { CurveInterpolation } from '@comfyorg/graph-model/curve'
-import type { PointTuple as CurvePoint } from '@comfyorg/shared-frontend-utils/geometry'
-
 import { histogramToPath } from '@/utils/histogramUtil'
 
 const {

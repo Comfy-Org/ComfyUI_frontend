@@ -1,7 +1,3 @@
-import type { Locator, Page } from '@playwright/test'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-
 import {
   cloudAppExpect as expect,
   cloudAppFixture,
@@ -9,6 +5,9 @@ import {
 } from '@e2e/fixtures/cloudAppFixture'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import type { WorkspaceStore } from '@e2e/types/globals'
+import type { Locator, Page } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 const BOOT_FEATURES = {} satisfies RemoteConfig

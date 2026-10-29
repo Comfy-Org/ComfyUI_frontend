@@ -2,19 +2,19 @@ import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'
-import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
-import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
-import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
   createMockLGraphNode,
   createMockPositionable
 } from '@/utils/__tests__/litegraphTestUtils'
+import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
+import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(),

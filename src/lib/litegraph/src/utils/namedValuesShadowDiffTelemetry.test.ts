@@ -1,8 +1,9 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
-import { useTelemetry } from '@comfyorg/telemetry'
+
 import type { NamedValuesShadowDiffResult } from './namedValuesShadowDiff'
 import {
   beginNamedValuesShadowDiffLoad,

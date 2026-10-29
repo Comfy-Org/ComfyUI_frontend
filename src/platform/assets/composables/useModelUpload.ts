@@ -3,12 +3,12 @@ import { computed } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import UploadModelDialog from '@/platform/assets/components/UploadModelDialog.vue'
 import UploadModelDialogHeader from '@/platform/assets/components/UploadModelDialogHeader.vue'
+import UploadModelUpgradeModal from '@/platform/assets/components/UploadModelUpgradeModal.vue'
+import UploadModelUpgradeModalHeader from '@/platform/assets/components/UploadModelUpgradeModalHeader.vue'
 import type {
   UploadModelDialogContext,
   UploadModelSuccess
 } from '@/platform/assets/composables/useUploadModelWizard'
-import UploadModelUpgradeModal from '@/platform/assets/components/UploadModelUpgradeModal.vue'
-import UploadModelUpgradeModalHeader from '@/platform/assets/components/UploadModelUpgradeModalHeader.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
 type UploadModelContextResolver = () => UploadModelDialogContext | undefined

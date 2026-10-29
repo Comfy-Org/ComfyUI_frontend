@@ -10,12 +10,12 @@
 </template>
 
 <script setup lang="ts">
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 
 import BoundingBoxesEditor from '@/components/boundingBoxes/BoundingBoxesEditor.vue'
 import { locateWidgetNode } from '@/composables/widgetHistoryScope'
-import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const { nodeId, widget, close } = defineProps<{

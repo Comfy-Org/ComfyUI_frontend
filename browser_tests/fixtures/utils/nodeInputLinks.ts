@@ -1,5 +1,4 @@
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 /** A connected input slot, paired with the node its link originates from. */

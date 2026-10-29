@@ -1,8 +1,8 @@
+import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type {
   ExecutionContext,
   WorkflowExecutionContext
 } from '@comfyorg/telemetry/types'
-import type { AppMode } from '@comfyorg/graph-model/appMode'
 
 interface WorkflowExecutionContextOptions {
   executableNodeCount: number

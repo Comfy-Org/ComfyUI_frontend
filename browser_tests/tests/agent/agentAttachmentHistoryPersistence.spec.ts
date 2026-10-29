@@ -1,9 +1,4 @@
-import { expect } from '@playwright/test'
-
 import type { AgentMessage } from '@comfyorg/ingest-types'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
@@ -11,9 +6,12 @@ import {
   expectAssets
 } from '@e2e/fixtures/utils/agentAttachmentHelpers'
 import type { ExpectedAssetPreview } from '@e2e/fixtures/utils/agentAttachmentHelpers'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
-import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 // PM-1148 / PM-1409 / PM-717: an attached asset preview on a USER message
 // used to disappear after a browser refresh, while the same preview inside

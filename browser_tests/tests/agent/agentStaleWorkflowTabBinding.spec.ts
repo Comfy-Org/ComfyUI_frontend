@@ -1,9 +1,18 @@
-import { expect } from '@playwright/test'
-
 import type {
   AgentMessage,
   AgentThreadListResponse
 } from '@comfyorg/ingest-types'
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import {
+  agentTest as test,
+  bootAgentApp
+} from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
@@ -12,17 +21,6 @@ import type {
   AgentTurnAccepted,
   CloudWorkflowEntry
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import {
-  agentTest as test,
-  bootAgentApp
-} from '@e2e/fixtures/agentPanelFixture'
-import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const BINDING_KEY = StorageKeys.agentWorkflowTabBindings('personal')
 const THREAD_KEY = StorageKeys.agentThread('personal')

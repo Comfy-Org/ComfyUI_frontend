@@ -1,11 +1,10 @@
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 import { expect } from '@playwright/test'
 import type { Route } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { Tooltip } from '@e2e/fixtures/components/Tooltip'
-import { assetPath } from '@e2e/fixtures/utils/paths'
-import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
   test('closing the panel removes a pending upload and preserves a sendable draft', async ({

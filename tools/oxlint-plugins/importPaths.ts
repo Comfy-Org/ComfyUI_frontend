@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
+
 import type { RuleTester } from 'oxlint/plugins-dev'
 
 type Rule = Parameters<RuleTester['run']>[1]

@@ -1,9 +1,9 @@
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import { uniqWith } from 'es-toolkit'
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OwnershipFilterOption } from '@/platform/assets/types/filterTypes'
 import { getAssetBaseModels } from '@/platform/assets/utils/assetMetadataUtils'

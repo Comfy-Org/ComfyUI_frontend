@@ -4,7 +4,6 @@ import {
   PACK_NAME_PATTERN,
   codePointLength
 } from '@/platform/skills/types'
-
 import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 import type {
   PromptSnapshot,

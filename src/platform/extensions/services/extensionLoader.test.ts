@@ -1,7 +1,7 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 import { loadExtensions } from './extensionLoader'

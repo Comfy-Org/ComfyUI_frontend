@@ -1,8 +1,8 @@
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TWidgetValue } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock(import('@comfyorg/telemetry'))

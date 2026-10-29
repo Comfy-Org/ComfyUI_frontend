@@ -10,10 +10,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import Button from '@comfyorg/design-system/button/Button'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { computed } from 'vue'
 
 const props = defineProps<{
   errorMessage: string

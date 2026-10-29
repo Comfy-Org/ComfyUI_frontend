@@ -1,6 +1,5 @@
-import type { ErrorEvent, EventHint } from '@sentry/vue'
-
 import { isThirdPartyErrorNoise } from '@comfyorg/shared-frontend-utils/telemetry'
+import type { ErrorEvent, EventHint } from '@sentry/vue'
 
 import { isAbortError } from '@/utils/typeGuardUtil'
 

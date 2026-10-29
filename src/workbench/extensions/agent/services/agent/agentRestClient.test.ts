@@ -2,19 +2,18 @@ import type {
   AgentThreadListResponse,
   PaginationInfo
 } from '@comfyorg/ingest-types'
+import { markErrorReported, reportError } from '@comfyorg/telemetry/reportError'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { markErrorReported, reportError } from '@comfyorg/telemetry/reportError'
-import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
-
-import { withAgentAuth } from './agentAuth'
-
+import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import type {
   AgentThreadSummary,
   CloudWorkflowEntry
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+
+import { withAgentAuth } from './agentAuth'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('./agentAuth'))

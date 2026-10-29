@@ -1,14 +1,14 @@
+import type {
+  ReadOnlyRect,
+  Rect,
+  Point2D as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { useElementBounding, useEventListener, useRafFn } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import type {
-  ReadOnlyRect,
-  Rect,
-  Point2D as Point
-} from '@comfyorg/shared-frontend-utils/geometry'
 import { getSelectedLinksAnchor } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

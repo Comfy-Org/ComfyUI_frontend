@@ -75,21 +75,22 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import { computed, onMounted, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
-import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
-import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelPreview from '@/components/sidebar/tabs/modelLibrary/ModelPreview.vue'
-import Button from '@comfyorg/design-system/button/Button'
+import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import { isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
 import {
@@ -100,7 +101,6 @@ import {
 } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
-import { isDesktop } from '@/platform/distribution/types'
 import { buildTree } from '@/utils/treeUtil'
 
 const modelStore = useModelStore()

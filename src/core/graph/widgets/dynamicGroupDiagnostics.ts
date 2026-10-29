@@ -1,8 +1,9 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { reportError } from '@comfyorg/telemetry/reportError'
+
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { isCloud } from '@/platform/distribution/types'
 import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnabled'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
 type RowOperation = 'add_row' | 'remove_row' | 'remote_apply'

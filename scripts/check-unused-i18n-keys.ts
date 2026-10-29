@@ -1,7 +1,9 @@
 #!/usr/bin/env tsx
 import { execSync } from 'child_process'
 import * as fs from 'fs'
+
 import { globSync } from 'glob'
+
 import type { LocaleData } from './i18n-types'
 import { isNestedLocaleData } from './i18n-types'
 

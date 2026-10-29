@@ -1,13 +1,13 @@
-import { DownloadStatus } from '@comfyorg/comfyui-electron-types'
 import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
-import { computed } from 'vue'
+import { DownloadStatus } from '@comfyorg/comfyui-electron-types'
 import { describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
+import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 import type {
   ModelDownloadDispatchOutcome,
   ModelWithUrl
 } from '@/platform/workflowErrors/missingModel/missingModelDownload'
-import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 import type { ElectronDownload } from '@/stores/electronDownloadStore'
 
 type FolderPaths = Record<string, string[]>

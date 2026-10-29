@@ -1,16 +1,15 @@
-import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
-import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
+import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import type { Ref } from 'vue'
-
 import WorkspaceMenuButton from '@/platform/account/components/dialogs/settings/WorkspaceMenuButton.vue'
+import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 vi.mock<unknown>(
   import('@/platform/billing/composables/useBillingContext'),

@@ -1,8 +1,8 @@
-import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCreateWorkspaceUrlLoader } from '@/platform/account/composables/useCreateWorkspaceUrlLoader'
+import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 
 const preservedQueryMocks = vi.hoisted(() => ({
   clearPreservedQuery: vi.fn(),

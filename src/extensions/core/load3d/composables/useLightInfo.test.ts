@@ -1,3 +1,9 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { LightInfoViewport } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
+import type { LightInfoViewportOptions } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
+import { createDefaultLight } from '@comfyorg/viewport3d/lightInfo/types'
+import type { LightInfoEntry } from '@comfyorg/viewport3d/lightInfo/types'
 import { fromAny } from '@total-typescript/shoehorn'
 import {
   assert,
@@ -10,14 +16,8 @@ import {
 } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { LightInfoViewport } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
-import type { LightInfoViewportOptions } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
-import { createDefaultLight } from '@comfyorg/viewport3d/lightInfo/types'
-import type { LightInfoEntry } from '@comfyorg/viewport3d/lightInfo/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import { useLightInfo } from './useLightInfo'

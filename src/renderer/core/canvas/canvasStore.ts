@@ -1,13 +1,15 @@
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useAppMode } from '@/composables/useAppMode'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
-
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import { useAppMode } from '@/composables/useAppMode'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import type {
   LGraph,
   LGraphCanvas,
@@ -16,11 +18,8 @@ import type {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { resolveSelectable } from '@/renderer/core/canvas/litegraph/selectionAdapter'
-import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { createPositionBounds } from '@/utils/positionBounds'
 

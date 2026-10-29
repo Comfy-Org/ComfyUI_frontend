@@ -3,8 +3,8 @@ import type { WatchHandle } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
-import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { useExtensionService } from './extensionService'

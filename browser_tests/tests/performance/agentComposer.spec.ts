@@ -1,11 +1,10 @@
-import { expect } from '@playwright/test'
-
-import { PerformanceHelper } from '@e2e/fixtures/helpers/PerformanceHelper'
 import { restoredTargetlessAgentThreadTest as test } from '@e2e/fixtures/agentPanelFixture'
+import { PerformanceHelper } from '@e2e/fixtures/helpers/PerformanceHelper'
 import {
   logMeasurement,
   recordMeasurement
 } from '@e2e/fixtures/utils/perfReporter'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Agent composer performance',

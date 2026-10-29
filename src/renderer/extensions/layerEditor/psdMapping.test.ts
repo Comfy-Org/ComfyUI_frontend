@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest'
-
 import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
 import type { BlendFn } from '@comfyorg/layer-editor/mode'
+import { describe, expect, it } from 'vitest'
+
 import {
   PSD_BLEND_MODES,
   fillToVectorContent,

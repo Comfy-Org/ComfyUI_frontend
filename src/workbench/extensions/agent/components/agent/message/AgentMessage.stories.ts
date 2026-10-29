@@ -1,14 +1,14 @@
+import Button from '@comfyorg/design-system/button/Button'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { useIntervalFn } from '@vueuse/core'
 import { defineComponent, onMounted, ref } from 'vue'
-
-import Button from '@comfyorg/design-system/button/Button'
 
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AssistantMessage,
   MessagePart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+
 import '@/workbench/extensions/agent/agentPanel.css'
 
 import AgentMessage from './AgentMessage.vue'

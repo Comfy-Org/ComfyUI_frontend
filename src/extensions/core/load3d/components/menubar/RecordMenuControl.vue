@@ -84,6 +84,9 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { menuButtonClass } from '@comfyorg/design-system/lib/menu/menuStyles'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
@@ -92,9 +95,6 @@ import {
   menuPanelClass
 } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/extensions/core/load3d/components/menubar/usePopoverExclusivity'
-import Button from '@comfyorg/design-system/button/Button'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import { menuButtonClass } from '@comfyorg/design-system/lib/menu/menuStyles'
 
 const { compact = false } = defineProps<{
   compact?: boolean

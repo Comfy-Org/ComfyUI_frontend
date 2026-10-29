@@ -1,3 +1,5 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
@@ -5,13 +7,10 @@ import { defineComponent, nextTick, ref } from 'vue'
 import AppToaster from '@/components/common/AppToaster.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
-
-import type { GraphOperation } from './graphOperations'
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
+import type { GraphOperation } from './graphOperations'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 const WORKFLOW_ID = 'wf-rejected-widget-write'

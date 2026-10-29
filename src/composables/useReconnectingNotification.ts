@@ -3,8 +3,8 @@ import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { createToastId } from '@/types/toastId'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { createToastId } from '@/types/toastId'
 
 const RECONNECT_TOAST_DELAY_MS = 2000
 // Backgrounded-tab timer throttling can let disconnect and reconnect both fire right as the tab regains focus, racing past RECONNECT_TOAST_DELAY_MS, so use a longer delay during the grace window below.

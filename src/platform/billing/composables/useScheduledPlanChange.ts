@@ -1,15 +1,15 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import {
+  formatSubscriptionDate,
+  resolveSubscriptionTierKey
+} from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import {
   isEnterprisePlanSlug,
   isUnknownTier
 } from '@/platform/billing/subscription/constants/tierPricing'
-import {
-  formatSubscriptionDate,
-  resolveSubscriptionTierKey
-} from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
 
 export function useScheduledPlanChange() {
   const { t, locale } = useI18n()

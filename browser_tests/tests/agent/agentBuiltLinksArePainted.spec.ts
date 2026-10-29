@@ -1,16 +1,15 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import {
   ADDITIVE_CANVAS_CASE,
   ADDITIVE_READINESS_NODE_ID,
   ADDITIVE_READINESS_WIDGET
 } from '@e2e/fixtures/data/agent/agentCanvasAdditive'
-import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 const CASE = 'agent-rec-refiner-between'
 

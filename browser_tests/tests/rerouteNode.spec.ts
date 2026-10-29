@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
 import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { expect } from '@playwright/test'
 
 const INSERTED_NODE_COUNT = 3
 

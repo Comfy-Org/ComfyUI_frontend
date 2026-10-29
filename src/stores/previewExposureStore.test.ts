@@ -1,8 +1,8 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 import {

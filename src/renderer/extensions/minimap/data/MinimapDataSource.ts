@@ -1,16 +1,16 @@
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { calculateNodeBounds } from '@/renderer/core/spatial/boundsCalculator'
-import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-
 import type { SizedExtents as MinimapBounds } from '@comfyorg/shared-frontend-utils/geometry'
+
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { calculateNodeBounds } from '@/renderer/core/spatial/boundsCalculator'
 import type {
   MinimapGroupData,
   MinimapLinkData,
   MinimapNodeData,
   MinimapNodeProgressStates
 } from '@/renderer/extensions/minimap/types'
+import { useLinkStore } from '@/stores/linkStore'
 
 export class MinimapDataSource {
   constructor(

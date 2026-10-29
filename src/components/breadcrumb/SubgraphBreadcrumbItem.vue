@@ -62,17 +62,20 @@
 </template>
 
 <script setup lang="ts">
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
+import type { MenuItemAction } from '@comfyorg/design-system/lib/menu/types'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import { cn } from '@comfyorg/tailwind-utils'
 import { createReusableTemplate } from '@vueuse/core'
 import { computed, nextTick, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Badge from '@comfyorg/design-system/badge/Badge'
-import Button from '@comfyorg/design-system/button/Button'
-import Input from '@comfyorg/design-system/input/Input'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import type { MenuItemAction } from '@comfyorg/design-system/lib/menu/types'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
+import { graphHasMissingNodes } from '@/platform/customNodes/manager/utils/graphHasMissingNodes'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
@@ -80,12 +83,9 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
-import { graphHasMissingNodes } from '@/platform/customNodes/manager/utils/graphHasMissingNodes'
 
 export interface BreadcrumbItem extends MenuItemAction {
   isBlueprint?: boolean

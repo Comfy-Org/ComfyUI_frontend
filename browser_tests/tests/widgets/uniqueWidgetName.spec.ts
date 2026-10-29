@@ -1,12 +1,10 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
-
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
-
-import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 const NODE_TYPE = 'DevToolsNodeWithOutputList'
 

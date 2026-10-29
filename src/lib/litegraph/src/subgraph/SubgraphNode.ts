@@ -8,63 +8,59 @@ import type {
   Subgraph,
   SubgraphInput
 } from '@comfyorg/graph-model/entityRegistry'
-import { once } from 'es-toolkit'
-import cloneDeep from 'es-toolkit/compat/cloneDeep'
-
-import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
-
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { DrawTitleBoxOptions } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
-
-import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
-import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type { ISlotType } from '@comfyorg/graph-model/interfaces'
-import type {
-  ISubgraphInput,
-  INodeInputSlot
-} from '@comfyorg/graph-model/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
-import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
-import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type {
   ExportedSubgraphInstance,
   ISerialisedNode
 } from '@comfyorg/graph-model/serialisation'
-import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
+import type {
+  ISubgraphInput,
+  INodeInputSlot
+} from '@comfyorg/graph-model/slots'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type {
   IBaseWidget,
   IWidgetLocator,
   TWidgetValue
 } from '@comfyorg/graph-model/widgets'
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
-import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
-import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
-import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
-import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
+import { once } from 'es-toolkit'
+import cloneDeep from 'es-toolkit/compat/cloneDeep'
+
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
+import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
+import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
+import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { DrawTitleBoxOptions } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import { LLink } from '@/lib/litegraph/src/LLink'
+import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
+import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
+import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
 import {
   getPreviewExposureHostLocator,
   tryGetPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
 import { createPromotedWidgetStoreProjection } from './promotedWidgetStoreProjection'
-
 import { createBitmapCache } from './svgBitmapCache'
 
 const getWorkflowBitmapCache = once((requestRedraw: () => void) => {

@@ -1,29 +1,29 @@
+import { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { i18n, loadLocale } from '@/i18n'
-import type {
-  CanvasPointerEvent,
-  LGraphCanvas
-} from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   drawHiddenLinkBadges,
   layoutHiddenLinkBadges,
   queryLinkBadgeAtPoint
 } from '@/lib/litegraph/src/canvas/linkBadges'
+import type {
+  CanvasPointerEvent,
+  LGraphCanvas
+} from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
-import { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
 } from '@/utils/__tests__/canvasTestUtils'
+import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 
 function createLinkedNodes(graph: LGraph): LLink {
   const source = new LGraphNode('Source')

@@ -7,6 +7,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { isForeignExecutionNoise } from '@e2e/fixtures/customNode/consoleErrorLedger'
+import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
   customNodeSuiteSettings,
   drainBackendToIdle,
@@ -14,7 +15,6 @@ import {
   submittedPromptCount,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
-import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 

@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
 import HoverCard from '@comfyorg/design-system/hover-card/HoverCard'
 import HoverCardContent from '@comfyorg/design-system/hover-card/HoverCardContent'
 import HoverCardTrigger from '@comfyorg/design-system/hover-card/HoverCardTrigger'
+import { useI18n } from 'vue-i18n'
 
 const { description, unavailable = false } = defineProps<{
   description: string

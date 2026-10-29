@@ -66,13 +66,13 @@
 </template>
 
 <script setup lang="ts">
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useElementHover } from '@vueuse/core'
 import { useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
 import DefaultThumbnail from '@/platform/workflow/templates/components/thumbnails/DefaultThumbnail.vue'
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 
 const {
   imageSrc = '',

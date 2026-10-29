@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Agent node selection chip removal',

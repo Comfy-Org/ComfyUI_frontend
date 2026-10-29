@@ -1,14 +1,15 @@
+import type {
+  BillingStatusResponse,
+  RenewalInvoice
+} from '@comfyorg/billing-core'
 import { describe, expect, it, vi } from 'vitest'
 import type { Mock } from 'vitest'
 import { computed } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
-import type {
-  BillingStatusResponse,
-  RenewalInvoice
-} from '@comfyorg/billing-core'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+
 import { useLegacyBilling } from './useLegacyBilling'
 
 vi.mock(import('firebase/auth'))

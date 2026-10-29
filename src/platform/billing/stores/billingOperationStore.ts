@@ -1,4 +1,3 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import type {
   BillingTelemetryEvent,
   BillingTelemetryFailure,
@@ -6,26 +5,23 @@ import type {
   SubscriptionCheckoutType
 } from '@comfyorg/account-core/billing'
 import { customerCanActHere } from '@comfyorg/account-core/billing'
+import type {
+  BillingAuthenticationState,
+  BillingOperationPhase,
+  BillingRecoveryAction
+} from '@comfyorg/billing-core'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
-import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
-import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { billingApi } from '@/platform/billing/api/billingApi'
-import type {
-  BillingAuthenticationState,
-  BillingOperationPhase,
-  BillingRecoveryAction
-} from '@comfyorg/billing-core'
 import { refreshBilling } from '@/platform/billing/billingRefresh'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import type {
   ProgressToast,
   ProgressToastKind
@@ -37,13 +33,17 @@ import {
   needsCustomerAttention,
   progressToastKind
 } from '@/platform/billing/customerAttention'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
+import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
+import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import {
   clearCheckoutJourney,
   getActiveCheckoutJourney,
   getCheckoutJourneyPaymentIntentSource
 } from '@/platform/billing/utils/checkoutJourney'
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const INITIAL_INTERVAL_MS = 1000

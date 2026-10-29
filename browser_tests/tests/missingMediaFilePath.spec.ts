@@ -1,6 +1,4 @@
-import type { Page } from '@playwright/test'
 import type { Asset } from '@comfyorg/ingest-types'
-
 import { makeAssetsResponse } from '@e2e/fixtures/assetApiFixture'
 import {
   comfyExpect as expect,
@@ -9,6 +7,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { WorkspaceStore } from '@e2e/types/globals'
+import type { Page } from '@playwright/test'
 
 const WORKFLOW_WIDGET_VALUE = 'bare_photo.png'
 const WORKFLOW = 'missing/missing_media_bare_filename'

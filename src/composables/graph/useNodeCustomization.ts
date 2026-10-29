@@ -1,4 +1,3 @@
-import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -10,6 +9,7 @@ import {
   isColorable
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import { useCanvasRefresh } from './useCanvasRefresh'

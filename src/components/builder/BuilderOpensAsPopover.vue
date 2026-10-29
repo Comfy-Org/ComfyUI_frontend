@@ -50,11 +50,11 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { PopoverAnchor, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Button from '@comfyorg/design-system/button/Button'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 
 import ViewTypeRadioGroup from './ViewTypeRadioGroup.vue'
 

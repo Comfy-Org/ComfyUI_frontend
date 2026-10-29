@@ -4,8 +4,8 @@ import { describe, expect, it, vi } from 'vitest'
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
-import { isTextResult, resultItemSupportsPreview } from '@/utils/resultItem'
 import { parseNodeOutput, parseTaskOutput } from '@/stores/resultItemParsing'
+import { isTextResult, resultItemSupportsPreview } from '@/utils/resultItem'
 
 function makeOutput(
   overrides: Partial<NodeExecutionOutput> = {}

@@ -1,18 +1,18 @@
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { defineComponent, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
-
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
 import { createMockWidget } from './widgetTestUtils'
+import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
 
 const i18n = createI18n({
   legacy: false,

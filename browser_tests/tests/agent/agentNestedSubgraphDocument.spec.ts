@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
+import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import {
   NESTED_INNER_ID,
   NESTED_OUTER_ID
 } from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
-import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { expect } from '@playwright/test'
 
 const CASE = 'agent-rec-text-only-answer'
 

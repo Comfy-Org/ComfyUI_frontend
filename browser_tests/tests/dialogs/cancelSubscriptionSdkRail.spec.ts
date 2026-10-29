@@ -1,8 +1,4 @@
-import { expect } from '@playwright/test'
-import type { Page, Request } from '@playwright/test'
-
 import type { BillingStatusResponse } from '@comfyorg/billing-core'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscriptionDialog'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
@@ -14,6 +10,8 @@ import {
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
 
 /**
  * Cancel subscription across the billing SDK rail — FE-2216.

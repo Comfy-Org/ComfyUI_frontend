@@ -1,16 +1,15 @@
-import { expect, mergeTests } from '@playwright/test'
-
-import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import { webSocketFixture } from '@e2e/fixtures/ws'
 import {
   cleanupFakeModel,
   loadWorkflowAndOpenErrorsTab
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest, pushAgentEvent } from '@e2e/tests/agent/agentPanelMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { expect, mergeTests } from '@playwright/test'
+
+import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const test = mergeTests(agentTest, webSocketFixture)
 

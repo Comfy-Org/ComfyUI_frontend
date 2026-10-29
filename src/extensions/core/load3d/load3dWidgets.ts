@@ -1,3 +1,11 @@
+import type { IStringWidget } from '@comfyorg/graph-model/widgets'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { CAMERA_ANGLE_VIEW_WIDGET_NAME } from '@comfyorg/viewport3d/cameraAngle/types'
+import type { CameraAngleViewMode } from '@comfyorg/viewport3d/cameraAngle/types'
+import {
+  LOAD3D_NONE_MODEL,
+  SUPPORTED_EXTENSIONS_ACCEPT
+} from '@comfyorg/viewport3d/load3d/constants'
 import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
@@ -6,19 +14,11 @@ import { isViewMode } from '@/extensions/core/load3d/cameraAngle/widgetBridge'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import { t } from '@/i18n'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IStringWidget } from '@comfyorg/graph-model/widgets'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { CustomComfyWidgetConstructor } from '@/types/comfy'
-import { CAMERA_ANGLE_VIEW_WIDGET_NAME } from '@comfyorg/viewport3d/cameraAngle/types'
-import type { CameraAngleViewMode } from '@comfyorg/viewport3d/cameraAngle/types'
-import {
-  LOAD3D_NONE_MODEL,
-  SUPPORTED_EXTENSIONS_ACCEPT
-} from '@comfyorg/viewport3d/load3d/constants'
 
 const Load3D = defineAsyncComponent(
   () => import('@/extensions/core/load3d/components/Load3D.vue')

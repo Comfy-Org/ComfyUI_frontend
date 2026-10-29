@@ -1,5 +1,5 @@
-import { reportError } from '@comfyorg/telemetry/reportError'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 const MAX_REPORTS_PER_SESSION = 20
 

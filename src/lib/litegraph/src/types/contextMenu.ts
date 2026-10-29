@@ -2,7 +2,6 @@ import type {
   ContextMenu,
   LGraphNode
 } from '@comfyorg/graph-model/entityRegistry'
-
 import type { IFoundSlot } from '@comfyorg/graph-model/slots'
 
 interface IContextMenuBase {

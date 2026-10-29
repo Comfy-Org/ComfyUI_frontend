@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { UpdatePassword } from '@e2e/fixtures/components/UpdatePassword'
+import { expect } from '@playwright/test'
 
 test.describe('Update password dialog', { tag: '@ui' }, () => {
   test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })

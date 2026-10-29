@@ -1,14 +1,14 @@
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { computed, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import enMessages from '@/locales/en/main.json'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { api } from '@/scripts/api'
-import { useToast } from '@/components/ui/toast/toastStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import enMessages from '@/locales/en/main.json'
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 

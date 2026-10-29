@@ -1,6 +1,6 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-
 import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
@@ -9,7 +9,6 @@ import {
   presentSsoRequired
 } from '@/platform/auth/sso/ssoRequired'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/composables/useFeatureFlags'))

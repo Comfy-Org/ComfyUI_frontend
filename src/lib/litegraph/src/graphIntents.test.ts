@@ -1,12 +1,9 @@
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import type { LinkId } from '@comfyorg/graph-model/linkId'
-
-import type { LGraph } from './LGraph'
-import type { LLink } from './LLink'
 import {
   collectingSeveredLinks,
   emitGraphIntent,
@@ -14,6 +11,8 @@ import {
   withGraphIntentSource
 } from './graphIntents'
 import type { GraphIntent, GraphIntentEvent } from './graphIntents'
+import type { LGraph } from './LGraph'
+import type { LLink } from './LLink'
 
 const CLEAR: GraphIntent = { type: 'clear', graphId: 'g', nodeIds: [] }
 

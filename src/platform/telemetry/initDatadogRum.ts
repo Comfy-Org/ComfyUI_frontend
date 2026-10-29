@@ -1,17 +1,16 @@
-// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
-import { datadogRum } from '@datadog/browser-rum'
-import { once } from 'es-toolkit'
-
 import { COMFY_RUM_APPLICATION } from '@comfyorg/shared-frontend-utils/telemetry'
-
-import { rumBeforeSend } from './datadogRumBeforeSend'
-import { trackUserManualRefresh } from './manualRefreshTracker'
 import {
   installDatadogRum,
   resolveDeployEnv,
   setFrontendBucket
 } from '@comfyorg/telemetry/rumContext'
 import type { FrontendBucket } from '@comfyorg/telemetry/rumContext'
+// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
+import { datadogRum } from '@datadog/browser-rum'
+import { once } from 'es-toolkit'
+
+import { rumBeforeSend } from './datadogRumBeforeSend'
+import { trackUserManualRefresh } from './manualRefreshTracker'
 
 const FRONTEND_CONTEXT_FETCH_TIMEOUT_MS = 1_000
 const FRONTEND_BUCKETS: readonly FrontendBucket[] = ['canary', 'stable']

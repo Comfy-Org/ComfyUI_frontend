@@ -1,8 +1,8 @@
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import type {
   Point2D,
   RectSide as Direction
 } from '@comfyorg/shared-frontend-utils/geometry'
-import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
 export interface NewNodePosition {
   node: LGraphNode

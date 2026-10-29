@@ -1,3 +1,4 @@
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type { Component } from 'vue'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
@@ -7,7 +8,6 @@ import type {
   SubscriptionDialogOptions,
   TopUpCreditsDialogOptions
 } from '@/platform/billing/composables/types'
-import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import type {
   DialogComponentProps,

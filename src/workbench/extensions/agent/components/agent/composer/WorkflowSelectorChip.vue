@@ -1,20 +1,19 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
+import MenuContent from '@comfyorg/design-system/menu/MenuContent'
+import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   DropdownMenuItemIndicator,
   DropdownMenuRadioGroup,
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import Input from '@comfyorg/design-system/input/Input'
-import MenuContent from '@comfyorg/design-system/menu/MenuContent'
-import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
-
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
 

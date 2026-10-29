@@ -1,18 +1,13 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 import { computed, ref, watch } from 'vue'
 
-import { t } from '@/i18n'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useServerLogs } from '@/composables/useServerLogs'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
-import { useComfyRegistryService } from '@/services/comfyRegistryService'
-
-import { normalizePackKeys } from '@/utils/packUtils'
+import { t } from '@/i18n'
 import { useManagerQueue } from '@/platform/customNodes/manager/composables/useManagerQueue'
 import { useComfyManagerService } from '@/platform/customNodes/manager/services/comfyManagerService'
 import type {
@@ -22,6 +17,10 @@ import type {
 } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import type { components } from '@/platform/customNodes/manager/types/generatedManagerTypes'
 import { versionStatusFilters } from '@/platform/customNodes/manager/utils/nodePackVersionUtil'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { useComfyRegistryService } from '@/services/comfyRegistryService'
+import { normalizePackKeys } from '@/utils/packUtils'
 
 type InstallPackParams = components['schemas']['InstallPackParams']
 type InstalledPacksResponse = components['schemas']['InstalledPacksResponse']

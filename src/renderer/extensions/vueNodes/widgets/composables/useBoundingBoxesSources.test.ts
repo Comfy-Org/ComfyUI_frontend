@@ -1,3 +1,4 @@
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
@@ -9,7 +10,6 @@ import {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 
 import { useBoundingBoxesSources } from './useBoundingBoxesSources'
 

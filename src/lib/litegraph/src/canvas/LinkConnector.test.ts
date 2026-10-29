@@ -1,9 +1,9 @@
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { LinkConnector } from '@/lib/litegraph/src/litegraph'
 import type { Reroute } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import {
   createMockLGraphNode,
   createMockLinkNetwork,

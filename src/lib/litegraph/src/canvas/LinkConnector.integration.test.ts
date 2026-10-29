@@ -1,7 +1,13 @@
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { ConnectingLink } from '@comfyorg/graph-model/slots'
 // oxlint-disable no-empty-pattern
 // TODO: Fix these tests after migration
 import { afterEach, describe, expect, vi } from 'vitest'
 
+import { test as baseTest } from '@/lib/litegraph/src/__fixtures__/testExtensions'
 import type {
   LGraph,
   Reroute,
@@ -9,15 +15,8 @@ import type {
   RerouteId
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
-
 import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-import { test as baseTest } from '@/lib/litegraph/src/__fixtures__/testExtensions'
-import type { ConnectingLink } from '@comfyorg/graph-model/slots'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import {
   createMockCanvasPointerEvent,
   createMockCanvasRenderingContext2D

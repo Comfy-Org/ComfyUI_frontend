@@ -1,9 +1,8 @@
-import { onUnmounted, readonly, shallowRef } from 'vue'
-
 import type {
   SsoRequiredTrigger,
   SsoSurface
 } from '@comfyorg/account-core/telemetry'
+import { onUnmounted, readonly, shallowRef } from 'vue'
 
 import type { SsoRequiredContext } from '@/platform/auth/sso/ssoRequiredContext'
 import {

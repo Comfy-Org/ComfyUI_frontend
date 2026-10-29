@@ -1,6 +1,6 @@
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { describe, expect, it } from 'vitest'
 
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   computeLegacyWidgetShadow,
   diffNamedValuesShadow

@@ -1,13 +1,13 @@
 <script setup lang="ts">
+import VideoPreview from '@comfyorg/design-system/media/VideoPreview'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, defineAsyncComponent, useAttrs } from 'vue'
 
 import { useTextFileContent } from '@/composables/useTextFileContent'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
-import VideoPreview from '@comfyorg/design-system/media/VideoPreview'
 import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const Preview3d = defineAsyncComponent(
   () => import('@/renderer/extensions/linearMode/Preview3d.vue')

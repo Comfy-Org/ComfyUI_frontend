@@ -1,4 +1,10 @@
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 import { beforeEach, describe, expect, it, test, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -9,18 +15,12 @@ import {
 } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
 import { useLinkStore } from '@/stores/linkStore'
-import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import {
   createMockLGraph,
   createMockLGraphNode,
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
-import {
-  toOwningGraphId,
-  toRootGraphId
-} from '@comfyorg/graph-model/graphScopeId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 vi.mock(import('@comfyorg/shared-frontend-utils/colorUtil'), () => ({

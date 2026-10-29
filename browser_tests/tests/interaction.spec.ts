@@ -1,6 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Position } from '@vueuse/core'
-
 import {
   comfyPageFixture as test,
   testComfySnapToGridGridSize
@@ -16,6 +13,8 @@ import {
   screenshotRegion
 } from '@e2e/fixtures/utils/screenshotRegion'
 import type { WorkspaceStore } from '@e2e/types/globals'
+import { expect } from '@playwright/test'
+import type { Position } from '@vueuse/core'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 

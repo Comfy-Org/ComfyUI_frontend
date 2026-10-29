@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { nodeOrganizationService } from '@/services/nodeOrganizationService'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { nodeOrganizationService } from '@/services/nodeOrganizationService'
 import { NodeSourceType } from '@/types/nodeSource'
 
 describe('nodeOrganizationService', () => {

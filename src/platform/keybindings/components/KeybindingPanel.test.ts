@@ -1,16 +1,16 @@
-import { render, screen, waitFor, within } from '@testing-library/vue'
-import { fromPartial } from '@total-typescript/shoehorn'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import userEvent from '@testing-library/user-event'
 import type { UserEvent } from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import { testI18n } from '@/utils/__tests__/testI18n'
-import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
-import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { testI18n } from '@/utils/__tests__/testI18n'
 
 import KeybindingPanel from './KeybindingPanel.vue'
 

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { components } from '@/types/comfyRegistryTypes'
 import { SortableAlgoliaField } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import { getPackSortValue } from '@/platform/customNodes/manager/utils/nodePackSort'
+import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 

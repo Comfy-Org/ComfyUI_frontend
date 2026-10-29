@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { getWorkspaceTelemetryContext } from '@/platform/billing/telemetry/workspaceTelemetryContext'
 
 const state = vi.hoisted(() => ({

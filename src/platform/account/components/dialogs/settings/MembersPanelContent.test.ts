@@ -1,11 +1,10 @@
-import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import MembersPanelContent from '@/platform/account/components/dialogs/settings/MembersPanelContent.vue'
-
 import type {
   WorkspacePendingInvite,
   WorkspaceMember

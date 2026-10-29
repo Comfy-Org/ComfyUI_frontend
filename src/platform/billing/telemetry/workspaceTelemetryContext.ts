@@ -1,10 +1,10 @@
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { WorkspaceTelemetryContext } from '@comfyorg/telemetry/types'
 import { onScopeDispose, watch } from 'vue'
 
 import { webSessionUser } from '@/platform/auth/session/webSessionUser'
-import { useTelemetry } from '@comfyorg/telemetry'
-import type { WorkspaceTelemetryContext } from '@comfyorg/telemetry/types'
-import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 const reportedScopeMismatches = new Set<string>()
 

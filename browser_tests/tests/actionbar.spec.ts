@@ -1,11 +1,10 @@
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+import type { WorkspaceStore } from '@e2e/types/globals'
 import type { Request } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import type { PromptResponse } from '@/platform/remote/comfyui/types'
-
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { webSocketFixture } from '@e2e/fixtures/ws'
-import type { WorkspaceStore } from '@e2e/types/globals'
 
 const webSocketTest = mergeTests(test, webSocketFixture)
 

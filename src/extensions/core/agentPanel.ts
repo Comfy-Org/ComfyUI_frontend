@@ -1,43 +1,43 @@
-import { whenever } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
-import { computed, ref, watch } from 'vue'
-
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type {
   AgentConsentNotOfferedReason,
   AgentConsentOfferExit,
   AgentConsentOfferStage
 } from '@comfyorg/telemetry/types'
+import { whenever } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
+import { computed, ref, watch } from 'vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
+import { useDialogStore } from '@/stores/dialogStore'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import {
   CONSENT_DIALOG_KEY,
   useAgentConsent
 } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
-import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
-import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
-import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import {
   notifyRestoreMintersAfterGraphConfigure,
   notifyRestoreMintersBeforeGraphLoad,
   notifyRestoreMintersGraphLoadError
 } from '@/workbench/extensions/agent/crdt/restoreOpMinter'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useExtensionService } from '@/platform/extensions/services/extensionService'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   clearPendingSignInAccept,
   hasPendingSignInAccept,
   takePendingSignInAccept
 } from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
+import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
-import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
-import { useDialogStore } from '@/stores/dialogStore'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const ACTIVATION_VISITS_STORAGE_KEY = 'Comfy.AgentPanel.activationVisits'
 const AUTOMATIC_ACTIVATION_VISITS = 2

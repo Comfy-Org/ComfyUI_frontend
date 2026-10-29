@@ -187,13 +187,29 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import {
+  menuButtonClass,
+  selectedMenuButtonClass
+} from '@comfyorg/design-system/lib/menu/menuStyles'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { cn } from '@comfyorg/tailwind-utils'
+import { getExportFormatOptions } from '@comfyorg/viewport3d/load3d/constants'
+import type {
+  AnimationItem,
+  CameraConfig,
+  GizmoMode,
+  LightConfig,
+  MaterialMode,
+  ModelConfig,
+  SceneConfig
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import { useElementSize } from '@vueuse/core'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
+import ViewerControls from '@/extensions/core/load3d/components/controls/ViewerControls.vue'
 import AnimationMenuStrip from '@/extensions/core/load3d/components/menubar/AnimationMenuStrip.vue'
 import CameraMenuGroup from '@/extensions/core/load3d/components/menubar/CameraMenuGroup.vue'
 import GizmoMenuGroup from '@/extensions/core/load3d/components/menubar/GizmoMenuGroup.vue'
@@ -207,24 +223,7 @@ import ModelMenuGroup from '@/extensions/core/load3d/components/menubar/ModelMen
 import RecordMenuControl from '@/extensions/core/load3d/components/menubar/RecordMenuControl.vue'
 import SceneMenuGroup from '@/extensions/core/load3d/components/menubar/SceneMenuGroup.vue'
 import { usePopoverExclusivity } from '@/extensions/core/load3d/components/menubar/usePopoverExclusivity'
-import ViewerControls from '@/extensions/core/load3d/components/controls/ViewerControls.vue'
-import Button from '@comfyorg/design-system/button/Button'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import {
-  menuButtonClass,
-  selectedMenuButtonClass
-} from '@comfyorg/design-system/lib/menu/menuStyles'
-import { getExportFormatOptions } from '@comfyorg/viewport3d/load3d/constants'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type {
-  AnimationItem,
-  CameraConfig,
-  GizmoMode,
-  LightConfig,
-  MaterialMode,
-  ModelConfig,
-  SceneConfig
-} from '@comfyorg/viewport3d/load3d/interfaces'
 
 const {
   animations = [],

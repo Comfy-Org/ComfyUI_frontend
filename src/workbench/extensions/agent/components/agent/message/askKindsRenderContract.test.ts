@@ -1,12 +1,10 @@
-import { render, screen, within } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { createI18n } from 'vue-i18n'
-
 import type { AgentAskKind } from '@comfyorg/ingest-types'
 import { zAgentAskKind } from '@comfyorg/ingest-types/zod'
+import { render, screen, within } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type {
   RenderedAskKind,
   TurnId

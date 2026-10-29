@@ -1,8 +1,9 @@
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+
 import type {
   ActivePathPointer,
   DraftPayloadV2
 } from '@/platform/workflow/persistence/base/draftTypes'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 export const nativeLoraDraftReady = ({
   path,

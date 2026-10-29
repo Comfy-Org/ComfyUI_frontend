@@ -1,31 +1,30 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { effectScope, nextTick, computed, ref } from 'vue'
-import type { Ref } from 'vue'
-import { storeToRefs } from 'pinia'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useAuthStore } from '@/stores/authStore'
-import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-
-import { billingApi } from '@/platform/billing/api/billingApi'
 import type {
   BillingRail,
   BillingStatusResponse,
   Plan
 } from '@comfyorg/billing-core'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { storeToRefs } from 'pinia'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { effectScope, nextTick, computed, ref } from 'vue'
+import type { Ref } from 'vue'
+
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import {
+  readCheckoutOperation,
+  refreshBilling
+} from '@/platform/billing/billingRefresh'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
+import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import {
   authenticatedRemoteConfigState,
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
-
-import {
-  readCheckoutOperation,
-  refreshBilling
-} from '@/platform/billing/billingRefresh'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import { useBillingContext as useSharedBillingContext } from './useBillingContext'
 

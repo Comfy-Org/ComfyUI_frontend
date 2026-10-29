@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
+
 import ts from 'typescript'
 
 interface Registration {

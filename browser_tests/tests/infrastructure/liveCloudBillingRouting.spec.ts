@@ -5,13 +5,12 @@ import { createServer } from 'node:http'
 import { createServer as createHttpsServer } from 'node:https'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { promisify } from 'node:util'
 import type { Duplex } from 'node:stream'
-
-import { expect } from '@playwright/test'
+import { promisify } from 'node:util'
 
 import { liveCloudBillingFixture } from '@e2e/fixtures/liveCloudBillingFixture'
 import { liveCloudBillingConfigSchema } from '@e2e/fixtures/utils/liveCloudBillingConfig'
+import { expect } from '@playwright/test'
 
 const test = liveCloudBillingFixture.extend<{
   sandboxProxy: { server: string; requests: string[] }

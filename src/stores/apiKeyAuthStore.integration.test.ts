@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
@@ -5,7 +6,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAuthStore } from '@/stores/authStore'
 
 const CUSTOMERS_URL = /\/customers$/

@@ -1,3 +1,5 @@
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { describe } from 'vitest'
 
 import {
@@ -8,8 +10,6 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { test } from './__fixtures__/testExtensions'
 

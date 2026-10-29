@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join, posix, relative, sep } from 'node:path'
+
 import type { PluginOption, UserConfig } from 'vite'
 import dts from 'vite-plugin-dts'
 

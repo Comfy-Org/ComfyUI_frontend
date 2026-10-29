@@ -1,6 +1,6 @@
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createPromotedMediaRuntime,

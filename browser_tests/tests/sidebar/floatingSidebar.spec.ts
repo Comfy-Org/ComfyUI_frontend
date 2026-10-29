@@ -1,9 +1,8 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import { canvasMenuFixture } from '@e2e/fixtures/canvasMenuFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { readPanelStyle } from '@e2e/fixtures/utils/panelStyle'
+import { expect, mergeTests } from '@playwright/test'
 
 const test = mergeTests(comfyPageFixture, canvasMenuFixture)
 

@@ -1,12 +1,10 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useClipboard, watchDebounced } from '@vueuse/core'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
-import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
-import Button from '@comfyorg/design-system/button/Button'
 
 const { code, lang = 'text' } = defineProps<{
   code: string

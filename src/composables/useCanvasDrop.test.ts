@@ -4,15 +4,15 @@ import { effectScope, ref } from 'vue'
 
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { usePragmaticDroppable } from '@/composables/usePragmaticDragAndDrop'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyModelDef } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 vi.mock(import('@/composables/usePragmaticDragAndDrop'), () => ({
   usePragmaticDraggable: vi.fn(),

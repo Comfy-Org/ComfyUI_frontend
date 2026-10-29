@@ -1,6 +1,6 @@
+import { createDefaultLight } from '@comfyorg/viewport3d/lightInfo/types'
 import { describe, expect, it } from 'vitest'
 
-import { createDefaultLight } from '@comfyorg/viewport3d/lightInfo/types'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { useLightInfoWidget } from './useLightInfoWidget'

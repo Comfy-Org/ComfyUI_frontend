@@ -1,6 +1,6 @@
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 import { describe, expect, it } from 'vitest'
 
-import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 import {
   bezierHead,
   bezierTail,

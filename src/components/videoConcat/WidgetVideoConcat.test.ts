@@ -1,13 +1,13 @@
+import type {
+  IWidgetVideoConcatOptions,
+  VideoConcatValue
+} from '@comfyorg/graph-model/widgets'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type {
-  IWidgetVideoConcatOptions,
-  VideoConcatValue
-} from '@comfyorg/graph-model/widgets'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'

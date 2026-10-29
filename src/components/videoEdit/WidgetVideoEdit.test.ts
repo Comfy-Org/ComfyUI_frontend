@@ -1,3 +1,9 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type {
+  VideoEditFeature,
+  VideoEditValue
+} from '@comfyorg/graph-model/widgets'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,13 +13,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { MediaSrcStatus } from '@/composables/media/useRetryableMediaSrc'
 import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
-import type {
-  VideoEditFeature,
-  VideoEditValue
-} from '@comfyorg/graph-model/widgets'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 

@@ -1,11 +1,10 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import { render } from '@testing-library/vue'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-
-import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'

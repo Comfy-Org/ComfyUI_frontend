@@ -1,9 +1,8 @@
+import { useTelemetry as sharedUseTelemetry } from '@comfyorg/telemetry'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 import type { DatadogRum } from '@datadog/browser-rum'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { TelemetryEvents } from '@comfyorg/telemetry/types'
-import { useTelemetry as sharedUseTelemetry } from '@comfyorg/telemetry'
 
 import { BootstrapTracer } from './bootstrapTracer'
 

@@ -1,4 +1,5 @@
 import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import { createSharedComposable } from '@vueuse/core'
 /**
  * Composable for managing transform state synchronized with LiteGraph canvas
  *
@@ -53,7 +54,6 @@ import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { computed, reactive, readonly } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createSharedComposable } from '@vueuse/core'
 
 interface Camera extends Point {
   z: number

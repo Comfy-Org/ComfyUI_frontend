@@ -1,23 +1,23 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import enMessages from '@/locales/en/main.json'
+import { canManageBillingFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import type {
   BalanceInfo,
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
+import { useAutoTopUpBannerKind } from '@/platform/billing/composables/useAutoTopUpBannerKind'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import enMessages from '@/locales/en/main.json'
-import { canManageBillingFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
-import { useAutoTopUpBannerKind } from '@/platform/billing/composables/useAutoTopUpBannerKind'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import BillingLocalCreditBanner from './BillingLocalCreditBanner.vue'

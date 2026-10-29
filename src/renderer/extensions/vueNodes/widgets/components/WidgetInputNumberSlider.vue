@@ -36,20 +36,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
-import Slider from '@comfyorg/design-system/slider/Slider'
 import NumberField from '@comfyorg/design-system/number-field/NumberField'
 import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
+import Slider from '@comfyorg/design-system/slider/Slider'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
+
+import { useNumberStepCalculation } from '@/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useWidgetHeight } from '@/types/widgetTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 import {
   STANDARD_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-import { useNumberStepCalculation } from '@/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 

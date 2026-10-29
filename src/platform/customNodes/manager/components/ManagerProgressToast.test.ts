@@ -1,13 +1,13 @@
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
-import { api } from '@/scripts/api'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import type { components } from '@/platform/customNodes/manager/types/generatedManagerTypes'
+import { api } from '@/scripts/api'
 
 import ManagerProgressToast from './ManagerProgressToast.vue'
 

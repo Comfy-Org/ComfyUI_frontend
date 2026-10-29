@@ -1,8 +1,7 @@
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { cloneDeep } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { shallowReactive } from 'vue'
-
-import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 export const WIDGET_HISTORY_LIMIT = 10
 

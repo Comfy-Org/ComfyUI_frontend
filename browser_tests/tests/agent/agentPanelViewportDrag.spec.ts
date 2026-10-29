@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
+import { expect } from '@playwright/test'
 
 // Matrix rank 83: https://linear.app/comfyorg/issue/PM-1242
 test.describe(

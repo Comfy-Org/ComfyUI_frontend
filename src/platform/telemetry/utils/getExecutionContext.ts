@@ -1,3 +1,5 @@
+import type { ExecutionContext } from '@comfyorg/telemetry/types'
+
 import { TOOLKIT_NODES } from '@/constants/essentialsNodes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
@@ -5,8 +7,6 @@ import { useApp } from '@/scripts/appInstance'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { reduceAllNodes } from '@/utils/graphTraversalUtil'
-
-import type { ExecutionContext } from '@comfyorg/telemetry/types'
 
 type NodeMetrics = {
   custom_node_count: number

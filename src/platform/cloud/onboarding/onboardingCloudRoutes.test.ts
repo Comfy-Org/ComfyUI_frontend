@@ -1,6 +1,6 @@
-import { computed } from 'vue'
 import { mapValues } from 'es-toolkit'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { START_LOCATION, createMemoryHistory, createRouter } from 'vue-router'
 import type {
   RouteLocationNormalized,
@@ -10,13 +10,13 @@ import type {
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
-  cloudOnboardingRoutes,
-  oauthConsentRedirect
-} from '@/platform/cloud/onboarding/onboardingCloudRoutes'
-import {
   captureOAuthRequestId,
   clearOAuthRequestId
 } from '@/platform/cloud/oauth/oauthState'
+import {
+  cloudOnboardingRoutes,
+  oauthConsentRedirect
+} from '@/platform/cloud/onboarding/onboardingCloudRoutes'
 
 const VALID_REQUEST_ID = '550e8400-e29b-41d4-a716-446655440000'
 

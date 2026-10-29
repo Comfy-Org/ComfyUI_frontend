@@ -1,8 +1,7 @@
-import type { Locator, Page } from '@playwright/test'
-
 import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import type { Locator, Page } from '@playwright/test'
 
 /** Drives a node's appearance the way a user does: toolbox colour, menu shape. */
 export class NodeAppearanceEditor {

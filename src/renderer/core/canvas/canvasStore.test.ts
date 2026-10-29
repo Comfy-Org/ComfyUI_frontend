@@ -1,5 +1,5 @@
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { nextTick, watch } from 'vue'
 import {
   assert,
   beforeEach,
@@ -9,14 +9,14 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
+import { nextTick, watch } from 'vue'
 
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSelectionStore } from '@/core/selection/selectionStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas

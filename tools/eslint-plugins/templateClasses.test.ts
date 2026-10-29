@@ -1,7 +1,8 @@
-import { RuleTester } from 'eslint'
 import path from 'node:path'
-import vueParser from 'vue-eslint-parser'
+
+import { RuleTester } from 'eslint'
 import { describe, it } from 'vitest'
+import vueParser from 'vue-eslint-parser'
 
 import templateClasses from './templateClasses'
 

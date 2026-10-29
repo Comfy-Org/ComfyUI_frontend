@@ -1,26 +1,23 @@
-import type { Page, Request } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import {
   zComfyApiWorkflow,
   zComfyWorkflow
 } from '@comfyorg/graph-model/workflowSchema'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-
 import load3dWorkflow from '@e2e/assets/3d/load3d_node.json' with { type: 'json' }
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
-import { mockEmptyAgentThreadList } from '@e2e/fixtures/utils/agentThreadList'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { mockEmptyAgentThreadList } from '@e2e/fixtures/utils/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { Load3DHelper } from '@e2e/tests/load3d/Load3DHelper'
+import type { Page, Request } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 const NODE_ID = '1'

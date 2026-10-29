@@ -1,9 +1,5 @@
-import { expect, mergeTests } from '@playwright/test'
-import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
-
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import {
   BLANK_WORKFLOW,
   agentTest,
@@ -12,12 +8,15 @@ import {
   mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { subscribeAgentWorkflow } from '@e2e/fixtures/utils/subscribeAgentWorkflow'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expect, mergeTests } from '@playwright/test'
+import type { Locator, Page, WebSocketRoute } from '@playwright/test'
+
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 const test = mergeTests(agentTest, webSocketFixture)
 

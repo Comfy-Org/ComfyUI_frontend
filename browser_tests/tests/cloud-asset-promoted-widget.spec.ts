@@ -1,6 +1,4 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   assetRequestIncludesTag,
   createCloudAssetsFixture
@@ -10,7 +8,8 @@ import {
   STABLE_CHECKPOINT_2
 } from '@e2e/fixtures/data/assetFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 const WORKFLOW = 'missing/missing_model_promoted_widget'
 const HOST_NODE_ID = toNodeId(2)

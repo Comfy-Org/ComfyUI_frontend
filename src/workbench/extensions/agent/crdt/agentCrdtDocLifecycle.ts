@@ -1,6 +1,6 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { once } from 'es-toolkit'
 
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'

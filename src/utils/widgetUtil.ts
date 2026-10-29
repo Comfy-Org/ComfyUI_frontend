@@ -1,6 +1,7 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDialogService } from '@/services/dialogService'

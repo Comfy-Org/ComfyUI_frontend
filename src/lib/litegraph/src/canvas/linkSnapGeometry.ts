@@ -1,8 +1,8 @@
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 import type {
   CubicBezier,
   PointTuple as Point
 } from '@comfyorg/shared-frontend-utils/geometry'
-import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 
 const SPLINE_CONTROL_RATIO = 0.25
 

@@ -1,13 +1,12 @@
-import { computed, watch } from 'vue'
-import type { Ref } from 'vue'
-
-import { clamp } from 'es-toolkit'
-
 import type {
   VideoEditTrim,
   VideoEditValue
 } from '@comfyorg/graph-model/widgets'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import { clamp } from 'es-toolkit'
+import { computed, watch } from 'vue'
+import type { Ref } from 'vue'
+
 import { frameToTime, roundSeconds, timeToFrame } from '@/utils/videoFrameUtil'
 
 interface UseVideoEditModelOptions {

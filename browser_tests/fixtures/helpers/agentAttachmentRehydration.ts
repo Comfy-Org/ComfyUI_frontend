@@ -1,17 +1,15 @@
-import type { Locator, Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import type {
   AgentMessage,
   AgentPostMessageRequest
 } from '@comfyorg/ingest-types'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 export const BARE_DIGEST = 'a'.repeat(64)
 export const PLAIN_FILENAME = 'ComfyUI_00002_.png'

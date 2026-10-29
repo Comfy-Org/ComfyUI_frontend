@@ -1,12 +1,11 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { useElementHover, useFocusWithin } from '@vueuse/core'
 import { onBeforeUnmount, useTemplateRef, watch } from 'vue'
 
-import Button from '@comfyorg/design-system/button/Button'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 
 import AssetThumbnail from './AssetThumbnail.vue'
-
 import {
   inlineReferenceChipClass,
   inlineReferenceRemoveAnchorClass,

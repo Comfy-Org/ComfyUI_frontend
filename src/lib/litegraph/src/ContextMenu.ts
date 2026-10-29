@@ -1,11 +1,11 @@
 import DOMPurify from 'dompurify'
 
+import { litegraph } from './litegraphInstance'
 import type {
   ContextMenuDivElement,
   IContextMenuOptions,
   IContextMenuValue
 } from './types/contextMenu'
-import { litegraph } from './litegraphInstance'
 
 const ALLOWED_TAGS = ['span', 'b', 'i', 'em', 'strong']
 const ALLOWED_STYLE_PROPS = new Set([

@@ -1,3 +1,4 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   AxiosAdapter,
   AxiosResponse,
@@ -5,8 +6,6 @@ import type {
 } from 'axios'
 import axios, { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { useTelemetry } from '@comfyorg/telemetry'
 
 import { attachRetryableStatusRetry } from '@/utils/axiosRetryableStatus'
 import { DEFAULT_RETRY_POLICY } from '@/utils/retryPolicy'

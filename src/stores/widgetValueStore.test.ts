@@ -1,14 +1,13 @@
-import { describe, expect, it, vi } from 'vitest'
-
-import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
-import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
-
-import type { UUID } from '@/utils/uuid'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
+import { describe, expect, it, vi } from 'vitest'
+
+import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
+import type { UUID } from '@/utils/uuid'
 
 import { stripGraphPrefix, useWidgetValueStore } from './widgetValueStore'
 

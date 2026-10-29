@@ -1,15 +1,15 @@
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 import { expect } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { BillingStatusResponse } from '@comfyorg/billing-core'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { operations } from '@/types/comfyRegistryTypes'
-import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
-import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
-import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 type CustomerBalanceResponse = NonNullable<
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']

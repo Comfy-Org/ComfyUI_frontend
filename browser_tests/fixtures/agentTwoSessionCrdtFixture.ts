@@ -1,37 +1,35 @@
-import type { Locator, Page, WebSocketRoute } from '@playwright/test'
-import { expect } from '@playwright/test'
-import { z } from 'zod'
-
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type {
-  AgentMessages,
-  AgentTurnAccepted,
-  AgentWsEvent
-} from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
-import {
-  parseAgentWsEvent,
-  zAgentTurnAccepted
-} from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import {
   agentTest,
   bootAgentApp,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { emptySeed } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { mockEmptyAgentThreadList } from '@e2e/fixtures/utils/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import type { Locator, Page, WebSocketRoute } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { z } from 'zod'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import type {
+  AgentMessages,
+  AgentTurnAccepted,
+  AgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  parseAgentWsEvent,
+  zAgentTurnAccepted
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const SOCKET_SID = 'b6f0a2c1-8e34-4d21-9c07-2a1b3c4d5e60'
 const PANEL_MOUNT_TIMEOUT = 30_000

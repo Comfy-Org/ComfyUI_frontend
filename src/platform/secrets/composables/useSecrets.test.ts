@@ -1,10 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { render } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { SecretErrorCode, SecretMetadata } from '@/platform/secrets/types'
+
 import { useSecrets as useSecretsComposable } from './useSecrets'
 
 const mockListSecrets = vi.fn()

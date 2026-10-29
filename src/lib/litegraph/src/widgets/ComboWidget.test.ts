@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { IComboWidget } from '@comfyorg/graph-model/widgets'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { ComboWidget } from '@/lib/litegraph/src/widgets/ComboWidget'
 
 type LGraphCanvasType = InstanceType<typeof LGraphCanvas>

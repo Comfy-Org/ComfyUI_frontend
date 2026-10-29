@@ -1,7 +1,5 @@
 import { readFileSync } from 'node:fs'
 
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
@@ -10,6 +8,7 @@ import {
   expectRegionScreenshot,
   screenshotRegion
 } from '@e2e/fixtures/utils/screenshotRegion'
+import { expect } from '@playwright/test'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 

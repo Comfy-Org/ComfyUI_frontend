@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { insertOverlapTest as test } from '@e2e/fixtures/agentInsertWorkflowOverlapFixture'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Agent insert_workflow into a populated tab (PM-2232)',

@@ -1,13 +1,4 @@
-import type { AnalyticsBrowser } from '@customerio/cdp-analytics-browser'
-import { omit, withTimeout } from 'es-toolkit'
-import { watch } from 'vue'
-
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { i18n } from '@/i18n'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
-import type { AuthUserInfo } from '@/types/authTypes'
-
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
 import type {
   AuthMetadata,
@@ -20,6 +11,14 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata
 } from '@comfyorg/telemetry/types'
+import type { AnalyticsBrowser } from '@customerio/cdp-analytics-browser'
+import { omit, withTimeout } from 'es-toolkit'
+import { watch } from 'vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { i18n } from '@/i18n'
+import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
+import type { AuthUserInfo } from '@/types/authTypes'
 
 export const EVENT_SOURCE = 'web-sdk'
 

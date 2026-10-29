@@ -232,6 +232,10 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
+import { cn } from '@comfyorg/tailwind-utils'
+import { storeToRefs } from 'pinia'
 import {
   computed,
   nextTick,
@@ -240,31 +244,26 @@ import {
   useTemplateRef,
   watch
 } from 'vue'
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { cn } from '@comfyorg/tailwind-utils'
 
-import { selectionEmphasisClass } from '@/platform/workflowErrors/panel/selectionEmphasis'
-import Button from '@comfyorg/design-system/button/Button'
-import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
-import type { MissingModelViewModel } from '@/platform/workflowErrors/missingModel/types'
-import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'
-
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
+import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'
+import { isCloud } from '@/platform/distribution/types'
+import { useMissingModelDownload } from '@/platform/workflowErrors/missingModel/composables/useMissingModelDownload'
 import {
   useMissingModelInteractions,
   getModelStateKey,
   getNodeDisplayLabel
 } from '@/platform/workflowErrors/missingModel/composables/useMissingModelInteractions'
-import { useMissingModelDownload } from '@/platform/workflowErrors/missingModel/composables/useMissingModelDownload'
-import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
-import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { isCloud } from '@/platform/distribution/types'
 import {
   isModelDownloadable,
   isTrustedHuggingFaceUrl,
   toBrowsableUrl
 } from '@/platform/workflowErrors/missingModel/missingModelDownload'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { MissingModelViewModel } from '@/platform/workflowErrors/missingModel/types'
+import { selectionEmphasisClass } from '@/platform/workflowErrors/panel/selectionEmphasis'
 import { formatSize } from '@/utils/formatUtil'
 
 const {

@@ -36,15 +36,15 @@
 </template>
 
 <script setup lang="ts">
+import TextTickerMultiLine from '@comfyorg/design-system/common/TextTickerMultiLine'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useTemplateRef } from 'vue'
 
-import TextTickerMultiLine from '@comfyorg/design-system/common/TextTickerMultiLine'
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
 import { useEssentialTileNodeDef } from '@/composables/useEssentialTileNodeDef'
 import type { EssentialTile } from '@/constants/essentialsNodes'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { previewPanel, tile } = defineProps<{
   tile: EssentialTile

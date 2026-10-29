@@ -1,9 +1,10 @@
 import { computed, effectScope, watch } from 'vue'
+
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useBootDeploymentFullLabel } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { toTitleCase } from '@/utils/textCaseUtil'
 import type { ComfyExtension, TopbarBadge } from '@/types/comfy'
+import { toTitleCase } from '@/utils/textCaseUtil'
 
 const badges = computed<TopbarBadge[]>(() => {
   const result: TopbarBadge[] = []

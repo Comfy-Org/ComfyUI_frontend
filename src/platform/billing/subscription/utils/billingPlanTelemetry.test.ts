@@ -2,12 +2,11 @@ import type {
   BillingCycle,
   SubscriptionCheckoutTier
 } from '@comfyorg/account-core/billing'
-import { describe, expect, it } from 'vitest'
-
 import type {
   SubscriptionDuration,
   SubscriptionTier
 } from '@comfyorg/billing-core'
+import { describe, expect, it } from 'vitest'
 
 import { toBillingCycle, toCurrentTier } from './billingPlanTelemetry'
 

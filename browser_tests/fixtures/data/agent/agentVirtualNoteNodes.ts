@@ -1,6 +1,6 @@
-import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
-
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+
+import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 
 export const NOTE_ID = 9001
 export const MARKDOWN_ID = 9002

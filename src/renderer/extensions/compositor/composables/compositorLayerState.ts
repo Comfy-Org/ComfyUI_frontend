@@ -1,12 +1,12 @@
 import type {
-  Bounds,
-  CompactSize
-} from '@comfyorg/shared-frontend-utils/geometry'
-import type {
   CompositorLayerEntry,
   CompositorBackgroundEntry,
   CompositorLayerState
 } from '@comfyorg/graph-model/compositor'
+import type {
+  Bounds,
+  CompactSize
+} from '@comfyorg/shared-frontend-utils/geometry'
 export type { CompositorLayerState } from '@comfyorg/graph-model/compositor'
 import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
 import type { BlendFn } from '@comfyorg/layer-editor/mode'

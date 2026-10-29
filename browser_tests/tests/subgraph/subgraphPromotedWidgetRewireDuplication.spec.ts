@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { expect } from '@playwright/test'
 
 // Reported (Jo Zhang / Christian Byrne): when the in-app AI agent (or a
 // manual drag) wires a new node into a subgraph's promoted "prompt" widget,

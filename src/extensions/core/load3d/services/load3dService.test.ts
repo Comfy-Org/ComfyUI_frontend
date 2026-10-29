@@ -1,16 +1,16 @@
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
+import { QuadWireframeOverlay } from '@comfyorg/viewport3d/load3d/quadWireframe/QuadWireframeManager'
 import * as THREE from 'three'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import {
   copyLoad3dState,
   getNodeByLoad3d,
   handleViewportRefresh,
   removeLoad3d
 } from '@/extensions/core/load3d/load3dInstances'
-import { QuadWireframeOverlay } from '@comfyorg/viewport3d/load3d/quadWireframe/QuadWireframeManager'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 const { nodeMap, useLoad3dViewerMock, skeletonCloneMock } = vi.hoisted(() => ({

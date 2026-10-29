@@ -21,17 +21,17 @@
  * and team-stop catalog and its translations (ADR BILLING-WEB-0038).
  */
 import { CheckoutSubscribeConfirm } from '@comfyorg/account-ui/billing/checkout'
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
-import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
-import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import type {
   BillingAuthenticationState,
   PreviewSubscribeResponse
 } from '@comfyorg/billing-core'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { useCheckoutCopy } from '@/platform/billing/composables/useCheckoutCopy'
+import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
+import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
+import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 
 interface Props {
   /** Personal-tier checkout. Required unless `teamPlan` is set. */

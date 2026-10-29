@@ -1,8 +1,9 @@
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotOffset, SlotOffsetMode } from '@comfyorg/graph-model/layout'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { parseSlotId } from '@comfyorg/graph-model/slotId'
+
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { UUID } from '@/utils/uuid'
 
 export function syncSlotOffsets(

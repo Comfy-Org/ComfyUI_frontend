@@ -1,9 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
-
 import {
   liveCloudBillingConfigSchema,
   loadLiveCloudBillingConfig
 } from '@e2e/fixtures/utils/liveCloudBillingConfig'
+import { describe, expect, it, vi } from 'vitest'
 
 const sandboxConfig = {
   PLAYWRIGHT_TEST_URL: 'http://localhost:5173',

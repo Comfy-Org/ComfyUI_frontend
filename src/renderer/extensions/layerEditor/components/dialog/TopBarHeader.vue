@@ -21,10 +21,9 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
 import Button from '@comfyorg/design-system/button/Button'
 import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 </script>

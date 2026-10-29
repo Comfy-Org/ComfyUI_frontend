@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { getInputNames } from '@e2e/fixtures/utils/nodeInputLinks'
 import { getPromotedWidgetNames } from '@e2e/fixtures/utils/promotedWidgets'
+import { expect } from '@playwright/test'
 
 // Reduced from the `utility_seedvr2_3b_int8_upscale_image` template (FE-258):
 // a `ResizeImageMaskNode` whose `resize_type` dynamic combo is set to a

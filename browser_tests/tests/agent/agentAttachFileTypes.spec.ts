@@ -1,6 +1,9 @@
-import { expect } from '@playwright/test'
-
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
+import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import {
@@ -8,11 +11,6 @@ import {
   agentAttachCapability
 } from '@/workbench/extensions/agent/utils/attachableFiles'
 import type { AgentAttachCapability } from '@/workbench/extensions/agent/utils/attachableFiles'
-
-import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
-import { Tooltip } from '@e2e/fixtures/components/Tooltip'
-import { assetPath } from '@e2e/fixtures/utils/paths'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const ACCEPTED: ReadonlyArray<{
   tier: AgentAttachCapability

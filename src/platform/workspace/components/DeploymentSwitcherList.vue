@@ -106,15 +106,15 @@
 </template>
 
 <script setup lang="ts">
+import MenuItem from '@comfyorg/design-system/menu/MenuItem'
+import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
+import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { DropdownMenuLabel, DropdownMenuRadioGroup } from 'reka-ui'
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MenuItem from '@comfyorg/design-system/menu/MenuItem'
-import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
-import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcherDefaultMenu from '@/platform/workspace/components/DeploymentSwitcherDefaultMenu.vue'

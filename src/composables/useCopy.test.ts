@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import {
   assert,
   beforeEach,
@@ -8,20 +9,21 @@ import {
   vi
 } from 'vitest'
 import { effectScope } from 'vue'
-import { useCopy } from './useCopy'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
   CANVAS_CLIPBOARD_KEY
 } from '@/lib/litegraph/src/canvas/clipboardStorage'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
 } from '@/utils/__tests__/canvasTestUtils'
-import { fromPartial } from '@total-typescript/shoehorn'
+
+import { useCopy } from './useCopy'
 
 const copyMocks = {
   canvas: {

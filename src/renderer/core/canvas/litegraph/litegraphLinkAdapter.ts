@@ -7,19 +7,20 @@ import type { LLink, Reroute } from '@comfyorg/graph-model/entityRegistry'
  * rendering data that can be consumed by the PathRenderer.
  * Maintains backward compatibility with existing litegraph integration.
  */
-
+import {
+  LinkDirection,
+  LinkMarkerShape,
+  LinkRenderType
+} from '@comfyorg/graph-model/globalEnums'
 import type { CanvasColour } from '@comfyorg/graph-model/interfaces'
 import type {
   PointTuple as Point,
   Point2D as PointObj,
   Bounds
 } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
-import {
-  LinkDirection,
-  LinkMarkerShape,
-  LinkRenderType
-} from '@comfyorg/graph-model/globalEnums'
+import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
 import type {
   ArrowShape,
@@ -28,7 +29,6 @@ import type {
   RenderContext as PathRenderContext,
   RenderMode
 } from '@/renderer/core/canvas/pathRenderer'
-import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 export interface LinkRenderContext {

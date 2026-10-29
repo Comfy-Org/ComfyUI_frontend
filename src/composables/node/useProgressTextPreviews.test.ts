@@ -1,3 +1,5 @@
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope } from 'vue'
@@ -10,8 +12,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 const { showTextPreview, removeTextPreview } = vi.hoisted(() => ({

@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import MenuContent from '@comfyorg/design-system/menu/MenuContent'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -8,14 +13,7 @@ import {
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import Button from '@comfyorg/design-system/button/Button'
-import MenuContent from '@comfyorg/design-system/menu/MenuContent'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useTelemetry } from '@comfyorg/telemetry'
-
 import type { AgentRunModeValue } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 

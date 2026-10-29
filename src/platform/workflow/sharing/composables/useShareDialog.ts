@@ -1,12 +1,13 @@
-import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
-import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { useDialogService } from '@/services/dialogService'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useAppModeStore } from '@/stores/appModeStore'
+
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import { t } from '@/i18n'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
+import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
+import { useDialogService } from '@/services/dialogService'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'global-share-workflow'
 

@@ -1,14 +1,14 @@
-import { expect } from '@playwright/test'
-
+import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
+import { TARGET_ID } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import {
   agentExecutionStoryTest as test,
   runToolCallFrame,
   settleStoryTurn,
   startStoryTurn
 } from '@e2e/tests/agent/agentExecutionStoryFixture'
-import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
-import { nextFrame } from '@e2e/fixtures/utils/timing'
-import { TARGET_ID } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
+import { expect } from '@playwright/test'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.describe(

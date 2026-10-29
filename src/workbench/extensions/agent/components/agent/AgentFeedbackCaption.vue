@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { openFeedbackDialog } from '@/workbench/extensions/agent/feedback'
 
 const { t } = useI18n()

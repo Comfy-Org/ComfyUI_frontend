@@ -1,11 +1,10 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import {
   agentTest,
   FUNDS_UNAVAILABLE_MESSAGE
 } from '@e2e/tests/agent/agentPanelMocks'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 agentTest.describe(
   'Agent Retry-After notice',

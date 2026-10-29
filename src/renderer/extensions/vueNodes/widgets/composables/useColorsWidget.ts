@@ -1,5 +1,6 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   ColorsInputSpec,
   InputSpec as InputSpecV2

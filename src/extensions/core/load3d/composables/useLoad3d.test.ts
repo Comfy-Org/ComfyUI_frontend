@@ -1,9 +1,13 @@
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { IWidget } from '@comfyorg/graph-model/widgets'
+import type { SizeTuple as Size } from '@comfyorg/shared-frontend-utils/geometry'
+import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
+import Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, shallowRef, effectScope } from 'vue'
 import type { EffectScope, ShallowRef } from 'vue'
-import { useSettingStore } from '@/platform/settings/settingStore'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   getLoad3dOutputCache,
   getLoad3dSceneRevision,
@@ -13,20 +17,16 @@ import {
   setLoad3dOutputCache,
   useLoad3d as useLoad3dImpl
 } from '@/extensions/core/load3d/composables/useLoad3d'
-import Load3d from '@comfyorg/viewport3d/load3d/Load3d'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
 import { load3dHost } from '@/extensions/core/load3d/load3dHost'
 import { isKeepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
-import type { SizeTuple as Size } from '@comfyorg/shared-frontend-utils/geometry'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IWidget } from '@comfyorg/graph-model/widgets'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createMockCanvasPointerEvent } from '@/utils/__tests__/canvasTestUtils'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@comfyorg/viewport3d/load3d/Load3d'), () => ({
   default: vi.fn()

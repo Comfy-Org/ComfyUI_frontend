@@ -1,40 +1,40 @@
-import { paymentRecoveryAvailableFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { setImmediate } from 'node:timers/promises'
+
+import type { BillingStatus } from '@comfyorg/billing-core'
 import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
-import { billingApi } from '@/platform/billing/api/billingApi'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { getActivePinia } from 'pinia'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { setImmediate } from 'node:timers/promises'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import type {
-  BalanceInfo,
-  SubscriptionInfo
-} from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import enMessages from '@/locales/en/main.json'
+import CurrentUserPopoverWorkspace from '@/platform/account/components/CurrentUserPopoverWorkspace.vue'
+import { useAccountUI } from '@/platform/account/composables/useAccountUI'
+import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 import type { DesktopHostAuthBridge } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import {
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import enMessages from '@/locales/en/main.json'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { paymentRecoveryAvailableFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import type {
+  BalanceInfo,
+  SubscriptionInfo
+} from '@/platform/billing/composables/types'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useAccountUI } from '@/platform/account/composables/useAccountUI'
-import type { BillingStatus } from '@comfyorg/billing-core'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-
-import CurrentUserPopoverWorkspace from '@/platform/account/components/CurrentUserPopoverWorkspace.vue'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const state = vi.hoisted(() => {
   function initialPlanSlug(): string | null {

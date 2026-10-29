@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -7,9 +8,8 @@ import {
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import type { LocalWebAuthEnvironment } from '@/platform/auth/localWeb/localWebAuthBridge'
-import { createMemoryTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
 import { startLocalWebSession } from '@/platform/auth/localWeb/localWebSession'
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { createMemoryTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
 
 vi.mock(import('@/composables/useFeatureFlags'))
 

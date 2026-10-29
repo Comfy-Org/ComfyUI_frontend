@@ -14,8 +14,9 @@
 
 <script setup lang="ts">
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
-import Menu from '@comfyorg/design-system/menu/Menu'
 import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+
 import { useWorkspaceActionMenuItems } from '@/platform/account/composables/useWorkspaceMenuItems'
 
 const { variant = 'muted-textonly' } = defineProps<{

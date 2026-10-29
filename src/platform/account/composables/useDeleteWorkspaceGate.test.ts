@@ -4,10 +4,9 @@ import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-
 import { useDeleteWorkspaceGate as createDeleteWorkspaceGate } from '@/platform/account/composables/useDeleteWorkspaceGate'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 interface TestSubscription {
   endDate: string | null

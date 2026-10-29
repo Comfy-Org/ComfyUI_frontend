@@ -1,3 +1,7 @@
+import type {
+  HDRIConfig,
+  MaterialMode
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -5,10 +9,6 @@ import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import LightControls from '@/extensions/core/load3d/components/controls/LightControls.vue'
-import type {
-  HDRIConfig,
-  MaterialMode
-} from '@comfyorg/viewport3d/load3d/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 const settingValues: Record<string, unknown> = {

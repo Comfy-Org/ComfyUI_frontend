@@ -1,9 +1,9 @@
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
-
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+
 import {
   captureInputLayout,
   inputHasLink,

@@ -79,18 +79,18 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   buildInviteLink,
   copyTextSilently
 } from '@/platform/workspace/utils/inviteLinks'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const toast = useToast()
 

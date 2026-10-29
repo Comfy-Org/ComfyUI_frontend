@@ -1,12 +1,5 @@
-import { expect } from '@playwright/test'
-import type { Page, Request } from '@playwright/test'
-
 import type { ErrorResponse, SsoDiscoverResponse } from '@comfyorg/ingest-types'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
-import type { operations } from '@/types/comfyRegistryTypes'
-
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   NOT_SSO,
   SSO_DISCOVERED,
@@ -14,7 +7,6 @@ import {
   SSO_EMAIL,
   SSO_REQUIRED
 } from '@e2e/fixtures/data/sso'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   CLOUD_SELF_EMAIL,
   CloudAuthHelper
@@ -23,6 +15,12 @@ import {
   mockCloudBoot,
   preselectCloudUser
 } from '@e2e/fixtures/utils/cloudBootMocks'
+import { expect } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
+import type { operations } from '@/types/comfyRegistryTypes'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 const APP_ROOT = new RegExp(

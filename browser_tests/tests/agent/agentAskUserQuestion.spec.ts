@@ -1,7 +1,3 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { agentAskTest as test } from '@e2e/fixtures/agentAskTurnFixture'
 import {
   ASK_USER_QUESTION,
@@ -14,6 +10,9 @@ import {
   unknownKindAskFrame
 } from '@e2e/fixtures/data/agent/agentAskFrames'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.describe(
   'Agent ask_user question',

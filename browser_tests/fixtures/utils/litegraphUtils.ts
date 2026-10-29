@@ -1,11 +1,10 @@
-import { expect } from '@playwright/test'
-
-import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
-import type { SerialisableLLink } from '@comfyorg/graph-model/serialisation'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerialisableLLink } from '@comfyorg/graph-model/serialisation'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position, Size } from '@e2e/fixtures/types'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+import { expect } from '@playwright/test'
 
 export const getMiddlePoint = (pos1: Position, pos2: Position) => {
   return {

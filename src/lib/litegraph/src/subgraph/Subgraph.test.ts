@@ -14,6 +14,7 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createUuidv4, Subgraph } from '@/lib/litegraph/src/litegraph'
+
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
   assertSubgraphStructure,

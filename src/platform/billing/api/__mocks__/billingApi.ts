@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+
 import type { billingApi as realBillingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 

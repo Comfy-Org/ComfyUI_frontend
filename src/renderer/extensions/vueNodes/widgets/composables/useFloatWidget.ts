@@ -1,13 +1,13 @@
+import type { INumericWidget } from '@comfyorg/graph-model/widgets'
 import { clamp } from 'es-toolkit/compat'
 
+import { addValueControlWidget } from '@/core/graph/widgets/valueControlWidgets'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { INumericWidget } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import { isFloatInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
-import { addValueControlWidget } from '@/core/graph/widgets/valueControlWidgets'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 
 function onFloatValueChange(this: INumericWidget, v: number) {
   const round = this.options.round

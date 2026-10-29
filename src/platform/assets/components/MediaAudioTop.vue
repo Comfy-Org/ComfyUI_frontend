@@ -19,7 +19,6 @@
 
 <script setup lang="ts">
 import WaveAudioPlayer from '@/components/common/WaveAudioPlayer.vue'
-
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 
 const { asset } = defineProps<{

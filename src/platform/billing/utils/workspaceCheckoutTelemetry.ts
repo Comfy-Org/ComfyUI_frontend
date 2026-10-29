@@ -2,9 +2,9 @@ import type {
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType
 } from '@comfyorg/account-core/billing'
-
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
+
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { useAuthStore } from '@/stores/authStore'
 

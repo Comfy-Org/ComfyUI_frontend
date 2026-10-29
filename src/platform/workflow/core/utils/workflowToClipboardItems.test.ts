@@ -1,3 +1,10 @@
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type {
+  ExportedSubgraph,
+  ISerialisedGraph,
+  SerialisableGraph
+} from '@comfyorg/graph-model/serialisation'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
@@ -5,13 +12,6 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import type {
-  ExportedSubgraph,
-  ISerialisedGraph,
-  SerialisableGraph
-} from '@comfyorg/graph-model/serialisation'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { workflowToClipboardItems } from './workflowToClipboardItems'

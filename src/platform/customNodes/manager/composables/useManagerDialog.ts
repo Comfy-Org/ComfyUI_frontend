@@ -1,16 +1,16 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useDialogService } from '@/services/dialogService'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { useDialogStore } from '@/stores/dialogStore'
+import ManagerDialog from '@/platform/customNodes/manager/components/manager/ManagerDialog.vue'
 import {
   ManagerUIState,
   getManagerUIState,
   showIncompatibleManagerToast
 } from '@/platform/customNodes/manager/composables/useManagerState'
 import type { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
-import ManagerDialog from '@/platform/customNodes/manager/components/manager/ManagerDialog.vue'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useDialogService } from '@/services/dialogService'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'global-manager'
 

@@ -1,3 +1,10 @@
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type {
+  ISerialisedGraph,
+  ISerialisedNode,
+  SerialisableGraph
+} from '@comfyorg/graph-model/serialisation'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { registerNodeState } from '@/core/graph/nodeShell/nodeShellState'
@@ -8,13 +15,6 @@ import {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type {
-  ISerialisedGraph,
-  ISerialisedNode,
-  SerialisableGraph
-} from '@comfyorg/graph-model/serialisation'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 /**
  * Pins the remint→remap contract for serialized link endpoints (ADR-ECS-0008,

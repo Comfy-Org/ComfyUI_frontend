@@ -1,6 +1,5 @@
-import { z } from 'zod'
-
 import { RenderShape } from '@comfyorg/graph-model/globalEnums'
+import { z } from 'zod'
 
 const nodeSlotSchema = z.object({
   CLIP: z.string(),

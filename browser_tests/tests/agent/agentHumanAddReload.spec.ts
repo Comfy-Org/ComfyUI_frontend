@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { expect } from '@playwright/test'
 
 // A node the user added by hand, whose `add_node` the host has received but
 // not acknowledged, must survive the catch-up that answers the first subscribe

@@ -1,19 +1,19 @@
-import { computed, ref } from 'vue'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
-import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
-import { useDialogStore } from '@/stores/dialogStore'
-import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
  * subscription, or read-only contact-admin UI.
  */
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 
+import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
+import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/i18n'))
 

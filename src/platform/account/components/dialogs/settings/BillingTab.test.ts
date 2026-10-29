@@ -1,39 +1,37 @@
-import { render, screen, within } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
-
+import type { Plan } from '@comfyorg/billing-core'
 import type {
   BillingCapabilitiesResponse,
   HostedTopupCheckout,
   SubscriptionState
 } from '@comfyorg/ingest-types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { computed, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import enMessages from '@/locales/en/main.json'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
+import BillingTab from '@/platform/account/components/dialogs/settings/BillingTab.vue'
+import { activateBillingScope } from '@/platform/billing/__tests__/activateBillingScope'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import type {
   BalanceInfo,
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import type { Plan } from '@comfyorg/billing-core'
-import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { billingApi } from '@/platform/billing/api/billingApi'
-import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
-import { activateBillingScope } from '@/platform/billing/__tests__/activateBillingScope'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
+import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
-
-import BillingTab from '@/platform/account/components/dialogs/settings/BillingTab.vue'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({

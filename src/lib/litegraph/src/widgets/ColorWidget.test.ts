@@ -1,9 +1,9 @@
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { IColorWidget } from '@comfyorg/graph-model/widgets'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode as LGraphNodeType } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
-import type { IColorWidget } from '@comfyorg/graph-model/widgets'
 import type { ColorWidget as ColorWidgetType } from '@/lib/litegraph/src/widgets/ColorWidget'
 
 type LGraphCanvasType = InstanceType<typeof LGraphCanvas>

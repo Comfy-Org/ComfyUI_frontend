@@ -55,15 +55,15 @@
 </template>
 
 <script setup lang="ts">
+import MenuSub from '@comfyorg/design-system/menu/MenuSub'
+import MenuSubContent from '@comfyorg/design-system/menu/MenuSubContent'
+import MenuSubTrigger from '@comfyorg/design-system/menu/MenuSubTrigger'
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { DropdownMenuLabel, DropdownMenuRadioGroup } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MenuSub from '@comfyorg/design-system/menu/MenuSub'
-import MenuSubContent from '@comfyorg/design-system/menu/MenuSubContent'
-import MenuSubTrigger from '@comfyorg/design-system/menu/MenuSubTrigger'
 import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwitcherRow.vue'
 import {
   switcherItemClass,

@@ -1,8 +1,7 @@
 import { vi } from 'vitest'
 
-import { provideBillingDialogs } from '@/platform/billing/subscription/composables/billingDialogsAccess'
-
 import type { useBillingDialogs as realUseBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { provideBillingDialogs } from '@/platform/billing/subscription/composables/billingDialogsAccess'
 
 type BillingDialogs = ReturnType<typeof realUseBillingDialogs>
 

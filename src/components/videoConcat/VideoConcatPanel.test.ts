@@ -1,3 +1,4 @@
+import { toLinkId } from '@comfyorg/graph-model/linkId'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,7 +7,6 @@ import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ConcatClip } from '@/composables/videoConcat/useVideoConcatClips'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
 
 import {
   clipTiles as tiles,

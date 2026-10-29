@@ -1,16 +1,15 @@
+import { toError } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { addBreadcrumb } from '@sentry/vue'
 import { watch } from 'vue'
 
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
-
 import {
   consumeSurveyReplayRequest,
   isSurveyReplayRequested
 } from '@/platform/onboarding/onboardingReplay'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
-import { toError } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 interface UserCloudStatus {
   status: 'active'

@@ -104,12 +104,12 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { BackgroundRenderModeType } from '@comfyorg/viewport3d/load3d/interfaces'
 import { computed, ref } from 'vue'
 
 import PopupSlider from '@/extensions/core/load3d/components/controls/PopupSlider.vue'
-import Button from '@comfyorg/design-system/button/Button'
-import type { BackgroundRenderModeType } from '@comfyorg/viewport3d/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { hdriActive = false, showBackgroundImage = true } = defineProps<{
   hdriActive?: boolean

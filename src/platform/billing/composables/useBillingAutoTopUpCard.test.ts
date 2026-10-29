@@ -1,10 +1,10 @@
+import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
-import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'

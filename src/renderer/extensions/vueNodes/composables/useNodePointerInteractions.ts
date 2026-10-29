@@ -1,3 +1,5 @@
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { nextTick, onScopeDispose, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
@@ -6,7 +8,6 @@ import {
   isMiddleButtonHeld,
   isMiddlePointerInput
 } from '@/base/pointerUtils'
-import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { captureGesture } from '@/lib/litegraph/src/canvas/captureGesture'
 import type {
   GestureEffect,
@@ -17,14 +18,13 @@ import {
   idleGesture,
   reduceGesture
 } from '@/lib/litegraph/src/canvas/reduceGesture'
+import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
 interface Press {

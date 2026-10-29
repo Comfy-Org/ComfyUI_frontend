@@ -5,15 +5,6 @@ import type {
   AgentSkillListResponse
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
-import { expect } from '@playwright/test'
-import type { Page, Route, WebSocketRoute } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type {
-  AgentTurnAccepted,
-  AgentWsEvent
-} from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -25,6 +16,14 @@ import {
 import { AgentWorkflowChatsMock } from '@e2e/fixtures/helpers/agentWorkflowChats'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import { expect } from '@playwright/test'
+import type { Page, Route, WebSocketRoute } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type {
+  AgentTurnAccepted,
+  AgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const WORKFLOWS = [
   { name: 'Portrait', id: 'af1dcab5-b7e9-47ac-b1cf-c6fd1f803a31' },

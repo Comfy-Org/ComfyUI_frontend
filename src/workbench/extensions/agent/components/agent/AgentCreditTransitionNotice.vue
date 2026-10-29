@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-
 import Button from '@comfyorg/design-system/button/Button'
+import { onMounted } from 'vue'
 
 const emit = defineEmits<{ dismiss: []; shown: [] }>()
 

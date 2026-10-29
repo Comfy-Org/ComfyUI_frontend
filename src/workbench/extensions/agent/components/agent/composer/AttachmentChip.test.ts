@@ -9,10 +9,10 @@ import {
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { i18n } from '@/i18n'
-
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AttachmentValidationError } from '@/workbench/extensions/agent/types/composerAttachment'
+
 import AttachmentChip from './AttachmentChip.vue'
 
 function renderChip(props: {

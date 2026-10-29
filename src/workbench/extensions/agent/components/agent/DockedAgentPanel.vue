@@ -42,7 +42,9 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useEventListener, useWindowSize } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import type { PropType } from 'vue'
@@ -57,9 +59,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAgentPanelRenderStore } from '@/workbench/extensions/agent/stores/agent/agentPanelRenderStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'

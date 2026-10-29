@@ -1,3 +1,7 @@
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { reportError } from '@comfyorg/telemetry/reportError'
 import {
   assert,
   beforeEach,
@@ -8,6 +12,10 @@ import {
   vi
 } from 'vitest'
 
+import {
+  createTestNode,
+  createTestWidgetNode
+} from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import {
   LGraphGroup,
@@ -20,17 +28,9 @@ import type {
   Positionable,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import {
-  createTestNode,
-  createTestWidgetNode
-} from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
-import type { reportError } from '@comfyorg/telemetry/reportError'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
 import {
   createTestRootGraph,

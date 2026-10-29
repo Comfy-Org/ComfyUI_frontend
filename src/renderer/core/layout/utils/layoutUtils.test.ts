@@ -1,8 +1,8 @@
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { describe, expect, it } from 'vitest'
 
 import { makeLinkSegmentKey } from '@/renderer/core/layout/utils/layoutUtils'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
 describe('layoutUtils', () => {
   describe('makeLinkSegmentKey', () => {

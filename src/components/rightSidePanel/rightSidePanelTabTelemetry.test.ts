@@ -1,6 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
-
 import { useTelemetry } from '@comfyorg/telemetry'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@comfyorg/telemetry'))
 

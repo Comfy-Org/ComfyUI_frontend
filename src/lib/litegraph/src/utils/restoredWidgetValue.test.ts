@@ -1,6 +1,6 @@
+import type { IColorWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { describe, expect, test } from 'vitest'
 
-import type { IColorWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/restoredWidgetValue'
 
 describe('coerceRestoredWidgetValue', () => {

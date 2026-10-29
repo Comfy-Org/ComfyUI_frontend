@@ -1,5 +1,6 @@
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 export interface SubgraphPseudoWidget {
   name: string

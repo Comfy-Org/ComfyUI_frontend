@@ -1,19 +1,19 @@
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { render } from '@testing-library/vue'
-import { useDialogStore } from '@/stores/dialogStore'
-import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useFeatureUsageTracker } from '@/platform/surveys/useFeatureUsageTracker'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useToast } from '@/components/ui/toast/toastStore'
+import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 function deferred<T>() {
   let resolve: (value: T | PromiseLike<T>) => void = () => {}

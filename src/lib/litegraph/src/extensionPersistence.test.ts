@@ -1,3 +1,4 @@
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 
@@ -6,7 +7,6 @@ import {
   LGraphNode,
   NodeInputSlot
 } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 
 function nodeWithNamespacedExtension(): ISerialisedNode {
   return {

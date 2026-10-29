@@ -1,54 +1,52 @@
-import type { User } from 'firebase/auth'
-import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
-
 import type {
   ScheduledRefreshReport,
   SessionErrorCode
 } from '@comfyorg/account-core/session'
-import { createWebCrossTabRefreshPort } from '@comfyorg/account-core/web'
 import {
   SESSION_ERROR_CODES,
   createSessionClient,
   isPermanentSessionError
 } from '@comfyorg/account-core/session'
-
+import { createWebCrossTabRefreshPort } from '@comfyorg/account-core/web'
 import {
   zCurrentWorkspaceResponse,
   zWorkspaceWithRole
 } from '@comfyorg/ingest-types/zod'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { UnifiedAuthRefreshOutcome } from '@comfyorg/telemetry/types'
+import type { User } from 'firebase/auth'
+import { defineStore } from 'pinia'
+import { computed, ref, shallowRef, watch } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { ensureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import {
   signedInOnWebSession,
   webSessionRequests
 } from '@/platform/auth/session/webSessionFetch'
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import type { UnifiedAuthRefreshOutcome } from '@comfyorg/telemetry/types'
+import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { provideUnifiedRemint } from '@/platform/auth/unified/remintRetry'
+import { isCloud } from '@/platform/distribution/types'
+import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 import { prepareWorkflowWorkspaceTransition } from '@/platform/workflow/persistence/base/storageIO'
+import { createLegacyWorkspaceTokenRail } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
+import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
+import { useTeamWorkspaceStoreAccess } from '@/platform/workspace/stores/teamWorkspaceStoreAccess'
+import { WorkspaceAuthError } from '@/platform/workspace/stores/workspaceAuthError'
 import {
   MAX_SCHEDULED_REFRESH_RETRIES,
   TOKEN_REFRESH_BUFFER_MS,
   WORKSPACE_STORAGE_KEYS
 } from '@/platform/workspace/workspaceConstants'
-import { createLegacyWorkspaceTokenRail } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
-import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
-import { WorkspaceAuthError } from '@/platform/workspace/stores/workspaceAuthError'
-import { useTeamWorkspaceStoreAccess } from '@/platform/workspace/stores/teamWorkspaceStoreAccess'
-import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
-import { ensureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
-import { provideUnifiedRemint } from '@/platform/auth/unified/remintRetry'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
-import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isCloud } from '@/platform/distribution/types'
-import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
+import type { AuthHeader } from '@/types/authTypes'
 
 export { WorkspaceAuthError }
 // The e2e fixtures import this type from the store path.

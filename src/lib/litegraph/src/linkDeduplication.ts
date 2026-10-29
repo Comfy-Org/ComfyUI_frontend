@@ -4,16 +4,12 @@ import type {
   LLink,
   SerialisedLLinkArray
 } from '@comfyorg/graph-model/entityRegistry'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { useLinkStore } from '@/stores/linkStore'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import type { EndpointUpdate } from '@/stores/linkStore'
 import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import cloneDeep from 'es-toolkit/compat/cloneDeep'
-
-import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type {
   ExportedSubgraph,
   ISerialisedGraph,
@@ -21,7 +17,11 @@ import type {
   SerialisableGraph,
   SerialisableLLink
 } from '@comfyorg/graph-model/serialisation'
-import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
+import { useTelemetry } from '@comfyorg/telemetry'
+import cloneDeep from 'es-toolkit/compat/cloneDeep'
+
+import { useLinkStore } from '@/stores/linkStore'
+import type { EndpointUpdate } from '@/stores/linkStore'
 
 type ConfiguredGraph = (ISerialisedGraph | SerialisableGraph) &
   Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs' | 'reroutes'>>

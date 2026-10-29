@@ -1,17 +1,17 @@
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import { isNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { st } from '@/i18n'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useApp } from '@/scripts/appInstance'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { isNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useApp } from '@/scripts/appInstance'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 /**
  * Unique identifier for a favorited widget.

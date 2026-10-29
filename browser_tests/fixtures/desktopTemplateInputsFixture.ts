@@ -2,9 +2,8 @@ import type {
   ComfyTemplateInputAsset,
   ComfyTemplateInputDownloadProgress
 } from '@comfyorg/comfyui-desktop-bridge-types'
-import type { Page } from '@playwright/test'
-
 import { desktopFixture } from '@e2e/fixtures/desktopFixture'
+import type { Page } from '@playwright/test'
 
 /**
  * Seeds the host's answer for one template. Anything not seeded answers with an

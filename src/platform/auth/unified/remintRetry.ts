@@ -1,3 +1,9 @@
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type {
+  UnifiedAuthRetryFailureReason,
+  UnifiedAuthRetryMetadata
+} from '@comfyorg/telemetry/types'
 import type {
   AxiosError,
   AxiosInstance,
@@ -12,12 +18,6 @@ import {
   presentForResponse
 } from '@/platform/auth/sso/ssoRequired'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import type {
-  UnifiedAuthRetryFailureReason,
-  UnifiedAuthRetryMetadata
-} from '@comfyorg/telemetry/types'
 import { fetchWithRetry } from '@/utils/fetchWithRetry'
 import type { RetryPolicy } from '@/utils/retryPolicy'
 

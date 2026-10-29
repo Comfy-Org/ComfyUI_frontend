@@ -47,11 +47,11 @@
 </template>
 
 <script setup lang="ts">
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { storeToRefs } from 'pinia'
+import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, useTemplateRef } from 'vue'
 
-import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { useHelpCenter } from '@/composables/useHelpCenter'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { APP_MODE_FEEDBACK_TYPEFORM_ID } from '@/platform/surveys/appModeFeedback'

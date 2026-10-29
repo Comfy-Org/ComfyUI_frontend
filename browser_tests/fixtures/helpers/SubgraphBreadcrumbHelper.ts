@@ -1,8 +1,7 @@
+import { SubgraphBreadcrumbPanel } from '@e2e/fixtures/components/SubgraphBreadcrumbPanel'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
-
-import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
-import { SubgraphBreadcrumbPanel } from '@e2e/fixtures/components/SubgraphBreadcrumbPanel'
 
 class SubgraphBreadcrumbHelper {
   readonly panel: SubgraphBreadcrumbPanel

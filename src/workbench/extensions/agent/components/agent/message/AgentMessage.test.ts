@@ -1,8 +1,10 @@
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+
 import { i18n } from '@/i18n'
+import { agentBoundWorkflowIdKey } from '@/workbench/extensions/agent/components/agent/agentBoundWorkflowId'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
@@ -18,7 +20,6 @@ import {
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import AgentMessage from './AgentMessage.vue'
-import { agentBoundWorkflowIdKey } from '@/workbench/extensions/agent/components/agent/agentBoundWorkflowId'
 
 function thinkingMessage(thinkingText?: string): AssistantMessage {
   return {

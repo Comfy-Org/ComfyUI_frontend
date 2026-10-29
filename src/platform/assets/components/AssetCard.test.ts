@@ -1,16 +1,15 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { fromPartial } from '@total-typescript/shoehorn'
-
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
-import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import userEvent from '@testing-library/user-event'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {

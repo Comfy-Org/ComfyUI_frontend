@@ -3,10 +3,10 @@ import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 import { ref } from 'vue'
 
-import { api } from '@/scripts/api'
-import { isAbortError } from '@/utils/typeGuardUtil'
 import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
 import type { components } from '@/platform/customNodes/manager/types/generatedManagerTypes'
+import { api } from '@/scripts/api'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 type ManagerQueueStatus = components['schemas']['QueueStatus']
 type InstallPackParams = components['schemas']['InstallPackParams']

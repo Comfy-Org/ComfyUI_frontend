@@ -1,7 +1,6 @@
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
-
-import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 
 import { useCropRatioLock } from './useCropRatioLock'
 

@@ -1,33 +1,33 @@
-import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
-import { fromPartial } from '@total-typescript/shoehorn'
-
 import type {
   AgentThreadListResponse,
   AgentThreadSummary
 } from '@comfyorg/ingest-types'
-import type { User } from 'firebase/auth'
-import { render, screen } from '@testing-library/vue'
+import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { User } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 
 vi.mock(import('firebase/auth'))
 
-import { i18n } from '@/i18n'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { i18n } from '@/i18n'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
-import { getFilenameDetails } from '@/utils/formatUtil'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { getFilenameDetails } from '@/utils/formatUtil'
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'

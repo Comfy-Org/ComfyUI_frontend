@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import type { Node } from '@tiptap/pm/model'
-import { DOMParser, Fragment, Slice } from '@tiptap/pm/model'
 import { baseKeymap } from '@tiptap/pm/commands'
 import { closeHistory, history, redo, undo } from '@tiptap/pm/history'
 import { keymap } from '@tiptap/pm/keymap'
+import type { Node } from '@tiptap/pm/model'
+import { DOMParser, Fragment, Slice } from '@tiptap/pm/model'
 import { EditorState, TextSelection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, EditorView } from '@tiptap/pm/view'
+import { default as DOMPurify } from 'dompurify'
 import {
   getCurrentInstance,
   h,
@@ -15,33 +16,26 @@ import {
   useTemplateRef,
   watch
 } from 'vue'
-import { default as DOMPurify } from 'dompurify'
 import { useI18n } from 'vue-i18n'
 
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-
+import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
 import {
   composerReferenceKey,
   composerReferenceName
 } from '@/workbench/extensions/agent/types/composerPrompt'
-import { sameComposerReferenceOrder } from '@/workbench/extensions/agent/utils/composerPrompt'
+import type { PromptEditor } from '@/workbench/extensions/agent/types/promptEditor'
+import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
+import type { WorkflowReferenceMetadata } from '@/workbench/extensions/agent/types/workflowReference'
 import {
   assetReferenceText,
   nodeReferenceText
 } from '@/workbench/extensions/agent/utils/agentMessageText'
-import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
-import type { PromptEditor } from '@/workbench/extensions/agent/types/promptEditor'
-import type { WorkflowReferenceMetadata } from '@/workbench/extensions/agent/types/workflowReference'
-import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
-import InlineAssetReference from './InlineAssetReference.vue'
-import {
-  inlineReferenceChipClass,
-  inlineReferenceRemoveAnchorClass,
-  inlineReferenceRemoveBadgeClass,
-  inlineReferenceRemoveButtonClass
-} from './inlineReferenceChipStyles'
+import { sameComposerReferenceOrder } from '@/workbench/extensions/agent/utils/composerPrompt'
+
 import ComposerSkillReference from './ComposerSkillReference.vue'
+import InlineAssetReference from './InlineAssetReference.vue'
 import {
   inlinePromptSchema,
   pastedSkillCommand,
@@ -52,6 +46,12 @@ import {
   promptDraft,
   promptTextOffset
 } from './inlinePrompt'
+import {
+  inlineReferenceChipClass,
+  inlineReferenceRemoveAnchorClass,
+  inlineReferenceRemoveBadgeClass,
+  inlineReferenceRemoveButtonClass
+} from './inlineReferenceChipStyles'
 
 defineOptions({ inheritAttrs: false })
 const {

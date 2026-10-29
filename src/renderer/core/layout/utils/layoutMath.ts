@@ -1,8 +1,8 @@
+import type { NodeLayout } from '@comfyorg/graph-model/layout'
 import type {
   Bounds,
   Point2D as Point
 } from '@comfyorg/shared-frontend-utils/geometry'
-import type { NodeLayout } from '@comfyorg/graph-model/layout'
 
 export const REROUTE_RADIUS = 8
 

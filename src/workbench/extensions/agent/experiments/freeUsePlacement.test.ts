@@ -1,3 +1,4 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
@@ -6,11 +7,10 @@ import {
   authenticatedRemoteConfigState,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
-
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+
 import {
   FREE_USE_PLACEMENT_FLAG,
   LOCAL_FREE_USE_PLACEMENT,

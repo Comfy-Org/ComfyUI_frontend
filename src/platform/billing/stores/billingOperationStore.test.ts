@@ -1,21 +1,20 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
+import type { BillingOpStatusResponse } from '@comfyorg/billing-core'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import {
   bindOperationToCheckoutJourney,
   clearCheckoutJourney,
   getActiveCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/billing/utils/checkoutJourney'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-
-import type { BillingOpStatusResponse } from '@comfyorg/billing-core'
-import { onBillingRefresh } from '@/platform/billing/billingRefresh'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 

@@ -41,6 +41,13 @@
 </template>
 
 <script setup lang="ts">
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onErrorCaptured, ref, useTemplateRef, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -55,14 +62,7 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
-import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
-import {
-  toOwningGraphId,
-  toRootGraphId
-} from '@comfyorg/graph-model/graphScopeId'
-import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { locatorIdFromState } from '@/utils/graphTraversalUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 import OutputSlot from './OutputSlot.vue'

@@ -1,6 +1,5 @@
-import { clamp } from 'es-toolkit'
-
 import type { RangeValue } from '@comfyorg/graph-model/widgets'
+import { clamp } from 'es-toolkit'
 
 export function positionToGamma(position: number): number {
   // Avoid log2(0) = -Infinity and log2(1) = 0 (division by zero in gamma)

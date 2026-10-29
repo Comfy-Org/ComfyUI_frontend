@@ -1,3 +1,6 @@
+import type { SlotLayout } from '@comfyorg/graph-model/layout'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SlotId } from '@comfyorg/graph-model/slotId'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -6,10 +9,7 @@ import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConn
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { SlotId } from '@comfyorg/graph-model/slotId'
 
 import {
   resolveNodeSurfaceSlotCandidate,

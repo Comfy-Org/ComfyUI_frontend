@@ -1,3 +1,4 @@
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,7 +10,6 @@ import messages from '@/locales/en/main.json'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import WidgetImageCompare from './WidgetImageCompare.vue'
 

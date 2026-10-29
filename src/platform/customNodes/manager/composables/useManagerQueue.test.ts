@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { ref } from 'vue'
 
-import { app } from '@/scripts/app'
 import { useManagerQueue } from '@/platform/customNodes/manager/composables/useManagerQueue'
 import type { components } from '@/platform/customNodes/manager/types/generatedManagerTypes'
+import { app } from '@/scripts/app'
 
 vi.mock(import('@/scripts/app'))
 

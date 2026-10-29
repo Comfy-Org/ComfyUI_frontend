@@ -10,6 +10,7 @@
 
 <script setup lang="ts">
 import { useTelemetry } from '@comfyorg/telemetry'
+
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
 import SidebarIcon from './SidebarIcon.vue'

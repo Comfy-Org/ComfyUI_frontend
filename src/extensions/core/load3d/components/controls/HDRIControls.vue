@@ -76,17 +76,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   SUPPORTED_HDRI_EXTENSIONS,
   SUPPORTED_HDRI_EXTENSIONS_ACCEPT
 } from '@comfyorg/viewport3d/load3d/constants'
 import type { HDRIConfig } from '@comfyorg/viewport3d/load3d/interfaces'
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { useToast } from '@/components/ui/toast/toastStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 

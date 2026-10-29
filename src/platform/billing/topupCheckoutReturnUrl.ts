@@ -1,8 +1,8 @@
 import type { BillingEnvironment } from '@comfyorg/billing-contract'
 
 import { getBillingWebUrl } from '@/platform/billing/billingWeb'
-import { isCloud } from '@/platform/distribution/types'
 import { hostBillingEnvironment } from '@/platform/billing/hostedBillingRoutes'
+import { isCloud } from '@/platform/distribution/types'
 
 const TOPUP_RETURN_PATH = '/return/topup'
 

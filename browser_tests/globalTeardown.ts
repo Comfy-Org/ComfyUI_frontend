@@ -1,9 +1,8 @@
-import { config as dotenvConfig } from 'dotenv'
-import MCR from 'monocart-coverage-reports'
-
 import { COVERAGE_OUTPUT_DIR, coverageSourceFilter } from '@e2e/coverageConfig'
 import { writePerfReport } from '@e2e/fixtures/utils/perfReporter'
 import { restorePath } from '@e2e/utils/backupUtils'
+import { config as dotenvConfig } from 'dotenv'
+import MCR from 'monocart-coverage-reports'
 
 dotenvConfig()
 

@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import {
   fireEvent,
   render,
@@ -5,14 +6,13 @@ import {
   waitFor,
   within
 } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ModelThumbnailResult } from '@/extensions/core/load3d/components/modelThumbnail'
 import { i18n } from '@/i18n'
 import { useDialogStore } from '@/stores/dialogStore'
-
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
+
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), { spy: true })

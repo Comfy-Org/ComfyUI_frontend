@@ -1,20 +1,20 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { useLoad3d } from '@/extensions/core/load3d/composables/useLoad3d'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { app } from '@/scripts/app'
-import type { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import * as graphTraversal from '@/utils/graphTraversalUtil'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { useLoad3d } from '@/extensions/core/load3d/composables/useLoad3d'
 import {
   previewGaussianSplatExtension,
   previewPointCloudExtension,
   saveGaussianSplatExtension,
   savePointCloudExtension
 } from '@/extensions/core/load3d/load3dPreviewExtensions'
+import type { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { app } from '@/scripts/app'
+import * as graphTraversal from '@/utils/graphTraversalUtil'
 
 const {
   waitForLoad3dMock,

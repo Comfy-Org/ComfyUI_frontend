@@ -2,16 +2,16 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { i18n } from '@/i18n'
-import { api } from '@/scripts/api'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { i18n } from '@/i18n'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { api } from '@/scripts/api'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { AgentTargetNavigationError } from '@/workbench/extensions/agent/services/agent/targetAwareAgentNavigation'
 
 import TabLinkCard from './TabLinkCard.vue'
-import { AgentTargetNavigationError } from '@/workbench/extensions/agent/services/agent/targetAwareAgentNavigation'
 
 const apiEvents: EventTarget = api
 

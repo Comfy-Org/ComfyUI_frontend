@@ -1,39 +1,35 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-
 import type { WebSession } from '@comfyorg/account-core/webSession'
-import type {
-  WebSessionRequestScope,
-  WebSessionRequests
-} from '@/platform/auth/session/webSessionFetch'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
-import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useAuthStore } from '@/stores/authStore'
-import { NoWorkspaceAccessError } from '@/platform/remote/ingest/ingestApiError'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import WorkspaceAuthGate from '@/platform/account/auth/WorkspaceAuthGate.vue'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
+import type {
+  WebSessionRequestScope,
+  WebSessionRequests
+} from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { NoWorkspaceAccessError } from '@/platform/remote/ingest/ingestApiError'
 import {
   remoteConfigErrorStatus,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
-
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import {
   stubAccountIdentityPort,
   stubFirebaseAuthHarness
 } from '@/utils/__tests__/stubAccountIdentityPort'
-
-import WorkspaceAuthGate from '@/platform/account/auth/WorkspaceAuthGate.vue'
 
 vi.mock(import('firebase/auth'), { spy: true })
 

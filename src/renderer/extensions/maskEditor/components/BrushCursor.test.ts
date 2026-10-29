@@ -1,9 +1,9 @@
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { BrushShape } from '@comfyorg/mask-editor/types'
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import BrushCursor from '@/renderer/extensions/maskEditor/components/BrushCursor.vue'
-import { BrushShape } from '@comfyorg/mask-editor/types'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 

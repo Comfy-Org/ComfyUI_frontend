@@ -129,15 +129,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, useTemplateRef } from 'vue'
-
-import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import Select from '@comfyorg/design-system/select/Select'
 import SelectContent from '@comfyorg/design-system/select/SelectContent'
 import SelectItem from '@comfyorg/design-system/select/SelectItem'
 import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
 import SelectValue from '@comfyorg/design-system/select/SelectValue'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, nextTick, useTemplateRef } from 'vue'
+
+import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
 import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
 import { ASPECT_RATIOS, useImageCrop } from '@/composables/useImageCrop'
 import {
@@ -146,11 +149,8 @@ import {
 } from '@/composables/useUpstreamValue'
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
-import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { widget, nodeId } = defineProps<{
   widget: SimplifiedWidget

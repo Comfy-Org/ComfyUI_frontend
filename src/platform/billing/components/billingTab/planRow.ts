@@ -1,13 +1,12 @@
 import type {
-  BillingCapabilitiesResponse,
-  SubscriptionState
-} from '@comfyorg/ingest-types'
-
-import type {
   BillingStatus,
   BillingSubscriptionStatus,
   SubscriptionDuration
 } from '@comfyorg/billing-core'
+import type {
+  BillingCapabilitiesResponse,
+  SubscriptionState
+} from '@comfyorg/ingest-types'
 
 type BillingCadence = 'monthly' | 'yearly'
 

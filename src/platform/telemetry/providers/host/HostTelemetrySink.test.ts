@@ -1,6 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { HostTelemetrySink } from './HostTelemetrySink'
 

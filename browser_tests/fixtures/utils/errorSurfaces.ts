@@ -1,8 +1,7 @@
-import type { Locator, Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import { ToastHelper, toastSelector } from '@e2e/fixtures/helpers/ToastHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 interface VisibleError {
   surface: string

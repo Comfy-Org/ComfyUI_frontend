@@ -1,7 +1,7 @@
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
-import { signInToLiveCloud } from '@e2e/fixtures/utils/liveCloudBillingContext'
 import { loadLiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
+import { signInToLiveCloud } from '@e2e/fixtures/utils/liveCloudBillingContext'
 
 export const liveCloudBillingFixture = base.extend<{
   comfyPage: ComfyPage

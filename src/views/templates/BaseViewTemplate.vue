@@ -25,8 +25,8 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { nextTick, onMounted, ref } from 'vue'
 
-import { electronAPI, isNativeWindow } from '@/utils/envUtil'
 import { isDesktop } from '@/platform/distribution/types'
+import { electronAPI, isNativeWindow } from '@/utils/envUtil'
 
 const { dark = false } = defineProps<{
   dark?: boolean

@@ -3,21 +3,20 @@ import type {
   LGraphNode,
   Subgraph
 } from '@comfyorg/graph-model/entityRegistry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RefusedWidget } from '@comfyorg/graph-model/widgetId'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import type { WidgetRefusalReport } from '@/lib/litegraph/src/node/widgetsView'
 import { refuseAmbiguousNodeWidgets } from '@/lib/litegraph/src/node/widgetsView'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { RefusedWidget } from '@comfyorg/graph-model/widgetId'
+import type { UUID } from '@/utils/uuid'
 
 import { registerNodeState, unregisterNodeState } from './nodeShellState'
-
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-
-import type { UUID } from '@/utils/uuid'
 
 const REFUSAL_TEARDOWN_ERROR_TYPE = 'failure_tearing_down_refused_widget'
 

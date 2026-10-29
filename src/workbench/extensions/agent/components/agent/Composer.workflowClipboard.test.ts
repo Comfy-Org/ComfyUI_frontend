@@ -5,6 +5,7 @@ import { defineComponent, h, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 

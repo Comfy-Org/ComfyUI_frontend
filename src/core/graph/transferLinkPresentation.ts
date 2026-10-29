@@ -1,7 +1,8 @@
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
+
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 
 export function getAgreedLinkPresentation(
   presentations: readonly (Readonly<LinkPresentation> | undefined)[]

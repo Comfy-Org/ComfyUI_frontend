@@ -1,10 +1,24 @@
 import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
-
-import type { DesktopHostAuthBridge } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import type {
   GetEmbeddingsResponse as EmbeddingsResponse,
   GetExtensionsResponse as ExtensionsResponse
 } from '@comfyorg/ingest-types'
+
+import type { ContextMenu } from '@/lib/litegraph/src/ContextMenu'
+import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { DesktopHostAuthBridge } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
+import type {
+  LogEntry,
+  LogsRawResponse,
+  TerminalSize
+} from '@/platform/remote/comfyui/execution/types'
 import type {
   DeviceStats,
   NodeError,
@@ -15,22 +29,8 @@ import type {
   UserData,
   UserDataFullInfo
 } from '@/platform/remote/comfyui/types'
-import type {
-  LogEntry,
-  LogsRawResponse,
-  TerminalSize
-} from '@/platform/remote/comfyui/execution/types'
 import type { Settings } from '@/platform/settings/types'
 import type { ComfyApp } from '@/types/comfy'
-import type { ContextMenu } from '@/lib/litegraph/src/ContextMenu'
-import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 
 import type {
   BottomPanelExtension,

@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import type { Asset } from '@comfyorg/ingest-types'
 import {
   assetRequestIncludesTag,
@@ -9,6 +7,7 @@ import {
   STABLE_CHECKPOINT,
   STABLE_CHECKPOINT_2
 } from '@e2e/fixtures/data/assetFixtures'
+import { expect } from '@playwright/test'
 
 const CLOUD_ASSETS: Asset[] = [STABLE_CHECKPOINT, STABLE_CHECKPOINT_2]
 const WAITING_FOR_WIDGET_TYPE = 'waiting:type'

@@ -1,7 +1,6 @@
-import { config as dotenvConfig } from 'dotenv'
-
 import { backupPath } from '@e2e/utils/backupUtils'
 import { resolveLocalSetupApiUrl } from '@e2e/utils/e2eConfig'
+import { config as dotenvConfig } from 'dotenv'
 
 dotenvConfig()
 

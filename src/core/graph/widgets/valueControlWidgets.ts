@@ -1,11 +1,12 @@
-import { t } from '@/i18n'
-import { isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IComboWidget,
   IStringWidget
 } from '@comfyorg/graph-model/widgets'
+
+import { t } from '@/i18n'
+import { isComboWidget } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'

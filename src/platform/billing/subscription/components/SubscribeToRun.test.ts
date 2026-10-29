@@ -1,12 +1,12 @@
-import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
-import { render, screen } from '@testing-library/vue'
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import SubscribeToRun from './SubscribeToRun.vue'

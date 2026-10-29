@@ -1,18 +1,17 @@
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import enMessages from '@/locales/en/main.json'
-
 import { useToast } from '@/components/ui/toast/toastStore'
+import enMessages from '@/locales/en/main.json'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useTelemetry } from '@comfyorg/telemetry'
-import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 

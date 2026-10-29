@@ -1,12 +1,11 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest, pushAgentEvent } from '@e2e/tests/agent/agentPanelMocks'
+import { expect, mergeTests } from '@playwright/test'
+
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const test = mergeTests(agentTest, webSocketFixture)
 const browserProofNodeId = toNodeId(1)

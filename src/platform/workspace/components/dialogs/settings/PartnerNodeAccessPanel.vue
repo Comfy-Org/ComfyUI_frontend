@@ -352,25 +352,24 @@
 
 <script setup lang="ts">
 import Badge from '@comfyorg/design-system/badge/Badge'
-import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
+import Button from '@comfyorg/design-system/button/Button'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import Switch from '@comfyorg/design-system/switch/Switch'
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
-
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import Button from '@comfyorg/design-system/button/Button'
-import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
-import Switch from '@comfyorg/design-system/switch/Switch'
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { handlePanelScroll } = useSettingsHeaderCollapse()
 

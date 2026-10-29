@@ -1,12 +1,10 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import {
   MANUAL_BLOCK_ADMISSION_DENIAL,
   MANUAL_BLOCK_ADMISSION_MESSAGE
 } from '@e2e/fixtures/data/agent/agentAdmissionDenials'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
+import { expect, mergeTests } from '@playwright/test'
 
 const test = mergeTests(agentTest, webSocketFixture)
 

@@ -68,17 +68,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { actionClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import Button from '@comfyorg/design-system/button/Button'
-import { useToast } from '@/components/ui/toast/toastStore'
 import {
   SUPPORTED_HDRI_EXTENSIONS,
   SUPPORTED_HDRI_EXTENSIONS_ACCEPT
 } from '@comfyorg/viewport3d/load3d/constants'
 import type { LightConfig } from '@comfyorg/viewport3d/load3d/interfaces'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { actionClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 
 const { compact = false, sceneHasImage = false } = defineProps<{
   compact?: boolean

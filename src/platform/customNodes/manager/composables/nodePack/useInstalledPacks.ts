@@ -1,10 +1,10 @@
 import { whenever } from '@vueuse/core'
 import { computed, onUnmounted, ref } from 'vue'
 
-import type { components } from '@/types/comfyRegistryTypes'
 import { useNodePacks } from '@/platform/customNodes/manager/composables/nodePack/useNodePacks'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import type { UseNodePacksOptions } from '@/platform/customNodes/manager/types/comfyManagerTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 
 export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
   const comfyManagerStore = useComfyManagerStore()

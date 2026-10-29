@@ -1,3 +1,6 @@
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { MaskBlendMode, Tools } from '@comfyorg/mask-editor/types'
+import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 /* oxlint-disable testing-library/no-container, testing-library/no-node-access -- layer rows have unlabeled checkboxes and the blend-mode select has no role-friendly label */
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
@@ -5,9 +8,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ImageLayerSettingsPanel from '@/renderer/extensions/maskEditor/components/ImageLayerSettingsPanel.vue'
-import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
-import { MaskBlendMode, Tools } from '@comfyorg/mask-editor/types'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 type ToolManager = ReturnType<typeof useToolManager>
 

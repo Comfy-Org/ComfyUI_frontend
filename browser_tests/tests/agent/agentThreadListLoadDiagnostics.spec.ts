@@ -1,9 +1,8 @@
-import { expect, mergeTests } from '@playwright/test'
-
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect, mergeTests } from '@playwright/test'
 
 const test = mergeTests(agentTest, hostTelemetryFixture)
 

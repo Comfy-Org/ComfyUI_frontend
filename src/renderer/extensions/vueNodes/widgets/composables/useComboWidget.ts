@@ -1,27 +1,27 @@
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { ref, toValue } from 'vue'
 
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
 import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
+import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { assetService } from '@/platform/assets/services/assetService'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import { isCloud } from '@/platform/distribution/types'
+import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
   ComboInputSpec,
   InputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
+import { useAssetsStore } from '@/stores/assetsStore'
 import type { BaseDOMWidget } from '@/types/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
-import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import { useRemoteWidget } from './useRemoteWidget'

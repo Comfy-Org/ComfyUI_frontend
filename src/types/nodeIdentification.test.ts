@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest'
-
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
@@ -15,6 +13,7 @@ import {
   parseNodeLocatorId,
   tryNormalizeNodeExecutionId
 } from '@comfyorg/graph-model/nodeIdentification'
+import { describe, expect, it } from 'vitest'
 
 describe('nodeIdentification', () => {
   describe('NodeLocatorId', () => {

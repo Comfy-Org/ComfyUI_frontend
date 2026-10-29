@@ -55,8 +55,8 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import VideoPlayOverlay from '@comfyorg/design-system/media/VideoPlayOverlay'
+import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
 const {

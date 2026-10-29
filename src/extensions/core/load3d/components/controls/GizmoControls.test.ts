@@ -1,3 +1,4 @@
+import type { GizmoConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
@@ -5,7 +6,6 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import GizmoControls from '@/extensions/core/load3d/components/controls/GizmoControls.vue'
-import type { GizmoConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const i18n = createI18n({
   legacy: false,

@@ -1,15 +1,14 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, onTestFinished } from 'vitest'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, onTestFinished } from 'vitest'
 
 import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
 import { attachDocOpMinter } from './docOpMinter'

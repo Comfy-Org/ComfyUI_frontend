@@ -1,10 +1,11 @@
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+
 import type {
   ExportedSubgraph,
   ExportedSubgraphInstance,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { normalizeSubgraphDefinitionIds } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useApp } from '@/scripts/appInstance'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

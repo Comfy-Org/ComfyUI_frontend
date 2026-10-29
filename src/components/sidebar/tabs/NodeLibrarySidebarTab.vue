@@ -262,9 +262,15 @@
 </template>
 
 <script setup lang="ts">
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import type { Ref } from 'vue'
 import {
@@ -278,19 +284,16 @@ import {
 
 import SearchFilterChip from '@/components/common/SearchFilterChip.vue'
 import type { SearchFilter } from '@/components/common/SearchFilterChip.vue'
-import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import { renderNodePreview } from '@/components/node/renderNodePreview'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
-import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
-import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
 import NodeHelpPage from '@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue'
-import Badge from '@comfyorg/design-system/badge/Badge'
-import Button from '@comfyorg/design-system/button/Button'
+import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
-import { useTelemetry } from '@comfyorg/telemetry'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -299,9 +302,7 @@ import {
   DEFAULT_SORTING_ID,
   nodeOrganizationService
 } from '@/services/nodeOrganizationService'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
@@ -311,7 +312,6 @@ import type {
 } from '@/types/nodeOrganizationTypes'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue'
 

@@ -247,41 +247,40 @@
 </template>
 
 <script setup lang="ts">
-import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import Button from '@comfyorg/design-system/button/Button'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { storeToRefs } from 'pinia'
+import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
-import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
-import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import WorkspaceSwitcherPopover from '@/platform/account/components/WorkspaceSwitcherPopover.vue'
-import Button from '@comfyorg/design-system/button/Button'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useExternalLink } from '@/composables/useExternalLink'
+import WorkspaceSwitcherPopover from '@/platform/account/components/WorkspaceSwitcherPopover.vue'
+import { useAccountUI } from '@/platform/account/composables/useAccountUI'
+import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 import {
   canDesktopHostSwitchWorkspace,
   isDesktopHostSignedIn
 } from '@/platform/auth/desktopHost/desktopHostSession'
-
-import { useExternalLink } from '@/composables/useExternalLink'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
 import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import SubscribeButton from '@/platform/billing/subscription/components/SubscribeButton.vue'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useAccountUI } from '@/platform/account/composables/useAccountUI'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
-import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const workspaceStore = useTeamWorkspaceStore()
 const billingState = useWorkspaceBillingStateStore()

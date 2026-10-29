@@ -1,11 +1,15 @@
-import type { Page, WebSocketRoute } from '@playwright/test'
 import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
 import type { AgentAskServerFrame } from '@comfyorg/ingest-types'
+import type { HostDoc, HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
+import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
+import type {
+  ParsedWireBatch,
+  WireOpEnvelope
+} from '@e2e/fixtures/agentWireFrame'
+import type { Page, WebSocketRoute } from '@playwright/test'
+import { isPlainObject } from 'es-toolkit'
 
-import {
-  DOC_PROTOCOL_VERSION,
-  parseServerDocFrame
-} from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type {
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -17,17 +21,12 @@ import type {
   ProgressWsMessage,
   StatusWsMessage
 } from '@/platform/remote/comfyui/execution/types'
+import {
+  DOC_PROTOCOL_VERSION,
+  parseServerDocFrame
+} from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import type { HostDoc, HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
-import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
-import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
-import type {
-  ParsedWireBatch,
-  WireOpEnvelope
-} from '@e2e/fixtures/agentWireFrame'
-import { isPlainObject } from 'es-toolkit'
 
 const SUBSCRIBE_TIMEOUT = 15_000
 /** The sid the fake ComfyUI reports on its first `status` frame. */

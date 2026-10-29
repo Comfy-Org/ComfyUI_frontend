@@ -1,8 +1,4 @@
 import { zPromptRequest } from '@comfyorg/ingest-types/zod'
-import { expect } from '@playwright/test'
-import type { Page, Request } from '@playwright/test'
-
-import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
   PROMPT_ACCEPTED,
   SESSION_REVOKED,
@@ -18,9 +14,12 @@ import {
   TEAM_WORKSPACE_NAME,
   WORKSPACE_SWITCHER_WORKSPACES
 } from '@e2e/fixtures/data/workspaceSwitcher'
-import { webSessionTest as test } from '@e2e/fixtures/webSessionFixture'
+import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
+import { webSessionTest as test } from '@e2e/fixtures/webSessionFixture'
+import { expect } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
 
 const WORKSPACE_HEADER = 'x-comfy-workspace-id'
 const TEAM_WORKSPACE_ID = 'ws-team'

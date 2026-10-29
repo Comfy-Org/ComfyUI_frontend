@@ -1,6 +1,6 @@
+import userEvent from '@testing-library/user-event'
 /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'

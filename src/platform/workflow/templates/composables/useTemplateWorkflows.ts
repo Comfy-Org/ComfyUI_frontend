@@ -1,16 +1,24 @@
+import type {
+  ComfyWorkflowJSON,
+  LegacyLoadableWorkflow
+} from '@comfyorg/graph-model/workflowSchema'
+import {
+  validateComfyWorkflow,
+  zLegacyLoadableWorkflow
+} from '@comfyorg/graph-model/workflowSchema'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { createToastId } from '@/types/toastId'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import type { TemplateInput } from '@/platform/workflow/templates/schemas/templateSchema'
 import { syncCompletedTemplateInputsWithCurrentGraph } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import type { TemplateInput } from '@/platform/workflow/templates/schemas/templateSchema'
+import { prepareTemplateInputs } from '@/platform/workflow/templates/services/templateInputService'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import type {
   TemplateGroup,
@@ -21,20 +29,11 @@ import {
   resolveTemplateInputAssets,
   startMissingTemplateInputDownloads
 } from '@/platform/workflow/templates/utils/templateInputAssets'
-import type {
-  ComfyWorkflowJSON,
-  LegacyLoadableWorkflow
-} from '@comfyorg/graph-model/workflowSchema'
-import {
-  validateComfyWorkflow,
-  zLegacyLoadableWorkflow
-} from '@comfyorg/graph-model/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
-
-import { prepareTemplateInputs } from '@/platform/workflow/templates/services/templateInputService'
+import { createToastId } from '@/types/toastId'
 
 type TemplateLoadResult = 'loaded' | 'graph-failed' | 'not-started'
 

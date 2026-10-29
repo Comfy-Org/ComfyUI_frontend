@@ -1,10 +1,11 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { startDesktopHostSession } from '@/platform/auth/desktopHost/desktopHostSession'
 import type { LocalWebAuthEnvironment } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createLocalWebAuthBridge } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createStorageTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
-import { reportError } from '@comfyorg/telemetry/reportError'
 
 /**
  * Hosts whose origin Cloud allows to read `/oauth/token` responses. `[::1]` is

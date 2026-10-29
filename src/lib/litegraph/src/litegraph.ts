@@ -2,14 +2,14 @@ import type {
   ContextMenu,
   LGraphNode
 } from '@comfyorg/graph-model/entityRegistry'
+import type { CanvasEventDetail } from '@comfyorg/graph-model/events'
+import type { ConnectingLink } from '@comfyorg/graph-model/slots'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 
 import { LiteGraphGlobal } from './LiteGraphGlobal'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import type { ConnectingLink } from '@comfyorg/graph-model/slots'
-import type { IContextMenuOptions } from './types/contextMenu'
 import { registerLiteGraphInstance } from './litegraphInstance'
 import { loadPolyfills } from './polyfills'
-import type { CanvasEventDetail } from '@comfyorg/graph-model/events'
+import type { IContextMenuOptions } from './types/contextMenu'
 
 // Must remain above LiteGraphGlobal (circular dependency due to abstract factory behaviour in `configure`)
 export { Subgraph } from './subgraph/Subgraph'

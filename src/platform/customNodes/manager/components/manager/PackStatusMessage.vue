@@ -12,10 +12,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import type { MessageVariants } from '@comfyorg/design-system/lib/message/message.variants'
 import Message from '@comfyorg/design-system/message/Message'
+import { computed } from 'vue'
+
 import type { components } from '@/types/comfyRegistryTypes'
 
 type PackVersionStatus = components['schemas']['NodeVersionStatus']

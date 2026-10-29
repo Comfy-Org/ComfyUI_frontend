@@ -2,16 +2,16 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
-  ContextMenuDivElement,
-  IContextMenuValue
-} from '@/lib/litegraph/src/types/contextMenu'
-import type {
   LGraph,
   LGraphCanvas,
   LGraphGroup,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import type {
+  ContextMenuDivElement,
+  IContextMenuValue
+} from '@/lib/litegraph/src/types/contextMenu'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 

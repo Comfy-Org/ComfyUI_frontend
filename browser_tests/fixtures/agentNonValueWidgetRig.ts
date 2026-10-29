@@ -1,9 +1,4 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
@@ -14,6 +9,10 @@ import {
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
+
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 /** Binary WS frame type 3 (`progress_text`): [u32 type][u32 idLen][id][text]. */
 export function progressTextFrame(nodeId: string, text: string): Buffer {

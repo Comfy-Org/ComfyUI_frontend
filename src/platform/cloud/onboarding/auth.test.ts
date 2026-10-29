@@ -1,14 +1,14 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   consumeSurveyReplayRequest,
   isSurveyReplayRequested,
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
-import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 

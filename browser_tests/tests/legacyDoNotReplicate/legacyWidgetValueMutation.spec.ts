@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
-
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { BAD_DO_NOT_DO_THIS_LegacyApiHelper } from '@e2e/fixtures/helpers/BAD_DO_NOT_DO_THIS_LegacyApiHelper'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { expect } from '@playwright/test'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.workflow.loadWorkflow('widgets/image_crop_widget')

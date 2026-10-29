@@ -189,34 +189,34 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@comfyorg/design-system/card/Card'
-import { vAutoAnimate } from '@formkit/auto-animate/vue'
-import { useAsyncState } from '@vueuse/core'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import ComfyHubPublishIntroPanel from '@/platform/workflow/sharing/components/profile/ComfyHubPublishIntroPanel.vue'
-import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
-import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
 import Button from '@comfyorg/design-system/button/Button'
+import Card from '@comfyorg/design-system/card/Card'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import Input from '@comfyorg/design-system/input/Input'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { vAutoAnimate } from '@formkit/auto-animate/vue'
+import { useAsyncState } from '@vueuse/core'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import ComfyHubPublishIntroPanel from '@/platform/workflow/sharing/components/profile/ComfyHubPublishIntroPanel.vue'
+import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
+import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
 import { useComfyHubPublishDialog } from '@/platform/workflow/sharing/composables/useComfyHubPublishDialog'
+import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
+import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import type {
   WorkflowPublishResult,
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
-import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { appendJsonExt } from '@/utils/formatUtil'
-import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { onClose } = defineProps<{
   onClose: () => void

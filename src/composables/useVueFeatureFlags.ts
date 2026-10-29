@@ -5,9 +5,8 @@
 import { createSharedComposable } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
-import { useSettingStore } from '@/platform/settings/settingStore'
-
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 function useVueFeatureFlagsIndividual() {
   const settingStore = useSettingStore()

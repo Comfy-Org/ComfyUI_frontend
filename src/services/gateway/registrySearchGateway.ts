@@ -1,3 +1,5 @@
+import { toError } from '@comfyorg/shared-frontend-utils/errorUtil'
+
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
 import { useComfyRegistrySearchProvider } from '@/services/providers/registrySearchProvider'
 import type { SearchNodePacksParams } from '@/types/algoliaTypes'
@@ -6,7 +8,6 @@ import type {
   SearchPacksOutcome
 } from '@/types/searchServiceTypes'
 import { paramsToCacheKey } from '@/utils/formatUtil'
-import { toError } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 interface ProviderState {
   provider: NodePackSearchProvider

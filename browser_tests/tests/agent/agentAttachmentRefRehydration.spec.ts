@@ -1,14 +1,8 @@
-import { expect } from '@playwright/test'
-
 import type {
   AgentMessage,
   AgentThreadListResponse
 } from '@comfyorg/ingest-types'
 import { zAgentTurnAccepted } from '@comfyorg/ingest-types/zod'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import {
   BARE_DIGEST,
@@ -22,6 +16,10 @@ import {
 } from '@e2e/fixtures/helpers/agentAttachmentRehydration'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 const THREAD_KEY = StorageKeys.agentThread('personal')
 

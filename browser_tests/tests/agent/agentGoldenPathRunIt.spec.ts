@@ -1,22 +1,21 @@
-import { expect } from '@playwright/test'
-
 import type { AgentAnswerAccepted } from '@comfyorg/ingest-types'
 import { zAgentAnswerRequest } from '@comfyorg/ingest-types/zod'
-
-import {
-  agentExecutionStoryTest as test,
-  runToolCallFrame,
-  settleStoryTurn,
-  startStoryTurn
-} from '@e2e/tests/agent/agentExecutionStoryFixture'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
-import { nextFrame } from '@e2e/fixtures/utils/timing'
 import {
   MESSAGE_ID,
   SOURCE_NODE_ID,
   THREAD_ID,
   WORKFLOW_ID
 } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
+import {
+  agentExecutionStoryTest as test,
+  runToolCallFrame,
+  settleStoryTurn,
+  startStoryTurn
+} from '@e2e/tests/agent/agentExecutionStoryFixture'
+import { expect } from '@playwright/test'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const JOB_ID = 'agent-golden-path-run-1'

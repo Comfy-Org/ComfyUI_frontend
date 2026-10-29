@@ -1,5 +1,5 @@
-import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
+import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {

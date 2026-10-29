@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useDropZone } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import DropZoneIndicatorContent from './DropZoneIndicatorContent.vue'
 import DropZoneMediaActions from './DropZoneMediaActions.vue'

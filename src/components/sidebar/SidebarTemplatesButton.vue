@@ -12,13 +12,13 @@
 </template>
 
 <script setup lang="ts">
+import { useTelemetry } from '@comfyorg/telemetry'
 import { computed } from 'vue'
 
-import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@comfyorg/telemetry'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 
 import SidebarIcon from './SidebarIcon.vue'
 

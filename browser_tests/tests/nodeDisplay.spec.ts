@@ -1,10 +1,8 @@
-import { expect } from '@playwright/test'
-
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { expect } from '@playwright/test'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 

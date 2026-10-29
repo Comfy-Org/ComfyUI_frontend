@@ -1,9 +1,8 @@
-import { computed } from 'vue'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useTelemetry } from '@comfyorg/telemetry'
-
 import { openTypeformDialog } from '@/platform/surveys/openTypeformDialog'
 
 import { FEEDBACK_TYPEFORM_ID } from './config'

@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type {
   ComfyNode,
   ComfyWorkflowJSON
 } from '@comfyorg/graph-model/workflowSchema'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { api } from '@/scripts/api'
 
 import { prepareTemplateInputs } from './templateInputService'

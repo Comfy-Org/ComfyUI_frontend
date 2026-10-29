@@ -103,15 +103,12 @@
 </template>
 
 <script setup lang="ts">
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
+import ModelInfoField from '@comfyorg/design-system/field/ModelInfoField'
 import { whenever } from '@vueuse/core'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
-import ModelInfoField from '@comfyorg/design-system/field/ModelInfoField'
-import type { components } from '@/types/comfyRegistryTypes'
-import PackStatusMessage from '@/platform/customNodes/manager/components/manager/PackStatusMessage.vue'
-import PackVersionBadge from '@/platform/customNodes/manager/components/manager/PackVersionBadge.vue'
 import PackEnableToggle from '@/platform/customNodes/manager/components/manager/button/PackEnableToggle.vue'
 import PackInstallButton from '@/platform/customNodes/manager/components/manager/button/PackInstallButton.vue'
 import PackTryUpdateButton from '@/platform/customNodes/manager/components/manager/button/PackTryUpdateButton.vue'
@@ -120,6 +117,8 @@ import PackUpdateButton from '@/platform/customNodes/manager/components/manager/
 import DescriptionTabPanel from '@/platform/customNodes/manager/components/manager/infoPanel/tabs/DescriptionTabPanel.vue'
 import NodesTabPanel from '@/platform/customNodes/manager/components/manager/infoPanel/tabs/NodesTabPanel.vue'
 import WarningTabPanel from '@/platform/customNodes/manager/components/manager/infoPanel/tabs/WarningTabPanel.vue'
+import PackStatusMessage from '@/platform/customNodes/manager/components/manager/PackStatusMessage.vue'
+import PackVersionBadge from '@/platform/customNodes/manager/components/manager/PackVersionBadge.vue'
 import { usePackUpdateStatus } from '@/platform/customNodes/manager/composables/nodePack/usePackUpdateStatus'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 import { useImportFailedDetection } from '@/platform/customNodes/manager/composables/useImportFailedDetection'
@@ -134,6 +133,7 @@ import type {
   ConflictDetectionResult
 } from '@/platform/customNodes/manager/types/conflictDetectionTypes'
 import { ImportFailedKey } from '@/platform/customNodes/manager/types/importFailedTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 
 interface InfoItem {
   key: string

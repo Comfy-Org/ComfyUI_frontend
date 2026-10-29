@@ -1,11 +1,10 @@
-import { describe, expect, it } from 'vitest'
-
 import {
   capturePromptResponse,
   isServerSideFault,
   serverSideFault,
   summarizePromptError
 } from '@e2e/fixtures/customNode/promptSubmission'
+import { describe, expect, it } from 'vitest'
 
 describe('summarizePromptError', () => {
   it('names the node class and failing input', () => {

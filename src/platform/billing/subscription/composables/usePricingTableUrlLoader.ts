@@ -1,6 +1,10 @@
+import type { TeamCreditStops } from '@comfyorg/billing-core'
 import { useRoute, useRouter } from 'vue-router'
 
+import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import {
   clearPreservedQuery,
@@ -8,10 +12,6 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import type { TeamCreditStops } from '@comfyorg/billing-core'
-import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.PRICING
 

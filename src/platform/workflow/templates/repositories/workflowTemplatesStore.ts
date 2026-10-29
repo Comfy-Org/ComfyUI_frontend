@@ -1,16 +1,12 @@
+import type {
+  NavGroupData,
+  NavItemData
+} from '@comfyorg/design-system/lib/navigation/types'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
 import { i18n, st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
-import { api } from '@/scripts/api'
-import type {
-  NavGroupData,
-  NavItemData
-} from '@comfyorg/design-system/lib/navigation/types'
-import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
-import { normalizeI18nKey } from '@/utils/formatUtil'
-
 import { zLogoIndex } from '@/platform/workflow/templates/schemas/templateSchema'
 import type { LogoIndex } from '@/platform/workflow/templates/schemas/templateSchema'
 import type {
@@ -18,6 +14,9 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
+import { api } from '@/scripts/api'
+import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 // Enhanced template interface for easier filtering
 interface EnhancedTemplate extends TemplateInfo {

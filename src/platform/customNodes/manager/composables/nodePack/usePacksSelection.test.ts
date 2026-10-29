@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import type { components } from '@/types/comfyRegistryTypes'
 import { usePacksSelection } from '@/platform/customNodes/manager/composables/nodePack/usePacksSelection'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
+import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 

@@ -1,20 +1,19 @@
-import { getActivePinia } from 'pinia'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import type { ComponentProps } from 'vue-component-type-helpers'
-
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+
 import WorkflowSelectorChip from './WorkflowSelectorChip.vue'
 
 const i18n = createI18n({

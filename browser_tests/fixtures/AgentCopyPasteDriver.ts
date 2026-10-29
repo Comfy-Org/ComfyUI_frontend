@@ -1,12 +1,12 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
-
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
 import { agentConversationTest } from '@e2e/fixtures/agentConversationFixture'
 import { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
 import { KeyboardHelper } from '@e2e/fixtures/helpers/KeyboardHelper'
+import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
+
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 const NODE_CLICK_SCREEN_POSITION = { x: 400, y: 400 }
 

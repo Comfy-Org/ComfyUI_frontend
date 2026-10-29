@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { CloudNotification } from '@e2e/fixtures/components/CloudNotification'
+import { expect } from '@playwright/test'
 
 test.describe('Cloud notification dialog', { tag: '@ui' }, () => {
   test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })

@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+
 import { RuleTester } from 'oxlint/plugins-dev'
 import { afterAll, describe, it } from 'vitest'
 

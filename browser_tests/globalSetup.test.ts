@@ -1,6 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
-
 import { runGlobalSetup } from '@e2e/globalSetup'
+import { describe, expect, it, vi } from 'vitest'
 
 function response(status: number): Response {
   return new Response(null, { status })

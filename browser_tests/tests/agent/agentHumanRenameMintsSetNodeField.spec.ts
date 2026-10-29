@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { expect } from '@playwright/test'
 
 /** Every op this client has minted so far, in frame order, as `op:node_id`. */
 function mintedOps(agentConversation: AgentConversationHarness): string[] {

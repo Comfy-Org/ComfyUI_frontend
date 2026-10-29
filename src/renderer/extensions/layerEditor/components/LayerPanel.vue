@@ -117,6 +117,8 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
+import type { RasterData, SceneNode } from '@comfyorg/layer-editor/node'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -128,8 +130,6 @@ import {
 } from '@/renderer/extensions/layerEditor/composables/layerPanelDnd'
 import { DEFAULT_BACKGROUND_COLOR } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { RasterData, SceneNode } from '@comfyorg/layer-editor/node'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
 

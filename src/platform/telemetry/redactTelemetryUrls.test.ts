@@ -1,10 +1,9 @@
-import { assert, describe, expect, it } from 'vitest'
-
 import {
   redactTelemetryError,
   redactTelemetryUrls,
   redactTelemetryValues
 } from '@comfyorg/telemetry/redactTelemetryUrls'
+import { assert, describe, expect, it } from 'vitest'
 
 function denselySharedValue(): Record<string, unknown> {
   let shared: Record<string, unknown> = {

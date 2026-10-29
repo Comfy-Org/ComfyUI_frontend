@@ -1,13 +1,13 @@
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { provideExtensionService } from '@/platform/extensions/services/extensionServiceAccess'
 import type {
   JobDetail,
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyApp } from '@/scripts/app'
-import { provideExtensionService } from '@/platform/extensions/services/extensionServiceAccess'
 import * as jobOutputCache from '@/services/jobOutputCache'
 import { TaskItemImpl } from '@/stores/queueStore'
 

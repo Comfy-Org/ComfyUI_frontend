@@ -56,13 +56,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { jobSortModes } from '@/composables/queue/useJobList'
 import type { JobSortMode } from '@/composables/queue/useJobList'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'

@@ -1,8 +1,7 @@
-import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 // Five wired seed nodes; the recorded turn only sets widget values, leaving
 // every node in place to copy.

@@ -1,12 +1,12 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type {
   LGraph,
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import {
   collectMissingNodes,
   graphHasMissingNodes

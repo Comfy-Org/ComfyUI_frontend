@@ -1,13 +1,13 @@
 import { createSharedComposable, useEventListener } from '@vueuse/core'
 import { ref } from 'vue'
 
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { api } from '@/scripts/api'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 import { useComfyManagerService } from '@/platform/customNodes/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { api } from '@/scripts/api'
 
 export const useApplyChanges = createSharedComposable(() => {
   const comfyManagerStore = useComfyManagerStore()

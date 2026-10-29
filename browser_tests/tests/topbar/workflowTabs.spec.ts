@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 test.describe('Workflow tabs', () => {
   test.describe('Path-backed active-tab identity', () => {

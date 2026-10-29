@@ -1,10 +1,11 @@
-import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+
 import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 
 test.describe('Node search box V2 extended', { tag: '@node' }, () => {

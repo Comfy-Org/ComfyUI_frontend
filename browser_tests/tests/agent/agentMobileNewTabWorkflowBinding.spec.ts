@@ -1,17 +1,16 @@
-import { devices, expect, mergeTests } from '@playwright/test'
-import type { Route } from '@playwright/test'
 import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { devices, expect, mergeTests } from '@playwright/test'
+import type { Route } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 // PM-1933: a cloud mobile-web reporter said the agent "is disconnected from my
 // workflow and gets lost", and the intake form's "what happened instead"

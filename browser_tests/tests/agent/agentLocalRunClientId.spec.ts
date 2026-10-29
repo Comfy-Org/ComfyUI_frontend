@@ -1,11 +1,10 @@
-import { expect } from '@playwright/test'
-
+import { COMFY_SOCKET_SID } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
   STALE_SESSION_CLIENT_ID,
   agentLocalRunTest as test
 } from '@e2e/fixtures/agentLocalRunClientIdFixture'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
-import { COMFY_SOCKET_SID } from '@e2e/fixtures/agentFollowerHostSocket'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Agent local run follows this canvas by borrowing its client id (PM-1875)',

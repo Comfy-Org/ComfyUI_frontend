@@ -59,19 +59,18 @@
 </template>
 
 <script setup lang="ts">
-import { useThrottleFn } from '@vueuse/core'
-import { Field as VeeField, useForm, useIsFieldValid } from 'vee-validate'
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Button from '@comfyorg/design-system/button/Button'
 import Field from '@comfyorg/design-system/field/Field'
 import FieldError from '@comfyorg/design-system/field/FieldError'
 import FieldGroup from '@comfyorg/design-system/field/FieldGroup'
 import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
 import Input from '@comfyorg/design-system/input/Input'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useThrottleFn } from '@vueuse/core'
+import { Field as VeeField, useForm, useIsFieldValid } from 'vee-validate'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'

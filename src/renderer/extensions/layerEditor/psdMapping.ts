@@ -1,7 +1,6 @@
-import type { Layer, RGB, VectorContent } from 'ag-psd'
-
 import type { FillSpec, GradientStop } from '@comfyorg/layer-editor/fill'
 import type { BlendFn } from '@comfyorg/layer-editor/mode'
+import type { Layer, RGB, VectorContent } from 'ag-psd'
 
 export const PSD_BLEND_MODES: Partial<
   Record<BlendFn, NonNullable<Layer['blendMode']>>

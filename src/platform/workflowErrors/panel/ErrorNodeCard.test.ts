@@ -1,21 +1,20 @@
-import { getActivePinia } from 'pinia'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@comfyorg/telemetry'
-
-import { resolveRunErrorMessage } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { resolveRunErrorMessage } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
+import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
-import { api } from '@/scripts/api'
 
 const mockGenerateErrorReport = vi.fn(
   (_data?: unknown) => '# ComfyUI Error Report\n...'

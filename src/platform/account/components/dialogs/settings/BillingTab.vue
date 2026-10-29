@@ -153,28 +153,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useExternalLink } from '@/composables/useExternalLink'
-import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
+import { computed, onMounted } from 'vue'
+
+import { useExternalLink } from '@/composables/useExternalLink'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import WorkspaceHeaderMenu from '@/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue'
-import BillingLocalCreditBanner from '@/platform/billing/components/billingTab/BillingLocalCreditBanner.vue'
-import BillingPlanCheckoutBanner from '@/platform/billing/components/billingTab/BillingPlanCheckoutBanner.vue'
-import BillingParkedBanner from '@/platform/billing/components/billingTab/BillingParkedBanner.vue'
-import BillingPausedBanner from '@/platform/billing/components/billingTab/BillingPausedBanner.vue'
-import BillingTopupCheckoutBanner from '@/platform/billing/components/billingTab/BillingTopupCheckoutBanner.vue'
-import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
-import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
 import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/billing/components/billingTab/BillingCreditsCard.vue'
+import BillingLocalCreditBanner from '@/platform/billing/components/billingTab/BillingLocalCreditBanner.vue'
+import BillingParkedBanner from '@/platform/billing/components/billingTab/BillingParkedBanner.vue'
+import BillingPausedBanner from '@/platform/billing/components/billingTab/BillingPausedBanner.vue'
+import BillingPlanCheckoutBanner from '@/platform/billing/components/billingTab/BillingPlanCheckoutBanner.vue'
 import BillingPlanRow from '@/platform/billing/components/billingTab/BillingPlanRow.vue'
+import BillingTopupCheckoutBanner from '@/platform/billing/components/billingTab/BillingTopupCheckoutBanner.vue'
 import { addCreditsEmphasis } from '@/platform/billing/components/billingTab/creditsCard'
 import {
   deriveBillingTabLoad,
@@ -182,12 +176,18 @@ import {
 } from '@/platform/billing/components/billingTab/planRow'
 import { useBillingCreditsCard } from '@/platform/billing/components/billingTab/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useBillingPlanRow'
+import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
-import { useTopupCheckoutBanner } from '@/platform/billing/composables/useTopupCheckoutBanner'
+import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { useTopupCheckoutBanner } from '@/platform/billing/composables/useTopupCheckoutBanner'
+import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
+import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 
 const billing = useBillingContext()
 const capabilities = useBillingCapabilities()

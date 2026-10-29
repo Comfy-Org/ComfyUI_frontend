@@ -1,4 +1,5 @@
 import { setImmediate } from 'node:timers/promises'
+
 import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, createApp, defineComponent } from 'vue'

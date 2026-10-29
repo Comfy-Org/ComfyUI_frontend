@@ -1,6 +1,6 @@
+import type { WorkflowApiAssetsResponse } from '@comfyorg/ingest-types'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import type { WorkflowApiAssetsResponse } from '@comfyorg/ingest-types'
 import type {
   PromptFailureResponse,
   PromptResponse

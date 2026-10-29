@@ -1,11 +1,10 @@
 import type { AgentRunMode, JobsListResponse } from '@comfyorg/ingest-types'
+import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
-
-import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 // Explicit reattachment after navigation, not automatic restoration of the old
 // page-session binding. See https://github.com/Comfy-Org/ComfyUI_frontend/pull/16849

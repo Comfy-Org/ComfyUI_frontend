@@ -1,3 +1,5 @@
+import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import {
   assert,
   beforeEach,
@@ -17,7 +19,7 @@ import {
   pointerEvent,
   selectedTitles
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
-import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'
 import type {
   LGraphCanvas,
   LGraphGroup,
@@ -30,8 +32,6 @@ import {
   LiteGraph,
   Reroute
 } from '@/lib/litegraph/src/litegraph'
-import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'
-import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))

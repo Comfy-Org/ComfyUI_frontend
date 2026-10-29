@@ -81,13 +81,13 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Button from '@comfyorg/design-system/button/Button'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useI18n } from 'vue-i18n'
+
 import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import ErrorOverlayDeploymentOffer from '@/platform/workspace/components/ErrorOverlayDeploymentOffer.vue'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 

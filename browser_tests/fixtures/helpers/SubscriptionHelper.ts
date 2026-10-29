@@ -1,12 +1,4 @@
-import { expect } from '@playwright/test'
-import type { Page, Route } from '@playwright/test'
-
-import {
-  PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
-  PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
-} from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
 import type { BillingStatusResponse } from '@comfyorg/billing-core'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import {
   createBalance,
   createSubscriptionStatus,
@@ -15,6 +7,14 @@ import {
 } from '@e2e/fixtures/data/subscriptionFixtures'
 import type { BalanceResponse } from '@e2e/fixtures/data/subscriptionFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expect } from '@playwright/test'
+import type { Page, Route } from '@playwright/test'
+
+import {
+  PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
+  PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+} from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 export interface SubscriptionConfig {
   status: BillingStatusResponse

@@ -1,5 +1,15 @@
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type {
+  CameraConfig,
+  CameraState,
+  LoadFolder,
+  Model3DInfo
+} from '@comfyorg/viewport3d/load3d/interfaces'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import { nextTick } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import Load3DViewerContent from '@/extensions/core/load3d/components/Load3dViewerContent.vue'
 import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import {
@@ -13,29 +23,19 @@ import {
 } from '@/extensions/core/load3d/composables/useLoad3d'
 import type { Load3dCachedOutput } from '@/extensions/core/load3d/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
-import type {
-  CameraConfig,
-  CameraState,
-  LoadFolder,
-  Model3DInfo
-} from '@comfyorg/viewport3d/load3d/interfaces'
-import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
-import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import { findNumericWidget } from '@/extensions/core/load3d/findNumericWidget'
+import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { Model3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import { readModel3DOutput } from '@/extensions/core/load3d/model3dOutput'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
-import { useToast } from '@/components/ui/toast/toastStore'
 import type {
   NodeExecutionOutput,
   NodeOutputWith
 } from '@/platform/remote/comfyui/execution/types'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 type Matrix = number[][]
@@ -46,12 +46,12 @@ const MAX_STALE_CAPTURE_RETRIES = 2
 type Load3dPreviewOutput = NodeOutputWith<{
   result?: [string?, CameraState?, string?, Matrix?, Matrix?]
 }>
-import { ComfyApp, app } from '@/scripts/app'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
+import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { ComfyApp, app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { isLoad3dNode } from '@/utils/litegraphUtil'
-import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 
 export const load3dExtension: ComfyExtension = {
   name: 'Comfy.Load3D',

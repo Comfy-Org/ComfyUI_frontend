@@ -1,12 +1,13 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useMagicKeys } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { Settings } from '@/platform/settings/types'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useExtensionDialogService } from '@/services/dialogService'
 import type {
@@ -17,9 +18,8 @@ import type {
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import { useApiKeyAuthStore } from './apiKeyAuthStore'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { useExecutionErrorStore } from './executionErrorStore'
 import { useAuthStore } from './authStore'
+import { useExecutionErrorStore } from './executionErrorStore'
 import { useQueueSettingsStore } from './queueSettingsStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'

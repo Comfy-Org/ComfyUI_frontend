@@ -1,8 +1,8 @@
-import { useToast } from '@/components/ui/toast/toastStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 interface ViewportInstance {

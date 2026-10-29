@@ -1,18 +1,17 @@
-import { expect } from '@playwright/test'
 import type {
   AgentMessage,
   AgentThreadListResponse
 } from '@comfyorg/ingest-types'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 const WORKSPACE_ID = 'personal'
 const THREAD_ID = 'thread-title-sync-e2e'

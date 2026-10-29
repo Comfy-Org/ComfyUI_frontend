@@ -27,11 +27,10 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-
 import Button from '@comfyorg/design-system/button/Button'
 import Slider from '@comfyorg/design-system/slider/Slider'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 const {
   icon = 'icon-[lucide--expand]',

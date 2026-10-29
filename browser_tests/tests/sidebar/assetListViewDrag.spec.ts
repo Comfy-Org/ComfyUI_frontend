@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { AGENT_VIDEO_ASSET } from '@e2e/fixtures/data/assetFixtures'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expect } from '@playwright/test'
 
 // PM-1401: dragging an asset out of the panel did nothing while the panel was
 // in list view, and worked in grid view. `MediaAssetCard` was the only thing

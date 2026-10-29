@@ -1,9 +1,8 @@
+import { webSocketFixture } from '@e2e/fixtures/ws'
+import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 import { expect, mergeTests } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { webSocketFixture } from '@e2e/fixtures/ws'
-import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
 // Story 39 of qa/user-story-test-matrix.md (in-app-agent-program):
 // "Escape does not stop the turn -- reproduces specifically for a turn

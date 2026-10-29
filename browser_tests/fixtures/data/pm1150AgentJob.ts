@@ -1,4 +1,5 @@
 import { createRouteMockJob } from '@e2e/fixtures/jobsRouteFixture'
+
 import type {
   JobDetail,
   RawJobListItem

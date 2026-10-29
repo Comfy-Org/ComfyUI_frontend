@@ -1,9 +1,10 @@
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import type { PromptSnapshot } from '@/workbench/extensions/agent/types/workflowReference'
+
 import UserMessage from './UserMessage.vue'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))

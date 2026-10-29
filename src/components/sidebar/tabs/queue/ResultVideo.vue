@@ -13,14 +13,14 @@
 <script setup lang="ts">
 import { computed, onActivated, useTemplateRef } from 'vue'
 
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemHtmlVideoType } from '@/utils/resultItem'
 import {
   resultItemUrl,
   resultItemVhsAdvancedPreviewUrl
 } from '@/utils/resultItemUrl'
-import { resultItemHtmlVideoType } from '@/utils/resultItem'
 
 /* MediaLightbox retains this component via KeepAlive include, which matches on
    the registered component name. */

@@ -1,5 +1,3 @@
-import type { Page } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import {
@@ -30,6 +28,7 @@ import {
 } from '@e2e/fixtures/customNode/valueDrift'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
+import type { Page } from '@playwright/test'
 
 const BATCH_SIZE = 24
 const GRID_SPACING = { x: 420, y: 360 }

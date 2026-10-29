@@ -3,8 +3,6 @@ import type {
   BillingResult,
   CapabilitiesReadOptions
 } from '@comfyorg/account-core/billing'
-
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesRead,
@@ -13,6 +11,8 @@ import type {
   BillingStatusResponse,
   SavedPaymentMethod
 } from '@comfyorg/billing-core'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 /** The reads a rail serves, in the shape the host's billing state holds. */
 export interface BillingReadRail {

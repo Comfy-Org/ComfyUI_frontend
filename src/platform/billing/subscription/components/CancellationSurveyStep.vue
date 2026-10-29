@@ -70,13 +70,13 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { RadioGroupItem, RadioGroupRoot } from 'reka-ui'
 import { onMounted, ref, useId } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import Button from '@comfyorg/design-system/button/Button'
-import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import CancellationStepLayout from '@/platform/billing/subscription/components/CancellationStepLayout.vue'
 import type {
   CancellationReason,
@@ -87,7 +87,6 @@ import {
   cancellationSurveyExitEvent,
   cancellationSurveyShownEvent
 } from '@/platform/billing/subscription/utils/cancellationSurvey'
-import { useTelemetry } from '@comfyorg/telemetry'
 
 const { surveyId, experimentVariant, onExit } = defineProps<{
   surveyId: string

@@ -1,3 +1,13 @@
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type {
+  ExportedSubgraph,
+  ISerialisedNode,
+  SerialisableGraph
+} from '@comfyorg/graph-model/serialisation'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { registerNodeState } from '@/core/graph/nodeShell/nodeShellState'
@@ -5,23 +15,13 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   normalizeConfiguredTopology,
   realignGroupWidgetChildLinks,
   realignInputLinkSlots
 } from '@/lib/litegraph/src/linkDeduplication'
-import type {
-  ExportedSubgraph,
-  ISerialisedNode,
-  SerialisableGraph
-} from '@comfyorg/graph-model/serialisation'
-import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const DEFINITION_ORDER = ['in_a', 'in_b', 'in_c']
 

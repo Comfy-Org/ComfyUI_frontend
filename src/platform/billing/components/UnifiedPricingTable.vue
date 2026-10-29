@@ -443,23 +443,34 @@
 </template>
 
 <script setup lang="ts">
-import Badge from '@comfyorg/design-system/badge/Badge'
-import PricingTierHeading from '@/platform/billing/components/PricingTierHeading.vue'
-import Card from '@comfyorg/design-system/card/Card'
 import {
-  BILLING_ACTION_NAME,
-  planCtaActionName
-} from '@/platform/telemetry/billingActionNames'
+  getStopDiscountedMonthlyUsd,
+  mapApiTeamCreditStops
+} from '@comfyorg/account-ui/billing/catalog'
+import type { Plan } from '@comfyorg/billing-core'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
+import Card from '@comfyorg/design-system/card/Card'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import type { PlanAction } from '@comfyorg/ingest-types'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
 import CreditSlider from '@/platform/billing/components/credit-slider/CreditSlider.vue'
-import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
-import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import PricingTierHeading from '@/platform/billing/components/PricingTierHeading.vue'
+import { formatSubscriptionDate } from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
+import {
+  DEFAULT_TEAM_PLAN_STOP_INDEX,
+  TEAM_PLAN_CREDIT_STOPS
+} from '@/platform/billing/subscription/constants/teamPlanCreditStops'
+import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import {
   ENTERPRISE_URL,
   TIER_PRICING,
@@ -470,23 +481,12 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/billing/subscription/constants/tierPricing'
-import {
-  getStopDiscountedMonthlyUsd,
-  mapApiTeamCreditStops
-} from '@comfyorg/account-ui/billing/catalog'
-import {
-  DEFAULT_TEAM_PLAN_STOP_INDEX,
-  TEAM_PLAN_CREDIT_STOPS
-} from '@/platform/billing/subscription/constants/teamPlanCreditStops'
-import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
-import type { Plan } from '@comfyorg/billing-core'
-import { formatSubscriptionDate } from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
-import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import {
+  BILLING_ACTION_NAME,
+  planCtaActionName
+} from '@/platform/telemetry/billingActionNames'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 

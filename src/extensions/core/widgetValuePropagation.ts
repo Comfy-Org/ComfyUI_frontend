@@ -1,11 +1,12 @@
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import type { LLink } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
-import { app } from '@/scripts/app'
-import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
+import { useLinkStore } from '@/stores/linkStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 type SourceNode = Pick<LGraphNode, 'id' | 'graph' | 'widgets'>

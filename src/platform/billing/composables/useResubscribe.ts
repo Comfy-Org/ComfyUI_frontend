@@ -1,12 +1,12 @@
-import { useToast } from '@/components/ui/toast/toastStore'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 
 /**
  * Reactivates a cancelled-but-still-active subscription and surfaces success or

@@ -1,46 +1,46 @@
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@comfyorg/graph-model/workflowSchema'
+import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
+import type { Keybinding } from '@comfyorg/keybindings/types'
+import type {
+  WorkflowOpenSource,
+  WorkflowQueueIntent
+} from '@comfyorg/telemetry/types'
 import type { ShallowRef } from 'vue'
 
-import type { Positionable } from '@comfyorg/graph-model/interfaces'
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type {
   LGraph,
   LGraphCanvas,
   LGraphNode,
   Vector2
 } from '@/lib/litegraph/src/litegraph'
-import type { MissingModelPipelineResult } from '@/platform/workflowErrors/missingModel/types'
-import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
-import type { SettingParams } from '@/platform/settings/types'
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON
-} from '@comfyorg/graph-model/workflowSchema'
-import type { Keybinding } from '@comfyorg/keybindings/types'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type {
   ExecutionErrorWsMessage,
   NodeExecutionOutput,
   ProgressWsMessage
 } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
-import type {
-  WorkflowOpenSource,
-  WorkflowQueueIntent
-} from '@comfyorg/telemetry/types'
+import type { SettingParams } from '@/platform/settings/types'
 import type {
   ComfyWorkflow,
   LoadedComfyWorkflow
 } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { MissingModelPipelineResult } from '@/platform/workflowErrors/missingModel/types'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyApi } from '@/scripts/api'
 import type { ComfyUI } from '@/scripts/ui'
 import type { ComfyAppMenu } from '@/scripts/ui/menu/index'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
-import type {
-  NodeExecutionId,
-  NodeLocatorId
-} from '@comfyorg/graph-model/nodeIdentification'
-import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { AuthUserInfo } from '@/types/authTypes'
 import type {
   BottomPanelExtension,

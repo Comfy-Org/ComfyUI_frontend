@@ -1,6 +1,3 @@
-import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
-import type { Page, Route } from '@playwright/test'
-
 import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type {
@@ -9,6 +6,9 @@ import type {
 } from '@e2e/fixtures/helpers/AssetHelper'
 import { createAssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
 import { ModelLibraryHelper } from '@e2e/fixtures/helpers/ModelLibraryHelper'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
+import type { Page, Route } from '@playwright/test'
+
 import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 
 const ASSETS_ROUTE_PATTERN = /\/api\/assets(?:\?.*)?$/

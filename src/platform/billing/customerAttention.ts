@@ -1,10 +1,10 @@
 import type { CustomerActionHold } from '@comfyorg/account-core/billing'
 import { isBlockedOnCustomerPhase } from '@comfyorg/account-core/billing'
-
 import type {
   BillingAuthenticationState,
   BillingOperationPhase
 } from '@comfyorg/billing-core'
+
 import type { ToastId } from '@/types/toastId'
 
 // Re-exported so both rails read one definition: a second copy that drifted

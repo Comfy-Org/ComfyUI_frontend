@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import {
   POST_RECONNECT_EVENT,
   POST_RECONNECT_TEXT,
@@ -7,6 +5,7 @@ import {
   TURN_IN_PROGRESS_MESSAGE,
   agentTurnLockTest as test
 } from '@e2e/fixtures/agentTurnLockFixture'
+import { expect } from '@playwright/test'
 
 // PM-1776 / PM-1682: this is a panel-only remount. The page stays loaded and
 // the socket stays connected; PM-1043 and PM-1199 cover those other triggers.

@@ -1,6 +1,20 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  appendQuarantine,
+  flushProxyWidgetMigration,
+  makeQuarantineEntry
+} from '@/core/graph/subgraph/migration/proxyWidgetMigration'
+import { reorderSubgraphInputsByName } from '@/core/graph/subgraph/promotionUtils'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
+import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import type {
   ExportedSubgraphInstance,
   INodeInputSlot,
@@ -9,10 +23,6 @@ import type {
   Subgraph,
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { WidgetValue } from '@/types/simplifiedWidget'
-import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
-import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   LegacyWidget,
   LGraphNode,
@@ -20,24 +30,14 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
-import {
-  appendQuarantine,
-  flushProxyWidgetMigration,
-  makeQuarantineEntry
-} from '@/core/graph/subgraph/migration/proxyWidgetMigration'
-import { reorderSubgraphInputsByName } from '@/core/graph/subgraph/promotionUtils'
-import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
-import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
+import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import type { WidgetState } from '@comfyorg/graph-model/widgetState'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { graphToPrompt } from '@/utils/executionUtil'
 
 import {

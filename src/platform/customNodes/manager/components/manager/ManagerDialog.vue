@@ -175,6 +175,17 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
+import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
+import type {
+  NavGroupData,
+  NavItemData
+} from '@comfyorg/design-system/lib/navigation/types'
+import Message from '@comfyorg/design-system/message/Message'
+import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
+import SearchAutocomplete from '@comfyorg/design-system/search-input/SearchAutocomplete'
 import { refDebounced, until, whenever } from '@vueuse/core'
 import { merge } from 'es-toolkit/compat'
 import {
@@ -191,24 +202,9 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
-import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
-import SearchAutocomplete from '@comfyorg/design-system/search-input/SearchAutocomplete'
-import Button from '@comfyorg/design-system/button/Button'
-import Message from '@comfyorg/design-system/message/Message'
-import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
-import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
-import { useExternalLink } from '@/composables/useExternalLink'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
-import type { components } from '@/types/comfyRegistryTypes'
-import type {
-  NavGroupData,
-  NavItemData
-} from '@comfyorg/design-system/lib/navigation/types'
-import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
 import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
+import { useExternalLink } from '@/composables/useExternalLink'
 import PackInstallButton from '@/platform/customNodes/manager/components/manager/button/PackInstallButton.vue'
 import PackUpdateButton from '@/platform/customNodes/manager/components/manager/button/PackUpdateButton.vue'
 import InfoPanel from '@/platform/customNodes/manager/components/manager/infoPanel/InfoPanel.vue'
@@ -220,14 +216,18 @@ import { useMissingNodes } from '@/platform/customNodes/manager/composables/node
 import { useUpdateAvailableNodes } from '@/platform/customNodes/manager/composables/nodePack/useUpdateAvailableNodes'
 import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
 import { useManagerDisplayPacks } from '@/platform/customNodes/manager/composables/useManagerDisplayPacks'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
 import { useManagerStatePersistence } from '@/platform/customNodes/manager/composables/useManagerStatePersistence'
 import { useRegistrySearch } from '@/platform/customNodes/manager/composables/useRegistrySearch'
-import { useConflictDetectionStore } from '@/platform/customNodes/manager/stores/conflictDetectionStore'
-import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/platform/customNodes/manager/stores/conflictDetectionStore'
 import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import { isLegacyManagerQuery } from '@/platform/customNodes/manager/utils/legacyManagerQuery'
 import { PACK_SORTABLE_FIELDS } from '@/platform/customNodes/manager/utils/nodePackSort'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import type { components } from '@/types/comfyRegistryTypes'
+import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
 
 const { initialTab, initialPackId, onClose } = defineProps<{
   initialTab?: ManagerTab

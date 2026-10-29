@@ -1,4 +1,3 @@
-import type { WorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 import { useMissingNodes } from '@/platform/customNodes/manager/composables/nodePack/useMissingNodes'
 import { usePackInstall } from '@/platform/customNodes/manager/composables/nodePack/usePackInstall'
 import { useApplyChanges } from '@/platform/customNodes/manager/composables/useApplyChanges'
@@ -6,6 +5,7 @@ import { useManagerDialog } from '@/platform/customNodes/manager/composables/use
 import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
+import type { WorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 
 export function createWorkflowErrorManager(): WorkflowErrorManager {
   const managerStore = useComfyManagerStore()

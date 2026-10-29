@@ -1,11 +1,11 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import { useTelemetry } from '@comfyorg/telemetry'
-
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
-import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+
 import { useComposer } from './useComposer'
 
 vi.mock(import('@comfyorg/telemetry'))

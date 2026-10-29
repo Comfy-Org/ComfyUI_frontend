@@ -44,11 +44,11 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
-import Button from '@comfyorg/design-system/button/Button'
-import Message from '@comfyorg/design-system/message/Message'
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'

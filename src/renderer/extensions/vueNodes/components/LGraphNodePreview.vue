@@ -32,12 +32,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
+
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
@@ -48,13 +51,10 @@ import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/wi
 import { dynamicComboOptionKeys } from '@/schemas/nodeDef/inputSpecTree'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { zeroUuid } from '@/utils/uuid'
 import { matchesWidgetName } from '@/utils/widgetBinding'
 import type { WidgetValueBinding } from '@/utils/widgetBinding'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   nodeDef,

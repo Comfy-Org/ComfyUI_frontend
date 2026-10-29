@@ -1,16 +1,5 @@
-import { ref, toRaw, watch } from 'vue'
 import QuickLRU from '@alloc/quick-lru'
-
-import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
-import { load3dHost } from '@/extensions/core/load3d/load3dHost'
-import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
-import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
-import {
-  isAssetPreviewSupported,
-  persistThumbnail
-} from '@/platform/assets/utils/assetPreviewUtil'
 import type {
   AnimationItem,
   BackgroundRenderModeType,
@@ -24,14 +13,25 @@ import type {
   SceneConfig,
   UpDirection
 } from '@comfyorg/viewport3d/load3d/interfaces'
-import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
+import { ref, toRaw, watch } from 'vue'
+
 import { useToast } from '@/components/ui/toast/toastStore'
-import { api } from '@/scripts/api'
+import { load3dHost } from '@/extensions/core/load3d/load3dHost'
 import {
   copyLoad3dState,
   handleViewportRefresh
 } from '@/extensions/core/load3d/load3dInstances'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
+import { t } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import {
+  isAssetPreviewSupported,
+  persistThumbnail
+} from '@/platform/assets/utils/assetPreviewUtil'
+import { api } from '@/scripts/api'
 
 interface Load3dViewerState {
   backgroundColor: string

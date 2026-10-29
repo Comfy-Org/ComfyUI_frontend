@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
+
 import WhatsNewPopup from './WhatsNewPopup.vue'
 
 // Mock release data with realistic CMS content

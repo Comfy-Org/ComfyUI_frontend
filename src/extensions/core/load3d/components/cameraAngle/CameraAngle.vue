@@ -78,26 +78,13 @@
 </template>
 
 <script setup lang="ts">
-import { useElementSize } from '@vueuse/core'
-import {
-  computed,
-  onMounted,
-  onUnmounted,
-  ref,
-  useTemplateRef,
-  watch
-} from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import ViewportWidgetShell from '@comfyorg/design-system/common/ViewportWidgetShell'
-import { actionClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import Button from '@comfyorg/design-system/button/Button'
+import ViewportWidgetShell from '@comfyorg/design-system/common/ViewportWidgetShell'
 import Select from '@comfyorg/design-system/select/Select'
 import SelectContent from '@comfyorg/design-system/select/SelectContent'
 import SelectItem from '@comfyorg/design-system/select/SelectItem'
 import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
 import SelectValue from '@comfyorg/design-system/select/SelectValue'
-import { useCameraAngle } from '@/extensions/core/load3d/composables/useCameraAngle'
 import {
   DISTANCE_TERMS,
   HORIZONTAL_TERMS,
@@ -111,8 +98,21 @@ import type {
   CameraAngleField,
   CameraAngleViewMode
 } from '@comfyorg/viewport3d/cameraAngle/types'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useElementSize } from '@vueuse/core'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
+import { actionClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
+import { useCameraAngle } from '@/extensions/core/load3d/composables/useCameraAngle'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'

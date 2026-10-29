@@ -1,10 +1,11 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
-import { useNodePreviewAndDrag } from './useNodePreviewAndDrag'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+
+import { useNodePreviewAndDrag } from './useNodePreviewAndDrag'
 
 vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 

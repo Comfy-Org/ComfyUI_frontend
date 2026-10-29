@@ -123,25 +123,26 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import ContextMenuContent from '@comfyorg/design-system/menu/ContextMenuContent'
+import MenuItems from '@comfyorg/design-system/menu/MenuItems'
+import TabsTrigger from '@comfyorg/design-system/tabs/TabsTrigger'
+import { cn } from '@comfyorg/tailwind-utils'
 import { ContextMenuRoot, ContextMenuTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import MenuItems from '@comfyorg/design-system/menu/MenuItems'
-import ContextMenuContent from '@comfyorg/design-system/menu/ContextMenuContent'
-import TabsTrigger from '@comfyorg/design-system/tabs/TabsTrigger'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { WorkflowExecutionStatus } from '@/stores/executionStore'
 import {
   useExecutionStore,
@@ -150,10 +151,9 @@ import {
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
-import { cn } from '@comfyorg/tailwind-utils'
 
-import WorkflowTabPopover from './WorkflowTabPopover.vue'
 import WorkflowAgentTargetIndicator from './WorkflowAgentTargetIndicator.vue'
+import WorkflowTabPopover from './WorkflowTabPopover.vue'
 
 defineOptions({ inheritAttrs: false })
 

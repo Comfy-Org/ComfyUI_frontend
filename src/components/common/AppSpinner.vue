@@ -1,10 +1,8 @@
 <script setup lang="ts">
+import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
+import Spinner from '@comfyorg/design-system/spinner/Spinner'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import Spinner from '@comfyorg/design-system/spinner/Spinner'
-
-import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 
 defineOptions({ inheritAttrs: false })
 

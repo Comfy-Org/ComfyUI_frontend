@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SidebarTab } from '@e2e/fixtures/components/SidebarTab'
+import { expect } from '@playwright/test'
 
 async function pressKeyAndExpectRequest(
   comfyPage: ComfyPage,

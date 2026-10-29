@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true

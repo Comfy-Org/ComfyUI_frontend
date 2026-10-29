@@ -160,8 +160,15 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import Tab from '@comfyorg/design-system/tab/Tab'
+import TabList from '@comfyorg/design-system/tab/TabList'
 import { unrefElement, useAsyncState, useStorage } from '@vueuse/core'
-import { useToast } from '@/components/ui/toast/toastStore'
 import {
   computed,
   defineAsyncComponent,
@@ -175,21 +182,14 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
-import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
-import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
-import Tab from '@comfyorg/design-system/tab/Tab'
-import TabList from '@comfyorg/design-system/tab/TabList'
-import Button from '@comfyorg/design-system/button/Button'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import MediaAssetSelectionBar from '@/platform/assets/components/MediaAssetSelectionBar.vue'
 import {

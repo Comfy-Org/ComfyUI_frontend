@@ -19,10 +19,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import RadioGroup from '@comfyorg/design-system/radio-group/RadioGroup'
 import RadioGroupItem from '@comfyorg/design-system/radio-group/RadioGroupItem'
+import { computed } from 'vue'
+
 import type { SettingOption } from '@/platform/settings/types'
 
 const { options = [] } = defineProps<{

@@ -1,9 +1,8 @@
 import type { LGraph, LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-
 import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
 
 import { Reroute } from '@/lib/litegraph/src/Reroute'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 /**
  * Resolves the reroute under a canvas-space point, preferring the layout store

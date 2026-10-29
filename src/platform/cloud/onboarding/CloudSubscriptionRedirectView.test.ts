@@ -1,3 +1,4 @@
+import type { TeamCreditStops } from '@comfyorg/billing-core'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { computed, ref } from 'vue'
@@ -6,7 +7,6 @@ import { createI18n } from 'vue-i18n'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
-import type { TeamCreditStops } from '@comfyorg/billing-core'
 
 import CloudSubscriptionRedirectView from './CloudSubscriptionRedirectView.vue'
 

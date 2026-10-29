@@ -1,11 +1,11 @@
+import booleanWorkflow from '@e2e/assets/inputs/boolean_input.json'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
 // @vitest-environment node
 import { fromPartial } from '@total-typescript/shoehorn'
 import { Storage } from 'happy-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import booleanWorkflow from '@e2e/assets/inputs/boolean_input.json'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
 import type { DraftPayloadV2 } from '@/platform/workflow/persistence/base/draftTypes'
 
 describe('WorkflowHelper draft workflows', () => {

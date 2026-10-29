@@ -1,5 +1,4 @@
 import type { CapabilitiesSnapshot } from '@comfyorg/account-core/billing'
-
 import type { BillingCapabilitiesRead } from '@comfyorg/billing-core'
 
 /**

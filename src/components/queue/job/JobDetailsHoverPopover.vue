@@ -28,11 +28,11 @@
 </template>
 
 <script setup lang="ts">
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { PopoverRoot } from 'reka-ui'
 import { computed } from 'vue'
 
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
-import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 
 const {
   open,

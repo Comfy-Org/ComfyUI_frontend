@@ -1,10 +1,10 @@
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import { render } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, markRaw, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
-import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import {
   LGraph,
   LGraphCanvas,

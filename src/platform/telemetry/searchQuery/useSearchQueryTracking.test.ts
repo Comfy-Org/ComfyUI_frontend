@@ -1,8 +1,7 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EffectScope, Ref } from 'vue'
 import { effectScope, ref } from 'vue'
-
-import { useTelemetry } from '@comfyorg/telemetry'
 
 vi.mock(import('@comfyorg/telemetry'))
 

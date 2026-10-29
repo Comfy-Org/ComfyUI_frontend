@@ -37,29 +37,28 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import ComfyLogo from '@comfyorg/design-system/icon/ComfyLogo'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { snakeCase } from 'es-toolkit'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-import { snakeCase } from 'es-toolkit'
-
-import ComfyLogo from '@comfyorg/design-system/icon/ComfyLogo'
-import Button from '@comfyorg/design-system/button/Button'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
-import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
+import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingPanelType } from '@/platform/settings/types'
-import { useTelemetry } from '@comfyorg/telemetry'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { useColorPaletteService } from '@/services/colorPaletteService'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import type { AppMenuItem } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
-import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 
 const { t } = useI18n()
 const menuItemStore = useMenuItemStore()

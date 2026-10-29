@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import {
   AGENT_NODE_IDS,
@@ -8,6 +6,7 @@ import {
   deleteNode
 } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { AgentRemoteApplyHarness } from '@e2e/fixtures/helpers/AgentRemoteApplyHarness'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Agent remote apply reaches the canvas',

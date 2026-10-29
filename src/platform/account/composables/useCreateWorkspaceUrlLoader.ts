@@ -1,12 +1,12 @@
 import { useRoute, useRouter } from 'vue-router'
 
+import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 import {
   clearPreservedQuery,
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE
 

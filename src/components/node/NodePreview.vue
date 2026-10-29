@@ -88,15 +88,15 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 </template>
 
 <script setup lang="ts">
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import { cn } from '@comfyorg/tailwind-utils'
 import { truncate, zip } from 'es-toolkit/compat'
 import { computed } from 'vue'
 
-import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
-import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
+import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'

@@ -1,10 +1,10 @@
-import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { partition } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import type { DeploymentCompatibilityMark } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import type { DeploymentRowLabels } from '@/platform/workspace/composables/useDeploymentLabels'

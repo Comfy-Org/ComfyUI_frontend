@@ -39,8 +39,8 @@
 import { computed } from 'vue'
 
 import TreeExplorerV2 from '@/components/common/TreeExplorerV2.vue'
-import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { NODE_CATEGORY_LABELS } from '@/types/nodeOrganizationTypes'
 import type { NodeLibrarySection } from '@/types/nodeOrganizationTypes'
 import type {

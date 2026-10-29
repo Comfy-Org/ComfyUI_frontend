@@ -1,8 +1,7 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
-
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 

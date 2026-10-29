@@ -1,17 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import {
-  LGraph,
-  LGraphNode,
-  LiteGraph,
-  SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
-import {
-  createTestSubgraph,
-  createTestSubgraphNode,
-  resetSubgraphFixtureState
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   appendQuarantine,
@@ -20,11 +11,19 @@ import {
   normalizeLegacyProxyWidgetEntry,
   readHostQuarantine
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock(import('@/services/litegraphService'))

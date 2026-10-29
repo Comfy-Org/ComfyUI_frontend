@@ -1,6 +1,3 @@
-import { mergeTests } from '@playwright/test'
-
-import type { TaskResponse } from '@/platform/tasks/services/taskSchema'
 import {
   comfyPageFixture,
   comfyExpect as expect
@@ -8,6 +5,9 @@ import {
 import { modelImportProgressFixture } from '@e2e/fixtures/modelImportProgressFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { mergeTests } from '@playwright/test'
+
+import type { TaskResponse } from '@/platform/tasks/services/taskSchema'
 
 const test = mergeTests(comfyPageFixture, modelImportProgressFixture)
 

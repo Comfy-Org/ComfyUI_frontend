@@ -1,9 +1,9 @@
+import type { BillingStatus } from '@comfyorg/billing-core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import type { BillingStatus } from '@comfyorg/billing-core'
 
 import { pausedBannerCopy, usePausedBanner } from './usePausedBanner'
 

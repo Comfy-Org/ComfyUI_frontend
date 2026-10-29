@@ -67,13 +67,13 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-import PackVersionBadge from '@/platform/customNodes/manager/components/manager/PackVersionBadge.vue'
 import PackBanner from '@/platform/customNodes/manager/components/manager/packBanner/PackBanner.vue'
 import PackCardFooter from '@/platform/customNodes/manager/components/manager/packCard/PackCardFooter.vue'
+import PackVersionBadge from '@/platform/customNodes/manager/components/manager/PackVersionBadge.vue'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import {
   IsInstallingKey,

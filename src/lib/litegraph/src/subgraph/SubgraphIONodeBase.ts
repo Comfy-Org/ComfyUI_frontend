@@ -4,36 +4,36 @@ import type {
   SubgraphInput,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-import { toSelectableKey } from '@/core/selection/selectionState'
-import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import type {
+  Hoverable,
+  CanvasPointerEvent
+} from '@comfyorg/graph-model/events'
+import { CanvasItem } from '@comfyorg/graph-model/globalEnums'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { serializeNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   DefaultConnectionColors,
   Positionable,
   CanvasColour
 } from '@comfyorg/graph-model/interfaces'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import type {
-  Hoverable,
-  CanvasPointerEvent
-} from '@comfyorg/graph-model/events'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@comfyorg/graph-model/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
-import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
-import { snapPoint } from '@/lib/litegraph/src/measure'
-import { CanvasItem } from '@comfyorg/graph-model/globalEnums'
+import { serializeNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   ExportedSubgraphIONode,
   Serialisable
 } from '@comfyorg/graph-model/serialisation'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+
+import { toSelectableKey } from '@/core/selection/selectionState'
+import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import { snapPoint } from '@/lib/litegraph/src/measure'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 
 import type { EmptySubgraphInput } from './EmptySubgraphInput'
 import type { EmptySubgraphOutput } from './EmptySubgraphOutput'

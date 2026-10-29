@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 
 type MockInputs = ('INT' | 'STRING' | 'IMAGE' | MockInputs)[][]

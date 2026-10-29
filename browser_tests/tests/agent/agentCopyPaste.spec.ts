@@ -1,6 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
 import type { AgentCopyPasteDriver } from '@e2e/fixtures/AgentCopyPasteDriver'
 import {
   AGENT_COPY_PASTE_SCENARIO,
@@ -8,6 +5,8 @@ import {
 } from '@e2e/fixtures/AgentCopyPasteDriver'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 const COMPOSER_PASTE_TEXT = 'make the sampler deterministic'
 

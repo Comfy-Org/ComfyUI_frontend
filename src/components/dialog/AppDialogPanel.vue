@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
 import DialogPanel from '@comfyorg/design-system/dialog/DialogPanel'
 import type { DialogPanelProps } from '@comfyorg/design-system/lib/dialog/types'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { HTMLAttributes } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const {
   size = 'default',

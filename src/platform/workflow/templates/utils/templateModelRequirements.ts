@@ -1,15 +1,16 @@
-import type {
-  FlattenableWorkflowGraph,
-  FlattenableWorkflowNode
-} from '@/platform/workflow/core/utils/workflowFlattening'
-import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
+import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
+import { zModelFile } from '@comfyorg/graph-model/workflowSchema'
+
 import {
   getModelFileKey,
   getSelectedModelsMetadata,
   isNodeAndAncestorsActive
 } from '@/platform/workflow/core/utils/modelRequirements'
-import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
-import { zModelFile } from '@comfyorg/graph-model/workflowSchema'
+import type {
+  FlattenableWorkflowGraph,
+  FlattenableWorkflowNode
+} from '@/platform/workflow/core/utils/workflowFlattening'
+import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
 
 function toModelFile(value: unknown): ModelFile | undefined {
   const result = zModelFile.safeParse(value)

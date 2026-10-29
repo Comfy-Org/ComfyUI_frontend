@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import type { useLoad3d } from '@/extensions/core/load3d/composables/useLoad3d'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyExtension } from '@/types/comfy'
 import type * as GraphTraversalModule from '@/utils/graphTraversalUtil'
 

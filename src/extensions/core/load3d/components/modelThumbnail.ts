@@ -1,3 +1,6 @@
+import { redactTelemetryError } from '@comfyorg/telemetry/redactTelemetryUrls'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { SharedRendererHandle } from '@comfyorg/viewport3d/three/sharedWebGLRenderer'
 import { TimeoutError } from 'es-toolkit'
 
 import { load3dHost } from '@/extensions/core/load3d/load3dHost'
@@ -5,9 +8,6 @@ import {
   isAssetPreviewSupported,
   persistThumbnail
 } from '@/platform/assets/utils/assetPreviewUtil'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { redactTelemetryError } from '@comfyorg/telemetry/redactTelemetryUrls'
-import type { SharedRendererHandle } from '@comfyorg/viewport3d/three/sharedWebGLRenderer'
 
 let queue: Promise<unknown> = Promise.resolve()
 const MODEL_LOAD_TIMEOUT_MS = 15_000

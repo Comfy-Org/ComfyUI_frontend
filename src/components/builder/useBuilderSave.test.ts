@@ -1,14 +1,14 @@
-import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import { useDialogService } from '@/services/dialogService'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useDialogService } from '@/services/dialogService'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
 

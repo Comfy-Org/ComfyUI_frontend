@@ -1,20 +1,20 @@
-import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
-
-// oxlint-disable-next-line comfy/no-restricted-paths
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useApp } from '@/scripts/appInstance'
-import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
-import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { getAncestorExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 import type {
   NodeExecutionId,
   NodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
-import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+// oxlint-disable-next-line comfy/no-restricted-paths
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useApp } from '@/scripts/appInstance'
+import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 
 /**
  * Missing media error state.

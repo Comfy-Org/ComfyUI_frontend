@@ -1,8 +1,9 @@
+import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { describe, expect, test } from 'vitest'
 
-import { LGraph, LGraphNode } from './litegraph'
-import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+
+import { LGraph, LGraphNode } from './litegraph'
 
 describe('execution order projection', () => {
   test('writes attached node order to the canonical store', () => {

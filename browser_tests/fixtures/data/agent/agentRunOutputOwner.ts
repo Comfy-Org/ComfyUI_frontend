@@ -1,10 +1,10 @@
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
 import {
   MESSAGE_ID,
   THREAD_ID,
   WORKFLOW_ID
 } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
+
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 export const RUN_JOB_ID = 'agent-exec-server-run-pm-2275'
 export const SHOWN_OUTPUT = 'agent-run-shown-output.png'

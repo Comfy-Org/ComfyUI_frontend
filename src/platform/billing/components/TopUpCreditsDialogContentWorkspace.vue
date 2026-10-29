@@ -361,14 +361,18 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@comfyorg/design-system/card/Card'
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
 import {
   getTopupAmountPreset,
   PURCHASE_REFUSAL_SERVER_CODES
 } from '@comfyorg/account-core/billing'
-import { useToast } from '@/components/ui/toast/toastStore'
+import type { CreateTopupResponse } from '@comfyorg/billing-core'
+import Button from '@comfyorg/design-system/button/Button'
+import Card from '@comfyorg/design-system/card/Card'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -378,32 +382,22 @@ import {
   formatUsdFromCents,
   usdToCredits
 } from '@/base/credits/comfyCredits'
-import Button from '@comfyorg/design-system/button/Button'
-import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import TopUpAmountFields from './TopUpAmountFields.vue'
-import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
-import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
-import { isCloud } from '@/platform/distribution/types'
-import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import type { CreateTopupResponse } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
-import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import type { BillingTab } from '@/platform/billing/billingTab'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
-import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
-import { topupCheckoutReturnUrl } from '@/platform/billing/topupCheckoutReturnUrl'
-import { isBlockedOnCustomerPhase } from '@/platform/billing/customerAttention'
-import { UncreditedTopupResponse } from '@/platform/billing/sdk/topupOperationView'
+import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
 import { useTopupOperation } from '@/platform/billing/composables/useTopupOperation'
-import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
+import { isBlockedOnCustomerPhase } from '@/platform/billing/customerAttention'
+import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
+import { UncreditedTopupResponse } from '@/platform/billing/sdk/topupOperationView'
+import { topupCheckoutReturnUrl } from '@/platform/billing/topupCheckoutReturnUrl'
 import {
   bindOperationToCheckoutJourney,
   clearCheckoutJourney,
@@ -416,10 +410,17 @@ import {
   trackCheckoutJourneyPhase,
   useCheckoutJourneyExit
 } from '@/platform/billing/utils/checkoutJourneyTelemetry'
+import { isCloud } from '@/platform/distribution/types'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+
+import TopUpAmountFields from './TopUpAmountFields.vue'
 
 const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean

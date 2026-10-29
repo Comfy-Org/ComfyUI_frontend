@@ -1,18 +1,16 @@
 <script setup lang="ts">
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import { cn } from '@comfyorg/tailwind-utils'
 import { marked } from 'marked'
 import type { Token, Tokens } from 'marked'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import { api } from '@/scripts/api'
-import type { AugmentedResultItem } from '@/utils/resultItem'
 import {
   renderMarkdownToHtml,
   resolveMarkdownUrl
 } from '@/utils/markdownRendererUtil'
-
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 import {
   classifyAssetUrl,
@@ -20,6 +18,7 @@ import {
   rewriteAgentAssetHtml,
   tokenReplyAssets
 } from '@/workbench/extensions/agent/utils/replyAssets'
+
 import CodeBlock from './CodeBlock.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 

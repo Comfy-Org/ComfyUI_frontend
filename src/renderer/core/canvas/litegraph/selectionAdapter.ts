@@ -1,10 +1,15 @@
-import type { ClickSelectionIntent } from '@/core/selection/selectionIntent'
 import type {
   LGraph,
   LGraphCanvas,
   SubgraphInputNode,
   SubgraphOutputNode
 } from '@comfyorg/graph-model/entityRegistry'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+
+import type { ClickSelectionIntent } from '@/core/selection/selectionIntent'
 import type {
   SelectableKey,
   SelectionCommand
@@ -13,18 +18,12 @@ import {
   parseSelectableKey,
   toSelectableKey
 } from '@/core/selection/selectionState'
-
-import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import { isSubgraph } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
-
-import { useSelectionStore } from '@/core/selection/selectionStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
 type SelectableItem =
   | LGraphNode

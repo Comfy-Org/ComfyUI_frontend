@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { comfyPageFixture as baseTest } from '@e2e/fixtures/ComfyPage'
 import {
   AUTOGROW_REFERENCE_NODE_ID,
@@ -12,7 +12,7 @@ import {
   getInputNames
 } from '@e2e/fixtures/utils/nodeInputLinks'
 import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { expect } from '@playwright/test'
 
 const test = baseTest.extend({
   page: async ({ page }, use) => {

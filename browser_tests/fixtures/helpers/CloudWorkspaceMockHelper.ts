@@ -1,15 +1,8 @@
-import type { Locator, Page, Route } from '@playwright/test'
+import type { Plan } from '@comfyorg/billing-core'
 import type {
   BillingCapabilities,
   BillingStatusResponse
 } from '@comfyorg/ingest-types'
-
-import type { Plan } from '@comfyorg/billing-core'
-import type {
-  Member,
-  WorkspaceWithRole
-} from '@/platform/workspace/api/workspaceApi'
-
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import {
   CLOUD_REMOTE_CONFIG,
@@ -23,6 +16,12 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspaceTokenMint } from '@e2e/fixtures/utils/workspaceMocks'
+import type { Locator, Page, Route } from '@playwright/test'
+
+import type {
+  Member,
+  WorkspaceWithRole
+} from '@/platform/workspace/api/workspaceApi'
 
 interface RoleChangeRequest {
   url: string

@@ -3,28 +3,28 @@ import type {
   SubgraphInputNode,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
-
-import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
-import {
-  linkIdReservations,
-  mintLinkId
-} from '@/lib/litegraph/src/idAllocation'
-import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { SubgraphInputEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphInputEventMap'
-import type {
-  PointTuple as Point,
-  ReadOnlyRect
-} from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
-import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type {
+  PointTuple as Point,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
+
+import {
+  linkIdReservations,
+  mintLinkId
+} from '@/lib/litegraph/src/idAllocation'
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { SubgraphInputEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphInputEventMap'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
+import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
+import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
 
 import { SubgraphSlot } from './SubgraphSlotBase'
 import { isNodeSlot, isSubgraphOutput } from './subgraphTypeGuards'

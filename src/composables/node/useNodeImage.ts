@@ -1,9 +1,10 @@
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { ImageLoadFailureMetadata } from '@comfyorg/telemetry/types'
+
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useTelemetry } from '@comfyorg/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
-import type { ImageLoadFailureMetadata } from '@comfyorg/telemetry/types'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getHdrPreviewUrl } from '@/utils/hdrFormatUtil'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'

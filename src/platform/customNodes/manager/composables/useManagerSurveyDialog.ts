@@ -1,6 +1,6 @@
+import ManagerSurveyDialog from '@/platform/customNodes/manager/components/survey/ManagerSurveyDialog.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
-import ManagerSurveyDialog from '@/platform/customNodes/manager/components/survey/ManagerSurveyDialog.vue'
 
 const DIALOG_KEY = 'global-manager-survey'
 

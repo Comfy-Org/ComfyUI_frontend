@@ -1,5 +1,4 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
-
 import type {
   IAssetWidget,
   IBaseWidget,
@@ -7,39 +6,40 @@ import type {
   IWidget,
   TWidgetType
 } from '@comfyorg/graph-model/widgets'
+
 import { toClass as instantiateClass } from '@/lib/litegraph/src/utils/type'
 
 import { AssetWidget } from './AssetWidget'
 import { BaseWidget } from './BaseWidget'
 import { BooleanWidget } from './BooleanWidget'
+import { BoundingBoxesWidget } from './BoundingBoxesWidget'
 import { BoundingBoxWidget } from './BoundingBoxWidget'
 import { ButtonWidget } from './ButtonWidget'
 import { ChartWidget } from './ChartWidget'
+import { ColorsWidget } from './ColorsWidget'
 import { ColorWidget } from './ColorWidget'
 import { ComboWidget } from './ComboWidget'
+import { CompositorWidget } from './CompositorWidget'
 import { CurveWidget } from './CurveWidget'
 import { FileUploadWidget } from './FileUploadWidget'
 import { GalleriaWidget } from './GalleriaWidget'
 import { GradientSliderWidget } from './GradientSliderWidget'
 import { ImageCompareWidget } from './ImageCompareWidget'
-import { BoundingBoxesWidget } from './BoundingBoxesWidget'
-import { LightInfoWidget } from './LightInfoWidget'
-import { ColorsWidget } from './ColorsWidget'
-import { CompositorWidget } from './CompositorWidget'
-import { PainterWidget } from './PainterWidget'
-import { RangeWidget } from './RangeWidget'
-import { VideoEditWidget } from './VideoEditWidget'
 import { ImageCropWidget } from './ImageCropWidget'
 import { KnobWidget } from './KnobWidget'
 import { LegacyWidget } from './LegacyWidget'
+import { LightInfoWidget } from './LightInfoWidget'
 import { MarkdownWidget } from './MarkdownWidget'
 import { MultiSelectWidget } from './MultiSelectWidget'
 import { NumberWidget } from './NumberWidget'
+import { PainterWidget } from './PainterWidget'
+import { RangeWidget } from './RangeWidget'
 import { SelectButtonWidget } from './SelectButtonWidget'
 import { SliderWidget } from './SliderWidget'
-import { TextWidget } from './TextWidget'
 import { TextareaWidget } from './TextareaWidget'
+import { TextWidget } from './TextWidget'
 import { TreeSelectWidget } from './TreeSelectWidget'
+import { VideoEditWidget } from './VideoEditWidget'
 
 export type WidgetTypeMap = {
   button: ButtonWidget

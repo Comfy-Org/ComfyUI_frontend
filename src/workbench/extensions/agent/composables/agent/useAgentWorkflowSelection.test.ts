@@ -1,5 +1,5 @@
-import { render, waitFor } from '@testing-library/vue'
 import type { WorkflowResponse } from '@comfyorg/ingest-types'
+import { render, waitFor } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
@@ -9,12 +9,12 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
-
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { AgentApiError } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type { CloudWorkflowListing } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
+
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './useAgentWorkflowSelection'
 

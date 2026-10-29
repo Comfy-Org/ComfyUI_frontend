@@ -1,3 +1,5 @@
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import type { ColorFormat } from '@comfyorg/shared-frontend-utils/colorUtil'
 import type {
   ComponentPropsAndSlots,
   Meta,
@@ -6,9 +8,6 @@ import type {
 import { computed, ref, toRefs } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import type { ColorFormat } from '@comfyorg/shared-frontend-utils/colorUtil'
-
-import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 import WidgetColorPicker from './WidgetColorPicker.vue'
 

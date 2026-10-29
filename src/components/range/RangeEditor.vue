@@ -177,18 +177,16 @@
 </template>
 
 <script setup lang="ts">
+import type { ColorStop } from '@comfyorg/graph-model/interfaces'
+import type { RangeValue } from '@comfyorg/graph-model/widgets'
+import { cn } from '@comfyorg/tailwind-utils'
+import { clamp } from 'es-toolkit'
 import { computed, toRef, useId, useTemplateRef } from 'vue'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
-import { cn } from '@comfyorg/tailwind-utils'
-import { histogramToPath } from '@/utils/histogramUtil'
 import { useRangeEditor } from '@/composables/useRangeEditor'
-import type { ColorStop } from '@comfyorg/graph-model/interfaces'
-import type { RangeValue } from '@comfyorg/graph-model/widgets'
-
+import { histogramToPath } from '@/utils/histogramUtil'
 import { normalize } from '@/utils/mathUtil'
-
-import { clamp } from 'es-toolkit'
 
 import { gammaToPosition, positionToGamma } from './rangeUtils'
 

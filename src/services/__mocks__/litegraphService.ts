@@ -1,7 +1,6 @@
 import { vi } from 'vitest'
 
 import { provideLitegraphService } from '@/core/graph/litegraphServiceAccess'
-
 import type {
   getExtraOptionsForWidget as realGetExtraOptionsForWidget,
   useLitegraphService as realUseLitegraphService

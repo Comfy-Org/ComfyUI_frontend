@@ -1,5 +1,5 @@
-import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'

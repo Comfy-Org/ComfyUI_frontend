@@ -1,11 +1,11 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import { useCompositorEditor } from './useCompositorEditor'
 import {

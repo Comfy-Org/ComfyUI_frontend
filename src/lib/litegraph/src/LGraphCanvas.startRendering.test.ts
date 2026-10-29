@@ -1,7 +1,7 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 describe('LGraphCanvas.startRendering', () => {

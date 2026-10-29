@@ -239,19 +239,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { cn } from '@comfyorg/tailwind-utils'
-
-import { selectionEmphasisClass } from './selectionEmphasis'
 import Button from '@comfyorg/design-system/button/Button'
 import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
-import LocateNodeButton from '@/platform/workflowErrors/panel/LocateNodeButton.vue'
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
-import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { useWorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import LocateNodeButton from '@/platform/workflowErrors/panel/LocateNodeButton.vue'
 import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
+import { useWorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+
+import { selectionEmphasisClass } from './selectionEmphasis'
 
 const { group, showInfoButton, highlighted } = defineProps<{
   group: MissingPackGroup

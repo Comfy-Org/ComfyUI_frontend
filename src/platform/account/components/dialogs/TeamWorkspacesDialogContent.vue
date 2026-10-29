@@ -130,22 +130,22 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import Card from '@comfyorg/design-system/card/Card'
-import { useToast } from '@/components/ui/toast/toastStore'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useCreateWorkspaceRefusal } from '@/platform/workspace/composables/useCreateWorkspaceRefusal'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
-import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const { onConfirm } = defineProps<{
   onConfirm?: (name: string) => void | Promise<void>

@@ -17,27 +17,27 @@ import type {
   SubgraphDefinition,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
+import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { isWidgetValue } from '@comfyorg/graph-model/widgets'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { isEqual } from 'es-toolkit'
 
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
-import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
-import { isWidgetValue } from '@comfyorg/graph-model/widgets'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { DynamicComboSelection } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 import {
   findNodeInHierarchy,
   findSubgraphByUuid,
@@ -49,8 +49,8 @@ import {
   SUBSCRIBE_ACK_MAX_TIMEOUTS,
   SUBSCRIBE_ACK_TIMEOUT_MS
 } from './agentCrdtDocLifecycle'
-import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
+import type { GraphOperation } from './graphOperations'
 import { reportLostEdit } from './reportLostEdit'
 import {
   isValueWidget,

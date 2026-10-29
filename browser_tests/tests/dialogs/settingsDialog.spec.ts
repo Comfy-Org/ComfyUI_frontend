@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
 import type { Keybinding } from '@comfyorg/keybindings/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { expect } from '@playwright/test'
 
 const MOCK_COMFYUI_VERSION = '9.99.0-e2e-test'
 

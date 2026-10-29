@@ -1,12 +1,11 @@
-import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-
 import {
   PERSONAL_WORKSPACE_NAME,
   TEAM_WORKSPACE_NAME
 } from '@e2e/fixtures/data/workspaceSwitcher'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { workspaceSwitcherTest as test } from '@e2e/fixtures/workspaceSwitcherFixture'
+import { expect } from '@playwright/test'
 
 /**
  * Cloud app support for `?workspace=` deep links

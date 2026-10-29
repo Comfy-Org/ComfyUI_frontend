@@ -1,5 +1,11 @@
-import { effectScope } from 'vue'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
 
 import {
   clearRootLinkReveals,
@@ -7,15 +13,8 @@ import {
 } from '@/lib/litegraph/src/canvas/linkRevealState'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
-import {
-  toOwningGraphId,
-  toRootGraphId
-} from '@comfyorg/graph-model/graphScopeId'
 
 import { useSlotLinkReveal } from './useSlotLinkReveal'
 

@@ -1,6 +1,5 @@
-import { z } from 'zod'
-
 import { zTaskResponse as zGeneratedTaskResponse } from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
 const zTaskStatus = z.union([
   zGeneratedTaskResponse.shape.status,

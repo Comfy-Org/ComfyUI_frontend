@@ -179,29 +179,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
-
+import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
 import Button from '@comfyorg/design-system/button/Button'
 import Message from '@comfyorg/design-system/message/Message'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { computed, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import {
+  isDesktopHostSessionActive,
+  requestDesktopHostSignIn
+} from '@/platform/auth/desktopHost/desktopHostSession'
+import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
+import { isCloud } from '@/platform/distribution/types'
 import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
-import {
-  isDesktopHostSessionActive,
-  requestDesktopHostSignIn
-} from '@/platform/auth/desktopHost/desktopHostSession'
-import { isCloud } from '@/platform/distribution/types'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'

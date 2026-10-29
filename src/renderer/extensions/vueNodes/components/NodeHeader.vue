@@ -68,22 +68,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref } from 'vue'
-
-import EditableText from '@comfyorg/design-system/common/EditableText'
 import CreditBadge from '@comfyorg/design-system/badge/CreditBadge'
 import Button from '@comfyorg/design-system/button/Button'
+import EditableText from '@comfyorg/design-system/common/EditableText'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, onErrorCaptured, ref } from 'vue'
+
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type { NodeBadgeProps } from './NodeBadge.vue'
 

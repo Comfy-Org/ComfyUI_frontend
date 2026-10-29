@@ -1,3 +1,7 @@
+import type {
+  ExportedSubgraph,
+  ISerialisedNode
+} from '@comfyorg/graph-model/serialisation'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import {
@@ -15,12 +19,8 @@ import {
   createTestRootGraph,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type {
-  ExportedSubgraph,
-  ISerialisedNode
-} from '@comfyorg/graph-model/serialisation'
-import { reloadSerializedGraph } from '@/utils/__tests__/litegraphTestUtils'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { reloadSerializedGraph } from '@/utils/__tests__/litegraphTestUtils'
 
 const INTERIOR_TYPE = 'Fixture/BlueprintInterior'
 

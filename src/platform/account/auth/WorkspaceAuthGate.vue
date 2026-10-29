@@ -67,6 +67,9 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { ReportErrorOptions } from '@comfyorg/telemetry/reportError'
 /**
  * WorkspaceAuthGate - Cloud workspace auth checkpoint.
  *
@@ -93,24 +96,21 @@ import {
   watch
 } from 'vue'
 
-import Button from '@comfyorg/design-system/button/Button'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { signedInOnWebSession } from '@/platform/auth/session/webSessionFetch'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { syncWorkspaceTelemetryContext } from '@/platform/billing/telemetry/workspaceTelemetryContext'
 import { isCloud } from '@/platform/distribution/types'
+import { NoWorkspaceAccessError } from '@/platform/remote/ingest/ingestApiError'
+import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import {
   remoteConfigErrorStatus,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
-import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import type { ReportErrorOptions } from '@comfyorg/telemetry/reportError'
-import { NoWorkspaceAccessError } from '@/platform/remote/ingest/ingestApiError'
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { syncWorkspaceTelemetryContext } from '@/platform/billing/telemetry/workspaceTelemetryContext'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 

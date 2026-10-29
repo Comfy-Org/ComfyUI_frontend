@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import { expect } from '@playwright/test'
 
 function isClear(ops: readonly RecordedGraphOperation[]): boolean {
   return ops.some((op) => op.op === 'clear')

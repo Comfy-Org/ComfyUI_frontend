@@ -1,8 +1,7 @@
 import type { AgentIdentity } from '@comfyorg/ingest-types'
-import type { Page } from '@playwright/test'
-
 import { WEB_SESSION } from '@e2e/fixtures/data/webSession'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { Page } from '@playwright/test'
 
 export const AGENT_SOCKET_URL = /\/api\/agent\/events(?:\?|$)/
 

@@ -1,3 +1,4 @@
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -6,7 +7,6 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { RenderShape } from '@comfyorg/graph-model/globalEnums'
 
 describe('LGraphCanvas Title Button Rendering', () => {
   let canvas: LGraphCanvas

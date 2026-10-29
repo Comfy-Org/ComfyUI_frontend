@@ -1,9 +1,3 @@
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
-
-import Load3DControls from '@/extensions/core/load3d/components/Load3DControls.vue'
 import type {
   CameraConfig,
   LightConfig,
@@ -11,6 +5,12 @@ import type {
   ModelConfig,
   SceneConfig
 } from '@comfyorg/viewport3d/load3d/interfaces'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import Load3DControls from '@/extensions/core/load3d/components/Load3DControls.vue'
 
 vi.mock(import('@/composables/useDismissableOverlay'), () => ({
   useDismissableOverlay: vi.fn()

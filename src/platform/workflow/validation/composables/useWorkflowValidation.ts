@@ -1,8 +1,9 @@
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { t } from '@/i18n'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
 import { fixBadLinks } from '@/utils/linkFixer'
 
 interface ValidationResult {

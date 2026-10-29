@@ -87,28 +87,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import Button from '@comfyorg/design-system/button/Button'
 import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import Message from '@comfyorg/design-system/message/Message'
-import AppPagination from '@/components/common/AppPagination.vue'
-import AppSpinner from '@/components/common/AppSpinner.vue'
 import Table from '@comfyorg/design-system/table/Table'
 import TableBody from '@comfyorg/design-system/table/TableBody'
 import TableCell from '@comfyorg/design-system/table/TableCell'
 import TableHead from '@comfyorg/design-system/table/TableHead'
 import TableHeader from '@comfyorg/design-system/table/TableHeader'
 import TableRow from '@comfyorg/design-system/table/TableRow'
-import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
-import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
+import AppPagination from '@/components/common/AppPagination.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
-import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
   EventType,

@@ -193,6 +193,9 @@
 </template>
 
 <script setup lang="ts">
+import SplitterGroup from '@comfyorg/design-system/splitter/SplitterGroup'
+import SplitterPanel from '@comfyorg/design-system/splitter/SplitterPanel'
+import SplitterResizeHandle from '@comfyorg/design-system/splitter/SplitterResizeHandle'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useElementSize } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
@@ -207,9 +210,6 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SplitterGroup from '@comfyorg/design-system/splitter/SplitterGroup'
-import SplitterPanel from '@comfyorg/design-system/splitter/SplitterPanel'
-import SplitterResizeHandle from '@comfyorg/design-system/splitter/SplitterResizeHandle'
 import { useAppMode } from '@/composables/useAppMode'
 import { usePanelSizing } from '@/composables/usePanelSizing'
 import {

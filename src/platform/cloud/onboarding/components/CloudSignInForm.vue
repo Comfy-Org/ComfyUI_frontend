@@ -63,17 +63,17 @@
 </template>
 
 <script setup lang="ts">
-import { Field as VeeField, useForm } from 'vee-validate'
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import Button from '@comfyorg/design-system/button/Button'
 import Field from '@comfyorg/design-system/field/Field'
 import FieldError from '@comfyorg/design-system/field/FieldError'
 import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
 import Input from '@comfyorg/design-system/input/Input'
-import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
 import Message from '@comfyorg/design-system/message/Message'
+import { Field as VeeField, useForm } from 'vee-validate'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
 import {
   CLOUD_AUTH_FIELD_CLASS,
   CLOUD_AUTH_LABEL_CLASS

@@ -1,7 +1,8 @@
-import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
+
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 export interface MissingModelPipelineResult {
   missingModels: ModelFile[]

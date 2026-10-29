@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
-import type { ActionBarButton } from '@/types/comfy'
-
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import type { ActionBarButton } from '@/types/comfy'
 
 export const useActionBarButtonStore = defineStore('actionBarButton', () => {
   const extensionStore = useExtensionStore()

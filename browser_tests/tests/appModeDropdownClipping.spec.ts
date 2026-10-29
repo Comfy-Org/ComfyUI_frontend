@@ -1,9 +1,8 @@
-import type { Page } from '@playwright/test'
-
 import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import type { Page } from '@playwright/test'
 
 /**
  * Default workflow widget inputs as [nodeId, widgetName] tuples.

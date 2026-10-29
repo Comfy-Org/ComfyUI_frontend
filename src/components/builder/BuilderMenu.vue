@@ -22,21 +22,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useI18n } from 'vue-i18n'
-
-import Menu from '@comfyorg/design-system/menu/Menu'
 import type {
   MenuItem,
   MenuItemCommandEvent
 } from '@comfyorg/design-system/lib/menu/types'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import { cn } from '@comfyorg/tailwind-utils'
+import { storeToRefs } from 'pinia'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const appModeStore = useAppModeStore()

@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expect } from '@playwright/test'
 
 // Regression test for https://github.com/Comfy-Org/ComfyUI_frontend/issues/10563
 //

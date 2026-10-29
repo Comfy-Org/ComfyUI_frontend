@@ -1,10 +1,22 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
+import type {
+  INodeInputSlot,
+  ISubgraphInput
+} from '@comfyorg/graph-model/slots'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 
 import DraggableList from '@/components/common/DraggableList.vue'
-import Button from '@comfyorg/design-system/button/Button'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import {
+  promotedInputSource,
+  promotedInputWidget
+} from '@/core/graph/subgraph/promotedInputWidget'
+import type { PromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import {
   demoteWidget,
   getPromotableWidgets,
@@ -14,29 +26,17 @@ import {
   refreshPromotedWidgetRendering,
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
-import {
-  promotedInputSource,
-  promotedInputWidget
-} from '@/core/graph/subgraph/promotedInputWidget'
-import type { PromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import type { WidgetItem } from '@/core/graph/subgraph/promotionUtils'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
-import type {
-  INodeInputSlot,
-  ISubgraphInput
-} from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { deriveWidgetVisibility } from '@/types/widgetVisibility'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 

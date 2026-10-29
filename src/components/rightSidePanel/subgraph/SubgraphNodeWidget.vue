@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ClassValue } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 
 const {
   nodeTitle,

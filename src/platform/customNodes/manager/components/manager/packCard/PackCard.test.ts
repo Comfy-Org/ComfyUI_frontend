@@ -1,17 +1,16 @@
+import Spinner from '@comfyorg/design-system/spinner/Spinner'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { render, screen } from '@testing-library/vue'
-
-import Spinner from '@comfyorg/design-system/spinner/Spinner'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import PackCard from '@/platform/customNodes/manager/components/manager/packCard/PackCard.vue'
 import type {
   MergedNodePack,
   RegistryPack
 } from '@/platform/customNodes/manager/types/comfyManagerTypes'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 vi.mock<unknown>(import('@/config'), () => ({
   default: {

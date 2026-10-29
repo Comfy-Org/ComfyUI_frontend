@@ -1,5 +1,5 @@
-import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 
 test.describe(
   'Human edit after another workflow resets',

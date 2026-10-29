@@ -12,16 +12,16 @@ import {
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import en from '@/locales/en/main.json'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { api } from '@/scripts/api'
-import * as registryService from '@/services/comfyRegistryService'
-import type { components as RegistryComponents } from '@/types/comfyRegistryTypes'
+import en from '@/locales/en/main.json'
 import PackUpdateButton from '@/platform/customNodes/manager/components/manager/button/PackUpdateButton.vue'
 import ManagerProgressToast from '@/platform/customNodes/manager/components/ManagerProgressToast.vue'
 import { useComfyManagerService } from '@/platform/customNodes/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import type { components as ManagerComponents } from '@/platform/customNodes/manager/types/generatedManagerTypes'
+import { api } from '@/scripts/api'
+import * as registryService from '@/services/comfyRegistryService'
+import type { components as RegistryComponents } from '@/types/comfyRegistryTypes'
 
 type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']

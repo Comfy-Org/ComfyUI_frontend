@@ -1,10 +1,7 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
 import type {
   BillingCapabilities,
   BillingStatusResponse
 } from '@comfyorg/ingest-types'
-
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import {
@@ -16,6 +13,8 @@ import {
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { recordOpenedUrl } from '@e2e/fixtures/utils/recordOpenedUrl'
+import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 

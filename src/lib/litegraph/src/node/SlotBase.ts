@@ -1,16 +1,17 @@
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type {
+  LinkDirection,
+  RenderShape
+} from '@comfyorg/graph-model/globalEnums'
 import type {
   CanvasColour,
   DefaultConnectionColors,
   INodeSlot,
   ISlotType
 } from '@comfyorg/graph-model/interfaces'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import type {
-  LinkDirection,
-  RenderShape
-} from '@comfyorg/graph-model/globalEnums'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 
 /** Base class for all input & output slots. */
 

@@ -6,19 +6,19 @@ let restoreFocusOnMount = false
 </script>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { ViewMode } from '@comfyorg/graph-model/appMode'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { snakeCase } from 'es-toolkit'
 import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import Menu from '@comfyorg/design-system/menu/Menu'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
-import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
-import type { ViewMode } from '@comfyorg/graph-model/appMode'
+import { useAppModeStore } from '@/stores/appModeStore'
 
 interface ViewModeSegment {
   mode: ViewMode

@@ -4,10 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-
-import { ComfyWidgets } from '@/scripts/widgets'
 import { app } from '@/scripts/app'
+import { ComfyWidgets } from '@/scripts/widgets'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))

@@ -1,11 +1,29 @@
-import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import type { NodeLifecycleEvent } from '@comfyorg/graph-model/LGraphEventMap'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import {
+  UNASSIGNED_NODE_ID,
+  compareNodeIds,
+  toNodeId
+} from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type {
+  ExportedSubgraph,
+  ISerialisedGraph,
+  SerialisableGraph,
+  SerialisableLLink,
+  SerialisableReroute
+} from '@comfyorg/graph-model/serialisation'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NodeLifecycleEvent } from '@comfyorg/graph-model/LGraphEventMap'
+import {
+  isRootGraphDocBound,
+  registerDocBoundRootGraphProbe
+} from '@/lib/litegraph/src/docBoundGraphs'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   LGraph,
   LGraphGroup,
@@ -16,43 +34,18 @@ import {
   Subgraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type {
-  ExportedSubgraph,
-  ISerialisedGraph,
-  SerialisableGraph,
-  SerialisableLLink,
-  SerialisableReroute
-} from '@comfyorg/graph-model/serialisation'
-import {
-  isRootGraphDocBound,
-  registerDocBoundRootGraphProbe
-} from '@/lib/litegraph/src/docBoundGraphs'
-import type { UUID } from '@/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { useEntityIdStore } from '@/stores/entityIdStore'
-import { useLinkStore } from '@/stores/linkStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
+import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import {
-  UNASSIGNED_NODE_ID,
-  compareNodeIds,
-  toNodeId
-} from '@comfyorg/graph-model/nodeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
-import {
-  createNestedSubgraphs,
-  createTestSubgraph,
-  createTestSubgraphData,
-  createTestSubgraphNode
-} from './subgraph/__fixtures__/subgraphHelpers'
-import { subgraphTest } from './subgraph/__fixtures__/subgraphFixtures'
+import type { UUID } from '@/utils/uuid'
+import { createUuidv4, zeroUuid } from '@/utils/uuid'
 
 import {
   duplicateLinksRoot,
@@ -62,8 +55,15 @@ import {
 import { duplicateSubgraphNodeIds } from './__fixtures__/duplicateSubgraphNodeIds'
 import { nestedSubgraphProxyWidgets } from './__fixtures__/nestedSubgraphProxyWidgets'
 import { nodeIdsFromReservedMintRange } from './__fixtures__/nodeIdsFromReservedMintRange'
-import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
+import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
+import { subgraphTest } from './subgraph/__fixtures__/subgraphFixtures'
+import {
+  createNestedSubgraphs,
+  createTestSubgraph,
+  createTestSubgraphData,
+  createTestSubgraphNode
+} from './subgraph/__fixtures__/subgraphHelpers'
 
 const mockReportError = vi.hoisted(() => vi.fn())
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({

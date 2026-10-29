@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expect } from '@playwright/test'
 
 const API_KEY = 'comfyui-e2e-cloud-api-key'
 

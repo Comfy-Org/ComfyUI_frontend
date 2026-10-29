@@ -1,11 +1,10 @@
-import { describe, expect, it } from 'vitest'
-
-import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   toOwningGraphId,
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { describe, expect, it } from 'vitest'
 
 import { useLinkPresentationStore } from './linkPresentationStore'
 

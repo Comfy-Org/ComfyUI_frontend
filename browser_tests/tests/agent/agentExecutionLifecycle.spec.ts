@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import { agentExecutionTest as test } from '@e2e/fixtures/agentExecutionFixture'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import {
@@ -7,6 +5,8 @@ import {
   TARGET_ID
 } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expect } from '@playwright/test'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.describe(

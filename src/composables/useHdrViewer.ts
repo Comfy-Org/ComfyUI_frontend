@@ -1,4 +1,5 @@
 import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
+import { WebGLViewport } from '@comfyorg/viewport3d/three/WebGLViewport'
 import * as THREE from 'three'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
@@ -9,16 +10,15 @@ import {
   detectGamutFromChromaticities,
   gamutToSrgbMatrix
 } from '@/renderer/hdr/colorGamut'
-import {
-  HDR_VIEWER_FRAGMENT_SHADER,
-  HDR_VIEWER_VERTEX_SHADER
-} from '@/renderer/hdr/hdrViewerShader'
 import type { ChannelHistograms, ImageStats } from '@/renderer/hdr/hdrStats'
 import {
   computeChannelHistograms,
   computeImageStats
 } from '@/renderer/hdr/hdrStats'
-import { WebGLViewport } from '@comfyorg/viewport3d/three/WebGLViewport'
+import {
+  HDR_VIEWER_FRAGMENT_SHADER,
+  HDR_VIEWER_VERTEX_SHADER
+} from '@/renderer/hdr/hdrViewerShader'
 import { getImageFilenameFromUrl } from '@/utils/hdrFormatUtil'
 
 const MIN_ZOOM = 0.05

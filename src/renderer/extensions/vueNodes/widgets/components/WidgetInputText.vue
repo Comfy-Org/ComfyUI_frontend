@@ -27,12 +27,12 @@
 </template>
 
 <script setup lang="ts">
+import Input from '@comfyorg/design-system/input/Input'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import Loader from '@/components/loader/Loader.vue'
-import Input from '@comfyorg/design-system/input/Input'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@comfyorg/tailwind-utils'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps

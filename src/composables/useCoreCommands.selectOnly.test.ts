@@ -1,11 +1,11 @@
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 vi.mock(import('firebase/auth'))
 

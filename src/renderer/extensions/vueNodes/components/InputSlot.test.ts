@@ -1,9 +1,8 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
-
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 
 import { i18n } from '@/i18n'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'

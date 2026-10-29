@@ -1,4 +1,3 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import {
   BILLING_STATUS_ROUTE,
   CANCEL_SUBSCRIPTION_ROUTE,
@@ -15,6 +14,8 @@ import type {
   AccountCredential,
   SessionSnapshot
 } from '@comfyorg/account-core/session'
+import type { Plan } from '@comfyorg/billing-core'
+import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -22,19 +23,18 @@ import type { User } from 'firebase/auth'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope } from 'vue'
 
-import type { SubscriptionInfo } from '@/platform/billing/composables/types'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useTelemetry } from '@comfyorg/telemetry'
-import type { Plan } from '@comfyorg/billing-core'
-import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useDowngradeToPersonal } from '@/platform/billing/composables/useDowngradeToPersonal'
 import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'
 import { useWorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
-import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useDialogStore } from '@/stores/dialogStore'

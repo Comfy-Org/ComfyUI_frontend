@@ -1,19 +1,18 @@
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { AxiosAdapter } from 'axios'
 import axios, { AxiosError } from 'axios'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useTelemetry } from '@comfyorg/telemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
-import { useDialogStore } from '@/stores/dialogStore'
-
 import {
   attachUnifiedRemintInterceptor,
   fetchWithUnifiedRemint
 } from '@/platform/auth/unified/remintRetry'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { attachRetryableStatusRetry } from '@/utils/axiosRetryableStatus'
 import { NO_RETRY_POLICY } from '@/utils/retryPolicy'
 

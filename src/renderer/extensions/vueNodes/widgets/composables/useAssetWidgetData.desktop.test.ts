@@ -1,9 +1,9 @@
-import { useAssetsStore } from '@/stores/assetsStore'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false

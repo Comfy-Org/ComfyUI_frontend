@@ -1,6 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
-
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { describe, expect, it, vi } from 'vitest'
 
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
 import {

@@ -4,18 +4,18 @@ import type {
   Subgraph,
   SubgraphNode
 } from '@comfyorg/graph-model/entityRegistry'
-import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
-
-import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+
 import { InvalidLinkError } from '@/lib/litegraph/src/infrastructure/InvalidLinkError'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import { SlotIndexError } from '@/lib/litegraph/src/infrastructure/SlotIndexError'
-import type { ISlotType } from '@comfyorg/graph-model/interfaces'
-import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
+import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 export type ExecutionId = string
 

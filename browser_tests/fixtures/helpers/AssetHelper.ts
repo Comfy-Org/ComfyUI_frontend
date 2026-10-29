@@ -1,5 +1,3 @@
-import type { Page, Route } from '@playwright/test'
-
 import type {
   Asset,
   ListAssetsResponse,
@@ -11,6 +9,7 @@ import {
   generateInputFiles,
   generateOutputAssets
 } from '@e2e/fixtures/data/assetFixtures'
+import type { Page, Route } from '@playwright/test'
 
 interface MutationRecord {
   endpoint: string

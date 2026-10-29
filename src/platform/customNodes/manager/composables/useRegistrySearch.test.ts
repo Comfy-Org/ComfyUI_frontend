@@ -1,17 +1,17 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { until } from '@vueuse/core'
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { useRegistrySearch } from '@/platform/customNodes/manager/composables/useRegistrySearch'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type {
   SearchMode,
   SearchPacksOutcome,
   SearchPacksResult
 } from '@/types/searchServiceTypes'
-import { useRegistrySearch } from '@/platform/customNodes/manager/composables/useRegistrySearch'
 
 vi.mock(import('@/services/gateway/registrySearchGateway'), () => {
   const gateway = {

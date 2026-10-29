@@ -1,3 +1,7 @@
+import type {
+  SizedExtents as MinimapBounds,
+  Bounds as ViewportTransform
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { useRafFn } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -8,11 +12,6 @@ import {
   enforceMinimumBounds
 } from '@/renderer/core/spatial/boundsCalculator'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
-
-import type {
-  SizedExtents as MinimapBounds,
-  Bounds as ViewportTransform
-} from '@comfyorg/shared-frontend-utils/geometry'
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
 export function useMinimapViewport(

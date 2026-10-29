@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
 import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   agentTest as test,
   FUNDS_UNAVAILABLE_MESSAGE
 } from '@e2e/tests/agent/agentPanelMocks'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Agent rate-limit retry submission',

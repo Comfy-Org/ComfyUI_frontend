@@ -1,6 +1,8 @@
-import { assert } from '@/base/assert'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
+import { assert } from '@/base/assert'
+
+import { wireLog } from './crdtLog'
 import type {
   DocFrameClient,
   DocOp,
@@ -9,7 +11,6 @@ import type {
   DocSubscribed,
   DocUpdate
 } from './docFrameClient'
-import { wireLog } from './crdtLog'
 import { RESEED_CONFLICT, STALE_SCHEMA_RESEED_REQUIRED } from './docFrameCodes'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'

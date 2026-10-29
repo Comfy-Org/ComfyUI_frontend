@@ -1,8 +1,10 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import { ChangeTracker } from '@/scripts/changeTracker'
 import {
   demoteWidget,
   promoteValueWidgetViaSubgraphInput
@@ -12,15 +14,13 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   createMissingMediaCandidate,
   seedMediaNodeDefs
 } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
-import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { ChangeTracker } from '@/scripts/changeTracker'
 
 describe('link ownership error surface', () => {
   beforeEach(() => {

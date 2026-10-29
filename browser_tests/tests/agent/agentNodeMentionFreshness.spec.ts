@@ -1,6 +1,3 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import workflow from '@e2e/assets/nodes/single_ksampler.json' with { type: 'json' }
 import {
@@ -14,6 +11,9 @@ import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.describe(
   'Node mention freshness (FE-3220)',

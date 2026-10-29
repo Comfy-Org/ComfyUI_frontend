@@ -1,9 +1,8 @@
-import { promiseTimeout } from '@vueuse/core'
-
 import type {
   ComfyDesktop2Bridge,
   ComfyTemplateInputAsset
 } from '@comfyorg/comfyui-desktop-bridge-types'
+import { promiseTimeout } from '@vueuse/core'
 
 type BridgeProvider = () => ComfyDesktop2Bridge | undefined
 

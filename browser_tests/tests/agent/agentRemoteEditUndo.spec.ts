@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { expect } from '@playwright/test'
 
 const WIDGET_CASE = 'agent-rec-set-widget-existing'
 const KSAMPLER_NODE_ID = '3'

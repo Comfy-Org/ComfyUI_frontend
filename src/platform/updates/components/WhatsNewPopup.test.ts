@@ -8,14 +8,15 @@ beforeEach(() => {
   Object.assign(useReleaseStore(), { releases: [] as ReleaseNote[] })
   vi.mocked(useReleaseStore().fetchReleases).mockResolvedValue(undefined)
 })
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import Button from '@comfyorg/design-system/button/Button'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+
 import WhatsNewPopup from './WhatsNewPopup.vue'
 
 vi.hoisted(() => {

@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { UsageLogsTable } from '@e2e/fixtures/components/UsageLogsTable'
 import {
@@ -9,6 +7,7 @@ import {
 } from '@e2e/fixtures/data/customerEvents'
 import { localAuthFixture as test } from '@e2e/fixtures/localAuthFixture'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Activity tab charge tooltip',

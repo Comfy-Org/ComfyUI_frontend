@@ -1,5 +1,6 @@
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import {
   afterEach,
   assert,
@@ -11,7 +12,6 @@ import {
 } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 

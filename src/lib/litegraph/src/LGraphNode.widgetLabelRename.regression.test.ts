@@ -6,8 +6,8 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { reloadSerializedGraph } from '@/utils/__tests__/litegraphTestUtils'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { reloadSerializedGraph } from '@/utils/__tests__/litegraphTestUtils'
 import { renameWidget } from '@/utils/widgetUtil'
 
 /**

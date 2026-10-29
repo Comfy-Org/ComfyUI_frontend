@@ -1,12 +1,11 @@
-import { z } from 'zod'
-
+import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { WidgetSelectDefaultFixture } from '@e2e/fixtures/components/WidgetSelectDefault'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
-import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { z } from 'zod'
 
 const zPromptRequestBody = z.object({ prompt: zComfyApiWorkflow })
 

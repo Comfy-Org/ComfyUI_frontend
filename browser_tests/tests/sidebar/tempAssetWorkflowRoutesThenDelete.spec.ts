@@ -1,5 +1,4 @@
 import type { Asset } from '@comfyorg/ingest-types'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test

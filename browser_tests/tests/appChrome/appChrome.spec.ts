@@ -1,11 +1,11 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import { canvasMenuFixture } from '@e2e/fixtures/canvasMenuFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   expectElementScreenshot,
   expectPageScreenshot
 } from '@e2e/fixtures/utils/screenshotRegion'
+import { expect, mergeTests } from '@playwright/test'
+
 import { NodeBadgeMode } from '@/types/nodeSource'
 
 const test = mergeTests(comfyPageFixture, canvasMenuFixture)

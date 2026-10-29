@@ -1,3 +1,5 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 /**
  * The one-click bug report.
  *
@@ -19,10 +21,8 @@
  * degrade to a note in the log section rather than abort the whole bundle.
  */
 import { DISTRIBUTION } from '@/platform/distribution/types'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
-
+import { api } from '@/scripts/api'
 import type {
   AssistantMessage,
   ToolPart
@@ -31,8 +31,8 @@ import type {
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { DevEvent } from './devPanelLog'
 import { devEventReplacer } from './devPanelLog'
-import type { MergeTraceEntry } from './mergeTrace'
 import type { MediaUiDiagnostic } from './mediaUiDiagnostics'
+import type { MergeTraceEntry } from './mergeTrace'
 
 /** Server logs beyond this are tail-trimmed; a paste has to stay pasteable. */
 const MAX_LOG_CHARS = 40_000

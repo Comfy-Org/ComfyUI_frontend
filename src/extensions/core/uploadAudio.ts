@@ -1,31 +1,30 @@
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget, IStringWidget } from '@comfyorg/graph-model/widgets'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget, IStringWidget } from '@comfyorg/graph-model/widgets'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useToast } from '@/components/ui/toast/toastStore'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import {
   getResourceURL,
   splitFilePath
 } from '@/renderer/extensions/vueNodes/widgets/utils/audioUtils'
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
-import type { DOMWidget } from '@/types/domWidget'
-import { useAudioService } from '@/services/audioService'
-import type { NodeLocatorId } from '@/types'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
-
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useAudioService } from '@/services/audioService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { NodeLocatorId } from '@/types'
 import type { ComfyExtension } from '@/types/comfy'
+import type { DOMWidget } from '@/types/domWidget'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 function updateUIWidget(
   audioUIWidget: DOMWidget<HTMLAudioElement, string>,

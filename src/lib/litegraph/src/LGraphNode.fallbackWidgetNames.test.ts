@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { LiteGraph } from './litegraph'
 import { createWidgetRestorationState } from './LGraphNode'
+import { LiteGraph } from './litegraph'
 
 const originalNamedValuesRestore = LiteGraph.namedValuesRestore
 

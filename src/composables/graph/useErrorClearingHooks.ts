@@ -1,3 +1,16 @@
+import {
+  LGraphEventMode,
+  NodeSlotType
+} from '@comfyorg/graph-model/globalEnums'
+import type { LGraphTriggerEvent } from '@comfyorg/graph-model/graphTriggers'
+import type {
+  NodeBeforeRemovedEvent,
+  NodeLifecycleEvent
+} from '@comfyorg/graph-model/LGraphEventMap'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { getParentExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
+
 /**
  * Installs per-node error-clearing callbacks (onConnectionsChange,
  * onWidgetChanged) on all current and future nodes in a graph.
@@ -6,29 +19,11 @@
  * works in legacy canvas mode as well.
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { createPromotionErrorReconciler } from '@/core/graph/subgraph/createPromotionErrorReconciler'
-import type {
-  NodeBeforeRemovedEvent,
-  NodeLifecycleEvent
-} from '@comfyorg/graph-model/LGraphEventMap'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { LiteGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import {
-  LGraphEventMode,
-  NodeSlotType
-} from '@comfyorg/graph-model/globalEnums'
-import type { LGraphTriggerEvent } from '@comfyorg/graph-model/graphTriggers'
-import { ChangeTracker } from '@/scripts/changeTracker'
 import { assetService } from '@/platform/assets/services/assetService'
-import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
-import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
-import {
-  scanNodeModelCandidates,
-  verifyAssetSupportedCandidates
-} from '@/platform/workflowErrors/missingModel/missingModelScan'
-import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
-import { cloudReleaseModelOptions } from '@/platform/workflowErrors/missingModel/releaseModelOptions'
 import {
   isMissingMediaCandidateActive,
   isMissingMediaCandidateScopeActive,
@@ -36,13 +31,20 @@ import {
   verifyMediaCandidates
 } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import {
+  scanNodeModelCandidates,
+  verifyAssetSupportedCandidates
+} from '@/platform/workflowErrors/missingModel/missingModelScan'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { cloudReleaseModelOptions } from '@/platform/workflowErrors/missingModel/releaseModelOptions'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import {
   collectAllNodes,
@@ -52,7 +54,6 @@ import {
   isExecutionPathActive,
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
-import { getParentExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 
 const hookedNodes = new WeakSet<LGraphNode>()
 

@@ -1,9 +1,9 @@
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { describe, expect, it } from 'vitest'
 
-import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
 

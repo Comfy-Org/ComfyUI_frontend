@@ -1,11 +1,10 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { api } from '@/scripts/api'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
-
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 function isSuccessfulRestart(event: AgentWsEvent): boolean {

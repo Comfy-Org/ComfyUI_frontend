@@ -3,8 +3,8 @@ import axios from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import { api } from '@/scripts/api'
 import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
+import { api } from '@/scripts/api'
 
 vi.mock(import('axios'), { spy: true })
 vi.mock(import('@/scripts/api'))

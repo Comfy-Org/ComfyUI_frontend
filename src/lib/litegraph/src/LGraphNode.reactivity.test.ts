@@ -1,9 +1,10 @@
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { describe, expect, test, vi } from 'vitest'
 import { computed, effect, nextTick, stop, watch } from 'vue'
 
-import { LGraph, LGraphNode } from './litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+
+import { LGraph, LGraphNode } from './litegraph'
 
 describe('_setConcreteSlots', () => {
   test('per-frame calls do not invalidate slot-array subscribers', async () => {

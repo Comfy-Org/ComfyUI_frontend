@@ -91,16 +91,15 @@
 </template>
 
 <script setup lang="ts">
+import { readSsoError } from '@comfyorg/account-core/sso'
+import { ssoFailureReason } from '@comfyorg/account-core/telemetry'
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
 import { omit } from 'es-toolkit'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import { readSsoError } from '@comfyorg/account-core/sso'
-import { ssoFailureReason } from '@comfyorg/account-core/telemetry'
-
-import Button from '@comfyorg/design-system/button/Button'
-import Message from '@comfyorg/design-system/message/Message'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { trackSsoSignInFailed } from '@/platform/auth/sso/ssoTelemetry'

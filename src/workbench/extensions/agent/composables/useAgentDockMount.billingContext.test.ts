@@ -1,3 +1,10 @@
+import type {
+  BillingRail,
+  BillingStatusResponse,
+  Plan
+} from '@comfyorg/billing-core'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { storeToRefs } from 'pinia'
 import {
   assert,
   beforeEach,
@@ -9,27 +16,19 @@ import {
 } from 'vitest'
 import { effectScope, nextTick, computed } from 'vue'
 import type { Ref } from 'vue'
-import { storeToRefs } from 'pinia'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { useAuthStore } from '@/stores/authStore'
-import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
-import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import type {
-  BillingRail,
-  BillingStatusResponse,
-  Plan
-} from '@comfyorg/billing-core'
+import { useBillingContext as useSharedBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
+import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import {
   authenticatedRemoteConfigState,
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
-
-import { useBillingContext as useSharedBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/useErrorHandling'))

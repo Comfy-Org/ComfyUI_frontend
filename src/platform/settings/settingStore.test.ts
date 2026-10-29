@@ -1,9 +1,6 @@
-import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
-
 import type { Keybinding } from '@comfyorg/keybindings/types'
 import { useTelemetry } from '@comfyorg/telemetry'
-import type { NodeBadgeMode } from '@/types/nodeSource'
-import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import {
   getSettingInfo,
@@ -11,6 +8,8 @@ import {
 } from '@/platform/settings/settingStore'
 import type { SettingParams, Settings } from '@/platform/settings/types'
 import { api } from '@/scripts/api'
+import type { NodeBadgeMode } from '@/types/nodeSource'
+import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
 vi.mock(import('@comfyorg/telemetry'))
 

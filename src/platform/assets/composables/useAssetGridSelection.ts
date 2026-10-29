@@ -1,3 +1,4 @@
+import type { ReadOnlyRectEdges as RectEdges } from '@comfyorg/shared-frontend-utils/geometry'
 import { useElementHover, useEventListener } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { computed, onScopeDispose, ref } from 'vue'
@@ -8,7 +9,6 @@ import {
   selectMarqueeIds
 } from '@/platform/assets/utils/marqueeSelectionUtil'
 import { clipRectToBounds } from '@/utils/mathUtil'
-import type { ReadOnlyRectEdges as RectEdges } from '@comfyorg/shared-frontend-utils/geometry'
 
 const DRAG_THRESHOLD_PX = 4
 const CARD_SELECTOR = '[data-asset-id]'

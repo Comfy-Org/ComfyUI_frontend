@@ -1,8 +1,8 @@
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import type { Reroute } from '@/lib/litegraph/src/litegraph'
-import type { LinkId } from '@comfyorg/graph-model/linkId'
 import {
   LGraph,
   LGraphCanvas,

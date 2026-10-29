@@ -1,32 +1,51 @@
+import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import {
+  getAncestorExecutionIds,
+  tryNormalizeNodeExecutionId
+} from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON,
+  WorkflowJSON04
+} from '@comfyorg/graph-model/workflowSchema'
+import { zNodePackMetadata } from '@comfyorg/graph-model/workflowSchema'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { normalizeExecutionTriggerSource } from '@comfyorg/telemetry/types'
+import type {
+  ExecutionContext,
+  WorkflowExecutionContext,
+  WorkflowExecutionIntent,
+  WorkflowOpenSource,
+  WorkflowQueueIntent
+} from '@comfyorg/telemetry/types'
+import { SUPPORTED_MESH_EXTENSIONS } from '@comfyorg/viewport3d/load3d/constants'
 import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
 import {
-  applyViewport,
-  measureViewportFromElement
-} from '@/renderer/core/canvas/canvasViewport'
-import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
-import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
-
+  pasteAudioNode,
+  pasteAudioNodes,
+  pasteImageNode,
+  pasteImageNodes,
+  pasteVideoNode,
+  pasteVideoNodes
+} from '@/composables/usePaste'
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
+import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { setBackendNodeText, st, t } from '@/i18n'
-import { normalizeI18nKey } from '@/utils/formatUtil'
-import { ChangeTracker } from '@/scripts/changeTracker'
-import { registerApp } from '@/scripts/appRegistry'
-import {
-  clipspace,
-  copyToClipspace,
-  pasteFromClipspace
-} from '@/scripts/clipspace'
-import type { Clipspace } from '@/scripts/clipspace'
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
@@ -36,89 +55,97 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { ISerialisedGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
-import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { snapPoint } from '@/lib/litegraph/src/measure'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
+import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
+import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/usePartnerNodesRunGate'
+import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import type {
+  ExecutionErrorWsMessage,
+  NodeExecutionOutput
+} from '@/platform/remote/comfyui/execution/types'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@comfyorg/telemetry'
-import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { normalizeExecutionTriggerSource } from '@comfyorg/telemetry/types'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
 import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
-import type {
-  ExecutionContext,
-  WorkflowExecutionContext,
-  WorkflowExecutionIntent,
-  WorkflowOpenSource,
-  WorkflowQueueIntent
-} from '@comfyorg/telemetry/types'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
-import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import {
-  ComfyWorkflow,
-  useWorkflowStore
-} from '@/platform/workflow/management/stores/workflowStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON,
-  WorkflowJSON04
-} from '@comfyorg/graph-model/workflowSchema'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { zNodePackMetadata } from '@comfyorg/graph-model/workflowSchema'
-import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
+import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
 import {
   buildSubgraphExecutionPaths,
   collectSubgraphDefinitions,
   parseFlattenableSubgraphDefinitions
 } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
-import type {
-  ExecutionErrorWsMessage,
-  NodeExecutionOutput
-} from '@/platform/remote/comfyui/execution/types'
-import type { NodeError } from '@/platform/remote/comfyui/types'
-import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
-import type { BaseDOMWidget } from '@/types/domWidget'
-import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
-import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useDialogService } from '@/services/dialogService'
-import { useExtensionService } from '@/platform/extensions/services/extensionService'
-import { useLitegraphService } from '@/services/litegraphService'
-import { useSubgraphService } from '@/services/subgraphService'
-import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
-import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
-import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
-import { useAuthStore } from '@/stores/authStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import {
-  getAncestorExecutionIds,
-  tryNormalizeNodeExecutionId
-} from '@comfyorg/graph-model/nodeIdentification'
-import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
+import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
+import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import {
+  refreshMissingModelPipeline,
+  runMissingModelPipeline
+} from '@/platform/workflowErrors/missingModel/missingModelPipeline'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type {
+  MissingModelCandidate,
+  MissingModelPipelineResult
+} from '@/platform/workflowErrors/missingModel/types'
+import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
-
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
+import {
+  applyViewport,
+  measureViewportFromElement
+} from '@/renderer/core/canvas/canvasViewport'
+import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
+import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
+import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
+import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { registerApp } from '@/scripts/appRegistry'
+import { ChangeTracker } from '@/scripts/changeTracker'
+import {
+  clipspace,
+  copyToClipspace,
+  pasteFromClipspace
+} from '@/scripts/clipspace'
+import type { Clipspace } from '@/scripts/clipspace'
+import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
+import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { useDialogService } from '@/services/dialogService'
+import { useLitegraphService } from '@/services/litegraphService'
+import { useSubgraphService } from '@/services/subgraphService'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
+import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -133,65 +160,9 @@ import type {
   NodeDefsFetch,
   QueuePromptOptions
 } from '@/types/comfy'
+import type { BaseDOMWidget } from '@/types/domWidget'
 import type { ExtensionManager } from '@/types/extensionTypes'
-import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
-import { normalizePromptError } from '@/utils/executionErrorUtil'
-import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
-import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
-import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
-import {
-  refreshMissingModelPipeline,
-  runMissingModelPipeline
-} from '@/platform/workflowErrors/missingModel/missingModelPipeline'
-import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
-import type {
-  MissingModelCandidate,
-  MissingModelPipelineResult
-} from '@/platform/workflowErrors/missingModel/types'
-import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
-import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
-import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
-
-import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
-import { anyItemOverlapsRect } from '@/utils/mathUtil'
-import { ensureNonZeroUuid } from '@/utils/uuid'
-import {
-  collectAllNodes,
-  forEachNode,
-  getNodeByExecutionId,
-  isAncestorPathActive,
-  triggerCallbackOnAllNodes
-} from '@/utils/graphTraversalUtil'
-import {
-  executeWidgetsCallback,
-  isImageNode,
-  isSelectOnly,
-  isVideoNode
-} from '@/utils/litegraphUtil'
 import { createNode } from '@/utils/createNode'
-import {
-  createSharedObjectUrl,
-  releaseSharedObjectUrl
-} from '@/utils/objectUrlUtil'
-import {
-  findLegacyRerouteNodes,
-  migrateLegacyRerouteNodes,
-  noNativeReroutes
-} from '@/utils/migration/migrateReroute'
-import { deserialiseAndCreate } from '@/utils/vintageClipboard'
-
-import { PromptExecutionError, api } from './api'
-import type { ComfyApi } from './api'
-import { defaultGraph } from './defaultGraph'
-import { importA1111 } from './pnginfo'
-import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
-import type { ComfyUI } from './ui'
-import type { ComfyAppMenu } from './ui/menu/index'
-import { clone } from './utils'
-import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import {
   extractFilesFromDragEvent,
   hasAudioType,
@@ -199,17 +170,43 @@ import {
   hasVideoType,
   isMediaFile
 } from '@/utils/eventUtils'
-import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { SUPPORTED_MESH_EXTENSIONS } from '@comfyorg/viewport3d/load3d/constants'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { normalizePromptError } from '@/utils/executionErrorUtil'
+import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
-  pasteAudioNode,
-  pasteAudioNodes,
-  pasteImageNode,
-  pasteImageNodes,
-  pasteVideoNode,
-  pasteVideoNodes
-} from '@/composables/usePaste'
+  collectAllNodes,
+  forEachNode,
+  getNodeByExecutionId,
+  isAncestorPathActive,
+  triggerCallbackOnAllNodes
+} from '@/utils/graphTraversalUtil'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
+import {
+  executeWidgetsCallback,
+  isImageNode,
+  isSelectOnly,
+  isVideoNode
+} from '@/utils/litegraphUtil'
+import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import {
+  findLegacyRerouteNodes,
+  migrateLegacyRerouteNodes,
+  noNativeReroutes
+} from '@/utils/migration/migrateReroute'
+import {
+  createSharedObjectUrl,
+  releaseSharedObjectUrl
+} from '@/utils/objectUrlUtil'
+import { ensureNonZeroUuid } from '@/utils/uuid'
+import { deserialiseAndCreate } from '@/utils/vintageClipboard'
+
+import { PromptExecutionError, api } from './api'
+import type { ComfyApi } from './api'
+import { defaultGraph } from './defaultGraph'
+import { importA1111 } from './pnginfo'
+import type { ComfyUI } from './ui'
+import type { ComfyAppMenu } from './ui/menu/index'
+import { clone } from './utils'
 
 export { ANIM_PREVIEW_WIDGET } from '@/composables/node/useNodeAnimatedImage'
 

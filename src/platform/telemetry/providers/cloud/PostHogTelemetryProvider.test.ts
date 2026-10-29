@@ -3,6 +3,12 @@ import type {
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
 import type { SsoTelemetryEvent } from '@comfyorg/account-core/telemetry'
+import type {
+  BootstrapCompleteMetadata,
+  OnboardingTourStage,
+  RunButtonProperties
+} from '@comfyorg/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 import type { CaptureResult, PostHog } from 'posthog-js'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
@@ -13,13 +19,6 @@ import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-
-import type {
-  BootstrapCompleteMetadata,
-  OnboardingTourStage,
-  RunButtonProperties
-} from '@comfyorg/telemetry/types'
-import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 const hoisted = vi.hoisted(() => {
   const mockCapture = vi.fn()

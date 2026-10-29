@@ -1,13 +1,14 @@
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
+
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 /**
  * Simplified widget interface for Vue-based node rendering
  * Removes all DOM manipulation and positioning concerns
  */
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
-import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
 export type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 

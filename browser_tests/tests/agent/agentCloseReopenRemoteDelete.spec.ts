@@ -1,8 +1,7 @@
+import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 
 // The tab is closed, the host deletes a node while nothing is subscribed, and
 // the tab is reopened from persistence — so the saved workflow on disk still

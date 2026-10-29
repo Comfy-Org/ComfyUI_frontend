@@ -1,9 +1,9 @@
-import { toRaw } from 'vue'
-import type { Object3D } from 'three'
-
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import { adoptClonedModel } from '@comfyorg/viewport3d/load3d/quadWireframe/adoptClonedModel'
 import { cloneObject3DResources } from '@comfyorg/viewport3d/load3d/SceneModelManager'
+import type { Object3D } from 'three'
+import { toRaw } from 'vue'
+
 import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 

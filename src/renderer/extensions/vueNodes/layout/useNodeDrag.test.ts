@@ -1,18 +1,18 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { NodeLayout } from '@comfyorg/graph-model/layout'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { fromPartial } from '@total-typescript/shoehorn'
 import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
-import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { NodeLayout } from '@comfyorg/graph-model/layout'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { UUID } from '@/utils/uuid'
+import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import type { UUID } from '@/utils/uuid'
 
 // TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
 // of manually mocking every dependency. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/10765

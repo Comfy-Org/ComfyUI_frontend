@@ -1,8 +1,7 @@
 <script setup lang="ts">
+import Checkbox from '@comfyorg/design-system/checkbox/Checkbox'
 import type { AgentAskOption } from '@comfyorg/ingest-types'
 import { xor } from 'es-toolkit'
-
-import Checkbox from '@comfyorg/design-system/checkbox/Checkbox'
 
 import AskUserOptionLabel from './AskUserOptionLabel.vue'
 import {

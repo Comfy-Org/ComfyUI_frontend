@@ -1,13 +1,13 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import type { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import type {
   IContextMenuValue,
   LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ContextMenuDivElement } from '@/lib/litegraph/src/types/contextMenu'
+import type { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'

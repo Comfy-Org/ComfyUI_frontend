@@ -1,16 +1,14 @@
-import type { Page } from '@playwright/test'
-
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type {
   AgentMessage,
   AgentThreadSummary,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
-
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-
 import { agentThreadPage } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { Page } from '@playwright/test'
+
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 const SAVED_AT = '2026-09-22T10:00:00Z'
 

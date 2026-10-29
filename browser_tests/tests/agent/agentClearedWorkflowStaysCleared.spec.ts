@@ -1,10 +1,9 @@
-import { expect, mergeTests } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
 import { agentConversationTest } from '@e2e/fixtures/agentConversationFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
+import { expect, mergeTests } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 const test = mergeTests(agentConversationTest, hostTelemetryFixture)
 

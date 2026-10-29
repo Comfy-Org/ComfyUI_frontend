@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AgentOnboardingAction } from '@comfyorg/telemetry/types'
 import { autoUpdate, offset, shift, useFloating } from '@floating-ui/vue'
 import type { Middleware } from '@floating-ui/vue'
 import {
@@ -11,15 +14,12 @@ import {
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
-import Button from '@comfyorg/design-system/button/Button'
 import {
   SPOTLIGHT_PAD,
   clampSpotlight,
   unionRect
 } from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
-import { useTelemetry } from '@comfyorg/telemetry'
-import type { AgentOnboardingAction } from '@comfyorg/telemetry/types'
 import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 import {
   reportMissingCoachTarget,

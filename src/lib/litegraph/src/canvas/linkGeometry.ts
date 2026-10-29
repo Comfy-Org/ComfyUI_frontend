@@ -1,6 +1,6 @@
 import type { LGraph, LLink } from '@comfyorg/graph-model/entityRegistry'
-
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'

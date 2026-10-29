@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { agentExecutionTest as test } from '@e2e/fixtures/agentExecutionFixture'
 import { SOURCE_NODE_ID } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
+import { expect } from '@playwright/test'
 
 const OUTPUT_FILENAME = 'agent-run-finished-offline.png'
 const OUTPUT_SRC = /agent-run-finished-offline\.png/

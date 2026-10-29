@@ -1,13 +1,12 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useDialogService } from '@/services/dialogService'
-import { useDialogStore } from '@/stores/dialogStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import type { KeybindingPreset } from '@comfyorg/keybindings/types'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+import { useDialogService } from '@/services/dialogService'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const mockDownloadBlob = vi.hoisted(() => vi.fn())
 const mockUploadFile = vi.hoisted(() => vi.fn())

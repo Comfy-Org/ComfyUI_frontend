@@ -23,7 +23,8 @@
 </template>
 
 <script setup lang="ts">
-import { BOUNDING_BOXES_HEADER_ACTIONS_ID } from '@/components/boundingBoxes/boundingBoxesHeaderActionsId'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+
+import { BOUNDING_BOXES_HEADER_ACTIONS_ID } from '@/components/boundingBoxes/boundingBoxesHeaderActionsId'
 </script>

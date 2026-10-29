@@ -99,25 +99,24 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
+import { LIGHT_TYPE_LABEL_KEYS } from '@comfyorg/viewport3d/lightInfo/types'
 import { useElementSize } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import { chipClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
-import Button from '@comfyorg/design-system/button/Button'
 import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
-import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
-import { LIGHT_TYPE_LABEL_KEYS } from '@comfyorg/viewport3d/lightInfo/types'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { chipClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
+import { useLightInfo } from '@/extensions/core/load3d/composables/useLightInfo'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 import LightInfoLightEditor from './LightInfoLightEditor.vue'
 import LightInfoViewportToolbar from './LightInfoViewportToolbar.vue'
-import { useLightInfo } from '@/extensions/core/load3d/composables/useLightInfo'
-import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 
 const COMPACT_WIDTH_THRESHOLD = 480
 const PANEL_BUDGET_WIDE = 208

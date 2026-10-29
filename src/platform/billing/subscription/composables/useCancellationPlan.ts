@@ -2,12 +2,12 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 import {
   getTierFeatures,
   toTierKey
 } from '@/platform/billing/subscription/constants/tierPricing'
 import { getPlanCreditGrant } from '@/platform/billing/subscription/utils/planCreditGrant'
-import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 
 export function useCancellationPlan() {
   const { t } = useI18n()

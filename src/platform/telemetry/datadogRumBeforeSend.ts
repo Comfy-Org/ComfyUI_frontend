@@ -1,3 +1,8 @@
+import { isRumErrorNoise } from '@comfyorg/shared-frontend-utils/telemetry'
+import {
+  redactTelemetryUrls,
+  redactTelemetryValues
+} from '@comfyorg/telemetry/redactTelemetryUrls'
 import type {
   RumActionEvent,
   RumBeforeSend,
@@ -6,8 +11,6 @@ import type {
   RumViewEvent
 } from '@datadog/browser-rum'
 
-import { isRumErrorNoise } from '@comfyorg/shared-frontend-utils/telemetry'
-
 import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
 
 import {
@@ -15,10 +18,6 @@ import {
   CUSTOM_NODE_LOAD_ERROR_TYPE,
   getCustomNodeFailureSignals
 } from './customNodeLoadTelemetry'
-import {
-  redactTelemetryUrls,
-  redactTelemetryValues
-} from '@comfyorg/telemetry/redactTelemetryUrls'
 
 const FIRST_PARTY_EXTENSION_FOLDERS = new Set(['cloud', 'core'])
 

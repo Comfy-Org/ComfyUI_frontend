@@ -1,7 +1,11 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
+
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
+import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
 import {
   bindMultilineTextareaWidget,
   createMultilineInputElement
@@ -10,12 +14,9 @@ import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useApp } from '@/scripts/appInstance'
 import { isDOMWidget } from '@/scripts/domWidget'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { DOMWidgetOptions } from '@/types/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
-import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 
 function addMultilineWidget(
   node: LGraphNode,

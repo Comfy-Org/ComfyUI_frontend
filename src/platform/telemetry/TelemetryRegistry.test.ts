@@ -2,8 +2,6 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
-import { describe, expect, expectTypeOf, it, vi } from 'vitest'
-
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import type {
   AgentConsentResolvedMetadata,
@@ -26,6 +24,7 @@ import type {
   AgentWorkflowAppliedMetadata,
   TelemetryProvider
 } from '@comfyorg/telemetry/types'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 type AgentDispatchMethod = keyof TelemetryProvider & `trackAgent${string}`
 

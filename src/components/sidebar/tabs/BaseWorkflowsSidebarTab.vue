@@ -157,21 +157,22 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
+import TextDivider from '@comfyorg/design-system/common/TextDivider'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
-import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
-import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
-import TextDivider from '@comfyorg/design-system/common/TextDivider'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
-import Button from '@comfyorg/design-system/button/Button'
-import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useAppMode } from '@/composables/useAppMode'
+import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -188,7 +189,6 @@ import {
   getWorkflowSuffix
 } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { title, filter, searchSubject, dataTestid, hideLeafIcon } = defineProps<{
   title: string

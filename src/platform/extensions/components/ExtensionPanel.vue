@@ -117,15 +117,16 @@
 </template>
 
 <script setup lang="ts">
-import type { CheckboxCheckedState } from 'reka-ui'
-import { computed, onMounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import Checkbox from '@comfyorg/design-system/checkbox/Checkbox'
-import Menu from '@comfyorg/design-system/menu/Menu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import {
+  filterByQuery,
+  sortByText
+} from '@comfyorg/design-system/lib/table/tableUtils'
+import type { TableSortDirection } from '@comfyorg/design-system/lib/table/tableUtils'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import Message from '@comfyorg/design-system/message/Message'
 import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import Switch from '@comfyorg/design-system/switch/Switch'
@@ -136,15 +137,14 @@ import TableHead from '@comfyorg/design-system/table/TableHead'
 import TableHeader from '@comfyorg/design-system/table/TableHeader'
 import TableRow from '@comfyorg/design-system/table/TableRow'
 import TableSortHead from '@comfyorg/design-system/table/TableSortHead'
-import {
-  filterByQuery,
-  sortByText
-} from '@comfyorg/design-system/lib/table/tableUtils'
-import type { TableSortDirection } from '@comfyorg/design-system/lib/table/tableUtils'
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import type { CheckboxCheckedState } from 'reka-ui'
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const { t } = useI18n()
 

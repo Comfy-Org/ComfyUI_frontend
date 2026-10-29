@@ -1,5 +1,5 @@
-import { clearOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
+import { clearOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import type { ComfyExtension } from '@/types/comfy'
 
 export const cloudSessionCookieExtension: ComfyExtension = {

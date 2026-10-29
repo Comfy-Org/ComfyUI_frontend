@@ -1,12 +1,12 @@
-import { captureCheckoutAttributionFromSearch } from '@/platform/telemetry/utils/checkoutAttribution'
-import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useAuthStore } from '@/stores/authStore'
-
 import type {
   PageViewMetadata,
   TelemetryProvider
 } from '@comfyorg/telemetry/types'
+
+import { captureCheckoutAttributionFromSearch } from '@/platform/telemetry/utils/checkoutAttribution'
+import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 const IMPACT_SCRIPT_URL =
   'https://utt.impactcdn.com/A6951770-3747-434a-9ac7-4e582e67d91f1.js'

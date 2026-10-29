@@ -1,19 +1,30 @@
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
+import type {
+  GroupLayout,
+  NodeBoundsUpdate,
+  NodeLayout,
+  RerouteLayout,
+  SlotOffset,
+  SlotOffsetMode
+} from '@comfyorg/graph-model/layout'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { SlotDirection, SlotIndex } from '@comfyorg/graph-model/slotId'
+import type {
+  Point2D as Point,
+  Size2D as Size,
+  RectTuple as StoredRect
+} from '@comfyorg/shared-frontend-utils/geometry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import log from 'loglevel'
 import { computed, ref, shallowReactive } from 'vue'
 import type { ComputedRef } from 'vue'
 import * as Y from 'yjs'
 
-import { toGroupId } from '@comfyorg/graph-model/groupId'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { GroupId } from '@comfyorg/graph-model/groupId'
-import type { LinkId } from '@comfyorg/graph-model/linkId'
-import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { readBrowserDpr } from '@/renderer/core/canvas/canvasViewport'
-import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import type { UUID } from '@/utils/uuid'
-
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
@@ -33,20 +44,6 @@ import type {
   SetGroupBoundsOperation,
   SetNodeZIndexOperation
 } from '@/renderer/core/layout/types'
-import type {
-  GroupLayout,
-  NodeBoundsUpdate,
-  NodeLayout,
-  RerouteLayout,
-  SlotOffset,
-  SlotOffsetMode
-} from '@comfyorg/graph-model/layout'
-import type {
-  Point2D as Point,
-  Size2D as Size,
-  RectTuple as StoredRect
-} from '@comfyorg/shared-frontend-utils/geometry'
-import type { SlotDirection, SlotIndex } from '@comfyorg/graph-model/slotId'
 import {
   isBoundsEqual,
   isPointEqual
@@ -67,7 +64,9 @@ import type {
   GroupLayoutMap,
   NodeLayoutMap
 } from '@/renderer/core/layout/utils/mappers'
+import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
+import type { UUID } from '@/utils/uuid'
 
 /** Top-level map keys touched by a batch of deep Yjs events. */
 function collectEventKeys(

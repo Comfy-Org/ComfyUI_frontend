@@ -35,17 +35,17 @@
 </template>
 
 <script setup lang="ts">
+import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
+import Button from '@comfyorg/design-system/button/Button'
+import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
+import TinyChevronIcon from '@comfyorg/design-system/icon/TinyChevronIcon'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import TinyChevronIcon from '@comfyorg/design-system/icon/TinyChevronIcon'
-import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import Button from '@comfyorg/design-system/button/Button'
-import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
-import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
-import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
+import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 
