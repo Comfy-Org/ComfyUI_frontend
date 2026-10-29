@@ -50,6 +50,12 @@ const ISOLATED_STORE_TESTS = [
   'src/stores/entityIdStore.test.ts',
   'src/testing/pinia.test.ts'
 ]
+// Censuses, not tests. They register every class in a real `object_info` and
+// write a result row, so they belong to vitest.census.config.mts and must stay
+// out of test:unit: the `scripts/**/*.test.ts` glob would otherwise pull them
+// into the tooling project, where they add seconds to every unit run and write
+// outside a temp directory as a side effect of running tests.
+const CENSUS_TESTS = ['scripts/registry-census/*.census.test.ts']
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -1013,7 +1019,7 @@ export default defineConfig({
             './vitest.console.setup.ts',
             './vitest.network.setup.ts'
           ],
-          exclude: FRONTEND_SCRIPT_TESTS,
+          exclude: [...FRONTEND_SCRIPT_TESTS, ...CENSUS_TESTS],
           include: [
             'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
