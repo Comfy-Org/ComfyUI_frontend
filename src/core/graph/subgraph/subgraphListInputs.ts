@@ -1,4 +1,5 @@
 import type {
+  ResolvedConnection,
   Subgraph,
   SubgraphInput,
   SubgraphNode
@@ -14,7 +15,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import {
   applyAutogrowTemplate,
-  listTemplateAt
+  listTemplateAt,
+  withComfyAutogrow
 } from '@/core/graph/widgets/dynamicWidgets'
 
 /**
@@ -22,6 +24,9 @@ import {
  * same minimum and maximum, and each other input as a single slot.
  */
 export function syncListInputs(host: SubgraphNode) {
+  // Wire autogrow from the start: hooks added later save and restore the
+  // node's callbacks, which would drop a handler chained after them
+  withComfyAutogrow(host)
   for (const input of host.subgraph.inputs) {
     const slots = hostInputsOf(host, input)
     // A list's slots are named `<input>.<item>`; a single slot is `<input>`
@@ -84,6 +89,10 @@ export function mergeListRuns(host: SubgraphNode) {
       return n === node && node.inputs[slot!].name === name
     })
   const bySlot = (input: SubgraphInput) => target(input)?.[1] ?? -1
+  const runs: {
+    anchor: SubgraphInput
+    sources: (ResolvedConnection | null | undefined)[]
+  }[] = []
   for (const anchor of [...subgraph.inputs].sort(
     (a, b) => bySlot(a) - bySlot(b)
   )) {
@@ -99,20 +108,25 @@ export function mergeListRuns(host: SubgraphNode) {
       .slice(inputs.length)
       .some((name) => node.inputs.find((i) => i.name === name)?.link != null)
     if (fedAfter) continue
-
     // Keep the first input as the list, and move the others' sources onto it
     const sources = inputs.map((input) => {
       const link = host.graph?.getLink(hostInputsOf(host, input)[0]?.link)
       return host.graph && link?.resolve(host.graph)
     })
     for (const input of inputs.slice(1)) subgraph.removeInput(input)
-    const others = subgraph.inputs.filter((i) => i !== anchor)
+    // Rename now: a group's new slots adopt any slot already named like them
     const group = names[0].slice(0, names[0].lastIndexOf('.'))
+    const others = subgraph.inputs.filter((i) => i !== anchor)
     anchor.name = nextUniqueName(
       group,
       others.map((i) => i.name)
     )
     for (const slot of hostInputsOf(host, anchor)) slot.name = anchor.name
+    runs.push({ anchor, sources })
+  }
+  // Removals and renames first: autogrow reads a disconnect right after a
+  // connect on the same slot as a link swap
+  for (const { anchor, sources } of runs) {
     subgraph.setInputList(anchor, { list: true })
     for (const [item, source] of sources.entries()) {
       const slotIndex = host.inputs.indexOf(hostInputsOf(host, anchor)[item])
