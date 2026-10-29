@@ -59,6 +59,7 @@ echo "https://abc.$project.pages.dev"
   writeFileSync(
     join(bin, 'tsx'),
     `#!/bin/bash
+echo 'Could not list failed tests: diagnostic' >&2
 echo '{"passed":2,"failed":0,"flaky":0,"skipped":0,"total":2}'
 `
   )

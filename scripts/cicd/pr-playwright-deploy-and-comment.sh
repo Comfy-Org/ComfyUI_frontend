@@ -219,7 +219,7 @@ else
 
                 if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
                     echo "Extracting counts from $REPORT_DIR using $EXTRACT_SCRIPT" >&2
-                    counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$url" 2>&1 || echo '{}')
+                    counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$url" || echo '{}')
                     echo "Extracted counts for $browser: $counts" >&2
                     echo "$counts" > "$temp_dir/$i.counts"
                 else

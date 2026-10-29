@@ -57,8 +57,8 @@ interface TestCounts {
 const MAX_LISTED_FAILURES = 20
 
 function toCount(value: unknown): number {
-  return Number.isSafeInteger(value) && (value as number) >= 0
-    ? (value as number)
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+    ? value
     : 0
 }
 
@@ -216,7 +216,7 @@ function countsFromRenderedStats(content: string): TestCounts | null {
   if (!match) return null
   const [passed, failed, flaky, skipped] = match
     .slice(1)
-    .map((n) => parseInt(n) || 0)
+    .map((n) => toCount(Number(n)))
   return {
     passed,
     failed,
@@ -231,7 +231,7 @@ function summaryCount(content: string, outcome: string): number {
   const match = content.match(
     new RegExp(`(\\d+)\\s+(?:tests?|specs?)\\s+${outcome}`, 'i')
   )
-  return match ? parseInt(match[1]) || 0 : 0
+  return match ? toCount(Number(match[1])) : 0
 }
 
 function countsFromSummaryText(content: string): TestCounts {
@@ -255,12 +255,6 @@ function countsFromHtmlReport(reportDir: string): TestCounts | null {
   )
 }
 
-/**
- * Extract test counts from a Playwright report directory
- * @param reportDir - Path to the playwright-report directory
- * @param baseUrl - Base URL of the deployed report (for test links)
- * @returns Test counts { passed, failed, flaky, skipped, total, failures }
- */
 function extractTestCounts(reportDir: string, baseUrl?: string): TestCounts {
   try {
     return (

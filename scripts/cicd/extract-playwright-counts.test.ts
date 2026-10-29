@@ -183,7 +183,7 @@ describe('extract-playwright-counts on a Playwright JSON report', () => {
   })
 
   it('keeps the counts when a spec is malformed', () => {
-    const malformed = { id: 'x', title: 'broken' }
+    const malformed = { id: 'x', title: 'broken', file: FILE, tests: 'none' }
 
     expect(
       extract({
@@ -229,11 +229,10 @@ describe('extract-playwright-counts on untrusted report content', () => {
 
   it('never evaluates script embedded in an HTML report', () => {
     const marker = join(tmpdir(), `extract-playwright-${process.pid}-pwned`)
+    onTestFinished(() => rmSync(marker, { force: true }))
     const { counts } = runExtractor({
       'index.html': `<script>window.playwrightReport = {stats: (() => { process.getBuiltinModule('fs').writeFileSync(${JSON.stringify(marker)}, ''); return { expected: 1 } })()};</script>`
     })
-
-    onTestFinished(() => rmSync(marker, { force: true }))
 
     expect(existsSync(marker)).toBe(false)
     expect(counts.total).toBe(0)
@@ -270,5 +269,14 @@ describe('extract-playwright-counts on an HTML report without report.json', () =
       skipped: 1,
       total: 6
     })
+  })
+
+  it('ignores counts too large to be exact', () => {
+    expect(
+      runExtractor({
+        'index.html':
+          '<div>9999999999999999999999999 passed · 1 failed · 0 flaky · 0 skipped</div>'
+      }).counts
+    ).toMatchObject({ passed: 0, failed: 1, total: 1 })
   })
 })
