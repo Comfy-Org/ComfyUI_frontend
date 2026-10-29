@@ -2197,6 +2197,35 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     )
   })
 
+  // FRONT-3670: once the agent can open a thread itself (FRONT-3251), an
+  // assistant turn with no user turn becomes reachable. It must not activate
+  // the thread: before the first send a new workspace's gratis grant is still
+  // unminted, so `agentHasFunds === false` is not yet evidence the user is out
+  // of credits, and the card would claim it beside the agent's opening line.
+  // The refusal-anchored inline card is what explains credits if the first
+  // send is in fact refused. Browser proof:
+  // browser_tests/tests/agent/agentCreditsExhaustionAgentStartedThread.spec.ts
+  it('stays hidden on a thread the agent started, with no user message', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-agent-started')
+    conversation.messages.push({
+      id: toTurnId('msg-agent-opening'),
+      role: 'assistant',
+      parts: [
+        { type: 'text', text: 'Want me to wire that up?', state: 'done' }
+      ],
+      streaming: false,
+      thinking: false
+    })
+    await nextTick()
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
   it('stays hidden while a restored thread has not loaded any messages', async () => {
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
