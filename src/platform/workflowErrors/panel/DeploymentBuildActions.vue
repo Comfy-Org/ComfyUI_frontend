@@ -14,10 +14,7 @@
       data-testid="deployment-build-platform"
     >
       {{ $t('rightSidePanel.editBuildOnPlatform') }}
-      <i
-        class="icon-[lucide--square-arrow-out-up-right] size-4"
-        aria-hidden="true"
-      />
+      <i class="icon-[lucide--square-arrow-out-up-right]" aria-hidden="true" />
     </Button>
     <Button
       variant="secondary"
@@ -28,7 +25,7 @@
       @click="copy(brief())"
     >
       <template v-if="copied">
-        <i class="icon-[lucide--check] size-4" aria-hidden="true" />
+        <i class="icon-[lucide--check]" aria-hidden="true" />
         {{ $t('deployToComfyApi.copied') }}
       </template>
       <template v-else>
