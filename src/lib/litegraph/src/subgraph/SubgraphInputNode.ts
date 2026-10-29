@@ -32,8 +32,6 @@ import { nextUniqueName } from '@/lib/litegraph/src/strings'
 
 import { EmptySubgraphInput } from './EmptySubgraphInput'
 import { SubgraphIONodeBase } from './SubgraphIONodeBase'
-import { canBeList } from './listInputs'
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 
 import { provideSubgraphInputGuard } from './subgraphTypeGuards'
 
@@ -97,27 +95,6 @@ export class SubgraphInputNode
   /** @inheritdoc */
   override removeSlot(slot: SubgraphInput): void {
     this.subgraph.removeInput(slot)
-  }
-
-  /** Lets the user choose between a list input and a single input. */
-  protected override getExtraSlotMenuOptions(
-    slot: SubgraphInput
-  ): IContextMenuValue[] {
-    if (slot.list)
-      return [{ content: 'Expose as single input', value: 'list-off' }]
-    return canBeList(this.subgraph, slot)
-      ? [{ content: 'Expose as list', value: 'list-on' }]
-      : []
-  }
-
-  protected override onExtraSlotMenuAction(
-    selectedItem: IContextMenuValue,
-    slot: SubgraphInput
-  ): void {
-    if (selectedItem.value === 'list-on' || selectedItem.value === 'list-off')
-      this.subgraph.setInputList(slot, {
-        list: selectedItem.value === 'list-on'
-      })
   }
 
   canConnectTo(
