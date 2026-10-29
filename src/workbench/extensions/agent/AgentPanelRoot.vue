@@ -857,7 +857,7 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (!target) return undefined
   const documentId = cloudIdFor(target)
   if (canvasMissedDocumentFrames(documentId)) {
-    reportWithheldDraft(documentId)
+    if (target.activeState) reportWithheldDraft(documentId)
     return undefined
   }
   const content = serializedCanvas(target)
