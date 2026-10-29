@@ -100,8 +100,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const draggedWidth = ref(PANEL_MIN_WIDTH)
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
-  // Last consent acceptance whose billing refresh a dock host has started;
-  // keeps the graph and linear hosts from both reading for one Agree.
   const billingRefreshedAcceptances = ref(0)
   const reportedFreeUseExposure = ref(false)
   const reportedFreeUseImpression = ref(false)

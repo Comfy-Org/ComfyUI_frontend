@@ -8709,8 +8709,6 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it.for(['workspace', 'legacy'] as const)(
-    // useAgentDockMount owns the post-consent refresh for every consent path;
-    // a second read here would race it.
     'leaves the $ post-consent billing refresh to the dock host on first send',
     async (billingType) => {
       makeTab('wf-42')

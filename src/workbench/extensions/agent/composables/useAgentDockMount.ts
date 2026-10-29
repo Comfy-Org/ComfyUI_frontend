@@ -31,9 +31,6 @@ export function useAgentDockMount(): AgentDockMount {
     { immediate: true }
   )
 
-  // Agree can create the Agent grant, so re-read billing after each confirmed
-  // acceptance. First-load and top-bar consent resolve before the panel
-  // mounts, so the persistent host owns this rather than the panel.
   const consentStore = useAgentConsentStore()
   watch(
     () => consentStore.acceptances,

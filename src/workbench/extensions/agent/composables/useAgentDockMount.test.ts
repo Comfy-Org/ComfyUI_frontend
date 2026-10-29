@@ -187,8 +187,6 @@ describe('useAgentDockMount', () => {
       return { consent: useAgentConsentStore(), fetchStatus }
     }
 
-    // First-load and top-bar consent resolve before the panel mounts, so the
-    // persistent host owns this refresh.
     it('refreshes billing when consent is accepted while the panel is closed', async () => {
       const { consent, fetchStatus } = mountWithBilling()
       expect(useAgentPanelStore().isOpen).toBe(false)
