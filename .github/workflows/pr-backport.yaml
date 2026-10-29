@@ -210,9 +210,11 @@ jobs:
 
             # A backport made by hand lives on a branch the bot did not
             # create. Count it only when its title marks it as a backport to
-            # this target and it says it carries this PR: the title names it,
-            # its head branch names it, or a body line starts with "Backport
-            # of" and names it. A body that only mentions the PR ("not included: #N",
+            # this target, is not a revert, and says it carries this PR: the
+            # title ends with "(#N)", the head branch has N next to
+            # "backport", or a body line starts with "Backport of" and names
+            # it. A branch with some other number (a ticket key like be-N),
+            # a title or a body that only mentions the PR ("not included: #N",
             # "follow-up to the backport of #N") does not count.
             MANUAL_PR=$(
               gh pr list \
@@ -227,8 +229,10 @@ jobs:
                     (.title | ascii_downcase |
                       startswith("[backport \($target)]") or
                       startswith("[\($target)]")) and
-                    ((.title | test("#\($pr)\($end)")) or
-                      (.headRefName | test("(^|[^0-9])\($pr)\($end)")) or
+                    (.title | test("revert"; "i") | not) and
+                    ((.title | test("\\(#\($pr)\\)$")) or
+                      (.headRefName |
+                        test("backport-\($pr)\($end)|(^|[/-])\($pr)-backport")) or
                       ((.body // "") | test(
                         "(^|\n)[ \t]*backport of (#|https://github[.]com/Comfy-Org/ComfyUI_frontend/pull/)\($pr)\($end)";
                         "i")))

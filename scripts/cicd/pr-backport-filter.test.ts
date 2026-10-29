@@ -260,6 +260,14 @@ describe('pr-backport filter-targets', () => {
         }
       },
       {
+        name: 'a head branch named backport-<number>',
+        pr: {
+          ...handMade,
+          head: 'oploop-918f-backport-21829-to-core-1.57',
+          body: 'PR 21829 conflicted on this branch.'
+        }
+      },
+      {
         name: 'the number in the head branch',
         pr: { ...handMade, body: 'PR 21829 conflicted on this branch.' }
       }
@@ -280,6 +288,29 @@ describe('pr-backport filter-targets', () => {
       {
         name: 'a backport title for another branch',
         pr: { ...handMade, title: '[backport cloud/1.57] fix(agent): answer' }
+      },
+      {
+        name: 'a ticket key with the same number in the head branch',
+        pr: {
+          ...handMade,
+          head: 'skishore23/be-21829-slash-picker-core-1.57',
+          body: 'Fixes the picker (BE-21829).'
+        }
+      },
+      {
+        name: 'a title that only mentions the PR',
+        pr: {
+          ...mentionOnly,
+          title: '[core/1.57] follow-up to #21829',
+          body: ''
+        }
+      },
+      {
+        name: 'a revert of the PR',
+        pr: {
+          ...handMade,
+          title: '[backport core/1.57] Revert "fix(agent): answer (#21829)"'
+        }
       },
       {
         name: 'a body that names the PR as left out',
