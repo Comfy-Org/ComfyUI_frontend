@@ -23,9 +23,8 @@ import { userMessageClipboard } from './message/userMessageClipboard'
 setupInlinePromptEditorDom()
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const PORTRAIT = 'Compose a portrait\nKeep the subject recognizable'
 const PORTRAIT_LINK =

@@ -4,10 +4,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  markErrorReported,
-  reportError
-} from '@/platform/telemetry/reportError'
+import { markErrorReported, reportError } from '@comfyorg/telemetry/reportError'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
@@ -20,7 +17,6 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('./agentAuth'))
 
 import {
@@ -448,26 +444,48 @@ describe('listThreads pagination', () => {
   it.for([
     {
       reason: 'missing_cursor',
+      ids: ['th-1'],
       pages: () => [threadPage(['th-1'], { has_more: true })]
     },
     {
       reason: 'repeated_cursor',
+      ids: ['th-1', 'th-2'],
       pages: () => [
         threadPage(['th-1'], { has_more: true, next_cursor: 'a' }),
         threadPage(['th-2'], { has_more: true, next_cursor: 'a' })
       ]
     }
   ])(
-    'returns $reason without partial threads when paging stops before the last page',
-    async ({ reason, pages }) => {
+    'returns $reason with the threads it did fetch when paging stops before the last page',
+    async ({ reason, ids, pages }) => {
       pages().forEach(respond)
 
-      await expect(makeClient().listThreads()).resolves.toEqual({
+      await expect(makeClient().listThreads()).resolves.toMatchObject({
         status: 'incomplete',
-        reason
+        reason,
+        threads: ids.map((id) => ({ id }))
       })
     }
   )
+
+  it('lists a repeated page once when every cursor answers with page 1', async () => {
+    const page1 = () =>
+      threadPage(['th-1', 'th-2'], {
+        has_more: true,
+        next_cursor: 'a'
+      })
+    respond(page1())
+    respond(page1())
+
+    await expect(makeClient().listThreads()).resolves.toEqual({
+      status: 'incomplete',
+      reason: 'repeated_cursor',
+      threads: [
+        expect.objectContaining({ id: 'th-1' }),
+        expect.objectContaining({ id: 'th-2' })
+      ]
+    })
+  })
 
   it('passes the caller abort signal to every page request', async () => {
     respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
@@ -481,13 +499,14 @@ describe('listThreads pagination', () => {
     ).toEqual([signal, signal])
   })
 
-  it('returns a failure without partial threads when a later page fails', async () => {
+  it('returns the threads already fetched when a later page fails', async () => {
     respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
     respond(jsonResponse(503, { error: 'unavailable' }))
 
     await expect(makeClient().listThreads()).resolves.toEqual({
-      status: 'failed',
-      cause: expect.objectContaining({ name: 'AgentApiError', status: 503 })
+      status: 'incomplete',
+      reason: 'request_failed',
+      threads: [expect.objectContaining({ id: 'th-1' })]
     })
   })
   it.for([

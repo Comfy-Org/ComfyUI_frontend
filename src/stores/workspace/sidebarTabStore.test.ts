@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 vi.mock(import('@/i18n'), () => ({

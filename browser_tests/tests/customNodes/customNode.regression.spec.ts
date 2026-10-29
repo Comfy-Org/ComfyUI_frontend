@@ -3,7 +3,7 @@ import { basename, resolve } from 'node:path'
 
 import type { Page } from '@playwright/test'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { CuratedOutputHashes } from '@e2e/fixtures/customNode/outputHashes'
 import {
   comfyExpect as expect,
@@ -216,9 +216,7 @@ for (const entry of manifestEntries) {
           }
           await comfyPage.nextFrame()
 
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(entry.expectedNodes.length)
+          await comfyPage.expectNodeCount(entry.expectedNodes.length)
           // Vue Nodes 2.0 mounts each node as a [data-node-id] element; assert
           // the pack's own nodes rendered, not just any node count.
           if (vueNodesEnabled)

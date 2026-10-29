@@ -66,7 +66,7 @@ import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import FormNumberField from '@/components/common/FormNumberField.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 const minimap = useMinimap()
 const commandStore = useCommandStore()

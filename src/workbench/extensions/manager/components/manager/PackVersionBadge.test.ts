@@ -247,14 +247,18 @@ describe('PackVersionBadge', () => {
     it('does not show chevron icon when disabled', () => {
       const { container } = renderComponent()
 
-      const chevronIcon = container.querySelector('.pi-chevron-right')
+      const chevronIcon = container.querySelector(
+        '[class*="lucide--chevron-right"]'
+      )
       expect(chevronIcon).not.toBeInTheDocument()
     })
 
     it('does not show update arrow when disabled', () => {
       const { container } = renderComponent()
 
-      const updateIcon = container.querySelector('.pi-arrow-circle-up')
+      const updateIcon = container.querySelector(
+        '[class*="lucide--circle-arrow-up"]'
+      )
       expect(updateIcon).not.toBeInTheDocument()
     })
 

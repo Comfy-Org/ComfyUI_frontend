@@ -2,20 +2,20 @@ import type {
   LGraph,
   LGraphNode,
   Subgraph
-} from '@/lib/litegraph/src/types/entityRegistry'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/entityRegistry'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { WidgetRefusalReport } from '@/lib/litegraph/src/node/widgetsView'
 import { refuseAmbiguousNodeWidgets } from '@/lib/litegraph/src/node/widgetsView'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { RefusedWidget } from '@/types/widgetId'
+import type { RefusedWidget } from '@comfyorg/graph-model/widgetId'
 
 import { registerNodeState, unregisterNodeState } from './nodeShellState'
 
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { UUID } from '@/utils/uuid'
 

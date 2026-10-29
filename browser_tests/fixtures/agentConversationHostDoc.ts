@@ -1,4 +1,5 @@
 import {
+  OPAQUE_WIDGETS_KEY,
   SCHEMA_VERSION,
   applyOps,
   hasAppliedOp,
@@ -18,7 +19,7 @@ import type {
 import type { DocSubscribedData, DocUpdateData } from '@comfyorg/ingest-types'
 import * as Y from 'yjs'
 
-import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
@@ -261,6 +262,27 @@ export class HostDoc {
     const widgets = new Y.Map<unknown>()
     for (const [name, value] of entries) widgets.set(name, value)
     node.set('widgets', widgets)
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
+  }
+
+  replaceOpaqueWidgetValues(
+    nodeId: number,
+    values: readonly unknown[]
+  ): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const node = nodesMap(this.doc).get(String(nodeId))
+    if (!(node instanceof Y.Map)) {
+      throw new Error(`Host node ${String(nodeId)} does not exist`)
+    }
+    if (!Array.isArray(node.get(OPAQUE_WIDGETS_KEY))) {
+      throw new Error(`Host node ${String(nodeId)} has no opaque widget values`)
+    }
+    node.set(OPAQUE_WIDGETS_KEY, [...values])
     this.seq += 1
     return this.updateFrame(
       Y.encodeStateAsUpdate(this.doc, before),

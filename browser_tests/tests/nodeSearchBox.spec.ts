@@ -14,9 +14,7 @@ async function waitForSearchInsertion(
   initialNodeCount: number
 ) {
   await expect(comfyPage.searchBox.input).toHaveCount(0)
-  await expect
-    .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-    .toBe(initialNodeCount + 1)
+  await comfyPage.expectNodeCount(initialNodeCount + 1)
 }
 
 async function getNodeRefsAddedSince(
