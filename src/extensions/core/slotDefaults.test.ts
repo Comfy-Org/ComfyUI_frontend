@@ -137,6 +137,7 @@ describe('Comfy.SlotDefaults', () => {
     ).not.toThrow()
 
     LiteGraph.flushSlotTypeTables()
+    expect(LiteGraph.slot_types_default_out.IMAGE).toContain('BadOutput')
     expect(LiteGraph.slot_types_out).not.toContain('7')
     expect(LiteGraph.registered_slot_out_types).toEqual({})
   })
@@ -148,25 +149,28 @@ describe('Comfy.SlotDefaults', () => {
       })
     )
     const defs = await app.getNodeDefs()
+    LiteGraph.slot_types_default_in = { MASK: ['ExistingNode'] }
     await slotDefaultsExtension.beforeRegisterNodeDef?.(
       LGraphNode,
       defs.PreviewImage,
       app
     )
-    const setDefaults = vi
-      .spyOn(slotDefaultsExtension, 'setDefaults')
-      .mockImplementationOnce(() => {
-        throw new TypeError('invalid defaults')
-      })
+    Object.defineProperty(slotDefaultsExtension.slot_types_default_out, 'BAD', {
+      value: null,
+      enumerable: true
+    })
+    const setDefaults = vi.spyOn(slotDefaultsExtension, 'setDefaults')
 
     LiteGraph.slot_types_default_out = { IMAGE: ['MyNode'] }
 
     expect(LiteGraph.slot_types_default_out).toEqual({ IMAGE: ['MyNode'] })
+    expect(LiteGraph.slot_types_default_in).toEqual({
+      MASK: ['ExistingNode']
+    })
+    expect(setDefaults).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledWith(
       expect.any(TypeError),
       expect.objectContaining({ errorType: 'error_setting_slot_defaults' })
     )
-    setDefaults.mockRestore()
   })
-
 })
