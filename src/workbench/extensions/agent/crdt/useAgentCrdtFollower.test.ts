@@ -2996,12 +2996,8 @@ describe('useAgentCrdtFollower', () => {
 
     enqueue([edit])
     await Promise.resolve()
-    // Five retries at 500 ms, then the whole budget again: the old sender
-    // settled the batch `undeliverable` here, which both lost the edit and
-    // lifted its LocalWidgetWrites hold.
     vi.advanceTimersByTime(10_000)
 
-    // One attempt plus the five retries, every one refused by the transport.
     expect(clientState.sendOps).toHaveBeenCalledTimes(6)
     expect(projectionState.noteLocalWrites).toHaveBeenCalledWith([edit])
     expect(projectionState.settleLocalWrites).not.toHaveBeenCalled()
@@ -3020,7 +3016,6 @@ describe('useAgentCrdtFollower', () => {
     const [, , resent] = clientState.sendOps.mock.calls[6]
     expect(resent).toHaveLength(1)
     expect(resent[0]).toMatchObject({ op: 'set_widget', node_id: '1' })
-    // The same wire identity, not a re-mint (KEEP-ALIVE #2, FORECLOSE #7).
     expect(resent[0].op_id).toBe(refused[0].op_id)
     expect(resent[0].base_version).toBe(refused[0].base_version)
     unmount()

@@ -148,14 +148,7 @@ export interface OpSender {
    * `undeliverable` exactly as it would have. Idempotent.
    */
   resume(): void
-  /**
-   * The socket is live again: re-transmit the batch the transport retry
-   * budget could not carry, with its original `op_id`s and stamps. A batch
-   * that exhausted the budget is held, not settled — an edit made while the
-   * agent process is down is owed delivery, not a lost-edit report (PM-2392,
-   * and the 2026-09-28 ruling that transport retry exhaustion is not a
-   * terminal discard). Idempotent, and a no-op while nothing is held.
-   */
+  /** Retries a batch held after transport exhaustion. */
   retryTransport(): void
   /**
    * Eager abort seam (FE #16637 residual): settle the in-flight batch NOW
@@ -215,7 +208,6 @@ interface InFlight extends WireBatch {
   reportedThrow: boolean
   resent: boolean
   parked: boolean
-  /** The retry budget ran out with the socket down; waiting for it to return. */
   awaitingTransport: boolean
   timer: ReturnType<typeof setTimeout> | null
 }
@@ -337,12 +329,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           SEND_RETRY_INTERVAL_MS
         )
       } else {
-        // The socket is down for longer than the budget, which is what an
-        // agent process restart looks like. Hold the batch at the head of
-        // the queue instead of settling it: settling here both loses the
-        // edit and lifts its `LocalWidgetWrites` hold, so the reconnect
-        // catch-up frame then projects the pre-outage value back over what
-        // the user typed (PM-2392). `retryTransport()` resumes it.
         batch.awaitingTransport = true
       }
       return

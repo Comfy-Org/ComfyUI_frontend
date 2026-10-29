@@ -210,8 +210,6 @@ describe('createOpSender', () => {
   })
 
   it.for([
-    // A down transport no longer settles on its own: the batch is held for
-    // the socket's return, so the detach below is what reports it.
     ['undeliverable', false, WORKFLOW, 3_000, 'detached'],
     ['undeliverable', true, null, 0, 'unbound'],
     ['unconfirmed', true, WORKFLOW, 0, 'detached'],
@@ -614,8 +612,6 @@ describe('createOpSender', () => {
 
     transportUp = true
     sender.retryTransport()
-    // The first batch leaves immediately; the second is pumped behind it as
-    // soon as the first settles, so mint order survives the outage.
     expect(sent.map((frame) => frame.ops.map((op) => op.op))).toEqual([
       ['add_node']
     ])
