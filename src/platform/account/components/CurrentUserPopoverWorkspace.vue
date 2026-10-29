@@ -268,6 +268,7 @@ import {
 
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
 import SubscribeButton from '@/platform/billing/subscription/components/SubscribeButton.vue'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
@@ -450,6 +451,6 @@ const handleCreateWorkspace = () => {
 }
 
 onMounted(() => {
-  if (!accountActionsOnly) void fetchBalance()
+  if (!accountActionsOnly) void refreshBalanceInBackground(fetchBalance)
 })
 </script>

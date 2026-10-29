@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import LocateNodeButton from '@/components/rightSidePanel/errors/LocateNodeButton.vue'
+import LocateNodeButton from '@/platform/workflowErrors/panel/LocateNodeButton.vue'
 
 describe('LocateNodeButton', () => {
   it('exposes the label as the button aria-label', () => {

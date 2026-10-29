@@ -2,7 +2,7 @@
  * What only the plans read does. The scope fence, the shared request, and the
  * publish rules it inherits are proved once in `scopedReader.test.ts`.
  */
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import type { SessionSnapshot } from '#/core/session'
 import { sessionBillingScopeSource } from './billingScope'
@@ -55,8 +55,7 @@ describe('createPlansReader', () => {
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
     expect(calls[0].route).toBe('/billing/plans')
-    expect(result.status).toBe('ok')
-    if (result.status !== 'ok') return
+    assert(result.status === 'ok')
     expect(result.value.data.current_plan_slug).toBe('free')
     expect(result.value.data.plans[0].slug).toBe('creator_monthly')
     expect(result.value.data.plans[0].price_cents).toBe(2000n)
@@ -107,8 +106,7 @@ describe('createPlansReader', () => {
 
     const result = await createPlansReader({ transport, scopeSource }).read()
 
-    expect(result.status).toBe('ok')
-    if (result.status !== 'ok') return
+    assert(result.status === 'ok')
     expect(result.value.data.plans[0].features).toEqual(['Fallback copy'])
     expect(result.value.data.plans[0].feature_items).toEqual([
       {

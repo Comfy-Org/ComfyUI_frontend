@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { createI18n } from 'vue-i18n'
 
 import RightSidePanel from '@/components/rightSidePanel/RightSidePanel.vue'
@@ -19,8 +20,9 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
+import type { WorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 
 import TabErrors from './TabErrors.vue'
 import { app } from '@/scripts/app'
@@ -75,8 +77,10 @@ vi.mock(
 
 describe('TabErrors.vue', () => {
   let i18n: ReturnType<typeof createI18n>
+  const selectedItems = ref<Positionable[]>([])
 
   beforeEach(() => {
+    selectedItems.value = []
     i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -143,9 +147,38 @@ describe('TabErrors.vue', () => {
     const user = userEvent.setup()
     const pinia = getActivePinia()!
     seed?.(pinia)
-    render(TabErrors, {
+    const manager: WorkflowErrorManager = {
+      useMissingNodes: () => ({
+        missingNodePacks: ref([]),
+        missingCoreNodes: ref({}),
+        isLoading: ref(false)
+      }),
+      useManagerState: () => ({
+        shouldShowManagerButtons: ref(false),
+        shouldShowInstallButton: ref(false)
+      }),
+      usePackInstall: () => ({
+        isInstalling: ref(false),
+        installAllPacks: vi.fn()
+      }),
+      useApplyChanges: () => ({
+        isRestarting: ref(false),
+        applyChanges: vi.fn()
+      }),
+      isPackInstalled: () => false,
+      openManager: vi.fn()
+    }
+    const Host = defineComponent(
+      () => () =>
+        h(TabErrors, {
+          selectedItems: selectedItems.value,
+          onLocateNode: mockFocusNode
+        })
+    )
+    render(Host, {
       global: {
         plugins: [i18n, pinia],
+        provide: { [WorkflowErrorManagerKey]: manager },
         stubs: {
           AsyncSearchInput: {
             template:
@@ -1162,7 +1195,7 @@ describe('TabErrors.vue', () => {
 
     const missingMediaNode = new LGraphNode('LoadImage')
     missingMediaNode.id = toNodeId(3)
-    setCanvasSelection([missingMediaNode])
+    selectedItems.value = [missingMediaNode]
     await nextTick()
 
     expect(errorChip).toHaveAttribute('aria-pressed', 'false')
@@ -1209,7 +1242,7 @@ describe('TabErrors.vue', () => {
 
     const missingMediaNode = new LGraphNode('LoadImage')
     missingMediaNode.id = toNodeId(3)
-    setCanvasSelection([missingMediaNode])
+    selectedItems.value = [missingMediaNode]
     await nextTick()
 
     const user = userEvent.setup()

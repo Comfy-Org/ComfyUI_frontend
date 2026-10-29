@@ -142,6 +142,7 @@ export function challengeRequiredOperation(
 export function defaultScenario(): CloudScenario {
   return {
     status: {
+      ended_at: null,
       is_active: true,
       has_funds: true,
       max_seats: 1,
@@ -154,7 +155,6 @@ export function defaultScenario(): CloudScenario {
       subscription_status: 'active',
       renewal_date: inAnHour(),
       scheduled_change: null,
-      ended_at: null,
       team_credit_stop: null
     },
     balance: { amount_micros: 12_500_000, currency: 'usd' },

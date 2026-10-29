@@ -5,6 +5,8 @@ import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { NavGroupData } from '@comfyorg/design-system/lib/navigation/types'
 
@@ -296,4 +298,36 @@ it('restores the collapsed header when switching sections', async () => {
   expect(
     await screen.findByRole('heading', { name: 'Acme Team' })
   ).toBeInTheDocument()
+})
+
+it('reports a failed balance read from the Credits section once instead of leaving it unhandled', async () => {
+  const failure = new Error('Balance temporarily unavailable')
+  const billing = useBillingContext()
+  vi.mocked(billing.fetchBalance).mockRejectedValueOnce(failure)
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+  settingUiMocks.navGroups.value = [
+    {
+      title: 'Workspace',
+      items: [
+        {
+          id: 'workspace-allowlist',
+          label: 'Allowlist',
+          icon: 'icon-[lucide--list-checks]'
+        },
+        { id: 'credits', label: 'Credits', icon: 'icon-[lucide--coins]' }
+      ]
+    }
+  ]
+  renderDialog()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Credits' }))
+
+  await vi.waitFor(() =>
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      surface: 'billing',
+      errorType: 'error_refreshing_balance',
+      level: 'warning'
+    })
+  )
+  expect(reportError).toHaveBeenCalledOnce()
 })

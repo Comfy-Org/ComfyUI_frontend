@@ -45,7 +45,7 @@ const configured: AutoReloadSettings = {
   last_failure_at: null,
   last_failure_reason: null,
   max_monthly_budget_cents: 100000,
-  max_reload_credits: null,
+  max_reload_credits: 100000,
   min_reload_credits: 1000,
   monthly_budget_cents: 20000,
   monthly_budget_is_default: false,

@@ -35,7 +35,7 @@ function projectCredits(
 function projectFeatureItem({
   params,
   ...item
-}: DecodedFeatureItem): FeatureItem | undefined {
+}: DecodedFeatureItem): FeatureItem {
   if (params === undefined) return item
   const count = asSafeNumber(params.count)
   return count === undefined ? item : { ...item, params: { count } }
@@ -43,10 +43,9 @@ function projectFeatureItem({
 
 function projectFeatureItems(
   raw: DecodedPlan['feature_items']
-): Pick<Plan, 'feature_items'> | undefined {
+): Pick<Plan, 'feature_items'> {
   if (raw === undefined) return {}
-  const feature_items = projectAll(raw, projectFeatureItem)
-  return feature_items === undefined ? undefined : { feature_items }
+  return { feature_items: raw.map(projectFeatureItem) }
 }
 
 function projectPlan({
@@ -65,7 +64,6 @@ function projectPlan({
   )
   if (
     credits === undefined ||
-    featureItems === undefined ||
     credits_cents === undefined ||
     max_seats === undefined ||
     price_cents === undefined ||

@@ -3655,10 +3655,12 @@
       "credits": {
         "addCredits": "Add credits",
         "available": "Available",
+        "availableUntil": "Available until {date}",
         "inUse": "In use now",
         "overdrawn": "Your runs used {count} more credit than you had. | Your runs used {count} more credits than you had.",
         "plan": "Plan",
         "planOfPool": "{remaining} of {total}",
+        "planUsed": "{percent}% used",
         "planTooltip": "Credits included with your plan. They refill each billing period.",
         "rateInfo": "About credits",
         "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
@@ -3667,6 +3669,10 @@
         "topUpTooltip": "Credits you added. They're used once plan credits run out.",
         "unavailable": "Couldn't load your balance."
       },
+      "footer": {
+        "messageSupport": "Message support",
+        "partnerNodesPricing": "Partner Nodes pricing"
+      },
       "handoff": {
         "member": {
           "action": "View usage",
@@ -3674,7 +3680,9 @@
         },
         "owner": {
           "action": "Open billing",
-          "label": "Payment methods, invoices, and usage"
+          "label": "Payment methods, invoices, and usage",
+          "line": "Manage everything else about billing on {platform}",
+          "platform": "platform.comfy.org"
         }
       },
       "loadError": "We couldn't load your plan.",
@@ -6208,8 +6216,13 @@
       "body2BeforeSignIn": "To build your workflows, Comfy Agent processes some of your data. Please rest assured, your data is never used for AI model training. By clicking Agree and continue, you agree to its usage.",
       "videoPlaceholder": "Video unavailable",
       "loadError": "Could not load your Agent preference. Try again.",
-      "signInError": "Could not open sign-in. Please try again.",
-      "saveError": "Could not save your preference. Try again."
+      "saveError": "Could not save your preference. Try again.",
+      "errorTitle": "Couldn't start Comfy Agent",
+      "loadErrorTitle": "Couldn't load your Agent settings",
+      "signInErrorTitle": "Couldn't open sign-in",
+      "errorContact": "Please check your connection and try again. If you continue having issues, please use the {contactForm}.",
+      "contactForm": "contact form",
+      "tryAgain": "Try again"
     },
     "paywall": {
       "title": "Out of credits",
