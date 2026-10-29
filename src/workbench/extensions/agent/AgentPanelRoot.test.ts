@@ -1020,7 +1020,7 @@ describe('AgentPanelRoot onboarding', () => {
       {
         title: 'Each chat works on one workflow',
         description:
-          "The workflow it's editing is named above the message box. Switching tabs brings up that workflow's latest chat."
+          "The workflow it's editing is named above the message box. Switching tabs brings up that workflow's latest chat, if it has one."
       },
       {
         title: 'Pick up where you left off',
@@ -1033,10 +1033,6 @@ describe('AgentPanelRoot onboarding', () => {
       await waitFor(() =>
         expect(within(dialog).getByText(`${index + 1} of 3`)).toBeVisible()
       )
-      if (index === 2)
-        expect(
-          within(dialog).queryByRole('button', { name: 'Skip' })
-        ).not.toBeInTheDocument()
       await userEvent.click(
         within(dialog).getByRole('button', {
           name: index === 2 ? 'Done' : 'Next'
@@ -9055,8 +9051,6 @@ describe('AgentPanelRoot workflow binding', () => {
       renderWithSelectedTarget()
 
       await sendHeldByCoach('build me a workflow')
-      // Every card targets the Agent panel itself, so detach the last card's
-      // target to stand in for a layout that never mounts it.
       screen
         .getByRole('button', { name: 'Show chat history', hidden: true })
         .removeAttribute('id')
@@ -9072,6 +9066,9 @@ describe('AgentPanelRoot workflow binding', () => {
           })
         ).getByRole('button', { name: 'Next' })
       )
+      expect(
+        screen.queryByRole('dialog', { name: 'Pick up where you left off' })
+      ).not.toBeInTheDocument()
       expect(bodies).toHaveLength(0)
 
       await vi.advanceTimersByTimeAsync(8_000)
