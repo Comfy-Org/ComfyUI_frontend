@@ -8,6 +8,10 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { modelFileUploadApi } from '@/platform/workspace/api/modelFileUploadApi'
 import type { ModelFileUploadResult } from '@/platform/workspace/api/modelFileUploadApi'
 import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
+import {
+  TaskNotFoundError,
+  taskService
+} from '@/platform/tasks/services/taskService'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
@@ -62,7 +66,11 @@ function pendingUpload() {
   }
 }
 
-function taskUpdate(status: AssetDownloadWsMessage['status'], error?: string) {
+function taskUpdate(
+  status: AssetDownloadWsMessage['status'],
+  error?: string,
+  taskId = TASK_ID
+) {
   const listener = vi
     .mocked(api.addEventListener)
     .mock.calls.findLast(([type]) => type === 'asset_download')?.[1]
@@ -70,7 +78,7 @@ function taskUpdate(status: AssetDownloadWsMessage['status'], error?: string) {
   listener(
     new CustomEvent('asset_download', {
       detail: {
-        task_id: TASK_ID,
+        task_id: taskId,
         asset_id: 'asset-1',
         asset_name: lora.name,
         bytes_total: lora.size,
@@ -319,6 +327,85 @@ describe('useUploadModelFile', () => {
       file: lora,
       error: 'This file is not a valid .safetensors file.'
     })
+  })
+
+  it('refreshes the model lists when the library task finishes before the upload call answers', async () => {
+    const { upload } = setup()
+    const server = pendingUpload()
+    upload.choose(lora)
+
+    const result = upload.upload()
+    taskUpdate('completed')
+    server.finish({ ok: true, taskId: TASK_ID })
+    await result
+    await nextTick()
+
+    expect(upload.state.value).toEqual({
+      status: 'done',
+      file: lora,
+      modelType: 'loras'
+    })
+    expect(useAssetDownloadStore().lastCompletedDownload).toMatchObject({
+      taskId: TASK_ID,
+      modelType: 'loras'
+    })
+  })
+
+  it('stops saving when the server no longer has the library task', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    vi.spyOn(taskService, 'getTask').mockResolvedValue({
+      ok: false,
+      error: new TaskNotFoundError(TASK_ID)
+    })
+    const { upload } = setup()
+    const server = pendingUpload()
+    upload.choose(lora)
+
+    const result = upload.upload()
+    server.finish({ ok: true, taskId: TASK_ID })
+    await result
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(useAssetDownloadStore().downloadList[0]?.status).toBe('failed')
+    expect(upload.state.value).toEqual({
+      status: 'failed',
+      file: lora,
+      error: enMessages.progressToast.taskUnavailable
+    })
+  })
+
+  it('says the upload was canceled when the library task is canceled', async () => {
+    const { upload } = setup()
+    const server = pendingUpload()
+    upload.choose(lora)
+
+    const result = upload.upload()
+    server.finish({ ok: true, taskId: TASK_ID })
+    await result
+
+    taskUpdate('cancelled')
+    await nextTick()
+    expect(upload.state.value).toEqual({
+      status: 'failed',
+      file: lora,
+      error: 'Upload canceled.'
+    })
+  })
+
+  it('keeps saving when a different import finishes', async () => {
+    const otherImport = '0f9e8d7c-6b5a-4c3d-8e2f-1a0b9c8d7e6f'
+    const { upload } = setup()
+    taskUpdate('running', undefined, otherImport)
+    const server = pendingUpload()
+    upload.choose(lora)
+
+    const result = upload.upload()
+    server.finish({ ok: true, taskId: TASK_ID })
+    await result
+
+    taskUpdate('completed', undefined, otherImport)
+    await nextTick()
+    expect(upload.state.value).toEqual({ status: 'saving', file: lora })
   })
 
   it('ignores an upload that answers after the person went back', async () => {

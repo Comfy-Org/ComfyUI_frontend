@@ -88,7 +88,10 @@ export function useUploadModelFile() {
     downloads.trackDownload(taskId, type, file.name)
     state.value = { status: 'saving', file }
     stopTaskWatch = watch(
-      () => downloads.downloadList.find((d) => d.taskId === taskId),
+      () => {
+        const download = downloads.downloadList.find((d) => d.taskId === taskId)
+        return download && { status: download.status, error: download.error }
+      },
       (download) => {
         if (run !== generation || !download) return
         if (download.status === 'completed') {
@@ -98,6 +101,12 @@ export function useUploadModelFile() {
             status: 'failed',
             file,
             error: download.error || t('assetBrowser.fileUpload.failed')
+          }
+        } else if (download.status === 'cancelled') {
+          state.value = {
+            status: 'failed',
+            file,
+            error: t('assetBrowser.fileUpload.cancelled')
           }
         }
       },
