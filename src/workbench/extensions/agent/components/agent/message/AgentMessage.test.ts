@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { i18n } from '@/i18n'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -644,6 +644,21 @@ describe('AgentMessage run approval', () => {
     ])
   })
 
+  it('shows a dismissed card read-only, without counting it as shown', () => {
+    const { emitted } = render(AgentMessage, {
+      props: { message: approvalMessage({ dismissed: true }) },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Dismissed: you sent a new message instead.')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Portrait workflow')).toBeInTheDocument()
+    expect(screen.queryByText('Do you approve?')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(emitted().approvalShown).toBeUndefined()
+  })
+
   it('keeps both labels in place while disabling an in-flight answer', () => {
     render(AgentMessage, {
       props: {
@@ -731,6 +746,70 @@ describe('AgentMessage ask_user question', () => {
     ],
     streaming: true,
     thinking: false
+  })
+
+  it('hides the choice hint on a dismissed multi-select question', () => {
+    const message = askMessage()
+    const [question] = message.parts
+    assert(question.type === 'askUser')
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...message,
+          parts: [
+            { ...question, minSelections: 0, maxSelections: 2, dismissed: true }
+          ]
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByText('Choose all that apply')).not.toBeInTheDocument()
+  })
+
+  it('keeps a dismissed question showing as dismissed after another tab answers it', () => {
+    const message = askMessage()
+    const [question] = message.parts
+    assert(question.type === 'askUser')
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...message,
+          parts: [
+            {
+              ...question,
+              dismissed: true,
+              resolution: { status: 'answered', selected: ['flux'] }
+            }
+          ]
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Dismissed: you sent a new message instead.')
+    ).toBeVisible()
+    expect(screen.queryByText('Flux Dev')).not.toBeInTheDocument()
+  })
+
+  it('shows a dismissed question as dismissed, without answer controls', () => {
+    const message = askMessage()
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...message,
+          parts: message.parts.map((part) => ({ ...part, dismissed: true }))
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Dismissed: you sent a new message instead.')
+    ).toBeVisible()
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
   it('renders the question card without a working spinner and forwards the answer', async () => {
@@ -899,6 +978,28 @@ describe('AgentMessage delete approval', () => {
       props: { message: { ...deleteMessage(), parts: [part] } },
       global: { plugins: [i18n] }
     })
+
+  it('keeps a dismissed delete card showing as dismissed after another tab answers it', () => {
+    renderResolved({
+      ...deleteCard,
+      dismissed: true,
+      resolution: { status: 'answered', selected: ['delete'] }
+    })
+
+    expect(
+      screen.getByText('Dismissed: you sent a new message instead.')
+    ).toBeVisible()
+    expect(screen.queryByText('Answered: delete them')).not.toBeInTheDocument()
+  })
+
+  it('shows a dismissed delete card as dismissed, without answer controls', () => {
+    renderResolved({ ...deleteCard, dismissed: true })
+
+    expect(
+      screen.getByText('Dismissed: you sent a new message instead.')
+    ).toBeVisible()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
 
   it.for<{ name: string; resolution: AskUserResolution; text: string }>([
     {

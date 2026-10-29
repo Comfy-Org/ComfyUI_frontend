@@ -989,6 +989,7 @@ const {
   entries,
   editableTurnId,
   isStreaming,
+  sendDismissesAsk,
   status,
   notices,
   threadId,
@@ -1948,6 +1949,7 @@ const { submit: onSend } = useAgentDraftSubmission({
   },
   // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
+    const dismissAsk = sendDismissesAsk.value
     const submissionId = composerStore.submission?.id
     if (
       !consentAccepted.value &&
@@ -1995,7 +1997,8 @@ const { submit: onSend } = useAgentDraftSubmission({
           references,
           () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
           meta.clientMessageId,
-          onAccepted
+          onAccepted,
+          dismissAsk
         )
       )
     } finally {
@@ -2360,6 +2363,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :answering-ask-ids="answeringAskIds"
       :user-name="userName"
       :streaming="isStreaming"
+      :send-dismisses-ask
       :submitting="isSending || status === 'thinking'"
       :can-attach="true"
       :can-open-assets="!isBuilderMode"

@@ -457,6 +457,16 @@ function disownsWorkflow(error: unknown): boolean {
   )
 }
 
+function refusedBeforeAcceptance(error: unknown): boolean {
+  if (!(error instanceof AgentApiError)) return false
+  if (parseAdmissionError(error) !== undefined) return true
+  return (
+    error.status >= 400 &&
+    error.status < 500 &&
+    parseTurnInProgress(error) === undefined
+  )
+}
+
 function parseTurnInProgress(error: unknown) {
   if (!(error instanceof AgentApiError) || error.status !== 409)
     return undefined
@@ -579,6 +589,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const readyThreadId = ref<string | null>(null)
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
+  const askSendRefused = ref(false)
   const answeringAskIds = computed(() => conversationStore.answeringAskIds)
   const pendingThreadSource = ref<AgentSessionThreadStartSource | null>(
     'first_open'
@@ -1288,10 +1299,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
     text: string,
     accepted: boolean,
     reattached: boolean,
-    threadAtSend: string
+    threadAtSend: string,
+    dismissedAskIds: string[]
   ): void {
     if (threadAtSend !== 'new' && conversationStore.threadId !== threadAtSend)
       return
+    if (
+      parseTurnInProgress(error) !== undefined &&
+      dismissedAskIds.some(conversationStore.activeTurnOwnsAsk)
+    ) {
+      askSendRefused.value = true
+      conversationStore.recordFailedSend(
+        nextLocalErrorId(),
+        text,
+        i18n.global.t('agent.askSendRefused')
+      )
+      return
+    }
+    if (!accepted && refusedBeforeAcceptance(error))
+      conversationStore.restoreActiveAsks(dismissedAskIds)
     recordSendError(error, text, accepted, reattached)
   }
 
@@ -1353,7 +1379,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
     clientMessageId?: string,
-    onAccepted?: () => void
+    onAccepted?: () => void,
+    dismissAsk = false
   ): Promise<boolean> {
     const generation = loadGeneration
     const skillScopeAtSend = skillPacks.scope
@@ -1362,6 +1389,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const origin: TurnOrigin =
       originContext === undefined ? null : { tabPath: originContext.tabPath }
     let sentContext: WorkflowTurnContext | undefined
+    let dismissedAskIds: string[] = []
     let accepted = false
     try {
       await prepareWorkflow()
@@ -1372,6 +1400,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return false
       }
       sentContext = wfContext
+      dismissedAskIds = dismissIfSentOverCard(dismissAsk)
       const ack = await postTurn(
         threadAtSend,
         text,
@@ -1407,9 +1436,20 @@ export function useAgentSession(deps: AgentSessionDeps) {
         generation
       )
       if (generation !== loadGeneration) return false
-      recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
+      recordCurrentSendError(
+        error,
+        text,
+        accepted,
+        reattached,
+        threadAtSend,
+        dismissedAskIds
+      )
       return false
     }
+  }
+
+  function dismissIfSentOverCard(dismissAsk: boolean): string[] {
+    return dismissAsk ? conversationStore.dismissActiveAsks() : []
   }
 
   function observeAcceptedTurn(
@@ -1438,7 +1478,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
     clientMessageId?: string,
-    onAccepted?: () => void
+    onAccepted?: () => void,
+    dismissAsk = false
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -1461,7 +1502,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         workflowReferences,
         selectionWorkflowId,
         clientMessageId,
-        onAccepted
+        onAccepted,
+        dismissAsk
       )
       if (!sent) stopPendingAck = null
       return sent
@@ -2158,6 +2200,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     entries: computed(() => conversationStore.entries),
     status: computed(() => conversationStore.status),
     isStreaming: computed(() => conversationStore.isStreaming),
+    sendDismissesAsk: computed(
+      () => conversationStore.activeAskOpen && !askSendRefused.value
+    ),
     notices: computed(() => notices.value),
     threadId: computed(() => conversationStore.threadId)
   }

@@ -911,6 +911,19 @@ describe('agentEventTransport settle lifecycle', () => {
     )
   })
 
+  it('greys out an open card when the user sends a message instead', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+    transport.ingest(runApproval('ask-1'))
+
+    transport.markAsks({ askIds: ['ask-1'], dismissed: true })
+
+    expect(emit.mock.lastCall?.[0].parts).toContainEqual(
+      expect.objectContaining({ type: 'runApproval', dismissed: true })
+    )
+  })
+
   it('records an explicitly targeted node link when the agent switches workflow tabs', () => {
     const message = drive([
       delta('opening it now'),

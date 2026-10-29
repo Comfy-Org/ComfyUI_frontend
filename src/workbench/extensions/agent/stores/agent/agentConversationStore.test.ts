@@ -18,7 +18,10 @@ import type {
   AgentChatEvent,
   CanvasSyncEvidence
 } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
-import type { AssistantMessage } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import type {
+  AskUserResolution,
+  AssistantMessage
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import { askIdOf } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import type { TurnTab } from './agentConversationStore'
@@ -2291,6 +2294,158 @@ describe('useAgentConversationStore', () => {
       'assistant'
     ])
   })
+  describe('a card the running turn waits on', () => {
+    it('greys out when a new turn is sent, and stays through its resolution', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+      expect(store.activeAskOpen).toBe(true)
+
+      store.dismissActiveAsks()
+      expect(store.activeAskOpen).toBe(false)
+      store.startTurn(T2)
+      store.retireAsk('turn-1:call-1', { status: 'closed' })
+
+      expect(store.messages[0].parts).toContainEqual(
+        expect.objectContaining({ type: 'runApproval', dismissed: true })
+      )
+    })
+
+    it('stays dismissed when another tab approves the run', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      store.dismissActiveAsks()
+      store.retireAsk('turn-1:call-1', {
+        status: 'answered',
+        selected: ['run']
+      })
+
+      expect(store.messages[0].parts).toContainEqual(
+        expect.objectContaining({ type: 'runApproval', dismissed: true })
+      )
+    })
+
+    it('reopens the cards a refused send dismissed, keeping answers another tab gave', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+      store.ingest(runApproval('t1', 'turn-1:call-2', { kind: 'ask_user' }))
+      store.ingest(runApproval('t1', 'turn-1:call-3', { kind: 'ask_user' }))
+      store.ingest(
+        runApproval('t1', 'turn-1:call-4', {
+          kind: 'delete_approval',
+          options: [
+            { id: 'delete', label: 'Delete' },
+            { id: 'keep', label: 'Keep' }
+          ],
+          context: {
+            action: 'delete_nodes',
+            nodes: [{ id: '12', type: 'KSampler', title: 'Hero sampler' }]
+          }
+        })
+      )
+      const askIds = store.dismissActiveAsks()
+      const answered: AskUserResolution = {
+        status: 'answered',
+        selected: ['run']
+      }
+      store.retireAsk('turn-1:call-1', answered)
+      store.retireAsk('turn-1:call-2', answered)
+      store.retireAsk('turn-1:call-4', answered)
+
+      store.restoreActiveAsks(askIds)
+
+      const card = (askId: string) =>
+        store.messages[0].parts.find(
+          (part) => 'askId' in part && part.askId === askId
+        )
+      expect(card('turn-1:call-1')).toBeUndefined()
+      expect(card('turn-1:call-2')).toMatchObject({
+        dismissed: false,
+        resolution: answered
+      })
+      expect(card('turn-1:call-3')).toMatchObject({ dismissed: false })
+      expect(card('turn-1:call-4')).toMatchObject({
+        dismissed: false,
+        resolution: answered
+      })
+      expect(store.activeAskOpen).toBe(true)
+    })
+
+    it('does not offer or dismiss a card that is already answered', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'turn-1:call-1', { kind: 'ask_user' }))
+      store.retireAsk('turn-1:call-1', {
+        status: 'answered',
+        selected: ['run']
+      })
+
+      expect(store.activeAskOpen).toBe(false)
+      expect(store.dismissActiveAsks()).toEqual([])
+    })
+
+    it('leaves a card whose answer is in flight alone', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+      store.setAskAnswering('turn-1:call-1', true)
+
+      expect(store.activeAskOpen).toBe(false)
+      store.dismissActiveAsks()
+
+      expect(
+        store.messages[0].parts.find((part) => part.type === 'runApproval')
+      ).not.toHaveProperty('dismissed')
+    })
+
+    it('leaves a card left on a finished turn alone', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+      store.ingest(done('t1'))
+      store.startTurn(T2)
+
+      expect(store.activeAskOpen).toBe(false)
+      store.dismissActiveAsks()
+
+      expect(
+        store.messages[0].parts.find((part) => part.type === 'runApproval')
+      ).not.toHaveProperty('dismissed')
+    })
+
+    it.for<{ name: string; persisted: AssistantMessage['parts'] | undefined }>([
+      {
+        name: 'a persisted reply',
+        persisted: [{ type: 'text', text: 'done', state: 'done' }]
+      },
+      { name: 'an empty terminal row', persisted: undefined }
+    ])(
+      'keeps a dismissed card when $name settles the turn',
+      ({ persisted }) => {
+        const store = useAgentConversationStore()
+        store.setThreadId('th')
+        store.startTurn(T1)
+        store.ingest(runApproval('t1', 'turn-1:call-1'))
+        store.dismissActiveAsks()
+
+        store.settleTurn({ threadId: 'th', messageId: T1 }, persisted)
+
+        expect(store.messages[0].parts).toContainEqual(
+          expect.objectContaining({ type: 'runApproval', dismissed: true })
+        )
+      }
+    )
+  })
+
   describe('a dropped approval ask is reported', () => {
     it('reports when the socket-drop teardown left nothing to route the ask to', () => {
       const store = useAgentConversationStore()
@@ -2894,6 +3049,22 @@ describe('useAgentConversationStore', () => {
         expect(store.awaitingApproval).toBe(false)
       }
     )
+
+    it('stops awaiting approval while Send has dismissed the run card', () => {
+      openTab('workflows/a.json')
+      const store = storeWithTurnOn(knownTab('workflows/a.json'), false)
+      store.ingest(runApproval('t1', 'ask-1'))
+
+      const askIds = store.dismissActiveAsks()
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
+
+      store.restoreActiveAsks(askIds)
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: true }
+      ])
+    })
 
     it.for([false, true])(
       'follows the tab of a live turn through a move, a rename and a close (stashed: %s)',
