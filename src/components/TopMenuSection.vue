@@ -80,11 +80,23 @@
                 :aria-label="t('menu.manageExtensions')"
                 @click="openCustomNodeManager"
               >
-                <i class="icon-[comfy--extensions-blocks] size-4" />
+                <i class="icon-[comfy--extensions-blocks]" />
                 <span
                   v-if="shouldShowRedDot"
-                  class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
+                  class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
                 />
+              </Button>
+              <Button
+                v-if="isDeployButtonShown"
+                :tooltip="t('deployToComfyApi.buttonLabel')"
+                tooltip-side="bottom"
+                variant="secondary"
+                size="icon"
+                :aria-label="t('deployToComfyApi.buttonLabel')"
+                data-testid="run-bar-deploy"
+                @click="openDeployInstallationDialog"
+              >
+                <i class="icon-[lucide--rocket]" />
               </Button>
               <Button
                 v-if="isCloud"
@@ -96,7 +108,7 @@
                 @click="() => openShareDialog().catch(toastErrorHandler)"
                 @pointerenter="prefetchShareDialog"
               >
-                <i class="icon-[comfy--send] size-4" />
+                <i class="icon-[comfy--send]" />
               </Button>
               <div v-if="!isRightSidePanelOpen" class="relative">
                 <Button
@@ -105,7 +117,7 @@
                   :class="
                     cn(
                       showErrorIndicatorOnPanelButton &&
-                        'outline-1 outline-destructive-background'
+                        'outline-1 outline-destructive'
                     )
                   "
                   variant="secondary"
@@ -113,9 +125,9 @@
                   :aria-label="t('rightSidePanel.togglePanel')"
                   @click="openRightSidePanel"
                 >
-                  <i class="icon-[lucide--panel-right] size-4" />
+                  <i class="icon-[lucide--panel-right]" />
                 </Button>
-                <StatusBadge
+                <Badge
                   v-if="showErrorIndicatorOnPanelButton"
                   variant="dot"
                   severity="danger"
@@ -180,14 +192,15 @@ import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -196,6 +209,7 @@ import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
+import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
   openShareDialog,
   prefetchShareDialog
@@ -217,6 +231,17 @@ const managerSurveyDialog = useManagerSurveyDialog()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
+const { flags } = useFeatureFlags()
+const isDeployButtonShown = computed(() => flags.deployToCloud)
+function openDeployInstallationDialog() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'run_bar_deploy_clicked',
+    element_group: 'top_menu'
+  })
+  openDeployToComfyApiDialog({ deploysInstallation: true }).catch(
+    toastErrorHandler
+  )
+}
 const executionErrorStore = useExecutionErrorStore()
 const actionBarButtonStore = useActionBarButtonStore()
 const queueUIStore = useQueueUIStore()
@@ -233,16 +258,12 @@ const isActionbarEnabled = computed(
 const isActionbarFloating = computed(
   () => isActionbarEnabled.value && !isActionbarDocked.value
 )
-/**
- * Whether the actionbar container has any visible docked buttons
- * (excluding ComfyActionbar, which uses position:fixed when floating
- * and does not contribute to the container's visual layout).
- */
 const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
   if (managerState.shouldShowExtensionsButton.value) return true
+  if (isDeployButtonShown.value) return true
   if (isCloud) return true
   if (!isRightSidePanelOpen.value) return true
   return false

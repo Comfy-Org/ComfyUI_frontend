@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useElementHover } from '@vueuse/core'
-import { PopoverAnchor } from 'reka-ui'
+import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import { computed, onBeforeUnmount, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentInstance } from 'vue'
@@ -9,11 +9,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import AssetMediaPreview from './AssetMediaPreview.vue'
 
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import type { AssetPreviewMode } from '../../../types/assetPreview'
+import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
 
 const { name, previewUrl, mediaUrl, mediaKind } = defineProps<{
   name: string
@@ -44,7 +42,6 @@ const contentHovered = useElementHover(content, {
   delayLeave: 150,
   triggerOnRemoval: true
 })
-const contentStyle = useModalLiftedZIndex(open)
 
 watch(
   [triggerHovered, contentHovered, triggerPointerInside],
@@ -102,7 +99,7 @@ function onInteractOutside(event: Event): void {
 </script>
 
 <template>
-  <Popover :open @update:open="onOpenChange">
+  <PopoverRoot :open @update:open="onOpenChange">
     <PopoverAnchor as-child>
       <button
         ref="trigger"
@@ -111,7 +108,7 @@ function onInteractOutside(event: Event): void {
         aria-haspopup="dialog"
         :aria-expanded="open"
         :aria-controls="open ? contentId : undefined"
-        class="relative flex size-full cursor-pointer items-center justify-center overflow-hidden rounded-md hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+        class="relative flex size-full cursor-pointer items-center justify-center overflow-hidden rounded-md hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
         @click="activate"
       >
         <slot />
@@ -124,10 +121,9 @@ function onInteractOutside(event: Event): void {
       align="start"
       :side-offset="8"
       :collision-padding="16"
-      :style="contentStyle"
       :class="
         cn(
-          'z-1700 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border-border-subtle bg-secondary-background p-0',
+          'max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border-border/50 bg-secondary p-0',
           playableKind === 'audio' ? 'w-86' : 'w-80'
         )
       "
@@ -153,10 +149,10 @@ function onInteractOutside(event: Event): void {
           :alt="name"
           class="max-h-80 w-full object-contain"
         />
-        <div class="px-3 py-2 text-sm wrap-anywhere text-base-foreground">
+        <div class="px-3 py-2 text-sm wrap-anywhere text-foreground">
           {{ name }}
         </div>
       </div>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 </template>

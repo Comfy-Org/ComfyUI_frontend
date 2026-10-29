@@ -20,9 +20,9 @@ const filename = path.join(
   '../../src/components/LintFixture.vue'
 )
 const buttonImport =
-  "<script setup>\nimport Button from '@/components/ui/button/Button.vue'\n</script>\n"
+  "<script setup>\nimport Button from '@comfyorg/design-system/button/Button'\n</script>\n"
 const inputImport =
-  "<script setup>\nimport Input from '@/components/ui/input/Input.vue'\n</script>\n"
+  "<script setup>\nimport Input from '@comfyorg/design-system/input/Input'\n</script>\n"
 
 function vue(template: string, script = '') {
   return { filename, code: `${script}<template>${template}</template>\n` }
@@ -31,6 +31,71 @@ function vue(template: string, script = '') {
 function redundant(template: string, output: string, script = '') {
   return { ...vue(template, script), output: vue(output, script).code }
 }
+
+ruleTester.run('icon-element', templateClasses.rules['icon-element'], {
+  valid: [
+    vue('<i class="icon-[lucide--check]" />'),
+    vue('<i class="icon-[lucide--check] size-5 shrink" />'),
+    vue('<i class="size-4 shrink-0" />'),
+    vue('<i class="icon-[lucide--check]" :title="\'size-4 shrink-0\'" />'),
+    vue('<i class="icon-[lucide--check]" :class="size === \'size-4\'" />'),
+    vue("<i :class=\"active ? 'icon-[lucide--check]' : 'size-4 shrink-0'\" />"),
+    vue('<i :class="cn(loading && \'icon-[lucide--loader]\')" />'),
+    vue('<span class="text-sm" />'),
+    vue('<Button icon="icon-[lucide--check]" />'),
+    vue('<div @click="track(\'icon-[lucide--check]\')" />'),
+    vue('<i v-bind="{ class: \'icon-[lucide--check]\' }" />'),
+    vue('<span v-bind="{ title: \'icon-[lucide--check]\' }" />'),
+    vue(
+      "<span v-bind=\"{ class: 'text-sm', title: 'icon-[lucide--check]' }\" />"
+    ),
+    vue(
+      "<span :class=\"iconName === 'icon-[lucide--check]' ? 'active' : ''\" />"
+    ),
+    vue('<span :class="iconName === \'icon-[lucide--check]\'" />'),
+    vue('<div class="[&_i]:size-4"><i class="icon-[comfy--logo]" /></div>')
+  ],
+  invalid: [
+    ...[
+      '<span class="size-4 icon-[lucide--check]" />',
+      '<div class="icon-[comfy--logo]" />',
+      '<button class="hover:icon-[lucide--check]" />',
+      '<Button class="icon-[lucide--check]" />',
+      '<span :class="\'icon-[lucide--check]\'" />',
+      '<span :class="cn(loading && \'icon-[lucide--loader]\')" />',
+      "<span :class=\"active ? 'icon-[lucide--check]' : 'text-sm'\" />",
+      '<span :class="{ \'icon-[lucide--check]\': active }" />',
+      '<span v-bind="{ class: \'icon-[lucide--check]\' }" />',
+      "<span v-bind=\"{ 'class': cn(active && 'icon-[lucide--check]') }\" />",
+      "<span :class=\"iconName === 'check' ? 'icon-[lucide--check]' : ''\" />",
+      "<span :class=\"'icon-[lucide--' + name + ']'\" />",
+      '<span :class="`icon-[${family}--${name}]`" />'
+    ].map((template) => ({
+      ...vue(template),
+      errors: [{ messageId: 'wrongElement' }]
+    })),
+    ...[
+      '<i class="icon-[lucide--check] size-4" />',
+      '<i class="shrink-0" :class="\'icon-[lucide--check]\'" />',
+      '<i class="icon-[lucide--check]" :class="cn(active && \'size-4\')" />',
+      "<i :class=\"{ 'icon-[lucide--check]': active, 'shrink-0': true }\" />",
+      '<i v-bind="{ class: \'icon-[lucide--check] size-4\' }" />',
+      '<i class="icon-mask-[comfy--logo] shrink-0" />',
+      '<i class="icon-img-[comfy--logo] size-4" />',
+      '<i class="icon-s1.5-[lucide--check] size-4" />'
+    ].map((template) => ({
+      ...vue(template),
+      errors: [{ messageId: 'redundantIconUtility' }]
+    })),
+    {
+      ...vue('<i class="icon-[lucide--check] size-4 shrink-0" />'),
+      errors: [
+        { messageId: 'redundantIconUtility', data: { token: 'size-4' } },
+        { messageId: 'redundantIconUtility', data: { token: 'shrink-0' } }
+      ]
+    }
+  ]
+})
 
 ruleTester.run(
   'no-default-utilities',

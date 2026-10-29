@@ -2,8 +2,8 @@ import type {
   WorkflowReference,
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
-} from '../../types/workflowReference'
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+} from '@/workbench/extensions/agent/types/workflowReference'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import {
   isInaccessible,
   render,
@@ -19,12 +19,14 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
-import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
+import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
@@ -32,8 +34,8 @@ setupInlinePromptEditorDom()
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('../../services/agent/agentAuth'))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 const fetchApi = vi.mocked(api.fetchApi)
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
@@ -353,7 +355,9 @@ describe('Composer', () => {
     expect(send).toBeEnabled()
 
     await userEvent.hover(send)
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('Send')
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      'Send'
+    )
   })
 
   it('renders without vue-i18n message compilation errors', async () => {
@@ -490,6 +494,31 @@ describe('Composer', () => {
     expect(consultEscapeOverride(event)).toBe(true)
     expect(emitted().stop).toHaveLength(1)
   })
+
+  it.for([false, true])(
+    'keeps composer commands idle while opening a chat with streaming=%s',
+    async (streaming) => {
+      useAgentComposerStore().setText('Keep this draft')
+      const { emitted } = mount({ openingChat: true, streaming })
+      const event = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        cancelable: true
+      })
+
+      expect(consultEscapeOverride(event)).toBe(false)
+      const action = screen.getByRole('button', {
+        name: streaming ? 'Stop' : 'Send'
+      })
+      expect(action).toBeDisabled()
+      await userEvent.click(action)
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.keyboard('{Enter}{Escape}')
+
+      expect(emitted().send).toBeUndefined()
+      expect(emitted().stop).toBeUndefined()
+      expect(useAgentComposerStore().draft).toBe('Keep this draft')
+    }
+  )
 
   it('does not stop the run on Escape once focus has left the composer entirely', async () => {
     const onStop = vi.fn()
@@ -1085,6 +1114,46 @@ describe('Composer', () => {
         expect(emitted().send).toBeUndefined()
       }
     )
+
+    it('emphasizes the active node on the canvas for pointer and keyboard browsing', async () => {
+      mount({ getMentionNodes: () => NODES })
+      const emphasized = () =>
+        NODES.filter(({ id }) => isNodeEmphasized(undefined, toNodeId(id)))
+      const menu = await openReferenceSection('Nodes')
+
+      expect(emphasized()).toEqual([])
+
+      await userEvent.keyboard('{ArrowDown}')
+      expect(emphasized()).toEqual([NODES[0]])
+
+      await userEvent.keyboard('{ArrowDown}')
+      expect(emphasized()).toEqual([NODES[1]])
+
+      await userEvent.hover(
+        within(menu).getByRole('menuitem', { name: 'Back' })
+      )
+      expect(emphasized()).toEqual([])
+
+      await userEvent.hover(
+        within(menu).getByRole('menuitem', { name: 'VAE Decode' })
+      )
+      expect(emphasized()).toEqual([NODES[2]])
+
+      await userEvent.keyboard('{Escape}')
+      expect(emphasized()).toEqual([])
+    })
+
+    it('stops emphasizing the node when the composer unmounts', async () => {
+      const { unmount } = mount({ getMentionNodes: () => NODES })
+      await openReferenceSection('Nodes')
+
+      await userEvent.keyboard('{ArrowDown}')
+      expect(isNodeEmphasized(undefined, toNodeId(NODES[0].id))).toBe(true)
+
+      unmount()
+
+      expect(isNodeEmphasized(undefined, toNodeId(NODES[0].id))).toBe(false)
+    })
 
     // Re-picking a staged node is a no-op, so it drops out of the list.
     it('hides nodes already in the basket', async () => {
@@ -1798,6 +1867,7 @@ describe('Composer', () => {
     const { emitted } = mount({ canAttach: true })
 
     await openAddMenu()
+    expect(screen.getByRole('separator')).toBeVisible()
     await userEvent.click(
       await screen.findByRole('menuitem', { name: 'Upload images or files' })
     )
@@ -1809,6 +1879,9 @@ describe('Composer', () => {
     const { emitted } = mount({ canOpenAssets: true })
 
     await openAddMenu()
+    expect(
+      screen.getAllByRole('menuitem').map((item) => item.textContent.trim())
+    ).toEqual(['Drag in asset from asset panel', 'Nodes', 'Workflows'])
     await userEvent.click(
       await screen.findByRole('menuitem', {
         name: 'Drag in asset from asset panel'

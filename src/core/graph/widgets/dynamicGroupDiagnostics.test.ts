@@ -4,11 +4,11 @@ import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { applyRemoteDynamicGroupRowCount } from './dynamicGroupDiagnostics'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { followedDoc } from '@/workbench/extensions/agent/crdt/__fixtures__/followedDoc'
 import { LiveGraphApplier } from '@/workbench/extensions/agent/crdt/liveGraphApplier'
 
@@ -19,8 +19,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return distribution.isCloud
   }
 }))
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 function addGroup(node: LGraphNode, min = 0) {
   useLitegraphService().addNodeInput(node, {
@@ -206,6 +204,12 @@ describe('remote DynamicGroup row count reports', () => {
     LiteGraph.registerNodeType('RemoteDynamicGroup', remoteNodeType(0))
     LiteGraph.registerNodeType('MinOneDynamicGroup', remoteNodeType(1))
     LiteGraph.registerNodeType('ConsentDynamicGroup', remoteNodeType(0))
+    LiteGraph.registerNodeType('AboveMaxDynamicGroup', remoteNodeType(0))
+    LiteGraph.registerNodeType('HugeDynamicGroup', remoteNodeType(0))
+    LiteGraph.registerNodeType('RestoredDynamicGroup', remoteNodeType(0))
+    LiteGraph.registerNodeType('RestoredEqualDynamicGroup', remoteNodeType(0))
+    LiteGraph.registerNodeType('RestoredShrinkDynamicGroup', remoteNodeType(0))
+    LiteGraph.registerNodeType('RestoredRegrowDynamicGroup', remoteNodeType(0))
   })
 
   function remoteGroup(type = 'RemoteDynamicGroup') {
@@ -234,19 +238,20 @@ describe('remote DynamicGroup row count reports', () => {
     const applier = new LiveGraphApplier({ getGraph: () => graph })
     const context = { actor: 'agent:test', opIds: ['op-1'] }
     applier.applyChanges(doc, collector.take(), context)
-    const rows = graph
-      .getNodeById(toNodeId(1))
-      ?.widgets?.find((widget) => widget.name === 'rows')
-    if (!rows) throw new Error('DynamicGroup node 1 was not created')
-    function setRows(count: unknown) {
+    const node = graph.getNodeById(toNodeId(1))
+    const rows = node?.widgets?.find((widget) => widget.name === 'rows')
+    if (!node || !rows) throw new Error('DynamicGroup node 1 was not created')
+    function setRows(count: unknown, rowValues: Record<string, number> = {}) {
       doc.transact(() => {
         const widgets = nodesMap(doc).get('1')?.get('widgets')
         if (!(widgets instanceof Y.Map)) throw new Error('named storage')
         widgets.set('rows', count)
+        for (const [name, value] of Object.entries(rowValues))
+          widgets.set(name, value)
       })
       return applier.applyChanges(doc, collector.take(), context).failureCount
     }
-    return { rows, setRows }
+    return { node, rows, setRows }
   }
 
   it('applies a remote row count without reporting', () => {
@@ -271,6 +276,88 @@ describe('remote DynamicGroup row count reports', () => {
       expect(reportError).not.toHaveBeenCalled()
     }
   )
+
+  it('applies a remote row count at max', () => {
+    const { rows, setRows } = remoteGroup()
+
+    expect(setRows(3)).toBe(0)
+    expect(rows.value).toBe(3)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('applies a remote row count above max', () => {
+    const { rows, setRows } = remoteGroup('AboveMaxDynamicGroup')
+
+    expect(setRows(4)).toBe(0)
+    expect(rows.value).toBe(4)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('refuses a remote row count above the allocation bound without adding rows', () => {
+    const { node, rows, setRows } = remoteGroup('HugeDynamicGroup')
+    const add = vi.spyOn(node, 'addCustomWidget').mockImplementation(() => {
+      throw new Error('Unexpected row allocation')
+    })
+
+    expect(setRows(1e9)).toBe(1)
+    expect(add).not.toHaveBeenCalled()
+    expect(rows.value).toBe(1)
+    expect(vi.mocked(reportError).mock.calls).toEqual([
+      [
+        expect.objectContaining({
+          message: 'Remote DynamicGroup row count did not apply'
+        }),
+        expect.objectContaining({
+          errorType: 'agent_graph_dynamic_group_rows_mismatch',
+          context: { requested: 1e9, actual: 1 }
+        })
+      ]
+    ])
+  })
+
+  function restoredGroup(type: string, count: number) {
+    const group = remoteGroup(type)
+    group.node.configure({
+      ...group.node.serialize(),
+      widgets_values: [count, ...Array(count).fill(1)]
+    })
+    expect(group.rows.value).toBe(count)
+    return group
+  }
+
+  it.for([
+    { type: 'RestoredEqualDynamicGroup', saved: 4, value: 4 },
+    { type: 'RestoredShrinkDynamicGroup', saved: 5, value: 4 }
+  ])(
+    'applies a remote row count of $value to a group restored with $saved rows above max',
+    ({ type, saved, value }) => {
+      const { rows, setRows } = restoredGroup(type, saved)
+
+      expect(setRows(value)).toBe(0)
+      expect(rows.value).toBe(value)
+      expect(reportError).not.toHaveBeenCalled()
+    }
+  )
+
+  it('applies a remote row count that restores rows the document still holds', () => {
+    const { rows, setRows } = restoredGroup('RestoredRegrowDynamicGroup', 5)
+    rows.value = 4
+    const rowValues = Object.fromEntries(
+      Array.from({ length: 5 }, (_, index) => [`rows.${index}.strength`, 1])
+    )
+
+    expect(setRows(5, rowValues)).toBe(0)
+    expect(rows.value).toBe(5)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('applies a remote row count that grows a restored group further above max', () => {
+    const { rows, setRows } = restoredGroup('RestoredDynamicGroup', 4)
+
+    expect(setRows(5)).toBe(0)
+    expect(rows.value).toBe(5)
+    expect(reportError).not.toHaveBeenCalled()
+  })
 
   it('reports a remote row count the live group did not reach, once per node type', () => {
     const { rows, setRows } = remoteGroup()

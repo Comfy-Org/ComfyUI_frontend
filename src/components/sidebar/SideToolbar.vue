@@ -16,8 +16,7 @@
           'mr-(--comfy-canvas-gutter)':
             !isConnected && !isHidden && sidebarLocation === 'right',
           'overflowing-sidebar': isOverflowing,
-          'overflow-hidden border-r border-interface-stroke/50 shadow-interface':
-            isConnected,
+          'overflow-hidden border-r border-border/50 shadow-md': isConnected,
           'pointer-events-none overflow-hidden opacity-0': isHidden,
           '-translate-x-8': isHidden && sidebarLocation === 'left',
           'translate-x-8': isHidden && sidebarLocation === 'right'
@@ -94,7 +93,7 @@ import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vu
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -336,6 +335,6 @@ onMounted(() => {
 <style scoped>
 .connected-sidebar {
   padding: var(--sidebar-padding) 0;
-  background-color: var(--comfy-menu-bg);
+  background-color: var(--background);
 }
 </style>

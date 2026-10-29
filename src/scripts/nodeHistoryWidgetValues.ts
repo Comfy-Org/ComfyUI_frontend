@@ -1,14 +1,16 @@
 import { cloneDeep, groupBy, isEqual, omit } from 'es-toolkit'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   collectSubgraphDefinitions,
   parseFlattenableSubgraphDefinitions
 } from '@/platform/workflow/core/utils/workflowFlattening'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { ownsNodeHistory } from '@/stores/widgetHistoryStore'
-import { parseWidgetId, widgetId } from '@/types/widgetId'
-import type { WidgetId } from '@/types/widgetId'
+import { parseWidgetId, widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 interface SerializedWidgetValues {
   id?: unknown
@@ -20,20 +22,30 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function nodeHistoryOwnedWidgets(widgets: readonly IBaseWidget[]) {
+  const owned = widgets.filter(ownsNodeHistory)
+  const mirrored = LiteGraph.vueNodesMode
+    ? owned.flatMap((widget) => widget.linkedWidgets ?? [])
+    : []
+  return new Set([...owned, ...mirrored])
+}
+
 export function collectNodeHistoryWidgets(
   rootGraph: LGraph
 ): Map<WidgetId, number> {
   return new Map(
     [rootGraph, ...rootGraph.subgraphs.values()].flatMap((graph) =>
-      graph.nodes.flatMap((node) =>
-        (node.widgets ?? [])
+      graph.nodes.flatMap((node) => {
+        const widgets = node.widgets ?? []
+        const owned = nodeHistoryOwnedWidgets(widgets)
+        return widgets
           .filter((widget) => widget.serialize !== false)
           .flatMap((widget, slot): [WidgetId, number][] =>
-            ownsNodeHistory(widget)
+            owned.has(widget)
               ? [[widgetId(graph.id, node.id, widget.name), slot]]
               : []
           )
-      )
+      })
     )
   )
 }

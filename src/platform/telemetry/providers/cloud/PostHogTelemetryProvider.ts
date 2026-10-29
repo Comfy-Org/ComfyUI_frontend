@@ -24,7 +24,7 @@ import {
 } from '@comfyorg/shared-frontend-utils/telemetry'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -53,6 +53,7 @@ import type {
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentPanelRenderStalledMetadata,
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
@@ -116,15 +117,16 @@ import type {
   WorkflowSavedMetadata,
   WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
-} from '../../types'
+} from '@comfyorg/telemetry/types'
 import {
   CANCELLATION_STAGE_EVENTS,
   OnboardingTourEvents,
   TelemetryEvents
-} from '../../types'
-import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
+} from '@comfyorg/telemetry/types'
+import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 const EXECUTION_EVENT_SOURCE = 'web-sdk'
+const MAX_PRE_INIT_QUEUED_EVENTS = 100
 
 const IN_APP_SURVEY_EVENTS: Record<InAppSurveyStage, TelemetryEventName> = {
   shown: TelemetryEvents.IN_APP_SURVEY_SHOWN,
@@ -202,6 +204,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private isEnabled = true
   private posthog: PostHog | null = null
   private eventQueue: QueuedEvent[] = []
+  private didWarnEventQueueFull = false
   private pendingFirstAuthAt = new Map<string, string>()
   private isInitialized = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
@@ -299,6 +302,20 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     }
   }
 
+  private enqueueEvent(event: QueuedEvent): void {
+    if (this.eventQueue.length >= MAX_PRE_INIT_QUEUED_EVENTS) {
+      if (!this.didWarnEventQueueFull) {
+        console.warn(
+          'PostHog pre-initialization event queue is full; dropping events'
+        )
+        this.didWarnEventQueueFull = true
+      }
+      return
+    }
+
+    this.eventQueue.push(event)
+  }
+
   private flushPendingFirstAuthAt(): void {
     for (const [userId, firstAuthAt] of this.pendingFirstAuthAt) {
       this.setFirstAuthAt(userId, firstAuthAt)
@@ -342,7 +359,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         console.error('Failed to track PostHog event:', error)
       }
     } else {
-      this.eventQueue.push(event)
+      this.enqueueEvent(event)
     }
   }
 
@@ -360,7 +377,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         console.error('Failed to track PostHog event:', error)
       }
     } else {
-      this.eventQueue.push({
+      this.enqueueEvent({
         eventName,
         properties
       })
@@ -790,6 +807,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentPanelOpened(metadata: AgentPanelOpenedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_PANEL_OPENED, metadata)
+  }
+
+  trackAgentPanelRenderStalled(
+    metadata: AgentPanelRenderStalledMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_PANEL_RENDER_STALLED, metadata)
   }
 
   trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {

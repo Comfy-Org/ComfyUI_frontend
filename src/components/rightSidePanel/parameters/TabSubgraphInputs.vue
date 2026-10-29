@@ -9,7 +9,7 @@ import {
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -19,8 +19,8 @@ import {
   isWidgetVisibleOnSurface
 } from '@/types/widgetVisibility'
 
-import { searchWidgets } from '../shared'
-import type { NodeWidgetsList } from '../shared'
+import { searchWidgets } from '@/components/rightSidePanel/shared'
+import type { NodeWidgetsList } from '@/components/rightSidePanel/shared'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
@@ -164,7 +164,7 @@ const label = computed(() => {
         ? ''
         : t('rightSidePanel.inputsNoneTooltip')
     "
-    class="border-b border-interface-stroke"
+    class="border-b"
     @update:collapse="(v) => (firstSectionCollapsed = v)"
     @reorder="handleReorder"
   >
@@ -182,6 +182,6 @@ const label = computed(() => {
     :host="node"
     :widgets="advancedInputsWidgets"
     show-node-name
-    class="border-b border-interface-stroke"
+    class="border-b"
   />
 </template>

@@ -12,7 +12,7 @@ import {
   UNKNOWN_ERROR_CODE,
   parseErrorResponse
 } from '@/platform/remote/comfyui/errors'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
 

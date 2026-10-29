@@ -1,36 +1,40 @@
 <template>
-  <Popover
-    v-if="linearMode"
-    :side="sidebarOnLeft ? 'right' : 'left'"
-    :side-offset="8"
-  >
-    <template #button>
+  <PopoverRoot v-if="linearMode">
+    <PopoverTrigger as-child>
       <SidebarIcon
-        icon="pi pi-question-circle"
+        icon="icon-[lucide--circle-question-mark] scale-90"
         class="comfy-help-center-btn"
         data-testid="help-center-button"
         :label="$t('menu.help')"
         :tooltip="$t('linearMode.giveFeedback')"
         :is-small
       />
-    </template>
-    <div
-      v-if="typeformError || !isValidTypeformId"
-      class="p-4 text-sm text-destructive-background"
+    </PopoverTrigger>
+    <PopoverContent
+      :side="sidebarOnLeft ? 'right' : 'left'"
+      :side-offset="8"
+      dismiss-on-viewport-change
+      class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
     >
-      {{ $t('linearMode.feedbackLoadError') }}
-    </div>
-    <div
-      v-else
-      ref="feedbackRef"
-      data-testid="feedback-embed"
-      data-tf-auto-resize
-      :data-tf-widget="APP_MODE_FEEDBACK_TYPEFORM_ID"
-    />
-  </Popover>
+      <div
+        v-if="typeformError || !isValidTypeformId"
+        class="p-4 text-sm text-destructive"
+      >
+        {{ $t('linearMode.feedbackLoadError') }}
+      </div>
+      <div
+        v-else
+        ref="feedbackRef"
+        data-testid="feedback-embed"
+        data-tf-auto-resize
+        :data-tf-widget="APP_MODE_FEEDBACK_TYPEFORM_ID"
+      />
+      <PopoverArrow class="fill-background stroke-border/50" />
+    </PopoverContent>
+  </PopoverRoot>
   <SidebarIcon
     v-else
-    icon="pi pi-question-circle"
+    icon="icon-[lucide--circle-question-mark] scale-90"
     class="comfy-help-center-btn"
     data-testid="help-center-button"
     :label="$t('menu.help')"
@@ -46,7 +50,8 @@
 import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef } from 'vue'
 
-import Popover from '@/components/ui/Popover.vue'
+import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { useHelpCenter } from '@/composables/useHelpCenter'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { APP_MODE_FEEDBACK_TYPEFORM_ID } from '@/platform/surveys/appModeFeedback'

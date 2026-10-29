@@ -46,6 +46,26 @@ describe('AgentConsentCard', () => {
     expect(emitted().reject).toHaveLength(1)
   })
 
+  it('ties the next sign-in step to the continue action', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderCard({ requiresSignIn: true })
+
+    const accept = screen.getByRole('button', {
+      name: 'Agree and continue with sign in'
+    })
+    expect(accept).not.toHaveAccessibleDescription()
+    expect(screen.queryByText("You'll sign in next.")).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Start using Comfy Agent' })
+    ).not.toBeInTheDocument()
+
+    await user.click(accept)
+    await user.click(screen.getByRole('button', { name: 'Skip for now' }))
+
+    expect(emitted().accept).toHaveLength(1)
+    expect(emitted().reject).toHaveLength(1)
+  })
+
   it('shows only the busy Start action while acceptance is being saved', () => {
     renderCard({ accepting: true })
 
@@ -81,6 +101,14 @@ describe('AgentConsentCard', () => {
     )
     expect(docs).toHaveAttribute('target', '_blank')
     expect(docs).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+
+  it('puts Skip before Start when the card is wide', () => {
+    renderCard({ docsUrl: 'https://docs.comfy.org/agent-tools/in-app-agent' })
+
+    expect(
+      screen.getAllByRole('button').map((button) => button.textContent)
+    ).toEqual(['Skip for now', 'Start using Comfy Agent'])
   })
 
   it('shows a placeholder when no video is supplied', () => {

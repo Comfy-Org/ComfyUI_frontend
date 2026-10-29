@@ -3,7 +3,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { uploadTempFile } from '@/services/uploadTempFile'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 class Load3dUtils {
   static async uploadTempImage(
@@ -80,15 +80,6 @@ class Load3dUtils {
     }
 
     return uploadPath
-  }
-
-  static getFilenameExtension(url: string): string | undefined {
-    const queryString = url.split('?')[1]
-    if (queryString) {
-      const filename = new URLSearchParams(queryString).get('filename')
-      if (filename) return filename.split('.').pop()?.toLowerCase()
-    }
-    return url.split('?')[0].split('.').pop()?.toLowerCase()
   }
 
   static splitFilePath(path: string): [string, string] {

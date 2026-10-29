@@ -6,18 +6,18 @@ import {
   authenticatedRemoteConfigState,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
-import { useAgentPanelStore } from '../stores/agent/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import {
   FREE_USE_PLACEMENT_FLAG,
   useFreeUsePlacement as useFreeUsePlacementImpl
 } from './freeUsePlacement'
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/utils/devFeatureFlagOverride'))
 vi.mock(import('@/utils/sessionFeatureFlagOverride'))
 

@@ -1,20 +1,21 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import BuilderSaveDialogContent from '@/components/builder/BuilderSaveDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
-import CancellationStepLayout from '@/platform/cloud/subscription/components/CancellationStepLayout.vue'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import CancellationStepLayout from '@/platform/billing/subscription/components/CancellationStepLayout.vue'
 import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
-import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
+import SubscriptionRequiredDialogContentUnified from '@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue'
+import type { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useDialogStore } from '@/stores/dialogStore'
-import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 vi.mock<unknown>(
-  import('@/platform/workspace/composables/useSubscriptionCheckout'),
+  import('@/platform/billing/composables/useSubscriptionCheckout'),
   async () => {
     const { computed, ref } = await import('vue')
 
@@ -46,6 +47,22 @@ vi.mock<unknown>(
       })
     }
   }
+)
+
+vi.mock(
+  import('@/platform/billing/composables/usePaymentRecoveryDialog'),
+  () => ({
+    isTopUpDeniedPastDue: vi.fn(),
+    usePaymentRecoveryDialog: (): ReturnType<
+      typeof usePaymentRecoveryDialog
+    > => ({
+      showPaymentRecoveryDialog: vi.fn(),
+      updatePayment: vi.fn(),
+      isUpdatingPayment: computed(() => false),
+      paymentRecoveryLock: computed(() => null),
+      refreshCapabilities: vi.fn()
+    })
+  })
 )
 
 const i18n = createI18n({
@@ -129,6 +146,37 @@ describe('GlobalDialog', () => {
     expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument()
   })
 
+  it('centers a dialog on the viewport when asked', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'reka-viewport-center',
+      title: 'Viewport',
+      component: Body,
+      dialogComponentProps: { centerOnViewport: true }
+    })
+
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog.className).toContain('[--workspace-inset-right:0px]')
+    expect(dialog.className).not.toContain('-translate-x-1/2')
+  })
+
+  it('keeps default dialogs offset by the workspace inset', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'reka-workspace-center',
+      title: 'Workspace',
+      component: Body
+    })
+
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog.className).toContain('--workspace-inset-right')
+    expect(dialog.className).not.toContain('[--workspace-inset-right:0px]')
+  })
+
   it('omits the title when headless is true', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -191,6 +239,26 @@ describe('GlobalDialog', () => {
       expect(await screen.findByRole('dialog', { name })).toBeInTheDocument()
     }
   )
+
+  it('names an untitled framed dialog by the DialogTitle in its content', async () => {
+    mountDialog()
+    const contentTitle = ref('Original title')
+    const TitledBody = defineComponent({
+      name: 'TitledBody',
+      setup: () => () => h(DialogTitle, () => contentTitle.value)
+    })
+
+    useDialogStore().showDialog({
+      key: 'framed-content-titled',
+      component: TitledBody
+    })
+
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Original title'
+    })
+    contentTitle.value = 'Translated title'
+    await waitFor(() => expect(dialog).toHaveAccessibleName('Translated title'))
+  })
 
   it('opens the save dialog with an accessible name and description', async () => {
     mountDialog()
@@ -415,7 +483,6 @@ describe('shouldPreventRekaDismiss', () => {
     layer.appendChild(inner)
     document.body.appendChild(layer)
     onTestFinished(() => {
-      releaseModalLayer(layer)
       layer.remove()
     })
     return inner
@@ -438,7 +505,6 @@ describe('shouldPreventRekaDismiss', () => {
       mark: (layer: HTMLElement) =>
         layer.setAttribute('data-reka-popper-content-wrapper', '')
     },
-    { name: 'a raised modal layer', mark: raiseModalLayer },
     {
       name: 'a toast',
       mark: (layer: HTMLElement) =>
@@ -460,10 +526,9 @@ describe('shouldPreventRekaDismiss', () => {
     }
   )
 
-  it('allows dismiss from a dialog scrim raised on the modal stack', () => {
+  it('allows dismiss from a dialog scrim', () => {
     const target = appendLayer((layer) => {
       layer.dataset.slot = 'dialog-overlay'
-      raiseModalLayer(layer)
     })
     expect(pointerDownOn(target).defaultPrevented).toBe(false)
   })

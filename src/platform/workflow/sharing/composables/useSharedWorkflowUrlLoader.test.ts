@@ -7,7 +7,7 @@ import { computed, createApp, defineComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 
 import { i18n } from '@/i18n'
@@ -30,7 +30,7 @@ vi.mock(import('vue-router'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/platform/workflow/sharing/services/workflowShareService'))
 
@@ -88,7 +88,7 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('@/composables/useWorkflowTemplateSelectorDialog'),
+  import('@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'),
   () => ({
     useWorkflowTemplateSelectorDialog: () => ({
       hide: mockHideTemplateSelector

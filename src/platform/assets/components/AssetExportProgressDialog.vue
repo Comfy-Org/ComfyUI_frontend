@@ -3,11 +3,11 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import ToastPanel from '@comfyorg/design-system/toast/ToastPanel'
+import Button from '@comfyorg/design-system/button/Button'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { AssetExport } from '@/stores/assetExportStore'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -56,10 +56,10 @@ const footerIconClass = computed(() => {
   if (isInProgress.value)
     return 'icon-[lucide--loader-circle] animate-spin text-muted-foreground'
   if (failedJobs.value.length > 0)
-    return 'icon-[lucide--circle-alert] text-destructive-background'
+    return 'icon-[lucide--circle-alert] text-destructive'
   if (cancelledJobs.value.length > 0)
     return 'icon-[lucide--circle-x] text-muted-foreground'
-  return 'icon-[lucide--check-circle] text-jade-600'
+  return 'icon-[lucide--check-circle] text-success'
 })
 
 function progressPercent(job: AssetExport): number {
@@ -75,10 +75,8 @@ function closeDialog() {
 <template>
   <ToastPanel v-model:expanded="isExpanded" :visible :announcement>
     <template #default>
-      <div
-        class="flex h-12 items-center justify-between border-b border-border-default px-4"
-      >
-        <h3 class="text-sm font-bold text-base-foreground">
+      <div class="flex h-12 items-center justify-between border-b px-4">
+        <h3 class="text-sm font-bold">
           {{ t('exportToast.exportingAssets') }}
         </h3>
       </div>
@@ -90,7 +88,7 @@ function closeDialog() {
             :key="job.taskId"
             :class="
               cn(
-                'flex items-center justify-between rounded-lg bg-modal-card-background px-4 py-3',
+                'flex items-center justify-between rounded-lg bg-secondary px-4 py-3',
                 job.status === 'completed' && 'opacity-50'
               )
             "
@@ -101,8 +99,8 @@ function closeDialog() {
                   cn(
                     'block truncate text-sm',
                     job.status === 'failed'
-                      ? 'text-destructive-background'
-                      : 'text-base-foreground'
+                      ? 'text-destructive'
+                      : 'text-foreground'
                   )
                 "
               >
@@ -118,16 +116,12 @@ function closeDialog() {
 
             <div class="flex items-center gap-2">
               <template v-if="job.status === 'failed'">
-                <i
-                  class="icon-[lucide--circle-alert] size-4 text-destructive-background"
-                />
+                <i class="icon-[lucide--circle-alert] text-destructive" />
               </template>
               <template
                 v-else-if="job.status === 'completed' && job.downloadError"
               >
-                <span
-                  class="max-w-32 truncate text-xs text-destructive-background"
-                >
+                <span class="max-w-32 truncate text-xs text-destructive">
                   {{ job.downloadError }}
                 </span>
                 <Button
@@ -136,9 +130,7 @@ function closeDialog() {
                   :aria-label="t('exportToast.retryDownload')"
                   @click.stop="assetExportStore.triggerDownload(job, true)"
                 >
-                  <i
-                    class="icon-[lucide--rotate-ccw] size-4 text-destructive-background"
-                  />
+                  <i class="icon-[lucide--rotate-ccw] text-destructive" />
                 </Button>
               </template>
               <template v-else-if="job.status === 'completed'">
@@ -148,9 +140,7 @@ function closeDialog() {
                   :aria-label="t('exportToast.downloadExport')"
                   @click.stop="assetExportStore.triggerDownload(job, true)"
                 >
-                  <i
-                    class="icon-[lucide--download] size-4 text-success-background"
-                  />
+                  <i class="icon-[lucide--download] text-success" />
                 </Button>
               </template>
               <template v-else-if="job.status === 'cancelled'">
@@ -159,10 +149,8 @@ function closeDialog() {
                 </span>
               </template>
               <template v-else-if="job.status === 'running'">
-                <Loader size="sm" class="text-base-foreground" />
-                <span class="text-xs text-base-foreground">
-                  {{ progressPercent(job) }}%
-                </span>
+                <Loader size="sm" class="text-foreground" />
+                <span class="text-xs"> {{ progressPercent(job) }}% </span>
               </template>
               <template v-else>
                 <span class="text-xs text-muted-foreground">
@@ -190,19 +178,19 @@ function closeDialog() {
 
     <template #footer="{ toggle }">
       <div
-        class="flex h-12 min-w-0 flex-1 items-center justify-between gap-2 border-t border-border-default px-4"
+        class="flex h-12 min-w-0 flex-1 items-center justify-between gap-2 border-t px-4"
       >
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
           <Tooltip :disabled="isExpanded">
             <TooltipTrigger as-child>
-              <i :class="cn('size-4 shrink-0', footerIconClass)" />
+              <i :class="footerIconClass" />
             </TooltipTrigger>
             <TooltipContent>{{ footerLabel }}</TooltipContent>
           </Tooltip>
           <span
             :class="
               cn(
-                'truncate overflow-hidden font-bold text-base-foreground transition-all duration-300',
+                'truncate overflow-hidden font-bold transition-all duration-300',
                 isExpanded ? 'min-w-0 flex-1' : 'w-0'
               )
             "
@@ -240,12 +228,9 @@ function closeDialog() {
             >
               <i
                 :class="
-                  cn(
-                    'size-4',
-                    isExpanded
-                      ? 'icon-[lucide--chevron-down]'
-                      : 'icon-[lucide--chevron-up]'
-                  )
+                  isExpanded
+                    ? 'icon-[lucide--chevron-down]'
+                    : 'icon-[lucide--chevron-up]'
                 "
               />
             </Button>
@@ -257,7 +242,7 @@ function closeDialog() {
               :aria-label="t('g.close')"
               @click.stop="closeDialog"
             >
-              <i class="icon-[lucide--x] size-4" />
+              <i class="icon-[lucide--x]" />
             </Button>
           </div>
         </div>

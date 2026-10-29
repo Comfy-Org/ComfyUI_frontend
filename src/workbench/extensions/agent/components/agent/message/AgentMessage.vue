@@ -7,13 +7,12 @@ import type {
   ActivityPart,
   AssistantMessage,
   TextPart
-} from '../../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   askIdOf,
   isOpenAskPart
-} from '../../../services/agent/agentMessageParts'
-import { htmlReplyAssets } from '../../../utils/replyAssets'
-import { cn } from '@comfyorg/tailwind-utils'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { htmlReplyAssets } from '@/workbench/extensions/agent/utils/replyAssets'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import AgentMessageGroup from './AgentMessageGroup.vue'
@@ -133,7 +132,7 @@ const status = computed(() => {
       v-if="status"
       class="flex h-8 items-center gap-2 rounded-lg px-2 text-sm/5 font-normal text-muted-foreground"
     >
-      <span :class="cn('size-4 shrink-0', status.icon)" />
+      <i aria-hidden="true" :class="status.icon" />
       <span class="agent-shimmer-text min-w-0 truncate">{{ status.text }}</span>
     </div>
 

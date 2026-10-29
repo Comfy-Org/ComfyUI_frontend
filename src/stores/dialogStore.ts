@@ -2,11 +2,12 @@ import { defineStore } from 'pinia'
 import { markRaw, ref } from 'vue'
 import type { Component, Ref } from 'vue'
 
-import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
+import type { DialogContentSize } from '@comfyorg/design-system/lib/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 export interface DialogComponentProps {
   closable?: boolean
+  centerOnViewport?: boolean
   dismissOnPointerDownOutside?: boolean
   /**
    * The header, body and footer components lay out and pad their own

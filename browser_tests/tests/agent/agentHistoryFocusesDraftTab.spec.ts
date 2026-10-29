@@ -9,7 +9,7 @@ import type {
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import {
   agentTest as test,
@@ -148,7 +148,7 @@ test.describe(
 
       await bootAgentApp(page, agentFlagEnabled, {
         beforeNavigate: async (page) => {
-          await page.route('**/api/agent/threads', (route) =>
+          await page.route('**/api/agent/threads?*', (route) =>
             route.fulfill(jsonRoute(threads))
           )
           await page.route('**/api/agent/threads/*/messages', (route) => {
