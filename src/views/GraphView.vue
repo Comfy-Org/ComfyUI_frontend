@@ -1,16 +1,19 @@
 <template>
-  <div class="comfyui-body grid size-full overflow-hidden">
-    <div id="comfyui-body-top" class="comfyui-body-top" />
-    <div id="comfyui-body-bottom" class="comfyui-body-bottom" />
-    <div id="comfyui-body-left" class="comfyui-body-left" />
-    <div id="comfyui-body-right" class="comfyui-body-right" />
+  <div class="comfyui-body isolate grid size-full overflow-hidden">
+    <div id="comfyui-body-top" class="comfyui-body-top z-3" />
+    <div id="comfyui-body-bottom" class="comfyui-body-bottom z-2" />
+    <div id="comfyui-body-left" class="comfyui-body-left z-1" />
+    <div id="comfyui-body-right" class="comfyui-body-right z-1" />
     <div
       v-show="!linearMode"
       id="graph-canvas-container"
-      ref="graphCanvasContainerRef"
-      class="graph-canvas-container"
+      class="graph-canvas-container isolate"
     >
-      <GraphCanvas @ready="onGraphReady" />
+      <GraphCanvas @ready="onGraphReady">
+        <template #legacy-menu>
+          <div ref="legacyMenuContainerRef" />
+        </template>
+      </GraphCanvas>
     </div>
     <LinearView v-if="linearMode" />
     <template v-if="isBuilderMode">
@@ -135,7 +138,7 @@ const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
-const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
+const legacyMenuContainerRef = ref<HTMLDivElement | null>(null)
 const graphReady = ref(false)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
@@ -324,8 +327,7 @@ onMounted(() => {
   executionStore.bindExecutionEvents()
 
   try {
-    // Relocate the legacy menu container to the graph canvas container so it is below other elements
-    graphCanvasContainerRef.value?.prepend(app.ui.menuContainer)
+    legacyMenuContainerRef.value?.append(app.ui.menuContainer)
   } catch (e) {
     console.error('Failed to init ComfyUI frontend', e)
   }
@@ -477,15 +479,8 @@ const onGraphReady = () => {
 
 .comfyui-body-top {
   order: -5;
-  /* Span across all columns */
   grid-column: 1/-1;
-  /* Position at the first row */
   grid-row: 1;
-  /* Top menu bar dropdown needs to be above of graph canvas splitter overlay which is z-index: 999 */
-  /* Top menu bar z-index needs to be higher than bottom menu bar z-index as by default
-  pysssss's image feed is located at body-bottom, and it can overlap with the queue button, which
-  is located in body-top. */
-  z-index: 1001;
   display: flex;
   flex-direction: column;
 }
@@ -496,7 +491,6 @@ const onGraphReady = () => {
   grid-column: 1;
   /* Position below the top element */
   grid-row: 2;
-  z-index: 10;
   display: flex;
 }
 
@@ -512,18 +506,14 @@ const onGraphReady = () => {
 
 .comfyui-body-right {
   order: -2;
-  z-index: 10;
   grid-column: 3;
   grid-row: 2;
 }
 
 .comfyui-body-bottom {
   order: 4;
-  /* Span across all columns */
   grid-column: 1/-1;
   grid-row: 3;
-  /* Bottom menu bar dropdown needs to be above of graph canvas splitter overlay which is z-index: 999 */
-  z-index: 1000;
   display: flex;
   flex-direction: column;
 }
