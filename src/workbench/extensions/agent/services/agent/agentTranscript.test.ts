@@ -435,16 +435,22 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
-  it('rejects non-string persisted thinking at the API boundary', () => {
-    const input: unknown = [
-      {
-        ...row(1, 'assistant', 'turn-a', 'Done', 'row-1'),
-        content: { text: 'Done', thinking: [{ text: 42 }] }
-      }
-    ]
+  it.for([
+    ['non-string text', { text: 42 }],
+    ['a null tool_call_id', { text: 'Final round.', tool_call_id: null }]
+  ] as const)(
+    'rejects persisted thinking with %s at the API boundary',
+    ([, thinking]) => {
+      const input: unknown = [
+        {
+          ...row(1, 'assistant', 'turn-a', 'Done', 'row-1'),
+          content: { text: 'Done', thinking: [thinking] }
+        }
+      ]
 
-    expect(zAgentMessages.safeParse(input).success).toBe(false)
-  })
+      expect(zAgentMessages.safeParse(input).success).toBe(false)
+    }
+  )
 
   it('skips blank persisted thinking and keeps an entry whose call is missing after the calls', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
@@ -477,21 +483,6 @@ describe('normalizeAgentTranscript', () => {
         ok: true
       },
       { type: 'thinking', text: 'The audit row is gone.', state: 'done' },
-      { type: 'text', text: 'Done', state: 'done' }
-    ])
-  })
-
-  it('restores persisted thinking whose tool_call_id is an explicit null', () => {
-    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
-    message.content = {
-      text: 'Done',
-      thinking: [{ text: 'Final round.', tool_call_id: null }]
-    }
-
-    const transcript = normalizeAgentTranscript([message])
-
-    expect(transcript.messages[0].parts).toEqual([
-      { type: 'thinking', text: 'Final round.', state: 'done' },
       { type: 'text', text: 'Done', state: 'done' }
     ])
   })
