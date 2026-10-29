@@ -9,10 +9,10 @@ import { useAgentTargetNavigation } from '@/workbench/extensions/agent/composabl
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 import { AgentTargetNavigationError } from '@/workbench/extensions/agent/services/agent/targetAwareAgentNavigation'
 
@@ -95,7 +95,7 @@ async function open(): Promise<void> {
       data-testid="workflow-link-media"
       class="flex size-8 shrink-0 items-center justify-center rounded-md border bg-secondary text-muted-foreground"
     >
-      <span class="icon-[comfy--workflow] size-4" />
+      <i aria-hidden="true" class="icon-[comfy--workflow]" />
     </span>
     <span
       data-testid="workflow-link-content"
@@ -110,10 +110,10 @@ async function open(): Promise<void> {
         {{ t('g.nodesCount', nodeCount) }}
       </span>
     </span>
-    <span
+    <i
       aria-hidden="true"
       data-testid="workflow-link-navigation"
-      class="icon-[lucide--arrow-right] size-4 shrink-0 text-muted-foreground"
+      class="icon-[lucide--arrow-right] text-muted-foreground"
     />
   </Button>
 </template>

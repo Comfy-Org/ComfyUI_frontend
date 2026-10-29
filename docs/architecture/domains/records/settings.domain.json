@@ -141,7 +141,13 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["account", "authentication", "dialog-host"],
+  "allowedDependencies": [
+    "account",
+    "authentication",
+    "dialog-host",
+    "keybindings",
+    "telemetry"
+  ],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
@@ -170,7 +176,7 @@
         "src/platform/settings/composables/useSettingsUrlLoader.integration.test.ts",
         "src/platform/settings/components/SettingDialog.test.ts",
         "src/platform/settings/components/SettingItem.test.ts",
-        "src/platform/settings/components/ExtensionPanel.test.ts",
+        "src/platform/extensions/components/ExtensionPanel.test.ts",
         "src/components/dialog/content/setting/SettingItem.test.ts"
       ]
     },

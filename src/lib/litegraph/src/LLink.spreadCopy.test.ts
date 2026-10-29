@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 
 import type { LLink } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { RerouteId } from '@/types/rerouteId'
-import { toRerouteId } from '@/types/rerouteId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
 function connectedPair(parentId?: RerouteId) {
   const graph = new LGraph()

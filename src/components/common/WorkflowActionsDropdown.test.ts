@@ -4,12 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import WorkflowActionsDropdown from './WorkflowActionsDropdown.vue'
 
@@ -24,11 +24,10 @@ beforeEach(() => {
 })
 
 const spies = vi.hoisted(() => ({
-  action: vi.fn(),
-  markAsSeen: vi.fn()
+  action: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), async () => {
   const { ref } = await import('vue')
@@ -42,16 +41,6 @@ vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), async () => {
           command: spies.action
         }
       ])
-    })
-  }
-})
-
-vi.mock<unknown>(import('@/composables/useNewMenuItemIndicator'), async () => {
-  const { ref } = await import('vue')
-  return {
-    useNewMenuItemIndicator: () => ({
-      hasUnseenItems: ref(true),
-      markAsSeen: spies.markAsSeen
     })
   }
 })
@@ -165,7 +154,6 @@ describe('WorkflowActionsDropdown', () => {
       screen.getByRole('button', { name: /workflow actions/ })
     ).toHaveAttribute('aria-expanded', 'false')
     expect(useTelemetry()?.trackUiButtonClicked).not.toHaveBeenCalled()
-    expect(spies.markAsSeen).not.toHaveBeenCalled()
   })
 
   it('opens the menu instead of toggling the mode when the active segment is clicked', async () => {
@@ -176,7 +164,6 @@ describe('WorkflowActionsDropdown', () => {
 
     expect(useCommandStore().execute).not.toHaveBeenCalled()
     expect(active).toHaveAttribute('aria-expanded', 'true')
-    expect(spies.markAsSeen).toHaveBeenCalled()
     expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'test',
       element_group: 'workflow_actions'

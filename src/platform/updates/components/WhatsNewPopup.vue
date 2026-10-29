@@ -29,7 +29,7 @@
           rel="noopener noreferrer"
           @click="closePopup"
         >
-          <i class="icon-[lucide--external-link] size-4" />
+          <i class="icon-[lucide--external-link]" />
           {{ $t('whatsNewPopup.learnMore') }}
         </a>
         <div class="flex items-center gap-4">
@@ -171,7 +171,6 @@ defineExpose({
 
   position: absolute;
   bottom: var(--whats-new-popup-bottom);
-  z-index: 1000;
   pointer-events: auto;
 }
 

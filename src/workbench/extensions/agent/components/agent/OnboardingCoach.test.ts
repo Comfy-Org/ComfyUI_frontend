@@ -5,14 +5,13 @@ import { nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 
 import OnboardingCoach from './OnboardingCoach.vue'
 
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const telemetry = () => vi.mocked(useTelemetry())!
 
@@ -447,6 +446,90 @@ describe('OnboardingCoach', () => {
     })
     await waitFor(() => expect(dialog).toBeVisible())
     expect(useOnboardingOverlayStore().active).toBe(true)
+  })
+
+  function mountWithFinished(
+    storageKey: string,
+    onFinished: () => void,
+    steps = STEPS
+  ) {
+    return render(
+      {
+        components: { OnboardingCoach },
+        setup: () => ({ steps, storageKey, onFinished }),
+        template:
+          '<div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" /><OnboardingCoach :steps="steps" :storage-key="storageKey" @finished="onFinished" />'
+      },
+      { global: { plugins: [i18n] } }
+    )
+  }
+
+  it('reports the tour finished when another tab completes it', async () => {
+    const onFinished = vi.fn()
+    mountWithFinished('coach-elsewhere', onFinished)
+    await screen.findByRole('dialog', { name: 'Meet the agent' })
+
+    localStorage.setItem('coach-elsewhere', 'true')
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'coach-elsewhere',
+        newValue: 'true',
+        storageArea: localStorage
+      })
+    )
+
+    await waitFor(() => expect(onFinished).toHaveBeenCalled())
+    await nextTick()
+
+    expect(onFinished).toHaveBeenCalledOnce()
+  })
+
+  it('reports finished once when the user skips', async () => {
+    const onFinished = vi.fn()
+    mountWithFinished('coach-skip-once', onFinished)
+    await userEvent.click(await screen.findByRole('button', { name: 'Skip' }))
+    await nextTick()
+    await nextTick()
+
+    expect(onFinished).toHaveBeenCalledOnce()
+  })
+
+  it('reports finished once when the user clicks Done', async () => {
+    const onFinished = vi.fn()
+    mountWithFinished('coach-done-once', onFinished, [STEPS[0]])
+    await userEvent.click(await screen.findByRole('button', { name: 'Done' }))
+    await nextTick()
+    await nextTick()
+
+    expect(onFinished).toHaveBeenCalledOnce()
+  })
+
+  it('reports a later completion in another tab after a replay', async () => {
+    const onFinished = vi.fn()
+    const coach = ref<{ restart: () => void } | null>(null)
+    render(
+      {
+        components: { OnboardingCoach },
+        setup: () => ({ steps: STEPS, coach, onFinished }),
+        template:
+          '<div id="panel" /><OnboardingCoach ref="coach" :steps="steps" storage-key="coach-replay-elsewhere" @finished="onFinished" />'
+      },
+      { global: { plugins: [i18n] } }
+    )
+    await userEvent.click(await screen.findByRole('button', { name: 'Skip' }))
+    coach.value?.restart()
+    await screen.findByRole('dialog', { name: 'Meet the agent' })
+
+    localStorage.setItem('coach-replay-elsewhere', 'true')
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'coach-replay-elsewhere',
+        newValue: 'true',
+        storageArea: localStorage
+      })
+    )
+
+    await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(2))
   })
 
   describe('reporting a step whose target never mounts', () => {

@@ -19,7 +19,9 @@
     <!-- Loading state while subscription is being set up -->
     <div v-if="isSettingUp" class="rounded-2xl border p-6">
       <div class="flex items-center gap-2 py-4 text-muted-foreground">
-        <i class="pi pi-spin pi-spinner" />
+        <i
+          class="icon-[lucide--loader-circle] animate-spin motion-reduce:animate-none"
+        />
         <span>{{ $t('billingOperation.subscriptionProcessing') }}</span>
       </div>
       <Button
@@ -36,7 +38,9 @@
     <!-- Billing data still loading: avoid rendering a false Free/$0 plan -->
     <div v-else-if="isLoading && !subscription" class="rounded-2xl border p-6">
       <div class="flex items-center gap-2 py-4 text-muted-foreground">
-        <i class="pi pi-spin pi-spinner" />
+        <i
+          class="icon-[lucide--loader-circle] animate-spin motion-reduce:animate-none"
+        />
         <span>{{ $t('g.loading') }}</span>
       </div>
     </div>
@@ -47,7 +51,7 @@
       class="flex flex-col items-start gap-3 rounded-2xl border p-6"
     >
       <div class="flex items-center gap-2 text-muted-foreground">
-        <i class="pi pi-exclamation-circle text-destructive" />
+        <i class="icon-[lucide--circle-alert] text-destructive" />
         <span class="text-sm">{{ $t('subscription.planLoadError') }}</span>
       </div>
       <Button
@@ -71,7 +75,7 @@
         <div
           class="flex size-8 shrink-0 items-center justify-center rounded-full text-warning"
         >
-          <i class="pi pi-info-circle" />
+          <i class="icon-[lucide--info]" />
         </div>
         <div class="flex flex-col gap-2 text-sm">
           <h2 class="m-0 pt-1.5 font-bold text-foreground">
@@ -350,7 +354,7 @@
                   v-if="benefit.type === 'feature'"
                   :class="
                     cn(
-                      'pi pi-check text-xs',
+                      'icon-[lucide--check] size-3',
                       showInactiveTeamSubscription
                         ? 'text-muted-foreground'
                         : 'text-foreground'

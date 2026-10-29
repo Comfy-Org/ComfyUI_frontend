@@ -1,3 +1,4 @@
+import type { CompactSize } from '@comfyorg/shared-frontend-utils/geometry'
 import { extractLayerState } from '@/renderer/extensions/compositor/composables/compositorLayerState'
 import { setCompositorWidgetValue } from '@/renderer/extensions/compositor/composables/compositorWidgets'
 import {
@@ -8,7 +9,7 @@ import type { SceneNode } from '@comfyorg/layer-editor/node'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 export interface CompositorLayerStateSession {
-  canvasSize: { value: { w: number; h: number } }
+  canvasSize: { value: CompactSize }
   layers: { value: SceneNode[] }
   layerFlips(id: string): { h: boolean; v: boolean }
   inputLayerIds(): string[]

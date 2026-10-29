@@ -14,7 +14,7 @@
           :aria-label="$t('g.newFolder')"
           @click="nodeBookmarkTreeExplorerRef?.addNewBookmarkFolder()"
         >
-          <i class="icon-[lucide--folder-plus] size-4" />
+          <i class="icon-[lucide--folder-plus]" />
         </Button>
         <PopoverRoot v-slot="{ close }">
           <PopoverTrigger as-child>
@@ -25,11 +25,11 @@
               size="icon"
               :aria-label="$t('sideToolbar.nodeLibraryTab.groupBy')"
             >
-              <i :class="cn(selectedGroupingIcon, 'size-4')" />
+              <i :class="selectedGroupingIcon" />
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            class="max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
+            class="w-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
             dismiss-on-viewport-change
           >
             <div class="flex flex-col gap-1 p-2">
@@ -47,7 +47,7 @@
                   }
                 "
               >
-                <i :class="cn(option.icon, 'size-4')" />
+                <i :class="option.icon" />
                 {{ $t(option.label) }}
               </Button>
             </div>
@@ -62,11 +62,11 @@
               size="icon"
               :aria-label="$t('sideToolbar.nodeLibraryTab.sortMode')"
             >
-              <i :class="cn(selectedSortingIcon, 'size-4')" />
+              <i :class="selectedSortingIcon" />
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            class="max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
+            class="w-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
             dismiss-on-viewport-change
           >
             <div class="flex flex-col gap-1 p-2">
@@ -84,7 +84,7 @@
                   }
                 "
               >
-                <i :class="cn(option.icon, 'size-4')" />
+                <i :class="option.icon" />
                 {{ $t(option.label) }}
               </Button>
             </div>
@@ -98,7 +98,7 @@
           :aria-label="$t('sideToolbar.nodeLibraryTab.resetView')"
           @click="resetOrganization"
         >
-          <i class="icon-[lucide--filter-x] size-4" />
+          <i class="icon-[lucide--filter-x]" />
         </Button>
         <Button
           :tooltip="$t('menu.refresh')"
@@ -108,7 +108,7 @@
           :aria-label="$t('menu.refresh')"
           @click="() => commandStore.execute('Comfy.RefreshNodeDefinitions')"
         >
-          <i class="icon-[lucide--refresh-cw] size-4" />
+          <i class="icon-[lucide--refresh-cw]" />
         </Button>
       </template>
       <template #header>
@@ -117,7 +117,9 @@
             ref="searchBoxRef"
             v-model="searchQuery"
             :clear-label="$t('g.clear')"
-            :accessible-label="$t('g.search')"
+            :accessible-label="
+              $t('g.searchPlaceholder', { subject: $t('g.nodes') })
+            "
             data-testid="node-library-search"
             class="node-lib-search-box"
             :placeholder="$t('g.searchPlaceholder', { subject: $t('g.nodes') })"
@@ -132,11 +134,11 @@
                   class="filter-button"
                   :aria-label="$t('g.filter')"
                 >
-                  <i class="icon-[lucide--list-filter] size-4" />
+                  <i class="icon-[lucide--list-filter]" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent
-                class="ml-[-13px] max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
+                class="ml-[-13px] w-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
                 dismiss-on-viewport-change
               >
                 <NodeSearchFilter @add-filter="onAddFilter" />
@@ -200,7 +202,7 @@
                         void subgraphStore.deleteBlueprint(node.data.name)
                       "
                     >
-                      <i class="icon-[lucide--trash-2] size-4" />
+                      <i class="icon-[lucide--trash-2]" />
                     </Button>
                     <Button
                       variant="muted-textonly"
@@ -210,7 +212,7 @@
                         void subgraphStore.editBlueprint(node.data.name)
                       "
                     >
-                      <i class="icon-[lucide--square-pen] size-4" />
+                      <i class="icon-[lucide--square-pen]" />
                     </Button>
                   </template>
                   <template v-else>
@@ -288,7 +290,7 @@ import NodeHelpPage from '@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -297,7 +299,7 @@ import {
   DEFAULT_SORTING_ID,
   nodeOrganizationService
 } from '@/services/nodeOrganizationService'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

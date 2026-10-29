@@ -31,7 +31,7 @@ const notice = computed<NoticePart>(() =>
       )
     "
   >
-    <span class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
+    <i aria-hidden="true" class="mt-0.5 icon-[lucide--triangle-alert]" />
     <span class="flex flex-col gap-0.5">
       <span>{{ notice.text }}</span>
       <span

@@ -26,9 +26,7 @@
       >
         <i
           :class="
-            copiedId === row.id
-              ? 'icon-[lucide--check] size-4'
-              : 'icon-[lucide--link] size-4'
+            copiedId === row.id ? 'icon-[lucide--check]' : 'icon-[lucide--link]'
           "
         />
       </Button>

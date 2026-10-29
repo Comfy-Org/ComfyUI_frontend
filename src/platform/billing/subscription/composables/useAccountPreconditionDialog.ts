@@ -2,7 +2,7 @@ import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import PersonalWalletCreditsDialog from '@/platform/billing/components/PersonalWalletCreditsDialog.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { AccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import type { PersonalWalletCredential } from '@/platform/workflowErrors/errorCatalog/runtimeErrorMatcher'
@@ -75,30 +75,29 @@ export function useAccountPreconditionDialog() {
     })
   }
 
-  function open(
+  async function open(
     precondition: AccountPrecondition,
     context: AccountPreconditionContext = {}
-  ): void {
+  ): Promise<boolean> {
     switch (precondition) {
       case 'sign_in':
         void showApiNodesSignInDialog(
           context.nodeType ? [context.nodeType] : []
         )
-        return
+        return true
       case 'subscription':
-        void showSubscriptionRequiredDialog({
+        return showSubscriptionRequiredDialog({
           reason: context.source ?? 'subscription_required'
         })
-        return
       case 'credits':
         showTopUpForExhaustedBalance(context)
-        return
+        return true
       case 'personal_wallet_session':
         showPersonalWalletDialog('session', context)
-        return
+        return true
       case 'personal_wallet_api_key':
         showPersonalWalletDialog('api_key', context)
-        return
+        return true
     }
   }
 

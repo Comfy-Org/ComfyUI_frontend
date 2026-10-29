@@ -43,6 +43,33 @@ describe('resolveAccountPrecondition', () => {
     ).toBe('subscription')
   })
 
+  it('keeps the retryable FREE_TIER_UNAVAILABLE 429 out of the subscription route', () => {
+    expect(
+      resolveAccountPrecondition({
+        exceptionType: 'FREE_TIER_UNAVAILABLE',
+        exceptionMessage: 'Subscription required to queue workflows'
+      })
+    ).toBeUndefined()
+  })
+
+  it.for([
+    'CLOUD_SUBSCRIPTION_REQUIRED',
+    'FREE_TIER_EXHAUSTED',
+    'PARTNER_NODE_PAYMENT_REQUIRED',
+    'MODEL_PAYMENT_REQUIRED'
+  ])(
+    'prefers the ExecutePrompt %s type over a conflicting credit message',
+    (exceptionType) => {
+      expect(
+        resolveAccountPrecondition({
+          exceptionType,
+          exceptionMessage:
+            'Payment Required: Please add credits to your account to use this node.'
+        })
+      ).toBe('subscription')
+    }
+  )
+
   it('classifies a subscription-upgrade error as a subscription precondition', () => {
     expect(
       resolveAccountPrecondition({

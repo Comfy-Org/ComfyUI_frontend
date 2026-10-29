@@ -41,19 +41,27 @@ export function isReplyAssetKind(value: MediaType): value is ReplyAssetKind {
   )
 }
 
+function parseUrl(href: string, base?: string): URL | null {
+  try {
+    return new URL(href, base)
+  } catch {
+    return null
+  }
+}
+
 /**
  * Moves a loopback ComfyUI media URL onto the page's API route and returns any
  * other URL unchanged.
  */
 export function resolveAgentAssetUrl(href: string): string {
   const url =
-    URL.parse(href) ??
-    (href.startsWith('//') ? URL.parse(href, window.location.origin) : null)
+    parseUrl(href) ??
+    (href.startsWith('//') ? parseUrl(href, window.location.origin) : null)
   if (!url) return href
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return href
   if (!isLoopbackHost(url.hostname)) return href
   if (!isMediaRoute(`${url.pathname}${url.search}`)) return href
-  const rehomed = URL.parse(
+  const rehomed = parseUrl(
     api.apiURL(`${url.pathname}${url.search}`),
     window.location.origin
   )

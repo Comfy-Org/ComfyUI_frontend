@@ -31,10 +31,7 @@
           :key="feature.key"
           class="flex flex-col gap-1.5 rounded-[10px] border border-border/50 bg-secondary/50 p-3"
         >
-          <i
-            :class="cn(feature.icon, 'size-4 text-foreground')"
-            aria-hidden="true"
-          />
+          <i :class="cn(feature.icon, 'text-foreground')" aria-hidden="true" />
           <span class="text-sm">{{ feature.title }}</span>
           <span class="text-xs text-muted-foreground">
             {{ feature.description }}
@@ -102,13 +99,13 @@ import {
   getSubscriptionCancellationMetadata
 } from '@/platform/billing/subscription/utils/subscriptionCancellationTelemetry'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const {
   cancelAt,

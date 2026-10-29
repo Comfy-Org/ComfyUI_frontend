@@ -144,7 +144,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(
   import('@/platform/updates/common/useFrontendVersionMismatchWarning'),
   () => ({
@@ -200,7 +200,7 @@ vi.mock<unknown>(
   () => stubModule
 )
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/components/ManagerProgressToast.vue'),
+  import('@/platform/customNodes/manager/components/ManagerProgressToast.vue'),
 
   () => stubModule
 )

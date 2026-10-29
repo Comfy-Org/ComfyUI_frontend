@@ -1,17 +1,18 @@
-import type {
-  LGraph,
-  LGraphCanvas
-} from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraph, LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { setGroupBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
 import { toSelectableKey } from '@/core/selection/selectionState'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { GraphScope } from '@/types/graphScopeId'
-import type { GroupId } from '@/types/groupId'
-import { toGroupId } from '@/types/groupId'
-import { hexToRgb, luminance, readableTextColor } from '@/utils/colorUtil'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import {
+  hexToRgb,
+  luminance,
+  readableTextColor
+} from '@comfyorg/shared-frontend-utils/colorUtil'
 
 import { canvasClass } from './canvas/canvasClassAccess'
 import { LGraphNode } from './LGraphNode'
@@ -25,11 +26,13 @@ import type {
   ColorOption,
   IColorable,
   IPinnable,
-  Point,
-  Positionable,
+  Positionable
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
   Rect,
-  Size
-} from './interfaces'
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type { IContextMenuValue } from './types/contextMenu'
 import { LiteGraph } from './litegraphInstance'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -43,7 +46,7 @@ import {
   isPointInRect,
   snapPoint
 } from './measure'
-import type { ISerialisedGroup } from './types/serialisation'
+import type { ISerialisedGroup } from '@comfyorg/graph-model/serialisation'
 
 export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true
@@ -559,7 +562,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 type RegisteredLGraphGroup = LGraphGroup
 type RegisteredIGraphGroupFlags = IGraphGroupFlags
 
-declare module './types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface LGraphGroup extends RegisteredLGraphGroup {}
   interface IGraphGroupFlags extends RegisteredIGraphGroupFlags {}
 }

@@ -22,7 +22,7 @@
       :aria-label="$t('actionbar.feedback')"
       @click="openFeedback"
     >
-      <i class="icon-[lucide--megaphone] size-4" />
+      <i class="icon-[lucide--megaphone]" />
     </Button>
     <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
     <LoginButton v-else class="p-1" />
@@ -58,7 +58,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { openFeedbackDialog } from '@/platform/support/feedbackDialog'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -94,12 +94,9 @@ async function onAgentEntryClick(): Promise<void> {
   isOpeningAgent.value = true
 
   try {
-    if (
-      agentPanelStore.onboarding.agentButton === 'togglePanel' ||
-      agentPanelStore.isVisible
-    ) {
+    if (agentPanelStore.isVisible) {
       useTelemetry()?.trackAgentEntryButtonClicked({
-        resulting_state: agentPanelStore.isVisible ? 'closed' : 'opened'
+        resulting_state: 'closed'
       })
       agentPanelStore.toggle()
       return

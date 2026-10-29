@@ -18,8 +18,8 @@ import {
   unionRect
 } from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
-import { useTelemetry } from '@/platform/telemetry'
-import type { AgentOnboardingAction } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AgentOnboardingAction } from '@comfyorg/telemetry/types'
 import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 import {
   reportMissingCoachTarget,
@@ -107,18 +107,28 @@ function reportStep(action: AgentOnboardingAction): void {
   useTelemetry()?.trackAgentOnboardingStep({ step: index.value + 1, action })
 }
 
+let finishedHere = false
+
 function onNext(): void {
   const finished = isLast.value
   reportStep(isLast.value ? 'finish' : 'next')
+  if (finished) finishedHere = true
   next()
   if (finished) emit('finished')
 }
 
 function onSkip(): void {
   reportStep('skip')
+  finishedHere = true
   finish()
   emit('finished')
 }
+
+const completed = computed(() => !active.value && !!step.value)
+watch(completed, (isCompleted) => {
+  if (isCompleted && !finishedHere) emit('finished')
+  finishedHere = false
+})
 
 const targetObserver = new MutationObserver(resolveTargets)
 targetObserver.observe(document.body, {

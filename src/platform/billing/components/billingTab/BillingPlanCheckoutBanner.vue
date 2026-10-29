@@ -9,12 +9,9 @@
       <div class="flex items-center gap-2">
         <i
           :class="
-            cn(
-              'size-4 shrink-0',
-              banner.kind === 'verifyPayment'
-                ? 'icon-[lucide--triangle-alert] text-warning'
-                : 'icon-[lucide--circle-alert] text-muted-foreground'
-            )
+            banner.kind === 'verifyPayment'
+              ? 'icon-[lucide--triangle-alert] text-warning'
+              : 'icon-[lucide--circle-alert] text-muted-foreground'
           "
           aria-hidden="true"
         />
@@ -23,7 +20,12 @@
       <p class="m-0 pl-6 text-sm text-muted-foreground">{{ copy?.body }}</p>
     </div>
     <div class="flex shrink-0 flex-wrap items-center gap-2 pl-6 sm:pl-0">
-      <Button variant="textonly" size="md" @click="emit('dismiss')">
+      <Button
+        v-if="banner.kind !== 'verifyPayment'"
+        variant="textonly"
+        size="md"
+        @click="emit('dismiss')"
+      >
         {{ $t('workspacePanel.billingStatus.planCheckout.dismiss') }}
       </Button>
       <Button
@@ -32,7 +34,7 @@
         :href="banner.actionUrl"
         target="_blank"
         rel="noopener"
-        variant="secondary"
+        variant="inverted"
         size="md"
         class="no-underline"
       >
@@ -45,7 +47,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
