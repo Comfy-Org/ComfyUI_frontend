@@ -67,7 +67,8 @@ vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
-  }
+  },
+  isDesktop: false
 }))
 
 vi.mock(import('./checkoutAttributionLoader'), () => ({

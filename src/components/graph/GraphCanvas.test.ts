@@ -153,7 +153,10 @@ vi.mock(
   () => ({ useWorkflowAutoSave: vi.fn() })
 )
 
-async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
+async function mountGraphCanvas(
+  stubs: Record<string, unknown> = {},
+  errorHandler?: (error: unknown) => void
+) {
   // Handed to the component rather than left to the active-Pinia fallback, so
   // the readiness gates below are set on the instance startup actually reads.
   const pinia = getActivePinia()!
@@ -174,7 +177,8 @@ async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
         pinia,
         createI18n({ legacy: false, locale: 'en', missingWarn: false })
       ],
-      stubs
+      stubs,
+      config: errorHandler ? { errorHandler } : {}
     }
   } as RenderOptions<typeof GraphCanvas>)
 
@@ -204,6 +208,17 @@ describe('GraphCanvas first-run tour wiring', () => {
     expect(
       mocks.runUrlActionLoaders.mock.invocationCallOrder[0]
     ).toBeGreaterThan(mocks.handleStartupOutcome.mock.invocationCallOrder[0])
+  })
+
+  it('settles tab restoration when startup fails before restoring tabs', async () => {
+    const failure = new Error('init failed')
+    mocks.initializeWorkflow.mockRejectedValue(failure)
+    const errors: unknown[] = []
+
+    await mountGraphCanvas({}, (error) => errors.push(error))
+
+    expect(errors).toEqual([failure])
+    expect(useWorkflowStore().tabsRestored).toBe(true)
   })
 
   it('offers the tour over a workflow that arrived from the URL', async () => {

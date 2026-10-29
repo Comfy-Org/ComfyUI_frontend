@@ -199,6 +199,7 @@
               'bg-interface-menu-component-surface-selected text-text-primary'
           )
         "
+        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsTile"
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
@@ -217,6 +218,7 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import Skeleton from 'primevue/skeleton'

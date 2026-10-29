@@ -22,13 +22,13 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentErrorMetadata,
-  AgentFreeUseNoticeMetadata,
   AgentMessageSentMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -309,13 +309,17 @@ const creditsExhausted = computed(() => {
   )
 })
 
+const threadHasUserMessage = computed(() =>
+  conversationEntries.value.some((entry) => entry.role === 'user')
+)
+
 /**
  * Suppressed while the latest transcript entry is an unresolved inline card:
  * the two render the same copy. An older card may be scrolled away and must not
  * hide the standing recovery path after a later server-side refusal.
  */
 const showStandingPaywall = computed(() => {
-  if (!creditsExhausted.value) return false
+  if (!creditsExhausted.value || !threadHasUserMessage.value) return false
   const latestEntry = conversationEntries.value.at(-1)
   return !(
     latestEntry?.role === 'assistant' &&
@@ -432,6 +436,7 @@ const agentTabGraph: ComfyWorkflowJSON = {
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
 const settingStore = useSettingStore()
+const dialogStore = useDialogStore()
 watch(
   () => canvasStore.canvas?.graph,
   (graph, _previous, onCleanup) => {
@@ -539,7 +544,9 @@ const coachDeferredBy = computed(() =>
     ? 'app_mode'
     : activeTour.value !== null
       ? 'tour_active'
-      : null
+      : dialogStore.dialogStack.length > 0
+        ? 'dialog_open'
+        : null
 )
 const coachCompletionWaiters = new Set<() => void>()
 function releaseCoachCompletionWaiters(): void {
@@ -897,7 +904,8 @@ const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
-  docInputNames
+  docInputNames,
+  docWidgetValue
 } = useAgentCrdtFollower(
   boundWorkflowId,
   () => resolvedUserInfo.value?.id ?? null,
@@ -955,7 +963,8 @@ const docOpMinter = attachDocOpMinter({
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
-  docInputNames
+  docInputNames,
+  docWidgetValue
 })
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
@@ -1362,19 +1371,24 @@ const { copy } = useClipboard({ legacy: true })
  * reading the flag here keeps the exposure — and the experiment's
  * denominator — to the panel openers the hypothesis is about.
  */
-const { variant: freeUsePlacement } = useFreeUsePlacement()
-const visibleFreeUsePlacement = computed(() =>
-  agentScopedHasFunds.value === false ? 'control' : freeUsePlacement.value
-)
+const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
+  useFreeUsePlacement()
 const {
   assignment: starterPromptAssignment,
   attributeExperiment: attributeStarterPromptExperiment,
   expose: exposeStarterPromptSet
 } = useStarterPromptSet()
 
-function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
-  useTelemetry()?.trackAgentFreeUseNotice(metadata)
-}
+/**
+ * The notice claims the Agent's own granted allowance, so an authoritative
+ * `scoped_has_funds.agent === false` forces the control arm. This line keeps
+ * the 1.56 predicate it inherited from the credit-transition carrier; main's
+ * stricter fail-closed form rides on a billing-read ordering fixture that is
+ * not on this line.
+ */
+const visibleFreeUsePlacement = computed(() =>
+  agentScopedHasFunds.value === false ? 'control' : freeUseVariant.value
+)
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   const message = entries.value.find(
@@ -1870,7 +1884,8 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
         id: `asset:${asset.ref}`,
         name: asset.name,
         ref: asset.ref,
-        previewUrl: asset.previewUrl
+        previewUrl: asset.previewUrl,
+        mediaUrl: asset.mediaUrl
       }) ?? false
     )
   }

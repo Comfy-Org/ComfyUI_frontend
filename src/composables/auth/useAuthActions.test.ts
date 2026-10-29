@@ -34,7 +34,11 @@ let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 
 const mockStartPendingTopup = vi.hoisted(() => vi.fn())
-const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+const mockClearPendingTopup = vi.hoisted(() => vi.fn())
+const mockDistributionState = vi.hoisted(() => ({
+  isCloud: false,
+  isDesktop: false
+}))
 const mockClearAllWorkspaceStorage = vi.hoisted(() => vi.fn())
 const mockPrepareWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
 
@@ -62,13 +66,19 @@ vi.mock(import('@/platform/auth/sso/ssoRequired'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
+  },
+  get isDesktop() {
+    return mockDistributionState.isDesktop
   }
 }))
 
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
-  usePendingTopup: () => ({ startPendingTopup: mockStartPendingTopup })
+  usePendingTopup: () => ({
+    startPendingTopup: mockStartPendingTopup,
+    clearPendingTopup: mockClearPendingTopup
+  })
 }))
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
@@ -131,6 +141,7 @@ beforeEach(() => {
   vi.mocked(mockAuthStore.register).mockResolvedValue(credential)
   vi.mocked(mockAuthStore.loginWithGoogle).mockResolvedValue(credential)
   mockDistributionState.isCloud = false
+  mockDistributionState.isDesktop = false
 })
 
 describe('useAuthActions.purchaseCreditsDirect', () => {
@@ -173,6 +184,26 @@ describe('useAuthActions.purchaseCreditsDirect', () => {
 
     expect(mockStartPendingTopup).not.toHaveBeenCalled()
     expect(open).not.toHaveBeenCalled()
+  })
+
+  it('reports a blocked checkout popup on the web', async () => {
+    vi.spyOn(window, 'open').mockImplementation(() => null)
+    const { purchaseCreditsDirect } = useAuthActions()
+
+    await expect(purchaseCreditsDirect(25)).rejects.toThrow()
+
+    expect(mockClearPendingTopup).toHaveBeenCalledOnce()
+  })
+
+  it('keeps tracking the top-up when Desktop hands checkout to the system browser', async () => {
+    mockDistributionState.isDesktop = true
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const { purchaseCreditsDirect } = useAuthActions()
+
+    await purchaseCreditsDirect(25)
+
+    expect(open).toHaveBeenCalledWith('https://checkout.stripe.test', '_blank')
+    expect(mockClearPendingTopup).not.toHaveBeenCalled()
   })
 })
 
