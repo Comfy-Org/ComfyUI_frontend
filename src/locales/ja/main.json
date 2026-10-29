@@ -5868,7 +5868,6 @@
           "off": "オフ",
           "on": "オン",
           "onHold": "保留中",
-          "paused": "一時停止中",
           "turnedOff": "オフ"
         },
         "title": "自動チャージ",
@@ -5931,7 +5930,6 @@
         },
         "scheduledChange": "{date}に{plan}へ変更されます。",
         "stayConfirm": {
-          "body": "{date}にプランが{plan}へ変更されることはありません。いつでも再度変更を予約できます。",
           "title": "{plan} への変更をキャンセルしますか？"
         },
         "unknown": {

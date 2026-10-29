@@ -5868,7 +5868,6 @@
           "off": "Désactivé",
           "on": "Activé",
           "onHold": "En attente",
-          "paused": "En pause",
           "turnedOff": "Désactivé"
         },
         "title": "Rechargement automatique",
@@ -5931,7 +5930,6 @@
         },
         "scheduledChange": "Passage à {plan} le {date}.",
         "stayConfirm": {
-          "body": "Votre forfait ne passera pas à {plan} le {date}. Vous pouvez à nouveau planifier un changement à tout moment.",
           "title": "Annuler votre changement vers {plan} ?"
         },
         "unknown": {

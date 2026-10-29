@@ -5868,7 +5868,6 @@
           "off": "Disattivata",
           "on": "Attivata",
           "onHold": "In attesa",
-          "paused": "In pausa",
           "turnedOff": "Disattivata"
         },
         "title": "Ricarica automatica",
@@ -5931,7 +5930,6 @@
         },
         "scheduledChange": "Passaggio a {plan} il {date}.",
         "stayConfirm": {
-          "body": "Il tuo piano non passerà a {plan} il {date}. Puoi programmare di nuovo una modifica in qualsiasi momento.",
           "title": "Annullare la modifica al piano {plan}?"
         },
         "unknown": {
