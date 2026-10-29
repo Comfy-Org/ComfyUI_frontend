@@ -25,6 +25,7 @@ export interface PlanRowFacts {
 
 export type PlanRowState =
   | { kind: 'activating'; planName: string }
+  | { kind: 'paused'; planName: string }
   | {
       kind: 'active'
       planName: string
@@ -84,7 +85,7 @@ export function derivePlanRow(facts: PlanRowFacts): PlanRowState {
   if (planName === null) return UNKNOWN
   switch (facts.billingStatus) {
     case 'paused':
-      return UNKNOWN
+      return { kind: 'paused', planName }
   }
 
   const cadence = toCadence(facts.duration)
@@ -125,6 +126,7 @@ export function planRowAction(
     case 'activating':
     case 'active':
     case 'ending':
+    case 'paused':
     case 'unknown':
       return 'manage'
     case 'noPlan':

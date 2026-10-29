@@ -125,6 +125,7 @@ const statusLine = computed(() => {
     return t(`${key}.activating`, { plan: state.planName })
   }
   if (state.kind === 'active') return activeLine(state)
+  if (state.kind === 'paused') return t(`${key}.paused`)
   if (state.kind === 'noPlan') return noPlanLine(state)
   if (state.kind === 'ending') {
     return t(`${key}.ending`, {

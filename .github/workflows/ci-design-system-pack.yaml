@@ -16,6 +16,8 @@ on:
       - 'scripts/cicd/check-design-system-*'
       - '.github/actions/setup-frontend/**'
       - '.github/workflows/ci-design-system-pack.yaml'
+      - '.storybook/main.ts'
+      - '.storybook/style.css'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

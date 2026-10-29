@@ -22,7 +22,10 @@
       "
     />
     <BillingStatusBanner section="billing" />
-    <BillingLocalCreditBanner :suppressed="suppressCreditBanner" />
+    <BillingLocalCreditBanner
+      :suppressed="suppressCreditBanner"
+      :add-credits-variant="addCreditsVariant"
+    />
     <section class="flex flex-col gap-3" data-testid="billing-plan-section">
       <h2 class="m-0 text-base font-medium text-foreground">
         {{ $t('workspacePanel.billingTab.credits.plan') }}
@@ -125,17 +128,18 @@ import BillingParkedBanner from '@/platform/billing/components/billingTab/Billin
 import BillingPausedBanner from '@/platform/billing/components/billingTab/BillingPausedBanner.vue'
 import BillingTopupCheckoutBanner from '@/platform/billing/components/billingTab/BillingTopupCheckoutBanner.vue'
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
-import { addCreditsEmphasis } from '@/platform/billing/components/billingTab/topupCheckoutBanner'
 import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
 import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/billing/components/billingTab/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/billing/components/billingTab/BillingPlanRow.vue'
+import { addCreditsEmphasis } from '@/platform/billing/components/billingTab/creditsCard'
 import {
   deriveBillingTabLoad,
   planRowAction
 } from '@/platform/billing/components/billingTab/planRow'
 import { useBillingCreditsCard } from '@/platform/billing/components/billingTab/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useBillingPlanRow'
+import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
@@ -158,14 +162,6 @@ const suppressCreditBanner = computed(
 const { flags } = useFeatureFlags()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
-const addCreditsVariant = computed(() =>
-  addCreditsEmphasis(
-    creditsCard.value.kind === 'unavailable'
-      ? null
-      : creditsCard.value.availableCents,
-    topupCheckout.banner.value
-  )
-)
 const planCreditNote = useTopUpPlanCreditCopy()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
@@ -192,6 +188,23 @@ const action = computed(() =>
   planRowAction(planRow.value, {
     canOpenPlans: capabilities.canOpenPlans.value,
     planKind: capabilities.planKind.value
+  })
+)
+
+const { state: autoTopUp } = useBillingAutoTopUpCard()
+const addCreditsVariant = computed(() =>
+  addCreditsEmphasis({
+    availableCents:
+      creditsCard.value.kind === 'unavailable'
+        ? null
+        : creditsCard.value.availableCents,
+    canTopUp: capabilities.canTopUp.value,
+    autoTopUpStatus:
+      autoTopUp.value.kind === 'loaded'
+        ? autoTopUp.value.settings.status
+        : null,
+    planActionIsPrimary:
+      action.value === 'subscribe' || action.value === 'choosePlan'
   })
 )
 
