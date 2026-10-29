@@ -11,7 +11,8 @@ const TASK_ID = '8c2d4e6f-1a3b-4c5d-9e7f-0a1b2c3d4e5f'
 const SIGNED_URL = 'https://storage.example.com/temp/model-uploads/x?sig=1'
 const SIGNED_HEADERS = {
   'Content-Type': 'application/octet-stream',
-  'x-goog-content-length-range': '0,12'
+  'x-goog-content-length-range': '0,12',
+  'x-goog-if-generation-match': '0'
 }
 
 class StorageRequest {
@@ -85,9 +86,9 @@ function serverAnswers(...answers: Response[]) {
   return calls
 }
 
-async function storageRequest() {
-  await vi.waitFor(() => expect(StorageRequest.sent).toHaveLength(1))
-  return StorageRequest.sent[0]
+async function storageRequest(nth = 1) {
+  await vi.waitFor(() => expect(StorageRequest.sent).toHaveLength(nth))
+  return StorageRequest.sent[nth - 1]
 }
 
 const file = new File(['twelve bytes'], 'my_style_v2.safetensors')
@@ -188,6 +189,72 @@ describe('modelFileUploadApi.uploadModelFile', () => {
       ok: false,
       reason: 'unsupportedType'
     })
+  })
+
+  it.for([
+    [403, 'PRIVATE_MODELS_DISABLED', 'privateModelsDisabled'],
+    [503, 'PRIVATE_MODELS_UNAVAILABLE', 'planUnavailable']
+  ] as const)(
+    'stops before any bytes when start answers %s %s',
+    async ([status, code, reason]) => {
+      serverAnswers(json(status, { code, message: 'from the server' }))
+
+      await expect(upload().result).resolves.toEqual({ ok: false, reason })
+      expect(StorageRequest.sent).toHaveLength(0)
+    }
+  )
+
+  it.for([
+    [403, 'PRIVATE_MODELS_DISABLED', 'privateModelsDisabled'],
+    [503, 'PRIVATE_MODELS_UNAVAILABLE', 'planUnavailable'],
+    [400, 'UNSUPPORTED_FILE_TYPE', 'unsupportedFile']
+  ] as const)(
+    'stops when the finish call answers %s %s',
+    async ([status, code, reason]) => {
+      serverAnswers(json(201, started), json(status, { code, message: 'x' }))
+      const { result } = upload()
+
+      ;(await storageRequest()).finish(200)
+
+      await expect(result).resolves.toEqual({ ok: false, reason })
+    }
+  )
+
+  it('starts again from a new signed URL when storage already holds the object', async () => {
+    const second = {
+      ...started,
+      upload_id: '5a1c9e2b-7d3f-4b8a-9c6e-2f4d8b1a3c70',
+      upload_url: `${SIGNED_URL}&second=1`
+    }
+    const calls = serverAnswers(
+      json(201, started),
+      json(201, second),
+      json(202, { task_id: TASK_ID, status: 'created' })
+    )
+    const { result } = upload()
+
+    ;(await storageRequest(1)).finish(412)
+    const retry = await storageRequest(2)
+    expect(retry.url).toBe(second.upload_url)
+    retry.finish(200)
+
+    await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+    expect(calls.map((call) => call.route)).toEqual([
+      '/assets/uploads',
+      '/assets/uploads',
+      '/assets/uploads/5a1c9e2b-7d3f-4b8a-9c6e-2f4d8b1a3c70/complete'
+    ])
+  })
+
+  it('gives up when storage refuses the second signed URL the same way', async () => {
+    const calls = serverAnswers(json(201, started), json(201, started))
+    const { result } = upload()
+
+    ;(await storageRequest(1)).finish(412)
+    ;(await storageRequest(2)).finish(412)
+
+    await expect(result).resolves.toMatchObject({ ok: false, reason: 'failed' })
+    expect(calls).toHaveLength(2)
   })
 
   it('fails without completing when storage refuses the bytes', async () => {

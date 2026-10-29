@@ -12,6 +12,17 @@ import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 const MODEL_FILE_EXTENSION = '.safetensors'
 const DEFAULT_MODEL_TYPE = 'loras'
 
+type UploadStopped = Extract<ModelFileUploadResult, { ok: false }>
+
+/** The words for each way an upload stops; any other failure shows the server's message or the generic one. */
+const FAILURE_COPY: Partial<Record<UploadStopped['reason'], string>> = {
+  cancelled: 'assetBrowser.fileUpload.cancelled',
+  unsupportedFile: 'assetBrowser.fileUpload.notSafetensors',
+  unsupportedType: 'assetBrowser.fileUpload.unsupportedType',
+  privateModelsDisabled: 'assetBrowser.fileUpload.privateModelsDisabled',
+  planUnavailable: 'assetBrowser.fileUpload.planUnavailable'
+}
+
 type ModelFileUpload =
   | { status: 'idle'; error?: string }
   | { status: 'chosen'; file: File }
@@ -66,16 +77,9 @@ export function useUploadModelFile() {
     state.value = { status: 'chosen', file }
   }
 
-  function failureText(failure: Extract<ModelFileUploadResult, { ok: false }>) {
-    if (failure.reason === 'cancelled') {
-      return t('assetBrowser.fileUpload.cancelled')
-    }
-    if (failure.reason === 'unsupportedFile') {
-      return t('assetBrowser.fileUpload.notSafetensors')
-    }
-    if (failure.reason === 'unsupportedType') {
-      return t('assetBrowser.fileUpload.unsupportedType')
-    }
+  function failureText(failure: UploadStopped) {
+    const copy = FAILURE_COPY[failure.reason]
+    if (copy) return t(copy)
     return failure.message ?? t('assetBrowser.fileUpload.failed')
   }
 

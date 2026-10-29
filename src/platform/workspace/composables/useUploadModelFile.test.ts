@@ -235,6 +235,30 @@ describe('useUploadModelFile', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it.for([
+    ['privateModelsDisabled', "Your plan doesn't include private models."],
+    ['planUnavailable', "Couldn't check your plan. Try again."],
+    ['unsupportedFile', 'Only .safetensors files can be uploaded.']
+  ] as const)(
+    'says what the server refused when it answers %s',
+    async ([reason, copy]) => {
+      const { upload } = setup()
+      const server = pendingUpload()
+      upload.choose(lora)
+
+      const result = upload.upload()
+      server.finish({ ok: false, reason })
+
+      await result
+      expect(upload.state.value).toEqual({
+        status: 'failed',
+        file: lora,
+        error: copy
+      })
+      expect(reportError).not.toHaveBeenCalled()
+    }
+  )
+
   it('offers only the folders the server accepts, LoRA first when listed', () => {
     const { upload } = setup()
 
@@ -288,12 +312,12 @@ describe('useUploadModelFile', () => {
     server.finish({ ok: true, taskId: TASK_ID })
     await result
 
-    taskUpdate('failed', 'Could not read the file')
+    taskUpdate('failed', 'This file is not a valid .safetensors file.')
     await nextTick()
     expect(upload.state.value).toEqual({
       status: 'failed',
       file: lora,
-      error: 'Could not read the file'
+      error: 'This file is not a valid .safetensors file.'
     })
   })
 
