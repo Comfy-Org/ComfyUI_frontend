@@ -9,6 +9,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { NavGroupData } from '@comfyorg/design-system/lib/navigation/types'
+import type { SettingDialogProps } from '@/platform/settings/types'
 
 import SettingDialog from './SettingDialog.vue'
 
@@ -128,9 +129,12 @@ beforeEach(() => {
   searchMocks.searchResultsCategories = ref(new Set<string>())
 })
 
-function renderDialog({ modal = false }: { modal?: boolean } = {}) {
+function renderDialog({
+  modal = false,
+  props = {}
+}: { modal?: boolean; props?: Partial<SettingDialogProps> } = {}) {
   return render(SettingDialog, {
-    props: { onClose: vi.fn() },
+    props: { onClose: vi.fn(), ...props },
     global: {
       plugins: [i18n],
       stubs: {
@@ -221,6 +225,40 @@ it('falls back when the active navigation item becomes unavailable', async () =>
   expect(
     screen.queryByText('workspace-allowlist panel')
   ).not.toBeInTheDocument()
+})
+
+it('navigates to a panel requested while the dialog is already open', async () => {
+  defaultCategory.value = { key: 'workspace', label: 'Workspace', children: [] }
+  const onClose = vi.fn()
+  const { rerender } = renderDialog({
+    props: { onClose, defaultPanel: 'workspace' }
+  })
+  expect(await screen.findByText('workspace panel')).toBeInTheDocument()
+
+  // The settings dialog is keyed, so a second `show('workspace-allowlist')`
+  // raises this instance with new content props instead of remounting.
+  await rerender({ onClose, defaultPanel: 'workspace-allowlist' })
+
+  expect(
+    await screen.findByText('workspace-allowlist panel')
+  ).toBeInTheDocument()
+  expect(screen.queryByText('workspace panel')).not.toBeInTheDocument()
+})
+
+it('ignores a requested panel that the current navigation does not offer', async () => {
+  const onClose = vi.fn()
+  const { rerender } = renderDialog({
+    props: { onClose, defaultPanel: 'workspace-allowlist' }
+  })
+  expect(
+    await screen.findByText('workspace-allowlist panel')
+  ).toBeInTheDocument()
+
+  await rerender({ onClose, defaultPanel: 'secrets' })
+
+  expect(
+    await screen.findByText('workspace-allowlist panel')
+  ).toBeInTheDocument()
 })
 
 it('shows the workspace identity in the dialog header on workspace sections', async () => {

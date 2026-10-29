@@ -214,6 +214,22 @@ watch(navItems, (items) => {
   activeCategoryKey.value = items[0]?.id ?? null
 })
 
+// A caller can ask for a panel while this dialog is already mounted — the
+// settings dialog is keyed, so `show(panel)` raises this instance rather than
+// creating one. Follow the request instead of staying on the opening panel.
+watch(
+  () => defaultPanel,
+  (panel) => {
+    if (!panel) return
+    if (!findCategoryByKey(panel) && !findPanelByKey(panel)) return
+    if (inSearch.value) {
+      searchQuery.value = ''
+      handleSearch('')
+    }
+    activeCategoryKey.value = panel
+  }
+)
+
 watch(
   [searchResultsCategories, matchedNavItemKeys],
   ([categories, navKeys]) => {

@@ -126,6 +126,38 @@ test.describe(
         .toContain('agent.cushions.notices')
     })
 
+    test('routes an already-open Settings dialog to the extension controls', async ({
+      comfyPage,
+      page
+    }) => {
+      await test.step('Open Settings on another panel first', async () => {
+        await comfyPage.settingDialog.open()
+        await comfyPage.settingDialog.goToAboutPanel()
+      })
+
+      await page.evaluate(() => {
+        window.app!.registerExtension({
+          name: 'agent.cushions.routing',
+          provenance: {
+            createdBy: 'comfy-agent',
+            summary: 'Adds cushion controls'
+          }
+        })
+      })
+
+      const notice = comfyPage.toast.withText(
+        'Your agent added agent.cushions.routing'
+      )
+      await notice.getByRole('button', { name: 'Manage extensions' }).click()
+
+      await expect(
+        comfyPage.settingDialog.contentArea.getByRole('switch', {
+          name: 'agent.cushions.routing'
+        })
+      ).toBeVisible()
+      await expect(page.locator('.about-container')).toBeHidden()
+    })
+
     test('badges an attributed sidebar tab without covering its count', async ({
       comfyPage,
       page
@@ -189,7 +221,7 @@ test.describe(
             ? route.fulfill({ status: 403 })
             : route.fallback()
         )
-        await tab.click({ button: 'right' })
+        await comfyPage.contextMenu.openFor(tab)
         await expect(
           comfyPage.contextMenu.menuItem('Manage extensions')
         ).toBeVisible()

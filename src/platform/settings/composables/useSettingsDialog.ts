@@ -39,6 +39,19 @@ export function useSettingsDialog() {
       })
       return
     }
+    // `showDialog` only raises an instance that already exists under this key,
+    // so a caller asking for a specific panel while Settings is open would
+    // otherwise keep whatever panel it was opened on. Push the requested
+    // destination into the live instance first; the dialog watches it.
+    if ((panel || settingId) && dialogStore.isDialogOpen(DIALOG_KEY)) {
+      dialogStore.updateDialog({
+        key: DIALOG_KEY,
+        contentProps: {
+          ...(panel ? { defaultPanel: panel } : {}),
+          ...(settingId ? { scrollToSettingId: settingId } : {})
+        }
+      })
+    }
     dialogStore.showDialog({
       key: DIALOG_KEY,
       component: settingDialogComponent,

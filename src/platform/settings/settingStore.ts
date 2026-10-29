@@ -181,6 +181,10 @@ export const useSettingStore = defineStore('setting', () => {
    * The store is updated before `onChange` runs so that handlers reading
    * this setting — including handlers of other settings this one cascades
    * into — observe the new value rather than the one it replaced.
+   *
+   * This does not persist. A caller that already has an acknowledged server
+   * write uses it to publish that value through the same local path `set()`
+   * takes; everyone else wants `set()`.
    */
   async function applySettingLocally<K extends keyof Settings>(
     key: K,
@@ -439,6 +443,7 @@ export const useSettingStore = defineStore('setting', () => {
     error,
     load,
     addSetting,
+    applySettingLocally,
     set,
     setMany,
     get,

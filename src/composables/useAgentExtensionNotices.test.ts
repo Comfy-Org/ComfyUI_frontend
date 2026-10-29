@@ -69,6 +69,28 @@ describe('useAgentExtensionNotices', () => {
     )
   })
 
+  it('announces nothing before settings arrive, with no late registration hold', async () => {
+    const extensionStore = useExtensionStore()
+    const settingStore = useSettingStore()
+    vi.spyOn(settingStore, 'set').mockResolvedValue()
+    vi.mocked(api.getSettings).mockResolvedValue({
+      'Comfy.Extension.SeenAgentExtensions': ['agent.tools.early']
+    } as Partial<Settings> as Settings)
+    extensionStore.registerExtension({ name: 'agent.tools.early' })
+
+    renderNotices()
+    await nextTick()
+
+    // Announcing here would use an empty seen history and re-announce an
+    // extension the user has already been told about.
+    expect(useToast().toasts).toEqual([])
+
+    await settingStore.load()
+    await nextTick()
+
+    expect(useToast().toasts).toEqual([])
+  })
+
   it('does not announce an extension already persisted as seen', async () => {
     const extensionStore = useExtensionStore()
     const settingStore = useSettingStore()
@@ -108,13 +130,10 @@ describe('useAgentExtensionNotices', () => {
   it('keeps the page open and reports an explicitly refused disable', async () => {
     const settingStore = useSettingStore()
     vi.mocked(api.getSettings).mockResolvedValue({} as Settings)
-    vi.mocked(api.storeSetting).mockImplementation((id) =>
-      Promise.resolve(
-        id === 'Comfy.Extension.Disabled'
-          ? new Response(null, { status: 403, statusText: 'Forbidden' })
-          : new Response()
-      )
-    )
+    vi.mocked(api.storeSetting).mockResolvedValue(new Response())
+    vi.when(api.storeSetting)
+      .calledWith('Comfy.Extension.Disabled', expect.anything())
+      .thenResolve(new Response(null, { status: 403, statusText: 'Forbidden' }))
     await settingStore.load()
     settingStore.settingValues['Comfy.Extension.SeenAgentExtensions'] = []
     const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
