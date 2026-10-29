@@ -354,6 +354,21 @@ function parseAdmissionError(error: unknown) {
   return { ...parsed.data.error, retryAfterSeconds: error.retryAfterSeconds }
 }
 
+function reportSendFailure(error: unknown): void {
+  reportError(error, {
+    surface: 'agent',
+    errorType: 'agent_send_message_failed',
+    tags:
+      error instanceof AgentApiError
+        ? {
+            status: error.status,
+            operation: error.operation,
+            retryAfterSeconds: error.retryAfterSeconds
+          }
+        : undefined
+  })
+}
+
 function disownsWorkflow(error: unknown): boolean {
   return (
     error instanceof AgentApiError &&
@@ -1045,10 +1060,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       `${i18n.global.t('agent.sendFailed')}: ${message}`
     )
     const turnAccepted = accepted || isUnreadableAckFailure(error)
-    reportError(error, {
-      surface: 'agent',
-      errorType: 'agent_send_message_failed'
-    })
+    reportSendFailure(error)
     trackAgentError(
       'request_failed',
       turnAccepted ? 'post_acceptance' : 'pre_acceptance',
