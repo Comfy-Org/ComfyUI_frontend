@@ -5551,11 +5551,11 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(body.draft).toEqual(draftSnapshot)
   })
 
-  // Once a workflow has been bound this session (turn 1's ack), a still-
-  // unbound tab must NOT keep re-minting: the second turn falls back to
-  // today's pre-existing behaviour (no signal at all) rather than asking
-  // the server to mint yet another empty workflow every turn.
-  it('(h10) a second turn on a still-unbound tab does not re-flag it as unbound', async () => {
+  // Turn 1's ack named a workflow this tab never adopted, so the session is
+  // bound to a workflow that is not the selected tab's. Falling back to it
+  // would hand the agent a graph the user is not looking at; the turn must
+  // say again that the selected tab is unbound and seed the mint from it.
+  it('(h10) a second turn on a still-unbound tab is flagged unbound again with its draft', async () => {
     const postMessage = vi
       .fn<AgentRestClient['postMessage']>()
       .mockResolvedValueOnce({
@@ -5566,16 +5566,76 @@ describe('useAgentSession (v1 composition root)', () => {
       .mockResolvedValueOnce({
         thread_id: 'th-9',
         message_id: 'msg-2',
-        workflow_id: 'wf-fresh'
+        workflow_id: 'wf-fresh-2'
       })
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
+    const draftSnapshot = { content: { nodes: [], links: [] } }
     const session = useAgentSession({
       rest,
       events: source,
       workflow: {
         current: () => ({ tabPath: 'workflows/scratch.json' }),
         adopted: vi.fn(),
+        draft: () => draftSnapshot
+      }
+    })
+    session.start()
+
+    await session.sendMessage('add a text input node')
+    await session.sendMessage('and a load image node')
+
+    expect(postMessage.mock.calls[0][1].currentTabUnbound).toBe(true)
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('workflowId')
+    expect(postMessage.mock.calls[1][1].currentTabUnbound).toBe(true)
+    expect(postMessage.mock.calls[1][1].draft).toEqual(draftSnapshot)
+  })
+
+  // Without a canvas to seed it, a re-asserted flag would mint an empty
+  // workflow, so a continuing turn with no draft keeps the thread fallback.
+  it('(h10b) a second turn on a still-unbound tab with no draft is not re-flagged', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-9',
+      message_id: 'msg-1',
+      workflow_id: 'wf-fresh'
+    }))
+    let draft: DraftSnapshot | undefined = { content: { nodes: [], links: [] } }
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        adopted: vi.fn(),
+        draft: () => draft
+      }
+    })
+    session.start()
+
+    await session.sendMessage('add a text input node')
+    draft = undefined
+    await session.sendMessage('and a load image node')
+
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('draft')
+  })
+
+  // When the session's workflow is bound to the selected tab itself, the
+  // tab is not unbound and must not ask the server for another mint.
+  it('(h10c) a turn is not flagged unbound while the bound workflow belongs to the selected tab', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-9',
+      message_id: 'msg-1',
+      workflow_id: 'wf-fresh'
+    }))
+    const bindingStore = useAgentWorkflowTabBindingStore()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        adopted: (workflowId, sent) => {
+          if (sent) bindingStore.bind(workflowId, sent.tabPath)
+        },
         draft: () => ({ content: { nodes: [], links: [] } })
       }
     })
@@ -5623,21 +5683,17 @@ describe('useAgentSession (v1 composition root)', () => {
     content: { nodes: LINKED_DRAFT.content.nodes, links: [] }
   }
 
-  it('(h11) a second turn on a still-unbound tab sends no canvas at all (PM-1410)', async () => {
-    let draft = LINKED_DRAFT
-    const { session, postMessage } = unboundSecondTurnSession(() => draft)
+  it('(h11) the first turn on a still-unbound tab carries the linked canvas (PM-1410)', async () => {
+    const { session, postMessage } = unboundSecondTurnSession(
+      () => LINKED_DRAFT
+    )
 
     await session.sendMessage('what is connected here?')
+
     expect(postMessage.mock.calls[0][1].draft).toEqual(LINKED_DRAFT)
-
-    draft = SEVERED_DRAFT
-    await session.sendMessage('is it still connected?')
-
-    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('draft')
-    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('workflowId')
   })
 
-  it.fails('(h12) a second turn on a still-unbound tab carries the connection the user severed (PM-1410)', async () => {
+  it('(h12) a second turn on a still-unbound tab carries the connection the user severed (PM-1410)', async () => {
     let draft = LINKED_DRAFT
     const { session, postMessage } = unboundSecondTurnSession(() => draft)
 
