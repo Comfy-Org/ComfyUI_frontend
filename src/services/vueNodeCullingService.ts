@@ -25,7 +25,6 @@ export function isNodeTypeExcludedFromCulling(nodeType: string): boolean {
   return excludedNodeTypeCounts.has(nodeType)
 }
 
-/** Bumps on every registration change; watch it to re-evaluate exclusions. */
 export function getCullingOptOutVersion(): number {
   return nodeTypeCullingOptOutVersion.value
 }

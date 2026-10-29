@@ -98,9 +98,6 @@ describe('useViewportKeepAlivePins', () => {
       connector.events.dispatch('reset', true)
       await nextTick()
 
-      // Every pin is transient by construction, so with all three released the
-      // set is empty. Selection is deliberately not a pin: it is the one input
-      // that can be graph-sized, and a detached node keeps its selection state.
       expect(pinnedNodeIds.value).toEqual(new Set())
     } finally {
       scope.stop()

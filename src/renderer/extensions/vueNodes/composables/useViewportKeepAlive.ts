@@ -18,27 +18,13 @@ const VIEWPORT_MARGIN_RATIO = 0.5
 const MAX_MARGIN_GRAPH_UNITS = 2000
 const REFRESH_THROTTLE_MS = 100
 
-interface Size {
-  width: number
-  height: number
-}
-
-interface Camera {
-  x: number
-  y: number
-  z: number
-}
+type Size = Pick<Bounds, 'width' | 'height'>
+type Camera = ReturnType<typeof useTransformState>['camera']
 
 interface UseViewportKeepAliveOptions {
   nodeIds: ComputedRef<NodeId[]>
   getNodeType: (nodeId: NodeId) => string | undefined
   pinnedNodeIds: ComputedRef<ReadonlySet<NodeId>>
-  /**
-   * Support escape hatch. A getter so the composable has a reactive dependency
-   * on it: read inside plain callbacks alone, turning it back on would not
-   * recompute the set, and turning it off would leave whatever was last
-   * computed in place rather than attaching everything.
-   */
   isEnabled?: () => boolean
   getNodeBounds: (nodeId: NodeId) => Bounds | null
   getViewportSize: () => Size
@@ -143,23 +129,17 @@ export function useViewportKeepAlive({
 
   const refreshThrottled = useThrottleFn(refresh, REFRESH_THROTTLE_MS, true)
 
-  watch(nodeIds, refresh, { immediate: true })
+  watch([nodeIds, isEnabled], refresh, { immediate: true })
   watch(
-    () => [camera.x, camera.y, camera.z],
+    [
+      () => [camera.x, camera.y, camera.z],
+      getViewportSize,
+      pinnedNodeIds,
+      getCullingOptOutVersion,
+      getGeometryVersion
+    ],
     () => void refreshThrottled()
   )
-  watch(
-    () => {
-      const viewport = getViewportSize()
-      return [viewport.width, viewport.height]
-    },
-    () => void refreshThrottled()
-  )
-  watch(pinnedNodeIds, () => void refreshThrottled())
-  watch(isEnabled, refresh)
-  watch(getCullingOptOutVersion, () => void refreshThrottled())
-
-  watch(getGeometryVersion, () => void refreshThrottled())
 
   return { activeNodeIds }
 }
