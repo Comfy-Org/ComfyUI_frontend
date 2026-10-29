@@ -779,6 +779,7 @@ export type AgentConsentDropReason =
 export type AgentCoachReleaseReason =
   | 'finished'
   | 'skipped'
+  | 'elsewhere'
   | 'stalled'
   | 'deferred_app_mode'
   | 'deferred_tour_active'

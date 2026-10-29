@@ -36,7 +36,7 @@ const { steps, storageKey, holdNotice } = defineProps<{
   holdNotice?: string
 }>()
 const emit = defineEmits<{
-  finished: [action: 'finish' | 'skip']
+  finished: [action: 'finish' | 'skip' | 'elsewhere']
   stalled: []
 }>()
 
@@ -129,7 +129,7 @@ function onSkip(): void {
 
 const completed = computed(() => !active.value && !!step.value)
 watch(completed, (isCompleted) => {
-  if (isCompleted && !finishedHere) emit('finished', 'finish')
+  if (isCompleted && !finishedHere) emit('finished', 'elsewhere')
   finishedHere = false
 })
 

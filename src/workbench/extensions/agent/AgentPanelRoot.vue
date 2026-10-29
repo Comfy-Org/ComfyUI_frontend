@@ -21,6 +21,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
+  AgentCoachReleaseReason,
   AgentErrorMetadata,
   AgentMessageSentMetadata,
   AgentPaywallSurface,
@@ -707,10 +708,16 @@ function releaseCoachCompletionWaiters(
   for (const resolve of coachCompletionWaiters) resolve(proceed)
   coachCompletionWaiters.clear()
 }
-function onCoachFinished(action: 'finish' | 'skip'): void {
+const coachReleaseReasons = {
+  finish: 'finished',
+  skip: 'skipped',
+  elsewhere: 'elsewhere'
+} as const satisfies Record<string, AgentCoachReleaseReason>
+
+function onCoachFinished(action: keyof typeof coachReleaseReasons): void {
   releaseCoachCompletionWaiters({
     outcome: 'released',
-    reason: action === 'skip' ? 'skipped' : 'finished'
+    reason: coachReleaseReasons[action]
   })
 }
 watch(
