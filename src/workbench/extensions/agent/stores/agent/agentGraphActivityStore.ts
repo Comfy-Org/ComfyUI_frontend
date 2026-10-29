@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import type { RootGraphId } from '@/types/graphScopeId'
-import type { NodeId } from '@/types/nodeId'
+import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 

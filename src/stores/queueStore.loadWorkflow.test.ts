@@ -5,7 +5,7 @@ import type {
   JobDetail,
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { provideExtensionService } from '@/services/extensionServiceAccess'
 import * as jobOutputCache from '@/services/jobOutputCache'

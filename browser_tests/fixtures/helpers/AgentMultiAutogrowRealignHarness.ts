@@ -7,13 +7,13 @@ import type { PromptResponse } from '@/platform/remote/comfyui/types'
 import type {
   ComfyApiWorkflow,
   WorkflowJSON04
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import {
   zComfyApiWorkflow,
   zComfyWorkflow
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/workflowSchema'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   AgentMessages,
   AgentRunModePreference,

@@ -2,6 +2,7 @@
 import {
   computed,
   defineAsyncComponent,
+  markRaw,
   onBeforeUnmount,
   ref,
   watch
@@ -9,7 +10,9 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
-import Button from '@/components/ui/button/Button.vue'
+import type { ModelThumbnailResult } from '@/extensions/core/load3d/components/modelThumbnail'
+import { generateModelThumbnail } from '@/extensions/core/load3d/components/modelThumbnail'
+import Button from '@comfyorg/design-system/button/Button'
 import {
   findOutputAsset,
   findServerPreviewUrl,
@@ -18,9 +21,17 @@ import {
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
-import { replyAssetResultItem } from '@/workbench/extensions/agent/utils/replyAssets'
-import ReplyAudioCard from './ReplyAudioCard.vue'
+import type {
+  ReplyAsset,
+  ReplyVisualAsset as ReplyVisualAssetData
+} from '@/workbench/extensions/agent/utils/replyAssets'
+import {
+  isReplyAudioAsset,
+  isReplyVisualAsset,
+  replyAssetResultItem
+} from '@/workbench/extensions/agent/utils/replyAssets'
+import ReplyAudioAssetGroup from './ReplyAudioAssetGroup.vue'
+import ReplyVisualAsset from './ReplyVisualAsset.vue'
 
 const { assets } = defineProps<{ assets: ReplyAsset[] }>()
 
@@ -29,8 +40,8 @@ const { t } = useI18n()
 /* Three rows of the four-column grid, per DES-530. */
 const COLLAPSED_COUNT = 12
 
-const visual = computed(() => assets.filter((asset) => asset.kind !== 'audio'))
-const audio = computed(() => assets.filter((asset) => asset.kind === 'audio'))
+const visual = computed(() => assets.filter(isReplyVisualAsset))
+const audio = computed(() => assets.filter(isReplyAudioAsset))
 
 const expanded = ref(false)
 const collapsible = computed(() => visual.value.length > COLLAPSED_COUNT)
@@ -69,79 +80,269 @@ const galleryItems = computed(() =>
   galleryAssets.value.map(replyAssetResultItem)
 )
 const galleryIndex = ref(-1)
+const autoplayGalleryVideo = ref(false)
 
-const modelThumbnails = ref<Record<string, string>>({})
-const assetNames = ref<Record<string, string>>({})
-const thumbnailAbortController = new AbortController()
-const thumbnailRetryTimers = new Set<ReturnType<typeof setTimeout>>()
+// Preserve controller identity inside Vue's deeply reactive state record.
+type ThumbnailState =
+  | {
+      phase: 'loading'
+      controller: AbortController
+      attempts: number
+      busyAttempts: number
+    }
+  | {
+      phase: 'retryPending'
+      timeout: ReturnType<typeof setTimeout>
+      attempts: number
+      busyAttempts: number
+    }
+  | { phase: 'paused'; attempts: number; busyAttempts: number }
+  | { phase: 'ready'; src: string }
+  | { phase: 'gaveUp' }
+
+type ThumbnailLoadOptions = {
+  attempts?: number
+  busyAttempts?: number
+  checkServerPreview?: boolean
+  generateOnPreviewMiss?: boolean
+}
+
+type ActiveThumbnailLoad = {
+  url: string
+  filename: string
+  controller: AbortController
+  attempts: number
+  busyAttempts: number
+  generateOnPreviewMiss: boolean
+}
+
+const MAX_THUMBNAIL_RETRIES = 2
 const THUMBNAIL_RETRY_DELAY_MS = 2000
-const THUMBNAIL_MAX_ATTEMPTS = 30
+const MAX_THUMBNAIL_BUSY_RETRIES = 9
+const MAX_THUMBNAIL_BUSY_DELAY_MS = 8 * 60_000
+
+const thumbnailState = ref<Record<string, ThumbnailState>>({})
+const assetNames = ref<Record<string, string>>({})
+let mounted = true
+
+function cancelThumbnailState(state: ThumbnailState | undefined): void {
+  if (state?.phase === 'loading') {
+    state.controller.abort()
+  } else if (state?.phase === 'retryPending') {
+    clearTimeout(state.timeout)
+  }
+}
 
 onBeforeUnmount(() => {
-  thumbnailAbortController.abort()
-  for (const timer of thumbnailRetryTimers) clearTimeout(timer)
-  thumbnailRetryTimers.clear()
+  mounted = false
+  for (const state of Object.values(thumbnailState.value)) {
+    cancelThumbnailState(state)
+  }
 })
 
-async function generateOffscreenModelThumbnail(
+/**
+ * Whether an offscreen render can resolve `url` at all. The Load3D loader
+ * resolves model data through the `filename` query, so a URL without one is
+ * terminally unrenderable rather than transiently failing — retrying it would
+ * spend the whole budget on work that cannot succeed.
+ */
+function canRenderOffscreen(url: string): boolean {
+  return new URL(url, window.location.origin).searchParams.has('filename')
+}
+
+/** Whether `url`'s current entry is still the `loading` strand owned by `controller`. */
+function owns(url: string, controller: AbortController): boolean {
+  const state = thumbnailState.value[url]
+  return state?.phase === 'loading' && state.controller === controller
+}
+
+function loadModelThumbnail(
   url: string,
   filename: string,
-  attempt = 1
-): Promise<void> {
-  const { generateModelThumbnail } =
-    await import('@/extensions/core/load3d/components/modelThumbnail')
-  const generated = await generateModelThumbnail(
-    url,
-    filename,
-    thumbnailAbortController.signal
-  )
-  if (generated.status === 'rendered') {
-    modelThumbnails.value[url] = generated.dataUrl
-    return
+  {
+    attempts = 0,
+    busyAttempts = 0,
+    checkServerPreview = true,
+    generateOnPreviewMiss = true
+  }: ThumbnailLoadOptions = {}
+): void {
+  const controller = markRaw(new AbortController())
+  thumbnailState.value[url] = {
+    phase: 'loading',
+    controller,
+    attempts,
+    busyAttempts
   }
-  if (
-    generated.status !== 'busy' ||
-    thumbnailAbortController.signal.aborted ||
-    attempt >= THUMBNAIL_MAX_ATTEMPTS
-  ) {
-    return
-  }
-  const timer = setTimeout(() => {
-    thumbnailRetryTimers.delete(timer)
-    void generateOffscreenModelThumbnail(url, filename, attempt + 1).catch(
-      () => {}
+
+  const previewLookup = checkServerPreview
+    ? findServerPreviewUrl(filename)
+    : Promise.resolve(null)
+  void previewLookup
+    .then((preview) =>
+      handlePreviewLookup(
+        {
+          url,
+          filename,
+          controller,
+          attempts,
+          busyAttempts,
+          generateOnPreviewMiss
+        },
+        preview
+      )
     )
-  }, THUMBNAIL_RETRY_DELAY_MS)
-  thumbnailRetryTimers.add(timer)
+    .catch(() => {
+      if (!mounted || !owns(url, controller)) return
+      scheduleThumbnailRetry(url, filename, attempts, busyAttempts)
+    })
+}
+
+async function handlePreviewLookup(
+  load: ActiveThumbnailLoad,
+  preview: string | null
+): Promise<void> {
+  const { url, filename, controller, attempts, busyAttempts } = load
+  if (!mounted || !owns(url, controller)) return
+  if (preview) {
+    thumbnailState.value[url] = { phase: 'ready', src: preview }
+    return
+  }
+  if (!load.generateOnPreviewMiss) {
+    scheduleThumbnailLoad(url, filename, {
+      attempts,
+      busyAttempts,
+      delay: THUMBNAIL_RETRY_DELAY_MS
+    })
+    return
+  }
+  if (!canRenderOffscreen(url)) {
+    thumbnailState.value[url] = { phase: 'gaveUp' }
+    return
+  }
+  const result = await generateModelThumbnail(url, filename, controller.signal)
+  if (!mounted || !owns(url, controller)) return
+  publishThumbnailResult(load, result)
+}
+
+function publishThumbnailResult(
+  load: ActiveThumbnailLoad,
+  result: ModelThumbnailResult
+): void {
+  const { url, filename, attempts, busyAttempts } = load
+  if (result.status === 'rendered') {
+    thumbnailState.value[url] = { phase: 'ready', src: result.dataUrl }
+  } else if (result.status === 'failed' || result.status === 'busy') {
+    scheduleThumbnailRetry(url, filename, attempts, busyAttempts, result.status)
+  } else {
+    thumbnailState.value[url] = { phase: 'gaveUp' }
+  }
+}
+
+function scheduleThumbnailLoad(
+  url: string,
+  filename: string,
+  {
+    attempts,
+    busyAttempts,
+    delay,
+    checkServerPreview = true
+  }: {
+    attempts: number
+    busyAttempts: number
+    delay: number
+    checkServerPreview?: boolean
+  }
+): void {
+  const timeout = setTimeout(() => {
+    if (!mounted) return
+    loadModelThumbnail(url, filename, {
+      attempts,
+      busyAttempts,
+      checkServerPreview
+    })
+  }, delay)
+  thumbnailState.value[url] = {
+    phase: 'retryPending',
+    timeout: markRaw(timeout),
+    attempts,
+    busyAttempts
+  }
+}
+
+function scheduleThumbnailRetry(
+  url: string,
+  filename: string,
+  attempts: number,
+  busyAttempts = 0,
+  status: 'failed' | 'busy' = 'failed'
+): void {
+  if (
+    (status === 'failed' && attempts >= MAX_THUMBNAIL_RETRIES) ||
+    (status === 'busy' && busyAttempts >= MAX_THUMBNAIL_BUSY_RETRIES)
+  ) {
+    thumbnailState.value[url] = { phase: 'gaveUp' }
+    return
+  }
+  const nextAttempts = status === 'failed' ? attempts + 1 : attempts
+  const nextBusyAttempts = status === 'busy' ? busyAttempts + 1 : busyAttempts
+  const delay =
+    status === 'busy'
+      ? Math.min(
+          THUMBNAIL_RETRY_DELAY_MS * 2 ** busyAttempts,
+          MAX_THUMBNAIL_BUSY_DELAY_MS
+        )
+      : THUMBNAIL_RETRY_DELAY_MS
+  scheduleThumbnailLoad(url, filename, {
+    attempts: nextAttempts,
+    busyAttempts: nextBusyAttempts,
+    delay,
+    checkServerPreview: status !== 'busy'
+  })
+}
+
+function hideThumbnail(url: string): void {
+  const state = thumbnailState.value[url]
+  if (state?.phase === 'ready' || state?.phase === 'gaveUp') return
+  cancelThumbnailState(state)
+  thumbnailState.value[url] = {
+    phase: 'paused',
+    attempts: state && 'attempts' in state ? state.attempts : 0,
+    busyAttempts: state && 'busyAttempts' in state ? state.busyAttempts : 0
+  }
+}
+
+function showThumbnail(url: string, filename: string): void {
+  const state = thumbnailState.value[url]
+  if (!state) loadModelThumbnail(url, filename)
+  else if (state.phase === 'paused') {
+    loadModelThumbnail(url, filename, {
+      attempts: state.attempts,
+      busyAttempts: state.busyAttempts
+    })
+  }
 }
 
 watch(
-  () => assets.filter((asset) => asset.kind === '3D' || asset.kind === 'audio'),
+  () => [
+    ...visibleVisual.value.filter((asset) => asset.kind === '3D'),
+    ...visibleAudio.value
+  ],
   (lookups) => {
     if (!isAssetPreviewSupported()) return
-    for (const { url, filename, kind } of lookups) {
-      if (kind === '3D' && !(url in modelThumbnails.value)) {
-        modelThumbnails.value[url] = ''
-        void findServerPreviewUrl(filename)
-          .then(async (preview) => {
-            if (preview) {
-              modelThumbnails.value[url] = preview
-              return
-            }
-            if (
-              !new URL(url, window.location.origin).searchParams.has('filename')
-            ) {
-              return
-            }
-            await generateOffscreenModelThumbnail(url, filename)
-          })
-          .catch(() => {})
-      }
+    const visible3D = lookups.filter((asset) => asset.kind === '3D')
+    const visibleUrls = new Set(visible3D.map((asset) => asset.url))
+    for (const url of Object.keys(thumbnailState.value)) {
+      if (!visibleUrls.has(url)) hideThumbnail(url)
+    }
+    for (const { url, filename } of visible3D) {
+      showThumbnail(url, filename)
+    }
+    for (const { url, filename } of lookups) {
       if (!(url in assetNames.value)) {
         assetNames.value[url] = ''
         void findOutputAsset(filename)
           .then((record) => {
-            if (record?.name) assetNames.value[url] = record.name
+            if (mounted && record?.name) assetNames.value[url] = record.name
           })
           .catch(() => {})
       }
@@ -157,18 +358,21 @@ const MediaLightbox = defineAsyncComponent(
   () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
 )
 
-function refreshModelThumbnail(asset: ReplyAsset, retry = true): void {
-  if (!isAssetPreviewSupported() || modelThumbnails.value[asset.url]) return
-  void findServerPreviewUrl(asset.filename).then((preview) => {
-    if (preview) {
-      modelThumbnails.value[asset.url] = preview
-    } else if (retry) {
-      setTimeout(() => refreshModelThumbnail(asset, false), 2000)
-    }
+function refreshModelThumbnail(asset: ReplyAsset): void {
+  const state = thumbnailState.value[asset.url]
+  if (!mounted || !isAssetPreviewSupported() || state?.phase === 'ready') return
+  cancelThumbnailState(state)
+  loadModelThumbnail(asset.url, asset.filename, {
+    generateOnPreviewMiss: false
   })
 }
 
-function inspect(asset: ReplyAsset): void {
+function modelThumbnailSrc(url: string): string {
+  const state = thumbnailState.value[url]
+  return state?.phase === 'ready' ? state.src : ''
+}
+
+function inspect(asset: ReplyVisualAssetData): void {
   if (asset.kind === '3D') {
     useDialogStore().showDialog({
       key: 'asset-3d-viewer',
@@ -182,88 +386,22 @@ function inspect(asset: ReplyAsset): void {
     })
     return
   }
+  autoplayGalleryVideo.value = asset.kind === 'video'
   galleryIndex.value = galleryAssets.value.indexOf(asset)
-}
-
-function playPreview(event: Event): void {
-  const video = event.target
-  if (video instanceof HTMLVideoElement) void video.play().catch(() => {})
-}
-
-function stopPreview(event: Event): void {
-  const video = event.target
-  if (video instanceof HTMLVideoElement) video.pause()
 }
 </script>
 
 <template>
   <div data-testid="reply-asset-group" class="my-4 flex flex-col gap-2">
     <div v-if="visibleVisual.length" :class="cn('grid gap-1', gridColsClass)">
-      <button
+      <ReplyVisualAsset
         v-for="asset in visibleVisual"
         :key="asset.url"
-        type="button"
-        :aria-label="asset.label ?? asset.filename"
-        :class="
-          cn(
-            'relative cursor-pointer overflow-hidden rounded-lg border-none p-0',
-            multi && 'aspect-square bg-accent',
-            !multi && asset.kind === '3D' && 'justify-self-end'
-          )
-        "
-        @click="inspect(asset)"
-      >
-        <img
-          v-if="asset.kind === 'image'"
-          :src="asset.url"
-          :alt="asset.label ?? asset.filename"
-          data-testid="reply-image-preview"
-          loading="lazy"
-          :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
-        />
-        <video
-          v-else-if="asset.kind === 'video'"
-          :src="asset.url"
-          data-testid="reply-video-preview"
-          muted
-          loop
-          playsinline
-          preload="metadata"
-          :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
-          @mouseenter="playPreview"
-          @mouseleave="stopPreview"
-        />
-        <img
-          v-else-if="modelThumbnails[asset.url]"
-          :src="modelThumbnails[asset.url]"
-          :alt="asset.label ?? asset.filename"
-          loading="lazy"
-          :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
-        />
-        <span
-          v-else
-          :class="
-            cn(
-              'flex items-center justify-center',
-              multi ? 'size-full' : 'aspect-square w-40 bg-accent'
-            )
-          "
-        >
-          <span class="icon-[lucide--box] size-6 text-muted-foreground" />
-        </span>
-        <span
-          v-if="asset.kind === 'video'"
-          data-testid="reply-video-affordance"
-          aria-hidden="true"
-          class="pointer-events-none absolute inset-0 flex items-center justify-center"
-        >
-          <span
-            class="flex size-9 items-center justify-center rounded-full bg-black/60 text-white shadow-sm backdrop-blur-sm"
-          >
-            <span class="icon-[lucide--play] size-4 fill-current" />
-          </span>
-        </span>
-      </button>
+        :asset
+        :multi
+        :model-thumbnail-src="modelThumbnailSrc(asset.url)"
+        @inspect="inspect(asset)"
+      />
     </div>
 
     <Button
@@ -275,44 +413,28 @@ function stopPreview(event: Event): void {
       @click="expanded = !expanded"
     >
       {{ expanded ? t('agent.showLess') : t('agent.showMore') }}
-      <span
+      <i
+        aria-hidden="true"
         :class="
           cn('icon-[lucide--chevron-down] size-3', expanded && 'rotate-180')
         "
       />
     </Button>
 
-    <div v-if="audio.length" class="flex flex-col gap-1">
-      <ReplyAudioCard
-        v-for="asset in visibleAudio"
-        :key="asset.url"
-        :asset
-        :title="assetNames[asset.url] || asset.label || asset.filename"
-      />
-      <Button
-        v-if="audioCollapsible"
-        type="button"
-        variant="outline"
-        size="sm"
-        class="self-center rounded-full"
-        @click="audioExpanded = !audioExpanded"
-      >
-        {{ audioExpanded ? t('agent.showLess') : t('agent.showMore') }}
-        <span
-          :class="
-            cn(
-              'icon-[lucide--chevron-down] size-3',
-              audioExpanded && 'rotate-180'
-            )
-          "
-        />
-      </Button>
-    </div>
+    <ReplyAudioAssetGroup
+      v-if="audio.length"
+      :assets="visibleAudio"
+      :asset-names
+      :collapsible="audioCollapsible"
+      :expanded="audioExpanded"
+      @toggle="audioExpanded = !audioExpanded"
+    />
 
     <MediaLightbox
       v-if="galleryIndex !== -1"
       :all-gallery-items="galleryItems"
       :active-index="galleryIndex"
+      :autoplay-video="autoplayGalleryVideo"
       @update:active-index="galleryIndex = $event"
     />
   </div>
