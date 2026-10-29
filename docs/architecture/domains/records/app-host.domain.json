@@ -130,6 +130,7 @@
     "canvas-renderer",
     "error-reporting",
     "graph-layout",
+    "keybindings",
     "telemetry",
     "vue-node-renderer"
   ],

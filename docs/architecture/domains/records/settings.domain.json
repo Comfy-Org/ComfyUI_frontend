@@ -145,6 +145,7 @@
     "account",
     "authentication",
     "dialog-host",
+    "keybindings",
     "telemetry"
   ],
   "allowedConsumers": ["vue-node-renderer"],

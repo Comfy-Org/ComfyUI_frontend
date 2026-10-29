@@ -48,6 +48,9 @@
     },
     {
       "path": "./packages/telemetry/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/keybindings/tsconfig.declarations.json"
     }
   ]
 }

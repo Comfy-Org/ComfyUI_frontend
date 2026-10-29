@@ -179,7 +179,7 @@
   "publicEntryPoints": [
     "src/renderer/core/canvas/litegraph/slotCalculations.ts"
   ],
-  "allowedDependencies": [],
+  "allowedDependencies": ["keybindings"],
   "allowedConsumers": ["app-host", "selection-toolbox"],
   "characterizationScenarios": [
     {

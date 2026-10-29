@@ -137,7 +137,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["error-reporting", "telemetry"],
+  "allowedDependencies": ["error-reporting", "keybindings", "telemetry"],
   "allowedConsumers": ["agent", "execution"],
   "characterizationScenarios": [
     {
