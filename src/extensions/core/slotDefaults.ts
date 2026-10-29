@@ -92,7 +92,7 @@ function registerSlotTypes(
   }
 }
 
-export const slotDefaultsExtension: ComfyExtension = {
+export const slotDefaultsExtension: SlotDefaultsExtension = {
   name: 'Comfy.SlotDefaults',
   suggestionsNumber: null,
   init(this: SlotDefaultsExtension) {
@@ -122,19 +122,26 @@ export const slotDefaultsExtension: ComfyExtension = {
     pendingIdleFill ??= runWhenGlobalIdle(() => LiteGraph.flushSlotTypeTables())
   },
   setDefaults(this: SlotDefaultsExtension, maxNum?: number | null) {
-    LiteGraph.slot_types_default_out = {}
-    LiteGraph.slot_types_default_in = {}
+    try {
+      LiteGraph.flushSlotTypeTables()
+      const max = maxNum ?? undefined
+      const nextOut: typeof LiteGraph.slot_types_default_out = {}
+      const nextIn: typeof LiteGraph.slot_types_default_in = {}
 
-    const max = maxNum ?? undefined
-    for (const type in this.slot_types_default_out) {
-      LiteGraph.slot_types_default_out[type] = this.slot_types_default_out[
-        type
-      ].slice(0, max)
-    }
-    for (const type in this.slot_types_default_in) {
-      LiteGraph.slot_types_default_in[type] = this.slot_types_default_in[
-        type
-      ].slice(0, max)
+      for (const type in this.slot_types_default_out) {
+        nextOut[type] = this.slot_types_default_out[type].slice(0, max)
+      }
+      for (const type in this.slot_types_default_in) {
+        nextIn[type] = this.slot_types_default_in[type].slice(0, max)
+      }
+
+      LiteGraph.slot_types_default_out = nextOut
+      LiteGraph.slot_types_default_in = nextIn
+    } catch (cause) {
+      reportError(cause, {
+        errorType: 'error_setting_slot_defaults',
+        surface: 'graph'
+      })
     }
   }
 }

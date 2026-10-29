@@ -92,6 +92,24 @@ describe('Comfy.SlotDefaults', () => {
     expect(LiteGraph.slot_types_default_out).toEqual({ IMAGE: ['MyNode'] })
   })
 
+  it('includes queued node defs when defaults are set before the idle fill', async () => {
+    respondToFetch(/\/object_info$/, () =>
+      Response.json({
+        PreviewImage: objectInfoEntry('PreviewImage', ['IMAGE', {}])
+      })
+    )
+    const defs = await app.getNodeDefs()
+    await slotDefaultsExtension.beforeRegisterNodeDef?.(
+      LGraphNode,
+      defs.PreviewImage,
+      app
+    )
+
+    slotDefaultsExtension.setDefaults()
+
+    expect(LiteGraph.slot_types_default_out.IMAGE).toContain('PreviewImage')
+  })
+
   it('lists a node constructed before the deferred fill only once', async () => {
     respondToFetch(/\/object_info$/, () =>
       Response.json({
@@ -117,11 +135,11 @@ describe('Comfy.SlotDefaults', () => {
     expect(LiteGraph.registered_slot_in_types.image.nodes).toEqual(['TestNode'])
   })
 
-  it('reports a def whose output is not an array without failing the hook', async () => {
+  it('skips a def output that is not an array without failing the hook', async () => {
     respondToFetch(/\/object_info$/, () =>
       Response.json({
         BadOutput: {
-          ...(objectInfoEntry('BadOutput', null) as object),
+          ...(objectInfoEntry('BadOutput', ['IMAGE', {}]) as object),
           output: 7
         }
       })
@@ -135,5 +153,60 @@ describe('Comfy.SlotDefaults', () => {
         app
       )
     ).not.toThrow()
+
+    LiteGraph.flushSlotTypeTables()
+    expect(LiteGraph.slot_types_default_out.IMAGE).toContain('BadOutput')
+    expect(LiteGraph.slot_types_out).not.toContain('7')
+    expect(LiteGraph.registered_slot_out_types).toEqual({})
+  })
+
+  it('reports a defaults failure without blocking a table replacement', async () => {
+    respondToFetch(/\/object_info$/, () =>
+      Response.json({
+        PreviewImage: objectInfoEntry('PreviewImage', ['IMAGE', {}])
+      })
+    )
+    const defs = await app.getNodeDefs()
+    LiteGraph.slot_types_default_in = { MASK: ['ExistingNode'] }
+    await slotDefaultsExtension.beforeRegisterNodeDef?.(
+      LGraphNode,
+      defs.PreviewImage,
+      app
+    )
+    Object.defineProperty(slotDefaultsExtension.slot_types_default_out, 'BAD', {
+      value: null,
+      enumerable: true
+    })
+    const setDefaults = vi.spyOn(slotDefaultsExtension, 'setDefaults')
+
+    LiteGraph.slot_types_default_out = { IMAGE: ['MyNode'] }
+
+    expect(LiteGraph.slot_types_default_out).toEqual({ IMAGE: ['MyNode'] })
+    expect(LiteGraph.slot_types_default_in).toEqual({
+      MASK: ['ExistingNode']
+    })
+    expect(setDefaults).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(TypeError),
+      expect.objectContaining({ errorType: 'error_setting_slot_defaults' })
+    )
+  })
+
+  it('contains a defaults failure from a direct settings update', () => {
+    LiteGraph.slot_types_default_out = { IMAGE: ['ExistingNode'] }
+    Object.defineProperty(slotDefaultsExtension.slot_types_default_out, 'BAD', {
+      value: null,
+      enumerable: true
+    })
+
+    expect(() => slotDefaultsExtension.setDefaults(5)).not.toThrow()
+
+    expect(LiteGraph.slot_types_default_out).toEqual({
+      IMAGE: ['ExistingNode']
+    })
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(TypeError),
+      expect.objectContaining({ errorType: 'error_setting_slot_defaults' })
+    )
   })
 })
