@@ -27,6 +27,7 @@ import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 import { SubgraphSlot } from './SubgraphSlotBase'
+import { listableNames } from './listInputs'
 import { isNodeSlot, isSubgraphOutput } from './subgraphTypeGuards'
 
 /**
@@ -65,6 +66,9 @@ export class SubgraphInput extends SubgraphSlot {
 
     // Allow nodes to block connection
     const inputIndex = node.inputs.indexOf(slot)
+    // A list feeds one dynamic input, with nothing connected after it
+    if (this.list && (this.linkIds.length || !listableNames(node, inputIndex)))
+      return
     if (
       node.onConnectInput?.(inputIndex, this.type, this, this.parent, -1) ===
       false

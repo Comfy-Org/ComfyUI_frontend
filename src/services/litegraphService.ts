@@ -1,5 +1,6 @@
 import { pick, zip } from 'es-toolkit/compat'
 
+import { syncListInputs } from '@/core/graph/subgraph/subgraphListInputs'
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
@@ -450,12 +451,16 @@ export const useLitegraphService = () => {
         subgraph.events.addEventListener('widget-demoted', () => {
           invalidateSubgraphPseudoWidgetCache(this)
         })
+        subgraph.events.addEventListener('input-list-changed', () =>
+          syncListInputs(this)
+        )
 
         setupStrokeStyles(this)
         addInputs(this, ComfyNode.nodeData.inputs)
         addOutputs(this, ComfyNode.nodeData.outputs)
         setInitialSize(this)
         this.serialize_widgets = true
+        syncListInputs(this)
         void extensionService.invokeExtensionsAsync('nodeCreated', this)
       }
 
@@ -530,6 +535,7 @@ export const useLitegraphService = () => {
         )
 
         super.configure(data)
+        syncListInputs(this)
       }
     }
 

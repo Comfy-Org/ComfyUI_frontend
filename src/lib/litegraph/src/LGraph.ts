@@ -167,6 +167,7 @@ import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import { provideSubgraphGuard } from './subgraph/subgraphTypeGuards'
+import { notifyListTargets } from './subgraph/listInputs'
 import {
   captureUnpackedTargetInput,
   findUnavailableSubgraphNodeType,
@@ -3615,6 +3616,18 @@ export class Subgraph
     this.inputNode.configure(data.inputNode)
     this.outputNode.configure(data.outputNode)
     for (const node of this.nodes) node.updateComputedDisabled()
+
+    // Inner nodes configure before the inputs, so a list's group learns now
+    for (const input of this.inputs)
+      if (input.list) notifyListTargets(this, input)
+  }
+
+  /** Makes `input` a list input, feeding a whole dynamic group, or single. */
+  setInputList(input: SubgraphInput, { list }: { list: boolean }): void {
+    if (!!input.list === list) return
+    input.list = list || undefined
+    notifyListTargets(this, input)
+    this.events.dispatch('input-list-changed', { input })
   }
 
   override configure(

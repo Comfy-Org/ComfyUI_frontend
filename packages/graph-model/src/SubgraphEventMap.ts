@@ -22,6 +22,10 @@ export interface SubgraphEventMap extends LGraphEventMap {
   'input-added': {
     input: SubgraphInput
   }
+  /** A subgraph input became a list input, or stopped being one. */
+  'input-list-changed': {
+    input: SubgraphInput
+  }
   'output-added': {
     output: SubgraphOutput
   }
