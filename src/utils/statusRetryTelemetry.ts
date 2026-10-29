@@ -24,6 +24,10 @@ export interface StatusRetrySettlement {
   readonly retryScheduled: boolean
 }
 
+function isSuccessfulStatus(status: number | undefined): boolean {
+  return status !== undefined && status >= 200 && status < 300
+}
+
 /** The outcome to record for a settled request, or `undefined` for none. */
 export function classifyStatusRetry({
   end,
@@ -44,13 +48,7 @@ export function classifyStatusRetry({
       return retryScheduled ? 'failed' : undefined
     case 'answered':
       if (!retryScheduled) return undefined
-      // Only a 2xx is a recovery. A 3xx the caller asked to see, and an opaque
-      // status of 0, say nothing about the backend having recovered.
-      return finalStatus !== undefined &&
-        finalStatus >= 200 &&
-        finalStatus < 300
-        ? 'recovered'
-        : 'failed'
+      return isSuccessfulStatus(finalStatus) ? 'recovered' : 'failed'
   }
 }
 
