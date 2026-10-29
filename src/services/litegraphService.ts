@@ -11,7 +11,10 @@ import {
   addWidgetPromotionOptions,
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
-import { applyDynamicInputs, syncListInputs } from '@/core/graph/widgets/dynamicWidgets'
+import {
+  applyDynamicInputs,
+  syncListInputs
+} from '@/core/graph/widgets/dynamicWidgets'
 import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
   LGraphCanvas,
