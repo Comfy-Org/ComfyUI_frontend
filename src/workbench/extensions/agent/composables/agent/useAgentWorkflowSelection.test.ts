@@ -369,11 +369,14 @@ describe('historical workflow restoration', () => {
     expect(panel.selectedWorkflow).toBeNull()
     expect(panel.targetUnavailable).toBe(false)
     expect(warnRestoreFailed).toHaveBeenCalledOnce()
-    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-      surface: 'agent',
-      errorType: 'agent_workflow_restore_failed',
-      context: { workflowId: 'wf-saved' }
-    })
+    expect(reportError).toHaveBeenCalledWith(
+      new Error('No saved workflow resolves to the chat target'),
+      {
+        surface: 'agent',
+        errorType: 'agent_workflow_restore_failed',
+        context: { workflowId: 'wf-saved' }
+      }
+    )
   })
 
   it.for([
@@ -422,7 +425,7 @@ describe('historical workflow restoration', () => {
     {
       opening: 'returns false',
       open: async () => false,
-      cause: expect.any(Error)
+      cause: new Error('The chat target workflow did not open')
     },
     {
       opening: 'throws',
