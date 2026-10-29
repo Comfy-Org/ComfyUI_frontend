@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import type {
   FailedSignIn,
+  LocalWebAuthBridge,
   LocalWebAuthEnvironment,
   LocalWebMessage,
   LocalWebPopup
@@ -850,30 +851,55 @@ describe('switchWorkspace', () => {
     expect(env.reportSignInFailure).not.toHaveBeenCalled()
   })
 
-  it('closes an open switch popup on sign-out so a new sign-in gets its own', async () => {
-    const { bridge, env, storage, popup, post } = await signedIn()
-    void bridge.switchWorkspace?.('ws-2')
-    await authorized(env)
+  function freshPopup() {
+    const popup = {
+      closed: false,
+      close() {
+        popup.closed = true
+      },
+      location: { href: 'about:blank' }
+    }
+    return popup
+  }
 
-    await bridge.signOut()
-    expect(popup.closed).toBe(true)
-    popup.closed = false
-    popup.location.href = 'about:blank'
-    const signingIn = bridge.requestSignIn()
-    expect(env.openPopup).toHaveBeenCalledTimes(2)
-    await authorized(env)
-    const { state } = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
-    post({
-      origin: ISSUER,
-      source: popup,
-      data: {
-        type: 'comfy-local-web-sign-in',
-        search: `?code=code-3&state=${encodeURIComponent(state)}`
-      }
-    })
+  it.for([
+    {
+      case: 'a switch consent popup is open',
+      start: (bridge: LocalWebAuthBridge) => bridge.switchWorkspace?.('ws-2')
+    },
+    {
+      case: 'a sign-in is still preparing its request',
+      start: (bridge: LocalWebAuthBridge) => bridge.requestSignIn()
+    }
+  ])(
+    'gives a sign-in after sign-out its own popup when $case',
+    async ({ start }) => {
+      const { bridge, env, storage, popup, post } = await signedIn()
+      const second = freshPopup()
+      env.openPopup.mockReturnValueOnce(popup).mockReturnValueOnce(second)
+      const canceled = start(bridge)
 
-    await expect(signingIn).resolves.toMatchObject({ status: 'signed_in' })
-  })
+      await bridge.signOut()
+      const signingIn = bridge.requestSignIn()
+      await vi.waitFor(() =>
+        expect(second.location.href).toContain('/oauth/authorize')
+      )
+      const { state } = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
+      post({
+        origin: ISSUER,
+        source: second,
+        data: {
+          type: 'comfy-local-web-sign-in',
+          search: `?code=code-3&state=${encodeURIComponent(state)}`
+        }
+      })
+
+      expect(popup.closed).toBe(true)
+      await expect(canceled).resolves.toEqual({ status: 'signed_out' })
+      await expect(signingIn).resolves.toMatchObject({ status: 'signed_in' })
+      expect(env.reportSignInFailure).not.toHaveBeenCalled()
+    }
+  )
 
   it('forgets every workspace on sign-out', async () => {
     const { bridge, env, tokens } = await signedInToBothWorkspaces()

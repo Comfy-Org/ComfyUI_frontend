@@ -110,7 +110,11 @@ export function createLocalWebAuthBridge(
   const listeners = new Set<(state: DesktopHostAuthState) => void>()
   let refreshing: Promise<OAuthTokens | undefined> | undefined
   let signingIn:
-    | { popup: LocalWebPopup; done: Promise<DesktopHostAuthState> }
+    | {
+        popup: LocalWebPopup
+        cancel: () => void
+        done: Promise<DesktopHostAuthState>
+      }
     | undefined
 
   const tokenOptions = () => ({
@@ -206,6 +210,7 @@ export function createLocalWebAuthBridge(
   }
 
   function abandonSignIn(): void {
+    signingIn?.cancel()
     signingIn?.popup.close()
     signingIn = undefined
   }
@@ -396,14 +401,15 @@ export function createLocalWebAuthBridge(
       env.reportSignInFailure({ kind: 'failed', reason: 'popup-blocked' })
       return Promise.resolve(currentState())
     }
-    const attempt = {
+    let canceled = false
+    const done = signInThroughPopup(
       popup,
-      done: signInThroughPopup(popup, stillWanted).finally(() => {
-        if (signingIn === attempt) signingIn = undefined
-      })
-    }
-    signingIn = attempt
-    return attempt.done
+      () => !canceled && stillWanted()
+    ).finally(() => {
+      if (signingIn?.done === done) signingIn = undefined
+    })
+    signingIn = { popup, cancel: () => (canceled = true), done }
+    return done
   }
 
   return {
