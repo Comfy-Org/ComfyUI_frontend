@@ -134,6 +134,26 @@ describe('extension loading', () => {
       }
     )
 
+    it('strips query strings from a failure message before naming it in the stack', () => {
+      const ext = '/extensions/comfyui-pack/js/guide.js'
+
+      reportExtensionLoadFailures([
+        {
+          ext,
+          error: new Error(
+            'Failed to load https://cdn.example.com/guide.js?token=secret'
+          )
+        }
+      ])
+
+      const [cause] = vi.mocked(reportError).mock.calls[0]
+      assert(cause instanceof AggregateError)
+      expect(cause.stack).toContain(
+        `Failed extension: ${ext}: Failed to load https://cdn.example.com/guide.js`
+      )
+      expect(cause.stack).not.toContain('secret')
+    })
+
     it('keeps a batch at the cap untruncated', () => {
       reportExtensionLoadFailures(
         Array.from({ length: 10 }, (_, i) =>

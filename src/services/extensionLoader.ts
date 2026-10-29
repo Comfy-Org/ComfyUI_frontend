@@ -13,6 +13,7 @@ import {
 } from '@/platform/telemetry/extensionLoadTelemetry'
 import type { ExtensionFailureDiagnostic } from '@/platform/telemetry/extensionLoadTelemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import { redactTelemetryUrls } from '@comfyorg/telemetry/redactTelemetryUrls'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { installErrorNodeWidgets } from '@/scripts/errorNodeWidgets'
@@ -104,7 +105,7 @@ export function reportExtensionLoadFailures(
   const aggregate = new AggregateError(errors, 'Error loading extensions')
   const failureLines = reportedFailures.map(
     ({ ext, message }) =>
-      `\nFailed extension: ${ext}: ${message.split('\n')[0]}`
+      `\nFailed extension: ${ext}: ${redactTelemetryUrls(message.split('\n')[0])}`
   )
   aggregate.stack = `${aggregate.stack ?? aggregate.message}\nFailed extensions: ${reportedFailures.map(({ ext }) => ext).join(', ')}${failureLines.join('')}`
 
