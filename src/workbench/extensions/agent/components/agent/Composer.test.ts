@@ -76,6 +76,20 @@ function mount(
 }
 
 describe('Composer', () => {
+  it('pads the header from content instead of a fixed height', () => {
+    render(Composer, {
+      props: {
+        hasWorkflowTarget: true,
+        selectWorkflowReference: vi.fn()
+      },
+      slots: { header: '<span>chip</span>' },
+      global: { plugins: [i18n] }
+    })
+    const header = screen.getByTestId('composer-workflow-header')
+    expect(header).toHaveClass('p-1')
+    expect(header).not.toHaveClass('h-11')
+  })
+
   it.for(['@unmatched text', '@Nodes unmatched'])(
     'sends an unmatched mention query with Enter: %s',
     async (text) => {

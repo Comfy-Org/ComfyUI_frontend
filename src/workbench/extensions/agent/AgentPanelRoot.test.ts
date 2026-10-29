@@ -11439,10 +11439,14 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
     const visibleRow = within(
-      await screen.findByRole('group', { name: 'Current tab' })
+      await screen.findByRole('group', {
+        name: i18n.global.t('agent.currentTab')
+      })
     ).getByRole('menuitemradio')
     const targetRow = within(
-      screen.getByRole('group', { name: 'Other open workflows' })
+      screen.getByRole('group', {
+        name: i18n.global.t('agent.otherOpenWorkflows')
+      })
     ).getByRole('menuitemradio')
     expect(visibleRow).toHaveTextContent('other')
     expect(visibleRow).not.toBeChecked()
