@@ -89,6 +89,10 @@ const config: StorybookConfig = {
         tsconfigPaths: true,
         alias: [
           {
+            find: '@comfyorg/design-system/css/style.css',
+            replacement: process.cwd() + '/.storybook/style.css'
+          },
+          {
             find: '@/composables/queue/useJobList',
             replacement: process.cwd() + '/src/storybook/mocks/useJobList.ts'
           },

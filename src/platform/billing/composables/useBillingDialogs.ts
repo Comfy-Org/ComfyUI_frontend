@@ -26,7 +26,7 @@ import {
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 export function useBillingDialogs() {
   const dialogStore = useDialogStore()

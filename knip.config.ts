@@ -35,6 +35,12 @@ const config: KnipConfig = {
     'packages/billing-contract': {
       project: ['src/**/*.ts']
     },
+    'packages/graph-model': {
+      project: ['src/**/*.ts']
+    },
+    'packages/keybindings': {
+      project: ['src/**/*.ts']
+    },
     'packages/design-system': {
       entry: ['tests/consumer/vite.config.ts'],
       project: ['src/**/*.{css,js,ts,vue}'],

@@ -177,7 +177,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["keybindings"],
   "allowedConsumers": ["selection-toolbox"],
   "characterizationScenarios": [
     {

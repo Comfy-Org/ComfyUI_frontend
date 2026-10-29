@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { useElementSize, useEventBus } from '@vueuse/core'
 import type { EventBusKey } from '@vueuse/core'
 import { cloneDeep, isEqual } from 'es-toolkit'
@@ -28,10 +29,13 @@ import {
 } from '@/composables/widgetHistoryScope'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useBoundingBoxesSources } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources'
-import type { BoundingBox } from '@/types/boundingBoxes'
-import type { NodeId } from '@/types/nodeId'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { readableTextColor, textOnColor } from '@/utils/colorUtil'
+import {
+  readableTextColor,
+  textOnColor
+} from '@comfyorg/shared-frontend-utils/colorUtil'
 
 const HANDLE_PX = 8
 const DIMENSION_STEP = 16
@@ -75,7 +79,7 @@ export function useBoundingBoxes(
   const focused = ref(false)
   const drawing = ref(false)
   const dragMode = ref<HitMode | null>(null)
-  const dragStartNorm = ref<{ x: number; y: number } | null>(null)
+  const dragStartNorm = ref<Point2D | null>(null)
   const boxAtStart = ref<Region | null>(null)
   const hoverIndex = ref<number | null>(null)
   const hoverTagIndex = ref<number | null>(null)
@@ -371,7 +375,7 @@ export function useBoundingBoxes(
     return out
   }
 
-  const hitTestPoint = (mN: { x: number; y: number }) => {
+  const hitTestPoint = (mN: Point2D) => {
     const { w: W, h: H } = logicalSize()
     const cands = boxesAt(
       state.value.regions,
@@ -389,7 +393,7 @@ export function useBoundingBoxes(
     )
   }
 
-  const titleAt = (mN: { x: number; y: number }) => {
+  const titleAt = (mN: Point2D) => {
     const el = canvasEl.value
     if (!el) return null
     const ctx = el.getContext('2d')
@@ -407,7 +411,7 @@ export function useBoundingBoxes(
     return null
   }
 
-  function pickForSelection(mN: { x: number; y: number }, cycle: boolean) {
+  function pickForSelection(mN: Point2D, cycle: boolean) {
     const { w: W, h: H } = logicalSize()
     const cands = boxesAt(
       state.value.regions,

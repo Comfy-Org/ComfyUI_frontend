@@ -18,15 +18,15 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   AgentErrorMetadata,
   AgentMessageSentMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
   AgentStopMethod
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
@@ -47,6 +47,7 @@ import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useAuthStore } from '@/stores/authStore'
 import {
   AGENT_ATTACH_ACCEPT,
@@ -67,7 +68,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -75,11 +76,14 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import type { RootGraphId } from '@/types/graphScopeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
-import { parseNodeId } from '@/types/nodeId'
-import { parseNodeLocatorId } from '@/types/nodeIdentification'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -270,13 +274,35 @@ onBeforeUnmount(() => agentIdentity.stop())
 
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
-const agentAccountId = computed(
-  () => authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null
+const teamWorkspaceStore = useTeamWorkspaceStore()
+const agentSocketIdentity = computed(() => [
+  authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
+  teamWorkspaceStore.activeWorkspaceId ?? null,
+  desktopHostUser.value?.workspaceId ?? null
+])
+watch(
+  agentSocketIdentity,
+  (
+    [account, workspace, hostWorkspace],
+    [wasAccount, wasWorkspace, wasHostWorkspace]
+  ) => {
+    if (
+      account === wasAccount &&
+      workspace === wasWorkspace &&
+      hostWorkspace === wasHostWorkspace
+    )
+      return
+    if (
+      workspace === null &&
+      account === wasAccount &&
+      account !== null &&
+      hostWorkspace === null
+    )
+      return
+    events.reconnect()
+    agentIdentity.reset()
+  }
 )
-watch(agentAccountId, () => {
-  events.reconnect()
-  agentIdentity.reset()
-})
 
 function onPaywallAction(
   action: AgentPaywallAction,
@@ -638,7 +664,7 @@ onBeforeUnmount(() =>
   })
 )
 const { withConsent } = useAgentConsent()
-const workspaceStore = useTeamWorkspaceStore()
+const workspaceStore = teamWorkspaceStore
 const onboardingKey = computed(() =>
   scopedOnboardingKey(
     resolvedUserInfo.value?.id,
@@ -829,10 +855,31 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
-  if (canvasMissedDocumentFrames(cloudIdFor(target))) return undefined
+  const documentId = cloudIdFor(target)
+  if (canvasMissedDocumentFrames(documentId)) {
+    if (target.activeState) reportWithheldDraft(documentId)
+    return undefined
+  }
   const content = serializedCanvas(target)
   if (!content) return undefined
   return { content }
+}
+
+function reportWithheldDraft(workflowId: string | undefined): void {
+  const errorType = 'agent_canvas_draft_withheld_stale'
+  reportError(new Error('agent canvas draft withheld: canvas may be stale'), {
+    surface: 'agent',
+    errorType,
+    level: 'warning',
+    fingerprint: [errorType],
+    tags: {
+      failure_kind: 'bad_state',
+      feature_area: 'agent',
+      operation: 'send',
+      outcome: 'withheld'
+    },
+    context: { workflowId }
+  })
 }
 
 function canvasMissedDocumentFrames(documentId: string | undefined): boolean {

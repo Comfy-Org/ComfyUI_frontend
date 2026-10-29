@@ -141,7 +141,10 @@
             <PartnerNodesRunCaption v-if="isActionbarDocked" />
           </div>
         </div>
-        <ErrorOverlay v-if="!isActionBarsHidden" />
+        <ErrorOverlay
+          v-if="!isActionBarsHidden"
+          @view-errors="viewErrorsInGraph"
+        />
         <QueueProgressOverlay
           v-if="isQueueProgressOverlayEnabled"
           v-model:expanded="isQueueOverlayExpanded"
@@ -188,7 +191,8 @@ import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
-import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
+import ErrorOverlay from '@/platform/workflowErrors/overlay/ErrorOverlay.vue'
+import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
@@ -200,7 +204,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -305,6 +309,7 @@ const shouldShowRedDot = computed((): boolean => {
 })
 
 const { hasAnyError, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
+const { viewErrorsInGraph } = useViewErrorsInGraph()
 
 const isErrorsTabEnabled = computed(() =>
   settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')

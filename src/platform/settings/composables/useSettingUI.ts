@@ -17,7 +17,7 @@ import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-import type { NavGroupData } from '@/types/navTypes'
+import type { NavGroupData } from '@comfyorg/design-system/lib/navigation/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
 
