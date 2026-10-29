@@ -16,7 +16,7 @@
       <NoResultsPlaceholder
         :title="$t('g.noResultsFound')"
         :message="$t('manager.tryAgainLater')"
-        icon="pi pi-exclamation-circle"
+        icon="icon-[lucide--circle-alert]"
         class="p-0"
       />
     </div>
@@ -102,7 +102,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@comfyorg/design-system/common/ContentDivider'
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
 import VerifiedIcon from '@comfyorg/design-system/icon/VerifiedIcon'
 import Button from '@comfyorg/design-system/button/Button'
 import AppSpinner from '@/components/common/AppSpinner.vue'

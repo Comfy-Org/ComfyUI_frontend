@@ -58,7 +58,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["telemetry"],
   "characterizationScenarios": [
     {
       "name": "Remote config refresh loads /features with a bounded wait and records load state",

@@ -1,11 +1,13 @@
-import type { Rect, Vec2 } from '#/node'
+import type {
+  Size2D,
+  CompactRect as Rect,
+  Point2D as Vec2
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 export type SelectionOp = 'replace' | 'add' | 'subtract' | 'intersect'
 
-export interface GrayMask {
+export interface GrayMask extends Size2D {
   data: Float32Array
-  width: number
-  height: number
 }
 
 export function emptyMask(width: number, height: number): GrayMask {
@@ -365,10 +367,8 @@ function featherMaskFull(mask: GrayMask, radius: number): GrayMask {
   return cur
 }
 
-export interface FloodSource {
+export interface FloodSource extends Size2D {
   data: Uint8ClampedArray
-  width: number
-  height: number
 }
 
 function pixelDifference(

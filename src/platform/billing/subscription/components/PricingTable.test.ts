@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import PricingTable from '@/platform/billing/subscription/components/PricingTable.vue'
 import Button from '@comfyorg/design-system/button/Button'
@@ -74,7 +74,7 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/composables/useErrorHandling'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock<unknown>(
   import('@/platform/telemetry/utils/checkoutAttribution'),

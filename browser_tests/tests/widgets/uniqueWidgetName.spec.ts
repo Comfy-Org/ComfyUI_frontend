@@ -6,7 +6,7 @@ import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
 
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 
 const NODE_TYPE = 'DevToolsNodeWithOutputList'
 

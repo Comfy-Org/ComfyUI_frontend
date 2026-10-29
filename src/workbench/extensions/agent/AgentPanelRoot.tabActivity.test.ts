@@ -21,7 +21,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -80,7 +80,7 @@ vi.mock<unknown>(
   () => ({ useAccountPreconditionDialog: () => ({ open: vi.fn() }) })
 )
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'), {

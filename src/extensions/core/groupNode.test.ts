@@ -7,7 +7,7 @@ import { t } from '@/i18n'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyNode } from '@comfyorg/graph-model/workflowSchema'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'

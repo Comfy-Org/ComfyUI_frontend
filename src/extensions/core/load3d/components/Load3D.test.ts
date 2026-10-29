@@ -8,8 +8,8 @@ import Load3D from '@/extensions/core/load3d/components/Load3D.vue'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComponentWidget } from '@/types/domWidget'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 const { load3dState } = vi.hoisted(() => ({

@@ -20,7 +20,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { id: 'root' }, canvas: canvasMock }
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 

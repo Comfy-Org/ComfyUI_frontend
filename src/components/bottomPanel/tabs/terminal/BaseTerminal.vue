@@ -23,7 +23,7 @@
       :aria-label="tooltipText"
       @click="handleCopy"
     >
-      <i class="pi pi-copy" />
+      <i class="icon-[lucide--copy]" />
     </Button>
   </div>
 </template>
