@@ -419,22 +419,22 @@ describe('fetchWithRetry status retry telemetry', () => {
     )
   })
 
-  it('stops recording one route and outcome after 20 events', async () => {
-    await Promise.all(
-      Array.from({ length: 25 }, () =>
-        fetchWithRetry(
-          'https://cloud.comfy.org/api/queue',
-          {},
-          {
-            fetchImpl: scriptedFetch(respond(503), respond(200)),
-            sleep,
-            random
-          }
-        )
+  it('records at most 20 events per route and outcome each minute', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    const recoverOnce = () =>
+      fetchWithRetry(
+        'https://cloud.comfy.org/api/queue',
+        {},
+        { fetchImpl: scriptedFetch(respond(503), respond(200)), sleep, random }
       )
-    )
 
+    await Promise.all(Array.from({ length: 25 }, recoverOnce))
     expect(tracked()).toHaveBeenCalledTimes(20)
+
+    vi.advanceTimersByTime(60_000)
+    await recoverOnce()
+
+    expect(tracked()).toHaveBeenCalledTimes(21)
   })
 
   it('does not spend the budget before telemetry is ready', async () => {

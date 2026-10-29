@@ -55,12 +55,25 @@ export function endForStop(reason: RetryStopReason): StatusRetryEnd {
   return reason === 'not_retryable' ? 'answered' : reason
 }
 
-const MAX_EVENTS_PER_KEY = 20
-const eventsSentPerKey = new Map<string, number>()
+const MAX_EVENTS_PER_KEY_PER_WINDOW = 20
+const BUDGET_WINDOW_MS = 60_000
+const budgetPerKey = new Map<string, { windowStart: number; sent: number }>()
 
 /** Forgets how many events each key has sent. */
 export function clearStatusRetryBudget(): void {
-  eventsSentPerKey.clear()
+  budgetPerKey.clear()
+}
+
+function spendBudget(key: string): boolean {
+  const now = Date.now()
+  const budget = budgetPerKey.get(key)
+  if (!budget || now - budget.windowStart >= BUDGET_WINDOW_MS) {
+    budgetPerKey.set(key, { windowStart: now, sent: 1 })
+    return true
+  }
+  if (budget.sent >= MAX_EVENTS_PER_KEY_PER_WINDOW) return false
+  budget.sent += 1
+  return true
 }
 
 function telemetryHost(host: string): string {
@@ -92,10 +105,7 @@ function recordStatusRetry(report: StatusRetryReport): void {
   const telemetry = useTelemetry()
   if (!outcome || !telemetry) return
   const { host, route } = describeUrl(report.url())
-  const key = `${host} ${route} ${outcome}`
-  const sent = eventsSentPerKey.get(key) ?? 0
-  if (sent >= MAX_EVENTS_PER_KEY) return
-  eventsSentPerKey.set(key, sent + 1)
+  if (!spendBudget(`${host} ${route} ${outcome}`)) return
 
   telemetry.trackFetchStatusRetry({
     transport: report.transport,
