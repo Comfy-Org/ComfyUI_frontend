@@ -134,7 +134,7 @@ function getHistoricalStats(
     const group = groupByName(r.measurements)
     const samples = group.get(testName)
     if (samples) {
-      const mean = meanMetric(samples, metric)
+      const mean = reportedMean(samples, metric)
       if (mean !== null) values.push(mean)
     }
   }
@@ -154,9 +154,8 @@ function getHistoricalTimeSeries(
     const group = groupByName(r.measurements)
     const samples = group.get(testName)
     if (samples) {
-      values.push(
-        samples.reduce((sum, s) => sum + s[metric], 0) / samples.length
-      )
+      const mean = reportedMean(samples, metric)
+      if (mean !== null) values.push(mean)
     }
   }
   return values
@@ -219,21 +218,43 @@ function frameTimeToFps(ms: number): number {
   return ms > 0 ? 1000 / ms : 0
 }
 
+type FrameMetricKey = 'frameDurationMs' | 'p95FrameDurationMs'
+
+function isFrameMetric(key: MetricKey): key is FrameMetricKey {
+  return key === 'frameDurationMs' || key === 'p95FrameDurationMs'
+}
+
+function frameSampled(
+  samples: PerfMeasurement[],
+  key: FrameMetricKey
+): PerfMeasurement[] {
+  return samples.filter((s) => (getMetricValue(s, key) ?? 0) > 0)
+}
+
 function sampledFrameMetric(
   samples: PerfMeasurement[],
-  key: 'frameDurationMs' | 'p95FrameDurationMs'
+  key: FrameMetricKey
 ): number | null {
-  const sampled = samples.filter((s) => (getMetricValue(s, key) ?? 0) > 0)
-  return medianMetric(sampled, key)
+  return medianMetric(frameSampled(samples, key), key)
 }
 
 function reportedMedian(
   samples: PerfMeasurement[],
   key: MetricKey
 ): number | null {
-  return key === 'frameDurationMs' || key === 'p95FrameDurationMs'
+  return isFrameMetric(key)
     ? sampledFrameMetric(samples, key)
     : medianMetric(samples, key)
+}
+
+function reportedMean(
+  samples: PerfMeasurement[],
+  key: MetricKey
+): number | null {
+  return meanMetric(
+    isFrameMetric(key) ? frameSampled(samples, key) : samples,
+    key
+  )
 }
 
 interface FpsTargetTally {
