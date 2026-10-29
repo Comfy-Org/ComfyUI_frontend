@@ -92,11 +92,6 @@ export interface CoreDialogService {
   ): DialogInstance
 }
 
-/**
- * Dialog surface exposed to extensions via `app.extensionManager.dialog`.
- * Feature dialogs live in their own composables; `createExtensionDialogService`
- * assembles them so this module never imports the features it fronts.
- */
 export interface ExtensionDialogService extends CoreDialogService {
   showApiNodesSignInDialog(apiNodeNames: string[]): Promise<boolean>
   showSignInDialog(): Promise<boolean>
