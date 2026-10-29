@@ -1,14 +1,13 @@
 import type { Page } from '@playwright/test'
 
-import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/types/nodeId'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 
 const CONDITIONING_INPUTS = ['positive', 'negative']
 
@@ -110,7 +109,7 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
     await test.step('Hide both links from the toolbox', async () => {
       await marqueeBeforeInputs(comfyPage, marquee)
       await comfyPage.selectionToolbox
-        .getByTestId(TestIds.selectionToolbox.hideLinks)
+        .getByRole('button', { name: 'Hide Selected Links', exact: true })
         .click()
 
       await expect
@@ -142,7 +141,7 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
     await test.step('Delete both links from the toolbox', async () => {
       await marqueeBeforeInputs(comfyPage, marquee)
       await comfyPage.selectionToolbox
-        .getByTestId(TestIds.selectionToolbox.deleteLinks)
+        .getByRole('button', { name: 'Delete Selected Links', exact: true })
         .click()
 
       await expect
@@ -160,9 +159,10 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
     await test.step('Delete both links with the Delete key', async () => {
       await marqueeBeforeInputs(comfyPage, marquee)
       await expect(
-        comfyPage.selectionToolbox.getByTestId(
-          TestIds.selectionToolbox.deleteLinks
-        )
+        comfyPage.selectionToolbox.getByRole('button', {
+          name: 'Delete Selected Links',
+          exact: true
+        })
       ).toBeVisible()
       await comfyPage.keyboard.delete()
 
@@ -186,8 +186,14 @@ async function expectOutputLinksHideAndShow(
   linkIds: string[]
 ) {
   const toolbox = comfyPage.selectionToolbox
-  const hideLinks = toolbox.getByTestId(TestIds.selectionToolbox.hideLinks)
-  const showLinks = toolbox.getByTestId(TestIds.selectionToolbox.showLinks)
+  const hideLinks = toolbox.getByRole('button', {
+    name: 'Hide Selected Links',
+    exact: true
+  })
+  const showLinks = toolbox.getByRole('button', {
+    name: 'Show Selected Links',
+    exact: true
+  })
 
   await test.step('Hide every link of the output from the toolbox', async () => {
     await clickOutput()
@@ -197,6 +203,7 @@ async function expectOutputLinksHideAndShow(
     await expect
       .poll(() => linkPresentation(comfyPage))
       .toEqual(Object.fromEntries(linkIds.map((id) => [id, { hidden: true }])))
+    await expect(toolbox).toBeHidden()
   })
 
   await test.step('Show the hidden links again from the toolbox', async () => {

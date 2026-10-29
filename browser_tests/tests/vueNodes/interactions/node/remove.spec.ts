@@ -91,9 +91,7 @@ test.describe(
       await textWidget.press('Delete')
 
       // Node count should remain the same
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialNodeCount)
+      await comfyPage.expectNodeCount(initialNodeCount)
     })
 
     test('Delete key does not delete node when nothing is selected', async ({

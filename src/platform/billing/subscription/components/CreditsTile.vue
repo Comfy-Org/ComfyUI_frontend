@@ -15,7 +15,7 @@
       :aria-label="$t('subscription.refreshCredits')"
       @click="handleRefresh"
     >
-      <i class="icon-[lucide--refresh-cw] size-4 text-muted-foreground" />
+      <i class="icon-[lucide--refresh-cw] text-muted-foreground" />
     </Button>
 
     <div class="flex flex-col gap-1">
@@ -27,7 +27,7 @@
         <i
           :class="
             cn(
-              'icon-[lucide--coins] size-4 self-center',
+              'icon-[lucide--coins] self-center',
               !inactivePlan && 'text-credit'
             )
           "
@@ -44,7 +44,7 @@
         v-if="emptyStateNotice"
         class="flex items-start gap-2 rounded-lg bg-background p-3 text-sm"
       >
-        <i class="mt-0.5 icon-[lucide--info] size-4 shrink-0 text-foreground" />
+        <i class="mt-0.5 icon-[lucide--info] text-foreground" />
         <div class="flex flex-col gap-1">
           <span class="text-foreground">{{ emptyStateNotice.title }}</span>
           <span class="text-muted-foreground">{{
@@ -89,7 +89,7 @@
             v-else
             class="flex items-center gap-1 font-bold text-foreground"
           >
-            <i class="icon-[lucide--coins] size-4 text-credit" />
+            <i class="icon-[lucide--coins] text-credit" />
             <span class="@max-[180px]:hidden">
               {{
                 $t('subscription.creditsLeftOfTotal', {
@@ -124,7 +124,7 @@
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
             >
-              <i class="icon-[lucide--info] size-4" />
+              <i class="icon-[lucide--info]" />
             </Button>
             <span
               v-if="isSpendingAdditional"
@@ -138,7 +138,7 @@
             v-else
             class="flex items-center gap-1 font-bold text-foreground"
           >
-            <i class="icon-[lucide--coins] size-4 text-credit" />
+            <i class="icon-[lucide--coins] text-credit" />
             {{ displayPrepaid }}
           </span>
         </div>
@@ -163,11 +163,11 @@
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
             >
-              <i class="icon-[lucide--info] size-4" />
+              <i class="icon-[lucide--info]" />
             </Button>
           </span>
           <span class="flex items-center gap-1 font-bold">
-            <i class="icon-[lucide--coins] size-4" />
+            <i class="icon-[lucide--coins]" />
             {{ displayPrepaid }}
           </span>
         </div>
@@ -243,7 +243,7 @@ import {
 } from '@/platform/billing/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/billing/subscription/utils/creditsProgress'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'

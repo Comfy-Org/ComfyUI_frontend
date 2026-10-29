@@ -5,7 +5,7 @@ import { computed, nextTick, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
-import type { AgentFreeUsePlacement } from '@/platform/telemetry/types'
+import type { AgentFreeUsePlacement } from '@comfyorg/telemetry/types'
 
 import FreeUseNotice from './FreeUseNotice.vue'
 import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'

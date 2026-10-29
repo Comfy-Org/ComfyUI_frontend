@@ -6,7 +6,7 @@ import {
   PACK_SEARCHABLE_ATTRIBUTES,
   USER_SEARCH_ANALYTICS_TAG
 } from '@/constants/searchConstants'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type {
   SearchAttribute,

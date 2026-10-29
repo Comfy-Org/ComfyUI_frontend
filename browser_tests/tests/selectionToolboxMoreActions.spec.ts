@@ -101,9 +101,7 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
       await comfyPage.clipboard.paste()
       await comfyPage.nextFrame()
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount + 1)
+      await comfyPage.expectNodeCount(initialCount + 1)
     })
 
     test('duplicate via More Options menu', async ({ comfyPage }) => {
@@ -118,9 +116,7 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
       await menu.getByText('Duplicate', { exact: true }).click()
       await comfyPage.nextFrame()
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount + 1)
+      await comfyPage.expectNodeCount(initialCount + 1)
     })
 
     test('refresh button is hidden for a node without refreshable widgets', async ({
@@ -133,7 +129,10 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
 
       await expect(comfyPage.selectionToolbox).toBeVisible()
       await expect(
-        comfyPage.selectionToolbox.getByTestId('refresh-button')
+        comfyPage.selectionToolbox.getByRole('button', {
+          name: 'Refresh Node',
+          exact: true
+        })
       ).toBeHidden()
     })
   })
@@ -162,7 +161,10 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
       await expect(ksampler).not.toBeBypassed()
       await expect(emptyLatent).not.toBeBypassed()
 
-      const bypassButton = comfyPage.page.getByTestId('bypass-button')
+      const bypassButton = comfyPage.selectionToolbox.getByRole('button', {
+        name: 'Bypass/Unbypass Selected Nodes',
+        exact: true
+      })
       await expect(bypassButton).toBeVisible()
       await bypassButton.click()
       await comfyPage.nextFrame()
@@ -170,7 +172,6 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
       await expect(ksampler).toBeBypassed()
       await expect(emptyLatent).toBeBypassed()
 
-      // Toggle back
       await bypassButton.click()
       await comfyPage.nextFrame()
 

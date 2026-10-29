@@ -1,3 +1,4 @@
+import type { RectEdges } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Locator, Page } from '@playwright/test'
 
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
@@ -27,9 +28,7 @@ export async function expectDomTextGeometry(texts: Locator[]) {
   }
 }
 
-function expectTextSeparated(
-  draws: Array<{ left: number; right: number; top: number; bottom: number }>
-) {
+function expectTextSeparated(draws: Array<RectEdges>) {
   expect(
     draws.some((draw, index) =>
       draws
@@ -57,14 +56,12 @@ export async function captureCanvasTextGeometry(
       const context = window.app!.canvas.canvas.getContext('2d')!
       const original = context.fillText
       let firstOrigin: DOMPoint | undefined
-      const draws: Array<{
-        text: string
-        left: number
-        right: number
-        top: number
-        bottom: number
-        boundary?: { left: number; right: number }
-      }> = []
+      const draws: Array<
+        RectEdges & {
+          text: string
+          boundary?: { left: number; right: number }
+        }
+      > = []
       const node = nodeId
         ? window.app!.graph.nodes.find(({ id }) => String(id) === nodeId)
         : undefined

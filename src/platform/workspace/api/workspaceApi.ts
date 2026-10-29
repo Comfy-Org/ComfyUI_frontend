@@ -1,3 +1,5 @@
+import type { AxiosRequestConfig } from 'axios'
+
 import type {
   AcceptInviteResponse,
   CreateInviteRequest,
@@ -64,25 +66,39 @@ export type { WorkspaceDeploymentCpuServer }
 
 const CPU_SERVER_READ_TIMEOUT_MS = 15_000
 
+/** For callers that already retry on their own schedule. */
+interface ReadOptions {
+  skipStatusRetry?: boolean
+}
+
+function withReadOptions(
+  auth: AxiosRequestConfig,
+  { skipStatusRetry }: ReadOptions
+): AxiosRequestConfig {
+  return skipStatusRetry ? { ...auth, __skipStatusRetry: true } : auth
+}
+
 export const workspaceApi = {
-  async list(): Promise<ListWorkspacesResponse> {
+  async list(options: ReadOptions = {}): Promise<ListWorkspacesResponse> {
     const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.get<ListWorkspacesResponse>(
         ingestApiUrl('/workspaces'),
-        auth
+        withReadOptions(auth, options)
       )
       return response.data
     } catch (err) {
       handleAxiosError(err, 'list')
     }
   },
-  async getCurrentWorkspace(): Promise<CurrentWorkspaceResponse> {
+  async getCurrentWorkspace(
+    options: ReadOptions = {}
+  ): Promise<CurrentWorkspaceResponse> {
     const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.get<CurrentWorkspaceResponse>(
         ingestApiUrl('/workspaces/current'),
-        auth
+        withReadOptions(auth, options)
       )
       return response.data
     } catch (err) {
@@ -125,7 +141,11 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<WorkspaceDeploymentList>(
         ingestApiUrl(`/workspaces/${workspaceId}/deployments`),
-        { ...auth, timeout: DEPLOYMENT_LISTING_TIMEOUT_MS }
+        {
+          ...auth,
+          timeout: DEPLOYMENT_LISTING_TIMEOUT_MS,
+          __skipStatusRetry: true
+        }
       )
       return response.data
     } catch (err) {

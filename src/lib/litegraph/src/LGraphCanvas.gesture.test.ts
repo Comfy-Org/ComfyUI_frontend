@@ -17,7 +17,7 @@ import {
   pointerEvent,
   selectedTitles
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type {
   LGraphCanvas,
   LGraphGroup,
@@ -31,7 +31,7 @@ import {
   Reroute
 } from '@/lib/litegraph/src/litegraph'
 import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'
-import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))

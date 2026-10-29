@@ -10,7 +10,7 @@
       rel="noopener noreferrer"
     >
       {{ $t('deployToComfyApi.readDocs') }}
-      <span class="icon-[lucide--square-arrow-out-up-right] size-4" />
+      <i aria-hidden="true" class="icon-[lucide--square-arrow-out-up-right]" />
     </Button>
   </DefineDocsLink>
 
@@ -37,7 +37,7 @@
           muted
           loop
           plays-inline
-          playback-control
+          :playback-labels="{ play: $t('g.play'), pause: $t('g.pause') }"
           data-testid="deploy-to-comfy-api-video"
           class="aspect-video w-full rounded-lg object-cover"
         >
@@ -87,11 +87,11 @@
             @click="copyHandoff"
           >
             <template v-if="copied">
-              <i class="icon-[lucide--check] size-4" aria-hidden="true" />
+              <i class="icon-[lucide--check]" aria-hidden="true" />
               {{ $t('deployToComfyApi.copied') }}
             </template>
             <template v-else>
-              <i class="icon-[lucide--copy] size-4" aria-hidden="true" />
+              <i class="icon-[lucide--copy]" aria-hidden="true" />
               {{ $t('deployToComfyApi.deployWithAgent') }}
             </template>
           </Button>
@@ -125,7 +125,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import Video from '@/components/common/Video.vue'
+import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useExternalLink } from '@/composables/useExternalLink'

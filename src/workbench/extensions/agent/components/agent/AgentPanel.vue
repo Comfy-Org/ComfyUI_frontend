@@ -14,7 +14,7 @@ import type {
   AgentPaywallSurface,
   AgentStarterPromptAssignment,
   AgentStopMethod
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 
 import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
 import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
@@ -453,7 +453,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           class="size-6 shrink-0 data-coach-hover:bg-accent"
           @click="onOpenHistory"
         >
-          <span class="icon-[lucide--history] size-4 shrink-0" />
+          <i aria-hidden="true" class="icon-[lucide--history]" />
         </Button>
         <template v-if="renaming">
           <Input
@@ -499,7 +499,10 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :aria-label="t('agent.chatOptions')"
                 class="size-6 shrink-0"
               >
-                <span class="icon-[lucide--chevron-down] size-3" />
+                <i
+                  aria-hidden="true"
+                  class="icon-[lucide--chevron-down] size-3"
+                />
               </Button>
             </template>
           </Menu>
@@ -561,9 +564,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           "
           class="absolute inset-0 z-10 flex items-center justify-center gap-2 bg-background/80 px-6 text-center text-sm"
         >
-          <span
+          <i
             aria-hidden="true"
-            class="icon-[lucide--loader-circle] size-4 shrink-0 motion-safe:animate-spin"
+            class="icon-[lucide--loader-circle] motion-safe:animate-spin"
           />
           {{
             t('agent.openingWorkflowChat', {

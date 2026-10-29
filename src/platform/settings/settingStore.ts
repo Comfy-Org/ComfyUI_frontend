@@ -8,8 +8,8 @@ import type { Ref } from 'vue'
 
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import type { SettingParams, Settings } from '@/platform/settings/types'
-import { useTelemetry } from '@/platform/telemetry'
-import type { SettingChangedMetadata } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { SettingChangedMetadata } from '@comfyorg/telemetry/types'
 import { api } from '@/scripts/api'
 
 export const getSettingInfo = (setting: SettingParams) => {
@@ -139,10 +139,13 @@ export const useSettingStore = defineStore('setting', () => {
           'Setting values must be loaded before any setting is registered.'
         )
       }
-      settingValues.value = await retry(() => api.getSettings(), {
-        retries: 3,
-        delay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000)
-      })
+      settingValues.value = await retry(
+        () => api.getSettings({ skipStatusRetry: true }),
+        {
+          retries: 3,
+          delay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000)
+        }
+      )
       await migrateZoomThresholdToFontSize()
       await migrateCanvasNavigationOverrides()
     },

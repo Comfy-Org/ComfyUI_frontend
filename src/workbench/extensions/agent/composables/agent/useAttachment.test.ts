@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import {
@@ -14,8 +14,6 @@ import {
   MAX_TURN_ATTACHMENTS,
   useAttachment
 } from './useAttachment'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 function fileOfSize(name: string, size: number, type = 'image/png'): File {
   const file = new File(['x'], name, { type })

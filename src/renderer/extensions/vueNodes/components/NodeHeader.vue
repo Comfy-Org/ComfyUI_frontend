@@ -23,7 +23,7 @@
             <i
               :class="
                 cn(
-                  'icon-[lucide--chevron-down] size-4 transition-transform',
+                  'icon-[lucide--chevron-down] transition-transform',
                   collapsed && '-rotate-90'
                 )
               "
@@ -60,7 +60,7 @@
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
       <i
         v-if="isPinned"
-        class="icon-[comfy--pin] size-4"
+        class="icon-[comfy--pin]"
         data-testid="node-pin-indicator"
       />
     </div>
@@ -76,7 +76,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'

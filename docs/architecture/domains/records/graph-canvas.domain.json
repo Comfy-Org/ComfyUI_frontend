@@ -284,10 +284,6 @@
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/types/events.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/lib/litegraph/src/types/panel.ts",
       "role": "domain"
     },

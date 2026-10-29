@@ -31,6 +31,9 @@ const meta: Meta<typeof AgentConsentCard> = {
     videoSources: VIDEO_SOURCES,
     posterSrc: POSTER_SRC,
     docsUrl: AGENT_DOCS_URL,
+    requiresSignIn: false,
+    accepting: false,
+    error: '',
     onAccept: fn(),
     onReject: fn()
   },
@@ -80,15 +83,16 @@ export const LongCopy: Story = {
   args: { paragraphs: [...paragraphs, ...paragraphs] }
 }
 
-/**
- * The card responds to its container, not the viewport, so it stacks inside a
- * narrow agent panel even on a wide screen.
- */
+const narrowPanel = () => ({
+  template:
+    '<div class="grid place-items-center bg-background p-8"><div class="w-[380px]"><story /></div></div>'
+})
+
 export const InNarrowPanel: Story = {
-  decorators: [
-    () => ({
-      template:
-        '<div class="grid place-items-center bg-background p-8"><div class="w-[380px]"><story /></div></div>'
-    })
-  ]
+  decorators: [narrowPanel]
+}
+
+export const SignedOutInNarrowPanel: Story = {
+  ...SignedOut,
+  decorators: [narrowPanel]
 }

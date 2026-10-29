@@ -7,7 +7,7 @@
         class="text-sm"
         @click="handleConflictInfoClick"
       >
-        <i class="pi pi-info-circle" />
+        <i class="icon-[lucide--info]" />
         {{ $t('manager.conflicts.conflictInfoTitle') }}
       </Button>
       <Button

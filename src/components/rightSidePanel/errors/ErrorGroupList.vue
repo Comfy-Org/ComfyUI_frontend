@@ -206,7 +206,7 @@
                 <i
                   v-else
                   aria-hidden="true"
-                  class="icon-[lucide--refresh-cw] size-4 shrink-0"
+                  class="icon-[lucide--refresh-cw]"
                 />
               </Button>
               <span
@@ -393,7 +393,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
