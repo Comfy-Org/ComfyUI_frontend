@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { WorkspaceDeploymentCpuServer } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -12,7 +12,7 @@ import type { CpuServerReading, CpuServerWatch } from './cpuServerStep'
 import { askCpuServer, isBeingSetUp, watchCpuServer } from './cpuServerStep'
 
 vi.mock(import('firebase/auth'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 

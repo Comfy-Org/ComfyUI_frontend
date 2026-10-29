@@ -1,7 +1,7 @@
 import type { Component } from 'vue'
 import { readonly, ref } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import type {

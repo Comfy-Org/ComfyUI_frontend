@@ -15,7 +15,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import CreditsTile from '@/platform/billing/subscription/components/CreditsTile.vue'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type { TeamCreditStopSummary } from '@comfyorg/billing-core'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 
@@ -56,7 +56,7 @@ vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/services/customerEventsService'))
 

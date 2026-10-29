@@ -1,6 +1,6 @@
-import type { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
+import type { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
-import type { Keybinding } from '@/platform/keybindings/types'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import type { NodeBadgeMode } from '@/types/nodeSource'
 import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
@@ -103,7 +103,6 @@ export type Settings = {
   'Comfy.Keybinding.CurrentPreset': string
   'Comfy.Extension.Disabled': Array<string>
   'Comfy.Extension.DisabledPacks': Array<string>
-  'Comfy.Extension.SeenAgentExtensions': Array<string>
   'Comfy.LinkRenderMode': number
   'Comfy.Node.AutoSnapLinkToSlot': boolean
   'Comfy.Node.SnapHighlightsNode': boolean
@@ -220,11 +219,6 @@ type SettingTelemetryOptions =
       includeValues?: boolean
     }
 
-/** Outcome of one setting write; only `saved` was acknowledged by the backend. */
-export type SettingWriteResult =
-  | { ok: true; outcome: 'saved' | 'unchanged' | 'superseded' }
-  | { ok: false; reason: 'refused' | 'unreachable'; detail: string }
-
 export interface SettingParams<TValue = unknown> extends FormItem {
   id: keyof Settings
   defaultValue: TValue | (() => TValue)
@@ -281,8 +275,6 @@ export type SettingPanelType =
   | 'workspace'
   | 'workspace-allowlist'
   | 'workspace-members'
-
-export type ExtensionFilterType = 'all' | 'core' | 'custom' | 'agentCreated'
 
 export interface SettingDialogProps {
   onClose: () => void

@@ -43,8 +43,6 @@
           :key="tab.id"
           :icon="tab.icon"
           :icon-badge="tab.iconBadge"
-          :provenance-badge="isAgentTab(tab) ? t('g.agentBadge') : ''"
-          :provenance-label="isAgentTab(tab) ? t('g.agentCreated') : ''"
           :tooltip="tab.tooltip"
           :tooltip-suffix="getTabTooltipSuffix(tab)"
           :label="tab.label || tab.title"
@@ -52,7 +50,6 @@
           :selected="tab.id === selectedTab?.id"
           :data-testid="`${tab.id}-tab-button`"
           @click="onTabClick(tab)"
-          @contextmenu="openAgentTabMenu(tab, $event)"
         />
         <SidebarTemplatesButton />
       </div>
@@ -72,7 +69,6 @@
     <Suspense v-if="NightlySurveyController">
       <component :is="NightlySurveyController" />
     </Suspense>
-    <Menu v-bind="agentTabMenuProps" :items="agentTabMenuItems" />
   </nav>
 </template>
 
@@ -91,24 +87,16 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import HelpCenterPopups from '@/components/helpcenter/HelpCenterPopups.vue'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
-import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
 import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/stores/commandStore'
-import { useExtensionStore } from '@/stores/extensionStore'
-import {
-  disableAgentExtensions,
-  showAgentExtensionSettings
-} from '@/platform/settings/agentExtensionService'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
@@ -169,40 +157,6 @@ const tabs = computed(() => {
 })
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
 const isHidden = computed(() => canvasStore.isPickingNodes)
-const agentTab = ref<SidebarTabExtension>()
-const { menuProps: agentTabMenuProps, show: showAgentTabMenu } = usePointMenu()
-const extensionStore = useExtensionStore()
-
-function getAgentTabExtension(tab: SidebarTabExtension) {
-  const extensionName = tab.source?.extensionName
-  if (!extensionName) return
-  const extension = extensionStore.extensions.find(
-    ({ name }) => name === extensionName
-  )
-  return extension && extensionStore.isAgentCreatedExtension(extension)
-    ? extension
-    : undefined
-}
-
-const isAgentTab = (tab: SidebarTabExtension) => !!getAgentTabExtension(tab)
-
-async function disableAgentTabExtension() {
-  if (!agentTab.value) return
-  const extension = getAgentTabExtension(agentTab.value)
-  if (extension) await disableAgentExtensions([extension])
-}
-
-const agentTabMenuItems = computed<MenuItem[]>(() => [
-  { label: t('g.manage'), command: showAgentExtensionSettings },
-  { label: t('g.disable'), command: disableAgentTabExtension }
-])
-
-function openAgentTabMenu(tab: SidebarTabExtension, event: MouseEvent) {
-  if (!isAgentTab(tab)) return
-  event.preventDefault()
-  agentTab.value = tab
-  showAgentTabMenu(event)
-}
 
 /**
  * Handle sidebar tab icon click.

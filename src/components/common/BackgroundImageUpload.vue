@@ -13,7 +13,13 @@
       :disabled="isUploading"
       @click="triggerFileInput"
     >
-      <i :class="isUploading ? 'pi pi-spin pi-spinner' : 'pi pi-upload'" />
+      <i
+        :class="
+          isUploading
+            ? 'icon-[lucide--loader-circle] animate-spin motion-reduce:animate-none'
+            : 'icon-[lucide--upload]'
+        "
+      />
     </Button>
     <Button
       :tooltip="$t('g.clear')"
@@ -23,7 +29,7 @@
       :disabled="!modelValue"
       @click="clearImage"
     >
-      <i class="pi pi-trash" />
+      <i class="icon-[lucide--trash-2]" />
     </Button>
     <input
       ref="fileInput"
@@ -44,7 +50,7 @@ import Input from '@comfyorg/design-system/input/Input'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const { t } = useI18n()
 

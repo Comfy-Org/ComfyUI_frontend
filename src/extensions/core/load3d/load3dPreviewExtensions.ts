@@ -22,7 +22,7 @@ import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/ty
 import { app } from '@/scripts/app'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import type { ComfyExtension } from '@/types/comfy'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 function applyResultToLoad3d(

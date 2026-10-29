@@ -3,7 +3,7 @@ import { storeToRefs } from 'pinia'
 import { computed, getCurrentScope, onScopeDispose } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { load3dLazyExtension } from '@/extensions/core/load3d/load3dLazy'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { app } from '@/scripts/app'
 import { useExtensionStore } from '@/stores/extensionStore'
 

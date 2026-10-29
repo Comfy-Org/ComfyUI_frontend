@@ -10,7 +10,7 @@ import {
 } from 'vitest'
 import type { Mock } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 import type { DocOp } from './docFrameClient'

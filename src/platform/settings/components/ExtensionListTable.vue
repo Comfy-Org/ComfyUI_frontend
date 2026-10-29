@@ -53,26 +53,14 @@
         </TableCell>
         <TableCell>
           {{ extension.name }}
-          <Badge
-            v-if="extensionStore.isAgentCreatedExtension(extension)"
-            severity="info"
-          >
-            {{ $t('g.createdByAgent') }}
+          <Badge :severity="extensionBadge(extension).severity">
+            {{ extensionBadge(extension).label }}
           </Badge>
-          <Badge v-else-if="extensionStore.isCoreExtension(extension.name)">
-            {{ $t('g.core') }}
-          </Badge>
-          <Badge v-else severity="info">{{ $t('g.custom') }}</Badge>
           <div
-            v-if="extensionStore.isAgentCreatedExtension(extension)"
+            v-if="extension.provenance?.summary"
             class="text-xs text-muted-foreground"
           >
-            <span>
-              {{ agentExtensionPackName(extension.name) ?? extension.name }}
-            </span>
-            <span v-if="extension.provenance?.summary">
-              · {{ extension.provenance.summary }}
-            </span>
+            {{ extension.provenance.summary }}
           </div>
         </TableCell>
         <TableCell class="text-right">
@@ -93,6 +81,7 @@
 
 <script setup lang="ts">
 import type { CheckboxCheckedState } from 'reka-ui'
+import { useI18n } from 'vue-i18n'
 
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
@@ -108,10 +97,7 @@ import TableHead from '@comfyorg/design-system/table/TableHead'
 import TableHeader from '@comfyorg/design-system/table/TableHeader'
 import TableRow from '@comfyorg/design-system/table/TableRow'
 import TableSortHead from '@comfyorg/design-system/table/TableSortHead'
-import {
-  agentExtensionPackName,
-  useExtensionStore
-} from '@/stores/extensionStore'
+import { useExtensionStore } from '@/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 const { extensions, selectedNames, enabledByName, selectAllState, actions } =
@@ -134,4 +120,15 @@ const emit = defineEmits<{
 }>()
 
 const extensionStore = useExtensionStore()
+const { t } = useI18n()
+
+function extensionBadge(extension: ComfyExtension) {
+  if (extensionStore.isAgentCreatedExtension(extension)) {
+    return { label: t('g.createdByAgent'), severity: 'info' as const }
+  }
+  if (extensionStore.isCoreExtension(extension.name)) {
+    return { label: t('g.core'), severity: undefined }
+  }
+  return { label: t('g.custom'), severity: 'info' as const }
+}
 </script>

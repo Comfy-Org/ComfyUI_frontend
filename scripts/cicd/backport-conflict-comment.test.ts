@@ -10,7 +10,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { beforeAll, describe, expect, it, onTestFinished } from 'vitest'
 import { parse } from 'yaml'
 
 interface WorkflowStep {
@@ -33,6 +33,16 @@ if (!commentStep?.run || !commentStep.env) {
   throw new Error('pr-backport.yaml must define the "Comment on failures" step')
 }
 const { run: commentRun, env: commentEnv } = commentStep
+
+beforeAll(() => {
+  const missing = ['envsubst', 'jq'].filter(
+    (tool) => spawnSync('bash', ['-c', `command -v ${tool}`]).status !== 0
+  )
+  if (missing.length > 0)
+    throw new Error(
+      `backport conflict comment tests need ${missing.join(' and ')} on PATH (envsubst ships in gettext-base)`
+    )
+})
 
 const botLogin = 'comfy-backport-bot'
 const firstMergeCommit = 'a'.repeat(40)

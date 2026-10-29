@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ImageLightbox from '@/components/common/ImageLightbox.vue'
+import ImageLightbox from '@comfyorg/design-system/media/ImageLightbox'
 
 const { mediaUrl, label, onMaskEdit } = defineProps<{
   mediaUrl: string
@@ -37,5 +37,11 @@ const lightboxOpen = ref(false)
       <i class="icon-[lucide--zoom-in]" />
     </button>
   </div>
-  <ImageLightbox v-model="lightboxOpen" :src="mediaUrl" :alt="label ?? ''" />
+  <ImageLightbox
+    v-model="lightboxOpen"
+    :src="mediaUrl"
+    :alt="label ?? ''"
+    :fallback-title="$t('g.imageLightbox')"
+    :close-label="$t('g.close')"
+  />
 </template>

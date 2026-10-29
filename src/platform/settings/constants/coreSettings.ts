@@ -8,7 +8,8 @@ import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
-import type { Keybinding } from '@/platform/keybindings/types'
+import { normalizeDisabledExtensionPaths } from '@/platform/settings/utils/extensionPath'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import { breakpointsTailwind } from '@vueuse/core'
@@ -684,20 +685,10 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Extension.DisabledPacks',
-    name: 'Disabled extension packs',
+    name: 'Disabled extension paths',
     type: 'hidden',
-    defaultValue: [] as string[],
-    migrateDeprecatedValue: (value: unknown) =>
-      Array.isArray(value)
-        ? value.filter((path): path is string => typeof path === 'string')
-        : [],
-    versionAdded: '1.59.0'
-  },
-  {
-    id: 'Comfy.Extension.SeenAgentExtensions',
-    name: 'Seen agent-created extensions',
-    type: 'hidden',
-    defaultValue: [] as string[],
+    defaultValue: [],
+    migrateDeprecatedValue: normalizeDisabledExtensionPaths,
     versionAdded: '1.59.0'
   },
   {

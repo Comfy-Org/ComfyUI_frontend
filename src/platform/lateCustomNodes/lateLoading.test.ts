@@ -5,8 +5,7 @@ import { computed } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
@@ -33,7 +32,7 @@ import {
 import { nodeTypesMayStillArrive } from './lateNodeTypes'
 
 vi.mock(import('firebase/auth'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
@@ -167,8 +166,7 @@ function preloadHelperLoader(attempts: Record<string, Attempt[]>) {
           return { ext, error }
         }
       },
-      reportFailures: () => {},
-      afterLateRegistration: () => {}
+      reportFailures: () => {}
     }
   }
 }
@@ -250,30 +248,16 @@ describe('late custom node loading', () => {
   })
 
   it('stops waiting, holds late extensions, then runs their startup steps, the refresh and one rebuild in order', async () => {
-    const fastAgentName = 'agent.fast.toolbar'
-    const lateAgentName = 'agent.b.toolbar'
-    let acceptInitialSeenWrite = () => {}
-    const initialSeenWrite = new Promise<Response>((resolve) => {
-      acceptInitialSeenWrite = () => resolve(new Response())
-    })
-    onTestFinished(acceptInitialSeenWrite)
-    useSettingStore().$patch({
-      settingValues: { 'Comfy.Extension.SeenAgentExtensions': [] }
-    })
-    vi.spyOn(api, 'storeSetting')
-      .mockReturnValueOnce(initialSeenWrite)
-      .mockResolvedValue(new Response())
     serve({
-      '/extensions/fast/main.js': { ms: 500, extension: fastAgentName },
+      '/extensions/fast/main.js': { ms: 500, extension: 'Fast' },
       '/extensions/a/main.js': { ms: 15_000, extension: 'A' },
-      '/extensions/b/main.js': { ms: 20_000, extension: lateAgentName }
+      '/extensions/b/main.js': { ms: 20_000, extension: 'B' }
     })
 
     const { isFinished } = await startEditor()
     expect(isFinished()).toBe(true)
-    expect(isRegistered(fastAgentName)).toBe(true)
+    expect(isRegistered('Fast')).toBe(true)
     expect(nodeTypesMayStillArrive()).toBe(true)
-    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledOnce())
 
     await vi.advanceTimersByTimeAsync(13_000)
     expect(isRegistered('A')).toBe(false)
@@ -282,58 +266,18 @@ describe('late custom node loading', () => {
     await vi.advanceTimersByTimeAsync(5_000)
 
     expect(isRegistered('A')).toBe(true)
-    expect(isRegistered(lateAgentName)).toBe(true)
+    expect(isRegistered('B')).toBe(true)
     expect(nodeTypesMayStillArrive()).toBe(false)
     expect(log).toEqual([
       'A:init',
-      `${lateAgentName}:init`,
+      'B:init',
       'A:registerCustomNodes',
-      `${lateAgentName}:registerCustomNodes`,
+      'B:registerCustomNodes',
       'reloadNodeDefs',
       'A:setup',
-      `${lateAgentName}:setup`,
+      'B:setup',
       'reloadCurrentWorkflow'
     ])
-    expect(api.storeSetting).toHaveBeenCalledOnce()
-    expect(useToast().toasts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          title: `Your agent added ${fastAgentName}`,
-          actions: [
-            expect.objectContaining({ label: 'Manage' }),
-            expect.objectContaining({ label: 'Disable' })
-          ]
-        })
-      ])
-    )
-    expect(useToast().toasts).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          title: `Your agent added ${lateAgentName}`
-        })
-      ])
-    )
-
-    acceptInitialSeenWrite()
-    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(2))
-
-    expect(useToast().toasts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ title: `Your agent added ${fastAgentName}` }),
-        expect.objectContaining({
-          title: `Your agent added ${lateAgentName}`,
-          actions: [
-            expect.objectContaining({ label: 'Manage' }),
-            expect.objectContaining({ label: 'Disable' })
-          ]
-        })
-      ])
-    )
-    await vi.waitFor(() =>
-      expect(
-        useSettingStore().get('Comfy.Extension.SeenAgentExtensions')
-      ).toEqual([fastAgentName, lateAgentName])
-    )
   })
 
   it('waits for startup to finish before the batch', async () => {
@@ -873,47 +817,24 @@ describe('late custom node loading', () => {
     expect(useToast().toasts).toEqual([])
   })
 
-  it('turns an agent extension on and discovers it after its fetch retry succeeds', async () => {
-    const agentName = 'agent.a.toolbar'
-    useSettingStore().$patch({
-      settingValues: { 'Comfy.Extension.SeenAgentExtensions': [] }
-    })
-    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
+  it('tries a script that could not be fetched once more after five seconds, and turns it on', async () => {
     serve({
-      '/extensions/a/main.js': {
-        ms: 3_000,
-        extension: agentName,
-        fetchFailures: 1
-      }
+      '/extensions/a/main.js': { ms: 3_000, extension: 'A', fetchFailures: 1 }
     })
 
     await startEditor()
     await vi.advanceTimersByTimeAsync(5_000)
-    expect(isRegistered(agentName)).toBe(false)
+    expect(isRegistered('A')).toBe(false)
     expect(useToast().toasts[0].description).toContain('Waiting for: a')
 
     await vi.advanceTimersByTimeAsync(4_000)
 
-    expect(isRegistered(agentName)).toBe(true)
-    expect(log).toContain(`${agentName}:setup`)
+    expect(isRegistered('A')).toBe(true)
+    expect(log).toContain('A:setup')
     expect(reportError).not.toHaveBeenCalled()
-    expect(useToast().toasts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          title: `Your agent added ${agentName}`,
-          actions: [
-            expect.objectContaining({ label: 'Manage' }),
-            expect.objectContaining({ label: 'Disable' })
-          ]
-        }),
-        expect.objectContaining({ title: 'Custom nodes are ready' })
-      ])
-    )
-    await vi.waitFor(() =>
-      expect(
-        useSettingStore().get('Comfy.Extension.SeenAgentExtensions')
-      ).toEqual([agentName])
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ title: 'Custom nodes are ready' })
+    ])
   })
 
   it.for<{
@@ -1045,11 +966,11 @@ describe('late custom node loading', () => {
         kind: 'warning',
         title: "Some custom nodes didn't start",
         description: 'Reload the page to turn on: a-pack',
-        actions: [expect.objectContaining({ label: 'Reload' })]
+        action: expect.objectContaining({ label: 'Reload' })
       })
     ])
     expect(reload).not.toHaveBeenCalled()
-    useToast().toasts[0].actions[0].onClick()
+    useToast().toasts[0].action?.onClick()
     expect(reload).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledOnce()
     expect(vi.mocked(reportError).mock.calls[0][1].context?.failures).toEqual([

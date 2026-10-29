@@ -6,6 +6,34 @@ import { api } from '@/scripts/api'
 
 vi.mock(import('@/scripts/api'))
 
+describe('Load3dUtils.isSameResourceURL', () => {
+  it.for([
+    {
+      a: '/api/view?filename=a.glb&type=input&rand=0.1',
+      b: '/api/view?filename=a.glb&type=input&rand=0.9',
+      same: true
+    },
+    {
+      a: '/api/view?type=input&filename=a.glb',
+      b: '/api/view?filename=a.glb&type=input',
+      same: true
+    },
+    {
+      a: '/api/view?filename=a.glb&type=input',
+      b: '/api/view?filename=b.glb&type=input',
+      same: false
+    },
+    {
+      a: '/api/view?filename=a.glb&type=input',
+      b: '/api/view?filename=a.glb&type=output',
+      same: false
+    },
+    { a: null, b: '/api/view?filename=a.glb', same: false }
+  ])('$a and $b name the same file: $same', ({ a, b, same }) => {
+    expect(Load3dUtils.isSameResourceURL(a, b)).toBe(same)
+  })
+})
+
 describe('Load3dUtils.mapSceneLightIntensityToHdri', () => {
   it('maps scene slider low end to a small positive HDRI intensity', () => {
     expect(Load3dUtils.mapSceneLightIntensityToHdri(1, 1, 10)).toBe(0.25)

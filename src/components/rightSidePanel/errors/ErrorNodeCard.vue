@@ -163,7 +163,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { cn } from '@comfyorg/tailwind-utils'
 import LocateNodeButton from './LocateNodeButton.vue'
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
