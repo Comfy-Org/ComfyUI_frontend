@@ -1,12 +1,12 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { emitGraphRestored, onGraphRestored } from './graphRestore'
 import type { GraphRestore } from './graphRestore'
 
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 describe('emitGraphRestored', () => {
   it('delivers to every listener when an earlier one throws, and reports the failure', () => {

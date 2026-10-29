@@ -27,8 +27,8 @@ import {
   useAgentConsent
 } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import type { ConsentOfferHooks } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
-import { useTelemetry } from '@/platform/telemetry'
-import type { AgentConsentTrigger } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AgentConsentTrigger } from '@comfyorg/telemetry/types'
 import type { useExtensionService } from '@/services/extensionService'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -79,7 +79,7 @@ function beginFirstRunScreenHandoff(): void {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(
   import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
@@ -182,13 +182,13 @@ const flush = (): Promise<void> =>
 
 const notOffered = async () =>
   vi.mocked(
-    (await import('@/platform/telemetry')).useTelemetry()!
+    (await import('@comfyorg/telemetry')).useTelemetry()!
       .trackAgentConsentNotOffered
   )
 
 const offerExited = async () =>
   vi.mocked(
-    (await import('@/platform/telemetry')).useTelemetry()!
+    (await import('@comfyorg/telemetry')).useTelemetry()!
       .trackAgentConsentOfferExited
   )
 

@@ -181,7 +181,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["telemetry"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

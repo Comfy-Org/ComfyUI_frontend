@@ -786,11 +786,13 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [
+    "app-host",
     "authentication",
     "design-system",
     "dialog-host",
     "error-reporting",
     "extension-runtime",
+    "keybindings",
     "workbench-shell",
     "workflow-management"
   ],

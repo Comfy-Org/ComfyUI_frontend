@@ -13,7 +13,7 @@ import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import {
   conflictingOriginLinksRoot,
@@ -21,7 +21,7 @@ import {
 } from './__fixtures__/duplicateLinks'
 import { normalizeConfiguredTopology } from './linkDeduplication'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 class DupTestNode extends LGraphNode {
   constructor(title?: string) {

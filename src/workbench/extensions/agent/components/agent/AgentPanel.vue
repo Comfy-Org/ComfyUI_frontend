@@ -14,7 +14,7 @@ import type {
   AgentPaywallSurface,
   AgentStarterPromptAssignment,
   AgentStopMethod
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 
 import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
 import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
@@ -550,7 +550,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             (workflowId, workflowName) =>
               emit('openReferenceWorkflow', workflowId, workflowName)
           "
-          @paywall-action="emit('paywallAction', $event, 'refused_send')"
+          @paywall-action="
+            (action, surface) => emit('paywallAction', action, surface)
+          "
         />
         <div
           v-if="showChatLoading"

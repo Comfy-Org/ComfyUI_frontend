@@ -54,6 +54,11 @@
       "count": 1
     }
   },
+  "packages/telemetry/src/redactTelemetryUrls.ts": {
+    "regexp/no-dupe-characters-character-class": {
+      "count": 13
+    }
+  },
   "packages/viewport3d/src/load3d/HDRIManager.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2
@@ -95,11 +100,6 @@
     }
   },
   "src/components/helpcenter/HelpCenterMenuContent.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/components/rightSidePanel/errors/MissingNodeCard.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -350,7 +350,7 @@
   },
   "src/lib/litegraph/src/litegraph.ts": {
     "comfy/no-reexports": {
-      "count": 44
+      "count": 43
     }
   },
   "src/lib/litegraph/src/litegraphInstance.ts": {
@@ -631,11 +631,6 @@
       "count": 2
     }
   },
-  "src/platform/keybindings/keybindingStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/platform/keybindings/presetService.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -669,11 +664,6 @@
   "src/platform/telemetry/providers/host/HostTelemetrySink.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/platform/telemetry/redactTelemetryUrls.ts": {
-    "regexp/no-dupe-characters-character-class": {
-      "count": 13
     }
   },
   "src/platform/telemetry/utils/surveyNormalization.ts": {
@@ -1088,11 +1078,6 @@
     }
   },
   "src/stores/assetsStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/stores/commandStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
     }

@@ -36,7 +36,7 @@
 import { whenever } from '@vueuse/core'
 import { computed, ref, shallowRef, useId } from 'vue'
 
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'

@@ -1,5 +1,5 @@
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 /** The active workflow's graph as serialized before and after an undo/redo restore. */
 export interface GraphRestore {
