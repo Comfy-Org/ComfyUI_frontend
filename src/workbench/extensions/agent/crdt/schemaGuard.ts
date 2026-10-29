@@ -23,7 +23,7 @@
 import { SCHEMA_VERSION, readSchemaVersion } from '@comfyorg/comfy-multi-player'
 import type * as Y from 'yjs'
 
-import { assert } from '@/base/assert'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
 
 /** Thrown by {@link assertReadableSchema}; carries the version actually found. */
 export class FollowerSchemaError extends Error {

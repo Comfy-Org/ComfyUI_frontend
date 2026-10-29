@@ -1,7 +1,7 @@
 import { remove } from 'es-toolkit'
 import { shallowReactive } from 'vue'
 
-import { assert } from '@/base/assert'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'

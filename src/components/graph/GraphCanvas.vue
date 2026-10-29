@@ -136,7 +136,7 @@ import {
   isMiddleButtonEvent,
   isMiddleButtonHeld,
   isMiddlePointerInput
-} from '@/base/pointerUtils'
+} from '@comfyorg/shared-frontend-utils/pointerUtils'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'

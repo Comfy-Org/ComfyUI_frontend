@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toRaw } from 'vue'
 
-import { setAssertReporter } from '@/base/assert'
+import { setAssertReporter } from '@comfyorg/shared-frontend-utils/assert'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'

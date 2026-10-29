@@ -1,10 +1,12 @@
+// @vitest-environment happy-dom
+
 import { describe, expect, it } from 'vitest'
 
 import {
   isMiddleButtonEvent,
   isMiddleButtonHeld,
   isMiddlePointerInput
-} from '@/base/pointerUtils'
+} from './pointerUtils'
 
 describe('pointerUtils', () => {
   describe('isMiddlePointerInput', () => {

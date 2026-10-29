@@ -10,7 +10,7 @@ import { cloneDeep, toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 import { provideCanvasClass } from './canvas/canvasClassAccess'
 
-import { isMiddleButtonEvent } from '@/base/pointerUtils'
+import { isMiddleButtonEvent } from '@comfyorg/shared-frontend-utils/pointerUtils'
 import { transferLinkPresentation } from '@/lib/litegraph/src/transferLinkPresentation'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'

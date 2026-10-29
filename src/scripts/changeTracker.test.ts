@@ -39,7 +39,7 @@ import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/base/assert'), () => ({
+vi.mock(import('@comfyorg/shared-frontend-utils/assert'), () => ({
   assert: mockAssert
 }))
 

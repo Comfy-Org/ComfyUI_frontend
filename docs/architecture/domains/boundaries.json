@@ -1134,8 +1134,6 @@
       {
         "name": "error-reporting/domain",
         "patterns": [
-          "src/base/assert.test.ts",
-          "src/base/assert.ts",
           "src/platform/telemetry/datadogRumBeforeSend.test.ts",
           "src/platform/telemetry/datadogRumBeforeSend.ts",
           "src/platform/telemetry/redactTelemetryUrls.test.ts",

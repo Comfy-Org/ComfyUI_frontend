@@ -21,7 +21,7 @@
  */
 import type { WidgetValuesForm } from '@comfyorg/comfy-multi-player'
 
-import { assert } from '@/base/assert'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'

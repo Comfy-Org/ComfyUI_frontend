@@ -2,7 +2,7 @@ import { useDebounceFn, useEventListener } from '@vueuse/core'
 import { ref } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { isMiddleButtonEvent } from '@/base/pointerUtils'
+import { isMiddleButtonEvent } from '@comfyorg/shared-frontend-utils/pointerUtils'
 
 interface TransformSettlingOptions {
   /**

@@ -8,7 +8,10 @@ import type {
 
 import { isRumErrorNoise } from '@comfyorg/shared-frontend-utils/telemetry'
 
-import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
+import {
+  ASSERTION_FAILURE_PREFIX,
+  hasRumAssertReporter
+} from '@comfyorg/shared-frontend-utils/assert'
 
 import {
   EXTENSION_FAILURES_TRUNCATED_FIELD,

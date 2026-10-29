@@ -1,5 +1,5 @@
 import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
-import { isMiddleButtonHeld } from '@/base/pointerUtils'
+import { isMiddleButtonHeld } from '@comfyorg/shared-frontend-utils/pointerUtils'
 
 /**
  * A class that can be added to the render cycle to show pointer / keyboard status symbols.

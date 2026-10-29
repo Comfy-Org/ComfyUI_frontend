@@ -2,7 +2,7 @@ import {
   isMiddleButtonEvent,
   isMiddleButtonHeld,
   isMiddlePointerInput
-} from '@/base/pointerUtils'
+} from '@comfyorg/shared-frontend-utils/pointerUtils'
 import { useApp } from '@/scripts/appInstance'
 
 export function forwardMiddleButtonToCanvas(

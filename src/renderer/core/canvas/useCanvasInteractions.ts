@@ -4,7 +4,7 @@ import {
   isMiddleButtonEvent,
   isMiddleButtonHeld,
   isMiddlePointerInput
-} from '@/base/pointerUtils'
+} from '@comfyorg/shared-frontend-utils/pointerUtils'
 import { isCanvasGestureWheel } from '@/base/wheelGestures'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

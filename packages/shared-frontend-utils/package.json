@@ -6,6 +6,10 @@
   "keywords": [],
   "type": "module",
   "exports": {
+    "./assert": {
+      "types": "./dist-types/assert.d.ts",
+      "default": "./src/assert.ts"
+    },
     "./colorUtil": {
       "types": "./dist-types/colorUtil.d.ts",
       "default": "./src/colorUtil.ts"
@@ -41,6 +45,10 @@
     "./piiUtil": {
       "types": "./dist-types/piiUtil.d.ts",
       "default": "./src/piiUtil.ts"
+    },
+    "./pointerUtils": {
+      "types": "./dist-types/pointerUtils.d.ts",
+      "default": "./src/pointerUtils.ts"
     },
     "./telemetry": {
       "types": "./dist-types/telemetry.d.ts",

@@ -2,7 +2,7 @@ import { SCHEMA_VERSION, mint } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { setAssertReporter } from '@/base/assert'
+import { setAssertReporter } from '@comfyorg/shared-frontend-utils/assert'
 
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 

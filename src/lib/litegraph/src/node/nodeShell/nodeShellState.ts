@@ -1,7 +1,7 @@
 import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { shallowReactive } from 'vue'
 
-import { assert } from '@/base/assert'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
 import {
   canTransferLayoutAttachment,
   transferLayoutAttachment

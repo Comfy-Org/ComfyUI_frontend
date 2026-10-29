@@ -5,7 +5,7 @@ import 'primeicons/primeicons.css'
 import { createApp } from 'vue'
 import type { App as VueApp } from 'vue'
 
-import { setAssertReporter } from '@/base/assert'
+import { setAssertReporter } from '@comfyorg/shared-frontend-utils/assert'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'

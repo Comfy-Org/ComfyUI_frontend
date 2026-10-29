@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { assert, setAssertReporter } from '@/base/assert'
+import { assert, setAssertReporter } from './assert'
 
 describe('assert', () => {
   beforeEach(() => {})

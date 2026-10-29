@@ -79,11 +79,6 @@
       "count": 1
     }
   },
-  "src/base/assert.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/base/common/downloadUtil.ts": {
     "comfy/no-new-error-throw": {
       "count": 2

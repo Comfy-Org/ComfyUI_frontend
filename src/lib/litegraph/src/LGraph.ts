@@ -2,7 +2,7 @@ import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
-import { assert } from '@/base/assert'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
 import { adoptPromotedWidgetValue } from '@/lib/litegraph/src/subgraph/promotion/adoptPromotedWidgetValue'
 import { toSelectableKey } from '@comfyorg/graph-state/selection/selectionState'
 import {

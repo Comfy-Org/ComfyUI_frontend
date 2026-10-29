@@ -100,7 +100,7 @@ vi.mock(import('@/scripts/app'))
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/base/assert'), () => ({
+vi.mock(import('@comfyorg/shared-frontend-utils/assert'), () => ({
   assert: mockAssert
 }))
 

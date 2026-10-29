@@ -5,7 +5,7 @@ import {
   isMiddleButtonEvent,
   isMiddleButtonHeld,
   isMiddlePointerInput
-} from '@/base/pointerUtils'
+} from '@comfyorg/shared-frontend-utils/pointerUtils'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { captureGesture } from '@/lib/litegraph/src/canvas/captureGesture'
 import type {
