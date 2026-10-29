@@ -1,5 +1,6 @@
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { parseFilePath } from '@/utils/formatUtil'
 
 const GRID_THUMBNAIL_PREVIEW_FORMAT = 'webp;75'
 
@@ -32,8 +33,21 @@ export function getGridThumbnailUrl(url: string): string {
     : `${parsed.pathname}${parsed.search}`
 }
 
+function isPlainRelativePath(filepath: string): boolean {
+  return filepath
+    .split(/[\\/]/)
+    .every(
+      (segment) =>
+        segment !== '' &&
+        segment !== '.' &&
+        segment !== '..' &&
+        !segment.includes(':')
+    )
+}
+
 /**
  * Parses an image widget value like "subfolder/filename [type]" into its parts.
+ * Values with a non-plain path segment are kept whole as the filename.
  */
 export function parseImageWidgetValue(raw: string): {
   filename: string
@@ -41,14 +55,9 @@ export function parseImageWidgetValue(raw: string): {
   type: string
 } {
   const { filepath, rootFolder: type } = parseAnnotatedPath(raw)
-  let value = filepath
-  let subfolder = ''
-  const slashIndex = value.lastIndexOf('/')
-  if (slashIndex !== -1) {
-    subfolder = value.slice(0, slashIndex)
-    value = value.slice(slashIndex + 1)
-  }
-  return { filename: value, subfolder, type }
+  if (!isPlainRelativePath(filepath))
+    return { filename: filepath, subfolder: '', type }
+  return { ...parseFilePath(filepath), type }
 }
 
 export const is_all_same_aspect_ratio = (imgs: HTMLImageElement[]): boolean => {
