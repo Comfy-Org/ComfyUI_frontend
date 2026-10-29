@@ -82,4 +82,48 @@ describe('parseImageWidgetValue', () => {
       type: 'input'
     })
   })
+
+  it.for([
+    {
+      raw: 'scenes\\sky.png [output]',
+      filename: 'sky.png',
+      subfolder: 'scenes',
+      type: 'output'
+    },
+    {
+      raw: 'a\\b/sky.png',
+      filename: 'sky.png',
+      subfolder: 'a/b',
+      type: 'input'
+    },
+    {
+      raw: '/sky.png [output]',
+      filename: '/sky.png',
+      subfolder: '',
+      type: 'output'
+    },
+    {
+      raw: 'scenes/sky.png/ [output]',
+      filename: 'scenes/sky.png/',
+      subfolder: '',
+      type: 'output'
+    },
+    {
+      raw: 'scenes/../sky.png [temp]',
+      filename: 'scenes/../sky.png',
+      subfolder: '',
+      type: 'temp'
+    },
+    {
+      raw: 'D:\\sky.png [output]',
+      filename: 'D:\\sky.png',
+      subfolder: '',
+      type: 'output'
+    }
+  ])(
+    'splits $raw only when every segment is a plain name',
+    ({ raw, ...expected }) => {
+      expect(parseImageWidgetValue(raw)).toEqual(expected)
+    }
+  )
 })
