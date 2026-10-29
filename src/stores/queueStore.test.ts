@@ -4,7 +4,7 @@ import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useJobModelDownloadStore } from '@/platform/workspace/stores/jobModelDownloadStore'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 import {
   TaskItemImpl,
   useQueuePendingTaskCountStore,

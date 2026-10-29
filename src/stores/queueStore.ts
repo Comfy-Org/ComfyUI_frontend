@@ -20,7 +20,7 @@ import { useExtensionServiceAccess } from '@/services/extensionServiceAccess'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useJobModelDownloadStore } from '@/platform/workspace/stores/jobModelDownloadStore'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
 

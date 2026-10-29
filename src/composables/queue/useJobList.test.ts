@@ -1,6 +1,6 @@
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useJobModelDownloadStore } from '@/platform/workspace/stores/jobModelDownloadStore'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'

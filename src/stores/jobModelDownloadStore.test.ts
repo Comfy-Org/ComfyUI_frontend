@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import type { ModelDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
-import { useJobModelDownloadStore } from '@/platform/workspace/stores/jobModelDownloadStore'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
