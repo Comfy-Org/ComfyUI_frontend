@@ -2213,6 +2213,27 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     )
   })
 
+  it('stays hidden on a thread the agent started, with no user message', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-agent-started')
+    conversation.messages.push({
+      id: toTurnId('msg-agent-opening'),
+      role: 'assistant',
+      parts: [
+        { type: 'text', text: 'Want me to wire that up?', state: 'done' }
+      ],
+      streaming: false,
+      thinking: false
+    })
+    await nextTick()
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
   it('stays hidden while a restored thread has not loaded any messages', async () => {
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
