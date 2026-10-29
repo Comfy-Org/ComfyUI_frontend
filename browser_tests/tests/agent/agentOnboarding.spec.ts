@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
@@ -8,6 +9,25 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+
+async function expectTourCard(
+  page: Page,
+  title: string,
+  description: string,
+  progress: string
+): Promise<Locator> {
+  const dialog = page.getByRole('dialog', { name: title })
+  await expect(dialog).toBeVisible()
+  await expect(dialog).toHaveAccessibleDescription(description)
+  await expect(dialog).toContainText(progress)
+  await expect(page.getByTestId('agent-coach-spotlight')).toBeVisible()
+  await expect(dialog).toBeInViewport({ ratio: 1 })
+  return dialog
+}
+
+function skipButton(dialog: Locator): Locator {
+  return dialog.getByRole('button', { name: enMessages.agent.skip })
+}
 
 test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
   test('returns to the previous card without completing the tour', async ({
@@ -147,31 +167,34 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       onboardingCompleted: false
     })
     await new AgentPanel(page).open()
-    const steps = [
-      [enMessages.agent.coachTitle, enMessages.agent.coachBody],
-      [enMessages.agent.coachWorkflowTitle, enMessages.agent.coachWorkflowBody],
-      [enMessages.agent.coachHistoryTitle, enMessages.agent.coachHistoryBody]
-    ] as const
+    const intro = await expectTourCard(
+      page,
+      enMessages.agent.coachTitle,
+      enMessages.agent.coachBody,
+      '1 of 3'
+    )
+    await expect(skipButton(intro)).toHaveCount(1)
+    await intro.getByRole('button', { name: enMessages.g.next }).click()
 
-    for (const [index, [title, description]] of steps.entries()) {
-      const dialog = page.getByRole('dialog', { name: title })
-      await expect(dialog).toBeVisible()
-      await expect(dialog).toHaveAccessibleDescription(description)
-      await expect(dialog).toContainText(`${index + 1} of ${steps.length}`)
-      await expect(page.getByTestId('agent-coach-spotlight')).toBeVisible()
-      await expect(dialog).toBeInViewport({ ratio: 1 })
-      await expect(
-        dialog.getByRole('button', { name: enMessages.agent.skip })
-      ).toHaveCount(index === steps.length - 1 ? 0 : 1)
-      await dialog
-        .getByRole('button', {
-          name:
-            index === steps.length - 1
-              ? enMessages.onboardingCoachmarks.done
-              : enMessages.g.next
-        })
-        .click()
-    }
+    const workflow = await expectTourCard(
+      page,
+      enMessages.agent.coachWorkflowTitle,
+      enMessages.agent.coachWorkflowBody,
+      '2 of 3'
+    )
+    await expect(skipButton(workflow)).toHaveCount(1)
+    await workflow.getByRole('button', { name: enMessages.g.next }).click()
+
+    const history = await expectTourCard(
+      page,
+      enMessages.agent.coachHistoryTitle,
+      enMessages.agent.coachHistoryBody,
+      '3 of 3'
+    )
+    await expect(skipButton(history)).toHaveCount(0)
+    await history
+      .getByRole('button', { name: enMessages.onboardingCoachmarks.done })
+      .click()
 
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect

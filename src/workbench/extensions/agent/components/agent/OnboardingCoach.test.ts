@@ -142,23 +142,19 @@ describe('OnboardingCoach', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('offers Skip on every card but the last, which finishes only through Done', async () => {
+  it('offers only Done on the last card', async () => {
     const user = userEvent.setup()
     mount()
-    for (const index of STEPS.keys()) {
-      await screen.findByRole('dialog', { name: STEPS[index].title })
-      await waitFor(() =>
-        expect(
-          screen.getByRole('button', { name: index === LAST ? 'Done' : 'Next' })
-        ).toBeVisible()
-      )
-      if (index === LAST) {
-        expect(screen.queryByRole('button', { name: 'Skip' })).toBeNull()
-      } else {
-        expect(screen.getByRole('button', { name: 'Skip' })).toBeVisible()
-        await user.click(screen.getByRole('button', { name: 'Next' }))
-      }
-    }
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByRole('dialog', { name: STEPS[1].title })
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByRole('dialog', { name: STEPS[LAST].title })
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Done' })).toBeVisible()
+    )
+    expect(screen.queryByRole('button', { name: 'Skip' })).toBeNull()
   })
 
   it.for([...STEPS.keys()].slice(0, LAST))(
