@@ -53,6 +53,30 @@ export function toAgentPaywallCta(action: AgentPaywallAction): AgentPaywallCta {
   return AGENT_PAYWALL_CTAS[action]
 }
 
+export type AgentPaywallRemediation = Extract<
+  AgentPaywallAction,
+  'addCredits' | 'subscribe'
+>
+
+const AGENT_PAYWALL_REMEDIATIONS = {
+  subscribed: 'addCredits',
+  local: 'addCredits',
+  subscriptionRequired: 'subscribe',
+  member: undefined,
+  salesManaged: undefined,
+  unavailable: undefined
+} satisfies Record<
+  AgentPaywallPresentation['kind'],
+  AgentPaywallRemediation | undefined
+>
+
+/** The one purchase route a viewer in this presentation can actually take. */
+export function toAgentPaywallRemediation(
+  presentation: AgentPaywallPresentation
+): AgentPaywallRemediation | undefined {
+  return AGENT_PAYWALL_REMEDIATIONS[presentation.kind]
+}
+
 export function resolveAgentPaywallPresentation({
   distribution,
   role,
