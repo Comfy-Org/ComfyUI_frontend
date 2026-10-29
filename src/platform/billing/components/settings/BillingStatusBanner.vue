@@ -378,7 +378,7 @@ function handleAddCredits() {
   void showTopUpCreditsDialog()
 }
 function handleResubscribePlan() {
-  subscriptionDialog.show({
+  void subscriptionDialog.show({
     planMode: audience.value === 'personal' ? 'personal' : 'team',
     reason: 'settings_billing_panel'
   })
