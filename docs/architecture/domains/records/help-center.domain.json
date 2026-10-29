@@ -17,7 +17,7 @@
     },
     {
       "path": "src/composables/useHelpCenter.ts",
-      "role": "application"
+      "role": "presentation"
     },
     {
       "path": "src/stores/helpCenterStore.ts",

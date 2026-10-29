@@ -20,8 +20,60 @@
       "role": "presentation"
     },
     {
+      "path": "src/platform/customNodes/manager/components/ManagerProgressToast.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/customNodes/manager/components/manager/ManagerDialog.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/nodePack/usePackInstall.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/useImportFailedDetection.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/useImportFailedDetection.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/useImportFailedNodeDialog.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/useManagerDialog.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/useManagerDialog.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/useManagerSurveyDialog.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/useManagerSurveyDialog.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/useNodeConflictDialog.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/workflowErrorManager.ts",
+      "role": "integration"
+    },
+    {
       "path": "src/platform/customNodes/manager/services/comfyManagerService.ts",
       "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/customNodes/manager/stores/comfyManagerStore.test.ts",
+      "role": "integration"
     },
     {
       "path": "src/platform/customNodes/manager/types/comfyManagerTypes.ts",
