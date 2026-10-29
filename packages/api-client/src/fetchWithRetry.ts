@@ -1,9 +1,5 @@
-import type { RetryPolicy } from '@/utils/retryPolicy'
-import {
-  canRetryMethod,
-  retryDelayMs,
-  sleep as sleepFor
-} from '@/utils/retryPolicy'
+import type { RetryPolicy } from './retryPolicy'
+import { canRetryMethod, retryDelayMs, sleep as sleepFor } from './retryPolicy'
 
 type FetchLike = (
   input: RequestInfo | URL,

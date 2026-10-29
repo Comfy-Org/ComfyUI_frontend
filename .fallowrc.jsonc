@@ -130,7 +130,7 @@
     },
     // Generated OpenAPI client types (mirrors knip ignore).
     {
-      "file": "src/workbench/extensions/manager/types/generatedManagerTypes.ts",
+      "file": "packages/api-client/src/generatedManagerTypes.ts",
       "exports": ["*"]
     },
     // Loaded dynamically: cloud onboarding routes, cloud telemetry provider, and

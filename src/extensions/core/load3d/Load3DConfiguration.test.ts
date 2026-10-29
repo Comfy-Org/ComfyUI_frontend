@@ -21,7 +21,7 @@ import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { Settings } from '@/platform/settings/types'
+import type { Settings } from '@comfyorg/settings-core/types'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))

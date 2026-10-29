@@ -10,18 +10,18 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { MissingModelPipelineResult } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@comfyorg/graph-model/workflowSchema'
-import type { Keybinding } from '@/platform/keybindings/types'
+import type { Keybinding } from '@comfyorg/settings-core/keybindingTypes'
 import type {
   ExecutionErrorWsMessage,
   NodeExecutionOutput,
   ProgressWsMessage
-} from '@/platform/remote/comfyui/execution/types'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+} from '@comfyorg/api-client/executionTypes'
+import type { NodeError } from '@comfyorg/api-client/types'
 import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
@@ -31,7 +31,7 @@ import type {
   LoadedComfyWorkflow
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
-import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import type { ComfyUI } from '@/scripts/ui'
 import type { ComfyAppMenu } from '@/scripts/ui/menu/index'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
@@ -41,7 +41,7 @@ import type {
   NodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { AuthUserInfo } from '@/types/authTypes'
+import type { AuthUserInfo } from '@comfyorg/api-client/authTypes'
 import type {
   BottomPanelExtension,
   ExtensionManager,

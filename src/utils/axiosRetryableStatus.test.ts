@@ -3,7 +3,7 @@ import axios, { AxiosError } from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 
 import { attachRetryableStatusRetry } from '@/utils/axiosRetryableStatus'
-import { DEFAULT_RETRY_POLICY } from '@/utils/retryPolicy'
+import { DEFAULT_RETRY_POLICY } from '@comfyorg/api-client/retryPolicy'
 
 interface ScriptedAnswer {
   readonly status: number

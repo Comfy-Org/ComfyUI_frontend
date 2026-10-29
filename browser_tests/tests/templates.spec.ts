@@ -7,7 +7,7 @@ import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { trackElementFlash } from '@e2e/fixtures/utils/flashDetector'
 import { assetPath } from '@e2e/fixtures/utils/paths'
-import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import type { WorkflowTemplates } from '@comfyorg/api-client/templateTypes'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 async function checkTemplateFileExists(

@@ -60,10 +60,6 @@
       "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/manager/types/generatedManagerTypes.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/workbench/extensions/manager/types/importFailedTypes.ts",
       "role": "presentation"
     },

@@ -8,10 +8,6 @@
       "role": "domain"
     },
     {
-      "path": "src/schemas/colorPaletteSchema.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/services/colorPaletteService.test.ts",
       "role": "application"
     },

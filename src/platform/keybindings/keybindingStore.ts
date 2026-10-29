@@ -5,7 +5,7 @@ import { computed, ref, shallowRef } from 'vue'
 
 import type { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
-import type { KeybindingPreset } from './types'
+import type { KeybindingPreset } from '@comfyorg/settings-core/keybindingTypes'
 
 type KeybindingMap = Partial<Record<string, KeybindingImpl>>
 

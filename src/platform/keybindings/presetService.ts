@@ -16,8 +16,8 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { KeybindingImpl } from './keybinding'
 import { useKeybindingService } from './keybindingService'
 import { useKeybindingStore } from './keybindingStore'
-import type { KeybindingPreset } from './types'
-import { zKeybindingPreset } from './types'
+import type { KeybindingPreset } from '@comfyorg/settings-core/keybindingTypes'
+import { zKeybindingPreset } from '@comfyorg/settings-core/keybindingTypes'
 
 const PRESETS_DIR = 'keybindings'
 

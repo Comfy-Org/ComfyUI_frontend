@@ -6,7 +6,7 @@ import { ref } from 'vue'
 import { api } from '@/scripts/api'
 import { isAbortError } from '@/utils/typeGuardUtil'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
-import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
+import type { components } from '@comfyorg/api-client/generatedManagerTypes'
 
 type ManagerQueueStatus = components['schemas']['QueueStatus']
 type InstallPackParams = components['schemas']['InstallPackParams']

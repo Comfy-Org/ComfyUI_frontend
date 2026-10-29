@@ -12,7 +12,7 @@ import zombie from '@/assets/palettes/zombie.json' with { type: 'json' }
 import type {
   ColorPalettes,
   CompletedPalette
-} from '@/schemas/colorPaletteSchema'
+} from '@comfyorg/settings-core/colorPaletteSchema'
 
 export const CORE_COLOR_PALETTES: ColorPalettes = {
   dark,

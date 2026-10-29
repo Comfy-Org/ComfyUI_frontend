@@ -32,14 +32,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workflow/templates/schemas/templateSchema.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/templates/types/**",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/workflow/templates/utils/**",
       "role": "domain"
     }

@@ -100,18 +100,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/auth/apiAuthProvider.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/auth/authCredential.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/auth/authCredential.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/auth/authRejection.test.ts",
       "role": "domain"
     },
@@ -168,10 +156,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/auth/session/sessionMediaUrl.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/auth/session/ssoReentryStorage.ts",
       "role": "infrastructure"
     },
@@ -182,10 +166,6 @@
     {
       "path": "src/platform/auth/session/useSessionCookie.ts",
       "role": "application"
-    },
-    {
-      "path": "src/platform/auth/session/webSessionFetch.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/platform/auth/session/webSessionUser.ts",
@@ -320,10 +300,6 @@
       "role": "application"
     },
     {
-      "path": "src/types/authTypes.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/types/axios-augmentation.d.ts",
       "role": "infrastructure"
     },
@@ -372,7 +348,7 @@
         "src/platform/workspace/stores/legacyWorkspaceTokenRail.lifecycle.test.ts",
         "src/platform/auth/unified/remintRetry.test.ts",
         "src/platform/auth/authRejection.test.ts",
-        "src/platform/auth/authCredential.test.ts",
+        "packages/api-client/src/authCredential.test.ts",
         "src/platform/account/auth/WorkspaceAuthGate.test.ts"
       ]
     },

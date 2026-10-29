@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobDetail } from '@comfyorg/api-client/jobTypes'
 
 import { agentExecutionStoryTest as test } from '@e2e/tests/agent/agentExecutionStoryFixture'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'

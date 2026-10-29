@@ -190,7 +190,7 @@
       "excludeFiles": [
         "**/*.test.ts",
         "**/*.spec.ts",
-        "src/platform/remote/comfyui/jobs/jobTypes.ts"
+        "packages/api-client/src/jobTypes.ts"
       ],
       "rules": {
         "comfy/no-unsafe-error-assertion": "error"
@@ -282,10 +282,15 @@
       }
     },
     {
-      "files": ["src/**/*.{ts,tsx,vue}"],
+      "files": [
+        "src/**/*.{ts,tsx,vue}",
+        "packages/api-client/src/**/*.ts",
+        "packages/settings-core/src/**/*.ts"
+      ],
       "excludeFiles": [
         "src/**/*.d.ts",
         "src/**/*.{test,spec,stories}.{ts,tsx,vue}",
+        "packages/*/src/**/*.test.ts",
         "src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**",
         "src/**/{generated,vendor}/**"
       ],
@@ -317,12 +322,7 @@
     },
     {
       "files": ["src/platform/remote/**/*.ts", "src/platform/remote/**/*.vue"],
-      "excludeFiles": [
-        "**/*.test.ts",
-        "**/*.spec.ts",
-        "src/platform/remote/comfyui/execution/types.ts",
-        "src/platform/remote/comfyui/jobs/jobTypes.ts"
-      ],
+      "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
       "rules": {
         "comfy/no-new-zod-for-remote-api-types": "error"
       }
@@ -359,7 +359,6 @@
       "files": ["src/schemas/**/*.ts"],
       "excludeFiles": [
         "src/schemas/**/*.test.ts",
-        "src/schemas/colorPaletteSchema.ts",
         "src/schemas/signInSchema.ts"
       ],
       "rules": {

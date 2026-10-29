@@ -44,10 +44,6 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/keybindings/types.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/modalUtil.ts",
       "role": "domain"
     }

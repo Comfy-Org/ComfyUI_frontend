@@ -104,20 +104,12 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/settings/constants/canvasNavigation.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/settings/globalSettingsApi.test.ts",
       "role": "infrastructure"
     },
     {
       "path": "src/platform/settings/globalSettingsApi.ts",
       "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/settings/types.ts",
-      "role": "domain"
     },
     {
       "path": "src/scripts/ui/settings.test.ts",

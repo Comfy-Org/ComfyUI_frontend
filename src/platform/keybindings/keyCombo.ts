@@ -1,7 +1,7 @@
 import { toRaw } from 'vue'
 
 import { RESERVED_BY_BROWSER, RESERVED_BY_TEXT_INPUT } from './reserved'
-import type { KeyCombo } from './types'
+import type { KeyCombo } from '@comfyorg/settings-core/keybindingTypes'
 
 const MODIFIER_KEY_LABELS: Record<string, string> = {
   Control: 'Ctrl',

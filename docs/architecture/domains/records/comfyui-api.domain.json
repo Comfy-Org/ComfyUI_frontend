@@ -8,10 +8,6 @@
       "role": "domain"
     },
     {
-      "path": "src/schemas/resultItemTypeSchema.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/createAnnotatedPath.test.ts",
       "role": "domain"
     },
@@ -20,13 +16,13 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": ["src/platform/remote/comfyui/execution/types.ts"],
+  "publicEntryPoints": [],
   "allowedDependencies": [],
   "allowedConsumers": ["graph-model"],
   "characterizationScenarios": [
     {
       "name": "Websocket execution-output schemas accept backend result items and task outputs",
-      "checks": ["src/platform/remote/comfyui/execution/types.test.ts"]
+      "checks": ["packages/api-client/src/executionTypes.test.ts"]
     },
     {
       "name": "HTTP error payloads parse into stable codes and bounded user-facing messages",

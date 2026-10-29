@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import type { KeybindingPreset } from '@/platform/keybindings/types'
+import type { KeybindingPreset } from '@comfyorg/settings-core/keybindingTypes'
 
 import { api } from '@/scripts/api'
 

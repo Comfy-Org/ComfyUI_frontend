@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { fetchWithRetry } from '@/utils/fetchWithRetry'
-import { DEFAULT_RETRY_POLICY } from '@/utils/retryPolicy'
+import { fetchWithRetry } from './fetchWithRetry'
+import { DEFAULT_RETRY_POLICY } from './retryPolicy'
 
 function respond(status: number, headers: Record<string, string> = {}) {
   return new Response(status === 200 ? '{}' : null, { status, headers })

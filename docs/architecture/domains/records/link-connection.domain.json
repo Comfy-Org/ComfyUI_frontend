@@ -90,10 +90,6 @@
     {
       "path": "src/lib/litegraph/src/infrastructure/LinkConnectorEventMap.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/types/searchBoxTypes.ts",
-      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

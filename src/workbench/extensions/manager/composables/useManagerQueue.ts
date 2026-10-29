@@ -7,7 +7,7 @@ import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { app } from '@/scripts/app'
 import { normalizePackKeys } from '@/utils/packUtils'
-import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
+import type { components } from '@comfyorg/api-client/generatedManagerTypes'
 
 type ManagerTaskHistory = Record<
   string,

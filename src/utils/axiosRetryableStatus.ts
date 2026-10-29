@@ -6,8 +6,11 @@ import type {
 } from 'axios'
 import axios from 'axios'
 
-import type { RetryPolicy } from '@/utils/retryPolicy'
-import { retryDelayMs, sleep as sleepFor } from '@/utils/retryPolicy'
+import type { RetryPolicy } from '@comfyorg/api-client/retryPolicy'
+import {
+  retryDelayMs,
+  sleep as sleepFor
+} from '@comfyorg/api-client/retryPolicy'
 
 export interface AxiosRetryableStatusOptions {
   readonly policy?: RetryPolicy

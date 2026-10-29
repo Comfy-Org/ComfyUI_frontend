@@ -12,10 +12,10 @@ import {
 } from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
-import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
+import type { WebSessionSend } from '@comfyorg/api-client/webSessionFetch'
 import { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader } from '@/types/authTypes'
-import { retryingSend } from '@/utils/fetchWithRetry'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
+import { retryingSend } from '@comfyorg/api-client/fetchWithRetry'
 
 export class GlobalSettingsApiError extends Error {
   constructor(

@@ -3,11 +3,11 @@ import type { Page } from '@playwright/test'
 
 import { expect, mergeTests } from '@playwright/test'
 
-import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
 import type {
   NodeError,
   PromptFailureResponse
-} from '@/platform/remote/comfyui/types'
+} from '@comfyorg/api-client/types'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'

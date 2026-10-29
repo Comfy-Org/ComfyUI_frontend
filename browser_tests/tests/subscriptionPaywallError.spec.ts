@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { PromptFailureResponse } from '@/platform/remote/comfyui/types'
+import type { PromptFailureResponse } from '@comfyorg/api-client/types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'

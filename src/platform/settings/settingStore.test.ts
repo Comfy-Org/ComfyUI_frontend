@@ -1,15 +1,13 @@
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import type { Keybinding } from '@/platform/keybindings/types'
+import type { Keybinding } from '@comfyorg/settings-core/keybindingTypes'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { NodeBadgeMode } from '@/types/nodeSource'
-import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import type { LinkReleaseTriggerAction } from '@comfyorg/settings-core/searchBoxTypes'
 
-import {
-  getSettingInfo,
-  useSettingStore
-} from '@/platform/settings/settingStore'
-import type { SettingParams, Settings } from '@/platform/settings/types'
+import { getSettingInfo } from '@comfyorg/settings-core/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { SettingParams, Settings } from '@comfyorg/settings-core/types'
 import { api } from '@/scripts/api'
 
 vi.mock(import('@comfyorg/telemetry'))

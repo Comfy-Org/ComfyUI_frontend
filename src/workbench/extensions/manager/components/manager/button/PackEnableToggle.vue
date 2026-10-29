@@ -41,7 +41,7 @@ import { useImportFailedDetection } from '@/workbench/extensions/manager/composa
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useNodeConflictDialog } from '@/workbench/extensions/manager/composables/useNodeConflictDialog'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
+import type { components as ManagerComponents } from '@comfyorg/api-client/generatedManagerTypes'
 
 const TOGGLE_DEBOUNCE_MS = 256
 

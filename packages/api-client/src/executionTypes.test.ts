@@ -1,7 +1,7 @@
 import { expect, expectTypeOf, it } from 'vitest'
 
-import type { ExecutedWsMessage, ExecutingWsMessage } from './types'
-import { zTaskOutput } from './types'
+import type { ExecutedWsMessage, ExecutingWsMessage } from './executionTypes'
+import { zTaskOutput } from './executionTypes'
 
 it('accepts terminal executing frames while keeping executed node IDs required', () => {
   expectTypeOf<{

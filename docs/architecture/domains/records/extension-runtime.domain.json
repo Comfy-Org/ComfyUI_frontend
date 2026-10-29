@@ -32,10 +32,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/scripts/api.eventListeners.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/scripts/api.featureFlags.test.ts",
       "role": "infrastructure"
     },
@@ -85,10 +81,6 @@
     },
     {
       "path": "src/scripts/api.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/apiTimeouts.ts",
       "role": "infrastructure"
     },
     {
@@ -177,7 +169,12 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["error-reporting", "telemetry", "webcam-capture"],
+  "allowedDependencies": [
+    "error-reporting",
+    "remote-config",
+    "telemetry",
+    "webcam-capture"
+  ],
   "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {
@@ -211,7 +208,7 @@
         "src/scripts/api.responses.test.ts",
         "src/scripts/api.featureFlags.test.ts",
         "src/scripts/api.sessionOverride.test.ts",
-        "src/scripts/api.eventListeners.test.ts"
+        "packages/api-client/src/ComfyApi.eventListeners.test.ts"
       ]
     },
     {

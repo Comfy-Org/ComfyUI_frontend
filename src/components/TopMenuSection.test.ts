@@ -25,10 +25,7 @@ import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composabl
 
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
-import type {
-  JobListItem,
-  JobStatus
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobListItem, JobStatus } from '@comfyorg/api-client/jobTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

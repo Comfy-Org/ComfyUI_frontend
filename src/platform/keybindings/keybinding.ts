@@ -1,7 +1,7 @@
 import { toRaw } from 'vue'
 
 import { KeyComboImpl } from './keyCombo'
-import type { Keybinding } from './types'
+import type { Keybinding } from '@comfyorg/settings-core/keybindingTypes'
 
 export class KeybindingImpl implements Keybinding {
   commandId: string
