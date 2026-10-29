@@ -2,7 +2,7 @@ import type { Locator } from '@playwright/test'
 import { mergeTests } from '@playwright/test'
 
 import type { AlgoliaNodePack } from '@/types/algoliaTypes'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
+import type { components as ManagerComponents } from '@/platform/customNodes/manager/types/generatedManagerTypes'
 import type {
   components as RegistryComponents,
   operations as RegistryOperations

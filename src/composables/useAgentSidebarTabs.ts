@@ -2,7 +2,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 

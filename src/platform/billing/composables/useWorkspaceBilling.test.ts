@@ -652,6 +652,30 @@ describe('useWorkspaceBilling', () => {
       expect(billing.occupiedSeats.value).toBe(75)
     })
 
+    it('stops treating a cached Agent grant as authoritative after the current read fails', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce({
+        ...activeStatus,
+        billing_rail: 'stripe',
+        scoped_has_funds: { agent: true }
+      })
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      const statusRead = createDeferred<BillingStatusResponse>()
+      mockWorkspaceApi.getBillingStatus.mockReturnValueOnce(statusRead.promise)
+      const refresh = billing.fetchStatus()
+      expect(billing.subscription.value?.agentScopedHasFundsAuthoritative).toBe(
+        true
+      )
+
+      statusRead.reject(new Error('status unavailable'))
+      await expect(refresh).rejects.toThrow('status unavailable')
+      expect(billing.subscription.value?.agentScopedHasFundsAuthoritative).toBe(
+        false
+      )
+      expect(billing.subscription.value?.agentScopedHasFunds).toBe(true)
+    })
+
     it('accepts missing seat capacity and clears the last known value', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce(activeStatus)
       const billing = setupBilling()

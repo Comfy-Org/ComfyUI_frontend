@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { useAgentExtensionActions } from './useAgentExtensionActions'
@@ -38,7 +38,7 @@ export function useAgentExtensionNotices() {
     [
       () => settingStore.isReady,
       () => extensionStore.agentExtensions,
-      () => extensionStore.areLateExtensionsPending
+      () => extensionStore.areLateCustomNodesPending
     ],
     ([settingsReady, extensions, pending]) => {
       if (!settingsReady || pending) return

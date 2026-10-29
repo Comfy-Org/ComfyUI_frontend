@@ -34,6 +34,16 @@ async function agentAuthHeader(): Promise<AuthHeader | null> {
   }
 }
 
+/** Returns the credential for Agent-owned Global Settings rows. */
+export async function agentSettingsAuthHeader(): Promise<AuthHeader | null> {
+  try {
+    if (isCloud) return await useAuthStore().getWorkspaceAuthHeader()
+    return await agentAuthHeader()
+  } catch {
+    return null
+  }
+}
+
 export async function withAgentAuth(
   init: AgentRequestInit
 ): Promise<AgentRequestInit> {

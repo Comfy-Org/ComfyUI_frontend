@@ -7,7 +7,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'
 import { api } from '@/scripts/api'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { testI18n } from '@/utils/__tests__/testI18n'
 
 import { useAgentExtensionNotices } from './useAgentExtensionNotices'
@@ -36,7 +36,7 @@ describe('useAgentExtensionNotices', () => {
         'agent.absent.toolbar'
       ]
     } as Partial<Settings> as Settings)
-    extensionStore.holdNewExtensions()
+    extensionStore.holdNewCustomNodes()
     renderNotices()
 
     extensionStore.registerExtension({ name: 'agent.tools.seen' })
@@ -51,7 +51,7 @@ describe('useAgentExtensionNotices', () => {
     await nextTick()
     expect(useToast().toasts).toEqual([])
 
-    extensionStore.finishLateExtensions()
+    extensionStore.finishLateCustomNodes()
     await nextTick()
 
     expect(useToast().toasts[0]).toMatchObject({

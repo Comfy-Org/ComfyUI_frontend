@@ -37,6 +37,22 @@ describe('createStorageTokenStore', () => {
     )
   })
 
+  it('keeps the tokens of each workspace across page loads until clear', () => {
+    const storage = memoryStorage()
+    const other = { ...TOKENS, accessToken: 'access-2' }
+    const first = createStorageTokenStore(storage, new EventTarget())
+    first.writeWorkspace('ws-1', TOKENS)
+    first.writeWorkspace('ws-2', other)
+
+    const reloaded = createStorageTokenStore(storage, new EventTarget())
+    expect(reloaded.readWorkspace('ws-1')).toEqual(TOKENS)
+    expect(reloaded.readWorkspace('ws-2')).toEqual(other)
+
+    reloaded.clear()
+    expect(reloaded.readWorkspace('ws-1')).toBeUndefined()
+    expect(storage.items.size).toBe(0)
+  })
+
   it('reads the tokens another tab stored after an earlier read', () => {
     const storage = memoryStorage()
     const store = createStorageTokenStore(storage, new EventTarget())
