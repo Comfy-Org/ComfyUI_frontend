@@ -273,11 +273,6 @@
       "count": 1
     }
   },
-  "src/components/rightSidePanel/errors/MissingNodeCard.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/components/sidebar/SideToolbar.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -640,6 +635,16 @@
   },
   "src/platform/cloud/onboarding/survey/surveySchema.test.ts": {
     "comfy/prefer-array-containing": {
+      "count": 2
+    }
+  },
+  "src/platform/customNodes/customNodeScripts.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "src/platform/extensions/stores/extensionStore.ts": {
+    "comfy/no-new-error-throw": {
       "count": 2
     }
   },
@@ -1039,11 +1044,6 @@
       "count": 1
     }
   },
-  "src/services/extensionLoader.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/services/jobOutputCache.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -1077,11 +1077,6 @@
   "src/stores/assetsStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
-    }
-  },
-  "src/stores/extensionStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
     }
   },
   "src/stores/nodeBookmarkStore.ts": {

@@ -64,7 +64,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
+import { selectionEmphasisClass } from '@/platform/workflowErrors/panel/selectionEmphasis'
 import { resolveMissingMediaItemLabel } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
 import { getMissingMediaReferences } from '@/platform/workflowErrors/missingMedia/missingMediaGrouping'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'

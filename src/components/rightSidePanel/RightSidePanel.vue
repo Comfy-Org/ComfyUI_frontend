@@ -8,6 +8,7 @@ import Tab from '@comfyorg/design-system/tab/Tab'
 import TabList from '@comfyorg/design-system/tab/TabList'
 import Button from '@comfyorg/design-system/button/Button'
 import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
+import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { app } from '@/scripts/app'
 import {
   getActiveGraphNodeIds,
@@ -41,9 +42,12 @@ import {
   useFlatAndCategorizeSelectedItems
 } from './shared'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
-import TabErrors from './errors/TabErrors.vue'
-import { useHasBlockingError } from './errors/useHasBlockingError'
+import TabErrors from '@/platform/workflowErrors/panel/TabErrors.vue'
+import { useHasBlockingError } from '@/platform/workflowErrors/panel/useHasBlockingError'
+import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
+import { createWorkflowErrorManager } from '@/platform/customNodes/manager/composables/workflowErrorManager'
 
+provide(WorkflowErrorManagerKey, createWorkflowErrorManager())
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const executionErrorStore = useExecutionErrorStore()
@@ -69,6 +73,7 @@ const { activeMissingModelGraphIds } = storeToRefs(missingModelStore)
 const { activeMissingMediaGraphIds } = storeToRefs(missingMediaStore)
 
 const { findParentGroup } = useGraphHierarchy()
+const { focusNode } = useFocusNode()
 
 const { selectedItems: directlySelectedItems } = storeToRefs(canvasStore)
 const { activeTab, isEditingSubgraph } = storeToRefs(rightSidePanelStore)
@@ -433,7 +438,11 @@ function handleTitleCancel() {
 
     <!-- Panel Content -->
     <div class="flex-1 scrollbar-thin overflow-y-auto">
-      <TabErrors v-if="activeTab === 'errors'" />
+      <TabErrors
+        v-if="activeTab === 'errors'"
+        :selected-items="directlySelectedItems"
+        @locate-node="focusNode"
+      />
       <template v-else-if="!hasSelection">
         <TabGlobalParameters
           v-if="activeTab === 'parameters'"

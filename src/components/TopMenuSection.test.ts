@@ -36,7 +36,7 @@ import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
 vi.mock(import('firebase/auth'))
 
 const mockData = vi.hoisted(() => ({
@@ -57,7 +57,7 @@ vi.mock(
 )
 
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useConflictAcknowledgment'),
+  import('@/platform/customNodes/manager/composables/useConflictAcknowledgment'),
 
   () => {
     const shouldShowConflictRedDot = ref(false)
@@ -74,7 +74,7 @@ vi.mock<unknown>(
 )
 
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useManagerState'),
+  import('@/platform/customNodes/manager/composables/useManagerState'),
 
   () => {
     const managerState = {
@@ -93,7 +93,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/scripts/app'))
-vi.mock(import('@/workbench/extensions/manager/composables/useManagerDialog'))
+vi.mock(import('@/platform/customNodes/manager/composables/useManagerDialog'))
 
 vi.mock(import('@comfyorg/telemetry'))
 

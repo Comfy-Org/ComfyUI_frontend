@@ -270,7 +270,7 @@ function promotedHostWrite(
     value_index: valueIndex,
     instance_path: [String(event.nodeId)],
     host_widgets_values: hostInputs.map((input, index) => {
-      if (index === valueIndex) return event.value
+      if (index === valueIndex) return undefined
       const value = widgetValueStore.getWidget(input.widgetId)?.value
       return isWidgetValue(value) ? value : undefined
     })
@@ -325,8 +325,7 @@ function routedWidgetOperation(
     op: 'set_widget',
     node_id: event.nodeId,
     widget: event.name,
-    value: event.value,
-    old: event.previous
+    value: event.value
   } as const
   const owningGraphId = node?.graph?.id ?? event.graphId
   if (owningGraphId === rootGraphId) {

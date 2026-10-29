@@ -97,7 +97,7 @@ import {
 } from '@/utils/litegraphUtil'
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
-import { useExtensionService } from './extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 
 async function reencodeAsPngBlob(
   blob: Blob,
