@@ -842,8 +842,6 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   return { content }
 }
 
-// PM-2118: a warning per withheld send shows the stale-canvas gate firing in
-// production, so the fix can be verified from telemetry and not only from tests.
 function reportWithheldDraft(workflowId: string | undefined): void {
   const errorType = 'agent_canvas_draft_withheld_stale'
   reportError(new Error('agent canvas draft withheld: canvas may be stale'), {
