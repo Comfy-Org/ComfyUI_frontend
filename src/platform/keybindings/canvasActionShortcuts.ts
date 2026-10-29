@@ -1,19 +1,19 @@
-import { CORE_KEYBINDINGS } from './defaults'
-import { KeybindingImpl } from './keybinding'
-import { useKeybindingStore } from './keybindingStore'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 
-const CANVAS_ACTION_COMMAND_IDS = new Set([
+import { CORE_KEYBINDINGS } from './defaults'
+
+/** The canvas actions whose shipped default a reply may name. */
+export const CANVAS_ACTION_COMMAND_IDS = new Set([
   'Comfy.Canvas.ToggleSelectedNodes.Bypass',
   'Comfy.Canvas.ToggleSelectedNodes.Mute',
   'Comfy.Canvas.ToggleSelectedNodes.Collapse',
-  'Comfy.Canvas.ToggleSelected.Pin',
   'Comfy.Graph.GroupSelectedNodes',
   'Comfy.Graph.ConvertToSubgraph',
   'Comfy.QueuePrompt',
   'Comfy.Interrupt',
   'Comfy.SaveWorkflow',
   'Comfy.Canvas.SelectAll',
-  'Comfy.Canvas.FitView',
   'Comfy.Canvas.ZoomIn',
   'Comfy.Canvas.ZoomOut'
 ])
@@ -22,6 +22,7 @@ const EQUIVALENT_MODIFIER: Record<string, string> = {
   CMD: 'CTRL',
   COMMAND: 'CTRL',
   CONTROL: 'CTRL',
+  META: 'CTRL',
   '⌘': 'CTRL',
   OPTION: 'ALT',
   OPT: 'ALT',
@@ -29,12 +30,37 @@ const EQUIVALENT_MODIFIER: Record<string, string> = {
   '⇧': 'SHIFT'
 }
 
+const EQUIVALENT_KEY: Record<string, string> = {
+  RETURN: 'ENTER',
+  ESC: 'ESCAPE',
+  DEL: 'DELETE',
+  SPACEBAR: 'SPACE'
+}
+
+const MODIFIER_LABELS: Record<string, string> = {
+  CTRL: 'Ctrl',
+  ALT: 'Alt',
+  SHIFT: 'Shift'
+}
+
 const MODIFIER_ORDER = ['CTRL', 'ALT', 'SHIFT']
 
-function canonical(keys: string[]): string {
-  const folded = keys
-    .map((key) => key.toUpperCase())
-    .map((key) => EQUIVALENT_MODIFIER[key] ?? key)
+function fold(key: string): string {
+  const upper = key.toUpperCase()
+  const modifier = EQUIVALENT_MODIFIER[upper] ?? upper
+  return MODIFIER_ORDER.includes(modifier)
+    ? modifier
+    : (EQUIVALENT_KEY[upper] ?? upper)
+}
+
+/** This app's label for a modifier however it was spelled, else undefined. */
+export function modifierLabel(key: string): string | undefined {
+  return MODIFIER_LABELS[fold(key)]
+}
+
+/** One spelling for a combo, with modifiers ordered and synonyms folded. */
+export function canonicalCombo(keys: string[]): string {
+  const folded = keys.map(fold)
   const modifiers = MODIFIER_ORDER.filter((modifier) =>
     folded.includes(modifier)
   )
@@ -46,30 +72,25 @@ const COMMAND_ID_BY_DEFAULT_COMBO = new Map(
   CORE_KEYBINDINGS.filter((keybinding) =>
     CANVAS_ACTION_COMMAND_IDS.has(keybinding.commandId)
   ).map((keybinding) => [
-    canonical(new KeybindingImpl(keybinding).combo.getKeySequences()),
+    canonicalCombo(new KeybindingImpl(keybinding).combo.getKeySequences()),
     keybinding.commandId
   ])
 )
 
-/**
- * The canvas command whose shipped default is `keys`, or undefined when no
- * canvas action ships that combo. MacOS spellings fold onto the labels this app
- * uses, which name Meta `Ctrl` and Option `Alt`.
- */
+/** The canvas command that ships `keys` as a default, else undefined. */
 export function canvasCommandForWrittenKeys(
   keys: string[]
 ): string | undefined {
-  return COMMAND_ID_BY_DEFAULT_COMBO.get(canonical(keys))
+  return COMMAND_ID_BY_DEFAULT_COMBO.get(canonicalCombo(keys))
 }
 
-/**
- * Returns a resolver for the key labels a command is currently bound to, as the
- * Keybindings settings panel shows them, or undefined when it is unbound.
- */
+/** Returns a reader for every key sequence a command is bound to now. */
 export function useCanvasActionShortcutKeys(): (
   commandId: string
-) => string[] | undefined {
+) => string[][] {
   const keybindingStore = useKeybindingStore()
   return (commandId) =>
-    keybindingStore.getKeybindingByCommandId(commandId)?.combo.getKeySequences()
+    keybindingStore
+      .getKeybindingsByCommandId(commandId)
+      .map((keybinding) => keybinding.combo.getKeySequences())
 }

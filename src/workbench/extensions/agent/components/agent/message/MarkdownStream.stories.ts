@@ -52,3 +52,15 @@ export const ShortcutSplitByEmphasis: Story = {
     text: 'Press **Ctrl**+**B** to bypass the node.'
   }
 }
+
+export const CrossPlatformShortcut: Story = {
+  args: {
+    text: 'Select the node and press Ctrl/Cmd+B to bypass it.'
+  }
+}
+
+export const TwoShortcutsInOneSentence: Story = {
+  args: {
+    text: 'Copy the node with Ctrl+C + Ctrl+V, then press Alt++ to zoom in on it.'
+  }
+}

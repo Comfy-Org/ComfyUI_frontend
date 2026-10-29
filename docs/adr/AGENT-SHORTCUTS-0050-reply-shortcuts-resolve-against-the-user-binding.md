@@ -30,22 +30,25 @@ prose is never consulted.**
 
 `canvasCommandForWrittenKeys` answers which canvas command ships a given combo
 as its default, folding the macOS spellings (`Cmd`, `Command`, `⌘`, `Option`,
-`Opt`, `⌥`, `⇧`) onto the labels this app uses. `useCanvasActionShortcutKeys`
-closes over the keybinding store and reports what that command is bound to now.
-Both are public entry points of the keybindings domain; the agent domain
-declares `keybindings` as an allowed dependency and keybindings declares `agent`
-as an allowed consumer, so the reply panel reaches no other keybindings module.
+`Opt`, `⌥`, `⇧`, `Meta`), the named-key synonyms (`Return`, `Esc`, `Del`,
+`Spacebar`) and case onto the labels this app uses. `useCanvasActionShortcutKeys`
+closes over the keybinding store and reports every sequence that command is
+bound to now, not just the first. Both are public entry points of the
+keybindings domain; the agent domain declares `keybindings` as an allowed
+dependency, so the reply panel reaches no other keybindings module.
 
 `renderShortcutKeycaps` rewrites one block of rendered reply HTML. Matching runs
 over a _run_ of text nodes that read as one stretch of prose rather than over
 each node alone, so a combo markdown split by emphasis (`Press **Ctrl**+**B**`)
-is still one combo; a run ends at a code span, link, existing keycap or block
-boundary, so nothing is joined across them. A modifier-bearing key combo becomes
-`<kbd>` keycaps. When that combo is a canvas
-action's shipped default and the user has rebound it, the keycaps show the
-user's keys instead. Every other combo is styled exactly as written.
+is still one combo; a run ends at a code span, link, existing keycap, line break
+or any other non-prose element, so nothing is joined across them and nothing is
+reordered around them. A combo is a run of modifiers terminated by one
+non-modifier key, which keeps `Ctrl+C + Ctrl+V` two combos rather than one
+four-key chain. A cross-platform alternation (`Ctrl/Cmd+B`) is one combo, since
+both spellings fold onto the same key; matching half of it and leaving `Ctrl/`
+in the prose is the failure this rules out.
 
-Three boundaries are part of the decision, not implementation detail:
+Four boundaries are part of the decision, not implementation detail:
 
 - **Shape, not words.** A combo is matched by its shape and identified by its
   keys, so the whole behaviour is language independent.
@@ -54,6 +57,18 @@ Three boundaries are part of the decision, not implementation detail:
 - **Substitute only on an exact default.** A combo that is not a canvas
   action's default is left as written, even when the sentence names an action we
   have a command for.
+- **Never substitute a key that still works.** A canvas default resolves to the
+  binding it matches when the command still carries it, so a command with
+  several defaults does not have one swapped for a sibling: `Alt++` stays
+  `Alt++` rather than becoming `Alt+=`. Only a genuine rebind changes the keys.
+
+A canvas default the user has unbound entirely is left as plain prose rather
+than keycapped. The keys are known-stale, and a keycap is this panel asserting
+that a key works.
+
+Only a modifier-bearing default is reachable, because a bare key in prose is a
+word. `CANVAS_ACTION_COMMAND_IDS` therefore lists no modifier-free action, and
+a test fails if one is added rather than leaving a silently dead entry.
 
 Keycaps are built from `createElement` and text nodes, never from an HTML string,
 and the result is sanitized downstream.
@@ -87,6 +102,13 @@ opposite of what this change is for. Caught in review by @dante01yoon.
 **Treating a mouse gesture as a key.** `Ctrl+click` and `Shift+drag` are left as
 written. Rendering them as keycaps is defensible but it is a separate call about
 what a keycap means, and is not made here.
+
+**Deriving the action set from every modifier-bearing core keybinding.** It
+would remove the hand-maintained list, which is the drift argument this ADR
+makes against a prompt-side list. It also silently opts in commands the agent
+does not talk about, and every addition is a product call about which actions a
+reply names. The reachability test gives the mechanical half of that guarantee
+without the scope.
 
 ## Consequences
 

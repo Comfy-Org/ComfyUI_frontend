@@ -1,7 +1,11 @@
-import { canvasCommandForWrittenKeys } from '@/platform/keybindings/canvasActionShortcuts'
+import {
+  canonicalCombo,
+  canvasCommandForWrittenKeys,
+  modifierLabel
+} from '@/platform/keybindings/canvasActionShortcuts'
 
-/** Resolves a command id to the key labels it is currently bound to. */
-export type KeySequenceResolver = (commandId: string) => string[] | undefined
+/** Reports every key sequence a command is bound to now. */
+export type KeySequenceResolver = (commandId: string) => string[][]
 
 const NON_PROSE_ELEMENTS = new Set([
   'CODE',
@@ -41,16 +45,18 @@ const INLINE_ELEMENTS = new Set([
   'RP'
 ])
 
-const MODIFIER = String.raw`[Cc]trl|CTRL|[Cc]ontrol|[Cc]md|[Cc]ommand|⌘|[Aa]lt|ALT|[Oo]ption|[Oo]pt|⌥|[Ss]hift|SHIFT|⇧`
+const MODIFIER = String.raw`ctrl|control|cmd|command|meta|⌘|alt|option|opt|⌥|shift|⇧`
 
-const NAMED_KEY = String.raw`F\d{1,2}|Enter|Return|Esc(?:ape)?|Space(?:bar)?|Tab|Delete|Del|Backspace|Home|End|PageUp|PageDown|Up|Down|Left|Right`
+const MODIFIER_SLOT = String.raw`(?:${MODIFIER})(?:\s*/\s*(?:${MODIFIER}))*`
+
+const NAMED_KEY = String.raw`f\d{1,2}|enter|return|escape|esc|spacebar|space|tab|delete|del|backspace|home|end|pageup|pagedown|up|down|left|right`
 
 const SINGLE_KEY =
-  String.raw`[A-Za-z0-9` +
-  '`' +
-  String.raw`~!@#$%^&*()\-_=+\[\]{}\\|;:'",.<>/?]`
+  String.raw`[a-z0-9` + '`' + String.raw`~!@#$%^&*()\-_=+\[\]{}\\|;:'",.<>/?]`
 
-const MODIFIER_BEARING_COMBO = String.raw`(?<![A-Za-z0-9])(?:${MODIFIER})(?:\s*\+\s*(?:${MODIFIER}|${NAMED_KEY}|${SINGLE_KEY})(?![A-Za-z0-9]))+(?!\s*\+)`
+const MODIFIER_BEARING_COMBO =
+  String.raw`(?<![a-z0-9/])${MODIFIER_SLOT}(?:\s*\+\s*${MODIFIER_SLOT})*` +
+  String.raw`\s*\+\s*(?:${NAMED_KEY}|${SINGLE_KEY})(?![a-z0-9])`
 
 function keyLabel(sequence: string): string {
   return sequence.length === 1 ? sequence.toUpperCase() : sequence
@@ -67,14 +73,31 @@ function keycaps(sequences: string[]): DocumentFragment {
   return fragment
 }
 
-function keysAsWritten(combo: string): string[] {
+function slotKey(slot: string): string {
+  const [spelling] = slot.split('/')
+  return modifierLabel(spelling.trim()) ?? slot
+}
+
+function comboKeys(combo: string): string[] {
   const slots = combo.split(/\s*\+\s*/)
   const keys: string[] = []
   slots.forEach((slot, index) => {
-    if (slot) keys.push(slot)
+    if (slot) keys.push(slotKey(slot))
     else if (index > 0 && index === slots.length - 1) keys.push('+')
   })
   return keys
+}
+
+function liveKeys(
+  written: string[],
+  resolve: KeySequenceResolver
+): string[] | undefined {
+  const commandId = canvasCommandForWrittenKeys(written)
+  if (!commandId) return written
+
+  const bound = resolve(commandId)
+  const asWritten = canonicalCombo(written)
+  return bound.find((keys) => canonicalCombo(keys) === asWritten) ?? bound.at(0)
 }
 
 interface Match {
@@ -84,26 +107,18 @@ interface Match {
 }
 
 function matchesIn(text: string, resolve: KeySequenceResolver): Match[] {
-  return [...text.matchAll(new RegExp(MODIFIER_BEARING_COMBO, 'g'))].map(
-    (match) => {
-      const written = keysAsWritten(match[0])
-      const commandId = canvasCommandForWrittenKeys(written)
-      const bound = commandId ? resolve(commandId) : undefined
-      return {
+  const matches: Match[] = []
+  for (const match of text.matchAll(new RegExp(MODIFIER_BEARING_COMBO, 'gi'))) {
+    const keys = liveKeys(comboKeys(match[0]), resolve)
+    if (keys) {
+      matches.push({
         start: match.index,
         end: match.index + match[0].length,
-        keys: bound?.length ? bound : written
-      }
+        keys
+      })
     }
-  )
-}
-
-function coveringMatches(
-  matches: Match[],
-  start: number,
-  end: number
-): Match[] {
-  return matches.filter((match) => match.end > start && match.start < end)
+  }
+  return matches
 }
 
 function spliceMatches(node: Text, nodeStart: number, matches: Match[]): void {
@@ -112,7 +127,7 @@ function spliceMatches(node: Text, nodeStart: number, matches: Match[]): void {
   const fragment = document.createDocumentFragment()
   let cursor = 0
 
-  for (const match of coveringMatches(matches, nodeStart, nodeEnd)) {
+  for (const match of matches) {
     const localStart = Math.max(match.start, nodeStart) - nodeStart
     if (localStart > cursor) fragment.append(text.slice(cursor, localStart))
     if (match.start >= nodeStart) fragment.append(keycaps(match.keys))
@@ -123,22 +138,20 @@ function spliceMatches(node: Text, nodeStart: number, matches: Match[]): void {
   node.replaceWith(fragment)
 }
 
-/**
- * Rewrites one run of text nodes that read as a single stretch of prose. A combo
- * may straddle them, as `Press **Ctrl**+**B**` does, so matching happens on the
- * joined text and each match is spliced back into the nodes it covers. The
- * keycaps land in the node the match starts in; later nodes drop their covered
- * part.
- */
 function rewriteRun(run: Text[], resolve: KeySequenceResolver): boolean {
   const matches = matchesIn(run.map((node) => node.data).join(''), resolve)
   if (matches.length === 0) return false
 
   let nodeStart = 0
+  let pending = 0
   for (const node of run) {
-    const length = node.data.length
-    spliceMatches(node, nodeStart, matches)
-    nodeStart += length
+    const nodeEnd = nodeStart + node.data.length
+    let past = pending
+    while (past < matches.length && matches[past].start < nodeEnd) past++
+    spliceMatches(node, nodeStart, matches.slice(pending, past))
+    while (pending < matches.length && matches[pending].end <= nodeEnd)
+      pending++
+    nodeStart = nodeEnd
   }
   return true
 }
@@ -150,7 +163,6 @@ function isProse(node: Text): boolean {
   return true
 }
 
-/** The nearest ancestor that is not inline, which is as far as a run may reach. */
 function blockOf(node: Text): Element | null {
   let parent = node.parentElement
   while (parent && INLINE_ELEMENTS.has(parent.tagName)) {
@@ -160,30 +172,39 @@ function blockOf(node: Text): Element | null {
 }
 
 function proseRuns(root: DocumentFragment): Text[][] {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  const walker = document.createTreeWalker(
+    root,
+    NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT
+  )
   const runs: Text[][] = []
   let current: Text[] = []
   let currentBlock: Element | null = null
 
+  const endRun = () => {
+    if (current.length > 0) runs.push(current)
+    current = []
+    currentBlock = null
+  }
+
   while (walker.nextNode()) {
-    const node = walker.currentNode as Text
-    const block = isProse(node) ? blockOf(node) : null
+    const node = walker.currentNode
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      if (!INLINE_ELEMENTS.has((node as Element).tagName)) endRun()
+      continue
+    }
+    const text = node as Text
+    const block = isProse(text) ? blockOf(text) : null
     if (!block || block !== currentBlock) {
-      if (current.length > 0) runs.push(current)
-      current = []
+      endRun()
       currentBlock = block
     }
-    if (block) current.push(node)
+    if (block) current.push(text)
   }
-  if (current.length > 0) runs.push(current)
+  endRun()
   return runs
 }
 
-/**
- * Renders the key combos in rendered reply HTML as `<kbd>` keycaps, re-keyed to
- * the user's own binding when the written combo is a canvas action's shipped
- * default. Text inside code, links and existing keycaps is left untouched.
- */
+/** Renders the key combos in reply HTML as keycaps showing the user's binding. */
 export function renderShortcutKeycaps(
   html: string,
   resolve: KeySequenceResolver
