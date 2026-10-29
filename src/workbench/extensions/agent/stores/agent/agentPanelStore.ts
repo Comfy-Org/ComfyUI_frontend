@@ -149,6 +149,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
    */
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
+  const billingRefreshedAcceptances = ref(0)
   const reportedFreeUseExposure = ref(false)
   const reportedFreeUseImpression = ref(false)
   const fundsRechecks = ref(new Map<number, string>())
@@ -486,6 +487,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     comfyAgent,
     onboarding,
     reportedExhaustionIdentity,
+    billingRefreshedAcceptances,
     reportedFreeUseExposure,
     reportedFreeUseImpression,
     creditTransitionNotice: readonly(creditTransitionNotice),
