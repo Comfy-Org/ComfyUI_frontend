@@ -2248,6 +2248,7 @@
         "name": "node-definition/domain",
         "patterns": [
           "src/constants/essentialsNodes.ts",
+          "src/core/graph/nodeDef/**",
           "src/types/nodeDefAugmentation.ts",
           "src/types/nodeSource.ts",
           "src/workbench/utils/**"

@@ -6,7 +6,7 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   dynamicComboOptionTypes,
   inputSpecTree
-} from '@/schemas/nodeDef/inputSpecTree'
+} from '@/core/graph/nodeDef/inputSpecInterpreter'
 
 /**
  * Select DynamicCombo options so that `node` exposes a socket of `wantedType`.

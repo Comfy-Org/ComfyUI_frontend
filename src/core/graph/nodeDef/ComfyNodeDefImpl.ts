@@ -4,7 +4,7 @@ import { resolveNodeDefText } from '@/i18n'
 import {
   collectSearchableInputTypes,
   collectSearchableOutputTypes
-} from '@/schemas/nodeDef/inputSpecTree'
+} from '@/core/graph/nodeDef/inputSpecInterpreter'
 import { transformNodeDefV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,

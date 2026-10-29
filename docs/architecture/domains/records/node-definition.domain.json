@@ -8,6 +8,10 @@
       "role": "domain"
     },
     {
+      "path": "src/core/graph/nodeDef/**",
+      "role": "domain"
+    },
+    {
       "path": "src/schemas/**",
       "role": "domain"
     },
@@ -32,8 +36,8 @@
       "name": "V1 node definitions migrate to V2 and input spec trees report diagnostics within bounds",
       "checks": [
         "packages/object-info-parser/src/__tests__/migration.test.ts",
-        "src/schemas/nodeDef/inputSpecTree.test.ts",
-        "src/schemas/nodeDef/inputSpecTree.cap.test.ts",
+        "src/core/graph/nodeDef/inputSpecInterpreter.test.ts",
+        "src/core/graph/nodeDef/inputSpecInterpreter.cap.test.ts",
         "packages/object-info-parser/src/__tests__/inputSpecInterpreter.test.ts"
       ]
     },

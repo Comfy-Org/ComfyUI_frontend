@@ -1,7 +1,10 @@
 import { expect, it } from 'vitest'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { inputSpecTree, ownSlotTypes } from '@/schemas/nodeDef/inputSpecTree'
+import {
+  inputSpecTree,
+  ownSlotTypes
+} from '@/core/graph/nodeDef/inputSpecInterpreter'
 import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 

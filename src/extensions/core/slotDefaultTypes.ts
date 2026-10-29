@@ -4,7 +4,7 @@ import {
   collectSearchableOutputTypes,
   inputSpecTree,
   ownSlotTypes
-} from '@/schemas/nodeDef/inputSpecTree'
+} from '@/core/graph/nodeDef/inputSpecInterpreter'
 import { transformNodeDefV1ToV2 } from '@comfyorg/object-info-parser/migration'
 
 import { ComfyWidgets } from '@/scripts/widgets'
