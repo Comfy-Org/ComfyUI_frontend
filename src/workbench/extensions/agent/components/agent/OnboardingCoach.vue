@@ -107,18 +107,31 @@ function reportStep(action: AgentOnboardingAction): void {
   useTelemetry()?.trackAgentOnboardingStep({ step: index.value + 1, action })
 }
 
+// Set when this card ends the tour itself, so the `active` watcher below only
+// reports an end that came from elsewhere (another tab, a synced setting).
+// Without it a send held behind the tour waits until the panel closes.
+let finishedHere = false
+
 function onNext(): void {
   const finished = isLast.value
   reportStep(isLast.value ? 'finish' : 'next')
+  if (finished) finishedHere = true
   next()
   if (finished) emit('finished')
 }
 
 function onSkip(): void {
   reportStep('skip')
+  finishedHere = true
   finish()
   emit('finished')
 }
+
+watch(active, (isActive, wasActive) => {
+  if (isActive || !wasActive) return
+  if (!finishedHere) emit('finished')
+  finishedHere = false
+})
 
 const targetObserver = new MutationObserver(resolveTargets)
 targetObserver.observe(document.body, {
