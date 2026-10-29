@@ -13,7 +13,8 @@ import type {
 import {
   areWorkflowIdsEquivalent,
   ensureWorkflowId,
-  getLegacyWorkflowId
+  getLegacyWorkflowId,
+  withoutWorkflowId
 } from '@/platform/workflow/core/utils/workflowId'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -275,9 +276,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     })
     workflow.legacyId = getLegacyWorkflowId(workflowData?.id)
 
-    const initialWorkflowData = ensureWorkflowId(
-      workflowData ?? getDefaultWorkflow()
-    )
+    const initialWorkflowData = workflowData
+      ? ensureWorkflowId(workflowData)
+      : ensureWorkflowId(withoutWorkflowId(getDefaultWorkflow()))
     workflow.originalContent = workflow.content =
       JSON.stringify(initialWorkflowData)
 

@@ -17,6 +17,7 @@ import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
+import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 import '@/scripts/changeTracker'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
@@ -35,6 +36,9 @@ import {
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/workflow/core/services/defaultWorkflowService'), {
+  spy: true
+})
 
 // Mock comfyApp globally for the store setup
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -265,6 +269,24 @@ describe('useWorkflowStore', () => {
 
       const workflow2 = store.createTemporary()
       expect(workflow2.path).toBe('workflows/Unsaved Workflow (2).json')
+    })
+
+    it('gives each default-created workflow its own root graph id', () => {
+      const servedId = '11111111-1111-4111-8111-111111111111'
+      vi.mocked(getDefaultWorkflow).mockReturnValue({
+        ...defaultGraph,
+        id: servedId
+      })
+
+      const first = store.createTemporary()
+      const second = store.createTemporary()
+
+      const firstId = JSON.parse(first.content!).id
+      const secondId = JSON.parse(second.content!).id
+
+      expect(firstId).toBeTruthy()
+      expect(firstId).not.toBe(servedId)
+      expect(secondId).not.toBe(firstId)
     })
 
     it('assigns each workflow a stable unique session identity', async () => {

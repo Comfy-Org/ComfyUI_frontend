@@ -17,6 +17,10 @@ function reportFallback(cause: unknown, errorType: string): void {
   reportError(cause, { errorType, surface: 'graph', level: 'warning' })
 }
 
+function asTemplate({ id: _documentId, ...workflow }: ComfyWorkflowJSON) {
+  return workflow
+}
+
 async function readDefaultWorkflow(): Promise<ComfyWorkflowJSON | null> {
   try {
     const res = await api.fetchApi(DEFAULT_WORKFLOW_ROUTE)
@@ -30,9 +34,10 @@ async function readDefaultWorkflow(): Promise<ComfyWorkflowJSON | null> {
       return null
     }
     const json: unknown = await res.json()
-    return await validateComfyWorkflow(json, (error) => {
+    const workflow = await validateComfyWorkflow(json, (error) => {
       reportFallback(new Error(error), 'DefaultWorkflowInvalid')
     })
+    return workflow && asTemplate(workflow)
   } catch (cause) {
     reportFallback(cause, 'DefaultWorkflowFetchFailed')
     return null

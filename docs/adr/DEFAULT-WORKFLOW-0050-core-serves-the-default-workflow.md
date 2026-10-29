@@ -59,6 +59,14 @@ and keeps the bundled graph as the fallback.
   graph. Only a 404 is silent, because that is simply what an older backend
   says. The rest go through `reportError` with a distinct `errorType`, so a
   core that starts serving a workflow this schema rejects is visible.
+- The default is a template, not a document, so it carries no workflow `id`.
+  The schema and the route's contract both permit one, and core serves the
+  selected file as-is, so a replacement default could ship with an exported
+  UUID. `getDefaultWorkflow()` strips it, and `createNewWorkflow` mints a fresh
+  identity whenever it falls back to the default rather than preserving one.
+  Without both, every new tab would share a root graph id and
+  `openWorkflowPathForGraph` could not attribute a polled run to a single tab.
+  Explicitly supplied or opened workflows keep their ids as before.
 - The whole prefetch is bounded, body read included, not just the request.
   `fetchApi` clears its timeout once the response arrives, so a backend that
   sends headers and then stalls mid-body would otherwise leave `res.json()`

@@ -35,6 +35,12 @@ const notJsonResponse = () =>
     headers: { 'Content-Type': 'text/html' }
   })
 
+const stalledBodyResponse = () =>
+  new Response(new ReadableStream({ start() {} }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  })
+
 describe('defaultWorkflowService', () => {
   beforeEach(() => {
     resetDefaultWorkflowForTesting()
@@ -130,7 +136,7 @@ describe('defaultWorkflowService', () => {
     expect(fetchApi).toHaveBeenCalledTimes(1)
   })
 
-  it('opens with the bundled default when the body never arrives', async () => {
+  it('opens with the bundled default when the request never answers', async () => {
     vi.useFakeTimers()
     fetchApi.mockReturnValue(new Promise<Response>(() => {}))
 
@@ -144,6 +150,35 @@ describe('defaultWorkflowService', () => {
       expect.objectContaining({ errorType: 'DefaultWorkflowTimedOut' })
     )
     vi.useRealTimers()
+  })
+
+  it('opens with the bundled default when headers arrive but the body stalls', async () => {
+    vi.useFakeTimers()
+    fetchApi.mockResolvedValue(stalledBodyResponse())
+
+    const ready = initDefaultWorkflow()
+    await vi.advanceTimersByTimeAsync(10_000)
+    await ready
+
+    expect(getDefaultWorkflow()).toBe(defaultGraph)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'DefaultWorkflowTimedOut' })
+    )
+    vi.useRealTimers()
+  })
+
+  it('does not hand a served workflow its own document id to new tabs', async () => {
+    fetchApi.mockResolvedValue(
+      jsonResponse({
+        ...servedWorkflow,
+        id: '11111111-1111-4111-8111-111111111111'
+      })
+    )
+
+    await initDefaultWorkflow()
+
+    expect(getDefaultWorkflow()).not.toHaveProperty('id')
   })
 })
 
