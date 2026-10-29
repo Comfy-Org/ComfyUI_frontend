@@ -55,6 +55,9 @@
 # Model-to-node mappings (cloud team)
 /src/platform/assets/mappings/                    @deepme987 @Comfy-Org/comfy_frontend_devs
 
+# Assets
+/src/platform/assets/                             @austinmroz @synap5e @Comfy-Org/comfy_frontend_devs
+
 # Billing and account boundary - see ADR-AUTH-BILLING-0032.
 # The billing half only. The account layer's session and identity paths are
 # deliberately unlisted until their owner claims them; until then a change

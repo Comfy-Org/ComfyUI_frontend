@@ -169,6 +169,7 @@ const mockReadStatus = vi.fn<BillingReadRail['readStatus']>()
 const buildStatus = (
   overrides: Partial<BillingStatusResponse> = {}
 ): BillingStatusResponse => ({
+  ended_at: null,
   is_active: true,
   has_funds: true,
   max_seats: 1,

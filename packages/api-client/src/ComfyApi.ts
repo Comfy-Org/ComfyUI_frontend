@@ -70,6 +70,7 @@ import type { JobAssetsResult, JobDetail, JobListItem } from './jobTypes'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { AuthCredential, AuthScheme } from './authTypes'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { getFetchRouteTemplate } from './fetchRouteTemplate'
 import { retryingSend } from './fetchWithRetry'
 import { NO_RETRY_POLICY } from './retryPolicy'
 import type { RetryPolicy } from './retryPolicy'
@@ -145,52 +146,6 @@ interface FetchApiOptions extends RequestInit {
   onAuthCredential?: (credential: AuthCredential) => void
   /** Send once, for callers that already retry on their own backoff. */
   skipStatusRetry?: boolean
-}
-
-const FETCH_ROUTE_GROUPS = new Set([
-  'assets',
-  'embeddings',
-  'experiment',
-  'extensions',
-  'features',
-  'files',
-  'folder_paths',
-  'free',
-  'global_subgraphs',
-  'history',
-  'hub',
-  'internal',
-  'interrupt',
-  'jobs',
-  'logs',
-  'models',
-  'node_replacements',
-  'object_info',
-  'prompt',
-  'providers',
-  'queue',
-  'secrets',
-  'settings',
-  'system_stats',
-  'upload',
-  'user',
-  'userdata',
-  'users',
-  'video_metadata',
-  'view',
-  'view_metadata',
-  'workflow_templates',
-  'workflows',
-  'workspace'
-])
-
-function getFetchRouteTemplate(route: string): string {
-  const segments = (route.split(/[?#]/)[0] ?? '').split('/').filter(Boolean)
-  const routeSegments = segments[0] === 'api' ? segments.slice(1) : segments
-  const [routeGroup, ...resources] = routeSegments
-
-  if (!routeGroup || !FETCH_ROUTE_GROUPS.has(routeGroup)) return '/other'
-  return `/${routeGroup}${resources.length ? '/:resource' : ''}`
 }
 
 /**
