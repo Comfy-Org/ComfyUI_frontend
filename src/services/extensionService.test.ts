@@ -4,6 +4,7 @@ import type { WatchHandle } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -617,71 +618,97 @@ describe('registerExtension auth hooks', () => {
 })
 
 describe('a disabled extension', () => {
-  function contributions() {
-    return {
-      keybinding: vi.spyOn(useKeybindingStore(), 'addDefaultKeybinding'),
-      commands: vi.spyOn(useCommandStore(), 'loadExtensionCommands'),
-      menu: vi.spyOn(useMenuItemStore(), 'loadExtensionMenuCommands'),
-      setting: vi.spyOn(useSettingStore(), 'addSetting'),
-      panels: vi.spyOn(
-        useBottomPanelStore(),
-        'registerExtensionBottomPanelTabs'
-      )
-    }
-  }
-
   function extension(name: string) {
     const getCustomWidgets = vi.fn(async () => ({}))
+    const onAuthUserResolved = vi.fn()
     const ext: ComfyExtension = {
       name,
       commands: [{ id: `${name}.cmd`, function: vi.fn() }],
       keybindings: [{ commandId: `${name}.cmd`, combo: { key: 'k' } }],
       menuCommands: [{ path: ['Extensions'], commands: [`${name}.cmd`] }],
-      // Setting ids are a closed union of core settings; an extension's own
-      // id is not one of them.
       settings: [
         {
-          id: `${name}.setting`,
+          id: 'Comfy.Validation.Workflows',
           name: 'A setting',
           type: 'boolean',
           defaultValue: false
         }
-      ] as unknown as ComfyExtension['settings'],
+      ],
       bottomPanelTabs: [],
+      actionBarButtons: [{ icon: 'icon', onClick: vi.fn() }],
       getCustomWidgets,
-      onAuthUserResolved: vi.fn()
+      onAuthUserResolved
     }
-    return { ext, getCustomWidgets }
+    return { ext, getCustomWidgets, onAuthUserResolved }
   }
 
-  it('stays listed but registers none of its commands, keybindings, menu entries, settings, panels, widgets or auth hooks', async () => {
-    const spies = contributions()
-    useExtensionStore().loadDisabledExtensionNames(['off'])
+  function afterCore(disabled: string[]) {
+    useExtensionStore().captureCoreExtensions()
+    useExtensionStore().loadDisabledExtensionNames(disabled)
+  }
+
+  it('adds no commands, keybindings, menu entries, buttons or auth hooks when third-party', async () => {
+    afterCore(['off'])
+    const panels = vi.spyOn(
+      useBottomPanelStore(),
+      'registerExtensionBottomPanelTabs'
+    )
     const off = extension('off')
 
     useExtensionService().registerExtension(off.ext)
     await Promise.resolve()
 
     expect(useExtensionStore().isExtensionInstalled('off')).toBe(true)
-    for (const spy of Object.values(spies)) expect(spy).not.toHaveBeenCalled()
-    expect(off.getCustomWidgets).not.toHaveBeenCalled()
+    expect(useCommandStore().isRegistered('off.cmd')).toBe(false)
+    expect(useKeybindingStore().getKeybindingByCommandId('off.cmd')).toBe(
+      undefined
+    )
+    expect(useMenuItemStore().menuItems).toEqual([])
+    expect(panels).not.toHaveBeenCalled()
+    expect(useActionBarButtonStore().buttons).toEqual([])
     expect(useCurrentUser).not.toHaveBeenCalled()
   })
 
-  it('still registers everything for an enabled extension', async () => {
-    const spies = contributions()
-    useExtensionStore().loadDisabledExtensionNames(['off'])
+  it('keeps its setting definitions and widget types, which saved workflows and core code read', async () => {
+    afterCore(['off'])
+    const off = extension('off')
+
+    useExtensionService().registerExtension(off.ext)
+    await Promise.resolve()
+
+    expect(
+      useSettingStore().settingsById['Comfy.Validation.Workflows']
+    ).toBeDefined()
+    expect(off.getCustomWidgets).toHaveBeenCalledOnce()
+  })
+
+  it('keeps everything for a disabled core extension, whose commands core UI calls', async () => {
+    useExtensionStore().loadDisabledExtensionNames(['core.off'])
+
+    useExtensionService().registerExtension(extension('core.off').ext)
+    useExtensionStore().captureCoreExtensions()
+    await Promise.resolve()
+
+    expect(useCommandStore().isRegistered('core.off.cmd')).toBe(true)
+    expect(useActionBarButtonStore().buttons).toHaveLength(1)
+  })
+
+  it('keeps everything for an enabled third-party extension', async () => {
+    afterCore(['off'])
     const on = extension('on')
 
     useExtensionService().registerExtension(on.ext)
     await Promise.resolve()
 
-    for (const spy of Object.values(spies)) expect(spy).toHaveBeenCalled()
-    expect(on.getCustomWidgets).toHaveBeenCalledOnce()
+    expect(useCommandStore().isRegistered('on.cmd')).toBe(true)
+    expect(
+      useKeybindingStore().getKeybindingByCommandId('on.cmd')
+    ).toBeDefined()
+    expect(useActionBarButtonStore().buttons).toHaveLength(1)
   })
 
   it('unregisters on dispose like any other extension', () => {
-    useExtensionStore().loadDisabledExtensionNames(['off'])
+    afterCore(['off'])
     const dispose = useExtensionService().registerExtension(
       extension('off').ext
     )

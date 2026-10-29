@@ -102,25 +102,8 @@ export const useExtensionService = () => {
   const registerExtensionNow = (extension: ComfyExtension) => {
     extensionStore.registerExtension(extension)
 
-    // A disabled extension stays listed, so Settings > Extensions can turn it
-    // back on, but contributes nothing: no commands, keybindings, menu entries,
-    // settings, panels, widgets or auth hooks.
-    if (!extensionStore.isExtensionEnabled(extension.name)) {
-      return once(() => extensionStore.unregisterExtension(extension.name))
-    }
-
-    const addKeybinding = wrapWithErrorHandling(
-      keybindingStore.addDefaultKeybinding
-    )
     const addSetting = wrapWithErrorHandling(settingStore.addSetting)
-
-    extension.keybindings?.forEach((keybinding) => {
-      addKeybinding(new KeybindingImpl(keybinding))
-    })
-    useCommandStore().loadExtensionCommands(extension)
-    useMenuItemStore().loadExtensionMenuCommands(extension)
     extension.settings?.forEach(addSetting)
-    useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
     if (extension.getCustomWidgets) {
       void (async () => {
         if (extension.getCustomWidgets) {
@@ -129,6 +112,20 @@ export const useExtensionService = () => {
         }
       })()
     }
+
+    if (!extensionStore.contributes(extension.name)) {
+      return once(() => extensionStore.unregisterExtension(extension.name))
+    }
+
+    const addKeybinding = wrapWithErrorHandling(
+      keybindingStore.addDefaultKeybinding
+    )
+    extension.keybindings?.forEach((keybinding) => {
+      addKeybinding(new KeybindingImpl(keybinding))
+    })
+    useCommandStore().loadExtensionCommands(extension)
+    useMenuItemStore().loadExtensionMenuCommands(extension)
+    useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
 
     const authHookHandles: WatchHandle[] = []
 

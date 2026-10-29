@@ -9,7 +9,9 @@ export const useTopbarBadgeStore = defineStore('topbarBadge', () => {
   const extensionStore = useExtensionStore()
 
   const badges = computed<TopbarBadge[]>(() =>
-    extensionStore.extensions.flatMap((e) => e.topbarBadges ?? [])
+    extensionStore.extensions
+      .filter((e) => extensionStore.contributes(e.name))
+      .flatMap((e) => e.topbarBadges ?? [])
   )
 
   return {
