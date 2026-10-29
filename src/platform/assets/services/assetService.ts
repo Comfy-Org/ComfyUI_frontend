@@ -279,6 +279,8 @@ function validateUploadedAssetResponse(
  * Not exposed globally - used internally by ComfyApi
  */
 function createAssetService() {
+  const deletionListeners = new Set<() => void>()
+
   /**
    * Model assets bucketed by folder category, built from a single walk of the
    * `models` tag rather than a fetch per category. Shared by the folder list
@@ -825,6 +827,17 @@ function createAssetService() {
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
     }
+    for (const listener of deletionListeners) listener()
+  }
+
+  /**
+   * Calls back after each asset this client deletes; returns the unsubscribe.
+   */
+  function onAssetDeleted(callback: () => void): () => void {
+    deletionListeners.add(callback)
+    return () => {
+      deletionListeners.delete(callback)
+    }
   }
 
   /**
@@ -1158,6 +1171,7 @@ function createAssetService() {
     getAllAssetsByTag,
     getWorkspaceLibraryModels,
     deleteAsset,
+    onAssetDeleted,
     updateAsset,
     addAssetTags,
     removeAssetTags,
