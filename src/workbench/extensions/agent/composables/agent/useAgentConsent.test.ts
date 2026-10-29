@@ -417,13 +417,13 @@ describe('useAgentConsent', () => {
     await request
   })
 
-  it('clears a load error on retry and shows the toast again after another failure', async () => {
+  it('shows the load alert again after another failed retry and does not add a toast', async () => {
     const secondLoad = deferred<Response>()
     fetchWithUnifiedRemint
       .mockRejectedValueOnce(new Error('offline'))
       .mockReturnValueOnce(secondLoad.promise)
     const onOpen = vi.fn()
-    void useAgentConsent().withConsent('button_click', onOpen)
+    const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
     await renderConsentCard(dialog)
 
@@ -451,6 +451,9 @@ describe('useAgentConsent', () => {
     )
     expect(useToast().toasts).toEqual([])
     expect(onOpen).not.toHaveBeenCalled()
+
+    dismissConsent(dialog)
+    await request
   })
 
   async function retryFailedLoad(stored: boolean) {
