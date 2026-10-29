@@ -97,7 +97,7 @@ import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatal
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import {
-  isGraphLoadHookOrigin,
+  consumeGraphLoadHookOrigin,
   useExtensionService
 } from '@/services/extensionService'
 import { beginChangeCaptureSuppression } from '@/services/changeCaptureSuppression'
@@ -2120,9 +2120,10 @@ export class ComfyApp implements IComfyApp {
       onNodeCreated?: (node: LGraphNode) => void
     }
   ) {
-    // Read before the first await: the origin marker only spans this call's
-    // synchronous entry, which is what keeps it scoped to the hook that made it.
-    const fromGraphLoadHook = isGraphLoadHookOrigin()
+    // Claim the mark before the first await. It is keyed on this file, so it
+    // stays scoped to the hook that started this call even if a forwarding
+    // wrapper on `handleFile` awaited before delegating here.
+    const fromGraphLoadHook = consumeGraphLoadHookOrigin(file)
     const previousDiscovery = this.fileLoadDiscoveryQueue
     let releaseDiscovery!: () => void
     this.fileLoadDiscoveryQueue = new Promise<void>((resolve) => {

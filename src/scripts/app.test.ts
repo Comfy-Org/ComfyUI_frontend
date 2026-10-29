@@ -33,7 +33,7 @@ vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import type { CurveData } from '@comfyorg/graph-model/curve'
 import type { useExtensionService } from '@/services/extensionService'
-import { isGraphLoadHookOrigin } from '@/services/extensionService'
+import { consumeGraphLoadHookOrigin } from '@/services/extensionService'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
@@ -193,7 +193,7 @@ vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
 }))
 
 vi.mock(import('@/services/extensionService'), () => ({
-  isGraphLoadHookOrigin: vi.fn(() => false),
+  consumeGraphLoadHookOrigin: vi.fn(() => false),
   useExtensionService: vi.fn(() =>
     fromPartial<ReturnType<typeof useExtensionService>>(mockExtensionService)
   )
@@ -3727,25 +3727,47 @@ describe('ComfyApp', () => {
     })
 
     it('allows a non-graph media file from a graph lifecycle hook', async () => {
-      vi.mocked(isGraphLoadHookOrigin).mockReturnValueOnce(true)
+      vi.mocked(consumeGraphLoadHookOrigin).mockReturnValueOnce(true)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
       vi.mocked(createNode).mockResolvedValue(null)
 
       await expect(
         app.handleFile(createTestFile('preview.png', 'image/png'))
       ).resolves.toBeUndefined()
+      // Resolving undefined also describes silently dropping the image, so
+      // require the media command that owns it to have run.
+      expect(pasteImageNode).toHaveBeenCalled()
     })
 
-    it('refuses a graph-bearing file from a graph lifecycle hook', async () => {
-      vi.mocked(isGraphLoadHookOrigin).mockReturnValueOnce(true)
-      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
-        workflow: createWorkflowGraphData()
-      })
+    // Each of these classes reaches the same refusal predicate; narrowing it to
+    // workflows alone would let a hook queue an API prompt or A1111 parameters
+    // behind its own load.
+    it.for([
+      {
+        name: 'workflow',
+        metadata: { workflow: createWorkflowGraphData() }
+      },
+      {
+        name: 'API prompt',
+        metadata: { prompt: { '1': { class_type: 'KSampler', inputs: {} } } }
+      },
+      {
+        name: 'A1111 parameters',
+        metadata: {
+          parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+        }
+      }
+    ])(
+      'refuses $name metadata from a graph lifecycle hook',
+      async ({ metadata }) => {
+        vi.mocked(consumeGraphLoadHookOrigin).mockReturnValueOnce(true)
+        vi.mocked(getWorkflowDataFromFile).mockResolvedValue(metadata)
 
-      await expect(
-        app.handleFile(createTestFile('nested.json', 'application/json'))
-      ).resolves.toBe(false)
-    })
+        await expect(
+          app.handleFile(createTestFile('nested.png', 'image/png'))
+        ).resolves.toBe(false)
+      }
+    )
 
     it('cleans before extensions prepare the incoming workflow', async () => {
       app.rootGraph.add(new LGraphNode('outgoing'))

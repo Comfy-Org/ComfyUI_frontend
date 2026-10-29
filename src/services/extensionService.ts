@@ -39,28 +39,51 @@ const graphLoadEntrypoints = [
   'loadApiJson'
 ] satisfies (keyof ComfyApp)[]
 
-let graphLoadHookOriginDepth = 0
+/**
+ * One token per in-flight `handleFile` call a graph-load hook started, keyed by
+ * the file it was started with.
+ *
+ * Provenance rides on the argument rather than on a window of time. An
+ * extension may install an async forwarding wrapper on `app.handleFile` that
+ * awaits before it delegates, and anything scoped to the synchronous entry of
+ * the call has already ended by then: the real handler would see an
+ * independent caller and queue the nested graph behind the hook that is
+ * waiting for it, stalling every later load. Keying on the file also leaves
+ * independent callers alone, because their file was never marked.
+ */
+const graphLoadHookOriginFiles = new WeakMap<File, Set<object>>()
 
 /**
- * True only for the synchronous entry of a call made through the `app` a
- * graph-load hook was handed. It is deliberately not "a hook is in flight
- * somewhere": a dispatch can stay pending across awaits, and refusing every
- * caller for that window breaks FIFO ordering for independent callers and
- * makes a user-initiated load fail while an unrelated extension hook awaits.
+ * True once, for a `handleFile` call a graph-load hook started with this file.
+ * Reading clears the mark, so a later independent call carrying the same file
+ * is not refused.
  *
- * Only `handleFile` needs it, because that entrypoint still accepts non-graph
+ * Only `handleFile` needs this, because that entrypoint still accepts non-graph
  * media from a hook and so cannot be refused at the proxy.
  */
-export function isGraphLoadHookOrigin(): boolean {
-  return graphLoadHookOriginDepth > 0
+export function consumeGraphLoadHookOrigin(file: File): boolean {
+  const pending = graphLoadHookOriginFiles.get(file)
+  const token: object | undefined = pending?.values().next().value
+  if (!pending || token === undefined) return false
+  pending.delete(token)
+  if (pending.size === 0) graphLoadHookOriginFiles.delete(file)
+  return true
 }
 
-function markGraphLoadHookOrigin<T>(operation: () => T): T {
-  graphLoadHookOriginDepth++
-  try {
-    return operation()
-  } finally {
-    graphLoadHookOriginDepth--
+/**
+ * Marks `file` as hook-originated. The returned release drops the mark if it
+ * was never consumed, so a wrapper that swallows the call cannot leave the file
+ * marked for whoever hands it over next.
+ */
+function markGraphLoadHookOrigin(file: File): () => void {
+  const token = {}
+  const pending = graphLoadHookOriginFiles.get(file) ?? new Set<object>()
+  pending.add(token)
+  graphLoadHookOriginFiles.set(file, pending)
+  return () => {
+    const current = graphLoadHookOriginFiles.get(file)
+    if (!current?.delete(token)) return
+    if (current.size === 0) graphLoadHookOriginFiles.delete(file)
   }
 }
 
@@ -75,11 +98,17 @@ function createGraphLoadHookDispatch(app: ComfyApp) {
   }
   {
     const original = app.handleFile
-    overrides.set('handleFile', (...args: unknown[]) =>
-      dispatching
-        ? markGraphLoadHookOrigin(() => Reflect.apply(original, app, args))
-        : Reflect.apply(original, app, args)
-    )
+    overrides.set('handleFile', async (...args: unknown[]) => {
+      const [file] = args
+      if (!dispatching || !(file instanceof File))
+        return Reflect.apply(original, app, args)
+      const release = markGraphLoadHookOrigin(file)
+      try {
+        return await Reflect.apply(original, app, args)
+      } finally {
+        release()
+      }
+    })
   }
   const hookApp = new Proxy(app, {
     get(target, property) {

@@ -7,7 +7,10 @@ import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'
 
-import { isGraphLoadHookOrigin, useExtensionService } from './extensionService'
+import {
+  consumeGraphLoadHookOrigin,
+  useExtensionService
+} from './extensionService'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -203,48 +206,98 @@ describe('invokeExtensionsAsync', () => {
     }
   )
 
-  it('marks a graph-bearing file started through the hook app as hook-originated', async () => {
-    const file = new File(
-      [JSON.stringify({ version: 0.4, nodes: [], links: [] })],
-      'nested.json',
-      { type: 'application/json' }
-    )
-    const handleFile = vi
-      .spyOn(useApp(), 'handleFile')
-      .mockImplementation(async () =>
-        isGraphLoadHookOrigin() ? false : void 0
+  // The second row is the case a time-scoped marker cannot serve: an extension
+  // wrapper that awaits before delegating resumes the real handler long after
+  // the call's synchronous entry ended, and an unmarked nested graph would
+  // queue behind the very hook awaiting it.
+  it.for([
+    { variant: 'directly', wrap: false },
+    { variant: 'through an async forwarding wrapper', wrap: true }
+  ])(
+    'marks a graph-bearing file started $variant through the hook app as hook-originated',
+    async ({ wrap }) => {
+      const file = new File(
+        [JSON.stringify({ version: 0.4, nodes: [], links: [] })],
+        'nested.json',
+        { type: 'application/json' }
       )
-    let nested: Promise<unknown> | undefined
+      const app = useApp()
+      const handleFile = vi.fn(async (handled: File) =>
+        consumeGraphLoadHookOrigin(handled) ? false : void 0
+      )
+      vi.spyOn(app, 'handleFile').mockImplementation(
+        wrap
+          ? async (...args) => {
+              await Promise.resolve()
+              return handleFile(args[0])
+            }
+          : handleFile
+      )
+      let nested: Promise<unknown> | undefined
+      register({
+        name: 'hook-file-loader',
+        beforeLoadGraph: async (hookApp: HookApp) => {
+          await Promise.resolve()
+          nested = hookApp.handleFile(file)
+          await nested
+        }
+      })
+
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+      await expect(nested).resolves.toBe(false)
+      expect(handleFile).toHaveBeenCalledWith(file)
+    }
+  )
+
+  it('clears the mark when a wrapper never delegates the hook file', async () => {
+    const file = new File([], 'swallowed.json', { type: 'application/json' })
+    const app = useApp()
+    vi.spyOn(app, 'handleFile').mockImplementation(async () => void 0)
     register({
-      name: 'hook-file-loader',
-      beforeLoadGraph: async (app: HookApp) => {
-        await Promise.resolve()
-        nested = app.handleFile(file)
-        await nested
+      name: 'swallowing-extension',
+      beforeLoadGraph: async (hookApp: HookApp) => {
+        await hookApp.handleFile(file)
       }
     })
 
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-    await expect(nested).resolves.toBe(false)
-    expect(handleFile).toHaveBeenCalledWith(file)
+    expect(consumeGraphLoadHookOrigin(file)).toBe(false)
   })
 
   it('does not treat an independent caller as hook-originated while a hook awaits', async () => {
+    const hookFile = new File([], 'hook.json', { type: 'application/json' })
+    const independentFile = new File([], 'independent.json', {
+      type: 'application/json'
+    })
+    const app = useApp()
     let release!: () => void
     const held = new Promise<void>((resolve) => {
       release = resolve
     })
-    register({ name: 'awaiting-extension', beforeLoadGraph: () => held })
+    let originForIndependentFile: boolean | undefined
+    let originForHookFileAfterAwait: boolean | undefined
+    vi.spyOn(app, 'handleFile').mockImplementation(async () => {
+      originForIndependentFile = consumeGraphLoadHookOrigin(independentFile)
+      await held
+      originForHookFileAfterAwait = consumeGraphLoadHookOrigin(hookFile)
+    })
+    register({
+      name: 'awaiting-extension',
+      beforeLoadGraph: (hookApp: HookApp) => hookApp.handleFile(hookFile)
+    })
 
     const dispatch =
       useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     await Promise.resolve()
-    const originWhileHookAwaits = isGraphLoadHookOrigin()
     release()
     await dispatch
 
-    expect(originWhileHookAwaits).toBe(false)
+    expect(originForIndependentFile).toBe(false)
+    // The hook's own file stays marked across the await, which is what a
+    // marker scoped to the call's synchronous entry could not do.
+    expect(originForHookFileAfterAwait).toBe(true)
   })
 
   it('lets a retained hook app load once the hook dispatch has finished', async () => {
@@ -268,9 +321,9 @@ describe('invokeExtensionsAsync', () => {
 
   it('does not recurse when a hook wraps a retained entrypoint', async () => {
     const app = useApp()
-    const original = app.loadGraphData
-    const loadGraphData = vi.fn().mockResolvedValue(undefined)
-    app.loadGraphData = loadGraphData
+    const loadGraphData = vi
+      .spyOn(app, 'loadGraphData')
+      .mockResolvedValue(undefined)
     register({
       name: 'wrapping-extension',
       beforeLoadGraph: (hookApp: HookApp) => {
@@ -282,14 +335,10 @@ describe('invokeExtensionsAsync', () => {
       }
     })
 
-    try {
-      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-      await expect(app.loadGraphData()).resolves.toBe(false)
-      expect(loadGraphData).toHaveBeenCalledOnce()
-    } finally {
-      app.loadGraphData = original
-    }
+    await expect(app.loadGraphData()).resolves.toBe(false)
+    expect(loadGraphData).toHaveBeenCalledOnce()
   })
 
   it('silently ignores a non-function property of the same name', async () => {
