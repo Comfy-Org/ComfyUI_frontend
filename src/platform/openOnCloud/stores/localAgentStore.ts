@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-export type PrototypeLocalAgent = 'found' | 'notFound'
+type PrototypeLocalAgent = 'found' | 'notFound'
 
 /** A stand-in for the local agent that Convert hands the workflow to. */
 export const useLocalAgentStore = defineStore('openOnCloudLocalAgent', () => {
