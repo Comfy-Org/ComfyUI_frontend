@@ -47,6 +47,12 @@ Keep widely-recognized technical terms in English rather than inventing German e
 German compounds are written closed, not spaced: "Bildgenerierung", not "Bild Generierung". Where a compound joins an English technical term to a German noun, hyphenate: "Node-Editor", "Workflow-Vorlage".
 Prefer the imperative for button labels ("Speichern", "Abbrechen") and avoid the infinitive-with-zu form, which reads like documentation rather than an interface.`
 
+const vietnameseGuidance = `Use natural, neutral Vietnamese with a professional tone. Leave out the pronoun when the sentence reads well without one; when the user must be addressed, use "bạn" consistently.
+Keep widely-recognized technical terms in English, as Vietnamese AI and creative-tool users do: node, workflow, prompt, canvas, widget, subgraph, seed, sampler, scheduler, checkpoint, latent, LoRA, VAE, CLIP, ControlNet. Translate everyday UI words: queue = hàng đợi, model = mô hình, image = ảnh, settings = cài đặt, template = mẫu, extension = tiện ích mở rộng.
+Vietnamese nouns do not inflect for number. Keep every pipe-separated plural form, repeating the same wording where English only changes the noun's number.
+Use sentence case: capitalize only the first word and proper nouns, never every word of a label. Button labels are short verbs: "Lưu", "Hủy", "Xóa", "Chạy".
+Write precomposed (NFC) characters and place tone marks consistently in the style common in Vietnamese software: "hóa", "xóa", "hủy", not "hoá", "xoá", "huỷ".`
+
 const generationDefaults = {
   model: 'gpt-5.6-terra',
   reasoningEffort: 'high',
@@ -87,7 +93,8 @@ const appTranslationConfig: TranslationPipelineConfig = {
     { code: 'fa', name: 'Persian', guidance: persianGuidance },
     { code: 'he', name: 'Hebrew', guidance: hebrewGuidance },
     { code: 'it', name: 'Italian' },
-    { code: 'de', name: 'German', guidance: germanGuidance }
+    { code: 'de', name: 'German', guidance: germanGuidance },
+    { code: 'vi', name: 'Vietnamese', guidance: vietnameseGuidance }
   ]
 }
 
