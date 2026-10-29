@@ -4,7 +4,7 @@ import { resolveUnifiedWebSession } from '@comfyorg/account-core/webSessionFlag'
 
 import { hasServerFirebaseConfig } from '@/config/firebase'
 import { isCloud } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { isLoopbackHost } from '@/utils/hostWhitelist'
 
 import {

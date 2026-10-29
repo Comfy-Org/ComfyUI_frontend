@@ -1,7 +1,7 @@
 import { delay } from 'es-toolkit'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import type { PlanCommandOutcome } from '@/platform/billing/components/billingTab/planLifecycle'

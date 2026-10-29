@@ -1,6 +1,6 @@
-import type { SlotLayout } from '@/renderer/core/layout/types'
-import type { NodeId } from '@/types/nodeId'
-import type { SlotId } from '@/types/slotId'
+import type { SlotLayout } from '@comfyorg/graph-model/layout'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { SlotId } from '@comfyorg/graph-model/slotId'
 
 /**
  * Slot link drag context

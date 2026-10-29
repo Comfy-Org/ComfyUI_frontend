@@ -27,7 +27,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type { Plan } from '@comfyorg/billing-core'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
@@ -43,7 +43,7 @@ import {
   stubFirebaseAuthHarness
 } from '@/utils/__tests__/stubAccountIdentityPort'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
@@ -138,6 +138,7 @@ const DOWNGRADE_PREVIEW = {
 }
 
 const STATUS = {
+  ended_at: null,
   billing_rail: 'stripe',
   has_funds: true,
   is_active: true,
@@ -148,6 +149,7 @@ const STATUS = {
 }
 
 const CAPABILITIES = {
+  auto_top_up_enabled: false,
   capabilities: {
     can_cancel: true,
     can_change_seats: false,

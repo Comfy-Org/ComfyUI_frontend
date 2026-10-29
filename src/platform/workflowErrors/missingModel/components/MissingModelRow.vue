@@ -244,7 +244,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
+import { selectionEmphasisClass } from '@/platform/workflowErrors/panel/selectionEmphasis'
 import Button from '@comfyorg/design-system/button/Button'
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
 import type { MissingModelViewModel } from '@/platform/workflowErrors/missingModel/types'

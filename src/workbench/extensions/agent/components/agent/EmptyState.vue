@@ -6,7 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@comfyorg/design-system/button/Button'
 import { FALLBACK_LOCALE } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
-import type { AgentStarterPromptAssignment } from '@/platform/telemetry/types'
+import type { AgentStarterPromptAssignment } from '@comfyorg/telemetry/types'
 
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'

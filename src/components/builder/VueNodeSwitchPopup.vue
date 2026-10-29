@@ -3,7 +3,7 @@
     v-if="appModeStore.showVueNodeSwitchPopup && !canvasStore.isPickingNodes"
     data-testid="linear-vue-node-switch-popup"
     :title="$t('appBuilder.vueNodeSwitch.title')"
-    show-close
+    :close-label="$t('g.close')"
     position="bottom-left"
     @close="dismiss"
   >
@@ -40,7 +40,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import NotificationPopup from '@/components/common/NotificationPopup.vue'
+import NotificationPopup from '@comfyorg/design-system/common/NotificationPopup'
 import Button from '@comfyorg/design-system/button/Button'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
