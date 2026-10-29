@@ -103,6 +103,7 @@ import { PromptExecutionError, api } from '@/scripts/api'
 import { useApp } from '@/scripts/appRegistry'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -131,7 +132,8 @@ const {
   mockRefreshMissingModelPipeline,
   mockImportA1111,
   mockWorkflowService,
-  mockValidateWorkflow
+  mockValidateWorkflow,
+  mockOpenAccountPrecondition
 } = vi.hoisted(() => ({
   mockExtensionService: {
     invokeExtensions: vi.fn(),
@@ -144,8 +146,16 @@ const {
     afterLoadNewGraph: vi.fn<WorkflowService['afterLoadNewGraph']>(),
     showPendingWarnings: vi.fn<WorkflowService['showPendingWarnings']>()
   },
-  mockValidateWorkflow: vi.fn<WorkflowValidation['validateWorkflow']>()
+  mockValidateWorkflow: vi.fn<WorkflowValidation['validateWorkflow']>(),
+  mockOpenAccountPrecondition: vi.fn()
 }))
+
+vi.mock(
+  import('@/platform/billing/subscription/composables/useAccountPreconditionDialog'),
+  () => ({
+    useAccountPreconditionDialog: () => ({ open: mockOpenAccountPrecondition })
+  })
+)
 
 vi.mock(
   import('@/platform/workflow/validation/composables/useWorkflowValidation'),
@@ -2230,6 +2240,28 @@ describe('ComfyApp', () => {
       )
 
       await expect(app.queuePrompt(0)).resolves.toBe(true)
+    })
+
+    it('opens the credits dialog and disables Auto Queue on a free-tier allowance rejection', async () => {
+      prepareEmptyPromptQueue()
+      useQueueSettingsStore().mode = 'instant-running'
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError(
+          {
+            error: {
+              type: 'FREE_TIER_EXHAUSTED',
+              message:
+                "You've used all your free generations. Upgrade to keep creating."
+            }
+          },
+          402
+        )
+      )
+
+      await expect(app.queuePrompt(0)).resolves.toBe(true)
+
+      expect(mockOpenAccountPrecondition).toHaveBeenCalledWith('credits')
+      expect(useQueueSettingsStore().mode).toBe('disabled')
     })
 
     it('uses the last processed queue item result after an earlier failure', async () => {

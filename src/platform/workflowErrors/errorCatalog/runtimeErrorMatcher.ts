@@ -255,6 +255,7 @@ const RUNTIME_MATCH_RULES: RuntimeMatchRule[] = [
     matches: (info, message) =>
       info.exceptionType === 'InsufficientFundsError' ||
       info.exceptionType === 'insufficient_credits' ||
+      info.exceptionType === 'FREE_TIER_EXHAUSTED' ||
       INSUFFICIENT_CREDITS_MESSAGES.has(message),
     resolve: () => catalogMatch(INSUFFICIENT_CREDITS_CATALOG_ID)
   },

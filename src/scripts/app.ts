@@ -111,6 +111,7 @@ import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId
@@ -1975,6 +1976,7 @@ export class ComfyApp implements IComfyApp {
             // Account preconditions (sign-in, subscription, credits) open their
             // own modal and must stay out of the error panel and error count.
             if (promptPrecondition) {
+              useQueueSettingsStore().mode = 'disabled'
               useAccountPreconditionDialog().open(promptPrecondition)
               console.error(error)
               break

@@ -82,6 +82,16 @@ describe('resolveAccountPrecondition', () => {
     ).toBe('credits')
   })
 
+  it('classifies a free-tier job allowance exhaustion (comfy-ingest FREE_TIER_EXHAUSTED) as a credits precondition', () => {
+    expect(
+      resolveAccountPrecondition({
+        exceptionType: 'FREE_TIER_EXHAUSTED',
+        exceptionMessage:
+          "You've used all your free generations. Upgrade to keep creating."
+      })
+    ).toBe('credits')
+  })
+
   it('classifies the team submit-time 429 (PAYMENT_REQUIRED / insufficient credits) as a credits precondition', () => {
     expect(
       resolveAccountPrecondition({
