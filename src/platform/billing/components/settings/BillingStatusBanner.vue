@@ -112,7 +112,7 @@ type BannerAction =
   | 'updatePayment'
 
 const { section } = defineProps<{
-  section?: 'planCredits' | 'members' | 'allowlist'
+  section?: 'planCredits' | 'members' | 'allowlist' | 'billing'
 }>()
 
 const { t, d } = useI18n()
@@ -120,7 +120,15 @@ const { renewalDate, subscription } = useBillingContext()
 const { permissions, canReactivatePlan, workspaceType } = useBillingUI()
 const { canTopUp, topUpDenial, canManageBilling, runDeniedPaymentPastDue } =
   useBillingCapabilities()
-const { kind, audience, dismiss } = useBillingBanner()
+const {
+  kind: overallKind,
+  lifecycleKind,
+  audience,
+  dismiss
+} = useBillingBanner()
+const kind = computed(() =>
+  section === 'billing' ? lifecycleKind.value : overallKind.value
+)
 const { formatTierName } = useWorkspaceTierLabel()
 const { isResubscribing, handleResubscribe } = useResubscribe()
 const {
@@ -182,15 +190,18 @@ const PLAN_LIFECYCLE_KINDS: ReadonlySet<BillingBannerKind> = new Set([
   'planChange'
 ])
 
-// A personal workspace's Members tab carries its own upgrade pitch, so the
-// plan lifecycle notices stay on the Plan & Credits tab.
-const isHiddenOnSection = computed(
-  () =>
+const isLifecycleKind = computed(
+  () => kind.value !== null && PLAN_LIFECYCLE_KINDS.has(kind.value)
+)
+
+const isHiddenOnSection = computed(() => {
+  if (section === 'billing') return !isLifecycleKind.value
+  return (
     section === 'members' &&
     workspaceType.value === 'personal' &&
-    kind.value !== null &&
-    PLAN_LIFECYCLE_KINDS.has(kind.value)
-)
+    isLifecycleKind.value
+  )
+})
 
 // Sales-managed plans (Enterprise, and unrecognized tiers, which fail closed
 // to sales) return through sales; only a strict ENTERPRISE tier is named.
@@ -358,9 +369,13 @@ const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
   planChange: planChangeView
 }
 
-const banner = computed<BannerView | null>(() =>
-  kind.value && !isHiddenOnSection.value ? bannerViews[kind.value]() : null
-)
+const banner = computed<BannerView | null>(() => {
+  if (!kind.value || isHiddenOnSection.value) return null
+  const view = bannerViews[kind.value]()
+  return view && section === 'billing'
+    ? { ...view, action: null, dismissible: false }
+    : view
+})
 
 function handleAddCredits() {
   void showTopUpCreditsDialog()
