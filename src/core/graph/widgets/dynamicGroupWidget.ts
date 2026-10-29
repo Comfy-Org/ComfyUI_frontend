@@ -3,7 +3,7 @@ import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { VueOnlyWidget } from '@/lib/litegraph/src/widgets/VueOnlyWidget'
 import {
   captureInputLayout,
@@ -11,7 +11,6 @@ import {
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import {
-  coerceRestoredWidgetValue,
   getWidgetIds,
   resolveNodeRootGraphId
 } from '@/lib/litegraph/src/utils/widget'
@@ -26,6 +25,8 @@ import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
 import {
+  dynamicGroupRowAllocationBound,
+  isRemoteDynamicGroupRowWrite,
   markDynamicGroupController,
   reportDynamicGroupRowRefusal
 } from './dynamicGroupDiagnostics'
@@ -52,7 +53,7 @@ export function dynamicGroupWidget(
     hidden: true,
     options: { min, max, socketless: true, serialize: false }
   })
-  markDynamicGroupController(controller)
+  markDynamicGroupController(controller, Object.keys(fields).length)
   node.addCustomWidget(
     new DynamicGroupNoticeWidget(
       {
@@ -88,7 +89,11 @@ export function dynamicGroupWidget(
     },
     callback: () =>
       changeRows(() => {
-        if (rows().length < max) controller.value = rows().length + 1
+        if (
+          rows().length < max &&
+          rows().length < dynamicGroupRowAllocationBound(controller)
+        )
+          controller.value = rows().length + 1
       })
   })
 
@@ -110,7 +115,10 @@ export function dynamicGroupWidget(
       })
       header.options.disabled = headers.length <= min
     })
-    add.options.disabled = headers.length >= max
+    add.options.disabled =
+      min > dynamicGroupRowAllocationBound(controller) ||
+      headers.length >= max ||
+      headers.length >= dynamicGroupRowAllocationBound(controller)
     if (controller.widgetId) store.setValue(controller.widgetId, headers.length)
     const graphId = resolveNodeRootGraphId(node)
     if (graphId && node.widgets)
@@ -376,24 +384,32 @@ export function dynamicGroupWidget(
     }
   }
 
-  function validateSavedRowCount(value: number, requested: number) {
-    const graphId = resolveNodeRootGraphId(node)
-    if (!graphId) return
-    const widgets = node.widgets ?? []
-    const position = widgets
-      .filter((widget) => widget.serialize !== false)
-      .indexOf(controller)
-    const restored = store.getRestoredWidgetValue(
-      graphId,
-      node.id,
-      inputName,
-      position
+  function exceedsAllocationBound(requested: number) {
+    if (requested <= dynamicGroupRowAllocationBound(controller)) return false
+    if (!isRemoteDynamicGroupRowWrite(node))
+      reportDynamicGroupRowRefusal(node, 'add_row', requested, rowCount)
+    throw new RangeError(
+      `Row count exceeds the allocation bound for DynamicGroup '${inputName}'`
     )
-    if (coerceRestoredWidgetValue(controller, restored?.value) !== value) return
-    const savedValueCount = store.getRestoredWidgetValueCount(graphId, node.id)
-    if (requested > Math.max(max, savedValueCount ?? 0))
-      throw new RangeError(
-        `Invalid saved row count for DynamicGroup '${inputName}'`
+  }
+
+  function resizeRows(count: number) {
+    const hosts = createPromotionHostLookup()
+    for (let index = rows().length - 1; index >= count; index--) {
+      if (!removeRow(index, hosts)) break
+    }
+    const existing = new Set(node.widgets)
+    while (rows().length < count) {
+      if (!addRow(rows().length, hosts)) break
+    }
+    publish()
+    announceAddedValues(existing)
+    if (rowCount !== count)
+      reportDynamicGroupRowRefusal(
+        node,
+        rowCount > count ? 'remove_row' : 'add_row',
+        count,
+        rowCount
       )
   }
 
@@ -402,25 +418,9 @@ export function dynamicGroupWidget(
     set(value: unknown) {
       if (typeof value !== 'number' || !Number.isFinite(value)) return
       const requested = Math.max(0, Math.trunc(value))
-      validateSavedRowCount(value, requested)
       const count = Math.max(min, requested)
-      const hosts = createPromotionHostLookup()
-      for (let index = rows().length - 1; index >= count; index--) {
-        if (!removeRow(index, hosts)) break
-      }
-      const existing = new Set(node.widgets)
-      while (rows().length < count) {
-        if (!addRow(rows().length, hosts)) break
-      }
-      publish()
-      announceAddedValues(existing)
-      if (rowCount !== count)
-        reportDynamicGroupRowRefusal(
-          node,
-          rowCount > count ? 'remove_row' : 'add_row',
-          count,
-          rowCount
-        )
+      if (exceedsAllocationBound(count)) return
+      resizeRows(count)
     }
   })
   controller.value = initialCount

@@ -1,3 +1,4 @@
+import type { MinBounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { ref } from 'vue'
 import type { Ref, ShallowRef } from 'vue'
 
@@ -13,7 +14,7 @@ import type {
 export function useMinimapRenderer(
   canvasRef: Readonly<ShallowRef<HTMLCanvasElement | null>>,
   graph: Ref<LGraph | null>,
-  bounds: Ref<{ minX: number; minY: number; width: number; height: number }>,
+  bounds: Ref<MinBounds>,
   scale: Ref<number>,
   updateFlags: Ref<UpdateFlags>,
   settings: {
@@ -38,7 +39,6 @@ export function useMinimapRenderer(
     const ctx = canvasRef.value.getContext('2d')
     if (!ctx) return
 
-    // Fast path for 0 nodes - just show background
     if (g._nodes.length === 0) {
       ctx.clearRect(0, 0, width, height)
       return
@@ -82,7 +82,7 @@ export function useMinimapRenderer(
       needsBoundsUpdate.value = false
       updateFlags.value.bounds = false
       needsFullRedraw.value = true
-      // When bounds change, we need to update the viewport position
+
       updateFlags.value.viewport = true
     }
 
@@ -94,7 +94,6 @@ export function useMinimapRenderer(
       renderMinimap()
     }
 
-    // Update viewport if needed (e.g., after bounds change)
     if (updateFlags.value.viewport) {
       updateViewport()
       updateFlags.value.viewport = false

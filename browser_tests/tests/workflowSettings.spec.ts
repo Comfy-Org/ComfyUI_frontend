@@ -1,7 +1,7 @@
 import type { Page, Request } from '@playwright/test'
 
-import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { ComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,

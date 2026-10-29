@@ -1,0 +1,261 @@
+import { describe, expect, it, vi } from 'vitest'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+
+describe('commandStore', () => {
+  describe('registerCommand', () => {
+    it('registers a command by id', () => {
+      const store = useCommandStore()
+      store.registerCommand({
+        id: 'test.command',
+        function: vi.fn()
+      })
+      expect(store.isRegistered('test.command')).toBe(true)
+    })
+
+    it('warns on duplicate registration and overwrites with new function', async () => {
+      const store = useCommandStore()
+
+      const originalFn = vi.fn()
+      const replacementFn = vi.fn()
+      store.registerCommand({ id: 'dup', function: originalFn })
+      store.registerCommand({ id: 'dup', function: replacementFn })
+
+      expect(console.warn).toHaveBeenCalledWith(
+        'Command dup already registered'
+      )
+      vi.mocked(console.warn).mockRestore()
+
+      await store.getCommand('dup').function()
+      expect(replacementFn).toHaveBeenCalled()
+      expect(originalFn).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('getCommand', () => {
+    it('returns the registered command', () => {
+      const store = useCommandStore()
+      const fn = vi.fn()
+      store.registerCommand({ id: 'get.test', function: fn, label: 'Test' })
+      const cmd = store.getCommand('get.test')
+      expect(cmd).toBeDefined()
+      expect(cmd.label).toBe('Test')
+    })
+
+    it('returns undefined for unregistered command', () => {
+      const store = useCommandStore()
+      expect(store.getCommand('nonexistent')).toBeUndefined()
+    })
+  })
+
+  describe('execute', () => {
+    it('executes a registered command', async () => {
+      const store = useCommandStore()
+      const fn = vi.fn()
+      store.registerCommand({ id: 'exec.test', function: fn })
+      await store.execute('exec.test')
+      expect(fn).toHaveBeenCalled()
+    })
+
+    it('throws for unregistered command', async () => {
+      const store = useCommandStore()
+      await expect(store.execute('missing')).rejects.toThrow(
+        'Command missing not found'
+      )
+    })
+
+    it('passes metadata to the command function', async () => {
+      const store = useCommandStore()
+      const fn = vi.fn()
+      store.registerCommand({ id: 'meta.test', function: fn })
+      await store.execute('meta.test', { metadata: { source: 'keyboard' } })
+      expect(fn).toHaveBeenCalledWith({ source: 'keyboard' })
+    })
+
+    it('calls errorHandler on failure', async () => {
+      const store = useCommandStore()
+      const error = new Error('fail')
+      store.registerCommand({
+        id: 'err.test',
+        function: () => {
+          throw error
+        }
+      })
+      const handler = vi.fn()
+      await store.execute('err.test', { errorHandler: handler })
+      expect(handler).toHaveBeenCalledWith(error)
+      expect(useToast().toasts).toEqual([])
+    })
+
+    it.for(['synchronous', 'asynchronous'] as const)(
+      'shows a toast for an unhandled %s command failure',
+      async (failure) => {
+        const store = useCommandStore()
+        const error = new Error('Command failed')
+        const actions = {
+          synchronous: () => {
+            throw error
+          },
+          asynchronous: () => Promise.reject(error)
+        }
+        store.registerCommand({
+          id: 'failing.command',
+          function: actions[failure]
+        })
+
+        await store.execute('failing.command')
+
+        expect(useToast().toasts).toEqual([
+          expect.objectContaining({
+            kind: 'error',
+            title: 'Error',
+            description: 'Command failed'
+          })
+        ])
+      }
+    )
+
+    it.for([
+      { selectOnly: false, calls: 1 },
+      { selectOnly: true, calls: 0 }
+    ])(
+      'executes graph mutations $calls times while selectOnly=$selectOnly',
+      async ({ selectOnly, calls }) => {
+        const fn = vi.fn()
+        const store = useCommandStore()
+        store.setInteractionMode({ isSelectOnly: () => selectOnly })
+        store.registerCommand({
+          id: 'graph.mutation',
+          function: fn,
+          mutatesGraph: true
+        })
+
+        await store.execute('graph.mutation')
+
+        expect(fn).toHaveBeenCalledTimes(calls)
+      }
+    )
+
+    it.for([
+      { selectOnlyAtDispatch: true, selectOnlyBeforeResume: false, calls: 0 },
+      { selectOnlyAtDispatch: false, selectOnlyBeforeResume: true, calls: 1 }
+    ])(
+      'decides at dispatch: selectOnly=$selectOnlyAtDispatch then $selectOnlyBeforeResume before the promise resumes runs $calls times',
+      async ({ selectOnlyAtDispatch, selectOnlyBeforeResume, calls }) => {
+        let selectOnly = selectOnlyAtDispatch
+        const fn = vi.fn()
+        const store = useCommandStore()
+        store.setInteractionMode({ isSelectOnly: () => selectOnly })
+        store.registerCommand({
+          id: 'graph.mutation',
+          function: fn,
+          mutatesGraph: true
+        })
+
+        const execution = store.execute('graph.mutation')
+        selectOnly = selectOnlyBeforeResume
+        await execution
+
+        expect(fn).toHaveBeenCalledTimes(calls)
+      }
+    )
+
+    it('evaluates conditional graph mutation capabilities at dispatch', async () => {
+      const fn = vi.fn()
+      const store = useCommandStore()
+      store.setInteractionMode({ isSelectOnly: () => true })
+      store.registerCommand({
+        id: 'conditional.mutation',
+        function: fn,
+        mutatesGraph: () => false
+      })
+
+      await store.execute('conditional.mutation')
+
+      expect(fn).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('isRegistered', () => {
+    it('returns false for unregistered command', () => {
+      const store = useCommandStore()
+      expect(store.isRegistered('nope')).toBe(false)
+    })
+  })
+
+  describe('loadExtensionCommands', () => {
+    it('registers commands from an extension', () => {
+      const store = useCommandStore()
+      store.loadExtensionCommands({
+        name: 'test-ext',
+        commands: [
+          { id: 'ext.cmd1', function: vi.fn(), label: 'Cmd 1' },
+          { id: 'ext.cmd2', function: vi.fn(), label: 'Cmd 2' }
+        ]
+      })
+      expect(store.isRegistered('ext.cmd1')).toBe(true)
+      expect(store.isRegistered('ext.cmd2')).toBe(true)
+      expect(store.getCommand('ext.cmd1').source).toBe('test-ext')
+      expect(store.getCommand('ext.cmd2').source).toBe('test-ext')
+    })
+
+    it('skips extensions without commands', () => {
+      const store = useCommandStore()
+      store.loadExtensionCommands({ name: 'no-commands' })
+      expect(store.commands).toHaveLength(0)
+    })
+  })
+
+  describe('getCommand resolves dynamic properties', () => {
+    it('resolves label as function', () => {
+      const store = useCommandStore()
+      store.registerCommand({
+        id: 'label.fn',
+        function: vi.fn(),
+        label: () => 'Dynamic'
+      })
+      expect(store.getCommand('label.fn').label).toBe('Dynamic')
+    })
+
+    it('resolves tooltip as function', () => {
+      const store = useCommandStore()
+      store.registerCommand({
+        id: 'tip.fn',
+        function: vi.fn(),
+        tooltip: () => 'Dynamic tip'
+      })
+      expect(store.getCommand('tip.fn').tooltip).toBe('Dynamic tip')
+    })
+
+    it('uses explicit menubarLabel over label', () => {
+      const store = useCommandStore()
+      store.registerCommand({
+        id: 'mbl.explicit',
+        function: vi.fn(),
+        label: 'Label',
+        menubarLabel: 'Menu Label'
+      })
+      expect(store.getCommand('mbl.explicit').menubarLabel).toBe('Menu Label')
+    })
+
+    it('falls back menubarLabel to label', () => {
+      const store = useCommandStore()
+      store.registerCommand({
+        id: 'mbl.default',
+        function: vi.fn(),
+        label: 'My Label'
+      })
+      expect(store.getCommand('mbl.default').menubarLabel).toBe('My Label')
+    })
+  })
+
+  describe('formatKeySequence', () => {
+    it('returns empty string when command has no keybinding', () => {
+      const store = useCommandStore()
+      store.registerCommand({ id: 'no.kb', function: vi.fn() })
+      const cmd = store.getCommand('no.kb')
+      expect(store.formatKeySequence(cmd)).toBe('')
+    })
+  })
+})

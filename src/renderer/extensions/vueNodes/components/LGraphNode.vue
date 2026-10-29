@@ -17,7 +17,7 @@
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
-        isSelected && 'outline-foreground',
+        isEmphasized && 'outline-foreground',
         executing && 'outline-primary',
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
@@ -59,14 +59,14 @@
       :id="nodeId"
     />
     <div
-      v-if="isSelected || executing"
+      v-if="isEmphasized || executing"
       data-testid="node-state-outline-overlay"
       :class="
         cn(
           'pointer-events-none absolute z-0 border-3 outline-none',
           selectionShapeClass,
           hasAnyError ? '-inset-1.75' : '-inset-0.75',
-          isSelected ? 'border-foreground' : 'border-primary'
+          isEmphasized ? 'border-foreground' : 'border-primary'
         )
       "
     />
@@ -258,18 +258,18 @@ import { storeToRefs } from 'pinia'
 import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
-import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
+import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -306,13 +306,15 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
   locatorIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { isTransparent } from '@/utils/colorUtil'
+import { isTransparent } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
@@ -349,9 +351,10 @@ useVueElementTracking(nodeId.value, 'node')
 
 const canvasStore = useCanvasStore()
 
-const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
-const isSelected = computed(() => {
-  return selectedNodeIds.value.has(nodeId.value)
+const { isGhostPlacing } = storeToRefs(useCanvasStore())
+const isEmphasized = computed(() => {
+  const graph = canvasStore.currentGraph
+  return isNodeEmphasized(graph ? graphScopeOf(graph) : undefined, nodeId.value)
 })
 
 const nodeLocatorId = computed(
@@ -683,9 +686,11 @@ const hasVideoInput = computed(() =>
   nodeData.inputs.some((input) => input.type === 'VIDEO')
 )
 
-const hasVideoEditWidget = computed(() =>
-  widgetIds.value.some(
-    (id) => widgetValueStore.getWidget(id)?.type === 'videoedit'
+const VIDEO_PREVIEW_WIDGET_TYPES = new Set(['videoedit', 'videoconcat'])
+
+const hasVideoPreviewWidget = computed(() =>
+  widgetIds.value.some((id) =>
+    VIDEO_PREVIEW_WIDGET_TYPES.has(widgetValueStore.getWidget(id)?.type ?? '')
   )
 )
 
@@ -715,7 +720,7 @@ const nodeMedia = computed(() => {
       ? 'video'
       : 'image'
 
-  if (type === 'video' && hasVideoEditWidget.value) return undefined
+  if (type === 'video' && hasVideoPreviewWidget.value) return undefined
 
   return { type, urls } as const
 })

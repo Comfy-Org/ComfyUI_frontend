@@ -1,6 +1,7 @@
 <template>
   <AppDialogPanel
     size="compact"
+    class="w-90"
     body-class="flex flex-col gap-4 text-[14px] text-muted-foreground"
     @close="onCancel"
   >
@@ -37,7 +38,7 @@ import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useQueueStore } from '@/stores/queueStore'

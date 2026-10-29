@@ -8,7 +8,8 @@ export const WORKSPACE_STORAGE_KEYS = {
   DEPLOYMENT_LINK_SWITCH: 'Comfy.Workspace.DeploymentLinkSwitch',
   // localStorage key (persists across browser sessions)
   LAST_WORKSPACE_ID: 'Comfy.Workspace.LastWorkspaceId',
-  DEPLOYMENT_HINT_PREFIX: 'Comfy.Workspace.DeploymentHint.'
+  DEPLOYMENT_HINT_PREFIX: 'Comfy.Workspace.DeploymentHint.',
+  UNCONFIRMED_CLOUD_HINT_PREFIX: 'Comfy.Workspace.UnconfirmedCloudHint.'
 } as const
 
 export const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000

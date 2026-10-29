@@ -26,6 +26,7 @@ import type {
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentPanelRenderStalledMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentRunApprovalResolvedMetadata,
@@ -76,11 +77,11 @@ import type {
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import {
   CANCELLATION_STAGE_EVENTS,
   TelemetryEvents
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<
@@ -347,6 +348,12 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {
     this.capture(TelemetryEvents.AGENT_PANEL_CLOSED, metadata)
+  }
+
+  trackAgentPanelRenderStalled(
+    metadata: AgentPanelRenderStalledMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_PANEL_RENDER_STALLED, metadata)
   }
 
   trackAgentEntryButtonClicked(

@@ -6,10 +6,9 @@ import {
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
-import { AGENT_CONSENT_OFFER_DECLINED_SETTING_ID } from '@/platform/settings/constants/agent'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
-import type { Keybinding } from '@/platform/keybindings/types'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import { breakpointsTailwind } from '@vueuse/core'
@@ -305,12 +304,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
-    id: AGENT_CONSENT_OFFER_DECLINED_SETTING_ID,
-    name: 'Agent consent offer declined',
-    type: 'hidden',
-    defaultValue: false
-  },
-  {
     id: 'Comfy.Graph.ZoomSpeed',
     category: ['LiteGraph', 'Canvas', 'ZoomSpeed'],
     name: 'Canvas zoom speed',
@@ -593,7 +586,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['Appearance', 'General'],
     name: 'Disable animations',
     type: 'boolean',
-    defaultValue: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    defaultValue: () =>
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     tooltip:
       'Turns off most CSS animations and transitions. Speeds up inference when the display GPU is also used for generation.',
     onChange: (value: unknown) => {
@@ -887,7 +881,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Seen new workflow action items',
     type: 'hidden',
     defaultValue: [] as string[],
-    versionAdded: '1.41.5'
+    versionAdded: '1.41.5',
+    deprecated: true
   },
   {
     id: 'Comfy.Execution.PreviewMethod',
@@ -1052,7 +1047,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Minimap.Visible',
     name: 'Display minimap on canvas',
     type: 'hidden',
-    defaultValue: window.innerWidth >= breakpointsTailwind.lg,
+    defaultValue: () => window.innerWidth >= breakpointsTailwind.lg,
     versionAdded: '1.25.0'
   },
   {
