@@ -62,8 +62,8 @@ function statusIcon(status: PromptQueueRowStatus): string {
         "
       />
     </button>
-    <ul v-if="expanded" class="m-0 flex list-none flex-col p-0">
-      <li
+    <div v-if="expanded" class="flex flex-col">
+      <div
         v-for="item in items"
         :key="item.id"
         :data-status="item.status"
@@ -105,7 +105,7 @@ function statusIcon(status: PromptQueueRowStatus): string {
         >
           <i aria-hidden="true" class="icon-[lucide--trash-2] size-3.5" />
         </Button>
-      </li>
-    </ul>
+      </div>
+    </div>
   </div>
 </template>

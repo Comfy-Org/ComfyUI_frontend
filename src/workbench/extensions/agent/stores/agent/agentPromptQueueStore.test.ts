@@ -57,6 +57,21 @@ describe('useAgentPromptQueueStore', () => {
     expect(composer.draft).toBe('unsent draft')
   })
 
+  it('does not count the running item as a waiting follow-up', () => {
+    const queue = useAgentPromptQueueStore()
+    const composer = useAgentComposerStore()
+    composer.setText('first')
+    queue.enqueueFromComposer('first', [], [])
+    queue.begin(queue.items[0].id)
+
+    expect(queue.hasWaiting).toBe(false)
+    expect(queue.count).toBe(1)
+
+    composer.setText('second')
+    queue.enqueueFromComposer('second', [], [])
+    expect(queue.hasWaiting).toBe(true)
+  })
+
   it('does not start edit on the active item and keeps the draft', () => {
     const composer = useAgentComposerStore()
     const queue = queueTwoWaiting()

@@ -1842,7 +1842,7 @@ function userEngaged(): boolean {
     composerStore.hasDraft ||
     isSending.value ||
     workflowSelecting.value ||
-    promptQueueStore.count > 0
+    promptQueueStore.hasWaiting
   )
 }
 
@@ -2066,13 +2066,12 @@ const { submit: submitDraft } = useAgentDraftSubmission({
 const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
   isBusy: () => isStreaming.value || isSending.value,
   submitDraft,
-  sendItem: async (item) => {
-    await sendTurn(item.text, item.attachments, item.nodes, item.references, {
+  sendItem: (item) =>
+    sendTurn(item.text, item.attachments, item.nodes, item.references, {
       clientMessageId: uuidv4(),
       inputMethod: 'typed',
       starterPrompt: null
-    })
-  },
+    }),
   deferCapture: () => {
     canvasStore.stopNodePicking()
     consumeSelection()

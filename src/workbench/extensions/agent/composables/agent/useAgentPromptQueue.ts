@@ -3,18 +3,31 @@ import type { PromptQueueItem } from '@/workbench/extensions/agent/stores/agent/
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 
+type QueueSendResult = void | boolean | Promise<void | boolean>
+
 export function useAgentPromptQueue(options: {
   isBusy: () => boolean
   submitDraft: (
     text: string,
     attachments: ComposerAttachment[],
     references?: WorkflowReference[]
-  ) => void
-  sendItem: (item: PromptQueueItem) => Promise<void>
+  ) => QueueSendResult
+  sendItem: (item: PromptQueueItem) => QueueSendResult
   deferCapture: () => void
 }) {
   const queue = useAgentPromptQueueStore()
   let pumping = false
+
+  async function settleStartedSend(
+    id: string,
+    submitted: QueueSendResult
+  ): Promise<void> {
+    const sent = await submitted
+    if (sent === false && queue.runningId === id) {
+      queue.finish(id)
+      if (options.isBusy()) queue.clearComposerDraft()
+    }
+  }
 
   async function pump(): Promise<void> {
     if (pumping || options.isBusy() || queue.runningId) return
@@ -23,7 +36,7 @@ export function useAgentPromptQueue(options: {
     pumping = true
     queue.begin(next.id)
     try {
-      await options.sendItem(next)
+      await settleStartedSend(next.id, options.sendItem(next))
     } finally {
       pumping = false
     }
@@ -52,7 +65,10 @@ export function useAgentPromptQueue(options: {
       queue.nextItem?.id === item.id
     ) {
       queue.begin(item.id)
-      options.submitDraft(text, attachments, references)
+      void settleStartedSend(
+        item.id,
+        options.submitDraft(text, attachments, references)
+      )
       return
     }
     queue.clearComposerDraft()

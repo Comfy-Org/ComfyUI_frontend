@@ -28,6 +28,7 @@ function setup() {
     busy,
     sent,
     deferred,
+    submitDraft,
     ...queueApi,
     queue: useAgentPromptQueueStore(),
     composer: useAgentComposerStore()
@@ -107,5 +108,20 @@ describe('useAgentPromptQueue', () => {
     busy.value = false
     await settleActiveAndPump()
     expect(sent).toEqual(['one', 'three', 'two revised'])
+  })
+
+  it('drops the running item when the first send fails so a retry can send', async () => {
+    const { handleComposerSend, queue, composer, submitDraft } = setup()
+    submitDraft.mockImplementationOnce(async () => false)
+
+    composer.setText('one')
+    handleComposerSend('one', [])
+    await vi.waitFor(() => expect(queue.runningId).toBeNull())
+    expect(queue.count).toBe(0)
+
+    composer.setText('one')
+    handleComposerSend('one', [])
+    expect(submitDraft).toHaveBeenCalledTimes(2)
+    expect(queue.runningId).not.toBeNull()
   })
 })

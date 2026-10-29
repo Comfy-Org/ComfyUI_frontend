@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
-import { v4 as uuidv4 } from 'uuid'
 
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
@@ -21,6 +20,7 @@ import {
 export const useAgentPromptQueueStore = defineStore('agentPromptQueue', () => {
   const composer = useAgentComposerStore()
   const state = shallowRef(emptyPromptQueue())
+  let nextId = 0
 
   const items = computed(() => visiblePromptQueueItems(state.value))
   const count = computed(() => items.value.length)
@@ -28,6 +28,14 @@ export const useAgentPromptQueueStore = defineStore('agentPromptQueue', () => {
   const runningId = computed(() => state.value.runningId)
   const editingId = computed(() => state.value.editingId)
   const nextItem = computed(() => nextPromptQueueItem(state.value))
+  const hasWaiting = computed(() =>
+    items.value.some((item) => item.id !== state.value.runningId)
+  )
+
+  function allocateId(): string {
+    nextId += 1
+    return `prompt-queue-${nextId}`
+  }
 
   function dispatch(event: PromptQueueEvent): void {
     state.value = reducePromptQueue(state.value, event)
@@ -74,7 +82,7 @@ export const useAgentPromptQueueStore = defineStore('agentPromptQueue', () => {
     attachments: ComposerAttachment[],
     references: WorkflowReference[]
   ): PromptQueueItem {
-    const item = captureItem(uuidv4(), text, attachments, references)
+    const item = captureItem(allocateId(), text, attachments, references)
     dispatch({ type: 'enqueued', item })
     return item
   }
@@ -141,6 +149,7 @@ export const useAgentPromptQueueStore = defineStore('agentPromptQueue', () => {
   return {
     items,
     count,
+    hasWaiting,
     expanded,
     runningId,
     editingId,
