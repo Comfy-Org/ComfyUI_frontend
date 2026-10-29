@@ -21,19 +21,15 @@ const { pricing = [] } = defineProps<{
   >
     <div
       v-if="core.length"
-      class="flex h-5 items-center justify-center overflow-clip rounded-md bg-input"
+      class="flex h-5 items-center justify-center gap-1 divide-x divide-muted-foreground overflow-clip rounded-md bg-input"
     >
-      <template v-for="(badge, index) of core" :key="badge.text">
-        <div
-          v-if="index !== 0"
-          class="mr-0.5 h-4 border-r border-muted-foreground pr-0.5"
-        />
-        <NodeBadge
-          bg-color="transparent"
-          v-bind="badge"
-          class="h-5 first:pl-2 last:pr-2"
-        />
-      </template>
+      <NodeBadge
+        v-for="badge of core"
+        :key="badge.text"
+        bg-color="transparent"
+        v-bind="badge"
+        class="h-4 rounded-none py-0 first:pl-2 last:pr-2"
+      />
     </div>
     <div
       v-if="hasComfyBadge"
@@ -51,31 +47,27 @@ const { pricing = [] } = defineProps<{
     </div>
     <div
       v-if="extension.length"
-      class="flex h-5 items-center justify-center overflow-clip rounded-md bg-input"
+      class="flex h-5 items-center justify-center gap-1 divide-x divide-muted-foreground overflow-clip rounded-md bg-input"
     >
-      <template v-for="(badge, index) of extension" :key="badge.text">
-        <div
-          v-if="index !== 0"
-          class="mr-0.5 h-4 border-r border-muted-foreground pr-0.5"
-        />
-        <NodeBadge
-          bg-color="transparent"
-          v-bind="badge"
-          :class="
-            cn(
-              'h-5 first:pl-2 last:pr-2',
-              badge.onClick && 'pointer-events-auto'
-            )
-          "
-        />
-      </template>
+      <NodeBadge
+        v-for="badge of extension"
+        :key="badge.text"
+        bg-color="transparent"
+        v-bind="badge"
+        :class="
+          cn(
+            'h-4 rounded-none py-0 first:pl-2 last:pr-2',
+            badge.onClick && 'pointer-events-auto'
+          )
+        "
+      />
     </div>
     <div
       v-for="badge in pricing"
       :key="badge.required"
       class="flex items-center gap-1"
     >
-      <CreditBadge variant="node" :text="badge.required" :rest="badge.rest" />
+      <CreditBadge :text="badge.required" :rest="badge.rest" />
     </div>
   </div>
 </template>

@@ -3,31 +3,18 @@
     data-testid="credit-badge-required"
     :class="
       cn(
-        'flex h-5 shrink-0 items-center bg-input p-1 text-xs',
-        variant === 'node' ? 'gap-1 rounded-md py-0.5 pl-2' : 'rounded-full',
+        'flex h-5 shrink-0 items-center gap-1 rounded-md bg-input py-0.5 pr-1 pl-2 text-xs',
         rest && 'rounded-r-none'
       )
     "
   >
-    <i
-      :class="
-        cn(
-          'icon-[lucide--coins] aspect-square bg-credit',
-          variant === 'node' ? 'size-3.5' : 'h-full w-auto'
-        )
-      "
-    />
+    <i class="icon-[lucide--coins] aspect-square size-3.5 bg-credit" />
     <span class="truncate" v-text="text" />
   </span>
   <span
     v-if="rest"
     data-testid="credit-badge-rest"
-    :class="
-      cn(
-        '-ml-1 flex h-5 max-w-max min-w-0 grow basis-0 items-center truncate bg-input text-xs',
-        variant === 'node' ? 'rounded-r-md' : 'rounded-r-full'
-      )
-    "
+    class="-ml-1 flex h-5 max-w-max min-w-0 grow basis-0 items-center truncate rounded-r-md bg-input text-xs"
   >
     <span class="pr-2" v-text="rest" />
   </span>
@@ -36,9 +23,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { variant = 'default' } = defineProps<{
+defineProps<{
   text: string
   rest?: string
-  variant?: 'default' | 'node'
 }>()
 </script>

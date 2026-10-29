@@ -45,9 +45,7 @@
       v-if="!isRerouteNode && !isTransparentHeaderless"
       v-bind="badges"
       class="absolute right-0 bottom-full"
-      :style="{
-        marginBottom: `${4 + (hasAnyError || isDraggingOver ? 4 : 0) + (isEmphasized || executing ? 3 : 0)}px`
-      }"
+      :style="badgesStyle"
     />
     <NodeBloodDrips
       v-if="
@@ -728,6 +726,10 @@ const nodeMedia = computed(() => {
 
 // Drag and drop support
 const isDraggingOver = ref(false)
+
+const badgesStyle = computed(() => ({
+  marginBottom: `${4 + (hasAnyError.value || isDraggingOver.value ? 4 : 0) + (isEmphasized.value || executing.value ? 3 : 0)}px`
+}))
 
 function handleDragOver(event: DragEvent) {
   const node = resolveLGraphNode()
