@@ -322,29 +322,59 @@ describe('model widgets on a deployment', () => {
       ])
     })
 
-    it('settles a missing-model wait on the new workspace without waiting for the old one', async () => {
-      vi.mocked(assetService.getWorkspaceLibraryModels).mockReturnValueOnce(
-        new Promise(() => {})
-      )
-      const widget = loraWidget()
-      const inventory = getComboWidgetInventory(widget)
-      let settled = false
-      void inventory?.waitForSettled().then(() => {
-        settled = true
-      })
+    it.for([
+      {
+        change: 'the workspace changes',
+        expected: ['release.safetensors', 'newer.safetensors'],
+        apply: () => onWorkspace('ws-2')
+      },
+      {
+        change: 'the member signs out',
+        expected: ['release.safetensors'],
+        apply: () => onWorkspace(null)
+      },
+      {
+        change: 'the flag turns off',
+        expected: ['release.safetensors'],
+        apply: () => {
+          vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = false
+        }
+      },
+      {
+        change: 'an upload reads the folder again',
+        expected: ['release.safetensors', 'newer.safetensors'],
+        apply: () => {
+          useAssetDownloadStore().lastCompletedDownload = {
+            taskId: 'task-1',
+            modelType: 'loras',
+            timestamp: 1
+          }
+        }
+      }
+    ])(
+      'settles a missing-model wait when $change while the first read never answers',
+      async ({ expected, apply }) => {
+        vi.mocked(assetService.getWorkspaceLibraryModels).mockReturnValueOnce(
+          new Promise(() => {})
+        )
+        const widget = loraWidget()
+        const inventory = getComboWidgetInventory(widget)
+        let settled = false
+        void inventory?.waitForSettled().then(() => {
+          settled = true
+        })
+        await settle()
+        expect(settled).toBe(false)
 
-      library.set('loras', models('new_workspace.safetensors'))
-      onWorkspace('ws-2')
-      expect(widget.options.values).toEqual(['release.safetensors'])
-      await settle()
+        library.set('loras', models('newer.safetensors'))
+        apply()
+        await settle()
 
-      expect(inventory?.getStatus()).toBe('ready')
-      expect(widget.options.values).toEqual([
-        'release.safetensors',
-        'new_workspace.safetensors'
-      ])
-      expect(settled).toBe(true)
-    })
+        expect(inventory?.getStatus()).toBe('ready')
+        expect(widget.options.values).toEqual(expected)
+        expect(settled).toBe(true)
+      }
+    )
 
     it('keeps a loader promoted out of a subgraph in step with the library', async () => {
       let answer: (names: string[]) => void = () => {}

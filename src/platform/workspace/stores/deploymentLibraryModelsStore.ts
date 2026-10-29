@@ -13,7 +13,6 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 interface LibraryFolder {
   names: readonly string[]
   status: ComboWidgetInventoryStatus
-  settled: Promise<void>
 }
 
 const NO_NAMES: readonly string[] = []
@@ -34,10 +33,6 @@ export const useDeploymentLibraryModelsStore = defineStore(
     const latestRequest = new Map<string, number>()
     const listeners = effectScope()
     let generation = 0
-    let endGeneration: () => void = () => {}
-    let generationEnded = new Promise<void>((resolve) => {
-      endGeneration = resolve
-    })
 
     watch(
       () => workspaceStore.workspaceId,
@@ -45,10 +40,6 @@ export const useDeploymentLibraryModelsStore = defineStore(
         generation++
         folders.clear()
         latestRequest.clear()
-        endGeneration()
-        generationEnded = new Promise<void>((resolve) => {
-          endGeneration = resolve
-        })
       },
       { flush: 'sync' }
     )
@@ -89,25 +80,25 @@ export const useDeploymentLibraryModelsStore = defineStore(
       const previous = folders.get(folder)
       const entry: LibraryFolder = {
         names: previous?.names ?? NO_NAMES,
-        status: previous?.status === 'ready' ? 'ready' : 'loading',
-        settled: assetService.getWorkspaceLibraryModels(folder).then(
-          (names) => {
-            if (!isCurrent()) return
-            folders.set(folder, { ...entry, names, status: 'ready' })
-          },
-          (err: unknown) => {
-            if (!isCurrent()) return
-            folders.set(folder, { ...entry, status: 'error' })
-            reportError(err, {
-              surface: 'workspace',
-              errorType: 'error_loading_library_models',
-              level: 'warning',
-              tags: { folder }
-            })
-          }
-        )
+        status: previous?.status === 'ready' ? 'ready' : 'loading'
       }
       folders.set(folder, entry)
+      void assetService.getWorkspaceLibraryModels(folder).then(
+        (names) => {
+          if (!isCurrent()) return
+          folders.set(folder, { names, status: 'ready' })
+        },
+        (err: unknown) => {
+          if (!isCurrent()) return
+          folders.set(folder, { ...entry, status: 'error' })
+          reportError(err, {
+            surface: 'workspace',
+            errorType: 'error_loading_library_models',
+            level: 'warning',
+            tags: { folder }
+          })
+        }
+      )
       return entry
     }
 
@@ -136,14 +127,21 @@ export const useDeploymentLibraryModelsStore = defineStore(
       return current(folder)?.status ?? 'ready'
     }
 
-    async function waitForSettled(folder: string): Promise<void> {
-      let entry = current(folder)
-      while (entry) {
-        await Promise.race([entry.settled, generationEnded])
-        const next = current(folder)
-        if (next === entry || next?.status !== 'loading') return
-        entry = next
-      }
+    function waitForSettled(folder: string): Promise<void> {
+      if (statusOf(folder) !== 'loading') return Promise.resolve()
+      return new Promise((resolve) => {
+        const stop = listeners.run(() =>
+          watch(
+            () => [flags.runtimeLibraryModelsEnabled, folders.get(folder)],
+            () => {
+              if (statusOf(folder) === 'loading') return
+              stop?.()
+              resolve()
+            }
+          )
+        )
+        if (!stop) resolve()
+      })
     }
 
     return {
