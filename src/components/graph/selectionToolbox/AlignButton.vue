@@ -5,6 +5,7 @@
         :tooltip="t('g.alignAndDistribute')"
         :variant="isOpen ? 'secondary' : 'muted-textonly'"
         :aria-label="t('g.alignAndDistribute')"
+        :disabled="!canArrange"
       >
         <div class="flex items-center gap-1">
           <i :class="ARRANGE_ICON" />
@@ -28,6 +29,7 @@
           tooltip-side="bottom"
           variant="muted-textonly"
           :aria-label="option.localizedName"
+          :disabled="!canArrange"
           @click="applyAlign(option)"
         >
           <i :class="option.icon" />
@@ -40,6 +42,7 @@
           tooltip-side="bottom"
           variant="muted-textonly"
           :aria-label="option.localizedName"
+          :disabled="!canArrange"
           @click="applyDistribute(option)"
         >
           <i :class="option.icon" />
@@ -68,8 +71,13 @@ import {
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 
 const { t } = useI18n()
-const { alignOptions, distributeOptions, applyAlign, applyDistribute } =
-  useNodeArrangement()
+const {
+  canArrange,
+  alignOptions,
+  distributeOptions,
+  applyAlign,
+  applyDistribute
+} = useNodeArrangement()
 const { selectedNodes } = useSelectionState()
 const lift = defineModel<number>('lift', { default: 0 })
 
@@ -84,6 +92,7 @@ watch(selectedNodes, (nodes, previous) => {
 })
 
 onBeforeUnmount(() => {
+  isOpen.value = false
   lift.value = 0
 })
 </script>

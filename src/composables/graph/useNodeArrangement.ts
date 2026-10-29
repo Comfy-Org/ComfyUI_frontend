@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { Direction } from '@/lib/litegraph/src/interfaces'
@@ -31,6 +32,11 @@ export function useNodeArrangement() {
   const { t } = useI18n()
   const canvasStore = useCanvasStore()
   const canvasRefresh = useCanvasRefresh()
+  const canArrange = computed(
+    () =>
+      !canvasStore.isReadOnly &&
+      canvasStore.selectedItems.filter(isLGraphNode).length >= 2
+  )
   const alignOptions: AlignOption[] = [
     {
       name: 'top',
@@ -103,6 +109,7 @@ export function useNodeArrangement() {
   }
 
   return {
+    canArrange,
     alignOptions,
     distributeOptions,
     applyAlign,

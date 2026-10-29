@@ -22,8 +22,13 @@ export function useSelectionMenuOptions() {
     renameSelection
   } = useSelectionOperations()
 
-  const { alignOptions, distributeOptions, applyAlign, applyDistribute } =
-    useNodeArrangement()
+  const {
+    canArrange,
+    alignOptions,
+    distributeOptions,
+    applyAlign,
+    applyDistribute
+  } = useNodeArrangement()
 
   const { convertToSubgraph, unpackSubgraph, addSubgraphToLibrary } =
     useSubgraphOperations()
@@ -111,12 +116,14 @@ export function useSelectionMenuOptions() {
       ...alignOptions.map((align) => ({
         label: align.localizedName,
         icon: align.icon,
+        disabled: !canArrange.value,
         action: () => applyAlign(align, alignTo)
       })),
       { type: 'divider' },
       ...distributeOptions.map((distribute) => ({
         label: distribute.localizedName,
         icon: distribute.icon,
+        disabled: !canArrange.value,
         action: () => applyDistribute(distribute)
       }))
     ],
