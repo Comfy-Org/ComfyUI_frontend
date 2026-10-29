@@ -36,4 +36,16 @@ describe('useBrowserTabTitleStore', () => {
 
     expect(store.prefix).toBe('[Two] ')
   })
+
+  it('treats any empty value as clearing the source', () => {
+    const store = useBrowserTabTitleStore()
+
+    store.setPrefix('feature-a', 'Input needed')
+    store.setPrefix('feature-a', '')
+    expect(store.prefix).toBe('')
+
+    store.setPrefix('feature-a', 'Input needed')
+    store.setPrefix('feature-a', undefined)
+    expect(store.prefix).toBe('')
+  })
 })

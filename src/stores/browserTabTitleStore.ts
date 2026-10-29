@@ -3,7 +3,7 @@ import { computed, shallowRef } from 'vue'
 
 /**
  * Prefixes for the browser tab title.
- * Cleared by setting to `null`;
+ * A source clears its prefix by setting an empty value (`''`, `null` or `undefined`).
  * Prefixes show in the original order in which they were set.
  */
 export const useBrowserTabTitleStore = defineStore('browserTabTitle', () => {
@@ -13,11 +13,11 @@ export const useBrowserTabTitleStore = defineStore('browserTabTitle', () => {
     [...prefixes.value.values()].map((text) => `[${text}] `).join('')
   )
 
-  function setPrefix(source: string, text: string | null): void {
+  function setPrefix(source: string, text: string | null | undefined): void {
     const current = prefixes.value.get(source)
-    if (text === null ? current === undefined : current === text) return
+    if (!text ? current === undefined : current === text) return
     const next = new Map(prefixes.value)
-    if (text === null) next.delete(source)
+    if (!text) next.delete(source)
     else next.set(source, text)
     prefixes.value = next
   }

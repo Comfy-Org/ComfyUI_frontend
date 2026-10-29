@@ -722,6 +722,27 @@ describe('AgentPanelRoot tab activity across chats', () => {
     expect(useBrowserTabTitleStore().prefix).toBe('')
   })
 
+  it('re-translates the page-wide prefix when the locale changes while an answer is pending', async () => {
+    const locale = i18n.global.locale.value
+    i18n.global.mergeLocaleMessage('x-test', {
+      g: { agentInputNeededShort: 'Answer needed' }
+    })
+    try {
+      renderPanel()
+      await send('install the video nodes')
+
+      emitAskUser()
+      await nextTick()
+      expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+
+      i18n.global.locale.value = 'x-test' as typeof locale
+      await nextTick()
+      expect(useBrowserTabTitleStore().prefix).toBe('[Answer needed] ')
+    } finally {
+      i18n.global.locale.value = locale
+    }
+  })
+
   it('keeps the page-wide approval flag when the asking turn has no open tab', async () => {
     const tab = workflowStore.activeWorkflow!
     renderPanel()
