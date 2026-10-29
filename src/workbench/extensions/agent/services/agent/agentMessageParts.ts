@@ -1,6 +1,7 @@
 import type { AgentAskConflict, AgentAskOption } from '@comfyorg/ingest-types'
 import {
   zAgentDeleteApprovalContext,
+  zAgentPausedContext,
   zAgentRunApprovalContext
 } from '@comfyorg/ingest-types/zod'
 import { isEqual, uniqBy } from 'es-toolkit'
@@ -145,19 +146,40 @@ export interface DeleteApprovalPart {
   resolution?: AskUserResolution
 }
 
-export type AskPart = RunApprovalPart | AskUserPart | DeleteApprovalPart
+/**
+ * An admission pause: the turn is parked and will recheck on its own, and the
+ * user can shortcut that with Resume. `reason` is the binding policy's token
+ * (`no_funds`, `workspace_paused`, ...) and `message` is the server's own
+ * user-facing copy for it, which is why neither is re-derived here.
+ */
+export interface PausedPart {
+  type: 'paused'
+  askId: string
+  prompt: string
+  message: string
+  reason: string
+  recheckAfterSeconds: number
+}
+
+export type AskPart =
+  | RunApprovalPart
+  | AskUserPart
+  | DeleteApprovalPart
+  | PausedPart
 
 function isAskPart(part: MessagePart): part is AskPart {
   return (
     part.type === 'runApproval' ||
     part.type === 'askUser' ||
-    part.type === 'deleteApproval'
+    part.type === 'deleteApproval' ||
+    part.type === 'paused'
   )
 }
 
 export function isPendingAskPart(part: MessagePart): part is AskPart {
   return (
     part.type === 'runApproval' ||
+    part.type === 'paused' ||
     (isAskPart(part) && part.resolution === undefined)
   )
 }
@@ -177,7 +199,15 @@ export function retireAskParts(
 ): MessagePart[] {
   const next = parts.flatMap((part): MessagePart[] => {
     if (askIdOf(part) !== askId) return [part]
-    if (!isAskPart(part) || part.type === 'runApproval') return []
+    // A retired pause leaves nothing to read back: admission either let the
+    // turn through or ended it, and both are told elsewhere. Drop the card like
+    // a run approval rather than leaving a stale "paused" claim on screen.
+    if (
+      !isAskPart(part) ||
+      part.type === 'runApproval' ||
+      part.type === 'paused'
+    )
+      return []
     const settled = settleResolution(part.resolution, resolution)
     return [
       settled === part.resolution ? part : { ...part, resolution: settled }
@@ -270,6 +300,30 @@ function toDeleteApprovalPart(ask: AskInput): DeleteApprovalPart | undefined {
   }
 }
 
+function toPausedPart(ask: AskInput): PausedPart | undefined {
+  const context = zAgentPausedContext.safeParse(ask.context).data
+  if (!context) return undefined
+  // One Resume option, never free text (ingest contract). A pause shaped like
+  // anything else is not this card, so fall through to the notice rather than
+  // render a Resume button that answers something unknown.
+  const offersResume =
+    isEqual(
+      ask.options.map(({ id }) => id),
+      ['resume']
+    ) &&
+    ask.max_selections === 1 &&
+    !ask.allow_other
+  if (!offersResume) return undefined
+  return {
+    type: 'paused',
+    askId: ask.ask_id,
+    prompt: clip(ask.prompt, ASK_LIMITS.prompt),
+    message: clip(context.message, ASK_LIMITS.prompt),
+    reason: context.reason,
+    recheckAfterSeconds: Math.max(0, context.recheck_after_seconds)
+  }
+}
+
 const ASK_PART_BUILDERS: Record<
   RenderedAskKind,
   (ask: AskInput) => AskPart | undefined
@@ -284,7 +338,8 @@ const ASK_PART_BUILDERS: Record<
     }
   },
   ask_user: toAskUserPart,
-  delete_approval: toDeleteApprovalPart
+  delete_approval: toDeleteApprovalPart,
+  paused: toPausedPart
 }
 
 function isRenderedAskKind(kind: AskInput['kind']): kind is RenderedAskKind {
@@ -318,6 +373,7 @@ export type MessagePart =
   | RunApprovalPart
   | AskUserPart
   | DeleteApprovalPart
+  | PausedPart
   | PaywallPart
 
 export interface AssistantMessage {

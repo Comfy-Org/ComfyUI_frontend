@@ -62,7 +62,13 @@ export type AgentTurnAccepted = GeneratedAgentTurnAccepted & {
 export const RENDERED_ASK_KINDS = [
   'run_approval',
   'ask_user',
-  'delete_approval'
+  'delete_approval',
+  // `paused` is not negotiated — the server raises the pause card for every
+  // client regardless of this list (see `ask_kinds` in the ingest contract), so
+  // leaving it out never stopped the ask arriving. It only stopped the panel
+  // rendering it, which turned a credits stop into the generic "waiting on a
+  // step this panel can't show" notice (PM-1649).
+  'paused'
 ] as const satisfies readonly AgentAskKind[]
 export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
 

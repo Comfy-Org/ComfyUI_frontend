@@ -7,6 +7,7 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import ActivityTrace from './ActivityTrace.vue'
 import AgentNoticeCard from './AgentNoticeCard.vue'
+import AgentPausedCard from './AgentPausedCard.vue'
 import AgentPaywallCard from './AgentPaywallCard.vue'
 import AskUserCard from './AskUserCard.vue'
 import DeleteApprovalCard from './DeleteApprovalCard.vue'
@@ -80,6 +81,16 @@ const emit = defineEmits<{
     @answer="
       (askId, selection) => emit('answer', askId, { selected: [selection] })
     "
+  />
+  <AgentPausedCard
+    v-else-if="group.kind === 'paused'"
+    :part="group.part"
+    :presentation="paywallPresentation"
+    :answering="answeringAskIds.has(group.part.askId)"
+    @answer="
+      (askId, selection) => emit('answer', askId, { selected: [selection] })
+    "
+    @add-credits="emit('paywallAction', 'addCredits')"
   />
   <AgentPaywallCard
     v-else-if="group.kind === 'paywall'"
