@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import type { DeploymentCompatibilityMark } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import type { DeploymentRowLabels } from '@/platform/workspace/composables/useDeploymentLabels'
@@ -152,7 +153,9 @@ export function useDeploymentRows() {
       ...deploymentRowLabels(deployment),
       mark,
       note: note(mark, deployment),
-      pickable: deployment === null || deployment.status === 'ready'
+      pickable:
+        deployment === null ||
+        pendingServerFact('BE-24332', deployment.status === 'ready')
     }
   }
 
