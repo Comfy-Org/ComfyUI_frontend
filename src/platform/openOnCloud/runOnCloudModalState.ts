@@ -1,7 +1,6 @@
 import type {
   CloudMissingModel,
-  CloudWorkflowCheckState,
-  CloudWorkflowGaps
+  CloudWorkflowCheckState
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import type { ModelUploadState } from '@/platform/openOnCloud/modelUpload'
 import { uploadPercent } from '@/platform/openOnCloud/modelUpload'
@@ -11,7 +10,7 @@ export type RunOnCloudModalState =
   | { kind: 'checking' }
   | { kind: 'signedOut' }
   | { kind: 'ready' }
-  | { kind: 'nodePacksMissing'; gaps: CloudWorkflowGaps }
+  | { kind: 'deploySetup' }
   | { kind: 'uploadModels'; models: CloudMissingModel[] }
   | { kind: 'uploading'; models: CloudMissingModel[]; percent: number }
 
@@ -35,7 +34,7 @@ export function runOnCloudModalState(
       return { kind: 'signedOut' }
     case 'missing':
       return verdict.gaps.nodePacks.length > 0
-        ? { kind: 'nodePacksMissing', gaps: verdict.gaps }
+        ? { kind: 'deploySetup' }
         : { kind: 'uploadModels', models: verdict.gaps.models }
   }
 }

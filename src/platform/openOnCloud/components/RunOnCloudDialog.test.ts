@@ -9,7 +9,6 @@ import type { PrototypeScenario } from '@/platform/openOnCloud/cloudWorkflowChec
 import { PROTOTYPE_CHECK_MS } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
-import { useLocalAgentStore } from '@/platform/openOnCloud/stores/localAgentStore'
 import {
   PROTOTYPE_UPLOAD_MS,
   useModelUploadStore
@@ -31,6 +30,8 @@ const i18n = createI18n({
 
 const READY_BODY =
   'Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.'
+const DEPLOY_BODY =
+  'This creates a deployment of your setup on Comfy Cloud. You manage it from Comfy Platform.'
 
 function renderDialog() {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
@@ -69,16 +70,16 @@ describe('RunOnCloudDialog', () => {
     },
     {
       scenario: 'nodePacksMissing',
-      heading: 'Run on Comfy Cloud',
-      body: "Comfy Cloud is missing 2 node packs: rgthree-comfy and comfyui-impact-pack. We'll start your local agent to get this workflow running on Comfy Cloud. You'll approve any local file uploads along the way.",
-      primary: 'Start agent',
+      heading: 'Deploy your setup to Comfy Cloud',
+      body: DEPLOY_BODY,
+      primary: 'Build with your agent',
       enabled: true
     },
     {
       scenario: 'nodePacksAndModelsMissing',
-      heading: 'Run on Comfy Cloud',
-      body: "Comfy Cloud is missing 2 node packs: rgthree-comfy and comfyui-impact-pack, and 1 model: face_yolov8m.pt. We'll start your local agent to get this workflow running on Comfy Cloud. You'll approve any local file uploads along the way.",
-      primary: 'Start agent',
+      heading: 'Deploy your setup to Comfy Cloud',
+      body: DEPLOY_BODY,
+      primary: 'Build with your agent',
       enabled: true
     },
     {
@@ -137,16 +138,23 @@ describe('RunOnCloudDialog', () => {
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument()
   })
 
+  it('switches the open modal to Deploy your setup when a node pack turns out missing', async () => {
+    startCheck('nodePacksMissing')
+    renderDialog()
+    expect(screen.getByRole('heading')).toHaveTextContent('Run on Comfy Cloud')
+
+    await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS)
+
+    expect(screen.getByRole('heading')).toHaveTextContent(
+      'Deploy your setup to Comfy Cloud'
+    )
+  })
+
   it.for<{ scenario: PrototypeScenario; primary: string; ran: () => void }>([
     {
       scenario: 'compatible',
       primary: 'Open on Comfy Cloud',
       ran: () => expect(openWorkflowOnCloud).toHaveBeenCalledOnce()
-    },
-    {
-      scenario: 'nodePacksMissing',
-      primary: 'Start agent',
-      ran: () => expect(useLocalAgentStore().isConverting).toBe(true)
     },
     {
       scenario: 'signedOut',
@@ -165,20 +173,6 @@ describe('RunOnCloudDialog', () => {
       expect(emitted()).toHaveProperty('done')
     }
   )
-
-  it('without a local agent, offers Platform and copies a prompt that names the packs', async () => {
-    useLocalAgentStore().prototypeAgent = 'notFound'
-    const { user } = await renderAnswered('nodePacksMissing')
-
-    expect(
-      screen.getByRole('link', { name: 'Open in Platform' })
-    ).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Copy prompt' }))
-
-    const prompt = await navigator.clipboard.readText()
-    expect(prompt).toContain('rgthree-comfy')
-    expect(prompt).toContain('comfyui-impact-pack')
-  })
 
   it('uploads the models, then shows the ready modal', async () => {
     const { user } = await renderAnswered('modelsMissing')

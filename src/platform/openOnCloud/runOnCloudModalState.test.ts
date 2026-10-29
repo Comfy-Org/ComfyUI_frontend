@@ -68,14 +68,14 @@ describe(runOnCloudModalState, () => {
       expected: { kind: 'signedOut' }
     },
     {
-      name: 'node packs missing: the node-packs modal',
+      name: 'node packs missing: Deploy your setup',
       check: answered({ kind: 'missing', gaps: packsOnly }),
-      expected: { kind: 'nodePacksMissing', gaps: packsOnly }
+      expected: { kind: 'deploySetup' }
     },
     {
-      name: 'node packs and models missing: the node-packs modal, keeping both',
+      name: 'node packs and models missing: Deploy your setup',
       check: answered({ kind: 'missing', gaps: packsAndModel }),
-      expected: { kind: 'nodePacksMissing', gaps: packsAndModel }
+      expected: { kind: 'deploySetup' }
     },
     {
       name: 'only models missing: the Upload models dialog',

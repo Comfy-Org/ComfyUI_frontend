@@ -4198,17 +4198,19 @@
       "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
       "checking": "Checking whether Comfy Cloud has every node and model this workflow uses…",
       "signedOut": "Sign in to check whether Comfy Cloud can run this workflow.",
-      "nodePacks": "{count} node pack | {count} node packs",
-      "models": "{count} model | {count} models",
-      "missingNodePacks": "Comfy Cloud is missing {nodePacks}: {names}.",
-      "missingNodePacksAndModels": "Comfy Cloud is missing {nodePacks}: {nodePackNames}, and {models}: {modelNames}.",
-      "startAgentBody": "{missing} We'll start your local agent to get this workflow running on Comfy Cloud. You'll approve any local file uploads along the way.",
-      "agentNotFound": "ComfyUI couldn't find your local agent. Copy a prompt for Claude Code or Codex, or set this workflow up on Platform.",
       "openOnCloud": "Open on Comfy Cloud",
-      "startAgent": "Start agent",
-      "signIn": "Sign in",
+      "signIn": "Sign in"
+    },
+    "agentMenu": {
+      "useLocalAgent": "Use local agent",
+      "openInClaude": "Open in Claude desktop",
+      "openInChatGpt": "Open in ChatGPT desktop",
       "copyPrompt": "Copy prompt",
-      "openInPlatform": "Open in Platform",
+      "promptCopied": "Prompt copied",
+      "claudeHandoff": "A real build would open Claude desktop with this prompt.",
+      "chatGptHandoff": "A real build would open ChatGPT desktop with this prompt.",
+      "agentNotFound": "ComfyUI couldn't find your local agent",
+      "agentNotFoundDetail": "The prompt is copied. Paste it into Claude Code or Codex, or deploy on Platform.",
       "agentEnsues": "Agent ensues"
     },
     "uploadDialog": {
