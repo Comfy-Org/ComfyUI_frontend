@@ -9182,7 +9182,7 @@ describe('AgentPanelRoot workflow binding', () => {
       )
 
       await waitFor(() => expect(bodies).toHaveLength(1))
-      expect(telemetry.trackAgentSendGated).toHaveBeenLastCalledWith({
+      expect(telemetry.trackAgentSendGated).toHaveBeenCalledWith({
         gate: 'coach',
         outcome: 'released',
         reason: 'elsewhere',
@@ -9190,6 +9190,14 @@ describe('AgentPanelRoot workflow binding', () => {
         held_ms: expect.any(Number),
         thread_id: null
       })
+      const coachOutcomes = telemetry.trackAgentSendGated.mock.calls
+        .map(([metadata]) => metadata)
+        .filter((metadata) => metadata.gate === 'coach')
+        .map(({ outcome, reason }) => ({ outcome, reason }))
+      expect(coachOutcomes).toEqual([
+        { outcome: 'held', reason: null },
+        { outcome: 'released', reason: 'elsewhere' }
+      ])
     })
 
     it('sends once when a coach step never finds its target', async () => {
