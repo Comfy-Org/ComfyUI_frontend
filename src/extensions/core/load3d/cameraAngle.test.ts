@@ -7,7 +7,7 @@ import { graphToPrompt } from '@/utils/executionUtil'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
-} from '@/types/widgetVisibility'
+} from '@comfyorg/graph-model/widgetVisibility'
 
 import { cameraAngleExtension as extension } from './cameraAngle'
 import { load3dWidgets } from './load3dWidgets'

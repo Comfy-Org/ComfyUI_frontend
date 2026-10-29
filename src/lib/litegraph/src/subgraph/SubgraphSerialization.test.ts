@@ -23,7 +23,7 @@ import {
 
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 import {
   createTestSubgraph,
   createTestSubgraphData,

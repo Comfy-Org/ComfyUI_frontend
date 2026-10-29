@@ -832,7 +832,7 @@ describe('AgentCrdtDocLifecycle page session nonce', () => {
   it('mints the nonce on first persist and keeps it for the page session', async () => {
     sessionStorage.clear()
     vi.resetModules()
-    const uuid = await import('@/utils/uuid')
+    const uuid = await import('@comfyorg/graph-model/uuid')
     const createUuidv4 = vi.spyOn(uuid, 'createUuidv4')
     const { AgentCrdtDocLifecycle: FreshLifecycle } =
       await import('./agentCrdtDocLifecycle')

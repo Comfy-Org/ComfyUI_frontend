@@ -27,8 +27,8 @@ import {
   isRootGraphDocBound,
   registerDocBoundRootGraphProbe
 } from '@/lib/litegraph/src/docBoundGraphs'
-import type { UUID } from '@/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
+import { createUuidv4, zeroUuid } from '@comfyorg/graph-model/uuid'
 import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'

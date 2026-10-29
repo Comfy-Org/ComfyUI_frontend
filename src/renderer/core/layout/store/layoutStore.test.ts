@@ -6,10 +6,9 @@ import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import { createUuidv4 } from '@/utils/uuid'
-import type { UUID } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
@@ -547,131 +546,6 @@ describe('layoutStore CRDT operations', () => {
     expect(nodeRef.value?.size).toEqual({ width: 220, height: 120 })
 
     unsubscribe()
-  })
-
-  it('normalizes DOM-sourced heights before storing', () => {
-    const nodeId = toNodeId('dom-node')
-    const layout = createTestNode(nodeId)
-
-    layoutStore.applyOperation({
-      type: 'createNode',
-      graphId: GRAPH,
-      nodeId,
-      layout,
-      timestamp: Date.now(),
-      source: LayoutSource.Canvas,
-      actor: 'test'
-    })
-
-    layoutStore.batchUpdateNodeBounds(
-      GRAPH,
-      [
-        {
-          nodeId,
-          bounds: {
-            x: layout.bounds.x,
-            y: layout.bounds.y,
-            width: layout.size.width,
-            height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
-          }
-        }
-      ],
-      { source: LayoutSource.Vue, boundsIncludeTitleHeight: true }
-    )
-
-    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
-    expect(nodeRef.value?.size.height).toBe(layout.size.height)
-    expect(nodeRef.value?.size.width).toBe(layout.size.width)
-    expect(nodeRef.value?.position).toEqual(layout.position)
-  })
-
-  it('normalizes very small DOM-sourced heights safely', () => {
-    const nodeId = toNodeId('small-dom-node')
-    const layout = createTestNode(nodeId)
-    layout.size.height = 10
-
-    layoutStore.applyOperation({
-      type: 'createNode',
-      graphId: GRAPH,
-      nodeId,
-      layout,
-      timestamp: Date.now(),
-      source: LayoutSource.Canvas,
-      actor: 'test'
-    })
-
-    layoutStore.batchUpdateNodeBounds(
-      GRAPH,
-      [
-        {
-          nodeId,
-          bounds: {
-            x: layout.bounds.x,
-            y: layout.bounds.y,
-            width: layout.size.width,
-            height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
-          }
-        }
-      ],
-      { source: LayoutSource.Vue, boundsIncludeTitleHeight: true }
-    )
-
-    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
-    expect(nodeRef.value?.size.height).toBeGreaterThanOrEqual(0)
-  })
-
-  it('handles undefined NODE_TITLE_HEIGHT without NaN results', () => {
-    const nodeId = toNodeId('undefined-title-height')
-    const layout = createTestNode(nodeId)
-
-    layoutStore.applyOperation({
-      type: 'createNode',
-      graphId: GRAPH,
-      nodeId,
-      layout,
-      timestamp: Date.now(),
-      source: LayoutSource.Canvas,
-      actor: 'test'
-    })
-
-    const originalTitleHeightDescriptor = Object.getOwnPropertyDescriptor(
-      LiteGraph,
-      'NODE_TITLE_HEIGHT'
-    )
-    Object.defineProperty(LiteGraph, 'NODE_TITLE_HEIGHT', {
-      configurable: true,
-      value: undefined,
-      writable: true
-    })
-
-    try {
-      layoutStore.batchUpdateNodeBounds(
-        GRAPH,
-        [
-          {
-            nodeId,
-            bounds: {
-              x: layout.bounds.x,
-              y: layout.bounds.y,
-              width: layout.size.width,
-              height: layout.size.height
-            }
-          }
-        ],
-        { source: LayoutSource.Vue, boundsIncludeTitleHeight: true }
-      )
-
-      const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
-      expect(nodeRef.value?.size.height).toBe(layout.size.height)
-    } finally {
-      if (originalTitleHeightDescriptor) {
-        Object.defineProperty(
-          LiteGraph,
-          'NODE_TITLE_HEIGHT',
-          originalTitleHeightDescriptor
-        )
-      }
-    }
   })
 })
 

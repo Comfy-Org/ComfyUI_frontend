@@ -12,7 +12,7 @@ import type {
 } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 /**
  * One {@link NodeState} per node in a root-flat, owner-indexed bucket.

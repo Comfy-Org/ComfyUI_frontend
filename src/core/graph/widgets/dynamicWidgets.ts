@@ -15,7 +15,7 @@ import {
 } from '@/lib/litegraph/src/utils/widget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import {
   zAutogrowOptions,
   zDynamicComboInputSpec,

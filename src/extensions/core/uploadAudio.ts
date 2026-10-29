@@ -13,7 +13,7 @@ import {
   getResourceURL,
   splitFilePath
 } from '@/renderer/extensions/vueNodes/widgets/utils/audioUtils'
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/lib/litegraph/src/types/domWidget'
 import { useAudioService } from '@/services/audioService'

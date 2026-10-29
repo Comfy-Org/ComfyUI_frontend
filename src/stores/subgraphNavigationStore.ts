@@ -20,7 +20,8 @@ import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { findSubgraphPathById } from '@/lib/litegraph/src/utils/graphTraversalUtil'
-import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
+import { isNonNullish } from '@/utils/typeGuardUtil'
+import { isSubgraph } from '@/lib/litegraph/src/utils/graphTypeGuards'
 
 interface WorkflowServiceAccess {
   openWorkflow(

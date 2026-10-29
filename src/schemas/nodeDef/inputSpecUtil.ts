@@ -1,5 +1,5 @@
 import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/graph-model/nodeDefSchemaV2'
 
 /**
  * Returns the node's top-level input specs plus every input nested inside a

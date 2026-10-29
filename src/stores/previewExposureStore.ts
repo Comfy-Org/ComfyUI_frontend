@@ -15,7 +15,7 @@ import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
 

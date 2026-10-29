@@ -31,7 +31,7 @@ import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 import {
   PROMOTED_WRITE_CATCH_UP_DEADLINE_MS,

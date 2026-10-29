@@ -34,7 +34,7 @@ import type {
   SizeTuple as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
 import type { IContextMenuValue } from './types/contextMenu'
-import { LiteGraph } from './litegraphInstance'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { Rectangle } from './infrastructure/Rectangle'
 import {
   containsCentre,

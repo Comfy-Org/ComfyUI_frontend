@@ -184,7 +184,7 @@ import type {
   PanelWidgetCallback,
   PanelWidgetOptions
 } from './types/panel'
-import { LiteGraph } from './litegraphInstance'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import {
   containsRect,
   createBounds,
@@ -226,7 +226,7 @@ import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getDraggedItems } from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
 import { slotTypeKey } from './utils/type'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 

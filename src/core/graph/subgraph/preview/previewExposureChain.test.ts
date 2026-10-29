@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 import type { PreviewExposureChainContext } from './previewExposureChain'
 import { resolvePreviewExposureChain } from './previewExposureChain'

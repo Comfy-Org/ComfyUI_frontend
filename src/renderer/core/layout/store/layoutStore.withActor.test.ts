@@ -4,7 +4,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { LayoutChange } from '@/renderer/core/layout/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 const GRAPH = createUuidv4()
 

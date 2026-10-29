@@ -18,7 +18,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import type { AgentGraphProjectionStage } from '@comfyorg/telemetry/types'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type {

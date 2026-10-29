@@ -30,7 +30,7 @@ import {
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { graphToPrompt } from '@/utils/executionUtil'
-import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
+import { isWidgetVisibleOnSurface } from '@comfyorg/graph-model/widgetVisibility'
 import { renameWidget } from '@/utils/widgetUtil'
 
 function setup(min = 0, max = 3) {

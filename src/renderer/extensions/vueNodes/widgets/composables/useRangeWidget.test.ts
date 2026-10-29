@@ -4,7 +4,7 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
-} from '@/types/widgetVisibility'
+} from '@comfyorg/graph-model/widgetVisibility'
 
 import { useRangeWidget } from './useRangeWidget'
 

@@ -17,7 +17,7 @@ import { registerNodeState, unregisterNodeState } from './nodeShellState'
 
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 const REFUSAL_TEARDOWN_ERROR_TYPE = 'failure_tearing_down_refused_widget'
 

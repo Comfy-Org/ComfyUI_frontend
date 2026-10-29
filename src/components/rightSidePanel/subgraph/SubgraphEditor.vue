@@ -35,7 +35,7 @@ import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
-import { deriveWidgetVisibility } from '@/types/widgetVisibility'
+import { deriveWidgetVisibility } from '@comfyorg/graph-model/widgetVisibility'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'

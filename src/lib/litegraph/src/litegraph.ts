@@ -7,7 +7,7 @@ import { LiteGraphGlobal } from './LiteGraphGlobal'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { ConnectingLink } from '@comfyorg/graph-model/slots'
 import type { IContextMenuOptions } from './types/contextMenu'
-import { registerLiteGraphInstance } from './litegraphInstance'
+import { registerLiteGraphInstance } from '@/lib/litegraph/src/litegraphInstance'
 import { loadPolyfills } from './polyfills'
 import type { CanvasEventDetail } from '@comfyorg/graph-model/events'
 
@@ -129,8 +129,8 @@ export type {
 } from '@comfyorg/graph-model/serialisation'
 export type { IWidget } from '@comfyorg/graph-model/widgets'
 export { isColorable } from './utils/type'
-export { createUuidv4 } from '@/utils/uuid'
-export type { UUID } from '@/utils/uuid'
+export { createUuidv4 } from '@comfyorg/graph-model/uuid'
+export type { UUID } from '@comfyorg/graph-model/uuid'
 export { truncateText } from './utils/textUtils'
 export {
   evaluateInput,

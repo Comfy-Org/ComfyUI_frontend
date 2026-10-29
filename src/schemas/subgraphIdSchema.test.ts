@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 import { isUuidShapedSubgraphId, zSubgraphId } from './subgraphIdSchema'
 

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import {
@@ -21,8 +21,8 @@ import {
   deriveWidgetVisibility,
   setWidgetAdvanced,
   setWidgetHiddenInPanel
-} from '@/types/widgetVisibility'
-import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
+} from '@comfyorg/graph-model/widgetVisibility'
+import type { WidgetVisibilityComponent } from '@comfyorg/graph-model/widgetVisibility'
 import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/restoredWidgetValue'

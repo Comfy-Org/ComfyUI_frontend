@@ -13,7 +13,7 @@ import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { RerouteChain } from '@comfyorg/graph-model/rerouteChain'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 import { useLinkStore } from './linkStore'
 import { useNodeDataStore } from './nodeDataStore'

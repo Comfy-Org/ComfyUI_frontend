@@ -5,7 +5,7 @@ import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplace
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { locatorIdFromState } from '@/lib/litegraph/src/utils/graphTraversalUtil'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 /** Reads the error stores directly; `node.has_errors` is untracked and would latch. */
 export function nodeHasError(

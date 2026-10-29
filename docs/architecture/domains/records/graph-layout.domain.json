@@ -95,7 +95,7 @@
         "src/renderer/core/layout/store/layoutStore.withActor.test.ts",
         "src/renderer/core/layout/store/layoutStore.multiHolder.test.ts",
         "src/renderer/core/layout/store/hitTargetAuthority.test.ts",
-        "src/renderer/core/layout/store/batchUpdateNodeBounds.test.ts"
+        "src/renderer/core/layout/utils/nodeSizeUtil.test.ts"
       ]
     },
     {

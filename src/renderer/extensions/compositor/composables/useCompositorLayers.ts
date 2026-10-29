@@ -6,7 +6,7 @@ import type { ImageFileRef } from '@/renderer/extensions/compositor/composables/
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { isSubgraph } from '@/utils/typeGuardUtil'
+import { isSubgraph } from '@/lib/litegraph/src/utils/graphTypeGuards'
 
 type CompositorNodeRef = Pick<LGraphNode, 'id' | 'graph'>
 

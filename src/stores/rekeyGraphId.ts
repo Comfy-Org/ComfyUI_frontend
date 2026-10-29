@@ -1,4 +1,4 @@
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 import { useEntityIdStore } from './entityIdStore'
 import { useGraphMetadataStore } from './graphMetadataStore'

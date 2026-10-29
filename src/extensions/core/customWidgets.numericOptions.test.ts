@@ -7,7 +7,7 @@ import type { INumericWidget } from '@comfyorg/graph-model/widgets'
 import { getWidgetStep } from '@/lib/litegraph/src/utils/widget'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 

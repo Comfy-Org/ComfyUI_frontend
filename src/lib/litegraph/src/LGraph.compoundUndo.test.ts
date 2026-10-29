@@ -6,7 +6,7 @@ import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 /**
  * Characterisation baseline for QA-1 / invariant I2: undo after a *compound*

@@ -20,9 +20,9 @@ import { zDynamicGroupInputSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { deriveWidgetSurfaces } from '@/types/widgetVisibility'
+import { deriveWidgetSurfaces } from '@comfyorg/graph-model/widgetVisibility'
 import { mapUniqueNodes } from '@/lib/litegraph/src/utils/graphTraversalUtil'
-import { isSubgraph } from '@/utils/typeGuardUtil'
+import { isSubgraph } from '@/lib/litegraph/src/utils/graphTypeGuards'
 
 import {
   dynamicGroupRowAllocationBound,

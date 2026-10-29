@@ -6,7 +6,7 @@ import type { ComfyApp } from '@/scripts/app'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
-} from '@/types/widgetVisibility'
+} from '@comfyorg/graph-model/widgetVisibility'
 
 import { load3dWidgets } from './load3dWidgets'
 

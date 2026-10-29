@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 
-import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComfyNodeDef as ComfyNodeDefV2 } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'

@@ -5,7 +5,7 @@ import type {
 import { defineStore } from 'pinia'
 import { shallowReactive } from 'vue'
 
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 interface GraphMetadata {
   revision: number

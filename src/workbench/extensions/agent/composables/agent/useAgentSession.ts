@@ -22,7 +22,7 @@ import {
   getWorkspaceId,
   StorageKeys
 } from '@/platform/workflow/persistence/base/storageKeys'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 import type {
   AgentActiveTabData,
   AgentAnswerReceipt,

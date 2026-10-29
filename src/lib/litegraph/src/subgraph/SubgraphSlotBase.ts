@@ -33,7 +33,7 @@ import type {
   Serialisable,
   SubgraphIO
 } from '@comfyorg/graph-model/serialisation'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 interface SubgraphSlotDrawOptions {
   ctx: CanvasRenderingContext2D

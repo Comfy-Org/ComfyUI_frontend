@@ -6,8 +6,8 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@comfyorg/graph-model/layout'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { UUID } from '@/utils/uuid'
-import { createUuidv4 } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 describe('layoutStore node layout refs', () => {
   const FIRST_GRAPH = createUuidv4()

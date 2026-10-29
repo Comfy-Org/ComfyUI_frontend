@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { describe, expect, it } from 'vitest'
 
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 import { useGraphMetadataStore } from './graphMetadataStore'
 

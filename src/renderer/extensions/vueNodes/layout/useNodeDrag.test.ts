@@ -11,7 +11,7 @@ import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useS
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@comfyorg/graph-model/layout'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 // TODO: Simplify test setup — use real layoutStore + createTestingPinia instead

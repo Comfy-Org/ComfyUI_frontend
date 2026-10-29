@@ -37,7 +37,7 @@ import {
   RenderShape,
   TitleMode
 } from '@comfyorg/graph-model/globalEnums'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 /** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
 export interface CreateNodeOptions {

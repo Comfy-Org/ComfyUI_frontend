@@ -15,8 +15,8 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
-import { createUuidv4 } from '@/utils/uuid'
-import type { UUID } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 vi.mock(import('@/scripts/app'))
 

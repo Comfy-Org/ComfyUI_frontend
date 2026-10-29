@@ -366,14 +366,6 @@
     {
       "path": "src/types/slotId.test.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/utils/uuid.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/utils/uuid.ts",
-      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],

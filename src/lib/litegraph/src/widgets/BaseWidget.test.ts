@@ -16,7 +16,7 @@ import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { isWidgetHidden } from '@/types/widgetVisibility'
+import { isWidgetHidden } from '@comfyorg/graph-model/widgetVisibility'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 function createTestWidget(

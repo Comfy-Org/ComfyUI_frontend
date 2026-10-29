@@ -59,7 +59,7 @@ import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { deriveWidgetVisibility } from '@/types/widgetVisibility'
+import { deriveWidgetVisibility } from '@comfyorg/graph-model/widgetVisibility'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'

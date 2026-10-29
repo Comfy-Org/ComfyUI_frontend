@@ -27,7 +27,7 @@ import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { isValidUuid } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
-import { isSubgraph } from '@/utils/typeGuardUtil'
+import { isSubgraph } from '@/lib/litegraph/src/utils/graphTypeGuards'
 import {
   createMockChangeTracker,
   createMockLGraphNode

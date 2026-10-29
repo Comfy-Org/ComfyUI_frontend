@@ -7,7 +7,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 import { showPlaceholdersAsWaiting } from './waitingNodes'
 

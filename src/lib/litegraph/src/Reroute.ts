@@ -12,13 +12,13 @@ import {
   toOwningGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import type {
   FloatingRerouteSlot,
   RerouteChain
 } from '@comfyorg/graph-model/rerouteChain'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 import type {
   Point2D as LayoutPoint,
   PointTuple as Point,
@@ -57,7 +57,7 @@ import type {
   LinkNetwork,
   ReadonlyLinkNetwork
 } from '@comfyorg/graph-model/linkNetwork'
-import { litegraph } from './litegraphInstance'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { distance, isPointInRect } from './measure'
 import type {
   Serialisable,

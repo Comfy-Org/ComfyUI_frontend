@@ -5,7 +5,7 @@ import type {
   IContextMenuOptions,
   IContextMenuValue
 } from './types/contextMenu'
-import { litegraph } from './litegraphInstance'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 
 const ALLOWED_TAGS = ['span', 'b', 'i', 'em', 'strong']
 const ALLOWED_STYLE_PROPS = new Set([

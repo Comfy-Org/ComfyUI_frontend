@@ -18,8 +18,8 @@ import {
   detachAllNodesFromStores,
   detachNodeFromStores
 } from '@/lib/litegraph/src/node/nodeShell/nodeShellLifecycle'
-import type { UUID } from '@/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
+import { createUuidv4, zeroUuid } from '@comfyorg/graph-model/uuid'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   attachGroupLayout,
@@ -156,7 +156,7 @@ import type {
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
 import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
-import { LiteGraph } from './litegraphInstance'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { SubgraphNode } from './subgraph/SubgraphNode'
 import {
   alignOutsideContainer,

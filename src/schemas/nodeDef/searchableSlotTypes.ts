@@ -9,7 +9,7 @@ import {
 import type {
   InputSpec as InputSpecV2,
   OutputSpec as OutputSpecV2
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+} from '@comfyorg/graph-model/nodeDefSchemaV2'
 
 /**
  * Every slot type an input could expose, including types nested inside

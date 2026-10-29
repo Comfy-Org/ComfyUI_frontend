@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 
 import { isInputPreviewOutput } from './nodeOutputUtil'
 

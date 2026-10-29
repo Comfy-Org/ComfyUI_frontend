@@ -32,7 +32,7 @@ import type { NodeId } from '@/renderer/core/layout/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { isSizeEqual } from '@/renderer/core/layout/utils/geometry'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 /**
  * Generic update item for element bounds tracking

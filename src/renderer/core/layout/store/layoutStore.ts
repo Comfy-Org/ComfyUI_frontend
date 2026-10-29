@@ -10,9 +10,8 @@ import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { readBrowserDpr } from '@/renderer/core/canvas/canvasViewport'
-import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -140,7 +139,6 @@ interface TypedYMap<T> {
 }
 
 interface BatchUpdateBoundsOptions {
-  boundsIncludeTitleHeight?: boolean
   source: LayoutSource
 }
 
@@ -1389,16 +1387,14 @@ class LayoutStoreImpl {
   ): void {
     if (updates.length === 0) return
 
-    const { source, boundsIncludeTitleHeight = false } = options
+    const { source } = options
     const nodeIds: NodeId[] = []
     const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
     for (const { nodeId, bounds } of updates) {
       if (!this.ynodes.has(makeScopedLayoutKey(rootGraphId, nodeId))) continue
 
-      boundsRecord[nodeId] = boundsIncludeTitleHeight
-        ? { ...bounds, height: removeNodeTitleHeight(bounds.height) }
-        : bounds
+      boundsRecord[nodeId] = bounds
       nodeIds.push(nodeId)
     }
 

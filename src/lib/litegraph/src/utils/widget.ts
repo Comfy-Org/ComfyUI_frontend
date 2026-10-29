@@ -3,7 +3,7 @@ import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 import { evaluateMathExpression } from '@/lib/litegraph/src/utils/mathParser'
 

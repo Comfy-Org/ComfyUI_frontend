@@ -20,10 +20,10 @@ import {
 import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
-import { isSubgraphIoNode } from '@/utils/typeGuardUtil'
+import { isSubgraphIoNode } from '@/lib/litegraph/src/utils/graphTypeGuards'
 
 type RuntimeGraphNode = Omit<LGraphNode, 'isSubgraphNode'> &
   Partial<Pick<LGraphNode, 'isSubgraphNode'>>

@@ -12,7 +12,7 @@ import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 import { useNodeDataStore } from './nodeDataStore'
 

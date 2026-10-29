@@ -3,7 +3,7 @@ import { describe } from 'vitest'
 
 import { createLGraphState, mintNodeId } from '@/lib/litegraph/src/idAllocation'
 import { test } from '@/testing/pinia'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 import { useEntityIdStore } from './entityIdStore'
 

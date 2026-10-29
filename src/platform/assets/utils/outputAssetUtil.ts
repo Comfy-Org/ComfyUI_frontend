@@ -8,7 +8,7 @@ import {
   getJobDetail,
   getPreviewableOutputsFromJobDetail
 } from '@/services/jobOutputCache'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
+import type { ResultItemType } from '@comfyorg/graph-model/resultItemTypeSchema'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 

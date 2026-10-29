@@ -1,7 +1,7 @@
 import type {
   NodeExecutionOutput,
   ResultItem
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/graph-model/nodeOutput'
 
 type InputPreviewOutput = Pick<NodeExecutionOutput, 'images'> & {
   images: ResultItem[]

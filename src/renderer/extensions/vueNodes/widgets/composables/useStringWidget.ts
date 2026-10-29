@@ -6,8 +6,8 @@ import {
   bindMultilineTextareaWidget,
   createMultilineInputElement
 } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
-import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isStringInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import { useApp } from '@/scripts/appInstance'
 import { isDOMWidget } from '@/scripts/domWidget'
 import type { DOMWidgetOptions } from '@/lib/litegraph/src/types/domWidget'

@@ -25,7 +25,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { mapUniqueNodes } from '@/lib/litegraph/src/utils/graphTraversalUtil'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 /** The badge-relevant projection of a node's definition. */
 interface NodeDefBadgeSources {

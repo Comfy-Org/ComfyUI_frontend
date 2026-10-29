@@ -1,6 +1,6 @@
 import type { LGraph } from '@comfyorg/graph-model/entityRegistry'
-import type { UUID } from '@/utils/uuid'
-import { createUuidv4 } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 

@@ -5,7 +5,7 @@ import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { deriveWidgetVisibility } from '@/types/widgetVisibility'
+import { deriveWidgetVisibility } from '@comfyorg/graph-model/widgetVisibility'
 import { describe, expect, it, beforeEach } from 'vitest'
 import {
   computedSectionDataList,

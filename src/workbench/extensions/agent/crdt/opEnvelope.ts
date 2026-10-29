@@ -9,7 +9,7 @@
 import { BATCHABLE_OPS } from '@comfyorg/comfy-multi-player'
 import type { Actor, Op, Stamp } from '@comfyorg/comfy-multi-player'
 
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'

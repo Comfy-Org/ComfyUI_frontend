@@ -10,7 +10,7 @@ import { createI18n } from 'vue-i18n'
 import type {
   NodeOutputWith,
   ResultItem
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/graph-model/nodeOutput'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'

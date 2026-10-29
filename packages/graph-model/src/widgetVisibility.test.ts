@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { WidgetVisibilitySource } from '@/types/widgetVisibility'
+import type { WidgetVisibilitySource } from './widgetVisibility'
 import {
   applyLegacyAdvancedWrite,
   applyLegacyHiddenWrite,
@@ -16,7 +16,7 @@ import {
   setWidgetAdvanced,
   setWidgetHiddenInPanel,
   WIDGET_SURFACES
-} from '@/types/widgetVisibility'
+} from './widgetVisibility'
 
 describe('WidgetVisibilitySource', () => {
   it('requires complete surface declarations', () => {

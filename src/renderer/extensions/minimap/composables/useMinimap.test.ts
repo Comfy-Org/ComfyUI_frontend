@@ -19,7 +19,7 @@ import {
   createMockCanvasRenderingContext2D,
   createMockMinimapCanvas
 } from '@/utils/__tests__/canvasTestUtils'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 interface MockNode {
   id: string

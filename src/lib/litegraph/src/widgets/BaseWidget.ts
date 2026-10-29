@@ -36,8 +36,8 @@ import {
   isWidgetHiddenInPanel,
   setWidgetAdvanced,
   setWidgetHiddenInPanel
-} from '@/types/widgetVisibility'
-import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
+} from '@comfyorg/graph-model/widgetVisibility'
+import type { WidgetVisibilityComponent } from '@comfyorg/graph-model/widgetVisibility'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */

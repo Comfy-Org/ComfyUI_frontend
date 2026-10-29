@@ -16,7 +16,7 @@ import {
   createMockLLink,
   createMockLinks
 } from '@/utils/__tests__/litegraphTestUtils'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 vi.mock(import('@/scripts/app'))
 

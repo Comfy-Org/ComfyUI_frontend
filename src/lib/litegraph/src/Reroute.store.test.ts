@@ -14,7 +14,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 import { duplicateSubgraphNodeIds } from './__fixtures__/duplicateSubgraphNodeIds'
 

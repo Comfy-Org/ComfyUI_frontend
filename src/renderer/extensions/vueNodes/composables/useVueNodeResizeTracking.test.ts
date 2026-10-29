@@ -10,7 +10,7 @@ import type { NodeLayout } from '@comfyorg/graph-model/layout'
 import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 type ResizeEntryLike = Pick<
   ResizeObserverEntry,

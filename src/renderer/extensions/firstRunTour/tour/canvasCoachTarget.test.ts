@@ -13,7 +13,7 @@ import {
 } from 'vue'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import type { NodeLayout } from '@comfyorg/graph-model/layout'

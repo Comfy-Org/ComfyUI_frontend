@@ -38,8 +38,8 @@ import {
   getExecutionIdByNode,
   getNodeByExecutionId
 } from '@/lib/litegraph/src/utils/graphTraversalUtil'
-import type { UUID } from '@/utils/uuid'
-import { zeroUuid } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import {
   SIMPLE_ERROR_TYPES,
   errorsForSlot,

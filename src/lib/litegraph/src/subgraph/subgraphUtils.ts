@@ -28,7 +28,7 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import type {

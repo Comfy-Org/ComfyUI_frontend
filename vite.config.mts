@@ -988,6 +988,7 @@ export default defineConfig({
           include: [
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'packages/telemetry/src/**/*.test.ts',
+            'packages/graph-model/src/**/*.test.ts',
             'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             ...FRONTEND_SCRIPT_TESTS
           ]

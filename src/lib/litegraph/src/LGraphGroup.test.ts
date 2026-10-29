@@ -14,7 +14,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import type { GroupId } from '@comfyorg/graph-model/groupId'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
 import * as colorUtil from '@comfyorg/shared-frontend-utils/colorUtil'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 import { test } from './__fixtures__/testExtensions'
 

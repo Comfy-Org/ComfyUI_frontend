@@ -5,7 +5,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
 function setup() {

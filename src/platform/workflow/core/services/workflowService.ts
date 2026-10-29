@@ -51,8 +51,8 @@ import {
   generateUUID
 } from '@/utils/formatUtil'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
-import type { UUID } from '@/utils/uuid'
-import { ensureNonZeroUuid, zeroUuid } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
+import { ensureNonZeroUuid, zeroUuid } from '@comfyorg/graph-model/uuid'
 
 export function readWorkflowDraftLineage(path: string) {
   return useWorkflowDraftStoreV2().getDraft(path)?.lineage ?? null

@@ -10,7 +10,7 @@ import { createI18n } from 'vue-i18n'
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItem } from '@comfyorg/graph-model/nodeOutput'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'

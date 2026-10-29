@@ -15,7 +15,7 @@ import type { GroupId } from '@comfyorg/graph-model/groupId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 // Enum for layout source types
 export enum LayoutSource {

@@ -1,7 +1,7 @@
 import type { ZodError } from 'zod'
 
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import type {
   ComfyInputsSpec,
   DynamicControlType

@@ -28,7 +28,7 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
-import { deriveWidgetVisibility } from '@/types/widgetVisibility'
+import { deriveWidgetVisibility } from '@comfyorg/graph-model/widgetVisibility'
 import { cn } from '@comfyorg/tailwind-utils'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }

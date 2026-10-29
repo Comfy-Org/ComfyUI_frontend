@@ -23,7 +23,7 @@ import {
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 import type { MissingNodeType, NodeReplacement } from './types'
 
 vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })

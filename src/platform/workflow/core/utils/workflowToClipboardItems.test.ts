@@ -12,7 +12,7 @@ import type {
 } from '@comfyorg/graph-model/serialisation'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 import { workflowToClipboardItems } from './workflowToClipboardItems'
 

@@ -370,7 +370,7 @@
   },
   "src/lib/litegraph/src/litegraph.ts": {
     "comfy/no-reexports": {
-      "count": 43
+      "count": 41
     }
   },
   "src/lib/litegraph/src/litegraphInstance.ts": {
@@ -1140,11 +1140,6 @@
   "src/types/slotId.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
-    }
-  },
-  "src/types/widgetVisibility.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 5
     }
   },
   "src/utils/__mocks__/litegraphUtil.ts": {

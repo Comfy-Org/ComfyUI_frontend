@@ -3,7 +3,7 @@ import { shallowReactive } from 'vue'
 
 import { createLGraphState } from '@/lib/litegraph/src/idAllocation'
 import type { LGraphState } from '@/lib/litegraph/src/idAllocation'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 export const useEntityIdStore = defineStore('entityId', () => {
   const states = shallowReactive(new Map<UUID, LGraphState>())

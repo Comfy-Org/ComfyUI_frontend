@@ -18,9 +18,9 @@ import type {
 import type { Keybinding } from '@comfyorg/keybindings/types'
 import type {
   ExecutionErrorWsMessage,
-  NodeExecutionOutput,
   ProgressWsMessage
 } from '@/platform/remote/comfyui/execution/types'
+import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import type {
   WorkflowOpenSource,

@@ -17,7 +17,7 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
-} from '@/types/widgetVisibility'
+} from '@comfyorg/graph-model/widgetVisibility'
 
 import { searchWidgets } from '@/components/rightSidePanel/shared'
 import type { NodeWidgetsList } from '@/components/rightSidePanel/shared'

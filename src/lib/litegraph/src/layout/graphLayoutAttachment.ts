@@ -17,7 +17,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { LayoutOperation } from '@/renderer/core/layout/types'
 import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 type GraphLayoutOwner = Pick<
   LGraph,

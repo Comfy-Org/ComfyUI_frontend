@@ -83,10 +83,8 @@ import {
   parseFlattenableSubgraphDefinitions
 } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
-import type {
-  ExecutionErrorWsMessage,
-  NodeExecutionOutput
-} from '@/platform/remote/comfyui/execution/types'
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
@@ -157,7 +155,7 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 
 import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
-import { ensureNonZeroUuid } from '@/utils/uuid'
+import { ensureNonZeroUuid } from '@comfyorg/graph-model/uuid'
 import {
   collectAllNodes,
   forEachNode,

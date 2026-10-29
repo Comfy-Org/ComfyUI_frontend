@@ -65,7 +65,7 @@ import {
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
 import type { NodeReplacement } from '@/platform/workflowErrors/nodeReplacement/types'
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 import { createNode } from '@/utils/createNode'
@@ -118,7 +118,7 @@ import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import type { importA1111 } from './pnginfo'
 
 type WorkflowService = ReturnType<typeof useWorkflowService>

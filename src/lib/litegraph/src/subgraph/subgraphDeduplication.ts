@@ -20,7 +20,7 @@ import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 import type {
   ExportedSubgraph,
   ExposedWidget,

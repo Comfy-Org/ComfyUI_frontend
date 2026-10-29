@@ -244,14 +244,6 @@
       "role": "domain"
     },
     {
-      "path": "src/types/widgetVisibility.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/widgetVisibility.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/nodeDefUtil.test.ts",
       "role": "domain"
     },
@@ -327,7 +319,7 @@
       "name": "Widget ids stay unique per node and widget visibility derives canvas, Vue node, and panel surfaces",
       "checks": [
         "src/types/widgetId.test.ts",
-        "src/types/widgetVisibility.test.ts"
+        "packages/graph-model/src/widgetVisibility.test.ts"
       ]
     },
     {

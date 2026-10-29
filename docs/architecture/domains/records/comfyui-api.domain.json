@@ -8,10 +8,6 @@
       "role": "domain"
     },
     {
-      "path": "src/schemas/resultItemTypeSchema.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/createAnnotatedPath.test.ts",
       "role": "domain"
     },

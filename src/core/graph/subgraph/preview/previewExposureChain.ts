@@ -1,6 +1,6 @@
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 interface ResolvedPreviewChainStep {
   rootGraphId: UUID

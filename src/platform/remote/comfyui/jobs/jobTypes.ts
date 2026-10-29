@@ -9,7 +9,7 @@
 import { zJobEntry } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import { resultItemType } from '@/schemas/resultItemTypeSchema'
+import { resultItemType } from '@comfyorg/graph-model/resultItemTypeSchema'
 import { zTaskOutput } from '@/platform/remote/comfyui/execution/types'
 
 const zJobStatus = z.enum([

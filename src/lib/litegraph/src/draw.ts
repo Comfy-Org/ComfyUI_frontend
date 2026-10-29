@@ -1,6 +1,6 @@
 import type { Rectangle } from './infrastructure/Rectangle'
 import type { CanvasColour } from '@comfyorg/graph-model/interfaces'
-import { litegraph } from './litegraphInstance'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { RenderShape, TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { cachedMeasureText } from './utils/textMeasureCache'
 

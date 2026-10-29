@@ -7,7 +7,7 @@ import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { isNodeLevelValidationError } from '@/utils/executionErrorUtil'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 import { getNodeByExecutionId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
-import { isSubgraph } from '@/utils/typeGuardUtil'
+import { isSubgraph } from '@/lib/litegraph/src/utils/graphTypeGuards'
 
 export interface LiftedErrorExtraInfo {
   input_name: string

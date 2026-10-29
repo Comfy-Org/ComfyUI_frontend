@@ -11,7 +11,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
-} from '@/types/widgetVisibility'
+} from '@comfyorg/graph-model/widgetVisibility'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
