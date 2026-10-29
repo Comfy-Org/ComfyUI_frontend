@@ -25,6 +25,6 @@ const subscribeToRunPromptVisible = useSubscribeToRunPromptPresence()
 const subscriptionDialog = useSubscriptionDialog()
 
 function handleClick() {
-  subscriptionDialog.showPricingTable({ reason: 'subscribe_now_button' })
+  void subscriptionDialog.showPricingTable({ reason: 'subscribe_now_button' })
 }
 </script>

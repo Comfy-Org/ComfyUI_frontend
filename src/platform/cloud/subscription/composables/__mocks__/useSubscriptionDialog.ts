@@ -5,8 +5,8 @@ import { provideSubscriptionDialog } from '@/platform/cloud/subscription/composa
 import type { useSubscriptionDialog as realUseSubscriptionDialog } from '../useSubscriptionDialog'
 
 const subscriptionDialog: ReturnType<typeof realUseSubscriptionDialog> = {
-  show: vi.fn(),
-  showPricingTable: vi.fn(),
+  show: vi.fn(async () => true),
+  showPricingTable: vi.fn(async () => true),
   hide: vi.fn(),
   startTeamWorkspaceUpgradeFlow: vi.fn(),
   resumePendingPricingFlow: vi.fn(async () => {})

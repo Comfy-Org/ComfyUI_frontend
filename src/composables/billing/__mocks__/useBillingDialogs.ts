@@ -18,7 +18,7 @@ const dialog: ReturnType<BillingDialogs['showBillingComingSoonDialog']> = {
 const billingDialogs = vi.mockObject<BillingDialogs>(
   {
     showTopUpCreditsDialog: async () => undefined,
-    showSubscriptionRequiredDialog: async () => {},
+    showSubscriptionRequiredDialog: async () => true,
     showBillingComingSoonDialog: () => dialog,
     showCancelSubscriptionDialog: async () => dialog,
     showCancelSubscriptionFlow: async () => {},
