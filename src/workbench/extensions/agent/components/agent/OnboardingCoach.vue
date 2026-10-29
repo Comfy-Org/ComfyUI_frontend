@@ -11,15 +11,15 @@ import {
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import {
   SPOTLIGHT_PAD,
   clampSpotlight,
   unionRect
 } from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
-import { useTelemetry } from '@/platform/telemetry'
-import type { AgentOnboardingAction } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AgentOnboardingAction } from '@comfyorg/telemetry/types'
 import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 import {
   reportMissingCoachTarget,

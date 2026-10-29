@@ -246,7 +246,10 @@ const tailwindConfigs = defineConfig([
   },
   {
     name: 'design-system/core-ui-theme-tokens',
-    files: ['src/components/ui/**/*.{ts,vue}'],
+    files: [
+      'src/components/ui/**/*.{ts,vue}',
+      'packages/design-system/src/components/**/*.{ts,vue}'
+    ],
     rules: {
       'better-tailwindcss/no-restricted-classes': [
         'error',
@@ -337,6 +340,13 @@ export default defineConfig([
       // Difference in typecheck on CI vs Local
       pluginVue.configs['flat/recommended'],
       ...tailwindConfigs,
+      {
+        files: ['**/*.vue'],
+        plugins: { 'template-classes': templateClasses },
+        rules: {
+          'template-classes/icon-element': 'error'
+        }
+      },
       {
         files: [
           'src/**/*.vue',
@@ -473,7 +483,6 @@ export default defineConfig([
         ignores: [
           'src/App.vue',
           'src/components/graph/SelectionToolbox.vue',
-          'src/components/ui/tooltip/*.vue',
           'src/renderer/core/layout/transform/TransformPane.vue'
         ],
         rules: {

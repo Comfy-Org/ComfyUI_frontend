@@ -45,6 +45,13 @@ export const useExtensionStore = defineStore('extension', () => {
     )
   })
 
+  const isAgentCreatedExtension = (extension: ComfyExtension) =>
+    extension.provenance?.createdBy === 'comfy-agent' ||
+    /^agent\.[^.]+\./.test(extension.name)
+  const agentExtensions = computed(() =>
+    extensions.value.filter(isAgentCreatedExtension)
+  )
+
   const isExtensionInstalled = (name: string) => name in extensionByName.value
 
   const isExtensionEnabled = (name: string) =>
@@ -180,9 +187,11 @@ export const useExtensionStore = defineStore('extension', () => {
 
   return {
     extensions,
+    agentExtensions,
     enabledExtensions,
     inactiveDisabledExtensionNames,
     isExtensionInstalled,
+    isAgentCreatedExtension,
     isExtensionEnabled,
     isExtensionReadOnly,
     registerExtension,

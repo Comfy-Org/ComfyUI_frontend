@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createPartnerNodeTokenSource } from '@/platform/auth/partnerNode/partnerNodeTokenSource'
 import type { PartnerNodeTokenTarget } from '@/platform/auth/partnerNode/partnerNodeTokenSource'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 

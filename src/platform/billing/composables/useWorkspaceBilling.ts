@@ -1,3 +1,4 @@
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import {
   computed,
   getCurrentScope,
@@ -17,8 +18,8 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useBillingPlans } from '@/platform/billing/subscription/composables/useBillingPlans'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import type {
@@ -28,11 +29,9 @@ import type {
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
   SubscribeOptions
-} from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
 import { openHostedBillingTabOutcome } from '@/platform/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
@@ -49,7 +48,7 @@ import { useBillingReadRail } from '@/platform/billing/composables/useBillingRea
 import { useSubscriptionRail } from '@/platform/billing/composables/useSubscriptionRail'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { subscribeInputFrom } from '@/platform/billing/subscribeInput'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 import type {
   BalanceInfo,
@@ -204,7 +203,7 @@ export type WorkspaceBilling = BillingState &
 export function useWorkspaceBilling(): WorkspaceBilling {
   const billingPlans = useBillingPlans()
   const billingOperationStore = useBillingOperationStore()
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
   const telemetry = useTelemetry()
   const { flags } = useFeatureFlags()
 
@@ -381,14 +380,17 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     try {
       const status = rail
         ? await readOnRail(rail.readStatus, 'getBillingStatus')
-        : await workspaceApi.getBillingStatus()
+        : await billingApi.getBillingStatus()
       if (status === undefined || isStaleStatusRead(requestId, workspaceId))
         return
 
       seatCapacity.value = seatCapacityFrom(status)
       statusData.value = status
       if (workspaceId && status.billing_rail) {
-        workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
+        useWorkspaceBillingStateStore().setWorkspaceBillingRail(
+          workspaceId,
+          status.billing_rail
+        )
       }
       adoption = resumePendingOperation(status)
     } catch (err) {
@@ -410,7 +412,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     try {
       const balance = rail
         ? await readOnRail(rail.readBalance, 'getBillingBalance')
-        : await workspaceApi.getBillingBalance()
+        : await billingApi.getBillingBalance()
       if (balance !== undefined && requestId === latestBillingReadIds.balance) {
         balanceData.value = balance
       }
@@ -509,7 +511,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     isLoading.value = true
     error.value = null
     try {
-      const response = await workspaceApi.subscribe(planSlug, options)
+      const response = await billingApi.subscribe(planSlug, options)
       isLoading.value = false
       void reconcileBillingStateAfterSubscribe()
       return response
@@ -535,7 +537,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     isLoading.value = true
     error.value = null
     try {
-      return await workspaceApi.previewSubscribe(planSlug, options)
+      return await billingApi.previewSubscribe(planSlug, options)
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to preview subscription'
@@ -619,7 +621,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     error.value = null
     try {
       const returnUrl = window.location.href
-      const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
+      const response = await billingApi.getPaymentPortalUrl(returnUrl)
       return { url: response.url || undefined, billingClient: 'legacy' }
     } catch (err) {
       error.value =
@@ -730,7 +732,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     // Once set, the poller (billingOperationStore) owns failure telemetry; until then, this must report it.
     let billingOpId: string | undefined
     try {
-      const response = await workspaceApi.cancelSubscription()
+      const response = await billingApi.cancelSubscription()
       billingOpId = response.billing_op_id
       const operation = await billingOperationStore.startOperation(
         billingOpId,
@@ -780,7 +782,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     isLoading.value = true
     error.value = null
     try {
-      const response = await workspaceApi.resubscribe()
+      const response = await billingApi.resubscribe()
       await Promise.allSettled([fetchStatus(), fetchBalance()])
       // A pending resubscribe (e.g. SCA/3DS re-authentication) isn't done
       // yet: wait for the tracked billing op to actually resolve instead of
@@ -822,7 +824,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     isLoading.value = true
     error.value = null
     try {
-      return await workspaceApi.createTopup(amountCents, crypto.randomUUID())
+      return await billingApi.createTopup(amountCents, crypto.randomUUID())
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to top up credits'

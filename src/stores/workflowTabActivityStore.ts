@@ -16,6 +16,7 @@ export const useWorkflowTabActivityStore = defineStore(
   () => {
     const agentTurnTabs = shallowRef<readonly AgentTurnTab[]>([])
     const creatingTab = ref(false)
+    const agentAwaitingApproval = ref(false)
     const unseenModifiedPaths = ref<Set<string>>(new Set())
 
     const editingPaths = computed(
@@ -32,6 +33,10 @@ export const useWorkflowTabActivityStore = defineStore(
 
     function setAgentTurnTabs(tabs: readonly AgentTurnTab[]): void {
       agentTurnTabs.value = tabs
+    }
+
+    function setAgentAwaitingApproval(awaiting: boolean): void {
+      agentAwaitingApproval.value = awaiting
     }
 
     function setCreating(creating: boolean): void {
@@ -54,6 +59,7 @@ export const useWorkflowTabActivityStore = defineStore(
 
     function clearAgentActivity(): void {
       agentTurnTabs.value = []
+      agentAwaitingApproval.value = false
       creatingTab.value = false
       unseenModifiedPaths.value.clear()
     }
@@ -61,9 +67,11 @@ export const useWorkflowTabActivityStore = defineStore(
     return {
       editingPaths,
       awaitingApprovalPaths,
+      agentAwaitingApproval,
       creatingTab,
       unseenModifiedPaths,
       setAgentTurnTabs,
+      setAgentAwaitingApproval,
       setCreating,
       markModified,
       markSeen,

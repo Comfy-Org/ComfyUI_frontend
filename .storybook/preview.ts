@@ -3,7 +3,7 @@ import type { Preview, StoryContext, StoryFn } from '@storybook/vue3-vite'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 
-import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE

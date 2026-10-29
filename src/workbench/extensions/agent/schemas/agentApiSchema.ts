@@ -12,6 +12,7 @@ import {
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
   zAgentToolCallData as zGeneratedAgentToolCallData,
+  zAgentThinkingEntry,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
   zToolCallSummary,
   zWorkflowListResponse
@@ -26,7 +27,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
-import { isNodeLocatorId } from '@/types/nodeIdentification'
+import { isNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 export { zAgentAdmissionError, zAgentCancelAccepted }
 export type {
@@ -147,10 +148,9 @@ export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
  * One persisted `content.thinking` entry: a model round's thinking text,
  * anchored to that round's first tool call when it made one.
  */
-export const zPersistedThinkingEntry = z.object({
-  text: z.string(),
-  tool_call_id: z.string().nullish()
-})
+export const zPersistedThinkingEntry = zAgentThinkingEntry
+  .pick({ text: true })
+  .extend({ tool_call_id: z.string().nullish() })
 
 /**
  * The message-parse boundary's `content.tool_calls` field is deliberately

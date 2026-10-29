@@ -1,5 +1,8 @@
+import type {
+  Size2D,
+  CompactRect as Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type { EffectiveMode } from './mode'
-import type { Rect } from './node'
 
 export interface NodeTexture {
   source: WebGLTexture | HTMLCanvasElement | ImageBitmap | OffscreenCanvas
@@ -25,9 +28,7 @@ interface AdjustmentInput {
 
 export type CompositeInput = LayerInput | AdjustmentInput
 
-export interface CompositorInit {
-  width: number
-  height: number
+export interface CompositorInit extends Size2D {
   onContextRestored?: () => void
 }
 
@@ -57,8 +58,6 @@ export interface Compositor {
   dispose(): void
 }
 
-export interface FBOHandle {
+export interface FBOHandle extends Readonly<Size2D> {
   readonly id: number
-  readonly width: number
-  readonly height: number
 }

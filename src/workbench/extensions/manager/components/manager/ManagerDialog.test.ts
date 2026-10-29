@@ -6,7 +6,7 @@ import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type {
   SearchPacksOutcome,
@@ -31,8 +31,6 @@ vi.mock(import('@/services/gateway/registrySearchGateway'), () => {
 })
 
 vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/services/comfyManagerService'),

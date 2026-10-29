@@ -12,10 +12,10 @@ import '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   nodeError,
   runtimeError,

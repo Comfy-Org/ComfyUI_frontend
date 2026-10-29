@@ -4,7 +4,7 @@ import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import {
   assert,
   beforeEach,
@@ -20,7 +20,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
@@ -95,7 +95,7 @@ vi.mock<unknown>(
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/workbench/extensions/manager/composables/useManagerDialog'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 type WrapperOptions = {
   pinia?: Pinia

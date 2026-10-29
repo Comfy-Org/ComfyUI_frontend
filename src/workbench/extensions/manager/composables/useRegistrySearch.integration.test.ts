@@ -4,7 +4,7 @@ import type { AxiosAdapter } from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 import { toValue } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
 
 const registryAdapter = await vi.hoisted(async () => {
@@ -17,8 +17,6 @@ const registryAdapter = await vi.hoisted(async () => {
 vi.mock(import('algoliasearch/dist/lite/builds/browser'), () => ({
   liteClient: vi.fn()
 }))
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 function goOffline() {
   vi.mocked(algoliasearch, { partial: true }).mockReturnValue({
