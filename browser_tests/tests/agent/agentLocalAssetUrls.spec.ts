@@ -20,6 +20,17 @@ const REMOTE_IMAGE = 'http://gpu-box.lan:8188/view?filename=ComfyUI_00007_.png'
 test.describe('Agent reply image URLs', { tag: ['@cloud', '@ui'] }, () => {
   test.use({ connectWebSocketToServer: false })
 
+  test.beforeEach(async ({ page }) => {
+    const duck = { path: assetPath('image64x64.webp') }
+    await mockViewFiles(page, {
+      'ComfyUI_00005_.png': duck,
+      'ComfyUI_00006_.png': duck
+    })
+    await page.route('http://gpu-box.lan:8188/view**', (route) =>
+      route.fulfill(duck)
+    )
+  })
+
   test(
     're-homes a loopback reply image without URL.parse',
     {
@@ -30,14 +41,6 @@ test.describe('Agent reply image URLs', { tag: ['@cloud', '@ui'] }, () => {
     },
     async ({ agentPanel, getAgentSocket, page, postedMessages }) => {
       const pageOrigin = new URL(page.url()).origin
-      const duck = { path: assetPath('image64x64.webp') }
-      await mockViewFiles(page, {
-        'ComfyUI_00005_.png': duck,
-        'ComfyUI_00006_.png': duck
-      })
-      await page.route('http://gpu-box.lan:8188/view**', (route) =>
-        route.fulfill(duck)
-      )
 
       await agentPanel.open()
       await agentPanel.selectWorkflow()
