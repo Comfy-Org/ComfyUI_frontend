@@ -12,6 +12,8 @@ import type { EffectScope, Ref } from 'vue'
 import {
   effectScope,
   getCurrentInstance,
+  onActivated,
+  onDeactivated,
   onMounted,
   onUnmounted,
   watch
@@ -126,6 +128,10 @@ function measureEntries(
     if (!(entry.target instanceof HTMLElement)) continue
     const element = entry.target
 
+    if (!element.isConnected) {
+      markElementForFreshMeasurement(element)
+      continue
+    }
     let elementType: string | undefined
     let elementId: string | undefined
 
@@ -275,54 +281,51 @@ function untrackElement(element: HTMLElement) {
 
 import.meta.hot?.dispose(stopResizeTracking)
 
-/**
- * Tracks DOM element size/position changes for a Vue component and syncs to layout store
- *
- * Sets up automatic ResizeObserver tracking when the component mounts and cleans up
- * when unmounted. The tracked element is identified by a data attribute set on the
- * component's root DOM element.
- *
- * @param appIdentifier - Application-level identifier for this tracked element (not a DOM ID)
- *                       Example: node ID like 'node-123', widget ID like 'widget-456'
- * @param trackingType - Type of element being tracked, determines which tracking config to use
- *                      Example: 'node' for Vue nodes, 'widget' for UI widgets
- *
- * @example
- * ```ts
- * // Track a Vue node component with ID 'my-node-123'
- * useVueElementTracking('my-node-123', 'node')
- *
- * // Would set data-node-id="my-node-123" on the component's root element
- * // and sync size changes to layoutStore.batchUpdateNodeBounds()
- * ```
- */
 export function useVueElementTracking(
   appIdentifier: string,
   trackingType: string
 ) {
+  const instance = getCurrentInstance()
+  let trackedElement: HTMLElement | null = null
+  let dataAttribute: string | null = null
+  let isDeactivated = false
+
   onMounted(() => {
-    const element = getCurrentInstance()?.proxy?.$el
+    const element = instance?.proxy?.$el
     if (!(element instanceof HTMLElement) || !appIdentifier) return
 
     const config = trackingConfigs.get(trackingType)
     if (!config) return
 
+    trackedElement = element
+    dataAttribute = config.dataAttribute
     element.dataset[config.dataAttribute] = appIdentifier
     markElementForFreshMeasurement(element)
     trackElement(element)
   })
 
+  onDeactivated(() => {
+    if (!trackedElement) return
+    isDeactivated = true
+    markElementForFreshMeasurement(trackedElement)
+    deferredElements.delete(trackedElement)
+    untrackElement(trackedElement)
+  })
+
+  onActivated(() => {
+    if (!trackedElement || !isDeactivated) return
+    isDeactivated = false
+    markElementForFreshMeasurement(trackedElement)
+    trackElement(trackedElement)
+  })
+
   onUnmounted(() => {
-    const element = getCurrentInstance()?.proxy?.$el
-    if (!(element instanceof HTMLElement)) return
+    if (!trackedElement || !dataAttribute) return
 
-    const config = trackingConfigs.get(trackingType)
-    if (!config) return
-
-    delete element.dataset[config.dataAttribute]
-    cachedNodeMeasurements.delete(element)
-    elementsNeedingFreshMeasurement.delete(element)
-    deferredElements.delete(element)
-    untrackElement(element)
+    delete trackedElement.dataset[dataAttribute]
+    cachedNodeMeasurements.delete(trackedElement)
+    elementsNeedingFreshMeasurement.delete(trackedElement)
+    deferredElements.delete(trackedElement)
+    untrackElement(trackedElement)
   })
 }

@@ -430,6 +430,10 @@
     "name": "Modern Node Design (Nodes 2.0)",
     "tooltip": "Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering."
   },
+  "Comfy_VueNodes_ViewportKeepAlive": {
+    "name": "Detach offscreen nodes in large graphs",
+    "tooltip": "On large graphs, nodes outside the viewport are detached from the page and reattached when they return, keeping their state. Turn off to keep every node attached, at the cost of large-graph performance."
+  },
   "Comfy_WidgetControlMode": {
     "name": "Widget control mode",
     "tooltip": "Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after.",

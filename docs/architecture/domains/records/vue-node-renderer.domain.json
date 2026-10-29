@@ -132,10 +132,26 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
+  "publicEntryPoints": [
+    "src/renderer/extensions/vueNodes/composables/useViewportKeepAlive.ts",
+    "src/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins.ts"
+  ],
+  "allowedDependencies": [
+    "graph-layout",
+    "graph-model",
+    "litegraph-api",
+    "link-connection"
+  ],
+  "allowedConsumers": ["app-host"],
   "characterizationScenarios": [
+    {
+      "name": "Viewport keep-alive bounds active nodes and retains transient browser state and link-drag sources until released",
+      "checks": [
+        "src/renderer/extensions/vueNodes/composables/useViewportKeepAlive.test.ts",
+        "src/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins.test.ts",
+        "browser_tests/tests/vueNodes/viewportKeepAlive.spec.ts"
+      ]
+    },
     {
       "name": "Node components render header, slots, badges, widgets, and state",
       "checks": [
@@ -186,7 +202,7 @@
     "docs/adr/RENDERING-ATOMICITY-0020-frame-atomic-rendering.md"
   ],
   "compatibilityPromises": [
-    "Existing graph canvas, linear mode, properties panel, node library preview, agent, and capability callers may continue importing Vue node renderer internals during inventory; this record grants no new cross-domain permissions.",
+    "Existing graph canvas, linear mode, properties panel, node library preview, agent, and capability callers may continue importing Vue node renderer internals during inventory; app-host consumes the tested viewport keep-alive entry points.",
     "Switching between the classic canvas and Vue node renderer preserves node geometry, widget values, and serialized workflows."
   ],
   "deepImports": "inventory"

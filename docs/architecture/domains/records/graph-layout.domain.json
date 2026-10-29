@@ -84,10 +84,23 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/renderer/core/layout/types.ts",
+    "src/renderer/core/layout/utils/layoutMath.ts",
+    "src/renderer/core/layout/transform/useTransformState.ts"
+  ],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["vue-node-renderer"],
   "characterizationScenarios": [
+    {
+      "name": "Viewport keep-alive consumes layout bounds, intersection math, and camera transforms without changing node geometry",
+      "checks": [
+        "src/renderer/core/layout/utils/layoutMath.test.ts",
+        "src/renderer/core/layout/transform/useTransformState.test.ts",
+        "src/renderer/extensions/vueNodes/composables/useViewportKeepAlive.test.ts",
+        "browser_tests/tests/vueNodes/viewportKeepAlive.spec.ts"
+      ]
+    },
     {
       "name": "Layout store preserves geometry, actors, holders, and hit targets",
       "checks": [
@@ -132,7 +145,7 @@
     "docs/adr/CANVAS-VIEWPORT-0009-canvas-viewport-system.md"
   ],
   "compatibilityPromises": [
-    "Existing callers in the canvas renderer, Vue node renderer, minimap, onboarding, agent CRDT, workflow, and graph core may continue importing layout internals during inventory; this record grants no new cross-domain permissions.",
+    "Existing callers in the canvas renderer, Vue node renderer, minimap, onboarding, agent CRDT, workflow, and graph core may continue importing layout internals during inventory; vue-node-renderer consumes the tested layout types, math, and transform-state entry points.",
     "Serialized node, group, and reroute positions and sizes, and LiteGraph pos/size accessors seen by extensions, remain unchanged."
   ],
   "deepImports": "inventory"

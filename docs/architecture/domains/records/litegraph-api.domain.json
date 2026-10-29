@@ -36,10 +36,17 @@
       "role": "infrastructure"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/lib/litegraph/src/litegraph.ts"],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["vue-node-renderer"],
   "characterizationScenarios": [
+    {
+      "name": "The Vue viewport consumer computes capped graph-space bounds and restores detached node elements",
+      "checks": [
+        "src/renderer/extensions/vueNodes/composables/useViewportKeepAlive.test.ts",
+        "browser_tests/tests/vueNodes/viewportKeepAlive.spec.ts"
+      ]
+    },
     {
       "name": "The LiteGraph barrel exposes the supported extension API",
       "checks": [
