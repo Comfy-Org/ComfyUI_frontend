@@ -3741,7 +3741,10 @@
       },
       "lowCredits": {
         "title": "Credits are low",
-        "localBody": "You have {credits} credits left. Add credits to keep running Partner Nodes."
+        "localBody": "You have {credits} credit left. Add credits to keep running Partner Nodes. | You have {credits} credits left. Add credits to keep running Partner Nodes.",
+        "personalBody": "You have {credits} credit left. Add credits before you run out. | You have {credits} credits left. Add credits before you run out.",
+        "ownerBody": "This workspace has {credits} credit left. Add credits before you run out. | This workspace has {credits} credits left. Add credits before you run out.",
+        "memberBody": "This workspace has {credits} credit left. Ask the workspace owner to add credits before you run out. | This workspace has {credits} credits left. Ask the workspace owner to add credits before you run out."
       },
       "ending": {
         "title": "Your Team plan ends on {date}",
