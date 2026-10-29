@@ -133,7 +133,7 @@ const listing: WorkspaceDeploymentList = {
 
 function withStatus(
   deployment: WorkspaceDeployment,
-  status: string,
+  status: WorkspaceDeployment['status'],
   canStart = status === 'stopped' || status === 'failed'
 ): WorkspaceDeployment {
   return { ...deployment, status, can_start: canStart }
@@ -330,7 +330,11 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByRole('tooltip')).toBeNull()
   })
 
-  it.for([
+  it.for<{
+    status: WorkspaceDeployment['status']
+    text: string
+    name: string
+  }>([
     {
       status: 'ready',
       text: 'Running on Studio Build · production',
@@ -485,7 +489,7 @@ describe('DeploymentSwitcher', () => {
     })
   })
 
-  it.for([
+  it.for<{ status: WorkspaceDeployment['status']; reason: string }>([
     {
       status: 'stopped',
       reason:
@@ -1664,7 +1668,7 @@ describe('DeploymentSwitcher, starting a stopped deployment', () => {
   const staging = listing.items[1]
 
   function withStaging(
-    status: string,
+    status: WorkspaceDeployment['status'],
     canStart?: boolean
   ): WorkspaceDeploymentList {
     return {
@@ -2041,7 +2045,13 @@ describe('DeploymentSwitcher, starting a stopped deployment', () => {
     expect(mockWorkspaceApi.startDeployment).toHaveBeenCalledTimes(1)
   })
 
-  it.for([
+  it.for<{
+    status: WorkspaceDeployment['status']
+    start: string
+    offered: boolean
+    tooltip: string
+    notice: string
+  }>([
     {
       status: 'stopped',
       start: 'offered',

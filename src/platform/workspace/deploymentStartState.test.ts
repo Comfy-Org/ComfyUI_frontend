@@ -14,7 +14,10 @@ import {
 
 const ID = 'dep-a1a1a1a1-0000-4000-8000-000000000001'
 
-function deploymentAt(status: string, canStart = false): WorkspaceDeployment {
+function deploymentAt(
+  status: WorkspaceDeployment['status'],
+  canStart = false
+): WorkspaceDeployment {
   return {
     deployment_id: ID,
     release_id: 'r-1',
