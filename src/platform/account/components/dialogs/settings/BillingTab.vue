@@ -96,7 +96,7 @@
               :href="handoffHref"
               target="_blank"
               rel="noopener"
-              class="text-muted-foreground no-underline hover:underline"
+              class="text-muted-foreground underline"
               @click="trackHandoff"
             >
               {{ $t('workspacePanel.billingTab.handoff.owner.platform') }}
@@ -156,7 +156,7 @@ import { useBillingDialogs } from '@/platform/billing/composables/useBillingDial
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useSubscriptionActions } from '@/platform/billing/subscription/composables/useSubscriptionActions'
+import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue'
@@ -210,7 +210,7 @@ const planCreditNote = useTopUpPlanCreditCopy()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { showSubscriptionDialog } = useSubscriptionPaywall()
 const telemetry = useTelemetry()
-const { isLoadingSupport, handleMessageSupport } = useSubscriptionActions()
+const { isLoadingSupport, handleMessageSupport } = useMessageSupport()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const partnerNodesPricingHref = computed(() =>
   buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })

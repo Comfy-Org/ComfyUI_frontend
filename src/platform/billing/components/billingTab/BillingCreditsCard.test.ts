@@ -261,6 +261,17 @@ describe('BillingCreditsCard', () => {
       meter: null
     },
     {
+      case: 'a paused plan keeps the pool but shows no usage',
+      facts: {
+        billingStatus: 'paused',
+        renewalDate: '2026-10-01T00:00:00Z'
+      },
+      amount: '0 of 1,000',
+      date: 'Refills October 1, 2026',
+      used: null,
+      meter: null
+    },
+    {
       case: 'used-up plan credits fill the meter',
       facts: { balance: balanceOf({ effective: 300, plan: 0, topUp: 300 }) },
       amount: '0 of 1,000',

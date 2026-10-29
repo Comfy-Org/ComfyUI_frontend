@@ -21,10 +21,20 @@ export type CreditsCardState =
       planPoolCredits: number | null
       topUpCents: number
       topUpInUse: boolean
+      showUsage: boolean
       planDate: { kind: 'refills' | 'availableUntil'; date: string | null }
     }
 
 export type PlanCreditsState = Extract<CreditsCardState, { kind: 'plan' }>
+
+const PLAN_USAGE_SHOWN: Record<BillingStatus, boolean> = {
+  awaiting_payment_method: true,
+  pending_payment: true,
+  paid: true,
+  payment_failed: true,
+  paused: false,
+  inactive: true
+}
 
 /** Maps the served balance and plan state onto the Credits card. */
 export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
@@ -48,6 +58,9 @@ export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
     planPoolCredits: facts.planPoolCredits,
     topUpCents,
     topUpInUse: planCents === 0 && topUpCents > 0,
+    showUsage: facts.billingStatus
+      ? PLAN_USAGE_SHOWN[facts.billingStatus]
+      : true,
     planDate:
       facts.planKind === 'ending'
         ? { kind: 'availableUntil', date: facts.endDate }

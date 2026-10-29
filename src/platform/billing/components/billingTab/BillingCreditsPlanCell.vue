@@ -116,7 +116,7 @@ const planTotal = computed(() =>
 )
 
 const planUsedPercent = computed(() => {
-  if (!plan.planPoolCredits) return null
+  if (!plan.showUsage || !plan.planPoolCredits) return null
   const remaining = centsToCredits(plan.planCents) / plan.planPoolCredits
   return Math.round(clamp(1 - remaining, 0, 1) * 100)
 })

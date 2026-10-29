@@ -30,6 +30,7 @@ import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { activateBillingScope } from '@/platform/billing/__tests__/activateBillingScope'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
+import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 
 import BillingTab from '@/platform/account/components/dialogs/settings/BillingTab.vue'
 
@@ -46,18 +47,8 @@ vi.mock(import('@/platform/billing/composables/useBillingUI'))
 vi.mock(import('@/platform/billing/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@comfyorg/telemetry'))
-const handleMessageSupport = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(
-  import('@/platform/billing/subscription/composables/useSubscriptionActions'),
-  async () => {
-    const { ref } = await import('vue')
-    return {
-      useSubscriptionActions: () => ({
-        isLoadingSupport: ref(false),
-        handleMessageSupport
-      })
-    }
-  }
+vi.mock(
+  import('@/platform/billing/subscription/composables/useSubscriptionActions')
 )
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string, correlationId?: string) =>
@@ -108,8 +99,14 @@ function correlationIdOf(link: HTMLElement) {
   )
 }
 
+const handleMessageSupport = vi.fn(async () => {})
+
 function arrange(scenario: Scenario = {}) {
   activateBillingScope('actor-a', 'workspace-a')
+  vi.mocked(useMessageSupport).mockReturnValue({
+    isLoadingSupport: ref(false),
+    handleMessageSupport
+  })
   const initialize = vi.fn(async () => {})
   const refresh = vi.fn(async () => {})
   const fetchStatus = vi.fn(async () => {})
@@ -580,9 +577,11 @@ describe('BillingTab', () => {
           null
       ).toBe(line)
       if (!line) return
-      expect(
-        within(card).getByRole('link', { name: 'platform.comfy.org' })
-      ).toHaveAttribute(
+      const platformLink = within(card).getByRole('link', {
+        name: 'platform.comfy.org'
+      })
+      expect(platformLink).toHaveClass('underline')
+      expect(platformLink).toHaveAttribute(
         'href',
         expect.stringContaining('https://platform.test/profile/billing?')
       )
