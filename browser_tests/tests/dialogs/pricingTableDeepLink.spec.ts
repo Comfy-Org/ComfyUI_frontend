@@ -87,6 +87,7 @@ const ACTIVE_TEAM_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: {
     id: 'team_700',
     credits_monthly: 147_700,
@@ -106,6 +107,7 @@ const ACTIVE_STANDARD_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   max_seats: 1,
@@ -128,19 +130,27 @@ const BILLING_BALANCE = {
   currency: 'USD'
 } satisfies BillingBalanceResponse
 
+const CURRENT_PLAN = { action: 'none', denied_reason: 'same_plan' } as const
+
 const TEAM_WITH_CREATOR_PLANS = {
   current_plan_slug: 'team_per_credit_annual',
-  plans: [CREATOR_ANNUAL_PLAN]
+  plans: [{ ...CREATOR_ANNUAL_PLAN, action: 'downgrade' }]
 } satisfies BillingPlansResponse
 
 const STANDARD_WITH_CREATOR_PLANS = {
   current_plan_slug: 'standard-annual',
-  plans: [STANDARD_ANNUAL_PLAN, CREATOR_ANNUAL_PLAN]
+  plans: [
+    { ...STANDARD_ANNUAL_PLAN, ...CURRENT_PLAN },
+    { ...CREATOR_ANNUAL_PLAN, action: 'change' }
+  ]
 } satisfies BillingPlansResponse
 
 const CREATOR_WITH_CREATOR_PLANS = {
-  ...STANDARD_WITH_CREATOR_PLANS,
-  current_plan_slug: 'creator-annual'
+  current_plan_slug: 'creator-annual',
+  plans: [
+    { ...STANDARD_ANNUAL_PLAN, action: 'downgrade' },
+    { ...CREATOR_ANNUAL_PLAN, ...CURRENT_PLAN }
+  ]
 } satisfies BillingPlansResponse
 
 const TEAM_CREDIT_STOPS = {
@@ -149,32 +159,82 @@ const TEAM_CREDIT_STOPS = {
     {
       id: 'team_200',
       credits: 42_200,
-      monthly: { list_price_cents: 20_000, price_cents: 20_000 },
-      yearly: { list_price_cents: 20_000, price_cents: 20_000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 20_000,
+        price_cents: 20_000,
+        period_charge_cents: 20_000
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 20_000,
+        price_cents: 20_000,
+        period_charge_cents: 240_000
+      }
     },
     {
       id: 'team_400',
       credits: 84_400,
-      monthly: { list_price_cents: 40_000, price_cents: 39_000 },
-      yearly: { list_price_cents: 40_000, price_cents: 38_000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 40_000,
+        price_cents: 39_000,
+        period_charge_cents: 39_000
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 40_000,
+        price_cents: 38_000,
+        period_charge_cents: 456_000
+      }
     },
     {
       id: 'team_700',
       credits: 147_700,
-      monthly: { list_price_cents: 70_000, price_cents: 66_500 },
-      yearly: { list_price_cents: 70_000, price_cents: 63_000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 70_000,
+        price_cents: 66_500,
+        period_charge_cents: 66_500
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 70_000,
+        price_cents: 63_000,
+        period_charge_cents: 756_000
+      }
     },
     {
       id: 'team_1400',
       credits: 295_400,
-      monthly: { list_price_cents: 140_000, price_cents: 129_500 },
-      yearly: { list_price_cents: 140_000, price_cents: 119_000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 140_000,
+        price_cents: 129_500,
+        period_charge_cents: 129_500
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 140_000,
+        price_cents: 119_000,
+        period_charge_cents: 1_428_000
+      }
     },
     {
       id: 'team_2500',
       credits: 527_500,
-      monthly: { list_price_cents: 250_000, price_cents: 225_000 },
-      yearly: { list_price_cents: 250_000, price_cents: 200_000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 250_000,
+        price_cents: 225_000,
+        period_charge_cents: 225_000
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 250_000,
+        price_cents: 200_000,
+        period_charge_cents: 2_400_000
+      }
     }
   ]
 } satisfies TeamCreditStops

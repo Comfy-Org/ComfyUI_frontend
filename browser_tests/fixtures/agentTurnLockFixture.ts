@@ -7,12 +7,14 @@ import type {
   AgentError,
   AgentMessage,
   AgentPendingAsk,
+  AgentThreadListResponse,
   AgentTurnAccepted
 } from '@comfyorg/ingest-types'
 import {
   zAgentPendingAsk,
   zAgentPostMessageRequest
 } from '@comfyorg/ingest-types/zod'
+import { escapeRegExp } from 'es-toolkit'
 import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -29,6 +31,23 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const zAnswerRequest = z.object({ selected: z.array(z.string()) })
+const zWireInteger = z.coerce.number().int().safe()
+
+function pendingAskForWire(
+  ask: z.infer<typeof zAgentPendingAsk>
+): AgentPendingAsk {
+  if (ask.kind !== 'run_approval') return ask
+  return {
+    ...ask,
+    context: {
+      ...ask.context,
+      doc_seq:
+        ask.context.doc_seq === undefined
+          ? undefined
+          : zWireInteger.parse(ask.context.doc_seq)
+    }
+  }
+}
 
 const THREAD_ID = 'b9d0a2a1-0f2c-4f1a-9a5e-6b0f4f2c1d77'
 const TURN_ID = '2dd4f367-3399-4cb4-8127-547f531c289a'
@@ -178,7 +197,7 @@ class TurnLockServer {
   private rejected = 0
   private posts = 0
   private readonly answered: string[][] = []
-  private pendingAsk: AgentPendingAsk | undefined
+  private pendingAsk: z.infer<typeof zAgentPendingAsk> | undefined
   private heldTranscript:
     | {
         threadId?: string
@@ -369,7 +388,10 @@ class TurnLockServer {
       role: 'assistant',
       status: 'streaming',
       workflow_id: WORKFLOW_ID,
-      pending_ask: this.pendingAsk
+      pending_ask:
+        this.pendingAsk === undefined
+          ? undefined
+          : pendingAskForWire(this.pendingAsk)
     })
     return rows
   }
@@ -401,7 +423,7 @@ async function routeTurnLock(
   page: Page,
   server: TurnLockServer
 ): Promise<void> {
-  await page.route('**/api/agent/threads', (route) =>
+  await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(
       jsonRoute({
         threads: [
@@ -429,7 +451,7 @@ async function routeTurnLock(
           }
         ],
         pagination: { offset: 0, limit: 100, total: 2, has_more: false }
-      })
+      } satisfies AgentThreadListResponse)
     )
   )
   await page.route('**/api/agent/threads/*/messages', async (route) => {
@@ -451,13 +473,6 @@ async function routeTurnLock(
     })
   })
 
-  /**
-   * The glob accepts any thread and any ask id, so without these checks an
-   * answer posted against the wrong ask -- or an option this ask never offered
-   * -- would still be recorded and `answeredAsks()` would report success. The
-   * assertion this fixture exists to support is "the answer left the client for
-   * *this* ask", so the route has to be the thing that enforces it.
-   */
   await page.route('**/api/agent/threads/*/asks/*/answer', (route) => {
     const url = new URL(route.request().url())
     const segments = url.pathname.split('/').map(decodeURIComponent)
@@ -520,8 +535,8 @@ export class AgentTurnLockHarness {
     private readonly server: TurnLockServer,
     private readonly finishSave: (success: boolean) => void,
     private readonly savedPaths: () => number,
-    private readonly getWebSocket: () => Promise<WebSocketRoute>,
-    private readonly nextWebSocket: () => Promise<WebSocketRoute>
+    private readonly getAgentSocket: () => Promise<WebSocketRoute>,
+    private readonly nextAgentSocket: () => Promise<WebSocketRoute>
   ) {
     this.agentPanel = new AgentPanel(page)
     this.panel = this.agentPanel.root
@@ -538,14 +553,14 @@ export class AgentTurnLockHarness {
       name: enMessages.agent.runApproval.run,
       exact: true
     })
-    // WorkSummary.vue renders three labels off the elapsed total: `worked`
-    // alone, `workedForSeconds`, or `workedForMinutes`. Anchoring on the
-    // shared `worked` stem matches all three, so the negative assertions on
-    // this locator cannot go vacuous when a turn is shorter or longer than the
-    // fixture's tool duration, or when the copy is reworded.
     this.workSummary = this.panel.getByRole('button', {
       name: new RegExp(
-        `^${enMessages.agent.worked.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`
+        `^(${[
+          enMessages.agent.worked,
+          enMessages.agent.workedNotConfirmedOnCanvas
+        ]
+          .map(escapeRegExp)
+          .join('|')})$`
       )
     })
     this.workingRow = this.panel.getByText(enMessages.agent.working, {
@@ -606,7 +621,7 @@ export class AgentTurnLockHarness {
 
   /** Sends a prompt and streams it to the point where a user sees work happening. */
   async startTurn(prompt: string): Promise<void> {
-    const live = await this.getWebSocket()
+    const live = await this.getAgentSocket()
     await this.composer.fill(prompt)
     await this.sendButton.click()
     // Stop is NOT an ack: Composer renders it from `isSending`, which
@@ -765,7 +780,7 @@ export class AgentTurnLockHarness {
 
   /** The socket the client is currently on, with no drop. */
   async liveSocket(): Promise<WebSocketRoute> {
-    return this.getWebSocket()
+    return this.getAgentSocket()
   }
 
   /** Drops the live socket and resolves with the one the client reconnects on. */
@@ -773,8 +788,8 @@ export class AgentTurnLockHarness {
     // Resolve the live route first: with no socket open yet both calls would
     // queue on the same waiter and hand back the same route, so the close
     // below would kill the one returned as the reconnect.
-    const live = await this.getWebSocket()
-    const reconnected = this.nextWebSocket()
+    const live = await this.getAgentSocket()
+    const reconnected = this.nextAgentSocket()
     await live.close()
     return reconnected
   }
@@ -786,7 +801,7 @@ export const agentTurnLockTest = mergeTests(
   webSocketFixture
 ).extend<{ turnLock: AgentTurnLockHarness }>({
   turnLock: async (
-    { page, workflowSelection, getWebSocket, nextWebSocket },
+    { page, workflowSelection, getAgentSocket, nextAgentSocket },
     use
   ) => {
     const server = new TurnLockServer()
@@ -797,8 +812,8 @@ export const agentTurnLockTest = mergeTests(
         server,
         workflowSelection.finishSave,
         () => workflowSelection.savedPaths.length,
-        getWebSocket,
-        nextWebSocket
+        getAgentSocket,
+        nextAgentSocket
       )
     )
   }

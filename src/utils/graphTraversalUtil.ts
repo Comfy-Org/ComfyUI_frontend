@@ -3,19 +3,23 @@ import type {
   LGraphNode,
   Subgraph,
   SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/entityRegistry'
+
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 import {
   createLeafNodeExecutionId,
   createNodeExecutionId,
   createNodeLocatorId,
   getParentExecutionIds,
   parseNodeLocatorId
-} from '@/types/nodeIdentification'
-import { parseNodeId, toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import type { NodeState } from '@/types/nodeState'
+} from '@comfyorg/graph-model/nodeIdentification'
+import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { UUID } from '@/utils/uuid'
 import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 

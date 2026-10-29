@@ -4,8 +4,9 @@ import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useA
 
 import { useAgentPanelStore } from './agentPanelStore'
 
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 /**
  * Regression pin for the duplicate Pinia id `agentPanel`.

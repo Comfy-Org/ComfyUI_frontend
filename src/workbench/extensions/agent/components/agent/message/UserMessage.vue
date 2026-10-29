@@ -4,26 +4,27 @@ import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
-import Tag from '@/components/chip/Tag.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Tag from '@comfyorg/design-system/chip/Tag'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
-import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
+import type { UserAttachment } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type {
   PromptSnapshot,
   WorkflowReference
-} from '../../../types/workflowReference'
-import type { ReplyAsset } from '../../../utils/replyAssets'
-import { isReplyAssetKind } from '../../../utils/replyAssets'
-import { agentMessageText } from '../../../utils/agentMessageText'
-import { promptReferenceParts } from '../../../utils/promptReferenceParts'
-import type { SkillReference as SkillReferenceData } from '../../../types/skillReference'
-import CatalogSkillReference from '../CatalogSkillReference.vue'
+} from '@/workbench/extensions/agent/types/workflowReference'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
+import { isReplyAssetKind } from '@/workbench/extensions/agent/utils/replyAssets'
+import { agentMessageText } from '@/workbench/extensions/agent/utils/agentMessageText'
+import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
+import type { SkillReference as SkillReferenceData } from '@/workbench/extensions/agent/types/skillReference'
+import CatalogSkillReference from '@/workbench/extensions/agent/components/agent/CatalogSkillReference.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 import {
   selectedUserMessageClipboard,
@@ -124,13 +125,6 @@ function attachmentIconClass(name: string): string {
   return kind === 'other' ? 'icon-[lucide--file]' : iconForMediaType(kind)
 }
 
-/**
- * Sent uploads reuse the reply asset grid (Uy, FE-1323): media attachments
- * render as the DES-530 per-count grid with the same hover-play, inspect, and
- * audio-card behavior as agent replies. A ref resolves to the uploaded input
- * file; an image without one still has its local preview. Text and other
- * kinds have no grid treatment and keep the compact tiles.
- */
 const splitAttachments = computed(() => {
   const grid: ReplyAsset[] = []
   const plain: UserAttachment[] = []
@@ -145,11 +139,7 @@ const splitAttachments = computed(() => {
 function gridAsset(item: UserAttachment): ReplyAsset | undefined {
   const kind = item.kind ?? getMediaTypeFromFilename(item.name)
   if (!isReplyAssetKind(kind)) return undefined
-  const url =
-    item.previewUrl ??
-    (item.ref
-      ? api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
-      : undefined)
+  const url = attachmentUrl(item, kind)
   if (!url) return undefined
   const filename = item.ref ?? item.name
   return {
@@ -158,6 +148,17 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
     kind,
     label: filename === item.name ? undefined : item.name
   }
+}
+
+function attachmentUrl(
+  item: UserAttachment,
+  kind: ReplyAsset['kind']
+): string | undefined {
+  const capturedUrl =
+    kind === 'video' || kind === 'audio' ? item.mediaUrl : item.previewUrl
+  if (capturedUrl) return capturedUrl
+  if (!item.ref || isHdrImageFilename(item.name)) return
+  return api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
 }
 </script>
 
@@ -172,7 +173,7 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
         class="max-w-48"
       >
         <template #icon>
-          <span class="icon-[lucide--at-sign] size-3 shrink-0" />
+          <i aria-hidden="true" class="icon-[lucide--at-sign] size-3" />
         </template>
       </Tag>
     </div>
@@ -189,9 +190,10 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
         class="m-0"
       >
         <div
-          class="flex aspect-square w-full items-center justify-center rounded-lg bg-secondary-background"
+          class="flex aspect-square w-full items-center justify-center rounded-lg bg-secondary"
         >
-          <span
+          <i
+            aria-hidden="true"
             :class="
               cn(attachmentIconClass(item.name), 'size-6 text-muted-foreground')
             "
@@ -206,7 +208,7 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
       v-if="text || workflowReferences.length || skillReference"
       ref="bubble"
       data-testid="user-message-bubble"
-      class="w-fit max-w-full rounded-lg bg-secondary-background px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
+      class="w-fit max-w-full rounded-lg bg-secondary px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
     >
       <template v-for="(part, index) in promptParts" :key="index">
         <Tag
@@ -241,7 +243,7 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
           @click="openReference(part.reference)"
         >
           <template #icon>
-            <span class="icon-[comfy--workflow] size-3 shrink-0" />
+            <i aria-hidden="true" class="icon-[comfy--workflow] size-3" />
           </template>
         </Tag>
         <CatalogSkillReference
@@ -271,7 +273,7 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
           })
         "
       >
-        <span class="icon-[lucide--pencil] size-3" />
+        <i aria-hidden="true" class="icon-[lucide--pencil] size-3" />
       </Button>
       <Tooltip disable-closing-trigger>
         <TooltipTrigger as-child>
@@ -283,7 +285,8 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
             class="size-6 rounded-lg"
             @click="copyMessage"
           >
-            <span
+            <i
+              aria-hidden="true"
               :class="
                 cn(
                   'size-3',

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
+  <div v-if="renderError" class="node-error p-2 text-sm text-destructive">
     {{ st('nodeErrors.widgets', 'Node Widgets Error') }}
   </div>
   <WidgetGrid
@@ -22,8 +22,8 @@
 import { computed, onErrorCaptured, ref } from 'vue'
 
 import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
-import type { NodeState } from '@/types/nodeState'
-import type { WidgetId } from '@/types/widgetId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'

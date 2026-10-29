@@ -1,4 +1,4 @@
-import type { ISelectButtonWidget } from '../types/widgets'
+import type { ISelectButtonWidget } from '@comfyorg/graph-model/widgets'
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**

@@ -4,9 +4,9 @@ import type {
   BillingStatusResponse as IngestBillingStatusResponse
 } from '@comfyorg/ingest-types'
 
+import type { Plan } from '@comfyorg/billing-core'
 import type {
   Member,
-  Plan,
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -24,6 +24,7 @@ export const LEGACY_PERSONAL_BILLING_STATUS = {
   occupied_seats: 1,
   subscription_status: 'ended',
   subscription_tier: 'FREE',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null
 } satisfies IngestBillingStatusResponse
@@ -109,6 +110,7 @@ export const TEAM_BILLING_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   max_seats: 30,
@@ -124,6 +126,7 @@ export const ENDED_STANDARD_BILLING_STATUS = {
   subscription_duration: 'MONTHLY',
   subscription_status: 'ended',
   subscription_tier: 'STANDARD',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   max_seats: 1,

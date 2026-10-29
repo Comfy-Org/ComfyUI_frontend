@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type {
   ColorsInputSpec,
   InputSpec as InputSpecV2
@@ -10,6 +10,8 @@ export const useColorsWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): IBaseWidget => {
     const spec = inputSpec as ColorsInputSpec
     const defaultValue: string[] = spec.default ? [...spec.default] : []
-    return node.addWidget('colors', spec.name, defaultValue, null)
+    return node.addWidget('colors', spec.name, defaultValue, null, {
+      hideInPanel: true
+    })
   }
 }

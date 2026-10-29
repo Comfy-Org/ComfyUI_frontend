@@ -59,9 +59,11 @@ function annualPlan(
   slug: string,
   tier: Plan['tier'],
   priceCents: number,
-  creditsCents: number
+  creditsCents: number,
+  decision: Pick<Plan, 'action' | 'denied_reason'>
 ): Plan {
   return {
+    ...decision,
     slug,
     tier,
     duration: 'ANNUAL',
@@ -81,13 +83,15 @@ const STANDARD_ANNUAL_PLAN = annualPlan(
   'standard-annual',
   'STANDARD',
   19_200,
-  4_200
+  4_200,
+  { action: 'none', denied_reason: 'same_plan' }
 )
 const CREATOR_ANNUAL_PLAN = annualPlan(
   'creator-annual',
   'CREATOR',
   33_600,
-  7_400
+  7_400,
+  { action: 'change' }
 )
 
 const PLAN_CATALOG = {
@@ -117,6 +121,7 @@ const ACTIVE_STANDARD = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   max_seats: 1,

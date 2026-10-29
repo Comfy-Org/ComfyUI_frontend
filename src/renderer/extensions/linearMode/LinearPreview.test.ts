@@ -91,7 +91,6 @@ function renderPreview(
     props,
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: {
         ImagePreview: { template: '<div data-testid="image-preview" />' },
         LatentPreview: { template: '<div data-testid="latent-preview" />' },

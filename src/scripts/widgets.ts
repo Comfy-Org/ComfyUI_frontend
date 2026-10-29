@@ -1,5 +1,3 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
 import {
   addValueControlWidget as _addValueControlWidget,
@@ -27,33 +25,14 @@ import { useRangeWidget } from '@/renderer/extensions/vueNodes/widgets/composabl
 import { useResolutionPreviewWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useResolutionPreviewWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { useTextareaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget'
+import { useVideoConcatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useVideoConcatWidget'
 import { useVideoEditWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
-import type { ComfyApp } from '@/types/comfy'
+import type { ComfyWidgetConstructor } from '@/types/comfy'
+
 import './domWidget'
-import './errorNodeWidgets'
-
-export type ComfyWidgetConstructor = (
-  node: LGraphNode,
-  inputName: string,
-  inputData: InputSpec,
-  app: ComfyApp,
-  widgetName?: string
-) => { widget: IBaseWidget; minWidth?: number; minHeight?: number }
-
-export type CustomComfyWidgetConstructor = (
-  ...args: Parameters<ComfyWidgetConstructor>
-) =>
-  | {
-      widget?: IBaseWidget
-      minWidth?: number
-      minHeight?: number
-    }
-  | IBaseWidget
-  | undefined
 
 /**
  * Transforms a V2 widget constructor to a V1 widget constructor.
@@ -95,6 +74,7 @@ export const ComfyWidgets = {
   CURVE: transformWidgetConstructorV2ToV1(useCurveWidget()),
   RANGE: transformWidgetConstructorV2ToV1(useRangeWidget()),
   VIDEO_EDIT: transformWidgetConstructorV2ToV1(useVideoEditWidget()),
+  VIDEO_CONCAT: transformWidgetConstructorV2ToV1(useVideoConcatWidget()),
   RESOLUTION_PREVIEW: transformWidgetConstructorV2ToV1(
     useResolutionPreviewWidget()
   ),

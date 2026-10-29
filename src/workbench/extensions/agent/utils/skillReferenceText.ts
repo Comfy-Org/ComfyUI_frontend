@@ -5,11 +5,11 @@ import {
   codePointLength
 } from '@/platform/skills/types'
 
-import type { SkillReferenceMetadata } from '../types/skillReference'
+import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 import type {
   PromptSnapshot,
   WorkflowReference
-} from '../types/workflowReference'
+} from '@/workbench/extensions/agent/types/workflowReference'
 
 // encodeURIComponent throws on an unpaired UTF-16 surrogate. The ES2023 lib
 // has no String#toWellFormed, so this applies the same U+FFFD replacement.

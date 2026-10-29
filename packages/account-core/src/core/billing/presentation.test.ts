@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { selectBillingPresentation } from './presentation.js'
+import { selectBillingPresentation } from './presentation'
 
 describe('selectBillingPresentation', () => {
   it('embeds only on the workspace Stripe rail with a host that can drive a challenge', () => {

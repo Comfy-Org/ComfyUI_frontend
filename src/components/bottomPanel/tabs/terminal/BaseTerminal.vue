@@ -4,12 +4,10 @@
     data-testid="terminal-root"
     class="relative size-full overflow-hidden bg-neutral-900"
   >
-    <div class="p-terminal size-full rounded-none p-2">
-      <div
-        ref="terminalEl"
-        data-testid="terminal-host"
-        class="terminal-host h-full"
-      />
+    <div
+      class="size-full rounded-none p-2 [&_.xterm]:overflow-x-auto [&_.xterm]:overflow-y-hidden [&_.xterm-screen]:overflow-hidden [&_.xterm-screen]:bg-neutral-900"
+    >
+      <div ref="terminalEl" data-testid="terminal-host" class="h-full" />
     </div>
     <Button
       :tooltip="tooltipText"
@@ -25,7 +23,7 @@
       :aria-label="tooltipText"
       @click="handleCopy"
     >
-      <i class="pi pi-copy" />
+      <i class="icon-[lucide--copy]" />
     </Button>
   </div>
 </template>
@@ -37,7 +35,7 @@ import type { Ref } from 'vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 import { electronAPI } from '@/utils/envUtil'
 import { isDesktop } from '@/platform/distribution/types'
@@ -105,14 +103,3 @@ onUnmounted(() => {
   emit('unmounted')
 })
 </script>
-
-<style scoped>
-:deep(.p-terminal) .xterm {
-  overflow: hidden;
-}
-
-:deep(.p-terminal) .xterm-screen {
-  overflow: hidden;
-  background-color: var(--color-neutral-900);
-}
-</style>

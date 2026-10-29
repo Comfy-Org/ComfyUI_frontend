@@ -2,22 +2,22 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
-import NumberField from '@/components/ui/number-field/NumberField.vue'
-import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Slider from '@comfyorg/design-system/slider/Slider'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
+import NumberField from '@comfyorg/design-system/number-field/NumberField'
+import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
-import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
+import type { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
+import { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
-import FieldSwitch from './FieldSwitch.vue'
-import LayoutField from './LayoutField.vue'
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
+import FieldSwitch from '@comfyorg/design-system/field/FieldSwitch'
+import LayoutField from '@comfyorg/design-system/field/LayoutField'
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
@@ -91,9 +91,9 @@ function openFullSettings() {
 </script>
 
 <template>
-  <div class="flex flex-col border-t border-interface-stroke">
+  <div class="flex flex-col border-t">
     <!-- NODES Section -->
-    <PropertiesAccordionItem class="border-b border-interface-stroke">
+    <PropertiesAccordionItem class="border-b">
       <template #label>
         {{ t('rightSidePanel.globalSettings.nodes') }}
       </template>
@@ -117,7 +117,7 @@ function openFullSettings() {
     </PropertiesAccordionItem>
 
     <!-- CANVAS Section -->
-    <PropertiesAccordionItem class="border-b border-interface-stroke">
+    <PropertiesAccordionItem class="border-b">
       <template #label>
         {{ t('rightSidePanel.globalSettings.canvas') }}
       </template>
@@ -160,13 +160,13 @@ function openFullSettings() {
     </PropertiesAccordionItem>
 
     <!-- CONNECTION LINKS Section -->
-    <PropertiesAccordionItem class="border-b border-interface-stroke">
+    <PropertiesAccordionItem class="border-b">
       <template #label>
         {{ t('rightSidePanel.globalSettings.connectionLinks') }}
       </template>
       <div class="space-y-4 px-4 py-3">
         <LayoutField :label="t('rightSidePanel.globalSettings.linkShape')">
-          <SingleSelect
+          <AppSingleSelect
             v-model="linkShape"
             :options="linkShapeOptions"
             :label="t('rightSidePanel.globalSettings.linkShape')"
@@ -184,17 +184,15 @@ function openFullSettings() {
     </PropertiesAccordionItem>
 
     <!-- View all settings button -->
-    <div
-      class="flex items-center justify-center border-b border-interface-stroke p-4"
-    >
+    <div class="flex items-center justify-center border-b p-4">
       <Button
         variant="muted-textonly"
         size="sm"
-        class="gap-2 text-sm"
+        class="text-sm"
         @click="openFullSettings"
       >
         {{ t('rightSidePanel.globalSettings.viewAllSettings') }}
-        <i class="icon-[lucide--settings] size-4" />
+        <i class="icon-[lucide--settings]" />
       </Button>
     </div>
   </div>

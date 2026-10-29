@@ -1,6 +1,9 @@
-import type { ContextMenu } from '../ContextMenu'
-import type { LGraphNode } from '../LGraphNode'
-import type { IFoundSlot } from './slots'
+import type {
+  ContextMenu,
+  LGraphNode
+} from '@comfyorg/graph-model/entityRegistry'
+
+import type { IFoundSlot } from '@comfyorg/graph-model/slots'
 
 interface IContextMenuBase {
   title?: string
@@ -58,7 +61,7 @@ export interface IContextMenuValue<
 interface IContextMenuSubmenu<
   TValue = unknown
 > extends IContextMenuOptions<TValue> {
-  options: ConstructorParameters<typeof ContextMenu<TValue>>[0]
+  options: ConstructorParameters<ContextMenu<TValue>['constructor']>[0]
 }
 
 export interface ContextMenuDivElement<

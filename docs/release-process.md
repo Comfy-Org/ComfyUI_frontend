@@ -29,7 +29,7 @@ and `cloud/1.41`, branched from the commit _before_ the bump. Nightly patch
 bumps on `main` are convenience snapshots — no branches created.
 
 The minor bump is scheduled automatically: `release-version-bump.yaml` runs a
-**minor** bump on `main` every Monday and Wednesday 20:00 UTC and enables
+**minor** bump on `main` every Monday 20:00 UTC (one release a week) and enables
 auto-merge on the resulting `version-bump-*` PR (marked with the
 `weekly-release-cut` label, which exempts it from the nightly stale-PR closer),
 so once its checks pass the merge
@@ -58,6 +58,11 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 1. Add `needs-backport` + version label to the merged PR
 2. `pr-backport.yaml` cherry-picks and creates a backport PR
 3. Conflicts produce a comment with details and an agent prompt
+
+Release labels alone do not start the backport. A merged PR with a
+`core/X.Y` or `cloud/X.Y` label but no `needs-backport` gets a comment saying
+the backport did not run. Each label is warned about once, and labels whose
+target already has an open or merged backport PR are left out.
 
 ## Release Sheriff Assignment
 

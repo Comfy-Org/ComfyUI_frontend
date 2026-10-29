@@ -1,18 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { reportError } from '@/platform/telemetry/reportError'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '../subgraph/__fixtures__/subgraphHelpers'
-
-vi.mock(import('@/platform/telemetry/reportError'))
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 function createNode(): LGraphNode {
   const graph = new LGraph()

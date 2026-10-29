@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
 
@@ -17,6 +17,49 @@ function useConsentedAgentPanelStore() {
   store.consentAccepted = true
   return store
 }
+
+describe('agentPanelStore funds rechecks', () => {
+  it('releases pending recheck owners and timers when the store is disposed', () => {
+    const store = useAgentPanelStore()
+    const release = vi.fn()
+    const initialTimers = vi.getTimerCount()
+    store.beginFundsRecheck('account-a', release)
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(true)
+
+    store.$dispose()
+
+    expect(release).toHaveBeenCalledOnce()
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(false)
+    expect(vi.getTimerCount()).toBe(initialTimers)
+  })
+
+  it('releases a stalled recheck after a bounded hold', () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const store = useAgentPanelStore()
+    store.beginFundsRecheck('account-a')
+
+    vi.advanceTimersByTime(9_999)
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(true)
+
+    vi.advanceTimersByTime(1)
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(false)
+  })
+
+  it('stays pending until every admitted recheck for an identity settles', () => {
+    const store = useAgentPanelStore()
+    const first = store.beginFundsRecheck('account-a')
+    const second = store.beginFundsRecheck('account-a')
+
+    store.finishFundsRecheck(second)
+
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(true)
+    store.finishFundsRecheck(first)
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(false)
+  })
+})
 
 describe('agentPanelStore engagement telemetry', () => {
   beforeEach(() => {
@@ -31,6 +74,31 @@ describe('agentPanelStore engagement telemetry', () => {
     api.serverFeatureFlagsSettled.value = true
     await nextTick()
     expect(store.flagsSettled).toBe(true)
+  })
+
+  it.for([null, false, '', {}, { state: 'unknown' }])(
+    'ignores an agent feature without a known state: %j',
+    (agent) => {
+      onTestFinished(() => {
+        api.serverFeatureFlags.value = {}
+      })
+      api.serverFeatureFlags.value = { agent }
+
+      expect(useAgentPanelStore().comfyAgent).toBeUndefined()
+    }
+  )
+
+  it("leaves the standalone harness on its own agent, not ComfyUI's", () => {
+    onTestFinished(() => {
+      api.serverFeatureFlags.value = {}
+    })
+    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+    api.serverFeatureFlags.value = {
+      agent: { state: 'ready' }
+    }
+    const store = useAgentPanelStore()
+
+    expect(store.comfyAgent).toBeUndefined()
   })
 
   it('emits a restored open only once the rehydrated panel actually docks', async () => {
@@ -53,6 +121,27 @@ describe('agentPanelStore engagement telemetry', () => {
       source: 'close_button',
       open_duration_ms: 3000
     })
+  })
+
+  it('starts a fresh free-use epoch when the panel restores without open()', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    await nextTick()
+    store.reportedFreeUseExposure = true
+    store.reportedFreeUseImpression = true
+
+    store.enabled = false
+    await nextTick()
+    store.enabled = true
+    await nextTick()
+
+    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenLastCalledWith({
+      source: 'restored'
+    })
+    expect(store.isOpen).toBe(true)
+    expect(store.reportedFreeUseExposure).toBe(false)
+    expect(store.reportedFreeUseImpression).toBe(false)
   })
 
   it('emits exactly one opened event for a user click while the panel is enabled', async () => {

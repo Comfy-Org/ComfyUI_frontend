@@ -55,13 +55,13 @@ function partsOf(method: SavedPaymentMethod) {
 <template>
   <p
     v-if="methods.length === 1 && chosen"
-    class="m-0 flex h-10 w-full items-center gap-3 rounded-lg bg-base-background px-4 text-sm"
+    class="m-0 flex h-10 w-full items-center gap-3 rounded-lg bg-background px-4 text-sm"
   >
     <i
-      :class="cn(partsOf(chosen).icon, 'size-4 shrink-0 text-muted-foreground')"
+      :class="cn(partsOf(chosen).icon, 'text-muted-foreground')"
       aria-hidden="true"
     />
-    <span class="text-base-foreground capitalize">
+    <span class="text-foreground capitalize">
       {{ partsOf(chosen).name }}
     </span>
     <span
@@ -77,18 +77,16 @@ function partsOf(method: SavedPaymentMethod) {
       :class="
         cn(
           selectTriggerVariants({ size: 'lg', border: 'none' }),
-          'w-full gap-3 bg-base-background px-4 text-sm'
+          'w-full gap-3 bg-background px-4 text-sm'
         )
       "
     >
       <template v-if="chosen">
         <i
-          :class="
-            cn(partsOf(chosen).icon, 'size-4 shrink-0 text-muted-foreground')
-          "
+          :class="cn(partsOf(chosen).icon, 'text-muted-foreground')"
           aria-hidden="true"
         />
-        <span class="text-base-foreground capitalize">
+        <span class="text-foreground capitalize">
           {{ partsOf(chosen).name }}
         </span>
         <span
@@ -99,7 +97,7 @@ function partsOf(method: SavedPaymentMethod) {
         </span>
       </template>
       <i
-        class="ml-auto icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground"
+        class="ml-auto icon-[lucide--chevron-down] text-muted-foreground"
         aria-hidden="true"
       />
     </SelectTrigger>
@@ -120,10 +118,7 @@ function partsOf(method: SavedPaymentMethod) {
             :class="selectItemVariants({ layout: 'single' })"
           >
             <SelectItemText class="flex items-center gap-3">
-              <i
-                :class="cn(partsOf(method).icon, 'size-4 shrink-0')"
-                aria-hidden="true"
-              />
+              <i :class="partsOf(method).icon" aria-hidden="true" />
               <span class="capitalize">{{ partsOf(method).name }}</span>
               <span
                 v-if="partsOf(method).detail"
@@ -133,7 +128,7 @@ function partsOf(method: SavedPaymentMethod) {
               </span>
             </SelectItemText>
             <SelectItemIndicator class="flex shrink-0 items-center">
-              <i class="icon-[lucide--check] size-4" aria-hidden="true" />
+              <i class="icon-[lucide--check]" aria-hidden="true" />
             </SelectItemIndicator>
           </SelectItem>
         </SelectViewport>

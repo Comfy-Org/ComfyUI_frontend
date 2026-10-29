@@ -5,9 +5,9 @@ import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPosit
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { Position } from '@e2e/fixtures/types'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
-import type { Point } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/types/nodeId'
-import type { RerouteId } from '@/types/rerouteId'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 
 type NodeGeometry = {
   inputs: Point[]
@@ -16,20 +16,36 @@ type NodeGeometry = {
   size: Point
 }
 
+export async function waitForCanvasViewToSettle(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () =>
+      new Promise<boolean>((resolve) => {
+        const { ds } = window.app!.canvas
+        let previous = [ds.scale, ds.offset[0], ds.offset[1]]
+        let stableFrames = 0
+
+        const check = () => {
+          const current = [ds.scale, ds.offset[0], ds.offset[1]]
+          stableFrames = current.every(
+            (value, index) => value === previous[index]
+          )
+            ? stableFrames + 1
+            : 0
+          previous = current
+          if (stableFrames === 5) resolve(true)
+          else requestAnimationFrame(check)
+        }
+
+        requestAnimationFrame(check)
+      })
+  )
+}
+
 export class CanvasHelper {
   constructor(
     private page: Page,
-    private canvas: Locator,
-    private resetViewButton: Locator
+    private canvas: Locator
   ) {}
-
-  async resetView(): Promise<void> {
-    if (await this.resetViewButton.isVisible()) {
-      await this.resetViewButton.click()
-    }
-    await this.page.mouse.move(10, 10)
-    await nextFrame(this.page)
-  }
 
   async getMinimapRightInset(): Promise<number> {
     const canvasRight = await this.canvas.evaluate(
@@ -207,10 +223,17 @@ export class CanvasHelper {
     await nextFrame(this.page)
   }
 
-  async getOffset(): Promise<[number, number]> {
-    return this.page.evaluate(
-      () => [...window.app!.canvas.ds.offset] as [number, number]
-    )
+  async getOffset(): Promise<Point> {
+    return this.page.evaluate(() => [...window.app!.canvas.ds.offset] as Point)
+  }
+
+  async setOffset(offset: Point): Promise<void> {
+    await this.page.evaluate((offset) => {
+      const canvas = window.app!.canvas
+      canvas.ds.offset = offset
+      canvas.setDirty(true, true)
+    }, offset)
+    await nextFrame(this.page)
   }
 
   async getElementWidth(): Promise<number> {
@@ -229,28 +252,7 @@ export class CanvasHelper {
   }
 
   async waitForViewToSettle(): Promise<void> {
-    await this.page.waitForFunction(
-      () =>
-        new Promise<boolean>((resolve) => {
-          const { ds } = window.app!.canvas
-          let previous = [ds.scale, ds.offset[0], ds.offset[1]]
-          let stableFrames = 0
-
-          const check = () => {
-            const current = [ds.scale, ds.offset[0], ds.offset[1]]
-            stableFrames = current.every(
-              (value, index) => value === previous[index]
-            )
-              ? stableFrames + 1
-              : 0
-            previous = current
-            if (stableFrames === 5) resolve(true)
-            else requestAnimationFrame(check)
-          }
-
-          requestAnimationFrame(check)
-        })
-    )
+    await waitForCanvasViewToSettle(this.page)
   }
 
   async getNodeTitleHeight(): Promise<number> {

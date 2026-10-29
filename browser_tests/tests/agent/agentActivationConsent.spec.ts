@@ -11,7 +11,8 @@ test.describe(
     test.use({
       agentConsentAccepted: false,
       initialLocalStorage: {
-        'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal': 'true',
+        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
+          'true',
         'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal': 'true'
       }
     })
@@ -89,10 +90,62 @@ test.describe(
 )
 
 test.describe(
-  'Fresh signed-in Agent consent and tour sequencing',
+  'Fresh signed-in Agent: the launch card, then the coach',
   { tag: ['@cloud', '@ui'] },
   () => {
     test.use({ agentConsentAccepted: false })
+
+    test('shows the card over the opened panel and runs the coach after Agree', async ({
+      agentPanel,
+      agentConsentWrites,
+      comfyPage,
+      postedMessages
+    }) => {
+      const page = comfyPage.page
+      const consent = page.getByRole('dialog', {
+        name: enMessages.agent.consent.title
+      })
+      const coach = page.getByRole('dialog', {
+        name: enMessages.agent.coachTitle
+      })
+
+      await test.step('The launch card appears over Agent', async () => {
+        await expect(agentPanel.root).toBeVisible()
+        await expect(consent).toBeVisible()
+        await expect(coach).toHaveCount(0)
+      })
+
+      await test.step('Agree saves consent and starts the coach', async () => {
+        await consent
+          .getByRole('button', { name: enMessages.agent.consent.accept })
+          .click()
+        await expect(consent).toHaveCount(0)
+        await expect(coach).toBeVisible()
+        expect(agentConsentWrites).toEqual([true])
+      })
+
+      await test.step('Skipping the coach permits one send without another consent card', async () => {
+        await coach.getByRole('button', { name: enMessages.agent.skip }).click()
+        await agentPanel.selectWorkflow()
+        await agentPanel.sendMessage('Build a product photo workflow')
+        await expect.poll(() => postedMessages).toHaveLength(1)
+        await expect(consent).toHaveCount(0)
+      })
+    })
+  }
+)
+
+test.describe(
+  'Signed-in Agent who skipped the launch card: consent and tour sequencing on Send',
+  { tag: ['@cloud', '@ui'] },
+  () => {
+    test.use({
+      agentConsentAccepted: false,
+      initialLocalStorage: {
+        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
+          'true'
+      }
+    })
 
     for (const tourAction of ['finish', 'skip'] as const) {
       test(`resumes one held send after the user ${tourAction === 'finish' ? 'finishes' : 'skips'} the tour`, async ({
@@ -157,6 +210,47 @@ test.describe(
       })
     }
 
+    test('shows the hold notice and keeps the draft when the tour is left untouched', async ({
+      agentPanel,
+      comfyPage,
+      postedMessages
+    }) => {
+      const page = comfyPage.page
+      const consent = page.getByRole('dialog', {
+        name: enMessages.agent.consent.title
+      })
+      const coach = page.getByRole('dialog', {
+        name: enMessages.agent.coachTitle
+      })
+      const draft = 'Build a product photo workflow'
+
+      await agentPanel.selectWorkflow()
+      await agentPanel.composer.fill(draft)
+      await agentPanel.sendButton.click()
+      await consent
+        .getByRole('button', { name: enMessages.agent.consent.accept })
+        .click()
+
+      await expect(coach).toBeVisible()
+      await expect(coach.getByTestId('agent-coach-hold-notice')).toHaveText(
+        enMessages.agent.coachHoldNotice
+      )
+      expect(postedMessages).toHaveLength(0)
+
+      await agentPanel.openButton.dispatchEvent('click')
+      await expect(agentPanel.root).toHaveCount(0)
+      await agentPanel.openButton.click()
+      await expect(agentPanel.root).toBeVisible()
+      await expect(agentPanel.composer).toHaveText(draft)
+      expect(postedMessages).toHaveLength(0)
+
+      await coach.getByRole('button', { name: enMessages.agent.skip }).click()
+      await expect(coach).toHaveCount(0)
+      await agentPanel.sendButton.click()
+      await expect(consent).toHaveCount(0)
+      await expect.poll(() => postedMessages).toHaveLength(1)
+    })
+
     test('resumes the held send when App Mode defers the active tour', async ({
       agentPanel,
       comfyPage,
@@ -214,6 +308,9 @@ test.describe(
         content: 'Build a product photo workflow',
         client_message_id: expect.stringMatching(
           /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        ),
+        client_version: expect.stringMatching(
+          /^(?=.{1,64}$)[A-Za-z0-9.-]+\+([0-9a-f]{40}|unknown)$/
         )
       })
     })
@@ -228,7 +325,8 @@ test.describe(
       agentConsentAccepted: false,
       agentPanelInitiallyOpen: true,
       initialLocalStorage: {
-        'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal': 'true'
+        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
+          'true'
       }
     })
 

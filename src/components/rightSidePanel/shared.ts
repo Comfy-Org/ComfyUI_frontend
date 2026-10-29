@@ -3,11 +3,11 @@ import { computed, toValue } from 'vue'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { NodeId } from '@/types/nodeId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
@@ -51,7 +51,10 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
       index,
       searchableLabel: item.widget.label?.toLowerCase() || '',
       searchableName: item.widget.name.toLowerCase(),
-      searchableType: item.widget.type.toLowerCase(),
+      searchableType:
+        typeof item.widget.type === 'string'
+          ? item.widget.type.toLowerCase()
+          : '',
       searchableValue: item.widget.value?.toString().toLowerCase() || ''
     }
     return searchableItem

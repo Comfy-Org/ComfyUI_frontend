@@ -1,4 +1,4 @@
-import type { IVideoEditWidget } from '../types/widgets'
+import type { IVideoEditWidget } from '@comfyorg/graph-model/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { WidgetEventOptions } from './BaseWidget'
 
