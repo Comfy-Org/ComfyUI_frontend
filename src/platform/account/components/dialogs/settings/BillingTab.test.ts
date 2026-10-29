@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -11,6 +11,7 @@ import type {
   SubscriptionState
 } from '@comfyorg/ingest-types'
 
+import { i18n } from '@/i18n'
 import enMessages from '@/locales/en/main.json'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
@@ -30,6 +31,7 @@ import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { activateBillingScope } from '@/platform/billing/__tests__/activateBillingScope'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
+import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 
 import BillingTab from '@/platform/account/components/dialogs/settings/BillingTab.vue'
 
@@ -52,6 +54,9 @@ vi.mock(import('@/platform/billing/composables/useBillingUI'))
 vi.mock(import('@/platform/billing/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(
+  import('@/platform/billing/subscription/composables/useSubscriptionActions')
+)
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string, correlationId?: string) =>
     `https://platform.test${path}?workspace=ws_1&correlation_id=${correlationId}`
@@ -102,8 +107,14 @@ function correlationIdOf(link: HTMLElement) {
   )
 }
 
+const handleMessageSupport = vi.fn(async () => {})
+
 function arrange(scenario: Scenario = {}) {
   activateBillingScope('actor-a', 'workspace-a')
+  vi.mocked(useMessageSupport).mockReturnValue({
+    isLoadingSupport: ref(false),
+    handleMessageSupport
+  })
   const initialize = vi.fn(async () => {})
   const refresh = vi.fn(async () => {})
   const fetchStatus = vi.fn(async () => {})
@@ -635,6 +646,56 @@ describe('BillingTab', () => {
       )
     }
   )
+
+  it('tells an owner the rest of billing lives on the linked platform.comfy.org', () => {
+    arrange({ canManageBilling: true })
+
+    const card = screen.getByTestId('billing-handoff-card')
+    expect(
+      within(card).getByText(/Manage everything else about billing on/)
+    ).toBeInTheDocument()
+    const platformLink = within(card).getByRole('link', {
+      name: 'platform.comfy.org'
+    })
+    expect(platformLink).toHaveClass('underline')
+    expect(platformLink).toHaveAttribute(
+      'href',
+      expect.stringContaining('https://platform.test/profile/billing?')
+    )
+  })
+
+  it('gives a member no platform.comfy.org line or link', () => {
+    arrange({ canManageBilling: false })
+
+    const card = screen.getByTestId('billing-handoff-card')
+    expect(
+      within(card).queryByText(/Manage everything else about billing on/)
+    ).not.toBeInTheDocument()
+    expect(
+      within(card).queryByRole('link', { name: 'platform.comfy.org' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('links Partner Nodes pricing to the docs and messages support from the footer', async () => {
+    const previousLocale = i18n.global.locale.value
+    i18n.global.locale.value = 'en'
+    onTestFinished(() => {
+      i18n.global.locale.value = previousLocale
+    })
+    arrange()
+    const footer = screen.getByTestId('billing-footer')
+
+    expect(
+      within(footer).getByRole('link', { name: 'Partner Nodes pricing' })
+    ).toHaveAttribute(
+      'href',
+      'https://docs.comfy.org/tutorials/partner-nodes/pricing'
+    )
+    await userEvent.click(
+      within(footer).getByRole('button', { name: 'Message support' })
+    )
+    expect(handleMessageSupport).toHaveBeenCalledOnce()
+  })
 
   it.for([
     {

@@ -81,6 +81,7 @@
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useLongDate } from '@/platform/billing/composables/useLongDate'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -115,7 +116,8 @@ const { section } = defineProps<{
   section?: 'planCredits' | 'members' | 'allowlist' | 'billing'
 }>()
 
-const { t, d } = useI18n()
+const { t } = useI18n()
+const { longDate } = useLongDate()
 const { renewalDate, subscription } = useBillingContext()
 const { permissions, canReactivatePlan, workspaceType } = useBillingUI()
 const { canTopUp, topUpDenial, canManageBilling, runDeniedPaymentPastDue } =
@@ -148,11 +150,6 @@ const canManage = computed(() => permissions.value.canManageSubscription)
 const isEnterprisePlan = computed(
   () => subscription.value?.tier === 'ENTERPRISE'
 )
-function longDate(raw: string | null | undefined): string {
-  const date = raw ? new Date(raw) : null
-  if (!date || Number.isNaN(date.getTime())) return ''
-  return d(date, { year: 'numeric', month: 'long', day: 'numeric' })
-}
 const cycleResetDate = computed(() => longDate(renewalDate.value))
 const planEndDate = computed(() => longDate(subscription.value?.endDate))
 const planName = computed(() => formatTierName(subscription.value?.tier, false))
