@@ -67,6 +67,7 @@
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useLongDate } from '@/platform/billing/composables/useLongDate'
 
 import Button from '@comfyorg/design-system/button/Button'
 import BillingAutoTopUpBanner from '@/platform/billing/components/billingTab/BillingAutoTopUpBanner.vue'
@@ -105,7 +106,8 @@ const { permissions } = useBillingUI()
 const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
-const { t, d, locale } = useI18n()
+const { t, locale } = useI18n()
+const { longDate } = useLongDate()
 
 const outOfCreditsDismissed = ref(false)
 const lowCreditsDismissed = ref(false)
@@ -166,12 +168,6 @@ watch(availableCents, (cents, previous) => {
 })
 
 const audience = computed(() => (isTeamPlan.value ? 'team' : 'personal'))
-
-function longDate(raw: string | null | undefined): string {
-  const date = raw ? new Date(raw) : null
-  if (!date || Number.isNaN(date.getTime())) return ''
-  return d(date, { year: 'numeric', month: 'long', day: 'numeric' })
-}
 
 const cycleResetDate = computed(() =>
   longDate(billing.renewalDate?.value ?? null)

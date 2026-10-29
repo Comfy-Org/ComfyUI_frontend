@@ -24,6 +24,8 @@ export type CreditsCardState =
       planDate: { kind: 'refills' | 'availableUntil'; date: string | null }
     }
 
+export type PlanCreditsState = Extract<CreditsCardState, { kind: 'plan' }>
+
 /** Maps the served balance and plan state onto the Credits card. */
 export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
   const { balance } = facts
