@@ -151,17 +151,24 @@ function resetAndRestoreTracker(
   return true
 }
 
-function restoreSavedBaseline(
+async function keepingSavedBaseline<T>(
   workflow: ComfyWorkflow,
-  savedBaseline: ComfyWorkflowJSON
-): void {
-  const tracker = workflow.changeTracker
-  if (!tracker) return
-  tracker.initialState = savedBaseline
-  workflow.isModified = !ChangeTracker.graphEqual(
-    savedBaseline,
-    tracker.activeState
-  )
+  load: () => Promise<T>
+): Promise<T> {
+  const savedState = workflow.changeTracker?.initialState
+  const savedContent = workflow.content
+  try {
+    return await load()
+  } finally {
+    const tracker = workflow.changeTracker
+    if (tracker && savedState && workflow.content === savedContent) {
+      tracker.initialState = savedState
+      workflow.isModified = !ChangeTracker.graphEqual(
+        savedState,
+        tracker.activeState
+      )
+    }
+  }
 }
 
 /** @internal Test-only: clears the module-level load queue between tests. */
@@ -530,15 +537,8 @@ export const useWorkflowService = () => {
         }
 
         workflow.changeTracker?.prepareForSave()
-        const savedBaseline =
-          options.keepSavedBaseline && workflow.isModified
-            ? {
-                state: workflow.changeTracker?.initialState,
-                content: workflow.content
-              }
-            : undefined
-        const loaded = await useApp()
-          .loadGraphData(
+        const load = () =>
+          useApp().loadGraphData(
             toRaw(workflow.activeState) as ComfyWorkflowJSON,
             /* clean=*/ true,
             /* restore_view=*/ true,
@@ -550,13 +550,10 @@ export const useWorkflowService = () => {
               workflowNavigationId: navigationIntentId
             }
           )
-          .finally(() => {
-            if (
-              savedBaseline?.state &&
-              workflow.content === savedBaseline.content
-            )
-              restoreSavedBaseline(workflow, savedBaseline.state)
-          })
+        const loaded =
+          options.keepSavedBaseline && workflow.isModified
+            ? await keepingSavedBaseline(workflow, load)
+            : await load()
         if (loaded === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           await restoreRetainedWorkflow(workflow)
