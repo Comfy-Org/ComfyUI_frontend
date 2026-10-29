@@ -118,7 +118,6 @@ function createSlotMetadata(
 ): WidgetSlotMetadata {
   const originNode = link ? graphRef?.getNodeById(link.originNodeId) : null
   return {
-    alwaysVisible: input.alwaysVisible,
     index,
     linked: link !== undefined,
     originNodeId: link?.originNodeId,
@@ -126,6 +125,7 @@ function createSlotMetadata(
       ? originNode?.outputs[link.originSlot]?.name
       : undefined,
     promoted: input.widgetId !== undefined,
+    shape: input.shape,
     type: String(input.type)
   }
 }

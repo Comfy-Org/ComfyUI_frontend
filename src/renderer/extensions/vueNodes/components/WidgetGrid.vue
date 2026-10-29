@@ -57,6 +57,7 @@
                 name: row.widget.simplified.name,
                 label: row.widget.simplified.label,
                 type: row.widget.slotMetadata.type,
+                shape: row.widget.slotMetadata.shape,
                 boundingRect: [0, 0, 0, 0]
               }"
               :node-id
@@ -207,7 +208,7 @@ const renderedRows = computed(() =>
             ? 'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100'
             : 'col-span-full',
           (widget.slotMetadata?.linked ||
-            widget.slotMetadata?.alwaysVisible ||
+            widget.simplified.type === 'shim' ||
             highlighted) &&
             'opacity-100'
         ),
