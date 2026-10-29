@@ -258,7 +258,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     slot: number
   ): { name: string; resolved: ResolvedInput }[] | undefined {
     const origin = this._listOrigin(slot)
-    const names = origin === undefined ? undefined : this.node.getListSlotNames?.(slot)
+    const names =
+      origin === undefined ? undefined : this.node.getListSlotNames?.(slot)
     if (origin === undefined || !names) return
     const items = this._subgraphNodeDto()?.resolveListItems(origin) ?? []
     return items
@@ -278,7 +279,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     )
   }
 
-  /** A list item fed by a list from further out contributes all of its items. */
   private _resolveListItem(slot: number): ResolvedInput[] {
     const origin = this._listOrigin(slot)
     if (origin !== undefined)
@@ -287,7 +287,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     return resolved ? [resolved] : []
   }
 
-  /** The index of the enclosing subgraph's list input feeding `slot`, if any. */
   private _listOrigin(slot: number): number | undefined {
     const linkId = this.inputs.at(slot)?.linkId
     const link = linkId == null ? undefined : this.graph.getLink(linkId)

@@ -898,7 +898,6 @@ function applyAutogrowTemplate(
     addAutogrowGroup(i, groupName, node)
 }
 
-/** The list input of the enclosing subgraph feeding `slot` of `node`, if any. */
 function listSourceOf(node: LGraphNode, slot: number) {
   const { graph } = node
   const link = graph?.getLink(node.inputs.at(slot)?.link)
@@ -963,7 +962,6 @@ function replaceSlots(
 const singleTarget = (subgraph: Subgraph, input: SubgraphInput) =>
   input.linkIds.length === 1 ? innerTarget(subgraph, input) : undefined
 
-/** The inputs feeding consecutive slots of a group from `anchor`'s, if a list can take them over. */
 function listRunFrom(subgraph: Subgraph, anchor: SubgraphInput) {
   const [node, slot] = singleTarget(subgraph, anchor) ?? []
   const names = node?.getListSlotNames?.(slot!)

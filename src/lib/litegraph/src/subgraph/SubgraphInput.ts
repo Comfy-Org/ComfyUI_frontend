@@ -155,11 +155,10 @@ export class SubgraphInput extends SubgraphSlot {
     }
   }
 
-  /** A list feeds one dynamic input, with nothing connected after it. */
   private _refusesList(node: LGraphNode, slot: number): boolean {
     if (!this.list) return false
-    // A subgraph node's input may take a list while it is being made into one
     return (
+      // A subgraph node's input may take a list while it is being made into one
       !!this.linkIds.length ||
       !(node.isSubgraphNode() || listableNames(node, slot))
     )
