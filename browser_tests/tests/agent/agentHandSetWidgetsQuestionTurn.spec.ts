@@ -368,8 +368,7 @@ test.describe(
 
         await test.step('The user sets cfg and steps by hand while offline', async () => {
           hostSocket.pauseSubscribes(WORKFLOW_ID)
-          hostSocket.holdConnections()
-          await hostSocket.disconnect()
+          await hostSocket.beginAgentOutage()
           await expect
             .poll(() => hostSocket.refusedConnectionCount(), {
               timeout: 30_000
@@ -380,7 +379,7 @@ test.describe(
         })
 
         await test.step('The socket reconnects but the document has not caught up', async () => {
-          hostSocket.releaseConnections()
+          hostSocket.endAgentOutage()
           await expect
             .poll(() => hostSocket.connectionCount(), { timeout: 30_000 })
             .toBeGreaterThan(connections)

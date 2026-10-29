@@ -145,11 +145,11 @@ export class AgentFollowerHostSocket {
   private refusedSubscribes = 0
 
   private socket: WebSocketRoute | null = null
+  private agentProcessDown = false
+  private refusedConnections = 0
   private comfySocket: WebSocketRoute | null = null
   private comfyConnections = 0
   private connections = 0
-  private connectionsHeld = false
-  private refusedConnections = 0
   private unansweredHumanBatches = 0
   private readonly subscribes = new Map<string, number>()
   private subscribeAnswer = (stateVector: string): HostFrame[] => [
@@ -199,23 +199,6 @@ export class AgentFollowerHostSocket {
     this.answerSubscribe(workflowId, stateVector)
   }
 
-  /**
-   * Closes every new agent socket until {@link releaseConnections}, so the
-   * page stays offline across its reconnect attempts.
-   */
-  holdConnections(): void {
-    this.connectionsHeld = true
-  }
-
-  releaseConnections(): void {
-    this.connectionsHeld = false
-  }
-
-  /** Agent socket attempts closed by {@link holdConnections}. */
-  refusedConnectionCount(): number {
-    return this.refusedConnections
-  }
-
   /** Pins the `status` sid; `''` models a socket with no id. */
   reportSocketSid(sid: string): this {
     this.fixedSid = sid
@@ -248,7 +231,7 @@ export class AgentFollowerHostSocket {
       )
     })
     await this.page.routeWebSocket(AGENT_SOCKET_URL, (socket) => {
-      if (this.connectionsHeld) {
+      if (this.agentProcessDown) {
         this.refusedConnections += 1
         void socket.close()
         return
@@ -257,6 +240,24 @@ export class AgentFollowerHostSocket {
       this.socket = socket
       socket.onMessage((raw) => this.onClientFrame(raw))
     })
+  }
+
+  /** Refuses reconnect attempts until the outage ends. */
+  async beginAgentOutage(): Promise<void> {
+    this.agentProcessDown = true
+    const socket = this.socket
+    this.socket = null
+    await socket?.close()
+  }
+
+  /** Allows the next reconnect attempt. */
+  endAgentOutage(): void {
+    this.agentProcessDown = false
+  }
+
+  /** Returns the number of refused reconnect attempts. */
+  refusedConnectionCount(): number {
+    return this.refusedConnections
   }
 
   send(frame: AgentWsEvent | AgentAskServerFrame | HostFrame): void {
