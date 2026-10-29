@@ -56,6 +56,12 @@ defineExpose({
 const titleId = useId()
 const bodyId = useId()
 const holdNoticeId = useId()
+const describedBy = computed(() =>
+  holdNotice ? `${bodyId} ${holdNoticeId}` : bodyId
+)
+const advanceLabelKey = computed(() =>
+  isLast.value ? 'onboardingCoachmarks.done' : 'g.next'
+)
 const target = ref<HTMLElement | null>(null)
 const visible = computed(() => active.value && target.value !== null)
 // Let surfaces like the What's New popup defer while a coach card is on
@@ -267,7 +273,7 @@ useEventListener(
           role="dialog"
           aria-modal="true"
           :aria-labelledby="titleId"
-          :aria-describedby="holdNotice ? `${bodyId} ${holdNoticeId}` : bodyId"
+          :aria-describedby="describedBy"
           tabindex="-1"
           :style="{
             ...floatingStyles,
@@ -328,7 +334,7 @@ useEventListener(
                 >{{ $t('agent.skip') }}</Button
               >
               <Button variant="inverted" size="md" @click="onNext">{{
-                $t(isLast ? 'onboardingCoachmarks.done' : 'g.next')
+                $t(advanceLabelKey)
               }}</Button>
             </div>
           </div>
