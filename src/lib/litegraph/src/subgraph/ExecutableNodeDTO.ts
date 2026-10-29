@@ -54,7 +54,18 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
   /** The graph that this node is a part of. */
   readonly graph: LGraph | Subgraph
 
-  inputs: { linkId: LinkId | null; name: string; type: ISlotType }[]
+  /**
+   * The node's inputs, followed by the inputs a subgraph node owns under the
+   * subgraph input one of them is linked from (e.g. autogrow children). Those
+   * take the inner input's name and resolve through `ownerSlot` on the subgraph
+   * node's DTO.
+   */
+  inputs: {
+    linkId: LinkId | null
+    name: string
+    type: ISlotType
+    ownerSlot?: number
+  }[]
 
   /** Backing field for {@link id}. */
   private _id: ExecutionId
@@ -125,11 +136,56 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       name: x.name,
       type: x.type
     }))
+    this.inputs.push(...this._ownedInputs())
 
     // Only create a wrapper if the node has an applyToGraph method
     if (this.node.applyToGraph) {
       this.applyToGraph = (...args) => this.node.applyToGraph?.(...args)
     }
+  }
+
+  /** The subgraph node's input bound to the subgraph input at `subgraphSlot`. */
+  private _subgraphNodeSlot(subgraphSlot: number): number {
+    const { subgraphNode } = this
+    if (!subgraphNode) return -1
+    const subgraphInput = subgraphNode.subgraph.inputs.at(subgraphSlot)
+    return subgraphNode.inputs.findIndex(
+      (input) => input._subgraphSlot === subgraphInput
+    )
+  }
+
+  private _subgraphNodeDto(): ExecutableLGraphNode | undefined {
+    return this.nodesByExecutionId.get(this.subgraphNodePath.join(':'))
+  }
+
+  private _ownedInputs(): ExecutableNodeDTO['inputs'] {
+    const { subgraphNode } = this
+    const subgraphNodeDto = this._subgraphNodeDto()
+    if (!subgraphNode || !subgraphNodeDto) return []
+
+    return this.inputs.flatMap((input) => {
+      const link =
+        input.linkId == null ? null : this.graph.getLink(input.linkId)
+      if (!link?.originIsIoNode) return []
+      const owner = subgraphNode.inputs.at(
+        this._subgraphNodeSlot(link.origin_slot)
+      )
+      if (!owner) return []
+      const prefix = `${owner.name}.`
+      return subgraphNodeDto.inputs.flatMap((ownerInput, ownerSlot) =>
+        ownerInput.name.startsWith(prefix) &&
+        !subgraphNode.inputs[ownerSlot]?._subgraphSlot
+          ? [
+              {
+                linkId: null,
+                name: input.name + ownerInput.name.slice(owner.name.length),
+                type: ownerInput.type,
+                ownerSlot
+              }
+            ]
+          : []
+      )
+    })
   }
 
   /** Returns either the DTO itself, or the DTOs of the inner nodes of the subgraph. */
@@ -172,6 +228,13 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         `No input found for flattened id [${this.id}] slot [${slot}]`
       )
 
+    if (input.ownerSlot !== undefined)
+      return this._subgraphNodeDto()?.resolveInput(
+        input.ownerSlot,
+        visited,
+        type
+      )
+
     // Nothing connected
     if (input.linkId == null) return
 
@@ -185,7 +248,11 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
     // Link goes up and out of this subgraph
     if (subgraphNode && link.originIsIoNode) {
-      const subgraphNodeInput = subgraphNode.inputs.at(link.origin_slot)
+      const subgraphNodeSlot = this._subgraphNodeSlot(link.origin_slot)
+      const subgraphNodeInput =
+        subgraphNodeSlot === -1
+          ? undefined
+          : subgraphNode.inputs[subgraphNodeSlot]
       if (!subgraphNodeInput)
         throw new SlotIndexError(
           `No input found for slot [${link.origin_slot}] ${input.name}`
@@ -197,7 +264,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         )
       // Nothing connected
       const linkId =
-        inputLinkId(subgraphNode.graph, subgraphNode.id, link.origin_slot) ??
+        inputLinkId(subgraphNode.graph, subgraphNode.id, subgraphNodeSlot) ??
         null
       if (linkId === null) {
         const id = subgraphNodeInput.widgetId

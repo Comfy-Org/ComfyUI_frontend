@@ -84,9 +84,31 @@ function syncNodeWidgetOrder(node: LGraphNode) {
 }
 
 function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
-  const { widget } = input
-  if (!widget || !node.widgets?.some((w) => w.name === widget.name))
-    addShimWidget(node, input)
+  const name = input.widget?.name ?? input.name
+  //A recreated input rebinds to the widget its predecessor left behind
+  const existing = node.widgets?.find((w) => w.name === name)
+  if (existing) {
+    input.widget ??= { name }
+    if (existing.type === 'shim') input.alwaysVisible = true
+    return
+  }
+  addShimWidget(node, input)
+
+  //Keep the group's rows contiguous behind its group widget. Saved widgets
+  //are never moved: that would reorder positional widgets_values.
+  const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
+  const widgets = node.widgets
+  const shim = widgets?.pop()
+  if (!widgets || !shim) return
+  const lastGroupWidget = widgets.findLastIndex(
+    (w) => w.name === groupName || w.name.startsWith(`${groupName}.`)
+  )
+  widgets.splice(
+    lastGroupWidget === -1 ? widgets.length : lastGroupWidget + 1,
+    0,
+    shim
+  )
+  syncNodeWidgetOrder(node)
 }
 
 function dynamicComboWidget(
@@ -486,21 +508,12 @@ function addAutogrowGroup(
     ...autogrowOrdinalToName(ordinal, input.name, groupName, node)
   }))
 
-  const startingWidgetCount = node.widgets.length
   const newInputs = namedSpecs.map((namedSpec) => {
     addNodeInput(node, namedSpec)
     const input = node.inputs.splice(node.inputs.length - 1, 1)[0]
     ensureWidgetForInput(node, input)
     return input
   })
-  //Keep the group's rows contiguous behind its group widget
-  const addedWidgets = node.widgets.splice(startingWidgetCount)
-  const lastGroupWidget = node.widgets.findLastIndex(
-    (w) => w.name === groupName || w.name.startsWith(`${groupName}.`)
-  )
-  node.widgets.splice(lastGroupWidget + 1, 0, ...addedWidgets)
-  syncNodeWidgetOrder(node)
-
   for (const newInput of newInputs) {
     for (const existingInput of remove(
       node.inputs,
