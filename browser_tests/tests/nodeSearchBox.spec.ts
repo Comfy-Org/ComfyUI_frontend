@@ -36,9 +36,29 @@ test.describe('Node search box', { tag: '@node' }, () => {
     }
   })
 
-  test(`Can trigger on empty canvas double click`, async ({ comfyPage }) => {
+  test('opens centered on the viewport on empty canvas double click', async ({
+    comfyPage
+  }) => {
     await comfyPage.canvasOps.doubleClick()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
+    await comfyPage.searchBox.typeQuery('KSampler')
+    await expect(comfyPage.searchBox.resultOptions.first()).toBeVisible()
+
+    const dialog = comfyPage.page.getByRole('dialog')
+    const preview = comfyPage.page.getByTestId('node-preview')
+    for (const width of [1280, 1920]) {
+      await test.step(`center search at ${width}px without clipping the preview`, async () => {
+        await comfyPage.page.setViewportSize({ width, height: 720 })
+        await expect(async () => {
+          const box = await dialog.boundingBox()
+          if (!box) throw new Error('Search dialog is not laid out')
+          expect(box.x + box.width / 2).toBeCloseTo(width / 2, 0)
+          expect(box.y + box.height / 2).toBeCloseTo(360, 0)
+        }).toPass({ timeout: 5000 })
+        if (width === 1280) await expect(preview).toBeHidden()
+        else await expect(preview).toBeInViewport({ ratio: 1 })
+      })
+    }
   })
 
   test(`Can trigger on group body double click`, async ({ comfyPage }) => {
