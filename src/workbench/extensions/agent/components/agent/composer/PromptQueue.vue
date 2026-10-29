@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 
-export type PromptQueueRowStatus = 'running' | 'waiting'
+type PromptQueueRowStatus = 'running' | 'waiting'
 
 export type PromptQueueRow = {
   id: string
