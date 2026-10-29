@@ -178,6 +178,38 @@ describe('requestSignIn', () => {
     })
   })
 
+  it('shares one popup and one code exchange between concurrent sign-ins', async () => {
+    const { bridge, env, storage, popup, post, tokens } = setup()
+    tokens.write({
+      accessToken: WS1_TOKEN,
+      refreshToken: 'refresh-1',
+      expiresAt: NOW + 3_600_000,
+      scope: 'comfy-cloud:user:read'
+    })
+    const fromButton = bridge.requestSignIn()
+    const fromSwitch = bridge.switchWorkspace?.('ws-2')
+    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+    const { state } = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
+
+    post({
+      origin: ISSUER,
+      source: popup,
+      data: {
+        type: 'comfy-local-web-sign-in',
+        search: `?code=code-1&state=${encodeURIComponent(state)}`
+      }
+    })
+
+    const [buttonState, switchState] = await Promise.all([
+      fromButton,
+      fromSwitch
+    ])
+    expect(buttonState).toEqual(switchState)
+    expect(env.openPopup).toHaveBeenCalledOnce()
+    expect(env.fetchImpl).toHaveBeenCalledOnce()
+    expect(env.reportSignInFailure).not.toHaveBeenCalled()
+  })
+
   it.for([
     { case: 'another origin', origin: 'https://evil.example.test', own: true },
     { case: 'another window', origin: ISSUER, own: false }

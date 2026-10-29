@@ -100,6 +100,7 @@ export function createLocalWebAuthBridge(
 ): LocalWebAuthBridge {
   const listeners = new Set<(state: DesktopHostAuthState) => void>()
   let refreshing: Promise<OAuthTokens | undefined> | undefined
+  let signingIn: Promise<DesktopHostAuthState> | undefined
 
   const tokenOptions = () => ({
     issuer: env.issuer,
@@ -336,8 +337,8 @@ export function createLocalWebAuthBridge(
     }
   }
 
-  async function requestSignIn(
-    stillWanted: () => boolean = () => true
+  async function signInThroughPopup(
+    stillWanted: () => boolean
   ): Promise<DesktopHostAuthState> {
     const url = await preparedAuthorizeUrl(stillWanted)
     if (!url) return currentState()
@@ -349,6 +350,15 @@ export function createLocalWebAuthBridge(
     const search = await callbackFrom(popup)
     if (search !== undefined) await finishPopupSignIn(search)
     return currentState()
+  }
+
+  function requestSignIn(
+    stillWanted: () => boolean = () => true
+  ): Promise<DesktopHostAuthState> {
+    signingIn ??= signInThroughPopup(stillWanted).finally(() => {
+      signingIn = undefined
+    })
+    return signingIn
   }
 
   return {
