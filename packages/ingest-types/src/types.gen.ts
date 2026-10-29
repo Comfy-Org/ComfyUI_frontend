@@ -106,6 +106,10 @@ export type WorkspaceDeployment = {
    */
   build_name?: string
   /**
+   * Whether starting the deployment (POST /api/workspaces/{id}/deployments/{deployment_id}/start) brings it back: true while it is stopped or failed, the statuses comfy-deploy's start re-runs; for any other status the start answers it unchanged. Answers "may the switcher offer Start on this row", for any member. It does not say the start will be taken: credit, the concurrency cap and the deployment's own config are the start route's refusals.
+   */
+  can_start: boolean
+  /**
    * When the deployment was created.
    */
   created_at: string
@@ -126,9 +130,18 @@ export type WorkspaceDeployment = {
    */
   release_version?: number
   /**
-   * The deployment's status (ready, provisioning, stopped, ...). Any of them may be picked; a job is taken only while it is ready.
+   * The deployment's lifecycle status as comfy-deploy reports it; a job is taken only while it is ready.
    */
-  status: string
+  status:
+    | 'queued'
+    | 'provisioning'
+    | 'starting'
+    | 'ready'
+    | 'unhealthy'
+    | 'stopping'
+    | 'stop_failed'
+    | 'stopped'
+    | 'failed'
 }
 
 /**
@@ -531,9 +544,9 @@ export type UsageTimeSeries = {
   groups: Array<string>
   not_available?: UsageNotAvailable
   /**
-   * `ledger` when `groups` are the usage ledger's keys, which the `filter_*` parameters accept; absent for an invoice-served answer.
+   * `ledger` when `groups` are the usage ledger's keys, which the `filter_*` parameters accept. `invoice` when a range the ledger does not hold was read from Metronome's invoices narrowed by `filter_product_line` (alone, on `product_line` or `model`): its groups are the invoices' models and accept no further filter. Absent for any other invoice-served answer.
    */
-  served_from?: 'ledger'
+  served_from?: 'ledger' | 'invoice'
   starting_on: string
   summary: UsageSummary
 }
@@ -607,7 +620,7 @@ export type UsageGroupLabel = {
    */
   deployment_name?: string
   /**
-   * Human-readable name for the key: a person's name, a product line's label, a model's name (`Not specified` for `unspecified`), or the key's owner and prefix.
+   * Human-readable name for the key: a person's name, a product line's label, a model's name (`Not specified` for `unspecified`: charges that name no model, such as Agent rounds, partner calls that send none, and Comfy Cloud GPU time), or the key's owner and prefix.
    */
   display_name?: string
   /**
@@ -650,6 +663,14 @@ export type UsageGroupLabel = {
    * Only for `source`: the API key's owner when the key is known to this workspace, or the member who deployed a deployment when comfy-deploy names it.
    */
   owner_user_id?: string
+  /**
+   * Only for `model` on a ledger-served answer: the partner the model's charges came through, as the partner catalog's provider id (the id workspace provider policy uses). Absent for a model whose charges name no known partner, a deployment and `unspecified`.
+   */
+  provider?: string
+  /**
+   * With `provider`: the partner's name, e.g. `Black Forest Labs`. Render beside `display_name`; `display_name` stays the model's own name.
+   */
+  provider_display_name?: string
 }
 
 export type UsageBucket = {
@@ -1632,6 +1653,22 @@ export type SavedPaymentMethod = {
    * Card brand. Present only for card payment methods.
    */
   brand?: string
+  /**
+   * Display-only card expiry month. Returned with exp_year only when both are known and valid; omitted otherwise, including non-card methods.
+   */
+  exp_month?: number
+  /**
+   * Display-only four-digit card expiry year. Returned with exp_month only when both are known and valid; omitted otherwise, including non-card methods.
+   */
+  exp_year?: number
+  /**
+   * Whether the card has expired, at 00:00 UTC on the first day after its expiry month. Omitted when expiry is unknown or invalid, including non-card methods. A display warning, not payment eligibility.
+   */
+  expired?: boolean
+  /**
+   * Whether the card expires within the next 30 days, including already expired cards, using the UTC expiry-month boundary. Omitted when expiry is unknown or invalid, including non-card methods. A display warning, not payment eligibility.
+   */
+  expiring_soon?: boolean
   id: string
   /**
    * Exactly one item is the default when the returned list is non-empty.
@@ -2513,6 +2550,21 @@ export type PickWorkspaceDeploymentRequest = {
    * Developer-platform deployment id: one of this workspace's, not deleted. The error message names which check failed.
    */
   deployment_id: string
+}
+
+/**
+ * Configured credit allowance of the current plan, not remaining balance, an invoice or proof of live provider grants. Amount includes credits and period; none is a proven configured zero. Native-empty or incoherent Enterprise configuration remains unknown, never none. Missing data and unresolved, unsupported, ended or activating plans remain unknown. Unknown or missing means unavailable; clients must not render zero. Does not change eligibility.
+ */
+export type PeriodCreditGrant = {
+  /**
+   * Configured whole display credits. Present only for amount.
+   */
+  credits?: number
+  /**
+   * Grant cadence, which may differ from Enterprise invoice cadence. Present only for amount.
+   */
+  period?: SubscriptionDuration
+  state: 'amount' | 'none' | 'unknown'
 }
 
 /**
@@ -3499,6 +3551,32 @@ export type JobOutputAsset = {
 }
 
 /**
+ * Where one executed node ran and where its output is shown, as ComfyUI
+ * records it in the history `meta`. Live `executed` messages carry the
+ * same `display_node`.
+ *
+ */
+export type JobExecutionMetaEntry = {
+  /**
+   * Canvas node id that shows this output
+   */
+  display_node?: string
+  /**
+   * Executed node id (the `outputs` key), e.g. `15.0.0.3` for an expanded node
+   */
+  node_id?: string
+  /**
+   * Id of the node that expanded this one, or null for a node that was not expanded
+   */
+  parent_node?: string | null
+  /**
+   * Top-level workflow node this node was expanded from (its own id when not expanded)
+   */
+  real_node_id?: string
+  [key: string]: unknown
+}
+
+/**
  * Full job details including workflow and outputs
  */
 export type JobDetailResponse = {
@@ -3519,10 +3597,15 @@ export type JobDetailResponse = {
    */
   execution_error?: ExecutionError
   /**
-   * Node-level execution metadata (only for terminal states)
+   * Node-level execution metadata (only for terminal states), keyed by
+   * the executed node id, the same keys as `outputs`. Each entry says
+   * which canvas node shows that node's output, which matters for nodes
+   * that ComfyUI expands at run time (their executed id, such as
+   * `15.0.0.3`, is not on the canvas).
+   *
    */
   execution_meta?: {
-    [key: string]: unknown
+    [key: string]: JobExecutionMetaEntry
   }
   /**
    * Workflow execution start timestamp (Unix milliseconds, only present once execution has started)
@@ -3689,7 +3772,7 @@ export type JobAssetsResponse = {
  */
 export type InteractiveTopupRequest = {
   /**
-   * Nominal credit purchase in USD cents, excluding tax and discounts. Actual payment and credit grant are asynchronous.
+   * Nominal credit purchase in USD cents, excluding tax and discounts; at most `max_topup_cents` on GET /api/billing/balance. Actual payment and credit grant are asynchronous.
    */
   amount_cents: number
   /**
@@ -4835,7 +4918,7 @@ export type CreateTopupResponse = {
  */
 export type CreateTopupRequest = {
   /**
-   * Amount to charge and grant as credits (in cents). Minimum $5.00.
+   * Amount to charge and grant as credits (in cents). Minimum $5.00; maximum `max_topup_cents` on GET /api/billing/balance (400 INVALID_AMOUNT above it).
    */
   amount_cents: number
   /**
@@ -4894,9 +4977,7 @@ export type CreateTopupCheckoutResponse = {
 export type CreateTopupCheckoutRequest = {
   /**
    * Amount to charge in cents, before any promotion code the customer
-   * enters. Whole dollars only, from $5.00 to $16,000.00. The ceiling is
-   * a fixed business limit (not a Stripe technical constraint) on how
-   * much a single unauthenticated-approval session may sell. The
+   * enters. Whole dollars only, from $5.00 to `max_topup_cents` on GET /api/billing/balance. The
    * credits granted are derived server-side from this amount and
    * cannot be set by the caller.
    *
@@ -5416,6 +5497,10 @@ export type BillingStatusResponse = {
    */
   pending_billing_op_type?: 'subscription' | 'topup'
   /**
+   * Server-resolved configured period allowance. Missing on older servers means unknown, never none; clients must not infer it from tier.
+   */
+  period_credit_grant?: PeriodCreditGrant
+  /**
    * Plan identifier (e.g., standard-monthly, team-pro-annual)
    */
   plan_slug?: string
@@ -5506,6 +5591,18 @@ export type BillingOpStatusResponse = {
    *
    */
   amount_charged_cents?: number
+  /**
+   * Original server-owned deadline for this top-up's authentication wait.
+   * Present only while a pending top-up requires customer authentication
+   * and the caller may read its payment details. Historical or unknown
+   * deadlines, terminal and reconciliation states omit it. The server also
+   * omits expired deadlines using its own clock. Absence is not a payment
+   * outcome. Polling and
+   * retries never extend the deadline. At expiry the server begins its
+   * existing payment cleanup; this is not proof that a payment failed.
+   *
+   */
+  authentication_deadline?: string
   /**
    * State derived from the PaymentIntent attached to this operation's
    * exact stored Stripe invoice. Absent when the operation has no
@@ -5751,7 +5848,7 @@ export type BillingOpCancelResponse = {
  */
 export type BillingEventsResponse = {
   /**
-   * When this environment began recording the member and source behind every charge, the same instant as `attribution_since` on the usage time series. A charge created before it shows "Not recorded" for member and source: the record does not hold them. A charge at or after it with no member is genuinely unattributed, not unrecorded. Absent where no such start is configured, and on the admin history feed.
+   * When this environment began attributing every charge, the same instant as `attribution_since` on the usage time series. Charges from before it may still name their member and source (many carried them long before); the start is only the instant from which a charge naming no member is known to be unattributed, which each such event states itself with `unattributed`. Absent where no such start is configured, and on the admin history feed.
    */
   attribution_since?: string
   events: Array<BillingEvent>
@@ -5831,6 +5928,10 @@ export type BillingEvent = {
   params?: {
     [key: string]: unknown
   }
+  /**
+   * True for a charge made at or after the instant this environment began attributing every charge (`attribution_since`) that names no member: the system tried and could not say who it was. A charge names a member by any identity the `scope` filter matches it on. Absent on money and lifecycle events, on charges that name a member, on deployment charges (attributed to their deployment), on charges made before attribution began (by the charge's own time where recorded, else when it was written), where no start is configured, and on the admin history feed.
+   */
+  unattributed?: boolean
 }
 
 /**
@@ -6957,6 +7058,14 @@ export type BillingBalanceResponse = {
    */
   low_balance?: boolean
   /**
+   * The most one top-up from this API may charge, in cents. Absent when the workspace has no billing account yet.
+   */
+  max_topup_cents?: number
+  /**
+   * The whole credits `max_topup_cents` buys. Absent when `max_topup_cents` is.
+   */
+  max_topup_credits?: number
+  /**
    * Pending/unbilled charges from draft invoices. Cents of `currency`, the same value as `pending_charges_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
    */
   pending_charges_cents?: number
@@ -6977,7 +7086,7 @@ export type BillingBalanceResponse = {
    */
   prepaid_balance_micros?: number
   /**
-   * Amount in cents to prefill for a top-up when the effective balance is negative: covers the shortfall plus the minimum top-up, rounded up to a whole dollar, and never below the default amount. Null when the balance is zero or positive, or not authoritative.
+   * Amount in cents to prefill for a top-up when the effective balance is negative: covers the shortfall plus the minimum top-up, rounded up to a whole dollar, never below the default amount and never above max_topup_cents. Null when the balance is zero or positive, or not authoritative.
    */
   suggested_topup_amount_cents?: number | null
 }
@@ -7164,6 +7273,31 @@ export type AutoReloadCardExpiry = {
    * Four-digit expiry year.
    */
   year: number
+}
+
+/**
+ * Estimated automatic charge for the proposed settings.
+ */
+export type AutoReloadPreview = {
+  /**
+   * Price of charge_credits in cents; null when charge_credits is null.
+   */
+  charge_cents: number | null
+  /**
+   * Credits the charge buys; null when the balance is at or above the threshold.
+   */
+  charge_credits: number | null
+  /**
+   * Whether saving would start a charge at the next check.
+   */
+  charges_now: boolean
+  /**
+   * Why saving would not start a charge; null when charges_now is true.
+   */
+  not_charging_reason:
+    | 'above_threshold'
+    | 'monthly_budget'
+    | 'paused_by_decline'
 }
 
 export type AuthenticateResponse = {
@@ -9704,7 +9838,7 @@ export type CreateAssetErrors = {
    */
   500: ErrorResponse
   /**
-   * Upload buffer budget exhausted on this pod while buffering an image part; retry after the Retry-After seconds. `code` is `UPLOAD_BUDGET_EXHAUSTED`.
+   * Temporary upload unavailability. `PRIVATE_MODELS_UNAVAILABLE` means model-import eligibility could not be resolved; retry without inferring plan ineligibility. `UPLOAD_BUDGET_EXHAUSTED` means the image buffer budget is full; retry after the Retry-After seconds.
    */
   503: ErrorResponse
 }
@@ -10116,6 +10250,10 @@ export type CreateAssetDownloadErrors = {
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * Model-import eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
 }
 
 export type CreateAssetDownloadError =
@@ -10312,6 +10450,10 @@ export type CreateAssetFromHashErrors = {
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * Model-import eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
 }
 
 export type CreateAssetFromHashError =
@@ -11270,6 +11412,64 @@ export type PutBillingAutoReloadResponses = {
 
 export type PutBillingAutoReloadResponse =
   PutBillingAutoReloadResponses[keyof PutBillingAutoReloadResponses]
+
+export type GetBillingAutoReloadPreviewData = {
+  body?: never
+  path?: never
+  query: {
+    threshold_credits: number
+    target_credits: number
+    /**
+     * Proposed monthly limit; absent means `max_monthly_budget_cents`.
+     */
+    monthly_budget_cents?: number
+  }
+  url: '/api/billing/auto-reload/preview'
+}
+
+export type GetBillingAutoReloadPreviewErrors = {
+  /**
+   * `INVALID_REQUEST`, `INVALID_AUTO_TOP_UP`, or `workspace_id_invalid`.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * `SUBSCRIPTION_CHANGE_IN_PROGRESS`.
+   */
+  409: ErrorResponse
+  /**
+   * `AUTO_TOP_UP_NOT_ELIGIBLE` (setup not ready, or no readable balance) or `AUTO_TOP_UP_NOT_AVAILABLE` (not in the rollout).
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `AUTO_TOP_UP_PREVIEW_UNAVAILABLE` (the balance could not be read).
+   */
+  503: ErrorResponse
+}
+
+export type GetBillingAutoReloadPreviewError =
+  GetBillingAutoReloadPreviewErrors[keyof GetBillingAutoReloadPreviewErrors]
+
+export type GetBillingAutoReloadPreviewResponses = {
+  /**
+   * Success
+   */
+  200: AutoReloadPreview
+}
+
+export type GetBillingAutoReloadPreviewResponse =
+  GetBillingAutoReloadPreviewResponses[keyof GetBillingAutoReloadPreviewResponses]
 
 export type GetBillingBalanceData = {
   body?: never
@@ -12511,11 +12711,14 @@ export type GetBillingUsageTimeSeriesData = {
      * grouping returns). The four `filter_*` parameters combine with each
      * other and with the ledger groupings `product_line`, `model`,
      * `person` and `source`, so a page can drill from a line to its
-     * models to the people behind one model. They apply only to
-     * ledger-served reads of an enabled workspace: on any other read,
-     * including the invoice groupings `product` and `endpoint`, the
-     * response is an empty series with `not_available` reason
-     * `filter_needs_ledger`. A member's view is still only their own
+     * models to the people behind one model. They apply to
+     * ledger-served reads of an enabled workspace. One more read takes
+     * a filter: `filter_product_line` alone on `product_line` or `model`
+     * over a range the ledger does not hold is answered from Metronome's
+     * invoices, narrowed to that line, with `served_from: invoice`. On
+     * any other read, including the invoice groupings `product` and
+     * `endpoint`, the response is an empty series with `not_available`
+     * reason `filter_needs_ledger`. A member's view is still only their own
      * rows: filtering on a colleague returns nothing.
      *
      */
@@ -16546,7 +16749,7 @@ export type ListCccWebsiteCardsErrors = {
    */
   403: unknown
   /**
-   * Public authority or cursor selection changed or expired; restart from current authority
+   * Public authority or Draft cursor selection changed or expired; restart from current authority
    */
   409: unknown
   /**
@@ -16557,7 +16760,7 @@ export type ListCccWebsiteCardsErrors = {
 
 export type ListCccWebsiteCardsResponses = {
   /**
-   * At most 24 card summaries; no graphs, inputs, examples or long bodies. Anonymous responses omit total, generation and facet counts. Cursors are audience, filter, clock and state bound and expire after five minutes.
+   * At most 24 card summaries; no graphs, inputs, examples or long bodies. Anonymous responses omit total, generation and facet counts. Cursors are audience and filter bound. LIVE cursors resume after their sort key at the current Live and clock; Draft cursors are clock and state bound and expire after five minutes.
    */
   200: CccWebsiteCardsPage
 }
@@ -20267,7 +20470,12 @@ export type ListWorkspaceDeploymentsData = {
      */
     id: string
   }
-  query?: never
+  query?: {
+    /**
+     * The deployments this browser started (POST /api/workspaces/{id}/deployments/{deployment_id}/start answered 202), one parameter each. A cached listing that still offers Start (can_start) on any of them predates its start, so it is listed again; if comfy-deploy cannot be reached for that, the answer is the 503, never the listing from before the start. Send each on every listing until one asked for after its start offers Start on it again or no longer lists it: each ingest server keeps its own cache, so a later listing can reach one that cached the deployment as stopped. An id the listing does not offer Start on costs nothing.
+     */
+    started_deployment_id?: Array<string>
+  }
   url: '/api/workspaces/{id}/deployments'
 }
 
