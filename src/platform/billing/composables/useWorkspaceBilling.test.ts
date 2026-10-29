@@ -812,6 +812,40 @@ describe('useWorkspaceBilling', () => {
       expect(billing.error.value).toBeNull()
       expect(billing.balance.value?.amountMicros).toBe(5_000_000)
     })
+
+    it('settles a failed balance read quietly once the workspace changed', async () => {
+      const balanceRead = createDeferred<typeof zeroBalance>()
+      mockWorkspaceApi.getBillingBalance.mockReturnValueOnce(
+        balanceRead.promise
+      )
+      const billing = setupBilling()
+
+      const read = billing.fetchBalance()
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: { id: 'workspace-2' }
+      })
+      balanceRead.reject(new Error('stale workspace balance failed'))
+
+      await expect(read).resolves.toBeUndefined()
+      expect(billing.error.value).toBeNull()
+    })
+
+    it('does not keep a balance from a stale workspace response', async () => {
+      const balanceRead = createDeferred<typeof zeroBalance>()
+      mockWorkspaceApi.getBillingBalance.mockReturnValueOnce(
+        balanceRead.promise
+      )
+      const billing = setupBilling()
+
+      const read = billing.fetchBalance()
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: { id: 'workspace-2' }
+      })
+      balanceRead.resolve(zeroBalance)
+      await read
+
+      expect(billing.balance.value).toBeNull()
+    })
   })
 
   describe('subscribe', () => {
