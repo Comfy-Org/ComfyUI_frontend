@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 import type {
   OAuthTokens,
   TokenFailureReason
@@ -37,6 +39,11 @@ const CALLBACK_PARAMS = [
   'iss'
 ]
 
+const zCallbackMessage = z.object({
+  type: z.literal(CALLBACK_MESSAGE_TYPE),
+  search: z.string()
+})
+
 export interface FailedSignIn {
   kind: 'failed'
   reason:
@@ -54,9 +61,11 @@ type SignInCallbackOutcome =
   | { kind: 'signed_in' }
   | FailedSignIn
 
-/** The window the authorize page opened in; only its closing is observed. */
+/** The sign-in window: opened blank on the click, then sent to authorize. */
 export interface LocalWebPopup {
   readonly closed: boolean
+  close(): void
+  location: { href: string }
 }
 
 export interface LocalWebMessage {
@@ -78,7 +87,7 @@ export interface LocalWebAuthEnvironment {
   fetchImpl: typeof fetch
   now: () => number
   /** Opens the authorize page in a popup; null when the browser blocked it. */
-  openPopup: (url: string) => LocalWebPopup | null
+  openPopup: () => LocalWebPopup | null
   /** Subscribes to messages posted to this page. */
   onMessage: (listener: (message: LocalWebMessage) => void) => () => void
   /** Tells the person a popup sign-in did not finish. */
@@ -218,6 +227,16 @@ export function createLocalWebAuthBridge(
     return undefined
   }
 
+  function keptFor(
+    workspaceId: string,
+    userId: string
+  ): OAuthTokens | undefined {
+    const kept = env.tokens.readWorkspace(workspaceId)
+    return kept && readAccessTokenIdentity(kept.accessToken)?.userId === userId
+      ? kept
+      : undefined
+  }
+
   async function keptWorkspaceTokens(
     workspaceId: string,
     userId: string
@@ -226,9 +245,8 @@ export function createLocalWebAuthBridge(
     | { kind: 'missing' }
     | { kind: 'unavailable' }
   > {
-    const kept = env.tokens.readWorkspace(workspaceId)
-    if (!kept || readAccessTokenIdentity(kept.accessToken)?.userId !== userId)
-      return { kind: 'missing' }
+    const kept = keptFor(workspaceId, userId)
+    if (!kept) return { kind: 'missing' }
     if (isFresh(kept)) return { kind: 'kept', tokens: kept }
     const result = await refreshAccessToken(kept.refreshToken, tokenOptions())
     if (result.ok) return { kind: 'kept', tokens: result.tokens }
@@ -253,11 +271,8 @@ export function createLocalWebAuthBridge(
   const issuerOrigin = new URL(env.issuer).origin
 
   function readCallbackSearch(data: unknown): string | undefined {
-    if (typeof data !== 'object' || data === null) return undefined
-    const { type, search } = data as { type?: unknown; search?: unknown }
-    return type === CALLBACK_MESSAGE_TYPE && typeof search === 'string'
-      ? search
-      : undefined
+    const message = zCallbackMessage.safeParse(data)
+    return message.success ? message.data.search : undefined
   }
 
   function callbackFrom(popup: LocalWebPopup): Promise<string | undefined> {
@@ -338,15 +353,15 @@ export function createLocalWebAuthBridge(
   }
 
   async function signInThroughPopup(
+    popup: LocalWebPopup,
     stillWanted: () => boolean
   ): Promise<DesktopHostAuthState> {
     const url = await preparedAuthorizeUrl(stillWanted)
-    if (!url) return currentState()
-    const popup = env.openPopup(url)
-    if (!popup) {
-      env.reportSignInFailure({ kind: 'failed', reason: 'popup-blocked' })
+    if (!url) {
+      popup.close()
       return currentState()
     }
+    popup.location.href = url
     const search = await callbackFrom(popup)
     if (search !== undefined) await finishPopupSignIn(search)
     return currentState()
@@ -355,7 +370,13 @@ export function createLocalWebAuthBridge(
   function requestSignIn(
     stillWanted: () => boolean = () => true
   ): Promise<DesktopHostAuthState> {
-    signingIn ??= signInThroughPopup(stillWanted).finally(() => {
+    if (signingIn) return signingIn
+    const popup = env.openPopup()
+    if (!popup) {
+      env.reportSignInFailure({ kind: 'failed', reason: 'popup-blocked' })
+      return Promise.resolve(currentState())
+    }
+    signingIn = signInThroughPopup(popup, stillWanted).finally(() => {
       signingIn = undefined
     })
     return signingIn
@@ -382,6 +403,9 @@ export function createLocalWebAuthBridge(
       const current = currentState()
       if (current.status !== 'signed_in') return requestSignIn()
       if (current.workspaceId === workspaceId) return current
+      const stillSignedIn = () => isSignedInAs(current.userId)
+      if (!keptFor(workspaceId, current.userId))
+        return requestSignIn(stillSignedIn)
       const outcome = await env.withRefreshLock(async () => {
         const kept = await keptWorkspaceTokens(workspaceId, current.userId)
         if (kept.kind !== 'kept') return kept.kind
@@ -390,8 +414,7 @@ export function createLocalWebAuthBridge(
         return adopted === 'storage-unavailable' ? 'unavailable' : 'missing'
       })
       if (outcome === 'unavailable') return currentState()
-      if (outcome === 'missing')
-        return requestSignIn(() => isSignedInAs(current.userId))
+      if (outcome === 'missing') return requestSignIn(stillSignedIn)
       emit()
       return currentState()
     },

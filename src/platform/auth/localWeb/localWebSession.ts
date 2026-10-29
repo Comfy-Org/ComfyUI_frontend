@@ -57,8 +57,8 @@ function browserEnvironment(
     withRefreshLock: withOriginLock,
     fetchImpl: (input, init) => fetch(input, init),
     now: () => Date.now(),
-    openPopup: (url) =>
-      window.open(url, 'comfy-local-web-sign-in', POPUP_FEATURES),
+    openPopup: () =>
+      window.open('about:blank', 'comfy-local-web-sign-in', POPUP_FEATURES),
     onMessage(listener) {
       const onMessage = (event: MessageEvent) => listener(event)
       window.addEventListener('message', onMessage)

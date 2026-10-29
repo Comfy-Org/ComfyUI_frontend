@@ -78,14 +78,20 @@ function setup(
   const page = { url: pageUrl }
   const storage = memoryStorage()
   const clock = { now: NOW }
-  const popup = { closed: false }
+  const popup = {
+    closed: false,
+    close() {
+      popup.closed = true
+    },
+    location: { href: 'about:blank' }
+  }
   const messages = new Set<(message: LocalWebMessage) => void>()
   const post = (message: LocalWebMessage) =>
     messages.forEach((listener) => listener(message))
   const env = {
     issuer: ISSUER,
     pageUrl: () => page.url,
-    openPopup: vi.fn<(url: string) => LocalWebPopup | null>(() => popup),
+    openPopup: vi.fn<() => LocalWebPopup | null>(() => popup),
     onMessage(listener: (message: LocalWebMessage) => void) {
       messages.add(listener)
       return () => messages.delete(listener)
@@ -108,8 +114,21 @@ function setup(
   return { bridge, env, page, storage, tokens, clock, states, popup, post }
 }
 
-function authorizeRequest(env: { openPopup: { mock: { calls: string[][] } } }) {
-  return new URL(env.openPopup.mock.calls[0][0])
+type PopupEnv = Pick<ReturnType<typeof setup>['env'], 'openPopup'>
+
+function authorizeUrlOf(env: PopupEnv): string | undefined {
+  const opened = env.openPopup.mock.results.at(0)
+  const href =
+    opened?.type === 'return' ? opened.value?.location.href : undefined
+  return href && href !== 'about:blank' ? href : undefined
+}
+
+function authorizeRequest(env: PopupEnv) {
+  return new URL(authorizeUrlOf(env) ?? '')
+}
+
+async function authorized(env: PopupEnv): Promise<void> {
+  await vi.waitFor(() => expect(authorizeUrlOf(env)).toBeDefined())
 }
 
 function formOf(init: RequestInit | undefined): Record<string, string> {
@@ -138,7 +157,7 @@ describe('requestSignIn', () => {
     const { bridge, env, storage } = setup()
 
     void bridge.requestSignIn()
-    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+    await authorized(env)
 
     const pending = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
     const url = authorizeRequest(env)
@@ -155,7 +174,7 @@ describe('requestSignIn', () => {
   it('signs in with the code the Cloud callback posts back', async () => {
     const { bridge, env, storage, popup, post } = setup()
     const signingIn = bridge.requestSignIn()
-    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+    await authorized(env)
     const { state } = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
 
     post({
@@ -178,6 +197,36 @@ describe('requestSignIn', () => {
     })
   })
 
+  it('opens the popup within the click, before preparing the sign-in', () => {
+    const { bridge, env, popup } = setup()
+
+    void bridge.requestSignIn()
+
+    expect(env.openPopup).toHaveBeenCalledOnce()
+    expect(popup.location.href).toBe('about:blank')
+  })
+
+  it('opens the popup within the click when switching to a workspace this page never signed in to', async () => {
+    const { bridge, env } = await signedIn()
+
+    void bridge.switchWorkspace?.('ws-2')
+
+    expect(env.openPopup).toHaveBeenCalledOnce()
+    await authorized(env)
+  })
+
+  it('closes the blank popup when the sign-in cannot be prepared', async () => {
+    const { bridge, storage, popup } = setup()
+    storage.setItem = () => {
+      throw new DOMException('full')
+    }
+
+    await bridge.requestSignIn()
+
+    expect(popup.closed).toBe(true)
+    expect(popup.location.href).toBe('about:blank')
+  })
+
   it('shares one popup and one code exchange between concurrent sign-ins', async () => {
     const { bridge, env, storage, popup, post, tokens } = setup()
     tokens.write({
@@ -188,7 +237,7 @@ describe('requestSignIn', () => {
     })
     const fromButton = bridge.requestSignIn()
     const fromSwitch = bridge.switchWorkspace?.('ws-2')
-    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+    await authorized(env)
     const { state } = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
 
     post({
@@ -217,7 +266,7 @@ describe('requestSignIn', () => {
     vi.useFakeTimers()
     const { bridge, env, storage, popup, post } = setup()
     const signingIn = bridge.requestSignIn()
-    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+    await authorized(env)
     const { state } = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
 
     post({
@@ -240,7 +289,7 @@ describe('requestSignIn', () => {
     vi.useFakeTimers()
     const { bridge, env, popup } = setup()
     const signingIn = bridge.requestSignIn()
-    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+    await authorized(env)
 
     popup.closed = true
     await vi.advanceTimersByTimeAsync(1_000)
@@ -267,7 +316,7 @@ describe('requestSignIn', () => {
     const { bridge, env, storage, popup, post } = setup()
     env.fetchImpl.mockResolvedValueOnce(oauthError('invalid_grant'))
     const signingIn = bridge.requestSignIn()
-    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+    await authorized(env)
     const { state } = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
 
     post({
@@ -294,7 +343,7 @@ describe('requestSignIn', () => {
     await expect(bridge.requestSignIn()).resolves.toEqual({
       status: 'signed_out'
     })
-    expect(env.openPopup).not.toHaveBeenCalled()
+    expect(authorizeUrlOf(env)).toBeUndefined()
   })
 })
 
@@ -572,7 +621,7 @@ describe('switchWorkspace', () => {
       status: 'signed_in',
       workspaceId: 'ws-1'
     })
-    expect(env.openPopup).not.toHaveBeenCalled()
+    expect(authorizeUrlOf(env)).toBeUndefined()
   })
 
   it('goes to consent for a workspace this page never signed in to', async () => {
@@ -580,7 +629,7 @@ describe('switchWorkspace', () => {
 
     void bridge.switchWorkspace?.('ws-2')
 
-    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+    await authorized(env)
     expect(authorizeRequest(env).pathname).toBe('/oauth/authorize')
   })
 
@@ -593,7 +642,7 @@ describe('switchWorkspace', () => {
     })
     expect(states.at(-1)).toMatchObject({ workspaceId: 'ws-1' })
     await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBe(WS1_TOKEN)
-    expect(env.openPopup).not.toHaveBeenCalled()
+    expect(authorizeUrlOf(env)).toBeUndefined()
     expect(env.fetchImpl).not.toHaveBeenCalled()
   })
 
@@ -609,7 +658,7 @@ describe('switchWorkspace', () => {
       grant_type: 'refresh_token',
       refresh_token: 'refresh-1'
     })
-    expect(env.openPopup).not.toHaveBeenCalled()
+    expect(authorizeUrlOf(env)).toBeUndefined()
   })
 
   it('keeps the workspace it leaves, even one signed in to before workspaces were kept', async () => {
@@ -623,7 +672,7 @@ describe('switchWorkspace', () => {
 
     void bridge.switchWorkspace?.('ws-2')
 
-    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+    await authorized(env)
     expect(tokens.readWorkspace('ws-1')?.accessToken).toBe(WS1_TOKEN)
   })
 
@@ -673,7 +722,7 @@ describe('switchWorkspace', () => {
       status: 'signed_in',
       workspaceId: 'ws-2'
     })
-    expect(env.openPopup).not.toHaveBeenCalled()
+    expect(authorizeUrlOf(env)).toBeUndefined()
   })
 
   it('never switches into tokens another account left behind', async () => {
@@ -687,7 +736,7 @@ describe('switchWorkspace', () => {
 
     void bridge.switchWorkspace?.('ws-2')
 
-    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+    await authorized(env)
     await expect(bridge.getState()).resolves.toMatchObject({ userId: 'user-1' })
   })
 
@@ -731,7 +780,7 @@ describe('switchWorkspace', () => {
 
     await expect(switching).resolves.toEqual({ status: 'signed_out' })
     await signingOut
-    expect(env.openPopup).not.toHaveBeenCalled()
+    expect(authorizeUrlOf(env)).toBeUndefined()
   })
 
   it('stays put without reporting a switch when the tab cannot remember the workspace', async () => {
@@ -746,7 +795,7 @@ describe('switchWorkspace', () => {
       workspaceId: 'ws-2'
     })
     expect(states).toEqual([])
-    expect(env.openPopup).not.toHaveBeenCalled()
+    expect(authorizeUrlOf(env)).toBeUndefined()
   })
 
   it('forgets every workspace on sign-out', async () => {
@@ -757,7 +806,7 @@ describe('switchWorkspace', () => {
 
     void bridge.switchWorkspace?.('ws-1')
 
-    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+    await authorized(env)
   })
 })
 
@@ -928,7 +977,7 @@ describe('across tabs sharing stored tokens', () => {
 
     await expect(switched).resolves.toEqual({ status: 'signed_out' })
     await signedOut
-    expect(switching.env.openPopup).not.toHaveBeenCalled()
+    expect(authorizeUrlOf(switching.env)).toBeUndefined()
   })
 
   it('keeps a tab on its workspace, signed out, when that workspace has no tokens left', async () => {
