@@ -154,6 +154,9 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
     getServerFeature,
     socket: { readyState: 1, send: socketSend },
+    // authStore resets the socket when the signed-in identity changes, which a
+    // desktop-host session in these tests does.
+    resetSocket: vi.fn(async () => {}),
     dispatchCustomEvent: vi.fn(),
     addEventListener: ws.add,
     removeEventListener: ws.remove,
