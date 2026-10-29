@@ -1,3 +1,4 @@
+import type { LGraph, Subgraph } from '@comfyorg/graph-model/entityRegistry'
 import type { INodeSlot } from '@comfyorg/graph-model/interfaces'
 import type { ResultItemType } from '@comfyorg/graph-model/resultItemTypeSchema'
 
@@ -9,6 +10,10 @@ export const isAbortError = (
   err: unknown
 ): err is DOMException & { name: 'AbortError' } =>
   err instanceof DOMException && err.name === 'AbortError'
+
+export const isSubgraph = (
+  item: LGraph | Subgraph | undefined | null
+): item is Subgraph => item?.isRootGraph === false
 
 /**
  * Check if an item is non-nullish.

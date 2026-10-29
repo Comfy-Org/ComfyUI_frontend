@@ -42,7 +42,7 @@ import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
-import { isSubgraph } from '@comfyorg/litegraph/utils/graphTypeGuards'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 import {
   ComfyWorkflow,
   registerWorkflowRuntime,

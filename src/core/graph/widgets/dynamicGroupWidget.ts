@@ -22,7 +22,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { deriveWidgetSurfaces } from '@comfyorg/graph-model/widgetVisibility'
 import { mapUniqueNodes } from '@comfyorg/litegraph/utils/graphTraversalUtil'
-import { isSubgraph } from '@comfyorg/litegraph/utils/graphTypeGuards'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 
 import {
   dynamicGroupRowAllocationBound,

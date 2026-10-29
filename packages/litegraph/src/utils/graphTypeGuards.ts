@@ -1,12 +1,4 @@
-import type {
-  LGraph,
-  LGraphNode,
-  Subgraph
-} from '@comfyorg/graph-model/entityRegistry'
-
-export const isSubgraph = (
-  item: LGraph | Subgraph | undefined | null
-): item is Subgraph => item?.isRootGraph === false
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
 export const isSubgraphIoNode = (
   node: Omit<LGraphNode, 'constructor'> & {

@@ -27,7 +27,7 @@ import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { isValidUuid } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
-import { isSubgraph } from '@comfyorg/litegraph/utils/graphTypeGuards'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import { createMockChangeTracker } from '@/utils/__tests__/workflowTestUtils'
 import { createMockCanvas } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
@@ -44,7 +44,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@comfyorg/litegraph/utils/graphTypeGuards'), () => ({
+vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isSubgraph: vi.fn(() => false)
 }))
 

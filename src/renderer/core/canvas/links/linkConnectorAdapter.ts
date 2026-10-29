@@ -7,7 +7,7 @@ import type { RenderLink } from '@comfyorg/litegraph/canvas/RenderLink'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { isSubgraph } from '@comfyorg/litegraph/utils/graphTypeGuards'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 
 // Keep one adapter per graph so rendering and interaction share state.
 const adapterByGraph = new WeakMap<LGraph, LinkConnectorAdapter>()
