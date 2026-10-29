@@ -34,6 +34,22 @@ if (!commentStep?.run || !commentStep.env) {
 }
 const { run: commentRun, env: commentEnv } = commentStep
 
+// The step derives FORCE_RERUN from the event in its env mapping. Evaluate
+// that exact expression instead of injecting the variable, so a change to it
+// fails here rather than silently skipping the manual path.
+const forceRerunExpression =
+  /^\$\{\{ github\.event_name == '([a-z_]+)' && inputs\.force_rerun \|\| 'false' \}\}$/.exec(
+    commentEnv.FORCE_RERUN ?? ''
+  )
+if (!forceRerunExpression) {
+  throw new Error(
+    `unexpected FORCE_RERUN expression in pr-backport.yaml: ${commentEnv.FORCE_RERUN}`
+  )
+}
+const forceRerunEvent = forceRerunExpression[1]
+const evaluateForceRerun = (eventName: string, forceRerunInput: boolean) =>
+  eventName === forceRerunEvent && forceRerunInput ? 'true' : 'false'
+
 beforeAll(() => {
   const missing = ['envsubst', 'jq'].filter(
     (tool) => spawnSync('bash', ['-c', `command -v ${tool}`]).status !== 0
@@ -78,6 +94,11 @@ case "$1 $2" in
   "issue create")
     record "$4" "$6" >> "\${FAKE_DIR}/issues.jsonl"
     ;;
+  "pr view")
+    [[ "$3" == "\${FAKE_PR_NUMBER}" && "$4 $5" == "--json author,mergeCommit" ]] || {
+      echo "unexpected gh pr view invocation: $*" >&2; exit 64; }
+    jq -cn --arg oid "\${FAKE_MERGE_COMMIT}" '{author: {login: "author"}, mergeCommit: {oid: $oid}}'
+    ;;
   "pr list") ;;
   *) echo "unexpected gh invocation: $*" >&2; exit 64 ;;
 esac
@@ -102,6 +123,7 @@ function createSandbox() {
 }
 
 interface Run {
+  event?: 'pull_request_target' | 'workflow_dispatch'
   mergeCommit?: string
   targetHead?: string
   failed?: string
@@ -114,6 +136,7 @@ interface Run {
 function reportConflict(
   sandbox: string,
   {
+    event = 'pull_request_target',
     mergeCommit = firstMergeCommit,
     targetHead = firstTargetHead,
     failed = coreConflict,
@@ -123,9 +146,9 @@ function reportConflict(
     prLocked = false
   }: Run = {}
 ) {
-  const event = join(sandbox, 'event.json')
+  const eventPath = join(sandbox, 'event.json')
   writeFileSync(
-    event,
+    eventPath,
     JSON.stringify({
       pull_request: {
         number: 21078,
@@ -135,7 +158,7 @@ function reportConflict(
     })
   )
   const script = commentRun
-    .replaceAll('${{ github.event_name }}', 'pull_request_target')
+    .replaceAll('${{ github.event_name }}', event)
     .replaceAll('${{ inputs.pr_number }}', '21078')
     .replaceAll('${{ steps.backport.outputs.failed }}', failed)
 
@@ -146,12 +169,14 @@ function reportConflict(
       BACKPORT_AGENT_PROMPT_TEMPLATE: commentEnv.BACKPORT_AGENT_PROMPT_TEMPLATE,
       COMMENT_BODY_TEMPLATE: commentEnv.COMMENT_BODY_TEMPLATE,
       FAKE_DIR: sandbox,
+      FAKE_MERGE_COMMIT: mergeCommit,
+      FAKE_PR_NUMBER: '21078',
       FAKE_LOGIN: login,
       FAKE_PR_LOCKED: String(prLocked),
       FAKE_READ: commentsRead,
       FAKE_TARGET_HEAD: targetHead,
-      FORCE_RERUN: String(forceRerun),
-      GITHUB_EVENT_PATH: event,
+      FORCE_RERUN: evaluateForceRerun(event, forceRerun),
+      GITHUB_EVENT_PATH: eventPath,
       GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
       GITHUB_SERVER_URL: 'https://github.com',
       PATH: `${sandbox}:${process.env.PATH}`
@@ -213,9 +238,19 @@ describe('backport conflict comment', () => {
       expected: 2
     },
     {
-      scenario: 'a manual force rerun',
-      second: { forceRerun: true },
+      scenario: 'a manual dispatch with force_rerun',
+      second: { event: 'workflow_dispatch', forceRerun: true },
       expected: 2
+    },
+    {
+      scenario: 'a manual dispatch without force_rerun',
+      second: { event: 'workflow_dispatch' },
+      expected: 1
+    },
+    {
+      scenario: 'force_rerun set outside a manual dispatch',
+      second: { forceRerun: true },
+      expected: 1
     },
     {
       scenario: 'a failed read of the existing comments',
@@ -244,6 +279,23 @@ describe('backport conflict comment', () => {
       expect(postedReports(sandbox)).toHaveLength(expected)
     }
   )
+
+  it('reads the author and merge commit from the PR on a manual dispatch', () => {
+    const sandbox = createSandbox()
+
+    reportConflict(sandbox, {
+      event: 'workflow_dispatch',
+      forceRerun: true,
+      mergeCommit: secondMergeCommit
+    })
+
+    const reports = postedReports(sandbox)
+    expect(reports).toHaveLength(1)
+    expect(reports[0]).toContain(
+      `<!-- backport-conflict:core/1.56:${secondMergeCommit}:${firstTargetHead} -->`
+    )
+    expect(reports[0]).toContain('cc @author')
+  })
 
   it('reports the same merge commit once per target', () => {
     const sandbox = createSandbox()
