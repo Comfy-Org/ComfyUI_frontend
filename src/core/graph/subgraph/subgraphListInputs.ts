@@ -122,6 +122,7 @@ export function mergeListRuns(host: SubgraphNode) {
       others.map((i) => i.name)
     )
     for (const slot of hostInputsOf(host, anchor)) slot.name = anchor.name
+    anchor.localized_name = undefined
     runs.push({ anchor, sources })
   }
   // Removals and renames first: autogrow reads a disconnect right after a
