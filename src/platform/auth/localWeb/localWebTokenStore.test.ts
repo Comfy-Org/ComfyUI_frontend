@@ -91,6 +91,20 @@ describe('createStorageTokenStore', () => {
     ).toBeUndefined()
   })
 
+  it('forgets one workspace and keeps the others', () => {
+    const storage = memoryStorage()
+    const store = createStorageTokenStore(storage, new EventTarget())
+    const other = { ...TOKENS, accessToken: 'access-2' }
+    store.writeWorkspace('ws-1', TOKENS)
+    store.writeWorkspace('ws-2', other)
+
+    store.forgetWorkspace('ws-1')
+
+    const reloaded = createStorageTokenStore(storage, new EventTarget())
+    expect(reloaded.readWorkspace('ws-1')).toBeUndefined()
+    expect(reloaded.readWorkspace('ws-2')).toEqual(other)
+  })
+
   it('forgets the tokens on clear', () => {
     const storage = memoryStorage()
     const store = createStorageTokenStore(storage, new EventTarget())

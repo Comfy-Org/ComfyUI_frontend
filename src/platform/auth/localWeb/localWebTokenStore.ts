@@ -1,4 +1,5 @@
 import type { OAuthTokens } from '@comfyorg/account-core/oauthPkce'
+import { omit } from 'es-toolkit'
 import { z } from 'zod'
 
 /** Where this page keeps its OAuth tokens; swapping it changes the policy. */
@@ -10,6 +11,8 @@ export interface LocalWebTokenStore {
   readWorkspace(workspaceId: string): OAuthTokens | undefined
   /** False when the storage refused the write, so nothing was persisted. */
   writeWorkspace(workspaceId: string, tokens: OAuthTokens): boolean
+  /** Forgets the tokens kept for one workspace. */
+  forgetWorkspace(workspaceId: string): void
   /** Forgets the active tokens and every workspace's tokens. */
   clear(): void
   /** Calls back when another tab changes the stored tokens. */
@@ -43,6 +46,9 @@ export function createMemoryTokenStore(): LocalWebTokenStore {
     writeWorkspace: (workspaceId, next) => {
       byWorkspace.set(workspaceId, next)
       return true
+    },
+    forgetWorkspace: (workspaceId) => {
+      byWorkspace.delete(workspaceId)
     },
     clear: () => {
       tokens = undefined
@@ -116,6 +122,14 @@ export function createStorageTokenStore(
         )
         return true
       }, false),
+    forgetWorkspace(workspaceId) {
+      ignoringStorageErrors(() => {
+        storage.setItem(
+          LOCAL_WEB_WORKSPACE_TOKENS_KEY,
+          JSON.stringify(omit(readWorkspaces(), [workspaceId]))
+        )
+      }, undefined)
+    },
     clear() {
       ignoringStorageErrors(() => {
         storage.removeItem(LOCAL_WEB_TOKENS_KEY)

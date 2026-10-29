@@ -901,6 +901,23 @@ describe('switchWorkspace', () => {
     }
   )
 
+  it('forgets a kept workspace whose refresh is refused and asks for consent on the next click', async () => {
+    const { bridge, env, clock, tokens } = await signedInToBothWorkspaces(30)
+    clock.now += 60_000
+    env.fetchImpl.mockResolvedValueOnce(oauthError('invalid_grant'))
+
+    await expect(bridge.switchWorkspace?.('ws-1')).resolves.toMatchObject({
+      status: 'signed_in',
+      workspaceId: 'ws-2'
+    })
+    expect(env.openPopup).not.toHaveBeenCalled()
+    expect(tokens.readWorkspace('ws-1')).toBeUndefined()
+
+    void bridge.switchWorkspace?.('ws-1')
+
+    expect(env.openPopup).toHaveBeenCalledOnce()
+  })
+
   it('forgets every workspace on sign-out', async () => {
     const { bridge, env, tokens } = await signedInToBothWorkspaces()
     await bridge.signOut()

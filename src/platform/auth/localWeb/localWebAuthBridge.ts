@@ -263,9 +263,9 @@ export function createLocalWebAuthBridge(
     if (isFresh(kept)) return { kind: 'kept', tokens: kept }
     const result = await refreshAccessToken(kept.refreshToken, tokenOptions())
     if (result.ok) return { kind: 'kept', tokens: result.tokens }
-    return result.reason === 'unavailable'
-      ? { kind: 'unavailable' }
-      : { kind: 'missing' }
+    if (result.reason === 'unavailable') return { kind: 'unavailable' }
+    env.tokens.forgetWorkspace(workspaceId)
+    return { kind: 'missing' }
   }
 
   async function freshTokens(): Promise<OAuthTokens | undefined> {
@@ -436,16 +436,14 @@ export function createLocalWebAuthBridge(
       const stillSignedIn = () => isSignedInAs(current.userId)
       if (!keptFor(workspaceId, current.userId))
         return requestSignIn(stillSignedIn)
-      const outcome = await env.withRefreshLock(async () => {
+      const switched = await env.withRefreshLock(async () => {
         const kept = await keptWorkspaceTokens(workspaceId, current.userId)
-        if (kept.kind !== 'kept') return kept.kind
-        const adopted = adopt(kept.tokens, { forNewTabs: false })
-        if (adopted === 'adopted') return 'switched'
-        return adopted === 'storage-unavailable' ? 'unavailable' : 'missing'
+        return (
+          kept.kind === 'kept' &&
+          adopt(kept.tokens, { forNewTabs: false }) === 'adopted'
+        )
       })
-      if (outcome === 'unavailable') return currentState()
-      if (outcome === 'missing') return requestSignIn(stillSignedIn)
-      emit()
+      if (switched) emit()
       return currentState()
     },
 
