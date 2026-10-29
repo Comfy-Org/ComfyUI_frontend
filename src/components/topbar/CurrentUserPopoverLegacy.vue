@@ -160,6 +160,7 @@ import Popover from '@/components/ui/Popover.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
@@ -250,6 +251,6 @@ const handleLogout = async () => {
 }
 
 onMounted(() => {
-  void fetchBalance()
+  void refreshBalanceInBackground(fetchBalance)
 })
 </script>
