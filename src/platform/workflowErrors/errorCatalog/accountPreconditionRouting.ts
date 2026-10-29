@@ -47,6 +47,10 @@ export function resolveAccountPrecondition(
   info: RuntimeErrorInfo
 ): AccountPrecondition | undefined {
   const match = resolveRuntimeCatalogMatch(info)
-  if (match?.params?.credential === 'api_key') return 'personal_wallet_api_key'
+  if (
+    match?.catalogId === PERSONAL_WALLET_INSUFFICIENT_CREDITS_CATALOG_ID &&
+    match.params?.credential === 'api_key'
+  )
+    return 'personal_wallet_api_key'
   return preconditionForCatalogId(match?.catalogId)
 }

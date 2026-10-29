@@ -12,7 +12,9 @@
       {{
         credential === 'api_key'
           ? $t('credits.personalWallet.apiKeyDescription')
-          : $t('credits.personalWallet.sessionDescription')
+          : teamWorkspaces.length > 0
+            ? $t('credits.personalWallet.sessionDescription')
+            : $t('credits.personalWallet.sessionNoTeamsDescription')
       }}
     </p>
 
@@ -48,7 +50,7 @@
         class="no-underline"
       >
         {{ $t('credits.personalWallet.createTeamApiKey') }}
-        <i class="icon-[lucide--external-link] size-4" />
+        <i class="icon-[lucide--external-link]" />
       </Button>
       <Button
         v-if="credential === 'api_key' || teamWorkspaces.length === 0"

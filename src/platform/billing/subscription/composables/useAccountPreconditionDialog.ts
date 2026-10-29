@@ -52,6 +52,7 @@ export function useAccountPreconditionDialog() {
     context: AccountPreconditionContext
   ): void {
     const creditsSource = useWorkspaceCreditsSource()
+    closePersonalWalletDialog()
     dialogStore.showDialog({
       key: PERSONAL_WALLET_DIALOG_KEY,
       component: PersonalWalletCreditsDialog,
@@ -63,7 +64,8 @@ export function useAccountPreconditionDialog() {
           if (await creditsSource.switchWorkspace(workspaceId))
             closePersonalWalletDialog()
         },
-        onAddCredits: () => {
+        onAddCredits: async () => {
+          if (!(await creditsSource.switchToPersonalWorkspace())) return
           closePersonalWalletDialog()
           showTopUpForExhaustedBalance(context)
         },

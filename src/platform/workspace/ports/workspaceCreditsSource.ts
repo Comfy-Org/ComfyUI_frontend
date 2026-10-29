@@ -4,6 +4,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 interface WorkspaceCreditsSourceAccess {
   readonly teamWorkspaces: readonly { id: string; name: string }[]
   switchWorkspace(workspaceId: string): Promise<boolean>
+  switchToPersonalWorkspace(): Promise<boolean>
 }
 
 export function useWorkspaceCreditsSource(): WorkspaceCreditsSourceAccess {
@@ -13,6 +14,9 @@ export function useWorkspaceCreditsSource(): WorkspaceCreditsSourceAccess {
     get teamWorkspaces() {
       return workspace.sharedWorkspaces
     },
-    switchWorkspace
+    switchWorkspace,
+    switchToPersonalWorkspace: async () =>
+      !workspace.personalWorkspace ||
+      switchWorkspace(workspace.personalWorkspace.id)
   }
 }

@@ -2,6 +2,8 @@ import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { describe, expect, it, vi } from 'vitest'
 
+import { useWorkspaceCreditsSource } from '@/platform/workspace/ports/workspaceCreditsSource'
+import { useDialogStore } from '@/stores/dialogStore'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import { useAccountPreconditionDialog } from './useAccountPreconditionDialog'
@@ -11,6 +13,31 @@ vi.mock(import('@/composables/auth/useAuthDialogs'))
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
+vi.mock(import('@/platform/workspace/ports/workspaceCreditsSource'))
+vi.mock(import('@/config/comfyApi'), () => ({
+  getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
+}))
+
+function mockCreditsSource(switchToPersonalSucceeds = true) {
+  const source = {
+    teamWorkspaces: [{ id: 'ws-acme', name: 'Acme' }],
+    switchWorkspace: vi.fn().mockResolvedValue(true),
+    switchToPersonalWorkspace: vi
+      .fn()
+      .mockResolvedValue(switchToPersonalSucceeds)
+  }
+  vi.mocked(useWorkspaceCreditsSource).mockReturnValue(source)
+  return source
+}
+
+function personalWalletDialogProps() {
+  const dialog = useDialogStore().dialogStack.find(
+    (d) => d.key === 'personal-wallet-credits'
+  )
+  return dialog?.contentProps as
+    | { credential: string; onAddCredits: () => Promise<void> }
+    | undefined
+}
 
 describe('useAccountPreconditionDialog', () => {
   it('routes a sign-in precondition to the API sign-in dialog with the node type', async () => {
@@ -107,5 +134,43 @@ describe('useAccountPreconditionDialog', () => {
 
     expect(billing.fetchStatus).not.toHaveBeenCalled()
     expect(billing.fetchBalance).not.toHaveBeenCalled()
+  })
+
+  it('replaces an open personal-wallet dialog with the latest credential', async () => {
+    mockCreditsSource()
+    const dialog = useAccountPreconditionDialog()
+
+    await dialog.open('personal_wallet_session')
+    await dialog.open('personal_wallet_api_key')
+
+    expect(personalWalletDialogProps()?.credential).toBe('api_key')
+    expect(
+      useDialogStore().dialogStack.filter(
+        (d) => d.key === 'personal-wallet-credits'
+      )
+    ).toHaveLength(1)
+  })
+
+  it('switches to the personal workspace before topping up personal credits', async () => {
+    const source = mockCreditsSource()
+    await useAccountPreconditionDialog().open('personal_wallet_api_key')
+
+    await personalWalletDialogProps()?.onAddCredits()
+
+    expect(source.switchToPersonalWorkspace).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledWith({
+      isInsufficientCredits: true
+    })
+    expect(personalWalletDialogProps()).toBeUndefined()
+  })
+
+  it('keeps the personal-wallet dialog open when the personal workspace switch fails', async () => {
+    mockCreditsSource(false)
+    await useAccountPreconditionDialog().open('personal_wallet_session')
+
+    await personalWalletDialogProps()?.onAddCredits()
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(personalWalletDialogProps()).toBeDefined()
   })
 })

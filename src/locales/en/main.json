@@ -2977,7 +2977,8 @@
     },
     "personalWallet": {
       "title": "Your personal account is out of credits",
-      "sessionDescription": "This session bills your personal account. Switch to a team workspace to use its credits, or add personal credits.",
+      "sessionDescription": "This session bills your personal account. To bill a team instead, switch to its workspace.",
+      "sessionNoTeamsDescription": "This session bills your personal account. Add personal credits to continue.",
       "apiKeyDescription": "This key bills your personal account. Create a team API key or add personal credits.",
       "switchTo": "Switch to {workspaceName}",
       "createTeamApiKey": "Create a team API key",

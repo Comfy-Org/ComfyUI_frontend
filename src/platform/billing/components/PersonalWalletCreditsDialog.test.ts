@@ -16,7 +16,10 @@ const i18n = createI18n({
       credits: {
         personalWallet: {
           title: 'Your personal account is out of credits',
-          sessionDescription: 'This session bills your personal account.',
+          sessionDescription:
+            'This session bills your personal account. To bill a team instead, switch to its workspace.',
+          sessionNoTeamsDescription:
+            'This session bills your personal account. Add personal credits to continue.',
           apiKeyDescription:
             'This key bills your personal account. Create a team API key or add personal credits.',
           switchTo: 'Switch to {workspaceName}',
@@ -60,6 +63,11 @@ describe('PersonalWalletCreditsDialog', () => {
     ])
 
     expect(
+      screen.getByText(
+        'This session bills your personal account. To bill a team instead, switch to its workspace.'
+      )
+    ).toBeInTheDocument()
+    expect(
       screen.getByRole('button', { name: 'Switch to Acme' })
     ).toBeInTheDocument()
     expect(
@@ -75,6 +83,11 @@ describe('PersonalWalletCreditsDialog', () => {
     const user = userEvent.setup()
     const { onAddCredits } = renderDialog('session', [])
 
+    expect(
+      screen.getByText(
+        'This session bills your personal account. Add personal credits to continue.'
+      )
+    ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /Switch to/ })
     ).not.toBeInTheDocument()

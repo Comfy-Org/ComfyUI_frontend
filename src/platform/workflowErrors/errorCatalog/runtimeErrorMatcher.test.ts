@@ -16,12 +16,6 @@ describe('resolveRuntimeCatalogMatch partner-node 402', () => {
       expected: { catalogId: INSUFFICIENT_CREDITS_CATALOG_ID }
     },
     {
-      case: 'team-wallet sentence',
-      message:
-        'Payment Required: This API key bills the Acme Studio team, which is out of credits.',
-      expected: { catalogId: INSUFFICIENT_CREDITS_CATALOG_ID }
-    },
-    {
       case: 'personal API key sentence',
       message:
         'Payment Required: This API key bills your personal account, which is out of credits.',
@@ -59,11 +53,41 @@ describe('resolveRuntimeCatalogMatch partner-node 402', () => {
     ).toEqual(expected)
   })
 
-  it('does not catalog the personal-account phrase without the 402 prefix', () => {
+  it.for([
+    {
+      case: 'personal-account phrase without the 402 prefix',
+      message: 'This API key bills your personal account.'
+    },
+    {
+      case: 'team-wallet sentence',
+      message:
+        'Payment Required: This API key bills the Acme Studio team, which is out of credits.'
+    },
+    {
+      case: 'team-wallet sentence whose team name quotes the personal phrase',
+      message:
+        'Payment Required: This API key bills the This API key bills your personal account, team, which is out of credits.'
+    },
+    {
+      case: 'reworded personal sentence',
+      message:
+        'Payment Required: This session bills your personal account, which is out of credits.'
+    },
+    {
+      case: 'lengthened legacy sentence',
+      message:
+        'Payment Required: Please add credits to your account to use this node. (Node: FluxPro)'
+    },
+    {
+      case: 'lengthened workspace sentence',
+      message:
+        'Payment Required: Please add credits to your workspace to continue. (Node: FluxPro)'
+    }
+  ])('does not catalog the $case', ({ message }) => {
     expect(
       resolveRuntimeCatalogMatch({
         exceptionType: 'RuntimeError',
-        exceptionMessage: 'This API key bills your personal account.'
+        exceptionMessage: message
       })
     ).toBeUndefined()
   })

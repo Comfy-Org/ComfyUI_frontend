@@ -31,9 +31,13 @@ import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 
 // Runtime errors can share generic exception labels, so targeted cataloging
 // relies on narrow stable messages. Keep these matches exact or prefix-based.
-const PAYMENT_REQUIRED_PREFIX = 'Payment Required: '
-const PERSONAL_WALLET_SESSION_PHRASE = 'set to bill your personal account'
-const PERSONAL_WALLET_API_KEY_PHRASE = 'bills your personal account'
+const INSUFFICIENT_CREDITS_MESSAGES = new Set([
+  'Payment Required: Please add credits to your account to use this node.'
+])
+const PERSONAL_WALLET_SESSION_PREFIX =
+  'Payment Required: This session is set to bill your personal account,'
+const PERSONAL_WALLET_API_KEY_PREFIX =
+  'Payment Required: This API key bills your personal account,'
 const WORKSPACE_INSUFFICIENT_CREDITS_MESSAGES = new Set([
   // Execution-time (pre-GPU) WebSocket failure for a queued team job.
   'Payment Required: Please add credits to your workspace to continue.',
@@ -216,20 +220,16 @@ function hasEmbeddedApiErrorPayload(message: string): boolean {
 
 export type PersonalWalletCredential = 'session' | 'api_key'
 
-function isPersonalWalletMessage(message: string): boolean {
-  return pendingServerFact(
-    'BE-23739',
-    message.startsWith(PAYMENT_REQUIRED_PREFIX) &&
-      (message.includes(PERSONAL_WALLET_SESSION_PHRASE) ||
-        message.includes(PERSONAL_WALLET_API_KEY_PHRASE))
-  )
+function isPersonalWalletMessage(message: string, prefix: string): boolean {
+  return pendingServerFact('BE-23739', message.startsWith(prefix))
 }
 
-function personalWalletCredential(message: string): PersonalWalletCredential {
-  return pendingServerFact(
-    'BE-23739',
-    message.includes(PERSONAL_WALLET_SESSION_PHRASE) ? 'session' : 'api_key'
-  )
+function personalWalletMatch(
+  credential: PersonalWalletCredential
+): RuntimeCatalogMatch {
+  return catalogMatch(PERSONAL_WALLET_INSUFFICIENT_CREDITS_CATALOG_ID, {
+    params: { credential }
+  })
 }
 
 function isSubscriptionUpgradeMessage(message: string): boolean {
@@ -275,11 +275,14 @@ const RUNTIME_MATCH_RULES: RuntimeMatchRule[] = [
     resolve: () => catalogMatch(WORKSPACE_INSUFFICIENT_CREDITS_CATALOG_ID)
   },
   {
-    matches: (_info, message) => isPersonalWalletMessage(message),
-    resolve: (_info, message) =>
-      catalogMatch(PERSONAL_WALLET_INSUFFICIENT_CREDITS_CATALOG_ID, {
-        params: { credential: personalWalletCredential(message) }
-      })
+    matches: (_info, message) =>
+      isPersonalWalletMessage(message, PERSONAL_WALLET_SESSION_PREFIX),
+    resolve: () => personalWalletMatch('session')
+  },
+  {
+    matches: (_info, message) =>
+      isPersonalWalletMessage(message, PERSONAL_WALLET_API_KEY_PREFIX),
+    resolve: () => personalWalletMatch('api_key')
   },
   {
     // 'insufficient_credits' is the error.type BE-2866 will emit on the
@@ -288,7 +291,7 @@ const RUNTIME_MATCH_RULES: RuntimeMatchRule[] = [
     matches: (info, message) =>
       info.exceptionType === 'InsufficientFundsError' ||
       info.exceptionType === 'insufficient_credits' ||
-      message.startsWith(PAYMENT_REQUIRED_PREFIX),
+      INSUFFICIENT_CREDITS_MESSAGES.has(message),
     resolve: () => catalogMatch(INSUFFICIENT_CREDITS_CATALOG_ID)
   },
   {
