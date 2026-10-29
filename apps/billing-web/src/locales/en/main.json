@@ -232,7 +232,7 @@
         },
         "not_verified": {
           "title": "Payment not verified",
-          "body": "Your bank didn't confirm it. Try again later, or contact support."
+          "body": "The payment wasn't verified. Try again later, or contact support."
         },
         "promo_expired": {
           "title": "Your promo code expired",

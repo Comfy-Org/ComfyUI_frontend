@@ -251,7 +251,7 @@ test('314-10555: a challenge the bank refuses lands on capture with Payment not 
 
   const card = page.getByRole('alert')
   await expect(card).toContainText('Payment not verified')
-  await expect(card).toContainText("Your bank didn't confirm it")
+  await expect(card).toContainText("The payment wasn't verified")
   await expect(card).not.toContainText("you haven't been charged")
   await expect(footnote(page)).toHaveText('')
   await expect(payButton(page)).toBeEnabled()
