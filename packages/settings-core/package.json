@@ -22,7 +22,6 @@
     "@comfyorg/telemetry": "workspace:*",
     "@vueuse/core": "catalog:",
     "es-toolkit": "catalog:",
-    "pinia": "catalog:",
     "semver": "^7.7.2",
     "vue": "catalog:",
     "zod": "catalog:"

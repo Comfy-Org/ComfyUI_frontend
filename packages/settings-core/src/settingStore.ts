@@ -1,7 +1,6 @@
 import { retry } from 'es-toolkit'
 import { cloneDeep } from 'es-toolkit/compat'
 import { createEventHook, until, useAsyncState } from '@vueuse/core'
-import { defineStore } from 'pinia'
 import { compare, valid } from 'semver'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
@@ -130,335 +129,330 @@ export interface SettingPersistence {
   storeSettings(settings: Partial<Settings>): Promise<unknown>
 }
 
-export function defineSettingStore(persistence: SettingPersistence) {
-  return defineStore('setting', () => {
-    const settingValues: Ref<Partial<Settings>> = ref({})
-    const settingsById = ref<Record<string, SettingParams>>({})
-    const latestWrite = new Map<keyof Settings, number>()
-    const settingChanged = createEventHook<SettingChange>()
+/** The setting store's state and actions, persisting through the given port. */
+export function settingStoreSetup(persistence: SettingPersistence) {
+  const settingValues: Ref<Partial<Settings>> = ref({})
+  const settingsById = ref<Record<string, SettingParams>>({})
+  const latestWrite = new Map<keyof Settings, number>()
+  const settingChanged = createEventHook<SettingChange>()
 
-    const {
-      isReady,
-      isLoading,
-      error,
-      execute: loadSettingValues
-    } = useAsyncState(
-      async () => {
-        if (Object.keys(settingsById.value).length) {
-          throw new Error(
-            'Setting values must be loaded before any setting is registered.'
-          )
-        }
-        settingValues.value = await retry(
-          () => persistence.getSettings({ skipStatusRetry: true }),
-          {
-            retries: 3,
-            delay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000)
-          }
+  const {
+    isReady,
+    isLoading,
+    error,
+    execute: loadSettingValues
+  } = useAsyncState(
+    async () => {
+      if (Object.keys(settingsById.value).length) {
+        throw new Error(
+          'Setting values must be loaded before any setting is registered.'
         )
-        await migrateZoomThresholdToFontSize()
-        await migrateCanvasNavigationOverrides()
-      },
-      undefined,
-      { immediate: false }
+      }
+      settingValues.value = await retry(
+        () => persistence.getSettings({ skipStatusRetry: true }),
+        {
+          retries: 3,
+          delay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000)
+        }
+      )
+      await migrateZoomThresholdToFontSize()
+      await migrateCanvasNavigationOverrides()
+    },
+    undefined,
+    { immediate: false }
+  )
+
+  async function load(): Promise<void> {
+    if (isReady.value) return
+
+    if (isLoading.value) {
+      await until(isLoading).toBe(false)
+      return
+    }
+
+    await loadSettingValues()
+  }
+
+  /**
+   * Check if a setting's value exists, i.e. if the user has set it manually.
+   * @param key - The key of the setting to check.
+   * @returns Whether the setting exists.
+   */
+  function exists(key: keyof Settings) {
+    return settingValues.value[key] !== undefined
+  }
+
+  /**
+   * Apply a setting value locally: clone, migrate, update the in-memory
+   * store, and fire onChange. Returns the migrated value, or `undefined`
+   * when the value is unchanged and was skipped.
+   *
+   * The store is updated before `onChange` runs so that handlers reading
+   * this setting — including handlers of other settings this one cascades
+   * into — observe the new value rather than the one it replaced.
+   */
+  async function applySettingLocally<K extends keyof Settings>(
+    key: K,
+    value: Settings[K]
+  ): Promise<AppliedSetting<Settings[K]> | undefined> {
+    const clonedValue = cloneDeep(value)
+    const newValue = tryMigrateDeprecatedValue(
+      settingsById.value[key],
+      clonedValue
+    )
+    const oldValue = get(key)
+    if (newValue === oldValue) return undefined
+
+    const typedNewValue = newValue as Settings[K]
+    settingValues.value[key] = typedNewValue
+    const write = (latestWrite.get(key) ?? 0) + 1
+    latestWrite.set(key, write)
+
+    await onChange(
+      settingsById.value[key],
+      newValue,
+      oldValue,
+      settingChanged.trigger
     )
 
-    async function load(): Promise<void> {
-      if (isReady.value) return
-
-      if (isLoading.value) {
-        await until(isLoading).toBe(false)
-        return
-      }
-
-      await loadSettingValues()
+    // Handlers are awaited, so a slow one lets a later change to this key land
+    // first. That change owns the value now; persisting ours would revert it.
+    if (latestWrite.get(key) !== write) return undefined
+    return {
+      previousValue: oldValue,
+      newValue: typedNewValue
     }
+  }
 
-    /**
-     * Check if a setting's value exists, i.e. if the user has set it manually.
-     * @param key - The key of the setting to check.
-     * @returns Whether the setting exists.
-     */
-    function exists(key: keyof Settings) {
-      return settingValues.value[key] !== undefined
-    }
+  /**
+   * Set a setting value.
+   * @param key - The key of the setting to set.
+   * @param value - The value to set.
+   */
+  async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
+    const applied = await applySettingLocally(key, value)
+    if (applied === undefined) return
+    await persistence.storeSetting(key, applied.newValue)
 
-    /**
-     * Apply a setting value locally: clone, migrate, update the in-memory
-     * store, and fire onChange. Returns the migrated value, or `undefined`
-     * when the value is unchanged and was skipped.
-     *
-     * The store is updated before `onChange` runs so that handlers reading
-     * this setting — including handlers of other settings this one cascades
-     * into — observe the new value rather than the one it replaced.
-     */
-    async function applySettingLocally<K extends keyof Settings>(
-      key: K,
-      value: Settings[K]
-    ): Promise<AppliedSetting<Settings[K]> | undefined> {
-      const clonedValue = cloneDeep(value)
-      const newValue = tryMigrateDeprecatedValue(
-        settingsById.value[key],
-        clonedValue
-      )
-      const oldValue = get(key)
-      if (newValue === oldValue) return undefined
+    const event = settingChangedEvent(settingsById.value[key], key, applied)
+    if (event) useTelemetry()?.trackSettingChanged(event)
+  }
 
-      const typedNewValue = newValue as Settings[K]
-      settingValues.value[key] = typedNewValue
-      const write = (latestWrite.get(key) ?? 0) + 1
-      latestWrite.set(key, write)
+  /**
+   * Set multiple setting values in a single API call.
+   * @param settings - A partial settings object with key-value pairs to set.
+   */
+  async function setMany(settings: Partial<Settings>) {
+    const updatedSettings: Partial<Settings> = {}
+    const telemetryEvents: SettingChangedMetadata[] = []
 
-      await onChange(
-        settingsById.value[key],
-        newValue,
-        oldValue,
-        settingChanged.trigger
-      )
-
-      // Handlers are awaited, so a slow one lets a later change to this key land
-      // first. That change owns the value now; persisting ours would revert it.
-      if (latestWrite.get(key) !== write) return undefined
-      return {
-        previousValue: oldValue,
-        newValue: typedNewValue
+    for (const key of Object.keys(settings) as (keyof Settings)[]) {
+      const applied = await applySettingLocally(key, settings[key])
+      if (applied !== undefined) {
+        Object.assign(updatedSettings, { [key]: applied.newValue })
+        const event = settingChangedEvent(settingsById.value[key], key, applied)
+        if (event) telemetryEvents.push(event)
       }
     }
 
-    /**
-     * Set a setting value.
-     * @param key - The key of the setting to set.
-     * @param value - The value to set.
-     */
-    async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
-      const applied = await applySettingLocally(key, value)
-      if (applied === undefined) return
-      await persistence.storeSetting(key, applied.newValue)
-
-      const event = settingChangedEvent(settingsById.value[key], key, applied)
-      if (event) useTelemetry()?.trackSettingChanged(event)
-    }
-
-    /**
-     * Set multiple setting values in a single API call.
-     * @param settings - A partial settings object with key-value pairs to set.
-     */
-    async function setMany(settings: Partial<Settings>) {
-      const updatedSettings: Partial<Settings> = {}
-      const telemetryEvents: SettingChangedMetadata[] = []
-
-      for (const key of Object.keys(settings) as (keyof Settings)[]) {
-        const applied = await applySettingLocally(key, settings[key])
-        if (applied !== undefined) {
-          Object.assign(updatedSettings, { [key]: applied.newValue })
-          const event = settingChangedEvent(
-            settingsById.value[key],
-            key,
-            applied
-          )
-          if (event) telemetryEvents.push(event)
-        }
-      }
-
-      if (Object.keys(updatedSettings).length > 0) {
-        await persistence.storeSettings(updatedSettings)
-        const telemetry = useTelemetry()
-        for (const event of telemetryEvents) {
-          telemetry?.trackSettingChanged(event)
-        }
+    if (Object.keys(updatedSettings).length > 0) {
+      await persistence.storeSettings(updatedSettings)
+      const telemetry = useTelemetry()
+      for (const event of telemetryEvents) {
+        telemetry?.trackSettingChanged(event)
       }
     }
+  }
 
-    /**
-     * Get a setting value.
-     * @param key - The key of the setting to get.
-     * @returns The value of the setting.
-     */
-    function get<K extends keyof Settings>(key: K): Settings[K] {
-      // Clone the value when returning to prevent external mutations
-      return cloneDeep(settingValues.value[key] ?? getDefaultValue(key)!)
-    }
+  /**
+   * Get a setting value.
+   * @param key - The key of the setting to get.
+   * @returns The value of the setting.
+   */
+  function get<K extends keyof Settings>(key: K): Settings[K] {
+    // Clone the value when returning to prevent external mutations
+    return cloneDeep(settingValues.value[key] ?? getDefaultValue(key)!)
+  }
 
-    /**
-     * Gets the setting params, asserting the type that is intentionally left off
-     * of {@link settingsById}.
-     * @param key The key of the setting to get.
-     * @returns The setting.
-     */
-    function getSettingById<K extends keyof Settings>(
-      key: K
-    ): SettingParams<Settings[K]> | undefined {
-      return settingsById.value[key] as SettingParams<Settings[K]> | undefined
-    }
+  /**
+   * Gets the setting params, asserting the type that is intentionally left off
+   * of {@link settingsById}.
+   * @param key The key of the setting to get.
+   * @returns The setting.
+   */
+  function getSettingById<K extends keyof Settings>(
+    key: K
+  ): SettingParams<Settings[K]> | undefined {
+    return settingsById.value[key] as SettingParams<Settings[K]> | undefined
+  }
 
-    /**
-     * Get the default value of a setting.
-     * @param key - The key of the setting to get.
-     * @returns The default value of the setting.
-     */
-    function getDefaultValue<K extends keyof Settings>(
-      key: K
-    ): Settings[K] | undefined {
-      // Assertion: settingsById is not typed.
-      const param = getSettingById(key)
+  /**
+   * Get the default value of a setting.
+   * @param key - The key of the setting to get.
+   * @returns The default value of the setting.
+   */
+  function getDefaultValue<K extends keyof Settings>(
+    key: K
+  ): Settings[K] | undefined {
+    // Assertion: settingsById is not typed.
+    const param = getSettingById(key)
 
-      if (param === undefined) return
+    if (param === undefined) return
 
-      const versionedDefault = getVersionedDefaultValue(key, param)
+    const versionedDefault = getVersionedDefaultValue(key, param)
 
-      return versionedDefault ?? resolveDefaultValue(param.defaultValue)
-    }
+    return versionedDefault ?? resolveDefaultValue(param.defaultValue)
+  }
 
-    function getVersionedDefaultValue<
-      K extends keyof Settings,
-      TValue = Settings[K]
-    >(key: K, param: SettingParams<TValue> | undefined): TValue | null {
-      // get default versioned value, skipping if the key is 'Comfy.InstalledVersion' to prevent infinite loop
-      const defaultsByInstallVersion = param?.defaultsByInstallVersion
-      if (defaultsByInstallVersion && key !== 'Comfy.InstalledVersion') {
-        const installedVersion = get('Comfy.InstalledVersion')
+  function getVersionedDefaultValue<
+    K extends keyof Settings,
+    TValue = Settings[K]
+  >(key: K, param: SettingParams<TValue> | undefined): TValue | null {
+    // get default versioned value, skipping if the key is 'Comfy.InstalledVersion' to prevent infinite loop
+    const defaultsByInstallVersion = param?.defaultsByInstallVersion
+    if (defaultsByInstallVersion && key !== 'Comfy.InstalledVersion') {
+      const installedVersion = get('Comfy.InstalledVersion')
 
-        if (installedVersion) {
-          const sortedVersions = Object.keys(defaultsByInstallVersion).sort(
-            (a, b) => compare(b, a)
-          )
+      if (installedVersion) {
+        const sortedVersions = Object.keys(defaultsByInstallVersion).sort(
+          (a, b) => compare(b, a)
+        )
 
-          for (const version of sortedVersions) {
-            // Ensure the version is in a valid format before comparing
-            if (!valid(version)) {
-              continue
-            }
+        for (const version of sortedVersions) {
+          // Ensure the version is in a valid format before comparing
+          if (!valid(version)) {
+            continue
+          }
 
-            if (compare(installedVersion, version) >= 0) {
-              const versionedDefault =
-                defaultsByInstallVersion[
-                  version as keyof typeof defaultsByInstallVersion
-                ]
-              if (versionedDefault !== undefined) {
-                return typeof versionedDefault === 'function'
-                  ? versionedDefault()
-                  : versionedDefault
-              }
+          if (compare(installedVersion, version) >= 0) {
+            const versionedDefault =
+              defaultsByInstallVersion[
+                version as keyof typeof defaultsByInstallVersion
+              ]
+            if (versionedDefault !== undefined) {
+              return typeof versionedDefault === 'function'
+                ? versionedDefault()
+                : versionedDefault
             }
           }
         }
       }
-
-      return null
     }
 
-    /**
-     * Register a setting.
-     * @param setting - The setting to register.
-     */
-    function addSetting(setting: SettingParams) {
-      if (setting.id in settingsById.value) {
-        // Setting already registered - skip to allow component remounting
-        // TODO: Add store reset methods to bootstrapStore and settingStore, then
-        // replace window.location.reload() with router.push() in SidebarLogoutIcon.vue
-        console.warn(`Setting already registered: ${setting.id}`)
-        return
-      }
+    return null
+  }
 
-      settingsById.value[setting.id] = setting
-
-      if (settingValues.value[setting.id] !== undefined) {
-        Object.assign(settingValues.value, {
-          [setting.id]: tryMigrateDeprecatedValue(
-            setting,
-            settingValues.value[setting.id]
-          )
-        })
-      }
-      void onChange(setting, get(setting.id), undefined, settingChanged.trigger)
+  /**
+   * Register a setting.
+   * @param setting - The setting to register.
+   */
+  function addSetting(setting: SettingParams) {
+    if (setting.id in settingsById.value) {
+      // Setting already registered - skip to allow component remounting
+      // TODO: Add store reset methods to bootstrapStore and settingStore, then
+      // replace window.location.reload() with router.push() in SidebarLogoutIcon.vue
+      console.warn(`Setting already registered: ${setting.id}`)
+      return
     }
 
-    /**
-     * A Navigation Mode preset stored before the Left Mouse Click Behavior and
-     * Mouse Wheel Scroll settings shipped in 1.27.4 is the only record of that
-     * choice. Materialise the overrides it implies before anything can read
-     * their defaults, which describe a different preset and would otherwise
-     * demote the stored mode to 'custom'.
-     *
-     * Runs from `load()` rather than the settings' own `onChange` so it is
-     * awaited, and so it does not depend on the order `CORE_SETTINGS` happens
-     * to register these three settings in.
-     */
-    async function migrateCanvasNavigationOverrides() {
-      const storedMode = settingValues.value['Comfy.Canvas.NavigationMode']
-      const preset =
-        typeof storedMode === 'string'
-          ? CANVAS_NAVIGATION_PRESETS[storedMode]
-          : undefined
-      if (!preset) return
+    settingsById.value[setting.id] = setting
 
-      const unset: Partial<Settings> = {}
-      for (const id of Object.keys(preset) as (keyof Settings)[]) {
-        if (settingValues.value[id] === undefined) {
-          Object.assign(unset, { [id]: preset[id] })
-        }
-      }
-      if (!Object.keys(unset).length) return
-
-      Object.assign(settingValues.value, unset)
-      await persistMigration(() => persistence.storeSettings(unset))
+    if (settingValues.value[setting.id] !== undefined) {
+      Object.assign(settingValues.value, {
+        [setting.id]: tryMigrateDeprecatedValue(
+          setting,
+          settingValues.value[setting.id]
+        )
+      })
     }
+    void onChange(setting, get(setting.id), undefined, settingChanged.trigger)
+  }
 
-    /**
-     * Migrate the old zoom threshold setting to the new font size setting.
-     * Preserves the exact zoom threshold behavior by converting it to equivalent font size.
-     */
-    async function migrateZoomThresholdToFontSize() {
-      const oldKey = 'LiteGraph.Canvas.LowQualityRenderingZoomThreshold'
-      const newKey = 'LiteGraph.Canvas.MinFontSizeForLOD'
+  /**
+   * A Navigation Mode preset stored before the Left Mouse Click Behavior and
+   * Mouse Wheel Scroll settings shipped in 1.27.4 is the only record of that
+   * choice. Materialise the overrides it implies before anything can read
+   * their defaults, which describe a different preset and would otherwise
+   * demote the stored mode to 'custom'.
+   *
+   * Runs from `load()` rather than the settings' own `onChange` so it is
+   * awaited, and so it does not depend on the order `CORE_SETTINGS` happens
+   * to register these three settings in.
+   */
+  async function migrateCanvasNavigationOverrides() {
+    const storedMode = settingValues.value['Comfy.Canvas.NavigationMode']
+    const preset =
+      typeof storedMode === 'string'
+        ? CANVAS_NAVIGATION_PRESETS[storedMode]
+        : undefined
+    if (!preset) return
 
-      // Only migrate if old setting exists and new setting doesn't
-      if (
-        settingValues.value[oldKey] !== undefined &&
-        settingValues.value[newKey] === undefined
-      ) {
-        const oldValue = settingValues.value[oldKey]
-
-        // Convert zoom threshold to equivalent font size to preserve exact behavior
-        // The threshold formula is: threshold = font_size / (14 * sqrt(DPR))
-        // For DPR=1: threshold = font_size / 14
-        // Therefore: font_size = threshold * 14
-        //
-        // Examples:
-        // - Old 0.6 threshold → 0.6 * 14 = 8.4px → rounds to 8px (preserves ~60% zoom threshold)
-        // - Old 0.5 threshold → 0.5 * 14 = 7px (preserves 50% zoom threshold)
-        // - Old 1.0 threshold → 1.0 * 14 = 14px (preserves 100% zoom threshold)
-        const mappedFontSize = Math.round(oldValue * 14)
-        const clampedFontSize = Math.max(1, Math.min(24, mappedFontSize))
-
-        // Set the new value
-        settingValues.value[newKey] = clampedFontSize
-
-        // Remove the old setting to prevent confusion
-        delete settingValues.value[oldKey]
-
-        // Store the migrated setting
-        await persistMigration(async () => {
-          await persistence.storeSetting(newKey, clampedFontSize)
-          await persistence.storeSetting(oldKey, undefined)
-        })
+    const unset: Partial<Settings> = {}
+    for (const id of Object.keys(preset) as (keyof Settings)[]) {
+      if (settingValues.value[id] === undefined) {
+        Object.assign(unset, { [id]: preset[id] })
       }
     }
+    if (!Object.keys(unset).length) return
 
-    return {
-      settingValues,
-      settingsById,
-      isReady,
-      isLoading,
-      error,
-      load,
-      addSetting,
-      set,
-      setMany,
-      get,
-      exists,
-      getDefaultValue,
-      onSettingChanged: settingChanged.on
+    Object.assign(settingValues.value, unset)
+    await persistMigration(() => persistence.storeSettings(unset))
+  }
+
+  /**
+   * Migrate the old zoom threshold setting to the new font size setting.
+   * Preserves the exact zoom threshold behavior by converting it to equivalent font size.
+   */
+  async function migrateZoomThresholdToFontSize() {
+    const oldKey = 'LiteGraph.Canvas.LowQualityRenderingZoomThreshold'
+    const newKey = 'LiteGraph.Canvas.MinFontSizeForLOD'
+
+    // Only migrate if old setting exists and new setting doesn't
+    if (
+      settingValues.value[oldKey] !== undefined &&
+      settingValues.value[newKey] === undefined
+    ) {
+      const oldValue = settingValues.value[oldKey]
+
+      // Convert zoom threshold to equivalent font size to preserve exact behavior
+      // The threshold formula is: threshold = font_size / (14 * sqrt(DPR))
+      // For DPR=1: threshold = font_size / 14
+      // Therefore: font_size = threshold * 14
+      //
+      // Examples:
+      // - Old 0.6 threshold → 0.6 * 14 = 8.4px → rounds to 8px (preserves ~60% zoom threshold)
+      // - Old 0.5 threshold → 0.5 * 14 = 7px (preserves 50% zoom threshold)
+      // - Old 1.0 threshold → 1.0 * 14 = 14px (preserves 100% zoom threshold)
+      const mappedFontSize = Math.round(oldValue * 14)
+      const clampedFontSize = Math.max(1, Math.min(24, mappedFontSize))
+
+      // Set the new value
+      settingValues.value[newKey] = clampedFontSize
+
+      // Remove the old setting to prevent confusion
+      delete settingValues.value[oldKey]
+
+      // Store the migrated setting
+      await persistMigration(async () => {
+        await persistence.storeSetting(newKey, clampedFontSize)
+        await persistence.storeSetting(oldKey, undefined)
+      })
     }
-  })
+  }
+
+  return {
+    settingValues,
+    settingsById,
+    isReady,
+    isLoading,
+    error,
+    load,
+    addSetting,
+    set,
+    setMany,
+    get,
+    exists,
+    getDefaultValue,
+    onSettingChanged: settingChanged.on
+  }
 }

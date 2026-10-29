@@ -1460,9 +1460,6 @@ importers:
       es-toolkit:
         specifier: 'catalog:'
         version: 1.49.0
-      pinia:
-        specifier: 'catalog:'
-        version: 4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
       semver:
         specifier: ^7.7.2
         version: 7.8.5
