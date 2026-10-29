@@ -1,3 +1,4 @@
+import type { JobModelDownload } from '@/stores/jobModelDownloadStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 import { isImageResult } from '@/utils/resultItem'
@@ -17,13 +18,7 @@ export type BuildJobDisplayCtx = {
   /** Whether the app is running in cloud distribution */
   isCloud?: boolean
   /** The model file the job is downloading before it runs */
-  modelDownload?: {
-    name: string
-    index: number
-    count: number
-    bytesDownloaded: number
-    bytesTotal: number | null
-  }
+  modelDownload?: Omit<JobModelDownload, 'progress'>
 }
 
 type JobDisplay = {
