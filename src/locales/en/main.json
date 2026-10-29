@@ -6180,7 +6180,7 @@
       "body1": "Comfy Agent helps you plan, build, run, and iterate on workflows. Describe what you want to create, and Comfy Agent will work as your powerful teammate.",
       "body2": "To build your workflows, Comfy Agent processes some of your data. Please rest assured, your data is never used for AI model training. By clicking Start, you agree to its usage.",
       "readDocs": "Read the docs",
-      "reject": "Skip",
+      "reject": "Skip for now",
       "accept": "Start using Comfy Agent",
       "agreeAndContinue": "Agree and continue with sign in",
       "body2BeforeSignIn": "To build your workflows, Comfy Agent processes some of your data. Please rest assured, your data is never used for AI model training. By clicking Agree and continue, you agree to its usage.",

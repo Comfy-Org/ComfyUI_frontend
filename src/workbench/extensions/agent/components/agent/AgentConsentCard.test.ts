@@ -45,7 +45,7 @@ describe('AgentConsentCard', () => {
     await user.click(
       screen.getByRole('button', { name: 'Start using Comfy Agent' })
     )
-    await user.click(screen.getByRole('button', { name: 'Skip' }))
+    await user.click(screen.getByRole('button', { name: 'Skip for now' }))
 
     expect(emitted().accept).toHaveLength(1)
     expect(emitted().reject).toHaveLength(1)
@@ -65,7 +65,7 @@ describe('AgentConsentCard', () => {
     ).not.toBeInTheDocument()
 
     await user.click(accept)
-    await user.click(screen.getByRole('button', { name: 'Skip' }))
+    await user.click(screen.getByRole('button', { name: 'Skip for now' }))
 
     expect(emitted().accept).toHaveLength(1)
     expect(emitted().reject).toHaveLength(1)
@@ -81,7 +81,7 @@ describe('AgentConsentCard', () => {
       screen.getByRole('button', { name: 'Start using Comfy Agent' })
     ).toHaveAttribute('aria-busy', 'true')
     expect(
-      screen.queryByRole('button', { name: 'Skip' })
+      screen.queryByRole('button', { name: 'Skip for now' })
     ).not.toBeInTheDocument()
   })
 
@@ -98,7 +98,7 @@ describe('AgentConsentCard', () => {
       'Please check your connection and try again. If you continue having issues, please use the contact form.'
     )
     expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Skip' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Skip for now' })).toBeEnabled()
     expect(
       screen.queryByRole('button', { name: 'Start using Comfy Agent' })
     ).not.toBeInTheDocument()
@@ -121,7 +121,7 @@ describe('AgentConsentCard', () => {
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Skip' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Skip for now' })).toBeEnabled()
   })
 
   it('retries accept from Try again after a failed save', async () => {
@@ -190,7 +190,7 @@ describe('AgentConsentCard', () => {
 
     expect(
       screen.getAllByRole('button').map((button) => button.textContent)
-    ).toEqual(['Skip', 'Start using Comfy Agent'])
+    ).toEqual(['Skip for now', 'Start using Comfy Agent'])
   })
 
   it('shows a placeholder when no video is supplied', () => {

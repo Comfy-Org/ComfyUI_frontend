@@ -110,7 +110,7 @@ const LAYOUTS = {
     contentWrap: 'flex min-w-0 flex-col justify-between gap-3.5 pt-3 pr-3 pb-3',
     section: cn(SECTION_SHELL, 'gap-2.5'),
     sectionNarrow: cn(SECTION_SHELL, 'gap-2.5'),
-    footer: 'flex min-w-0 flex-nowrap items-center justify-between gap-x-3',
+    footer: FOOTER_WIDE,
     footerNarrow: FOOTER_NARROW
   }
 } as const
@@ -150,9 +150,7 @@ const actionButtonClass = computed(() =>
 )
 const actionRowClass = computed(() =>
   isWide.value
-    ? mode.value === 'columns'
-      ? 'ml-auto flex flex-nowrap items-center justify-end gap-2.5'
-      : 'ml-auto flex flex-wrap items-center justify-end gap-2.5'
+    ? 'ml-auto flex flex-wrap items-center justify-end gap-2.5'
     : 'flex w-full flex-col gap-2.5'
 )
 const acceptLabelKey = computed(() => {
