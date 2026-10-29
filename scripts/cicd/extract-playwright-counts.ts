@@ -29,7 +29,7 @@ interface Suite {
 }
 
 interface FullReportData {
-  config?: { rootDir?: string }
+  config?: { rootDir?: string; configFile?: string }
   stats?: TestStats
   suites?: Suite[]
 }
@@ -53,12 +53,18 @@ interface TestCounts {
   failures?: FailedTest[]
 }
 
-function repoRelativePath(file: string, rootDir?: string): string {
-  if (!rootDir) return file
-  const relative = path.relative(process.cwd(), path.resolve(rootDir, file))
-  return relative.startsWith('..') || path.isAbsolute(relative)
+function repoRelativePath(
+  file: string,
+  config: FullReportData['config']
+): string {
+  if (!config?.rootDir || !config.configFile) return file
+  const testRoot = path.posix.relative(
+    path.posix.dirname(config.configFile),
+    config.rootDir
+  )
+  return testRoot.startsWith('..') || path.posix.isAbsolute(testRoot)
     ? file
-    : relative.split(path.sep).join('/')
+    : path.posix.join(testRoot, file)
 }
 
 function extractFailedTests(
@@ -66,18 +72,20 @@ function extractFailedTests(
   baseUrl?: string
 ): FailedTest[] {
   const failures: FailedTest[] = []
-  const rootDir = reportData.config?.rootDir
+  const reportLinkBase = baseUrl?.startsWith('https://') ? baseUrl : undefined
 
   function processSuite(suite: Suite, parentPath: string[] = []) {
     const suitePath = suite.title ? [...parentPath, suite.title] : parentPath
 
     for (const spec of suite.specs ?? []) {
       if (!spec.tests.some((test) => test.status === 'unexpected')) continue
-      const file = repoRelativePath(spec.file || suite.file, rootDir)
+      const file = repoRelativePath(spec.file || suite.file, reportData.config)
       failures.push({
         name: [...suitePath, spec.title].filter(Boolean).join(' › '),
         file,
-        traceUrl: baseUrl ? `${baseUrl}/#?testId=${spec.id}` : undefined
+        traceUrl: reportLinkBase
+          ? `${reportLinkBase}/#?testId=${spec.id}`
+          : undefined
       })
     }
 

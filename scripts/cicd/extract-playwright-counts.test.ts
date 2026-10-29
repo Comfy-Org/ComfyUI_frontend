@@ -27,7 +27,7 @@ type SuiteFixture = Pick<JSONReportSuite, 'title' | 'file'> & {
 }
 
 interface ReportFixture {
-  config?: Pick<JSONReport['config'], 'rootDir'>
+  config?: Partial<Pick<JSONReport['config'], 'rootDir' | 'configFile'>>
   stats: JSONReport['stats']
   suites: SuiteFixture[]
 }
@@ -49,14 +49,11 @@ function stats(
   return { startTime: '2026-10-29T00:00:00.000Z', duration: 1, ...counts }
 }
 
-function extract(report: ReportFixture) {
+function extract(report: ReportFixture, baseUrl = BASE_URL) {
   const dir = mkdtempSync(join(tmpdir(), 'extract-playwright-counts-'))
   try {
     writeFileSync(join(dir, 'report.json'), JSON.stringify(report))
-    const run = spawnSync(TSX, [SCRIPT, dir, BASE_URL], {
-      cwd: ROOT,
-      encoding: 'utf8'
-    })
+    const run = spawnSync(TSX, [SCRIPT, dir, baseUrl], { encoding: 'utf8' })
     if (run.status !== 0) {
       throw new Error(`extractor exited ${run.status}: ${run.stderr}`)
     }
@@ -67,7 +64,10 @@ function extract(report: ReportFixture) {
 }
 
 const mixedReport: ReportFixture = {
-  config: { rootDir: join(ROOT, 'browser_tests') },
+  config: {
+    rootDir: '/__w/ComfyUI_frontend/ComfyUI_frontend/browser_tests',
+    configFile: '/__w/ComfyUI_frontend/ComfyUI_frontend/playwright.config.ts'
+  },
   stats: stats({ expected: 3, unexpected: 1, flaky: 1, skipped: 1 }),
   suites: [
     {
@@ -110,10 +110,14 @@ describe('extract-playwright-counts on a Playwright JSON report', () => {
     ])
   })
 
-  it('keeps the report path when the test root is outside the checkout', () => {
-    const elsewhere = { ...mixedReport, config: { rootDir: '/elsewhere' } }
+  it('keeps the report path when the report has no config file', () => {
+    const noConfigFile = { ...mixedReport, config: { rootDir: '/elsewhere' } }
 
-    expect(extract(elsewhere).failures[0].file).toBe(FILE)
+    expect(extract(noConfigFile).failures[0].file).toBe(FILE)
+  })
+
+  it('omits the report link when the report was not deployed', () => {
+    expect(extract(mixedReport, 'failed').failures[0].traceUrl).toBeUndefined()
   })
 
   it('lists no failures when tests only failed before passing on retry', () => {
