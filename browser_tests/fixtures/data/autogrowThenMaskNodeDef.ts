@@ -1,4 +1,4 @@
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 export const AUTOGROW_THEN_MASK_NODE_TYPE = 'AutogrowThenMaskTestNode'
 

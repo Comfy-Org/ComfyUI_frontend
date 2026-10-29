@@ -3,7 +3,7 @@ import type {
   ComfyNodeDef as ComfyNodeDefV2,
   InputSpec
 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import type { components } from '@/types/comfyRegistryTypes'
 
 const registryToFrontendV2NodeOutputs = (

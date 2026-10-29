@@ -14,7 +14,7 @@ import {
   splitFilePath
 } from '@/renderer/extensions/vueNodes/widgets/utils/audioUtils'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import type { DOMWidget } from '@/types/domWidget'
 import { useAudioService } from '@/services/audioService'
 import type { NodeLocatorId } from '@/types'

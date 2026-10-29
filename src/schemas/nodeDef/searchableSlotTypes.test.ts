@@ -6,7 +6,7 @@ import {
   collectSearchableInputTypes,
   collectSearchableOutputTypes
 } from '@/schemas/nodeDef/searchableSlotTypes'
-import type { ComfyInputsSpec, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyInputsSpec, InputSpec } from '@comfyorg/object-info-parser'
 
 function dynamicCombo(
   options: { key: string; inputs: ComfyInputsSpec }[]

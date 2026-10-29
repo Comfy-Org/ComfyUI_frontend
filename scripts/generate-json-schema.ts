@@ -7,7 +7,7 @@ import {
   zComfyWorkflow1
 } from '@comfyorg/graph-model/workflowSchema'
 import { zComfyNodeDef as zComfyNodeDefV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
-import { zComfyNodeDef as zComfyNodeDefV1 } from '../src/schemas/nodeDefSchema'
+import { zComfyNodeDef as zComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 
 function toNamedJsonSchema(schema: z.ZodType, title: string) {
   return {

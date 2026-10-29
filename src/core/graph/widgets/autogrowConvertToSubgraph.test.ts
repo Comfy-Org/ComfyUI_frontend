@@ -11,7 +11,7 @@ import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useLitegraphService } from '@/services/litegraphService'
 
 const AUTOGROW_NODE_TYPE = 'test/AutogrowThenPlainInputs'

@@ -81,7 +81,7 @@ import type {
   JobDetail,
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { retryingSend } from '@/utils/fetchWithRetry'

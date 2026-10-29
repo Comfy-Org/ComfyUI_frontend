@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import type { InputSpec } from '@comfyorg/object-info-parser'
 import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import { useLitegraphService } from '@/services/litegraphService'
 

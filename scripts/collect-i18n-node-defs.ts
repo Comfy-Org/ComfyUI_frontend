@@ -2,7 +2,7 @@ import * as fs from 'fs'
 
 import { transformNodeDefV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import type { WidgetLabels } from './nodeDefLocaleSerializer'

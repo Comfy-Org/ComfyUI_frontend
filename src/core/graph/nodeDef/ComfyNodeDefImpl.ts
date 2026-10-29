@@ -16,7 +16,7 @@ import type {
   ComfyNodeDef as ComfyNodeDefV1,
   ComfyOutputTypesSpec as ComfyOutputSpecV1,
   PriceBadge
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'

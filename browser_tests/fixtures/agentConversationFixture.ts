@@ -9,7 +9,10 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import type {
+  ComfyNodeDef,
+  ObjectInfoResponse
+} from '@comfyorg/object-info-parser'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type {

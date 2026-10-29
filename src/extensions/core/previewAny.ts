@@ -9,7 +9,7 @@ import {
   addTextPreviewWidgets,
   updateTextPreviewWidgets
 } from '@/extensions/core/textPreviewWidgets'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 

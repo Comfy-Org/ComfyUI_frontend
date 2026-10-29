@@ -8,7 +8,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ContextMenuDivElement } from '@/lib/litegraph/src/types/contextMenu'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { ComfyApp, app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { filterUnavailableCoreMediaMenuActions } from '@/utils/coreMediaMenuActionUtils'

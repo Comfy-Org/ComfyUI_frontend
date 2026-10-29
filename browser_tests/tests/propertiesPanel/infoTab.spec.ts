@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import type { ObjectInfoResponse } from '@comfyorg/object-info-parser'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'

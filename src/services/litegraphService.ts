@@ -57,11 +57,11 @@ import type {
 import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec as InputSpecV1
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import {
   getInputSpecType,
   zDynamicGroupInputSpec
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import { useApp } from '@/scripts/appInstance'
 import { provideLitegraphService } from '@/core/graph/litegraphServiceAccess'
 import {

@@ -1,6 +1,6 @@
 import { expect, mergeTests } from '@playwright/test'
 
-import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import type { ObjectInfoResponse } from '@comfyorg/object-info-parser'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'

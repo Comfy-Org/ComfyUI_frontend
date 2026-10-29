@@ -1,4 +1,4 @@
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { inputSpecTree, ownSlotTypes } from '@/schemas/nodeDef/inputSpecTree'
 import { transformNodeDefV1ToV2 } from '@comfyorg/object-info-parser/migration'

@@ -88,8 +88,11 @@ import type {
   NodeExecutionOutput
 } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
-import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import {
+  isComboInputSpecV1,
+  isComboInputSpecV2
+} from '@comfyorg/object-info-parser'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/types/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
