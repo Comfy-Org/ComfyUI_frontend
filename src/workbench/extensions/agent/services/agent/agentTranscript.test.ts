@@ -24,6 +24,15 @@ const row = (
 })
 
 describe('normalizeAgentTranscript', () => {
+  it('restores the server-reported turn charge from persisted usage', () => {
+    const assistant = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    assistant.token_usage = { charge_micro_usd: 6038 }
+
+    const transcript = normalizeAgentTranscript([assistant])
+
+    expect(transcript.messages[0].creditsUsed).toBeCloseTo(1.274)
+  })
+
   it('restores a skill and adjacent workflow references in their original order from message text', () => {
     const message = row(1, 'user', 'turn-a', '', 'row-1')
     message.content = {

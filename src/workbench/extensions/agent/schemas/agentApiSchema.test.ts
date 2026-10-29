@@ -317,7 +317,8 @@ describe('agentApiSchema contract subtleties', () => {
         output_tokens: 425,
         total_tokens: 4918,
         cache_read_input_tokens: 35596,
-        cache_creation_input_tokens: 0
+        cache_creation_input_tokens: 0,
+        charge_micro_usd: 6038
       },
       { input_tokens: 1, output_tokens: 2 },
       {}
@@ -335,7 +336,12 @@ describe('agentApiSchema contract subtleties', () => {
   })
 
   it('degrades a malformed usage instead of failing the done frame', () => {
-    for (const usage of ['nope', 42, { input_tokens: '4493' }]) {
+    for (const usage of [
+      'nope',
+      42,
+      { input_tokens: '4493' },
+      { charge_micro_usd: -1 }
+    ]) {
       const parsed = zAgentWsEvent.parse({
         ...doneBase,
         data: { ...doneBase.data, usage }

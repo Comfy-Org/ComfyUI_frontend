@@ -41,6 +41,41 @@ function paywallMessage(message?: string): AssistantMessage {
   }
 }
 
+describe('AgentMessage credit usage', () => {
+  it('shows the completed turn charge without presenting it as a session total', () => {
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...createAssistantMessage(toTurnId('msg-credits')),
+          parts: [{ type: 'text', text: 'Done', state: 'done' }],
+          streaming: false,
+          creditsUsed: 1.274
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByTestId('agent-credit-usage')).toHaveTextContent(
+      'Agent used 1.27 credits'
+    )
+  })
+
+  it('hides unavailable usage', () => {
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...createAssistantMessage(toTurnId('msg-no-credits')),
+          parts: [{ type: 'text', text: 'Done', state: 'done' }],
+          streaming: false
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByTestId('agent-credit-usage')).not.toBeInTheDocument()
+  })
+})
+
 describe('AgentMessage paywall reply', () => {
   it('renders the usage-limit card as an inline assistant reply', () => {
     render(AgentMessage, {

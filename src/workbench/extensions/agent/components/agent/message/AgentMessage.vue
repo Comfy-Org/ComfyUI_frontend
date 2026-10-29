@@ -35,7 +35,7 @@ const {
   answeringAskIds?: ReadonlySet<string>
   paywallPresentation?: AgentPaywallPresentation
 }>()
-const { t } = useI18n()
+const { locale, t } = useI18n()
 
 const emit = defineEmits<{
   feedback: [vote: 'up' | 'down' | null]
@@ -71,6 +71,18 @@ const markdown = computed(() =>
 const showActions = computed(
   () => !message.streaming && markdown.value.length > 0
 )
+
+const creditUsage = computed(() => {
+  if (message.streaming || !message.creditsUsed || message.creditsUsed <= 0)
+    return null
+  const credits =
+    message.creditsUsed < 0.01
+      ? '<0.01'
+      : new Intl.NumberFormat(locale.value, {
+          maximumFractionDigits: 2
+        }).format(message.creditsUsed)
+  return t('agent.creditsUsed', { credits })
+})
 
 const replyAssets = computed(() =>
   showActions.value ? htmlReplyAssets(renderMarkdownToHtml(markdown.value)) : []
@@ -137,6 +149,15 @@ const status = computed(() => {
     >
       <i aria-hidden="true" :class="status.icon" />
       <span class="agent-shimmer-text min-w-0 truncate">{{ status.text }}</span>
+    </div>
+
+    <div
+      v-if="creditUsage"
+      data-testid="agent-credit-usage"
+      class="flex items-center gap-1.5 px-2 text-xs/5 text-muted-foreground"
+    >
+      <i aria-hidden="true" class="icon-[lucide--coins] size-3.5" />
+      <span>{{ creditUsage }}</span>
     </div>
 
     <MessageFeedback
