@@ -143,6 +143,36 @@ export const simpleTouchSupportExtension: ComfyExtension = {
 
     app.canvasEl.parentElement?.addEventListener('touchcancel', resetTouchState)
 
+    function handlePinchMove(e: TouchEvent) {
+      if (!lastTouch) return
+      const canvas = canvasOrReport('touchmove', e)
+      if (!canvas) return
+      e.preventDefault()
+      canvas.pointer.isDown = false
+      touchGesture.zooming = true
+
+      LiteGraph.closeAllContextMenus(window)
+      canvas.search_box?.close()
+      const newTouchDist = getMultiTouchPos(e)
+      const center = getMultiTouchCenter(e)
+
+      if (lastScale === null || touchDist === null) return
+      if (touchDist === 0) {
+        // Fingers that started on the same point: measure the pinch from the
+        // first frame where they are apart.
+        touchDist = newTouchDist
+        lastScale = canvas.ds.scale
+        lastTouch = center
+        return
+      }
+      const scale = (lastScale * newTouchDist) / touchDist
+      // Fingers on the same point give a 0, Infinity or NaN scale, which would
+      // write non-finite values into the viewport.
+      if (!Number.isFinite(scale) || scale <= 0) return
+
+      zoomCanvasAroundPinch(canvas, scale, center, lastTouch)
+    }
+
     app.canvasEl.parentElement?.addEventListener(
       'touchmove',
       (e) => {
@@ -154,26 +184,8 @@ export const simpleTouchSupportExtension: ComfyExtension = {
             touchTime = null
           }
         }
-        if (e.touches.length === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
-          const canvas = canvasOrReport('touchmove', e)
-          if (!canvas) return
-          e.preventDefault()
-          canvas.pointer.isDown = false
-          touchGesture.zooming = true
-
-          LiteGraph.closeAllContextMenus(window)
-          canvas.search_box?.close()
-          const newTouchDist = getMultiTouchPos(e)
-
-          const center = getMultiTouchCenter(e)
-
-          if (lastScale === null || touchDist === null) return
-          const scale = (lastScale * newTouchDist) / touchDist
-          // Fingers on the same point give a 0, Infinity or NaN scale, which
-          // would write non-finite values into the viewport.
-          if (!Number.isFinite(scale) || scale <= 0) return
-
-          zoomCanvasAroundPinch(canvas, scale, center, lastTouch)
+        if (e.touches.length === 2 && !e.ctrlKey && !e.shiftKey) {
+          handlePinchMove(e)
         }
       },
       true

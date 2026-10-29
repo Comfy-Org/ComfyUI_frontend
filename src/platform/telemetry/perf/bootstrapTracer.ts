@@ -224,6 +224,10 @@ export class BootstrapTracer {
     return [...this._timings].sort((a, b) => a.startMs - b.startMs)
   }
 
+  /**
+   * `timed_out` is not terminal: startup can still finish after the watchdog
+   * fires, and the outcome then becomes `completed` or `failed`.
+   */
   get outcome(): 'completed' | 'failed' | 'timed_out' | 'pending' {
     return this._outcome ?? (this._timeoutReported ? 'timed_out' : 'pending')
   }

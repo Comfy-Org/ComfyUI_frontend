@@ -547,6 +547,9 @@ interface SnappingLink {
   endDirection?: LinkDirection
 }
 
+/** Consecutive throwing frames after which the render loop stops. */
+const MAX_FAILED_FRAMES = 60
+
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
@@ -2520,22 +2523,41 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.is_rendering = true
     let isFirstFrame = true
+    let failedFrames = 0
+    let reportedFailure = false
     renderFrame.call(this)
 
-    // The first frame runs synchronously inside the constructor. If it throws
-    // (e.g. a userscript patching drawImage), report it and keep the loop
-    // alive so the canvas can recover instead of staying frozen all session.
+    // A frame that throws (e.g. a userscript patching drawImage) used to stop
+    // the loop for good; the first frame runs inside the constructor, so it
+    // also left app.canvas unassigned. Report the first failure and keep
+    // drawing so a transient failure recovers; report at most once per loop. A persistent one stops the
+    // loop after MAX_FAILED_FRAMES in a row, leaving it restartable.
     function renderFrame(this: LGraphCanvas) {
       if (!this.pause_rendering) {
         try {
           this.draw()
+          failedFrames = 0
         } catch (cause) {
-          if (!isFirstFrame) throw cause
-          reportError(cause, {
-            errorType: 'error_rendering_canvas_initial_frame',
-            surface: 'graph',
-            tags: { feature_area: 'litegraph', operation: 'start_rendering' }
-          })
+          failedFrames++
+          if (!reportedFailure) {
+            reportedFailure = true
+            reportError(cause, {
+              errorType: isFirstFrame
+                ? 'error_rendering_canvas_initial_frame'
+                : 'error_rendering_canvas_frame',
+              surface: 'graph',
+              tags: { feature_area: 'litegraph', operation: 'start_rendering' }
+            })
+          }
+          if (failedFrames >= MAX_FAILED_FRAMES) {
+            this.is_rendering = false
+            reportError(cause, {
+              errorType: 'error_rendering_canvas_stopped',
+              surface: 'graph',
+              tags: { feature_area: 'litegraph', operation: 'start_rendering' },
+              context: { failedFrames }
+            })
+          }
         }
       }
       isFirstFrame = false

@@ -4,7 +4,6 @@ import { shallowRef } from 'vue'
 
 import type { DragAndScale } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
 import type { app as comfyApp } from '@/scripts/app'
 
 import { simpleTouchSupportExtension } from './simpleTouchSupport'
@@ -15,12 +14,20 @@ type Viewport = Pick<
   'scale' | 'offset' | 'min_scale' | 'max_scale'
 >
 
-const { canvasEl, container, canvasAvailability } = vi.hoisted(() => {
-  const container = document.createElement('div')
-  const canvasEl = document.createElement('canvas')
-  container.append(canvasEl)
-  return { container, canvasEl, canvasAvailability: { missing: false } }
-})
+const { canvasEl, container, canvasAvailability, viewportState } = vi.hoisted(
+  () => {
+    const container = document.createElement('div')
+    const canvasEl = document.createElement('canvas')
+    container.append(canvasEl)
+    const viewportState: { ds?: Viewport } = {}
+    return {
+      container,
+      canvasEl,
+      canvasAvailability: { missing: false },
+      viewportState
+    }
+  }
+)
 
 const processMouseDown = vi.fn()
 const processMouseMove = vi.fn()
@@ -32,6 +39,7 @@ vi.mock(import('@/scripts/app'), () => {
     min_scale: 0.1,
     max_scale: 10
   }
+  viewportState.ds = ds
   const canvas = fromPartial<LGraphCanvas>({
     ds,
     pointer: { isDown: false },
@@ -184,25 +192,41 @@ describe('Comfy.SimpleTouchSupport pinch zoom', () => {
   })
 
   function viewport() {
-    const canvas = app.canvasOrUndefined
-    if (!canvas) throw new Error('Expected the mocked canvas')
-    canvas.ds.scale = 1
-    canvas.ds.offset[0] = 0
-    canvas.ds.offset[1] = 0
-    return canvas.ds
+    const { ds } = viewportState
+    if (!ds) throw new Error('Expected the mocked viewport')
+    ds.scale = 1
+    ds.offset[0] = 0
+    ds.offset[1] = 0
+    return ds
   }
 
   it.for([
     { name: 'start on the same point', start: 0, move: 100 },
     { name: 'start and stay on the same point', start: 0, move: 0 },
     { name: 'end on the same point', start: 100, move: 0 }
-  ])('keeps the viewport finite when two fingers $name', ({ start, move }) => {
+  ])(
+    'leaves the viewport unchanged when two fingers $name',
+    ({ start, move }) => {
+      const ds = viewport()
+
+      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl, start)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, move)])
+
+      expect({ scale: ds.scale, offset: [...ds.offset] }).toEqual({
+        scale: 1,
+        offset: [0, 0]
+      })
+    }
+  )
+
+  it('zooms once fingers that started on the same point move apart', () => {
     const ds = viewport()
 
-    dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl, start)])
-    dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, move)])
+    dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl)])
+    dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 50)])
+    dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 100)])
 
-    expect([ds.scale, ...ds.offset].every(Number.isFinite)).toBe(true)
+    expect(ds.scale).toBe(2)
   })
 })
 
