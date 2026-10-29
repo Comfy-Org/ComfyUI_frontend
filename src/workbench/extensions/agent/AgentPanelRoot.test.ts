@@ -8700,6 +8700,22 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
+  it.for(['workspace', 'legacy'] as const)(
+    'refreshes $ billing when consent succeeds outside the first send',
+    async (billingType) => {
+      paywallBilling.type = billingType
+      Object.assign(useAgentConsentStore(), { accepted: false })
+      renderWithSelectedTarget()
+      paywallBilling.fetchStatus.mockClear()
+
+      Object.assign(useAgentConsentStore(), { accepted: true })
+
+      await waitFor(() =>
+        expect(paywallBilling.fetchStatus).toHaveBeenCalledOnce()
+      )
+    }
+  )
+
   it.for([
     { host: 'Desktop', desktop: true },
     { host: 'a browser tab on a local Core', desktop: false }

@@ -1297,6 +1297,15 @@ function refreshAgentBillingStatus(): void {
   })
 }
 
+watch(
+  [consentAccepted, consentIdentity],
+  ([accepted, identity], [previousAccepted, previousIdentity]) => {
+    if (accepted && (!previousAccepted || identity !== previousIdentity))
+      refreshAgentBillingStatus()
+  },
+  { flush: 'sync' }
+)
+
 // Adoption (onWorkflowAdopted) and tab activation (onAgentActiveTab) are the
 // primary spinner setters; the non-idle branch only re-arms it after the
 // stash/resume flip of a panel remount, where those setters never run.
@@ -1915,7 +1924,6 @@ async function consentAllowsSubmission(
       hasConsent = true
       acceptedIdentity = consentIdentity.value
     })
-    if (hasConsent) refreshAgentBillingStatus()
     if (hasConsent) coachReleased = await waitForCoachCompletion()
   } finally {
     if (consentHeldSubmissionId === submissionId)

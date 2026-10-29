@@ -244,6 +244,29 @@ describe('useLegacyBilling', () => {
         expect(useSubscription().fetchStatusDirect).toHaveBeenCalledTimes(reads)
       }
     )
+
+    it('finishes initialization and reports a failed status read', async () => {
+      const failure = new Error('status unavailable')
+      useSubscription().subscriptionStatus.value = statusWith({
+        billing_rail: 'stripe',
+        scoped_has_funds: { agent: true }
+      })
+      vi.mocked(useSubscription().fetchStatusDirect).mockRejectedValueOnce(
+        failure
+      )
+      vi.mocked(useAuthStore().fetchBalance).mockResolvedValueOnce(null)
+      const billing = useLegacyBilling()
+
+      await expect(billing.initialize()).resolves.toBeUndefined()
+
+      expect(billing.isInitialized.value).toBe(true)
+      expect(billing.subscription.value?.agentScopedHasFundsAuthoritative).toBe(
+        false
+      )
+      expect(useAuthActions().reportError).toHaveBeenCalledExactlyOnceWith(
+        failure
+      )
+    })
   })
 
   describe('resubscribe', () => {
