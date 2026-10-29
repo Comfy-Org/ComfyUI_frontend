@@ -81,6 +81,13 @@ EXPECTED_ROW_KEYS = (
     'storeReadErrors',
     'newTypes',
     'driveTypes',
+    # Telemetry, never gated -- but listed here so that a channel silently
+    # ceasing to be written WITHHOLDS the verdict rather than reading as a clean
+    # population. A measurement channel that stops firing makes every green run
+    # since worth less than it looked, which is the same doctrine as the
+    # detection proof.
+    'formAgreement',
+    'registryForms',
 )
 
 TELEMETRY = (

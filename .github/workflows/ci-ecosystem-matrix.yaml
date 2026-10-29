@@ -342,7 +342,13 @@ jobs:
           row_names=()
           for f in matrix-rows/*.json; do
             name=$(basename "$f" .json)
-            case "$name" in _manifest*) continue ;; esac
+            # Named explicitly rather than skipping every _-prefixed file:
+            # safe_name() maps any leading non-alphanumeric to _, so a future
+            # pack id could sanitise into one, and silently dropping its row
+            # here would read as a harness failure with a misleading message.
+            # _registry-baseline.json is the widget-form census's own row -- a
+            # different population, with none of the fields a verdict reads.
+            case "$name" in _manifest*|_registry-baseline) continue ;; esac
             row_names+=("$name")
           done
           echo "specs=$built rows=${#row_names[@]}"

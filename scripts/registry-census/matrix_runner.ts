@@ -1437,8 +1437,15 @@ export async function runRegistryCensus(outPath: string): Promise<void> {
 /**
  * The row identity the baseline census writes under.
  *
- * Deliberately not a pack id: it shares an output directory with pack rows, and
- * an aggregator that counted it as a pack would inflate every per-pack
- * denominator by one.
+ * **The leading underscore is load-bearing, not cosmetic.** The baseline row may
+ * share an output directory with pack rows, and it carries only `registryForms`
+ * — none of the eleven fields `summarize_matrix.py` reads. Counted as a pack it
+ * would read as ROW SCHEMA DRIFT and WITHHOLD the gated verdict, and it would
+ * inflate every per-pack denominator by one.
+ *
+ * `summarize_matrix.py` already skips `_`-prefixed files that are not shard
+ * manifests, and the shard's rows-vs-specs check in `ci-ecosystem-matrix.yaml`
+ * skips the same prefix. Renaming this without a leading underscore breaks a
+ * required gate rather than this census.
  */
 export const BASELINE_PACK = '_registry-baseline'

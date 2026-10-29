@@ -1,7 +1,7 @@
 """Report the `widgets_values_form` population over a directory of matrix rows.
 
-Two populations, and conflating them is the mistake this script exists to make
-impossible:
+Three channels over two populations, and conflating them is the mistake this
+script exists to make impossible:
 
   REGISTRY CLASSES   every class in `object_info.shape.json`, instantiated and
                      proven once with no pack code loaded (`registryForms` on
@@ -22,7 +22,8 @@ designed on a shape it was built to decline, so a floor would fail the run for
 correct behaviour.
 
 Usage:
-    python3 scripts/registry-census/census_forms.py <rows-dir> [--json out.json]
+    python3 scripts/registry-census/census_forms.py <rows-dir> \
+        [--baseline path/to/_registry-baseline.json] [--json out.json]
 """
 
 import argparse
@@ -54,10 +55,18 @@ HARNESS_VERDICTS = ('!serialize_threw', '!createNode_null', '!no_refusal_named')
 ALL_VERDICTS = ('provable', *PREDICATE_REFUSALS, *HARNESS_VERDICTS)
 
 
-def read_rows(rows_dir: str):
-    """Rows, split into the baseline row and the pack rows."""
+def read_rows(rows_dir: str, baseline_path: str = ''):
+    """Rows, split into the baseline row and the pack rows.
+
+    The baseline is identified by its `pack` field rather than its filename, so
+    a run that wrote it elsewhere can be pointed at with `--baseline` and a run
+    that wrote it beside the pack rows needs no extra argument.
+    """
     baseline, packs, stubs, missing = None, [], 0, 0
-    for path in sorted(glob.glob(os.path.join(rows_dir, '*.json'))):
+    paths = sorted(glob.glob(os.path.join(rows_dir, '*.json')))
+    if baseline_path:
+        paths.append(baseline_path)
+    for path in paths:
         try:
             with open(path, encoding='utf-8') as fh:
                 row = json.load(fh)
@@ -237,10 +246,15 @@ def report_pack_local(packs):
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('rows', help='directory of per-pack row JSON')
+    ap.add_argument(
+        '--baseline',
+        default='',
+        help='path to the _registry-baseline row, if it is not in <rows>',
+    )
     ap.add_argument('--json', default='', help='also write the summary as JSON')
     args = ap.parse_args()
 
-    baseline, packs, stubs, missing = read_rows(args.rows)
+    baseline, packs, stubs, missing = read_rows(args.rows, args.baseline)
     print(f'rows: {len(packs)} packs'
           f'  (stubs {stubs}, missing both channels {missing},'
           f" baseline {'present' if baseline else 'MISSING'})")
