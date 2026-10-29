@@ -8,7 +8,9 @@
     "conditions": [
       "@comfyorg/account-core",
       "@comfyorg/account-ui",
+      "@comfyorg/graph-state",
       "@comfyorg/layer-editor",
+      "@comfyorg/litegraph",
       "@comfyorg/mask-editor",
       "@comfyorg/object-info-parser",
       "@comfyorg/viewport3d"
