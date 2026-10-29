@@ -158,6 +158,8 @@ const activeTab = (
     data: { workflow_id: workflowId, message_id: id, thread_id: threadId }
   })
 
+type ConversationStore = ReturnType<typeof useAgentConversationStore>
+
 const tabLinkIds = (store: ReturnType<typeof useAgentConversationStore>) =>
   store.messages.flatMap((m) =>
     m.parts.flatMap((p) => (p.type === 'tabLink' ? [p.workflowId] : []))
@@ -2031,18 +2033,23 @@ describe('useAgentConversationStore', () => {
           turn_id: SNAPSHOT_TURN_ID
         }
       ])
+    const storedTool = (): AssistantMessage['parts'][number] => ({
+      type: 'tool',
+      callId: 'call-add_node',
+      name: 'add_node',
+      state: 'done',
+      ok: true
+    })
     const storedParts = (): AssistantMessage['parts'] => [
       { type: 'thinking', text: 'before the reload', state: 'done' },
-      {
-        type: 'tool',
-        callId: 'call-add_node',
-        name: 'add_node',
-        state: 'done',
-        ok: true
-      },
+      storedTool(),
       { type: 'thinking', text: 'after the reload', state: 'done' },
       { type: 'text', text: 'Added it.', state: 'done' }
     ]
+    const reconciledParts = (
+      store: ConversationStore
+    ): AssistantMessage['parts'] | undefined =>
+      store.messages.find((message) => message.id === SNAPSHOT_TURN_ID)?.parts
     const restoredAndSettled = () => {
       const store = useAgentConversationStore()
       const settled: TurnId[] = []
@@ -2093,14 +2100,51 @@ describe('useAgentConversationStore', () => {
         persisted
       )
 
-      expect(
-        store.messages
-          .find((message) => message.id === SNAPSHOT_TURN_ID)
-          ?.parts.filter((part) => part.type === 'thinking')
-      ).toEqual([
-        { type: 'thinking', text: 'before the reload', state: 'done' },
-        { type: 'thinking', text: 'after the reload', state: 'done' }
+      expect(reconciledParts(store)).toEqual(storedParts())
+    })
+
+    it('keeps a live round whose text repeats a stored round before the tool', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'checking the graph'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        [
+          { type: 'thinking', text: 'checking the graph', state: 'done' },
+          storedTool(),
+          { type: 'text', text: 'Added it.', state: 'done' }
+        ]
+      )
+
+      expect(reconciledParts(store)).toEqual([
+        { type: 'thinking', text: 'checking the graph', state: 'done' },
+        storedTool(),
+        { type: 'thinking', text: 'checking the graph', state: 'done' },
+        { type: 'text', text: 'Added it.', state: 'done' }
       ])
+    })
+
+    it('folds a round the reload cut in half into its stored copy', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(thinking(SNAPSHOT_ROW_ID, ' and then the sampler'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      const persisted = storedParts().map((part) =>
+        part.type === 'thinking' && part.text === 'after the reload'
+          ? { ...part, text: 'after the reload and then the sampler' }
+          : part
+      )
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        persisted
+      )
+
+      expect(reconciledParts(store)).toEqual(persisted)
     })
 
     it('keeps the longer live thinking when stored thinking is truncated', () => {
@@ -2112,22 +2156,18 @@ describe('useAgentConversationStore', () => {
 
       store.reconcileSettledTurn(
         { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
-        [
-          { type: 'thinking', text: 'after the reload', state: 'done' },
-          { type: 'text', text: 'Added it.', state: 'done' }
-        ]
+        storedParts()
       )
 
-      expect(
-        store.messages
-          .find((message) => message.id === SNAPSHOT_TURN_ID)
-          ?.parts.filter((part) => part.type === 'thinking')
-      ).toEqual([
+      expect(reconciledParts(store)).toEqual([
+        { type: 'thinking', text: 'before the reload', state: 'done' },
+        storedTool(),
         {
           type: 'thinking',
           text: 'after the reload continues',
           state: 'done'
-        }
+        },
+        { type: 'text', text: 'Added it.', state: 'done' }
       ])
     })
 
@@ -2169,9 +2209,15 @@ describe('useAgentConversationStore', () => {
       })
     })
 
-    it.for(['reset', 'hydrate'] as const)(
-      'does not announce a held turn when the thread is left through %s',
-      (departure) => {
+    it.for([
+      { through: 'reset', leave: (store: ConversationStore) => store.reset() },
+      {
+        through: 'hydrate',
+        leave: (store: ConversationStore) => store.hydrate([])
+      }
+    ])(
+      'does not announce a held turn when the thread is left through $through',
+      ({ leave }) => {
         const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
         const store = useAgentConversationStore()
         const settled: TurnId[] = []
@@ -2187,12 +2233,41 @@ describe('useAgentConversationStore', () => {
         )
         store.ingest(done(SNAPSHOT_ROW_ID))
 
-        if (departure === 'reset') store.reset()
-        else store.hydrate([])
+        leave(store)
 
         expect(settled).toEqual([])
       }
     )
+
+    it('keeps the reconciled row when a late ask retirement follows a stale held tool call', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(runApproval(SNAPSHOT_ROW_ID, 'turn-7:call-1'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      expect(settled).toEqual([])
+
+      vi.advanceTimersByTime(30_000)
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      store.retireAsk('turn-7:call-1', { status: 'retired' })
+
+      expect(reconciledParts(store)).toEqual(storedParts())
+    })
 
     it('announces a held turn only once when the canvas reports twice', () => {
       const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'

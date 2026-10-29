@@ -253,8 +253,51 @@ function anchorThinking(parts: AssistantMessage['parts']): AnchoredThinking[] {
   return anchored
 }
 
-function thinkingOverlaps(left: ThinkingPart, right: ThinkingPart): boolean {
-  return left.text.startsWith(right.text) || right.text.startsWith(left.text)
+interface AnchoredLiveThinking extends AnchoredLocalPart {
+  part: ThinkingPart
+}
+
+function toolCallIdsOf(parts: AssistantMessage['parts']): string[] {
+  return parts.flatMap((part) => (part.type === 'tool' ? [part.callId] : []))
+}
+
+/**
+ * How many of the turn's tool calls had already run when the live row opened.
+ * A snapshot-restored row carries only what streamed after the reload, so its
+ * tool counts sit this far behind the stored row's. Keyed on shared call ids,
+ * falling back to the trailing count when they do not line up.
+ */
+function liveToolOffset(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts']
+): number {
+  const live = toolCallIdsOf(liveParts)
+  const persisted = toolCallIdsOf(persistedParts)
+  if (live.length === 0) return persisted.length
+  const trailing = Math.max(0, persisted.length - live.length)
+  for (let offset = 0; offset <= trailing; offset += 1)
+    if (live.every((callId, index) => persisted[offset + index] === callId))
+      return offset
+  return trailing
+}
+
+/**
+ * Whether a stored and a live round are the same round. Only ever asked of
+ * two rounds already aligned to the same inter-tool interval: equal text
+ * alone is not identity, since one sentence can be narrated twice. Within an
+ * interval, a mid-round reload leaves the live copy a suffix of the stored
+ * one and a truncated stored round a prefix of the live one.
+ */
+function sameThinkingRound(stored: ThinkingPart, live: ThinkingPart): boolean {
+  return stored.text.includes(live.text) || live.text.includes(stored.text)
+}
+
+function liveThinkingAnchors(
+  liveParts: AssistantMessage['parts']
+): AnchoredLiveThinking[] {
+  return anchorLocalParts(liveParts).flatMap((anchor) =>
+    anchor.part.type === 'thinking' ? [{ ...anchor, part: anchor.part }] : []
+  )
 }
 
 function mergeSnapshotThinking(
@@ -262,30 +305,29 @@ function mergeSnapshotThinking(
   persistedParts: AssistantMessage['parts']
 ): AssistantMessage['parts'] {
   const merged = [...persistedParts]
-  const persisted = anchorThinking(persistedParts)
-  const matchedPersisted = new Set<number>()
-  const unmatchedLive = anchorLocalParts(liveParts).filter(
-    ({ part, toolCount }) => {
-      if (part.type !== 'thinking') return false
-      const unmatched = (candidate: AnchoredThinking) =>
-        !matchedPersisted.has(candidate.index)
-      const match =
-        persisted.find(
-          (candidate) =>
-            unmatched(candidate) &&
-            candidate.toolCount === toolCount &&
-            thinkingOverlaps(candidate.part, part)
-        ) ??
-        persisted.find(
-          (candidate) =>
-            unmatched(candidate) && candidate.part.text === part.text
-        )
-      if (match === undefined) return true
-      matchedPersisted.add(match.index)
-      if (part.text.length > match.part.text.length) merged[match.index] = part
-      return false
+  const offset = liveToolOffset(liveParts, persistedParts)
+  const stored = anchorThinking(persistedParts)
+  const claimed = new Set<number>()
+  const unmatchedLive: AnchoredLocalPart[] = []
+  // Newest first, so each live round claims the latest stored round still
+  // unclaimed in its interval: the live rounds of the interval the reload
+  // fell inside are that interval's last ones.
+  for (const anchor of liveThinkingAnchors(liveParts).reverse()) {
+    const toolCount = anchor.toolCount + offset
+    const candidate = stored.findLast(
+      (entry) => entry.toolCount === toolCount && !claimed.has(entry.index)
+    )
+    if (
+      candidate === undefined ||
+      !sameThinkingRound(candidate.part, anchor.part)
+    ) {
+      unmatchedLive.unshift({ ...anchor, toolCount })
+      continue
     }
-  )
+    claimed.add(candidate.index)
+    if (anchor.part.text.length > candidate.part.text.length)
+      merged[candidate.index] = anchor.part
+  }
   return interleaveLocalParts(merged, unmatchedLive)
 }
 
@@ -844,6 +886,10 @@ export const useAgentConversationStore = defineStore(
         unreconciled.transport.hasPendingCanvasSync()
       )
         return
+      // Nothing is held, so this transport has no reason to stay reachable --
+      // and a later retireAsk() would otherwise republish its own copy of the
+      // row over the reconciled one.
+      settledActiveTransports.delete(unreconciled.transport)
       unreconciled.announced = true
       void snapshotTurnSettled.trigger(unreconciled.turn)
     }
