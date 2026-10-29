@@ -92,7 +92,7 @@ function addSamplerNode(nodeId: number): RecordedGraphOperation {
 }
 
 function addLoadImage(nodeId: number): RecordedGraphOperation {
-  const pos = [700, 100]
+  const pos = [700, 880]
   return {
     op: 'add_node',
     pos,
