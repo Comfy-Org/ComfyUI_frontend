@@ -321,8 +321,20 @@
       }
     },
     {
-      "files": ["src/platform/remote/**/*.ts", "src/platform/remote/**/*.vue"],
-      "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
+      "files": [
+        "src/platform/remote/**/*.ts",
+        "src/platform/remote/**/*.vue",
+        "packages/api-client/src/**/*.ts"
+      ],
+      "excludeFiles": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "packages/api-client/src/executionTypes.ts",
+        "packages/api-client/src/jobTypes.ts",
+        "packages/api-client/src/resultItemTypeSchema.ts",
+        "packages/api-client/src/taskSchema.ts",
+        "packages/api-client/src/templateSchema.ts"
+      ],
       "rules": {
         "comfy/no-new-zod-for-remote-api-types": "error"
       }
