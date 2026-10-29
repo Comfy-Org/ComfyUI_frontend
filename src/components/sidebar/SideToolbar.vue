@@ -38,28 +38,15 @@
         :class="groupClasses"
       >
         <ComfyMenuButton />
-        <ContextMenu
+        <SidebarExtensionTabButton
           v-for="tab in tabs"
           :key="tab.id"
-          :model="getTabContextMenu(tab)"
-          @close-auto-focus.prevent
-        >
-          <SidebarIcon
-            :icon="tab.icon"
-            :icon-badge="tab.iconBadge"
-            :provenance-badge="isAgentTab(tab) ? 'AI' : undefined"
-            :provenance-label="
-              isAgentTab(tab) ? t('g.agentCreated') : undefined
-            "
-            :tooltip="tab.tooltip"
-            :tooltip-suffix="getTabTooltipSuffix(tab)"
-            :label="tab.label || tab.title"
-            :is-small
-            :selected="tab.id === selectedTab?.id"
-            :data-testid="`${tab.id}-tab-button`"
-            @click="onTabClick(tab)"
-          />
-        </ContextMenu>
+          :tab
+          :tooltip-suffix="getTabTooltipSuffix(tab)"
+          :is-small
+          :selected="tab.id === selectedTab?.id"
+          @click="onTabClick(tab)"
+        />
         <SidebarTemplatesButton />
       </div>
 
@@ -100,23 +87,19 @@ import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
-import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
-import { useExtensionStore } from '@/stores/extensionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
-import SidebarIcon from './SidebarIcon.vue'
+import SidebarExtensionTabButton from './SidebarExtensionTabButton.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
 
@@ -140,8 +123,6 @@ const NightlySurveyController =
 const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
-const extensionStore = useExtensionStore()
-const settingsDialog = useSettingsDialog()
 const userStore = useUserStore()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
@@ -172,44 +153,6 @@ const tabs = computed(() => {
 })
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
 const isHidden = computed(() => canvasStore.isPickingNodes)
-
-function sourceExtension(tab: SidebarTabExtension) {
-  const name = workspaceStore.sidebarTab.getSourceExtensionName(tab.id)
-  return extensionStore.extensions.find((extension) => extension.name === name)
-}
-
-function isAgentTab(tab: SidebarTabExtension) {
-  const extension = sourceExtension(tab)
-  return extension ? extensionStore.isAgentCreatedExtension(extension) : false
-}
-
-async function disableTabExtension(tab: SidebarTabExtension) {
-  const extension = sourceExtension(tab)
-  if (!extension) return
-  const disabled = settingStore.get('Comfy.Extension.Disabled')
-  if (disabled.includes(extension.name)) return
-  await settingStore.set('Comfy.Extension.Disabled', [
-    ...disabled,
-    extension.name
-  ])
-  window.location.reload()
-}
-
-function getTabContextMenu(tab: SidebarTabExtension): MenuItem[] {
-  if (!isAgentTab(tab)) return []
-  return [
-    {
-      label: t('g.manageExtensions'),
-      icon: 'icon-[lucide--settings]',
-      command: () => settingsDialog.show('extension')
-    },
-    {
-      label: t('g.disableExtension'),
-      icon: 'icon-[lucide--circle-off]',
-      command: () => disableTabExtension(tab)
-    }
-  ]
-}
 
 /**
  * Handle sidebar tab icon click.

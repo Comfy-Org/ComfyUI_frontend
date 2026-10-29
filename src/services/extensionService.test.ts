@@ -5,7 +5,6 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { useExtensionService } from './extensionService'
@@ -409,21 +408,38 @@ describe('invokeExtensionsAsync', () => {
     })
 
     it('attributes sidebar tabs to the extension whose setup registered them', async () => {
-      register({
-        name: 'agent.tools.sidebar',
-        setup: (app: ReturnType<typeof useApp>) => {
-          app.extensionManager.registerSidebarTab({
-            id: 'agent-tab',
-            title: 'Agent tab',
-            type: 'vue',
-            component: {}
-          })
-        }
+      const app = useApp()
+      const originalManager = Object.getOwnPropertyDescriptor(
+        app,
+        'extensionManager'
+      )
+      const registerSidebarTabForExtension = vi.fn()
+      Object.defineProperty(app, 'extensionManager', {
+        configurable: true,
+        value: { registerSidebarTabForExtension }
       })
+      try {
+        register({
+          name: 'agent.tools.sidebar',
+          setup: (setupApp: ReturnType<typeof useApp>) => {
+            setupApp.extensionManager.registerSidebarTab({
+              id: 'agent-tab',
+              title: 'Agent tab',
+              type: 'vue',
+              component: {}
+            })
+          }
+        })
 
-      await useExtensionService().invokeExtensionsAsync('setup')
+        await useExtensionService().invokeExtensionsAsync('setup')
+      } finally {
+        if (originalManager)
+          Object.defineProperty(app, 'extensionManager', originalManager)
+        else delete (app as Partial<typeof app>).extensionManager
+      }
 
-      expect(useSidebarTabStore().getSourceExtensionName('agent-tab')).toBe(
+      expect(registerSidebarTabForExtension).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'agent-tab' }),
         'agent.tools.sidebar'
       )
     })

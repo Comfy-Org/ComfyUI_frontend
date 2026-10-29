@@ -12,7 +12,6 @@ import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
 import { useApp } from '@/scripts/appInstance'
@@ -70,8 +69,20 @@ function createSetupHookApp(app: ComfyApp, extensionName: string): ComfyApp {
   const extensionManager = new Proxy(manager, {
     get(target, property) {
       if (property === 'registerSidebarTab') {
-        return (tab: Parameters<typeof target.registerSidebarTab>[0]) =>
-          useSidebarTabStore().registerSidebarTab(tab, undefined, extensionName)
+        return (tab: Parameters<typeof target.registerSidebarTab>[0]) => {
+          const attributedManager = target as typeof target & {
+            registerSidebarTabForExtension?: (
+              tab: Parameters<typeof target.registerSidebarTab>[0],
+              extensionName: string
+            ) => void
+          }
+          return attributedManager.registerSidebarTabForExtension
+            ? attributedManager.registerSidebarTabForExtension(
+                tab,
+                extensionName
+              )
+            : target.registerSidebarTab(tab)
+        }
       }
       const value: unknown = Reflect.get(target, property, target)
       return typeof value === 'function' ? value.bind(target) : value
