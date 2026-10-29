@@ -77,7 +77,6 @@ export const useJobModelDownloadStore = defineStore('jobModelDownload', () => {
     return downloads.value.get(jobId)
   }
 
-  /** Drops downloads of jobs the queue no longer lists as pending or running. */
   function reconcileActiveJobs(activeJobIds: ReadonlySet<JobId>) {
     const ended = [...downloads.value.keys()].filter(
       (jobId) => !activeJobIds.has(jobId)

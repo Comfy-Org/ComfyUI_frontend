@@ -101,7 +101,6 @@ function downloadPercent({ progress }: JobModelDownload) {
 /**
  * Builds the reactive job list, filters, and grouped view for the queue overlay.
  */
-
 export function useJobList() {
   const { t, locale } = useI18n()
   const queueStore = useQueueStore()
@@ -280,10 +279,6 @@ export function useJobList() {
       : undefined
   }
 
-  /**
-   * The row's fills. A model download uses the light fill only, the one the
-   * running node uses, so the name and size stay readable over it.
-   */
   function progressFills(
     state: JobState,
     isActive: boolean,
