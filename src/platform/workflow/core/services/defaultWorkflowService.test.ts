@@ -59,7 +59,7 @@ describe('defaultWorkflowService', () => {
     fetchApi.mockResolvedValue(jsonResponse(servedWorkflow))
 
     const ready = initDefaultWorkflow()
-    expect(getDefaultWorkflow()).toEqual(defaultGraph)
+    expect(getDefaultWorkflow()).toBe(defaultGraph)
 
     await ready
   })
@@ -69,7 +69,7 @@ describe('defaultWorkflowService', () => {
 
     await initDefaultWorkflow()
 
-    expect(getDefaultWorkflow()).toEqual(defaultGraph)
+    expect(getDefaultWorkflow()).toBe(defaultGraph)
   })
 
   it('does not report a 404, which is how older backends answer', async () => {
@@ -85,7 +85,7 @@ describe('defaultWorkflowService', () => {
 
     await initDefaultWorkflow()
 
-    expect(getDefaultWorkflow()).toEqual(defaultGraph)
+    expect(getDefaultWorkflow()).toBe(defaultGraph)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ errorType: 'DefaultWorkflowRouteUnavailable' })
@@ -97,7 +97,7 @@ describe('defaultWorkflowService', () => {
 
     await initDefaultWorkflow()
 
-    expect(getDefaultWorkflow()).toEqual(defaultGraph)
+    expect(getDefaultWorkflow()).toBe(defaultGraph)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ errorType: 'DefaultWorkflowInvalid' })
@@ -109,7 +109,7 @@ describe('defaultWorkflowService', () => {
 
     await initDefaultWorkflow()
 
-    expect(getDefaultWorkflow()).toEqual(defaultGraph)
+    expect(getDefaultWorkflow()).toBe(defaultGraph)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ errorType: 'DefaultWorkflowFetchFailed' })
@@ -120,7 +120,7 @@ describe('defaultWorkflowService', () => {
     fetchApi.mockRejectedValue(new TypeError('Failed to fetch'))
 
     await expect(initDefaultWorkflow()).resolves.toBeUndefined()
-    expect(getDefaultWorkflow()).toEqual(defaultGraph)
+    expect(getDefaultWorkflow()).toBe(defaultGraph)
   })
 
   it('requests the workflow at most once per page load', async () => {
@@ -144,7 +144,7 @@ describe('defaultWorkflowService', () => {
     await vi.advanceTimersByTimeAsync(10_000)
     await ready
 
-    expect(getDefaultWorkflow()).toEqual(defaultGraph)
+    expect(getDefaultWorkflow()).toBe(defaultGraph)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ errorType: 'DefaultWorkflowTimedOut' })
@@ -160,7 +160,7 @@ describe('defaultWorkflowService', () => {
     await vi.advanceTimersByTimeAsync(10_000)
     await ready
 
-    expect(getDefaultWorkflow()).toEqual(defaultGraph)
+    expect(getDefaultWorkflow()).toBe(defaultGraph)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ errorType: 'DefaultWorkflowTimedOut' })
@@ -181,7 +181,8 @@ describe('defaultWorkflowService', () => {
     expect(getDefaultWorkflow()).toEqual(servedWorkflow)
   })
 
-  it('never exposes a document id, so each caller mints its own', () => {
+  it('ships a bundled default with no document id of its own', () => {
+    expect(defaultGraph).not.toHaveProperty('id')
     expect(getDefaultWorkflow()).not.toHaveProperty('id')
   })
 })
@@ -197,6 +198,6 @@ describe('defaultWorkflowService in e2e builds', () => {
     await initDefaultWorkflow()
 
     expect(fetchApi).not.toHaveBeenCalled()
-    expect(getDefaultWorkflow()).toEqual(defaultGraph)
+    expect(getDefaultWorkflow()).toBe(defaultGraph)
   })
 })
