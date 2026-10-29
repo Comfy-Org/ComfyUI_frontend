@@ -94,7 +94,7 @@ case "$1 $2" in
   "pr view")
     [[ "$3" == "\${FAKE_PR_NUMBER}" && "$4 $5" == "--json author,mergeCommit" ]] || {
       echo "unexpected gh pr view invocation: $*" >&2; exit 64; }
-    jq -cn --arg oid "\${FAKE_MERGE_COMMIT}" '{author: {login: "author"}, mergeCommit: {oid: $oid}}'
+    jq -cn --arg oid "\${FAKE_MERGE_COMMIT}" '{author: {login: "pr-view-author"}, mergeCommit: {oid: $oid}}'
     ;;
   "pr list") ;;
   *) echo "unexpected gh invocation: $*" >&2; exit 64 ;;
@@ -146,13 +146,17 @@ function reportConflict(
   const eventPath = join(sandbox, 'event.json')
   writeFileSync(
     eventPath,
-    JSON.stringify({
-      pull_request: {
-        number: 21078,
-        user: { login: 'author' },
-        merge_commit_sha: mergeCommit
-      }
-    })
+    JSON.stringify(
+      event === 'workflow_dispatch'
+        ? { inputs: { pr_number: '21078', force_rerun: String(forceRerun) } }
+        : {
+            pull_request: {
+              number: 21078,
+              user: { login: 'author' },
+              merge_commit_sha: mergeCommit
+            }
+          }
+    )
   )
   const script = commentRun
     .replaceAll('${{ github.event_name }}', event)
@@ -291,7 +295,7 @@ describe('backport conflict comment', () => {
     expect(reports[0]).toContain(
       `<!-- backport-conflict:core/1.56:${secondMergeCommit}:${firstTargetHead} -->`
     )
-    expect(reports[0]).toContain('cc @author')
+    expect(reports[0]).toContain('cc @pr-view-author')
   })
 
   it('reports the same merge commit once per target', () => {
