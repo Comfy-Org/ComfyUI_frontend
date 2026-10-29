@@ -247,6 +247,26 @@ const askResolved = (
     }
   })
 const PAST_ANSWER_RETRY_BACKOFF_MS = 5_000
+function deleteApproval(id: string, askId = 'turn-1:call-1') {
+  return wire({
+    type: 'agent_ask',
+    data: {
+      thread_id: 'th-1',
+      message_id: id,
+      ask_id: askId,
+      kind: 'delete_approval',
+      context: { action: 'delete_nodes', nodes: [{ id: '12' }] },
+      prompt: 'Delete these nodes?',
+      options: [
+        { id: 'delete', label: 'Delete' },
+        { id: 'keep', label: 'Keep' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+  })
+}
 const askUser = (id: string, askId = 'turn-1:call-1') =>
   wire({
     type: 'agent_ask',
@@ -2103,6 +2123,90 @@ describe('useAgentSession (v1 composition root)', () => {
     ).toBe(false)
   })
 
+  describe('superseded-answer report names the ask kind', () => {
+    async function parkedOn(
+      frame: unknown,
+      receipt: AgentAnswerReceipt | Promise<AgentAnswerReceipt> = {
+        status: 'answered'
+      }
+    ) {
+      const answerAsk = vi.fn<AgentRestClient['answerAsk']>(() =>
+        Promise.resolve(receipt)
+      )
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: source
+      })
+      session.start()
+      await session.sendMessage('go on')
+      emit(frame)
+      return { session, emit }
+    }
+
+    it.for([
+      ['run_approval', runApproval('msg-1'), ['run'], ['cancel']],
+      ['ask_user', askUser('msg-1'), ['sdxl'], ['flux']],
+      ['delete_approval', deleteApproval('msg-1'), ['keep'], ['delete']]
+    ] as const)(
+      'tags a lost %s answer with its kind',
+      async ([kind, frame, sent, won]) => {
+        const { session, emit } = await parkedOn(frame)
+        await session.answerAsk('turn-1:call-1', { selected: [...sent] })
+
+        emit(askResolved('msg-1', 'turn-1:call-1', [...won]))
+
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'agent_ask_answer_superseded',
+            tags: expect.objectContaining({ ask_kind: kind })
+          })
+        )
+      }
+    )
+
+    it('tags an answer to an ask with no card on screen as unknown', async () => {
+      const { session } = await parkedOn(askUser('msg-1'), {
+        status: 'answered',
+        selected: ['flux']
+      })
+
+      await session.answerAsk('turn-1:call-9', { selected: ['sdxl'] })
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_ask_answer_superseded',
+          tags: expect.objectContaining({ ask_kind: 'unknown' })
+        })
+      )
+    })
+
+    it('keeps the kind when a new chat starts before the answer settles', async () => {
+      let resolve: (receipt: AgentAnswerReceipt) => void = () => {}
+      const promise = new Promise<AgentAnswerReceipt>((settle) => {
+        resolve = settle
+      })
+      const { session } = await parkedOn(askUser('msg-1'), promise)
+      const answered = session.answerAsk('turn-1:call-1', {
+        selected: ['sdxl']
+      })
+
+      session.newChat()
+      resolve({ status: 'answered', selected: ['flux'] })
+      await answered
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_ask_answer_superseded',
+          tags: expect.objectContaining({ ask_kind: 'ask_user' })
+        })
+      )
+    })
+  })
+
   describe('ask_user', () => {
     const parkedOnQuestion = async (
       receipt: AgentAnswerReceipt = { status: 'answered' }
@@ -2246,7 +2350,8 @@ describe('useAgentSession (v1 composition root)', () => {
             other_text_changed: false,
             selection_known: true,
             committed_selected_count: 1,
-            submitted_selected_count: 1
+            submitted_selected_count: 1,
+            ask_kind: 'ask_user'
           }
         })
       )
@@ -2358,7 +2463,8 @@ describe('useAgentSession (v1 composition root)', () => {
               other_text_changed: true,
               selection_known: false,
               committed_selected_count: undefined,
-              submitted_selected_count: 1
+              submitted_selected_count: 1,
+              ask_kind: 'ask_user'
             }
           })
         )
@@ -2594,7 +2700,11 @@ describe('useAgentSession (v1 composition root)', () => {
         name: 'the same option with other free text',
         changes: { selection_changed: false, other_text_changed: true },
         committed: { selected: ['sdxl'], other_text: 'a VAE' },
-        expected: { status: 'answered', selected: ['sdxl'], otherText: 'a VAE' }
+        expected: {
+          status: 'answered',
+          selected: ['sdxl'],
+          otherText: 'a VAE'
+        }
       }
     ])(
       'shows the committed answer when $name won',
@@ -2960,7 +3070,8 @@ describe('useAgentSession (v1 composition root)', () => {
           other_text_changed: false,
           selection_known: true,
           committed_selected_count: 1,
-          submitted_selected_count: 1
+          submitted_selected_count: 1,
+          ask_kind: 'run_approval'
         }
       })
       expect(session.notices.value).toHaveLength(1)
@@ -2988,7 +3099,9 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await session.sendMessage('build it and run it')
       emit(runApproval('msg-1'))
-      const answered = session.answerAsk('turn-1:call-1', { selected: ['run'] })
+      const answered = session.answerAsk('turn-1:call-1', {
+        selected: ['run']
+      })
 
       emit(askResolved('msg-1'))
       expect(cardOnScreen()).toBe(false)
@@ -3991,7 +4104,9 @@ describe('useAgentSession (v1 composition root)', () => {
           })
       )
     const cancelMessage = vi.fn(
-      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+      async (): Promise<AgentCancelAccepted> => ({
+        status: 'cancelling'
+      })
     )
     const rest = fakeRest({
       postMessage,
@@ -4060,7 +4175,9 @@ describe('useAgentSession (v1 composition root)', () => {
       )
       .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
     const cancelMessage = vi.fn(
-      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+      async (): Promise<AgentCancelAccepted> => ({
+        status: 'cancelling'
+      })
     )
     const session = useAgentSession({
       rest: fakeRest({ postMessage, cancelMessage }),
@@ -5898,7 +6015,9 @@ describe('useAgentSession (v1 composition root)', () => {
         (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
       >()
       .mockRejectedValue(
-        new AgentApiError('content too long', 422, { type: 'VALIDATION_ERROR' })
+        new AgentApiError('content too long', 422, {
+          type: 'VALIDATION_ERROR'
+        })
       )
     const session = useAgentSession({
       rest: fakeRest({ postMessage }),
