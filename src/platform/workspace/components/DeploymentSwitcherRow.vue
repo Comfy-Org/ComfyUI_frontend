@@ -4,11 +4,12 @@
       v-bind="$attrs"
       :value
       :disabled
-      :aria-describedby="compatibilityNote ? noteId : undefined"
+      :aria-describedby="note ? noteId : undefined"
       :class="
         cn(
           switcherItemClass,
-          'aria-checked:bg-secondary aria-checked:data-highlighted:bg-accent'
+          'aria-checked:bg-secondary aria-checked:data-highlighted:bg-accent',
+          muted && 'data-disabled:opacity-100'
         )
       "
       @select="emit('select', $event)"
@@ -18,7 +19,15 @@
         icon-class="size-3.5 text-muted-foreground"
         ring-class="ring-1 ring-background group-data-highlighted:ring-accent group-aria-checked:ring-secondary group-aria-checked:group-data-highlighted:ring-accent"
       />
-      <span ref="titleText" class="min-w-0 flex-1 truncate text-foreground">
+      <span
+        ref="titleText"
+        :class="
+          cn(
+            'min-w-0 flex-1 truncate',
+            muted ? 'text-muted-foreground' : 'text-foreground'
+          )
+        "
+      >
         {{ title }}
       </span>
       <span
@@ -53,9 +62,7 @@
           />
         </DropdownMenuItemIndicator>
       </span>
-      <span v-if="compatibilityNote" :id="noteId" hidden>
-        {{ compatibilityNote }}
-      </span>
+      <span v-if="note" :id="noteId" hidden>{{ note }}</span>
     </MenuRadioItem>
   </TextTooltip>
 </template>
@@ -84,7 +91,8 @@ const {
   detail = null,
   tooltip,
   tone,
-  compatibilityNote = null,
+  note = null,
+  muted = false,
   switching = false,
   disabled = false
 } = defineProps<{
@@ -95,7 +103,8 @@ const {
   tooltip: string
   /** The deployment's status; leave it out for Comfy Cloud. */
   tone?: DeploymentStatusTone
-  compatibilityNote?: string | null
+  note?: string | null
+  muted?: boolean
   switching?: boolean
   disabled?: boolean
 }>()
@@ -112,7 +121,7 @@ const detailCell = useTemplateRef<HTMLElement>('detailCell')
 const isTruncated = ref(false)
 
 const tooltipText = computed(() => {
-  if (compatibilityNote) return compatibilityNote
+  if (note) return note
   return isTruncated.value ? tooltip : ''
 })
 
