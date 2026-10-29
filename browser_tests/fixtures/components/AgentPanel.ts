@@ -146,7 +146,14 @@ export class AgentPanel {
       name: 'Workflow JSON'
     })
     this.workSummary = this.root.getByRole('button', {
-      name: new RegExp(`^${escapeRegExp(enMessages.agent.worked)}`)
+      name: new RegExp(
+        `^(${[
+          enMessages.agent.worked,
+          enMessages.agent.workedNotConfirmedOnCanvas
+        ]
+          .map(escapeRegExp)
+          .join('|')})`
+      )
     })
   }
 

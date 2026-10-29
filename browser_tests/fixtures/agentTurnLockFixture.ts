@@ -547,9 +547,9 @@ export class AgentTurnLockHarness {
   public readonly liveProgressRow: Locator
   public readonly userBubbles: Locator
   public readonly turnInProgressNotice: Locator
+  public readonly agentPanel: AgentPanel
   private readonly entryButton: Locator
   private readonly dock: Locator
-  private readonly agentPanel: AgentPanel
 
   constructor(
     private readonly page: Page,
@@ -615,14 +615,6 @@ export class AgentTurnLockHarness {
     return this.server.postAttempts
   }
 
-  transcriptReads(): number {
-    return this.server.transcriptReadCount
-  }
-
-  /**
-   * Resolves once the reload's turn-recovery poll has run out of attempts, so
-   * only the socket can settle the turn after this.
-   */
   async waitForRecoveryExhausted(): Promise<void> {
     const hydrationRead = 1
     await expect

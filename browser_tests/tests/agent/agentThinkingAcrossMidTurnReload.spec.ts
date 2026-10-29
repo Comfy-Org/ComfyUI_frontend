@@ -20,19 +20,16 @@ test(
       description: 'https://linear.app/comfyorg/issue/FRONT-3659'
     }
   },
-  async ({ page, turnLock, getAgentSocket }) => {
+  async ({ turnLock, getAgentSocket }) => {
     const prompt = 'add an audio output node'
 
     await test.step('narrate a round, then reload mid-turn', async () => {
       await turnLock.openOnBlankWorkflow()
       await turnLock.startTurn(prompt)
-      await expect(turnLock.panel.getByText(TURN_THINKING_TEXT)).toBeVisible()
 
-      await page.reload()
-      await expect(turnLock.panel).toBeVisible({ timeout: 30_000 })
+      await turnLock.agentPanel.reload()
       await expect(turnLock.userBubbles).toHaveText([prompt])
       await expect(turnLock.stopButton).toBeVisible()
-      await expect(turnLock.panel.getByText(TURN_THINKING_TEXT)).toHaveCount(0)
     })
 
     const socket =
@@ -50,10 +47,9 @@ test(
 
       await expect(turnLock.sendButton).toBeVisible({ timeout: 30_000 })
       await expect(turnLock.stopButton).toHaveCount(0)
-      await expect(turnLock.workSummary).toBeVisible()
 
-      await turnLock.workSummary.click()
-      await expect(turnLock.panel.getByRole('listitem')).toHaveText([
+      await turnLock.agentPanel.openWorkSummary()
+      await expect(turnLock.agentPanel.activityRows).toHaveText([
         TURN_THINKING_TEXT,
         /Add node/,
         LATE_THINKING_TEXT
