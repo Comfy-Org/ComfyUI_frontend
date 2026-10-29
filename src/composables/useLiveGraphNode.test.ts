@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { app } from '@/scripts/app'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 import { useLiveGraphNode } from './useLiveGraphNode'
 

@@ -7,7 +7,7 @@ description: 'Adds deprecation warnings for renamed or removed properties/APIs. 
 
 Adds backward-compatible deprecation warnings for renamed or removed
 properties using the `defineDeprecatedProperty` helper in
-`src/lib/litegraph/src/utils/feedback.ts`.
+`packages/litegraph/src/utils/feedback.ts`.
 
 ## When to Use
 
@@ -33,10 +33,10 @@ working.
 
 ### 2. Apply the Deprecation
 
-Use `defineDeprecatedProperty` from `src/lib/litegraph/src/utils/feedback.ts`:
+Use `defineDeprecatedProperty` from `packages/litegraph/src/utils/feedback.ts`:
 
 ```typescript
-import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
+import { defineDeprecatedProperty } from '@comfyorg/litegraph/utils/feedback'
 
 /** @deprecated Use {@link obj.newProp} instead. */
 defineDeprecatedProperty(

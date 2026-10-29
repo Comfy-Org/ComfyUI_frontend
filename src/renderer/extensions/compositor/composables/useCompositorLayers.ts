@@ -3,10 +3,10 @@ import { reactive } from 'vue'
 
 import type { CompositorBBox } from '@/renderer/extensions/compositor/composables/compositorLayerState'
 import type { ImageFileRef } from '@/renderer/extensions/compositor/composables/compositorPaths'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { isSubgraph } from '@/lib/litegraph/src/utils/graphTypeGuards'
+import { isSubgraph } from '@comfyorg/litegraph/utils/graphTypeGuards'
 
 type CompositorNodeRef = Pick<LGraphNode, 'id' | 'graph'>
 

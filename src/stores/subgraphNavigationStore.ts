@@ -9,7 +9,7 @@ import {
 } from 'vue-router'
 
 import type { PanZoom as DragAndScaleState } from '@comfyorg/shared-frontend-utils/geometry'
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Subgraph } from '@comfyorg/litegraph/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -19,9 +19,9 @@ import { isUuidShapedSubgraphId } from '@comfyorg/graph-state/subgraphIdSchema'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
-import { findSubgraphPathById } from '@/lib/litegraph/src/utils/graphTraversalUtil'
+import { findSubgraphPathById } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { isNonNullish } from '@/utils/typeGuardUtil'
-import { isSubgraph } from '@/lib/litegraph/src/utils/graphTypeGuards'
+import { isSubgraph } from '@comfyorg/litegraph/utils/graphTypeGuards'
 
 interface WorkflowServiceAccess {
   openWorkflow(

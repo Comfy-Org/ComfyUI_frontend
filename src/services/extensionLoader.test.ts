@@ -1,6 +1,6 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { EXTENSION_FAILURES_TRUNCATED_FIELD } from '@/platform/telemetry/extensionLoadTelemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
@@ -21,7 +21,7 @@ const coreLoad = vi.hoisted(() => ({
 vi.mock(import('@/extensions/core/index'), () => ({
   registerCoreExtensions: async () => {
     const { LGraphCanvas, LGraphNode } =
-      await import('@/lib/litegraph/src/litegraph')
+      await import('@comfyorg/litegraph/litegraph')
     coreLoad.onConfigure = LGraphNode.prototype.onConfigure
     coreLoad.processMouseDown = LGraphCanvas.prototype.processMouseDown
     coreLoad.processMouseMove = LGraphCanvas.prototype.processMouseMove

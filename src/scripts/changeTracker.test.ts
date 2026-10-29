@@ -22,9 +22,9 @@ import {
   createTestSubgraphData,
   createTestSubgraphNode,
   resetSubgraphFixtureState
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { Subgraph } from '@/lib/litegraph/src/LGraph'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import { LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
+import type { Subgraph } from '@comfyorg/litegraph/LGraph'
 import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'

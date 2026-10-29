@@ -5,8 +5,8 @@ import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, shallowRef } from 'vue'
 
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { CustomEventTarget } from '@comfyorg/litegraph/infrastructure/CustomEventTarget'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
@@ -18,7 +18,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createMockCanvasRenderingContext2D,
   createMockMinimapCanvas
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 import type { UUID } from '@comfyorg/graph-model/uuid'
 
 interface MockNode {

@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { describe } from 'vitest'
 
-import { mintNodeId } from '@/lib/litegraph/src/idAllocation'
+import { mintNodeId } from '@comfyorg/litegraph/idAllocation'
 import { createLGraphState } from '@comfyorg/graph-model/lgraphState'
 import { test } from '@/testing/pinia'
 import type { UUID } from '@comfyorg/graph-model/uuid'

@@ -3,8 +3,8 @@ import { nextTick } from 'vue'
 import { useLoad3d } from '@/extensions/core/load3d/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
+import type { IContextMenuValue } from '@comfyorg/litegraph/types/contextMenu'
 import type {
   NodeExecutionOutput,
   NodeOutputWith,
@@ -18,7 +18,7 @@ type SaveMeshOutput = NodeOutputWith<{
 import { app } from '@/scripts/app'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { getNodeByLocatorId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 function applySaveGLBOutput(node: LGraphNode, fileInfo: ResultItem): void {
   const filePath = (fileInfo.subfolder ?? '') + '/' + (fileInfo.filename ?? '')

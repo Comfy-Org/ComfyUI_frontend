@@ -1,7 +1,7 @@
 import { cloneDeep, groupBy, isEqual, omit } from 'es-toolkit'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   collectSubgraphDefinitions,

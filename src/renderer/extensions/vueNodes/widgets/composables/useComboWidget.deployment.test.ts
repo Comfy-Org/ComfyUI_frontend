@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 

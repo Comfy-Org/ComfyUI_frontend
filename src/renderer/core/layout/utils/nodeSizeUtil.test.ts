@@ -1,6 +1,6 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 describe('removeNodeTitleHeight', () => {

@@ -5,7 +5,11 @@ import type { z } from 'zod'
 
 import { listDirectory, readJson } from './outcome'
 import type { Outcome } from './outcome'
-import { domainRecordSchema, exceptionLedgerSchema } from './schema'
+import {
+  SOURCE_ROOTS,
+  domainRecordSchema,
+  exceptionLedgerSchema
+} from './schema'
 import type { ArchitectureException, DomainRecord } from './schema'
 
 const DOMAINS_DIRECTORY = 'docs/architecture/domains'
@@ -28,14 +32,16 @@ export interface ArchitectureConfiguration {
 }
 
 function listSourceFiles(repositoryRoot: string): Outcome<string[]> {
-  const entries = listDirectory(repositoryRoot, 'src', true)
-  if (!entries.ok) return entries
+  const files: string[] = []
+  for (const root of SOURCE_ROOTS) {
+    if (!existsSync(join(repositoryRoot, root))) continue
+    const entries = listDirectory(repositoryRoot, root, true)
+    if (!entries.ok) return entries
+    files.push(...entries.value.map((filename) => `${root}/${filename}`))
+  }
   return {
     ok: true,
-    value: entries.value
-      .map((filename) => `src/${filename}`)
-      .filter((filename) => SOURCE_FILE.test(filename))
-      .sort()
+    value: files.filter((filename) => SOURCE_FILE.test(filename)).sort()
   }
 }
 

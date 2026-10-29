@@ -2,7 +2,7 @@
 import { computed, reactive, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { deriveWidgetVisibility } from '@comfyorg/graph-model/widgetVisibility'

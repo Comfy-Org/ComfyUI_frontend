@@ -12,8 +12,8 @@ import type {
   ExecutableLGraphNode,
   ExecutionId,
   LGraph
-} from '@/lib/litegraph/src/litegraph'
-import { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
+import { ExecutableNodeDTO } from '@comfyorg/litegraph/litegraph'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'

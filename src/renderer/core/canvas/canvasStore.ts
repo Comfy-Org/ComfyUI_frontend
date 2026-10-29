@@ -14,8 +14,8 @@ import type {
   LGraphGroup,
   LGraphNode,
   SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
-import { resolveSelectable } from '@/lib/litegraph/src/canvas/selectionAdapter'
+} from '@comfyorg/litegraph/litegraph'
+import { resolveSelectable } from '@comfyorg/litegraph/canvas/selectionAdapter'
 import { useSelectionStore } from '@comfyorg/graph-state/selection/selectionStore'
 import { useLayoutMutations } from '@comfyorg/graph-state/layout/layoutMutations'
 import { LayoutSource } from '@comfyorg/graph-state/layout/types'

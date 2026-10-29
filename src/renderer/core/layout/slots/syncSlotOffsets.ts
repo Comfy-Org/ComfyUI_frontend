@@ -1,4 +1,4 @@
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import type { SlotOffset, SlotOffsetMode } from '@comfyorg/graph-model/layout'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'

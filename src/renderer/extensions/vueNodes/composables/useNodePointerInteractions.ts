@@ -6,18 +6,18 @@ import {
   isMiddleButtonHeld,
   isMiddlePointerInput
 } from '@comfyorg/shared-frontend-utils/pointerUtils'
-import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import { captureGesture } from '@/lib/litegraph/src/canvas/captureGesture'
+import { CanvasPointer } from '@comfyorg/litegraph/CanvasPointer'
+import { captureGesture } from '@comfyorg/litegraph/canvas/captureGesture'
 import type {
   GestureEffect,
   GestureEvent,
   GestureState
-} from '@/lib/litegraph/src/canvas/reduceGesture'
+} from '@comfyorg/litegraph/canvas/reduceGesture'
 import {
   idleGesture,
   reduceGesture
-} from '@/lib/litegraph/src/canvas/reduceGesture'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/canvas/reduceGesture'
+import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'

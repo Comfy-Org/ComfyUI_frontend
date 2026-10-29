@@ -85,7 +85,7 @@
     // Public extension API surface, deliberately exported for the 40+ custom-node
     // ecosystem (ADR-LAYOUT / ADR-ECS). No internal importer by design.
     { "file": "src/types/index.ts", "exports": ["*"] },
-    { "file": "src/lib/litegraph/src/litegraph.ts", "exports": ["*"] },
+    { "file": "packages/litegraph/src/litegraph.ts", "exports": ["*"] },
     { "file": "src/scripts/ui/menu/index.ts", "exports": ["*"] },
     {
       "file": "src/scripts/ui/components/asyncDialog.ts",
@@ -125,7 +125,7 @@
       "exports": ["convertToInput"]
     },
     {
-      "file": "src/lib/litegraph/src/widgets/widgetMap.ts",
+      "file": "packages/litegraph/src/widgets/widgetMap.ts",
       "exports": ["isAssetWidget"]
     },
     // Generated OpenAPI client types (mirrors knip ignore).

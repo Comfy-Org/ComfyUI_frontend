@@ -7,10 +7,10 @@ import {
   test
 } from 'vitest'
 
-import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { SUBGRAPH_INPUT_ID } from '@comfyorg/litegraph/constants'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
+import type { SubgraphNode } from '@comfyorg/litegraph/litegraph'
+import { enableSubgraphNodeCreation } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 

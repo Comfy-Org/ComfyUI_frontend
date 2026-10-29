@@ -1,6 +1,6 @@
 import { contains, modulesBySpecificity, sameRole } from './records'
 import type { ArchitectureConfiguration, Claim } from './records'
-import { ROLES, ROLE_DEPENDENCIES } from './schema'
+import { ROLES, ROLE_DEPENDENCIES, SOURCE_ROOTS } from './schema'
 import type { ArchitecturalRole, DomainRecord } from './schema'
 
 export const BOUNDARIES_PATH = 'docs/architecture/domains/boundaries.json'
@@ -125,7 +125,10 @@ export function buildBoundaries({
     boundaries: {
       zones: [
         ...ordered.map(({ name, patterns }) => ({ name, patterns })),
-        { name: UNCLASSIFIED, patterns: ['src/**'] }
+        {
+          name: UNCLASSIFIED,
+          patterns: SOURCE_ROOTS.map((root) => `${root}/**`)
+        }
       ],
       rules: [
         ...ordered.map((zone) => ({

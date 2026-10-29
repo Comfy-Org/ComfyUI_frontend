@@ -1,7 +1,7 @@
 import { useI18n } from 'vue-i18n'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import NodeOutputsExportDialog from '@/platform/assets/components/NodeOutputsExportDialog.vue'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { useAssetZipExport } from '@/platform/assets/composables/useAssetZipExport'

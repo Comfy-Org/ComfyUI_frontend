@@ -4,7 +4,7 @@ import {
   LGraph,
   LGraphEventMode,
   LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 
 import { graphToPrompt } from './executionUtil'
 

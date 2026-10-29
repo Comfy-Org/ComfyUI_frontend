@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
+} from '@comfyorg/litegraph/constants'
 import type {
   ExportedSubgraph,
   ISerialisedGraph,

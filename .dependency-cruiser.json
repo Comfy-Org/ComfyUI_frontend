@@ -41,10 +41,10 @@
       "name": "litegraph-does-not-import-the-app",
       "severity": "error",
       "from": {
-        "path": "^src/lib/litegraph/",
+        "path": "^packages/litegraph/",
         "pathNot": "/__(fixtures|mocks)__/"
       },
-      "to": { "path": "^src/", "pathNot": "^src/lib/litegraph/" }
+      "to": { "path": "^src/" }
     }
   ],
   "options": {

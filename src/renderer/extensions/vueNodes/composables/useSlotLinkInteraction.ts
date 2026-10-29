@@ -2,17 +2,17 @@ import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
 import type { Fn } from '@vueuse/core'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { AutoPanController } from '@/lib/litegraph/src/canvas/useAutoPan'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import { AutoPanController } from '@comfyorg/litegraph/canvas/useAutoPan'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
+import { LLink, slotFloatingLinks } from '@comfyorg/litegraph/LLink'
+import { CanvasPointer } from '@comfyorg/litegraph/CanvasPointer'
 import {
   hasModifierKey,
   selectSlotLinks
-} from '@/lib/litegraph/src/canvas/linkSelection'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
+} from '@comfyorg/litegraph/canvas/linkSelection'
+import type { Reroute } from '@comfyorg/litegraph/Reroute'
+import type { RenderLink } from '@comfyorg/litegraph/canvas/RenderLink'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -24,13 +24,13 @@ import {
 } from '@/renderer/core/canvas/interaction/canvasPointerEvent'
 import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
-import { getGraphSlotLayout } from '@/lib/litegraph/src/canvas/slotCalculations'
+import { getGraphSlotLayout } from '@comfyorg/litegraph/canvas/slotCalculations'
 import {
   resolveNodeSurfaceSlotCandidate,
   resolveSlotTargetCandidate
 } from '@/renderer/core/canvas/links/linkDropOrchestrator'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { isLinkRevealed } from '@/lib/litegraph/src/canvas/linkRevealState'
+import { isLinkRevealed } from '@comfyorg/litegraph/canvas/linkRevealState'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -42,7 +42,7 @@ import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/compos
 import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
-import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
+import { inputLink } from '@comfyorg/litegraph/node/slotLinks'
 import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
 import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'

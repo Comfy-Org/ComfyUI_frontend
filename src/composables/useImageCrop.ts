@@ -6,7 +6,7 @@ import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { resolveInputSourceNode } from '@/lib/litegraph/src/utils/graphTraversalUtil'
+import { resolveInputSourceNode } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 type ResizeDirection =

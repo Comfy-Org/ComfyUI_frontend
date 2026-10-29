@@ -3,7 +3,7 @@ import { nextTick, ref } from 'vue'
 
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/workflowTestUtils'
 
 import { registerWorkflowTabActivityTracker } from './workflowTabActivityTracker'
 

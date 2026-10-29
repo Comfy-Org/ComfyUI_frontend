@@ -3,7 +3,7 @@ import { debounce } from 'es-toolkit'
 import type { CompositorLayerStateSession } from '@/renderer/extensions/compositor/composables/compositorSave'
 import { saveCompositorLayerState } from '@/renderer/extensions/compositor/composables/compositorSave'
 import { Dirty } from '@comfyorg/layer-editor/history'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 
 const AUTO_SAVE_DEBOUNCE_MS = 300
 

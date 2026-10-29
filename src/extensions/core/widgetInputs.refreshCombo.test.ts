@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { LGraph, LLink } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LLink } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
@@ -15,7 +15,7 @@ import {
   createMockLGraphNode,
   createMockLLink,
   createMockLinks
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 vi.mock(import('@/scripts/app'))

@@ -1,8 +1,8 @@
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { beforeEach, describe, expect, it, test, vi } from 'vitest'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
+import { LGraphEventMode } from '@comfyorg/litegraph/litegraph'
 import {
   MINIMAP_DECORATION_POP_MS,
   renderMinimapToCanvas
@@ -14,7 +14,7 @@ import {
   createMockLGraph,
   createMockLGraphNode,
   createMockNodeOutputSlot
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import {
   toOwningGraphId,
   toRootGraphId

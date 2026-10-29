@@ -1,4 +1,4 @@
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 

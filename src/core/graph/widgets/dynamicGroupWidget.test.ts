@@ -16,17 +16,17 @@ import {
 
 import { i18n } from '@/i18n'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
-import { multiClone } from '@/lib/litegraph/src/subgraph/subgraphUtils'
+import { multiClone } from '@comfyorg/litegraph/subgraph/subgraphUtils'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { graphToPrompt } from '@/utils/executionUtil'

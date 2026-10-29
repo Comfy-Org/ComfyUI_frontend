@@ -7,21 +7,21 @@ import {
   getPromotableWidgets,
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
-import { resolveConcretePromotedWidget } from '@/lib/litegraph/src/subgraph/promotion/resolveConcretePromotedWidget'
-import { resolveSubgraphInputTarget } from '@/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget'
-import type { SerializedProxyWidgetTuple } from '@/lib/litegraph/src/subgraph/promotion/promotionSchema'
-import { parseProxyWidgets } from '@/lib/litegraph/src/subgraph/promotion/promotionSchema'
+import { resolveConcretePromotedWidget } from '@comfyorg/litegraph/subgraph/promotion/resolveConcretePromotedWidget'
+import { resolveSubgraphInputTarget } from '@comfyorg/litegraph/subgraph/promotion/resolveSubgraphInputTarget'
+import type { SerializedProxyWidgetTuple } from '@comfyorg/litegraph/subgraph/promotion/promotionSchema'
+import { parseProxyWidgets } from '@comfyorg/litegraph/subgraph/promotion/promotionSchema'
 import type {
   ProxyWidgetErrorQuarantineEntry,
   ProxyWidgetQuarantineReason
-} from '@/lib/litegraph/src/subgraph/promotion/proxyWidgetQuarantineSchema'
-import { parseProxyWidgetErrorQuarantine } from '@/lib/litegraph/src/subgraph/promotion/proxyWidgetQuarantineSchema'
+} from '@comfyorg/litegraph/subgraph/promotion/proxyWidgetQuarantineSchema'
+import { parseProxyWidgetErrorQuarantine } from '@comfyorg/litegraph/subgraph/promotion/proxyWidgetQuarantineSchema'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { nextUniqueName } from '@comfyorg/graph-state/strings'
-import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { Subgraph } from '@comfyorg/litegraph/subgraph/Subgraph'
+import type { SubgraphInput } from '@comfyorg/litegraph/subgraph/SubgraphInput'
+import type { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
 import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { useLinkStore } from '@comfyorg/graph-state/linkStore'

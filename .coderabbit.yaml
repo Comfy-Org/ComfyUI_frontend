@@ -54,7 +54,7 @@ reviews:
         instructions: |
           Use only PR metadata already available in the review context: the changed-file list relative to the PR base, the PR description, and the diff content. Do not rely on shell commands.
 
-          This check applies ONLY when the PR modifies files under `src/lib/litegraph/`, `src/ecs/`, or files related to graph entities (nodes, links, widgets, slots, reroutes, groups, subgraphs).
+          This check applies ONLY when the PR modifies files under `packages/litegraph/`, `src/ecs/`, or files related to graph entities (nodes, links, widgets, slots, reroutes, groups, subgraphs).
 
           If none of those paths appear in the changed files, pass immediately.
 
@@ -81,7 +81,7 @@ reviews:
     - path: '**/*.stories.ts'
       instructions: |
         Treat `docs/guidance/storybook.md` as required review context.
-    - path: 'src/lib/litegraph/**'
+    - path: 'packages/litegraph/**'
       instructions: |
         Treat the ADRs in `docs/adr/` as required review context. For widget
         serialization changes, also read
@@ -102,7 +102,7 @@ reviews:
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,
         `docs/guidance/vitest.md`, and `docs/testing/vitest-patterns.md` as
         required review context for every changed Vitest test file.
-    - path: 'src/lib/litegraph/**/*.test.ts'
+    - path: 'packages/litegraph/**/*.test.ts'
       instructions: |
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,
         `docs/guidance/vitest.md`, `docs/testing/vitest-patterns.md`, and

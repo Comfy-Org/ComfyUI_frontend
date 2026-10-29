@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import {
   clearRootLinkReveals,
   isLinkRevealed
-} from '@/lib/litegraph/src/canvas/linkRevealState'
+} from '@comfyorg/litegraph/canvas/linkRevealState'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { app } from '@/scripts/app'
 import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'

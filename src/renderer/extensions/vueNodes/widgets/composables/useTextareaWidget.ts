@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { ITextareaWidget } from '@comfyorg/graph-model/widgets'
 import { isTextareaInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import type {

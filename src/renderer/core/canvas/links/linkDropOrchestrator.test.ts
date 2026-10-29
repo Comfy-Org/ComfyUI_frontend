@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -19,7 +19,7 @@ import {
 const NODE_ID = toNodeId('node-1')
 const getGraphSlotLayout = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/lib/litegraph/src/canvas/slotCalculations'), () => ({
+vi.mock(import('@comfyorg/litegraph/canvas/slotCalculations'), () => ({
   getGraphSlotLayout
 }))
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 
-import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import { SUBGRAPH_OUTPUT_ID } from '@comfyorg/litegraph/constants'
 import {
   toOwningGraphId,
   toRootGraphId

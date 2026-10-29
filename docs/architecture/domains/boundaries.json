@@ -456,7 +456,7 @@
       {
         "name": "assets/integration",
         "patterns": [
-          "src/lib/litegraph/src/widgets/AssetWidget.ts",
+          "packages/litegraph/src/widgets/AssetWidget.ts",
           "src/platform/assets/utils/createAssetWidget.test.ts",
           "src/platform/assets/utils/createAssetWidget.ts"
         ]
@@ -816,8 +816,8 @@
         "patterns": [
           "src/extensions/core/createBoundingBoxes.test.ts",
           "src/extensions/core/createBoundingBoxes.ts",
-          "src/lib/litegraph/src/widgets/BoundingBoxesWidget.test.ts",
-          "src/lib/litegraph/src/widgets/BoundingBoxesWidget.ts",
+          "packages/litegraph/src/widgets/BoundingBoxesWidget.test.ts",
+          "packages/litegraph/src/widgets/BoundingBoxesWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.test.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.ts"
         ]
@@ -891,8 +891,8 @@
           "src/renderer/core/canvas/canvasStore.test.ts",
           "src/renderer/core/canvas/canvasStore.ts",
           "src/renderer/core/canvas/links/slotLinkDragUIState.ts",
-          "src/lib/litegraph/src/canvas/useAutoPan.test.ts",
-          "src/lib/litegraph/src/canvas/useAutoPan.ts",
+          "packages/litegraph/src/canvas/useAutoPan.test.ts",
+          "packages/litegraph/src/canvas/useAutoPan.ts",
           "src/renderer/core/canvas/useCanvasInteractions.test.ts",
           "src/renderer/core/canvas/useCanvasInteractions.ts",
           "src/renderer/core/canvas/useCanvasScheduler.ts"
@@ -904,8 +904,8 @@
           "src/composables/canvas/visibleCanvasViewport.test.ts",
           "src/composables/canvas/visibleCanvasViewport.ts",
           "src/renderer/core/canvas/__tests__/canvasViewport.test.ts",
-          "src/lib/litegraph/src/canvas/pathRenderer.test.ts",
-          "src/lib/litegraph/src/canvas/pathRenderer.ts"
+          "packages/litegraph/src/canvas/pathRenderer.test.ts",
+          "packages/litegraph/src/canvas/pathRenderer.ts"
         ]
       },
       {
@@ -1364,27 +1364,27 @@
         "name": "graph-canvas/domain",
         "patterns": [
           "src/base/common/selectionBounds.ts",
-          "src/lib/litegraph/src/canvas/measureSlots.ts",
-          "src/lib/litegraph/src/canvas/reduceGesture.test.ts",
-          "src/lib/litegraph/src/canvas/reduceGesture.ts",
-          "src/lib/litegraph/src/infrastructure/LGraphCanvasEventMap.ts",
-          "src/lib/litegraph/src/types/contextMenu.ts",
-          "src/lib/litegraph/src/types/panel.ts",
-          "src/lib/litegraph/src/types/badgeData.ts",
+          "packages/litegraph/src/canvas/measureSlots.ts",
+          "packages/litegraph/src/canvas/reduceGesture.test.ts",
+          "packages/litegraph/src/canvas/reduceGesture.ts",
+          "packages/litegraph/src/infrastructure/LGraphCanvasEventMap.ts",
+          "packages/litegraph/src/types/contextMenu.ts",
+          "packages/litegraph/src/types/panel.ts",
+          "packages/litegraph/src/types/badgeData.ts",
           "src/utils/vintageClipboard.ts"
         ]
       },
       {
         "name": "graph-canvas/application",
         "patterns": [
-          "src/lib/litegraph/src/DragAndScale.animateToBounds.test.ts",
-          "src/lib/litegraph/src/DragAndScale.ts",
-          "src/lib/litegraph/src/DragAndScale.viewportSize.test.ts",
-          "src/lib/litegraph/src/__tests__/**",
-          "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.test.ts",
-          "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.ts",
-          "src/lib/litegraph/src/canvas/hitTesting.ts",
-          "src/lib/litegraph/src/canvas/resolvePointerTarget.ts",
+          "packages/litegraph/src/DragAndScale.animateToBounds.test.ts",
+          "packages/litegraph/src/DragAndScale.ts",
+          "packages/litegraph/src/DragAndScale.viewportSize.test.ts",
+          "packages/litegraph/src/__tests__/**",
+          "packages/litegraph/src/canvas/getCanvasContextMenuTarget.test.ts",
+          "packages/litegraph/src/canvas/getCanvasContextMenuTarget.ts",
+          "packages/litegraph/src/canvas/hitTesting.ts",
+          "packages/litegraph/src/canvas/resolvePointerTarget.ts",
           "src/systems/**",
           "src/workbench/eventHelpers.test.ts",
           "src/workbench/eventHelpers.ts"
@@ -1393,55 +1393,55 @@
       {
         "name": "graph-canvas/infrastructure",
         "patterns": [
-          "src/lib/litegraph/src/CanvasPointer.deviceDetection.test.ts",
-          "src/lib/litegraph/src/CanvasPointer.ts",
-          "src/lib/litegraph/src/canvas/captureGesture.test.ts",
-          "src/lib/litegraph/src/canvas/captureGesture.ts",
-          "src/lib/litegraph/src/canvas/clipboardStorage.ts",
-          "src/lib/litegraph/src/cursorCache.test.ts",
-          "src/lib/litegraph/src/cursorCache.ts"
+          "packages/litegraph/src/CanvasPointer.deviceDetection.test.ts",
+          "packages/litegraph/src/CanvasPointer.ts",
+          "packages/litegraph/src/canvas/captureGesture.test.ts",
+          "packages/litegraph/src/canvas/captureGesture.ts",
+          "packages/litegraph/src/canvas/clipboardStorage.ts",
+          "packages/litegraph/src/cursorCache.test.ts",
+          "packages/litegraph/src/cursorCache.ts"
         ]
       },
       {
         "name": "graph-canvas/presentation",
         "patterns": [
-          "src/lib/litegraph/src/ContextMenu.ts",
-          "src/lib/litegraph/src/LGraphBadge.ts",
-          "src/lib/litegraph/src/LGraphButton.test.ts",
-          "src/lib/litegraph/src/LGraphButton.ts",
-          "src/lib/litegraph/src/LGraphCanvas.clipboard.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.cloneZIndex.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.deprecated.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.drawConnections.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.gesture.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.ghost.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.groupSelection.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.interactionMode.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.invalidation.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.linkDragAutoPan.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.linkVisibility.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.onMenuAdd.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.prompt.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.renderInfo.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.resize.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.selectOnly.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.selection.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.setGraph.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.slotHitDetection.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.subgraphPasteDelete.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.titleButtons.test.ts",
-          "src/lib/litegraph/src/LGraphCanvas.ts",
-          "src/lib/litegraph/src/LGraphIcon.ts",
-          "src/lib/litegraph/src/canvas/InputIndicators.ts",
-          "src/lib/litegraph/src/draw.ts",
-          "src/lib/litegraph/src/nodeBadgeDraw.test.ts",
-          "src/lib/litegraph/src/nodeBadgeDraw.ts",
-          "src/lib/litegraph/src/nodeEmphasis.ts",
-          "src/lib/litegraph/src/utils/linkColors.ts",
-          "src/lib/litegraph/src/utils/textMeasureCache.test.ts",
-          "src/lib/litegraph/src/utils/textMeasureCache.ts",
-          "src/lib/litegraph/src/utils/textUtils.test.ts",
-          "src/lib/litegraph/src/utils/textUtils.ts"
+          "packages/litegraph/src/ContextMenu.ts",
+          "packages/litegraph/src/LGraphBadge.ts",
+          "packages/litegraph/src/LGraphButton.test.ts",
+          "packages/litegraph/src/LGraphButton.ts",
+          "src/core/graph/subgraph/LGraphCanvas.clipboard.test.ts",
+          "packages/litegraph/src/LGraphCanvas.cloneZIndex.test.ts",
+          "packages/litegraph/src/LGraphCanvas.deprecated.test.ts",
+          "packages/litegraph/src/LGraphCanvas.drawConnections.test.ts",
+          "packages/litegraph/src/LGraphCanvas.gesture.test.ts",
+          "packages/litegraph/src/LGraphCanvas.ghost.test.ts",
+          "packages/litegraph/src/LGraphCanvas.groupSelection.test.ts",
+          "packages/litegraph/src/LGraphCanvas.interactionMode.test.ts",
+          "packages/litegraph/src/LGraphCanvas.invalidation.test.ts",
+          "packages/litegraph/src/LGraphCanvas.linkDragAutoPan.test.ts",
+          "packages/litegraph/src/LGraphCanvas.linkVisibility.test.ts",
+          "packages/litegraph/src/LGraphCanvas.onMenuAdd.test.ts",
+          "packages/litegraph/src/LGraphCanvas.prompt.test.ts",
+          "packages/litegraph/src/LGraphCanvas.renderInfo.test.ts",
+          "packages/litegraph/src/LGraphCanvas.resize.test.ts",
+          "packages/litegraph/src/LGraphCanvas.selectOnly.test.ts",
+          "packages/litegraph/src/LGraphCanvas.selection.test.ts",
+          "packages/litegraph/src/LGraphCanvas.setGraph.test.ts",
+          "packages/litegraph/src/LGraphCanvas.slotHitDetection.test.ts",
+          "src/core/graph/subgraph/LGraphCanvas.subgraphPasteDelete.test.ts",
+          "packages/litegraph/src/LGraphCanvas.titleButtons.test.ts",
+          "packages/litegraph/src/LGraphCanvas.ts",
+          "packages/litegraph/src/LGraphIcon.ts",
+          "packages/litegraph/src/canvas/InputIndicators.ts",
+          "packages/litegraph/src/draw.ts",
+          "packages/litegraph/src/nodeBadgeDraw.test.ts",
+          "packages/litegraph/src/nodeBadgeDraw.ts",
+          "packages/litegraph/src/nodeEmphasis.ts",
+          "packages/litegraph/src/utils/linkColors.ts",
+          "packages/litegraph/src/utils/textMeasureCache.test.ts",
+          "packages/litegraph/src/utils/textMeasureCache.ts",
+          "packages/litegraph/src/utils/textUtils.test.ts",
+          "packages/litegraph/src/utils/textUtils.ts"
         ]
       },
       {
@@ -1460,18 +1460,18 @@
           "src/extensions/core/selectionBorder.ts",
           "src/extensions/core/simpleTouchSupport.test.ts",
           "src/extensions/core/simpleTouchSupport.ts",
-          "src/lib/litegraph/src/__fixtures__/canvasHarness.ts",
-          "src/lib/litegraph/src/contextMenuCompat.test.ts",
-          "src/lib/litegraph/src/contextMenuCompat.ts"
+          "packages/litegraph/src/__fixtures__/canvasHarness.ts",
+          "packages/litegraph/src/contextMenuCompat.test.ts",
+          "packages/litegraph/src/contextMenuCompat.ts"
         ]
       },
       {
         "name": "graph-commands/application",
-        "patterns": ["src/lib/litegraph/src/graphIntents.test.ts"]
+        "patterns": ["packages/litegraph/src/graphIntents.test.ts"]
       },
       {
         "name": "graph-commands/infrastructure",
-        "patterns": ["src/lib/litegraph/src/docBoundGraphs.ts"]
+        "patterns": ["packages/litegraph/src/docBoundGraphs.ts"]
       },
       {
         "name": "graph-compatibility/integration",
@@ -1517,53 +1517,53 @@
       {
         "name": "graph-model/domain",
         "patterns": [
-          "src/lib/litegraph/src/slotColors.ts",
-          "src/lib/litegraph/src/LGraph.compoundUndo.test.ts",
-          "src/lib/litegraph/src/LGraph.configureStoreScope.test.ts",
-          "src/lib/litegraph/src/LGraph.deepCollision.test.ts",
-          "src/lib/litegraph/src/LGraph.failedConfigure.test.ts",
-          "src/lib/litegraph/src/LGraph.inputSlotRealign.test.ts",
-          "src/lib/litegraph/src/LGraph.linkPresentation.test.ts",
-          "src/lib/litegraph/src/LGraph.linkPresentationTransfer.test.ts",
-          "src/lib/litegraph/src/LGraph.roundTrip.test.ts",
-          "src/lib/litegraph/src/LGraph.serialise.test.ts",
-          "src/lib/litegraph/src/LGraph.tabSwitchSnapshot.test.ts",
-          "src/lib/litegraph/src/LGraph.test.ts",
-          "src/lib/litegraph/src/LGraph.ts",
-          "src/lib/litegraph/src/LGraphGroup.test.ts",
-          "src/lib/litegraph/src/LGraphGroup.ts",
-          "src/lib/litegraph/src/LGraphNode.arrangeWidgetInputSlots.test.ts",
-          "src/lib/litegraph/src/LGraphNode.fallbackWidgetNames.test.ts",
-          "src/lib/litegraph/src/LGraphNode.geometry.test.ts",
-          "src/lib/litegraph/src/LGraphNode.namedValuesShadowDiff.test.ts",
-          "src/lib/litegraph/src/LGraphNode.nodeState.test.ts",
-          "src/lib/litegraph/src/LGraphNode.ownCollectionFields.test.ts",
-          "src/lib/litegraph/src/LGraphNode.propertyChanged.test.ts",
-          "src/lib/litegraph/src/LGraphNode.reactivity.test.ts",
-          "src/lib/litegraph/src/LGraphNode.resize.test.ts",
-          "src/lib/litegraph/src/LGraphNode.serialisedWidgetRegisters.test.ts",
-          "src/lib/litegraph/src/LGraphNode.stateProjection.test.ts",
-          "src/lib/litegraph/src/LGraphNode.test.ts",
-          "src/lib/litegraph/src/LGraphNode.titleButtons.test.ts",
-          "src/lib/litegraph/src/LGraphNode.ts",
-          "src/lib/litegraph/src/LGraphNode.widgetLabelRename.regression.test.ts",
-          "src/lib/litegraph/src/LGraphNode.widgetOrder.test.ts",
-          "src/lib/litegraph/src/LLink.spreadCopy.test.ts",
-          "src/lib/litegraph/src/LLink.store.test.ts",
-          "src/lib/litegraph/src/LLink.test.ts",
-          "src/lib/litegraph/src/LLink.ts",
-          "src/lib/litegraph/src/LinkMap.ts",
-          "src/lib/litegraph/src/Reroute.store.test.ts",
-          "src/lib/litegraph/src/Reroute.ts",
-          "src/lib/litegraph/src/extensionPersistence.test.ts",
-          "src/lib/litegraph/src/extensionPersistence.ts",
-          "src/lib/litegraph/src/geometryApiContracts.test.ts",
-          "src/lib/litegraph/src/idAllocation.property.test.ts",
-          "src/lib/litegraph/src/idAllocation.test.ts",
-          "src/lib/litegraph/src/idAllocation.ts",
-          "src/lib/litegraph/src/measure.test.ts",
-          "src/lib/litegraph/src/measure.ts",
-          "src/lib/litegraph/src/serialization.test.ts",
+          "packages/litegraph/src/slotColors.ts",
+          "packages/litegraph/src/LGraph.compoundUndo.test.ts",
+          "src/utils/LGraph.configureStoreScope.test.ts",
+          "packages/litegraph/src/LGraph.deepCollision.test.ts",
+          "packages/litegraph/src/LGraph.failedConfigure.test.ts",
+          "packages/litegraph/src/LGraph.inputSlotRealign.test.ts",
+          "packages/litegraph/src/LGraph.linkPresentation.test.ts",
+          "packages/litegraph/src/LGraph.linkPresentationTransfer.test.ts",
+          "packages/litegraph/src/LGraph.roundTrip.test.ts",
+          "packages/litegraph/src/LGraph.serialise.test.ts",
+          "packages/litegraph/src/LGraph.tabSwitchSnapshot.test.ts",
+          "packages/litegraph/src/LGraph.test.ts",
+          "packages/litegraph/src/LGraph.ts",
+          "packages/litegraph/src/LGraphGroup.test.ts",
+          "packages/litegraph/src/LGraphGroup.ts",
+          "packages/litegraph/src/LGraphNode.arrangeWidgetInputSlots.test.ts",
+          "packages/litegraph/src/LGraphNode.fallbackWidgetNames.test.ts",
+          "packages/litegraph/src/LGraphNode.geometry.test.ts",
+          "packages/litegraph/src/LGraphNode.namedValuesShadowDiff.test.ts",
+          "packages/litegraph/src/LGraphNode.nodeState.test.ts",
+          "packages/litegraph/src/LGraphNode.ownCollectionFields.test.ts",
+          "packages/litegraph/src/LGraphNode.propertyChanged.test.ts",
+          "packages/litegraph/src/LGraphNode.reactivity.test.ts",
+          "packages/litegraph/src/LGraphNode.resize.test.ts",
+          "packages/litegraph/src/LGraphNode.serialisedWidgetRegisters.test.ts",
+          "packages/litegraph/src/LGraphNode.stateProjection.test.ts",
+          "packages/litegraph/src/LGraphNode.test.ts",
+          "packages/litegraph/src/LGraphNode.titleButtons.test.ts",
+          "packages/litegraph/src/LGraphNode.ts",
+          "src/utils/LGraphNode.widgetLabelRename.regression.test.ts",
+          "src/workbench/utils/LGraphNode.widgetOrder.test.ts",
+          "packages/litegraph/src/LLink.spreadCopy.test.ts",
+          "packages/litegraph/src/LLink.store.test.ts",
+          "packages/litegraph/src/LLink.test.ts",
+          "packages/litegraph/src/LLink.ts",
+          "packages/litegraph/src/LinkMap.ts",
+          "packages/litegraph/src/Reroute.store.test.ts",
+          "packages/litegraph/src/Reroute.ts",
+          "packages/litegraph/src/extensionPersistence.test.ts",
+          "packages/litegraph/src/extensionPersistence.ts",
+          "packages/litegraph/src/geometryApiContracts.test.ts",
+          "packages/litegraph/src/idAllocation.property.test.ts",
+          "packages/litegraph/src/idAllocation.test.ts",
+          "packages/litegraph/src/idAllocation.ts",
+          "packages/litegraph/src/measure.test.ts",
+          "packages/litegraph/src/measure.ts",
+          "packages/litegraph/src/serialization.test.ts",
           "src/types/linkId.test.ts",
           "src/types/linkTopology.ts",
           "src/types/nodeId.test.ts",
@@ -1576,15 +1576,15 @@
       {
         "name": "graph-model/application",
         "patterns": [
-          "src/lib/litegraph/src/node/nodeShell/**",
-          "src/lib/litegraph/src/LGraph.remintLinkRemap.test.ts",
-          "src/lib/litegraph/src/linkDeduplication.conflictingOrigins.test.ts",
-          "src/lib/litegraph/src/linkDeduplication.remapReferences.test.ts",
-          "src/lib/litegraph/src/linkDeduplication.transformLinkReferences.test.ts",
-          "src/lib/litegraph/src/linkDeduplication.ts",
-          "src/lib/litegraph/src/node/slotLinks.test.ts",
-          "src/lib/litegraph/src/node/slotLinks.ts",
-          "src/lib/litegraph/src/remintLinkRemap.ts",
+          "packages/litegraph/src/node/nodeShell/**",
+          "packages/litegraph/src/LGraph.remintLinkRemap.test.ts",
+          "packages/litegraph/src/linkDeduplication.conflictingOrigins.test.ts",
+          "packages/litegraph/src/linkDeduplication.remapReferences.test.ts",
+          "packages/litegraph/src/linkDeduplication.transformLinkReferences.test.ts",
+          "packages/litegraph/src/linkDeduplication.ts",
+          "packages/litegraph/src/node/slotLinks.test.ts",
+          "packages/litegraph/src/node/slotLinks.ts",
+          "packages/litegraph/src/remintLinkRemap.ts",
           "src/stores/entityIdStore.test.ts",
           "src/stores/linkStore.test.ts",
           "src/stores/nodeDataStore.test.ts",
@@ -1594,31 +1594,28 @@
       {
         "name": "graph-model/infrastructure",
         "patterns": [
-          "src/lib/litegraph/src/MapProxyHandler.ts",
-          "src/lib/litegraph/src/infrastructure/CustomEventTarget.ts",
-          "src/lib/litegraph/src/infrastructure/createMutationView.test.ts",
-          "src/lib/litegraph/src/infrastructure/createMutationView.ts",
-          "src/lib/litegraph/src/node/slotDescriptorView.test.ts",
-          "src/lib/litegraph/src/node/slotDescriptorView.ts"
+          "packages/litegraph/src/MapProxyHandler.ts",
+          "packages/litegraph/src/infrastructure/CustomEventTarget.ts",
+          "packages/litegraph/src/infrastructure/createMutationView.test.ts",
+          "packages/litegraph/src/infrastructure/createMutationView.ts",
+          "packages/litegraph/src/node/slotDescriptorView.test.ts",
+          "packages/litegraph/src/node/slotDescriptorView.ts"
         ]
       },
       {
         "name": "graph-model/integration",
-        "patterns": [
-          "src/extensions/core/rerouteNode.ts",
-          "src/lib/litegraph/test/**"
-        ]
+        "patterns": ["src/extensions/core/rerouteNode.ts"]
       },
       {
         "name": "graph-selection/integration",
-        "patterns": ["src/lib/litegraph/src/canvas/SelectedItemsView.ts"]
+        "patterns": ["packages/litegraph/src/canvas/SelectedItemsView.ts"]
       },
       {
         "name": "graph-traversal/application",
         "patterns": [
-          "src/lib/litegraph/src/utils/__mocks__/graphTraversalUtil.ts",
-          "src/lib/litegraph/src/utils/graphTraversalUtil.test.ts",
-          "src/lib/litegraph/src/utils/graphTraversalUtil.ts"
+          "packages/litegraph/src/utils/__mocks__/graphTraversalUtil.ts",
+          "packages/litegraph/src/utils/graphTraversalUtil.test.ts",
+          "packages/litegraph/src/utils/graphTraversalUtil.ts"
         ]
       },
       {
@@ -1677,7 +1674,7 @@
         "name": "image-compare/integration",
         "patterns": [
           "src/extensions/core/imageCompare.ts",
-          "src/lib/litegraph/src/widgets/ImageCompareWidget.ts",
+          "packages/litegraph/src/widgets/ImageCompareWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts"
         ]
       },
@@ -1713,7 +1710,7 @@
           "src/extensions/core/imageCompositor.test.ts",
           "src/extensions/core/imageCompositor.ts",
           "src/extensions/core/layerEditor.ts",
-          "src/lib/litegraph/src/widgets/CompositorWidget.ts",
+          "packages/litegraph/src/widgets/CompositorWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts"
         ]
       },
@@ -1732,7 +1729,7 @@
         "name": "image-crop/integration",
         "patterns": [
           "src/extensions/core/imageCrop.ts",
-          "src/lib/litegraph/src/widgets/ImageCropWidget.ts"
+          "packages/litegraph/src/widgets/ImageCropWidget.ts"
         ]
       },
       {
@@ -1841,8 +1838,8 @@
         "patterns": [
           "src/extensions/core/load3d/lightInfo.test.ts",
           "src/extensions/core/load3d/lightInfo.ts",
-          "src/lib/litegraph/src/widgets/LightInfoWidget.test.ts",
-          "src/lib/litegraph/src/widgets/LightInfoWidget.ts",
+          "packages/litegraph/src/widgets/LightInfoWidget.test.ts",
+          "packages/litegraph/src/widgets/LightInfoWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.ts"
         ]
@@ -1886,31 +1883,31 @@
         "patterns": [
           "src/extensions/core/slotDefaultTypes.test.ts",
           "src/extensions/core/slotDefaultTypes.ts",
-          "src/lib/litegraph/src/canvas/RenderLink.ts",
-          "src/lib/litegraph/src/infrastructure/LinkConnectorEventMap.ts",
+          "packages/litegraph/src/canvas/RenderLink.ts",
+          "packages/litegraph/src/infrastructure/LinkConnectorEventMap.ts",
           "src/types/searchBoxTypes.ts"
         ]
       },
       {
         "name": "link-connection/application",
         "patterns": [
-          "src/lib/litegraph/src/canvas/FloatingRenderLink.test.ts",
-          "src/lib/litegraph/src/canvas/FloatingRenderLink.ts",
-          "src/lib/litegraph/src/canvas/LinkConnector.core.test.ts",
-          "src/lib/litegraph/src/canvas/LinkConnector.dropOnNode.test.ts",
-          "src/lib/litegraph/src/canvas/LinkConnector.integration.test.ts",
-          "src/lib/litegraph/src/canvas/LinkConnector.test.ts",
-          "src/lib/litegraph/src/canvas/LinkConnector.ts",
-          "src/lib/litegraph/src/canvas/LinkConnectorSubgraphInputValidation.test.ts",
-          "src/lib/litegraph/src/canvas/MovingInputLink.ts",
-          "src/lib/litegraph/src/canvas/MovingLinkBase.ts",
-          "src/lib/litegraph/src/canvas/MovingOutputLink.ts",
-          "src/lib/litegraph/src/canvas/ToInputFromIoNodeLink.ts",
-          "src/lib/litegraph/src/canvas/ToInputRenderLink.ts",
-          "src/lib/litegraph/src/canvas/ToOutputFromIoNodeLink.ts",
-          "src/lib/litegraph/src/canvas/ToOutputFromRerouteLink.ts",
-          "src/lib/litegraph/src/canvas/ToOutputRenderLink.test.ts",
-          "src/lib/litegraph/src/canvas/ToOutputRenderLink.ts"
+          "packages/litegraph/src/canvas/FloatingRenderLink.test.ts",
+          "packages/litegraph/src/canvas/FloatingRenderLink.ts",
+          "packages/litegraph/src/canvas/LinkConnector.core.test.ts",
+          "packages/litegraph/src/canvas/LinkConnector.dropOnNode.test.ts",
+          "packages/litegraph/src/canvas/LinkConnector.integration.test.ts",
+          "packages/litegraph/src/canvas/LinkConnector.test.ts",
+          "packages/litegraph/src/canvas/LinkConnector.ts",
+          "packages/litegraph/src/canvas/LinkConnectorSubgraphInputValidation.test.ts",
+          "packages/litegraph/src/canvas/MovingInputLink.ts",
+          "packages/litegraph/src/canvas/MovingLinkBase.ts",
+          "packages/litegraph/src/canvas/MovingOutputLink.ts",
+          "packages/litegraph/src/canvas/ToInputFromIoNodeLink.ts",
+          "packages/litegraph/src/canvas/ToInputRenderLink.ts",
+          "packages/litegraph/src/canvas/ToOutputFromIoNodeLink.ts",
+          "packages/litegraph/src/canvas/ToOutputFromRerouteLink.ts",
+          "packages/litegraph/src/canvas/ToOutputRenderLink.test.ts",
+          "packages/litegraph/src/canvas/ToOutputRenderLink.ts"
         ]
       },
       {
@@ -1920,43 +1917,43 @@
       {
         "name": "link-presentation/domain",
         "patterns": [
-          "src/lib/litegraph/src/canvas/linkGeometry.ts",
-          "src/lib/litegraph/src/canvas/linkRevealState.test.ts",
-          "src/lib/litegraph/src/canvas/linkRevealState.ts"
+          "packages/litegraph/src/canvas/linkGeometry.ts",
+          "packages/litegraph/src/canvas/linkRevealState.test.ts",
+          "packages/litegraph/src/canvas/linkRevealState.ts"
         ]
       },
       {
         "name": "link-presentation/application",
         "patterns": [
-          "src/lib/litegraph/src/transferLinkPresentation.ts",
-          "src/lib/litegraph/src/canvas/linkVisibility.test.ts",
-          "src/lib/litegraph/src/canvas/linkVisibility.ts"
+          "packages/litegraph/src/transferLinkPresentation.ts",
+          "packages/litegraph/src/canvas/linkVisibility.test.ts",
+          "packages/litegraph/src/canvas/linkVisibility.ts"
         ]
       },
       {
         "name": "link-presentation/presentation",
         "patterns": [
-          "src/lib/litegraph/src/canvas/linkBadgeRenderer.ts",
-          "src/lib/litegraph/src/canvas/linkBadges.test.ts",
-          "src/lib/litegraph/src/canvas/linkBadges.ts"
+          "packages/litegraph/src/canvas/linkBadgeRenderer.ts",
+          "packages/litegraph/src/canvas/linkBadges.test.ts",
+          "packages/litegraph/src/canvas/linkBadges.ts"
         ]
       },
       {
         "name": "litegraph-api/infrastructure",
         "patterns": [
-          "src/lib/litegraph/src/litegraphInstance.ts",
-          "src/lib/litegraph/src/polyfills.ts",
-          "src/lib/litegraph/src/utils/feedback.ts"
+          "packages/litegraph/src/litegraphInstance.ts",
+          "packages/litegraph/src/polyfills.ts",
+          "packages/litegraph/src/utils/feedback.ts"
         ]
       },
       {
         "name": "litegraph-api/integration",
         "patterns": [
           "src/composables/useGlobalLitegraph.ts",
-          "src/lib/litegraph/src/LiteGraphGlobal.ts",
-          "src/lib/litegraph/src/litegraph.publicApi.test.ts",
-          "src/lib/litegraph/src/litegraph.test.ts",
-          "src/lib/litegraph/src/litegraph.ts"
+          "packages/litegraph/src/LiteGraphGlobal.ts",
+          "packages/litegraph/src/litegraph.publicApi.test.ts",
+          "packages/litegraph/src/litegraph.test.ts",
+          "packages/litegraph/src/litegraph.ts"
         ]
       },
       {
@@ -2205,8 +2202,7 @@
         "patterns": [
           "src/constants/essentialsNodes.ts",
           "src/types/nodeDefAugmentation.ts",
-          "src/types/nodeSource.ts",
-          "src/workbench/utils/**"
+          "src/types/nodeSource.ts"
         ]
       },
       {
@@ -2311,8 +2307,8 @@
       {
         "name": "node-replacement/domain",
         "patterns": [
-          "src/lib/litegraph/src/utils/cnrIdUtil.test.ts",
-          "src/lib/litegraph/src/utils/cnrIdUtil.ts",
+          "packages/litegraph/src/utils/cnrIdUtil.test.ts",
+          "packages/litegraph/src/utils/cnrIdUtil.ts",
           "src/platform/workflowErrors/nodeReplacement/types.ts"
         ]
       },
@@ -2356,12 +2352,12 @@
           "src/core/graph/widgets/revealDynamicInputSlot.ts",
           "src/core/graph/widgets/valueControl.test.ts",
           "src/core/graph/widgets/valueControl.ts",
-          "src/lib/litegraph/src/utils/mathParser.test.ts",
-          "src/lib/litegraph/src/utils/mathParser.ts",
-          "src/lib/litegraph/src/utils/namedValuesShadowDiff.test.ts",
-          "src/lib/litegraph/src/utils/namedValuesShadowDiff.ts",
-          "src/lib/litegraph/src/widgetConnectionSuppression.test.ts",
-          "src/lib/litegraph/src/widgetValueNullContract.test.ts",
+          "packages/litegraph/src/utils/mathParser.test.ts",
+          "packages/litegraph/src/utils/mathParser.ts",
+          "packages/litegraph/src/utils/namedValuesShadowDiff.test.ts",
+          "packages/litegraph/src/utils/namedValuesShadowDiff.ts",
+          "packages/litegraph/src/widgetConnectionSuppression.test.ts",
+          "packages/litegraph/src/widgetValueNullContract.test.ts",
           "src/types/widgetId.test.ts",
           "src/types/widgetState.ts",
           "src/utils/nodeDefUtil.test.ts",
@@ -2388,8 +2384,8 @@
           "src/core/graph/widgets/valueControlWidgets.ts",
           "src/extensions/core/widgetValuePropagation.test.ts",
           "src/extensions/core/widgetValuePropagation.ts",
-          "src/lib/litegraph/src/utils/widget.test.ts",
-          "src/lib/litegraph/src/utils/widget.ts",
+          "packages/litegraph/src/utils/widget.test.ts",
+          "packages/litegraph/src/utils/widget.ts",
           "src/stores/widgetValueStore.graphReactivity.test.ts",
           "src/utils/widgetUtil.test.ts",
           "src/utils/widgetUtil.ts"
@@ -2398,19 +2394,19 @@
       {
         "name": "node-widgets/infrastructure",
         "patterns": [
-          "src/lib/litegraph/src/node/widgetsView.emptyWidgetName.test.ts",
-          "src/lib/litegraph/src/node/widgetsView.refusalCriterion.test.ts",
-          "src/lib/litegraph/src/node/widgetsView.refusalValueRestore.test.ts",
-          "src/lib/litegraph/src/node/widgetsView.test.ts",
-          "src/lib/litegraph/src/node/widgetsView.ts",
-          "src/lib/litegraph/src/node/widgetsView.uniqueWidgetName.test.ts",
-          "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.test.ts",
-          "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts"
+          "packages/litegraph/src/node/widgetsView.emptyWidgetName.test.ts",
+          "packages/litegraph/src/node/widgetsView.refusalCriterion.test.ts",
+          "packages/litegraph/src/node/widgetsView.refusalValueRestore.test.ts",
+          "packages/litegraph/src/node/widgetsView.test.ts",
+          "packages/litegraph/src/node/widgetsView.ts",
+          "packages/litegraph/src/node/widgetsView.uniqueWidgetName.test.ts",
+          "packages/litegraph/src/utils/namedValuesShadowDiffTelemetry.test.ts",
+          "packages/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts"
         ]
       },
       {
         "name": "node-widgets/presentation",
-        "patterns": ["src/lib/litegraph/src/CurveEditor.ts"]
+        "patterns": ["packages/litegraph/src/CurveEditor.ts"]
       },
       {
         "name": "node-widgets/integration",
@@ -2426,8 +2422,8 @@
           "src/extensions/core/widgetInputs.refreshCombo.test.ts",
           "src/extensions/core/widgetInputs.test.ts",
           "src/extensions/core/widgetInputs.ts",
-          "src/lib/litegraph/src/widgets/widgetMap.test.ts",
-          "src/lib/litegraph/src/widgets/widgetMap.ts"
+          "packages/litegraph/src/widgets/widgetMap.test.ts",
+          "packages/litegraph/src/widgets/widgetMap.ts"
         ]
       },
       {
@@ -2441,7 +2437,7 @@
         "name": "note-nodes/integration",
         "patterns": [
           "src/extensions/core/noteNode.ts",
-          "src/lib/litegraph/src/widgets/MarkdownWidget.ts",
+          "packages/litegraph/src/widgets/MarkdownWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.test.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.ts"
         ]
@@ -2494,7 +2490,7 @@
         "name": "painter/integration",
         "patterns": [
           "src/extensions/core/painter.ts",
-          "src/lib/litegraph/src/widgets/PainterWidget.ts",
+          "packages/litegraph/src/widgets/PainterWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts"
         ]
       },
@@ -2743,7 +2739,7 @@
         "patterns": [
           "src/composables/node/usePromotedPreviews.test.ts",
           "src/composables/node/usePromotedPreviews.ts",
-          "src/lib/litegraph/src/subgraph/promotion/adoptPromotedWidgetValue.ts",
+          "packages/litegraph/src/subgraph/promotion/adoptPromotedWidgetValue.ts",
           "src/core/graph/subgraph/migration/**",
           "src/core/graph/subgraph/promotedInputWidget.test.ts",
           "src/core/graph/subgraph/promotedInputWidget.ts",
@@ -2752,7 +2748,7 @@
           "src/core/graph/subgraph/promotionAfterReplacement.test.ts",
           "src/core/graph/subgraph/promotionUtils.test.ts",
           "src/core/graph/subgraph/promotionUtils.ts",
-          "src/lib/litegraph/src/subgraph/promotedWidgetStoreProjection.ts",
+          "packages/litegraph/src/subgraph/promotedWidgetStoreProjection.ts",
           "src/services/subgraphPseudoWidgetCache.test.ts",
           "src/services/subgraphPseudoWidgetCache.ts",
           "src/stores/previewExposureStore.test.ts"
@@ -2766,13 +2762,13 @@
         "name": "subgraphs/domain",
         "patterns": [
           "src/constants/groupNodeConstants.ts",
-          "src/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputLink.test.ts",
-          "src/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputLink.ts",
-          "src/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget.test.ts",
-          "src/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget.ts",
-          "src/lib/litegraph/src/constants.ts",
-          "src/lib/litegraph/src/infrastructure/SubgraphEventMap.ts",
-          "src/lib/litegraph/src/infrastructure/SubgraphInputEventMap.ts",
+          "packages/litegraph/src/subgraph/promotion/resolveSubgraphInputLink.test.ts",
+          "packages/litegraph/src/subgraph/promotion/resolveSubgraphInputLink.ts",
+          "packages/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget.test.ts",
+          "packages/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget.ts",
+          "packages/litegraph/src/constants.ts",
+          "packages/litegraph/src/infrastructure/SubgraphEventMap.ts",
+          "packages/litegraph/src/infrastructure/SubgraphInputEventMap.ts",
           "src/utils/blueprintUtils.ts"
         ]
       },
@@ -2781,8 +2777,8 @@
         "patterns": [
           "src/core/graph/subgraph/liftNodeErrorsToBoundary.test.ts",
           "src/core/graph/subgraph/liftNodeErrorsToBoundary.ts",
-          "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.test.ts",
-          "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts",
+          "packages/litegraph/src/subgraph/ExecutableNodeDTO.test.ts",
+          "packages/litegraph/src/subgraph/ExecutableNodeDTO.ts",
           "src/stores/subgraphNavigationStore.navigateToHash.test.ts",
           "src/stores/subgraphNavigationStore.test.ts",
           "src/stores/subgraphNavigationStore.ts",
@@ -2793,8 +2789,8 @@
         "name": "subgraphs/presentation",
         "patterns": [
           "src/components/breadcrumb/**",
-          "src/lib/litegraph/src/subgraph/svgBitmapCache.test.ts",
-          "src/lib/litegraph/src/subgraph/svgBitmapCache.ts"
+          "packages/litegraph/src/subgraph/svgBitmapCache.test.ts",
+          "packages/litegraph/src/subgraph/svgBitmapCache.ts"
         ]
       },
       {
@@ -2802,7 +2798,7 @@
         "patterns": [
           "src/extensions/core/groupNode.test.ts",
           "src/extensions/core/groupNode.ts",
-          "src/lib/litegraph/src/subgraph/__fixtures__/**"
+          "packages/litegraph/src/subgraph/__fixtures__/**"
         ]
       },
       {
@@ -3087,9 +3083,9 @@
           "src/components/palette/WidgetColors.vue",
           "src/components/range/WidgetRange.test.ts",
           "src/components/range/WidgetRange.vue",
-          "src/lib/litegraph/src/widgets/BoundingBoxWidget.ts",
-          "src/lib/litegraph/src/widgets/CurveWidget.ts",
-          "src/lib/litegraph/src/widgets/VideoEditWidget.ts",
+          "packages/litegraph/src/widgets/BoundingBoxWidget.ts",
+          "packages/litegraph/src/widgets/CurveWidget.ts",
+          "packages/litegraph/src/widgets/VideoEditWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useWidgetRenderer.test.ts",
           "src/renderer/extensions/vueNodes/widgets/registry/**",
           "src/types/widgetTypes.ts"
@@ -3598,15 +3594,15 @@
       {
         "name": "graph-model/domain/outer-1",
         "patterns": [
-          "src/lib/litegraph/src/infrastructure/**",
-          "src/lib/litegraph/src/node/**",
-          "src/lib/litegraph/src/types/**",
-          "src/lib/litegraph/src/utils/**"
+          "packages/litegraph/src/infrastructure/**",
+          "packages/litegraph/src/node/**",
+          "packages/litegraph/src/types/**",
+          "packages/litegraph/src/utils/**"
         ]
       },
       {
         "name": "graph-model/integration/outer-1",
-        "patterns": ["src/lib/litegraph/src/__fixtures__/**"]
+        "patterns": ["packages/litegraph/src/__fixtures__/**"]
       },
       {
         "name": "hdr-viewer/domain/outer-1",
@@ -3661,7 +3657,7 @@
       },
       {
         "name": "node-definition/domain/outer-1",
-        "patterns": ["src/schemas/**"]
+        "patterns": ["src/schemas/**", "src/workbench/utils/**"]
       },
       {
         "name": "node-library/application/outer-1",
@@ -3673,7 +3669,7 @@
       },
       {
         "name": "node-widgets/presentation/outer-1",
-        "patterns": ["src/lib/litegraph/src/widgets/**"]
+        "patterns": ["packages/litegraph/src/widgets/**"]
       },
       {
         "name": "onboarding-tours/presentation/outer-1",
@@ -3709,7 +3705,7 @@
       },
       {
         "name": "subgraphs/domain/outer-1",
-        "patterns": ["src/lib/litegraph/src/subgraph/**"]
+        "patterns": ["packages/litegraph/src/subgraph/**"]
       },
       {
         "name": "support-feedback/application/outer-1",
@@ -3857,7 +3853,7 @@
       },
       {
         "name": "unclassified",
-        "patterns": ["src/**"]
+        "patterns": ["src/**", "packages/litegraph/src/**"]
       }
     ],
     "rules": [

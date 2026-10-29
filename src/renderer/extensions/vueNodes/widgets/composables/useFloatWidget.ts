@@ -1,6 +1,6 @@
 import { clamp } from 'es-toolkit/compat'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { INumericWidget } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { isFloatInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'

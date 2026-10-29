@@ -45,7 +45,7 @@ import { computed, onErrorCaptured, ref, useTemplateRef, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
-import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import type { INodeSlot } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
@@ -61,7 +61,7 @@ import {
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import { locatorIdFromState } from '@/lib/litegraph/src/utils/graphTraversalUtil'
+import { locatorIdFromState } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'

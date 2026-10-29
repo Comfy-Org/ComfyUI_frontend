@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IChartWidget } from '@comfyorg/graph-model/widgets'
 import { isChartInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/graph-model/nodeDefSchemaV2'

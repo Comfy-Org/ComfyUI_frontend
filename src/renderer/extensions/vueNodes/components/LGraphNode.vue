@@ -265,8 +265,8 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
 import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
-import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { LGraphEventMode, LiteGraph } from '@comfyorg/litegraph/litegraph'
+import { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -312,11 +312,11 @@ import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
   locatorIdFromState
-} from '@/lib/litegraph/src/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { isTransparent } from '@comfyorg/shared-frontend-utils/colorUtil'
 
-import { resizeNodeLayout } from '@/lib/litegraph/src/layout/graphLayoutAttachment'
+import { resizeNodeLayout } from '@comfyorg/litegraph/layout/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'

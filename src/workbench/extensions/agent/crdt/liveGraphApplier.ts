@@ -19,12 +19,12 @@ import {
 import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
 import type { INodeFlags } from '@comfyorg/graph-model/interfaces'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { LGraphCanvas } from '@comfyorg/litegraph/LGraphCanvas'
 import { withGraphIntentSource } from '@comfyorg/graph-state/graphIntents'
-import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
+import { detachSerialisedLinks } from '@comfyorg/litegraph/linkDeduplication'
+import { LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
+import { topologicalSortSubgraphs } from '@comfyorg/litegraph/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
   ISerialisableNodeInput,

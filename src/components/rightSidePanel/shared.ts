@@ -4,8 +4,8 @@ import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
-import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphGroup } from '@comfyorg/litegraph/LGraphGroup'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {

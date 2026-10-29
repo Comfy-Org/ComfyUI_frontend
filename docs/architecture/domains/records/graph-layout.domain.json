@@ -85,7 +85,7 @@
     {
       "name": "Graph attachment and layout mutations keep LiteGraph and the layout store in sync",
       "checks": [
-        "src/lib/litegraph/src/layout/graphLayoutAttachment.test.ts",
+        "packages/litegraph/src/layout/graphLayoutAttachment.test.ts",
         "src/renderer/core/layout/operations/layoutMutations.test.ts",
         "src/renderer/core/layout/operations/subgraphConversionLayout.test.ts",
         "src/renderer/core/layout/slots/syncSlotOffsets.test.ts",

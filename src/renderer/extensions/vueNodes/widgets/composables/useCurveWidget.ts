@@ -1,5 +1,5 @@
 import type { CurveData } from '@comfyorg/graph-model/curve'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { ICurveWidget } from '@comfyorg/graph-model/widgets'
 import type {
   CurveInputSpec,

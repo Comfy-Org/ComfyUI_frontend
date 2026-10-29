@@ -5,7 +5,7 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 
 import { render, screen } from '@testing-library/vue'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { NodeLayout } from '@comfyorg/graph-model/layout'
 import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

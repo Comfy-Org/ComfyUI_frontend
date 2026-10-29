@@ -1,7 +1,7 @@
 import { useElementBounding, useEventListener } from '@vueuse/core'
 import { effectScope, watch } from 'vue'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { RectTarget } from '@/platform/onboarding/coachmarkRegistry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'

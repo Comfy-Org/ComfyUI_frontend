@@ -9,7 +9,7 @@ import type {
   LGraph,
   LGraphNode,
   Subgraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import {
   areWorkflowIdsEquivalent,
   ensureWorkflowId,
@@ -42,7 +42,7 @@ import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
-import { isSubgraph } from '@/lib/litegraph/src/utils/graphTypeGuards'
+import { isSubgraph } from '@comfyorg/litegraph/utils/graphTypeGuards'
 import {
   ComfyWorkflow,
   registerWorkflowRuntime,

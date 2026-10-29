@@ -13,7 +13,7 @@ not the usual `INodeInputSlot`/`INodeOutputSlot`. Check for it before
 treating the argument as a normal slot:
 
 ```ts
-import { isSubgraphInput, isSubgraphOutput } from '@/lib/litegraph/src/litegraph'
+import { isSubgraphInput, isSubgraphOutput } from '@comfyorg/litegraph/litegraph'
 
 onConnectionsChange(type, index, isConnected, link, slotOrIO) {
   if (isSubgraphInput(slotOrIO) || isSubgraphOutput(slotOrIO)) {

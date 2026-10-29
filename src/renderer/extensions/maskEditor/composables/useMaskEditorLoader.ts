@@ -5,7 +5,7 @@ import type {
   ImageRef,
   ImageLayer
 } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'

@@ -13,8 +13,8 @@ import type {
   NodeExecutionId,
   NodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
-import { getActiveGraphNodeIds } from '@/lib/litegraph/src/utils/graphTraversalUtil'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { getActiveGraphNodeIds } from '@comfyorg/litegraph/utils/graphTraversalUtil'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 
 /**
  * Missing media error state.

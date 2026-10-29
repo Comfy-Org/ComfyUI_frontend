@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import { createPromotedMediaRuntime } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
 
 import { clearDeletedAssetWidgetValues } from './clearDeletedAssetWidgetValues'

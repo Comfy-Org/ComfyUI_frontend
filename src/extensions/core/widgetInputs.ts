@@ -1,17 +1,17 @@
 import { intersection } from 'es-toolkit/compat'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { createWidgetRestorationState } from '@/lib/litegraph/src/LGraphNode'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { createWidgetRestorationState } from '@comfyorg/litegraph/LGraphNode'
+import { LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   ISerialisedNode,
   ISlotType,
   LLink
-} from '@/lib/litegraph/src/litegraph'
-import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
-import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+} from '@comfyorg/litegraph/litegraph'
+import { NodeSlot } from '@comfyorg/litegraph/node/NodeSlot'
+import { outputHasLinks, outputLinks } from '@comfyorg/litegraph/node/slotLinks'
 import type { IBaseWidget, IWidgetLocator } from '@comfyorg/graph-model/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'

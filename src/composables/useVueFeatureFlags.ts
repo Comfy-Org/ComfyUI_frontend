@@ -7,7 +7,7 @@ import { computed, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 
 function useVueFeatureFlagsIndividual() {
   const settingStore = useSettingStore()

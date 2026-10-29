@@ -1,12 +1,12 @@
 import { resolveNodeDefText, st, te } from '@/i18n'
-import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
+import { legacyMenuCompat } from '@comfyorg/litegraph/contextMenuCompat'
 import type {
   IContextMenuOptions,
   IContextMenuValue,
   INodeInputSlot,
   IWidget
-} from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
+import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { app } from '@/scripts/app'
 
 export function translateContextMenuItems(

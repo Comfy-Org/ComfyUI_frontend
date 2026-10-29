@@ -11,11 +11,11 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 
 import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { CustomEventTarget } from '@comfyorg/litegraph/infrastructure/CustomEventTarget'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
 import { api } from '@/scripts/api'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { createMockCanvasRenderingContext2D } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 interface HarnessCounters {
   digestNodeReads: number

@@ -1,8 +1,8 @@
 import type { Editor as TiptapEditor } from '@tiptap/core'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { resolveNodeRootGraphId } from '@comfyorg/litegraph/utils/widget'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'

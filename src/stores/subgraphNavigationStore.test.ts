@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 
 import type * as VueRouter from 'vue-router'
 
-import type { Subgraph } from '@/lib/litegraph/src/LGraph'
+import type { Subgraph } from '@comfyorg/litegraph/LGraph'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -82,7 +82,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   }
 })
 
-vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'), () => ({
   findSubgraphPathById: vi.fn()
 }))
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => routeHash }))
@@ -155,7 +155,7 @@ describe('useSubgraphNavigationStore', () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
     const { findSubgraphPathById } =
-      await import('@/lib/litegraph/src/utils/graphTraversalUtil')
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
 
     const workflow1 = fromPartial<ComfyWorkflow>({
       path: 'workflow1.json',
@@ -208,7 +208,7 @@ describe('useSubgraphNavigationStore', () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
     const { findSubgraphPathById } =
-      await import('@/lib/litegraph/src/utils/graphTraversalUtil')
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
 
     const workflow1 = fromPartial<ComfyWorkflow>({
       path: 'workflow1.json',
@@ -265,7 +265,7 @@ describe('useSubgraphNavigationStore', () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
     const { findSubgraphPathById } =
-      await import('@/lib/litegraph/src/utils/graphTraversalUtil')
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
 
     const unreachableSubgraph = createMockSubgraph('orphan-subgraph', app.graph)
 
@@ -292,7 +292,7 @@ describe('useSubgraphNavigationStore', () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
     const { findSubgraphPathById } =
-      await import('@/lib/litegraph/src/utils/graphTraversalUtil')
+      await import('@comfyorg/litegraph/utils/graphTraversalUtil')
 
     // Create mock subgraph and graph structure
     const mockSubgraph = createMockSubgraph('subgraph-1', app.graph)

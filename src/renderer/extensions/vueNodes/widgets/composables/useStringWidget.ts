@@ -1,7 +1,7 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
-import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
+import { resolveNodeRootGraphId } from '@comfyorg/litegraph/utils/widget'
+import { defineDeprecatedProperty } from '@comfyorg/litegraph/utils/feedback'
 import {
   bindMultilineTextareaWidget,
   createMultilineInputElement
@@ -10,7 +10,7 @@ import { isStringInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import { useApp } from '@/scripts/appInstance'
 import { isDOMWidget } from '@/scripts/domWidget'
-import type { DOMWidgetOptions } from '@/lib/litegraph/src/types/domWidget'
+import type { DOMWidgetOptions } from '@comfyorg/litegraph/types/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { widgetId } from '@comfyorg/graph-model/widgetId'

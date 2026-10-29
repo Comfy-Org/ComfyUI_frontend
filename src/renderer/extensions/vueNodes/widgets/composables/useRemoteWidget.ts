@@ -3,7 +3,7 @@ import { shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
-import type { IWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IWidget, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'

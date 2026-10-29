@@ -8,11 +8,11 @@
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/utils/cnrIdUtil.test.ts",
+      "path": "packages/litegraph/src/utils/cnrIdUtil.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/utils/cnrIdUtil.ts",
+      "path": "packages/litegraph/src/utils/cnrIdUtil.ts",
       "role": "domain"
     },
     {
@@ -38,7 +38,7 @@
         "src/platform/workflowErrors/nodeReplacement/missingNodeScan.test.ts",
         "src/platform/workflowErrors/nodeReplacement/missingNodesErrorStore.test.ts",
         "src/platform/workflowErrors/nodeReplacement/nodeReplacementStore.test.ts",
-        "src/lib/litegraph/src/utils/cnrIdUtil.test.ts"
+        "packages/litegraph/src/utils/cnrIdUtil.test.ts"
       ]
     },
     {

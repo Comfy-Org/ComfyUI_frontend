@@ -24,7 +24,7 @@ import type {
 } from '@comfyorg/viewport3d/lightInfo/types'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@comfyorg/graph-state/graphIntents'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 

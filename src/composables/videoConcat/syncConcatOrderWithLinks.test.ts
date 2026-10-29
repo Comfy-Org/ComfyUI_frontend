@@ -2,7 +2,7 @@ import { assert, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type {
   IBaseWidget,
   IVideoConcatWidget

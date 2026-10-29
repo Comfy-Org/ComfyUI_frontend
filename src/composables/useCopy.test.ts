@@ -13,14 +13,14 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
   CANVAS_CLIPBOARD_KEY
-} from '@/lib/litegraph/src/canvas/clipboardStorage'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
-import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/canvas/clipboardStorage'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
+import { createTestNode } from '@comfyorg/litegraph/__fixtures__/nodeHelpers'
+import { createTestRootGraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 const copyMocks = {

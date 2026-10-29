@@ -25,8 +25,8 @@ import type {
   INodeInputSlot,
   ISubgraphInput
 } from '@comfyorg/graph-model/slots'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'

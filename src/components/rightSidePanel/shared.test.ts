@@ -1,5 +1,5 @@
-import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphGroup } from '@comfyorg/litegraph/LGraphGroup'
+import { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'

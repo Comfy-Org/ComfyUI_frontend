@@ -8,7 +8,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   executionIdToNodeLocatorId,
   getNodeByLocatorId
-} from '@/lib/litegraph/src/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 function resolveStatus(
   t: (key: string) => string,

@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import ViewerControls from '@/extensions/core/load3d/components/controls/ViewerControls.vue'
 import { useDialogStore } from '@/stores/dialogStore'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 const handleViewerClose = vi.fn()
 

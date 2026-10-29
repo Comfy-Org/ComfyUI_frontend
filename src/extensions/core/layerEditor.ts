@@ -1,5 +1,5 @@
 import { app } from '@/scripts/app'
-import { selectedCanvasNodes } from '@/lib/litegraph/src/canvas/selectionAdapter'
+import { selectedCanvasNodes } from '@comfyorg/litegraph/canvas/selectionAdapter'
 import type { ComfyExtension } from '@/types/comfy'
 
 export const layerEditorExtension: ComfyExtension = {

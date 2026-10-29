@@ -1,6 +1,6 @@
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/workflowTestUtils'
 
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import * as videoThumbnail from '@/workbench/extensions/agent/utils/videoThumbnail'

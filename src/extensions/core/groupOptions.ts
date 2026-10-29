@@ -1,7 +1,7 @@
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
-import { LGraphEventMode, LGraphGroup } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { IContextMenuValue } from '@comfyorg/litegraph/types/contextMenu'
+import { LGraphEventMode, LGraphGroup } from '@comfyorg/litegraph/litegraph'
+import type { LGraphNode, LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyExtension } from '@/types/comfy'
 

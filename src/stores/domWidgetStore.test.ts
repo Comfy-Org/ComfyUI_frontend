@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 // Mock DOM widget for testing
 const createMockDOMWidget = (id: string) => {

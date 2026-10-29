@@ -4,7 +4,7 @@ import { toValue } from 'vue'
 
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { AutoPanController } from '@/lib/litegraph/src/canvas/useAutoPan'
+import { AutoPanController } from '@comfyorg/litegraph/canvas/useAutoPan'
 import { useLayoutMutations } from '@comfyorg/graph-state/layout/layoutMutations'
 import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { LayoutSource } from '@comfyorg/graph-state/layout/types'

@@ -1,13 +1,13 @@
 import type { ShallowRef } from 'vue'
 
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
+import type { IContextMenuValue } from '@comfyorg/litegraph/types/contextMenu'
 import type {
   LGraph,
   LGraphCanvas,
   LGraphNode,
   Vector2
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type { MissingModelPipelineResult } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { SettingParams } from '@/platform/settings/types'

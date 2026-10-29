@@ -136,83 +136,83 @@
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/CurveEditor.ts",
+      "path": "packages/litegraph/src/CurveEditor.ts",
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/node/widgetsView.emptyWidgetName.test.ts",
+      "path": "packages/litegraph/src/node/widgetsView.emptyWidgetName.test.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/node/widgetsView.refusalCriterion.test.ts",
+      "path": "packages/litegraph/src/node/widgetsView.refusalCriterion.test.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/node/widgetsView.refusalValueRestore.test.ts",
+      "path": "packages/litegraph/src/node/widgetsView.refusalValueRestore.test.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/node/widgetsView.test.ts",
+      "path": "packages/litegraph/src/node/widgetsView.test.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/node/widgetsView.ts",
+      "path": "packages/litegraph/src/node/widgetsView.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/node/widgetsView.uniqueWidgetName.test.ts",
+      "path": "packages/litegraph/src/node/widgetsView.uniqueWidgetName.test.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/utils/mathParser.test.ts",
+      "path": "packages/litegraph/src/utils/mathParser.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/utils/mathParser.ts",
+      "path": "packages/litegraph/src/utils/mathParser.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/utils/namedValuesShadowDiff.test.ts",
+      "path": "packages/litegraph/src/utils/namedValuesShadowDiff.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/utils/namedValuesShadowDiff.ts",
+      "path": "packages/litegraph/src/utils/namedValuesShadowDiff.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.test.ts",
+      "path": "packages/litegraph/src/utils/namedValuesShadowDiffTelemetry.test.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts",
+      "path": "packages/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/utils/widget.test.ts",
+      "path": "packages/litegraph/src/utils/widget.test.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/utils/widget.ts",
+      "path": "packages/litegraph/src/utils/widget.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/widgetConnectionSuppression.test.ts",
+      "path": "packages/litegraph/src/widgetConnectionSuppression.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/widgetValueNullContract.test.ts",
+      "path": "packages/litegraph/src/widgetValueNullContract.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/**",
+      "path": "packages/litegraph/src/widgets/**",
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/widgetMap.test.ts",
+      "path": "packages/litegraph/src/widgets/widgetMap.test.ts",
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/widgetMap.ts",
+      "path": "packages/litegraph/src/widgets/widgetMap.ts",
       "role": "integration"
     },
     {
@@ -263,19 +263,19 @@
     {
       "name": "Legacy canvas widgets render and respond to input for each generic kind",
       "checks": [
-        "src/lib/litegraph/src/widgets/BaseWidget.test.ts",
-        "src/lib/litegraph/src/widgets/ComboWidget.test.ts",
-        "src/lib/litegraph/src/widgets/NumberWidget.test.ts",
-        "src/lib/litegraph/src/widgets/NumericWidgetRendering.test.ts",
-        "src/lib/litegraph/src/widgets/widgetMap.test.ts"
+        "packages/litegraph/src/widgets/BaseWidget.test.ts",
+        "packages/litegraph/src/widgets/ComboWidget.test.ts",
+        "packages/litegraph/src/widgets/NumberWidget.test.ts",
+        "packages/litegraph/src/widgets/NumericWidgetRendering.test.ts",
+        "packages/litegraph/src/widgets/widgetMap.test.ts"
       ]
     },
     {
       "name": "node.widgets stays a consistent view over stored widget values",
       "checks": [
-        "src/lib/litegraph/src/node/widgetsView.test.ts",
-        "src/lib/litegraph/src/node/widgetsView.uniqueWidgetName.test.ts",
-        "src/lib/litegraph/src/widgetValueNullContract.test.ts",
+        "packages/litegraph/src/node/widgetsView.test.ts",
+        "packages/litegraph/src/node/widgetsView.uniqueWidgetName.test.ts",
+        "packages/litegraph/src/widgetValueNullContract.test.ts",
         "src/core/graph/widgets/nodeWidgetValues.test.ts"
       ]
     },

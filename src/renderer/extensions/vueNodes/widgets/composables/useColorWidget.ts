@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IColorWidget } from '@comfyorg/graph-model/widgets'
 import { isColorInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import type {

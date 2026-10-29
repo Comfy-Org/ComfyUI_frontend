@@ -54,6 +54,9 @@
     },
     {
       "path": "./packages/graph-state/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/litegraph/tsconfig.declarations.json"
     }
   ]
 }

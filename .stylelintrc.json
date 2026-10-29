@@ -76,7 +76,7 @@
     "**/coverage/**",
     "playwright-report/**",
     "public/**",
-    "src/lib/litegraph/**"
+    "packages/litegraph/**"
   ],
   "files": ["**/*.css", "**/*.vue"]
 }

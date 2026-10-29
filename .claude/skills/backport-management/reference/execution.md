@@ -41,7 +41,7 @@ Use the result to:
 
 - Send CLEAN PRs through label-driven automation (Step 1) — they'll typically self-merge
 - Reserve manual worktree time (Step 3) for CONFLICT PRs only
-- Surface PRs likely to need backport-only compat shims (CONFLICT files in `src/lib/litegraph/` or `src/scripts/app.ts`)
+- Surface PRs likely to need backport-only compat shims (CONFLICT files in `packages/litegraph/` or `src/scripts/app.ts`)
 
 ## Step 1: Label-Driven Automation (Batch)
 
@@ -130,7 +130,7 @@ for PR in ${CONFLICT_PRS[@]}; do
   # BEFORE pushing. A bad shim is worse than no fix:
   #   - node.onXxx callback assignments (onDragDrop, onConnectionsChange, onRemoved, onConfigure, etc.)
   #   - Methods on LGraphNode, LGraphCanvas, LGraph, Subgraph
-  #   - Public exports from src/lib/litegraph/
+  #   - Public exports from packages/litegraph/
   #   - Types published from src/types/index.ts (litegraph-augmentation.d.ts on older branches)
   # If a public callback's signature/contract changed: add a backport-only
   # compatibility shim that preserves the OLD contract while keeping the

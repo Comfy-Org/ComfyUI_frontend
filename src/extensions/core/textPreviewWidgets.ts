@@ -1,5 +1,5 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
+import { resolveNodeRootGraphId } from '@comfyorg/litegraph/litegraph'
 import WidgetTextPreview from '@/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue'
 import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 import type { CustomInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'

@@ -38,7 +38,7 @@ import {
 } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { findServerPreviewUrl } from '@/platform/assets/utils/assetPreviewUtil'
@@ -55,7 +55,7 @@ import {
   isValidAgentAttachment
 } from './utils/attachableFiles'
 import type { AgentAttachVerdict } from './utils/attachableFiles'
-import { getNodeByLocatorId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { MinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'

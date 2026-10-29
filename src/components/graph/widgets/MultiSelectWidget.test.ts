@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ComboInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
-import type { ComponentWidget } from '@/lib/litegraph/src/types/domWidget'
+import type { ComponentWidget } from '@comfyorg/litegraph/types/domWidget'
 
 import MultiSelectWidget from './MultiSelectWidget.vue'
 

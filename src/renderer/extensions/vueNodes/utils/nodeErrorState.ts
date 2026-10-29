@@ -1,10 +1,10 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import { locatorIdFromState } from '@/lib/litegraph/src/utils/graphTraversalUtil'
+import { locatorIdFromState } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import type { UUID } from '@comfyorg/graph-model/uuid'
 
 /** Reads the error stores directly; `node.has_errors` is untracked and would latch. */

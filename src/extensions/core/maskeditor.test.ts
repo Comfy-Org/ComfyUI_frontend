@@ -5,12 +5,12 @@ import type { useMaskEditor } from '@/renderer/extensions/maskEditor/composables
 import type {
   IContextMenuValue,
   LGraphCanvas
-} from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ContextMenuDivElement } from '@/lib/litegraph/src/types/contextMenu'
+} from '@comfyorg/litegraph/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { ContextMenuDivElement } from '@comfyorg/litegraph/types/contextMenu'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import { filterUnavailableCoreMediaMenuActions } from '@/utils/coreMediaMenuActionUtils'
 
 vi.mock(import('@/scripts/app'))

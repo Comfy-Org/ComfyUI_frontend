@@ -15,7 +15,7 @@ import type {
   LGraph,
   LGraphCanvas,
   LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
@@ -139,7 +139,7 @@ const DEFS: Record<string, Partial<ComfyNodeDef>> = {
 }
 
 async function installGlobals() {
-  const lg = await import('@/lib/litegraph/src/litegraph')
+  const lg = await import('@comfyorg/litegraph/litegraph')
   const appMod = await import('@/scripts/app')
   const uiMod = await import('@/scripts/ui')
   const apiMod = await import('@/scripts/api')

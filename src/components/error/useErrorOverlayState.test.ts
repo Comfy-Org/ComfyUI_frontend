@@ -42,7 +42,7 @@ vi.mock(import('@/composables/graph/useNodeErrorFlagSync'), () => ({
 vi.mock(import('@/scripts/app'))
 
 vi.mock<unknown>(
-  import('@/lib/litegraph/src/utils/graphTraversalUtil'),
+  import('@comfyorg/litegraph/utils/graphTraversalUtil'),
   () => ({
     executionIdToNodeLocatorId: vi.fn((id: string) => id),
     getActiveGraphNodeIds: vi.fn(() => new Set()),

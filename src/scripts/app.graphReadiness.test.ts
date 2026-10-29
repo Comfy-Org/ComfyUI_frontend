@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { effectScope, nextTick, watch } from 'vue'
 
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph } from '@comfyorg/litegraph/litegraph'
 import { app } from '@/scripts/app'
 
 const setGraph = (graph: LGraph | undefined) => {

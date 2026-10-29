@@ -2,9 +2,9 @@
 
 Two properties named `serialize` exist at different levels of a widget object. They control different serialization layers and are checked by completely different code paths.
 
-**`widget.serialize`** — Controls **workflow persistence**. Checked by `LGraphNode.serialize()` and `configure()` when reading/writing `widgets_values` in the workflow JSON. When `false`, the widget is skipped in both serialization and deserialization. Used for UI-only widgets (image previews, progress text, audio players). Typed as `IBaseWidget.serialize` in `src/lib/litegraph/src/types/widgets.ts`.
+**`widget.serialize`** — Controls **workflow persistence**. Checked by `LGraphNode.serialize()` and `configure()` when reading/writing `widgets_values` in the workflow JSON. When `false`, the widget is skipped in both serialization and deserialization. Used for UI-only widgets (image previews, progress text, audio players). Typed as `IBaseWidget.serialize` in `packages/litegraph/src/types/widgets.ts`.
 
-**`widget.options.serialize`** — Controls **prompt/API serialization**. Checked by `executionUtil.ts` when building the API payload sent to the backend. When `false`, the widget is excluded from prompt inputs. Used for client-side-only controls (`control_after_generate`, combo filter lists) that the server doesn't need. Typed as `IWidgetOptions.serialize` in `src/lib/litegraph/src/types/widgets.ts`.
+**`widget.options.serialize`** — Controls **prompt/API serialization**. Checked by `executionUtil.ts` when building the API payload sent to the backend. When `false`, the widget is excluded from prompt inputs. Used for client-side-only controls (`control_after_generate`, combo filter lists) that the server doesn't need. Typed as `IWidgetOptions.serialize` in `packages/litegraph/src/types/widgets.ts`.
 
 These correspond to the two data formats in `ComfyMetadata` embedded in output files (PNG, GLTF, WebM, AVIF, etc.): `widget.serialize` → `ComfyMetadataTags.WORKFLOW`, `widget.options.serialize` → `ComfyMetadataTags.PROMPT`.
 
@@ -50,11 +50,11 @@ See [ADR-WIDGET-SERIALIZATION-0006](adr/WIDGET-SERIALIZATION-0006-preserve-primi
 
 ## Code references
 
-- `widget.serialize` checked: `src/lib/litegraph/src/LGraphNode.ts` serialize() and configure()
+- `widget.serialize` checked: `packages/litegraph/src/LGraphNode.ts` serialize() and configure()
 - `widget.options.serialize` checked: `src/utils/executionUtil.ts`
 - `widget.options.serialize` set: `src/scripts/widgets.ts` addValueControlWidgets()
 - `widget.serialize` set: `src/composables/node/useNodeImage.ts`, `src/extensions/core/previewAny.ts`, etc.
 - Metadata types: `src/types/metadataTypes.ts`
 - PrimitiveNode: `src/extensions/core/widgetInputs.ts`
-- Copy/paste serialization: `src/lib/litegraph/src/LGraphCanvas.ts` `_serializeItems()`
-- Clone: `src/lib/litegraph/src/LGraphNode.ts` `clone()`
+- Copy/paste serialization: `packages/litegraph/src/LGraphCanvas.ts` `_serializeItems()`
+- Clone: `packages/litegraph/src/LGraphNode.ts` `clone()`

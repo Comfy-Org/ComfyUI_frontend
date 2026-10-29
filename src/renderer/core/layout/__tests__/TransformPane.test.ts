@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
-import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
+import { createMockCanvas } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 

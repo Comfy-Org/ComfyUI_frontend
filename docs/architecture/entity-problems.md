@@ -2,7 +2,7 @@
 
 This document catalogs the structural problems in the current litegraph entity system. It provides the concrete "why" behind the ECS migration proposed in [ADR-ECS-0008](../adr/ECS-0008-entity-component-system.md). For the as-is relationship map, see [Entity Interactions](entity-interactions.md).
 
-All file references are relative to `src/lib/litegraph/src/`.
+All file references are relative to `packages/litegraph/src/`.
 
 ## 1. God Objects
 

@@ -2,7 +2,7 @@ import type {
   LGraph,
   LGraphCanvas,
   LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type { useExecutionStore } from '@/stores/executionStore'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 

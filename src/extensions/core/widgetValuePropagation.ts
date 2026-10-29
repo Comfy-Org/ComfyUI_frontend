@@ -1,6 +1,6 @@
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import type { LLink } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@comfyorg/litegraph/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { app } from '@/scripts/app'
 import { useLinkStore } from '@comfyorg/graph-state/linkStore'

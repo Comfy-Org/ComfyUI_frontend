@@ -19,14 +19,14 @@ import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
 import { load3dHost } from '@/extensions/core/load3d/load3dHost'
 import { isKeepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
 import type { SizeTuple as Size } from '@comfyorg/shared-frontend-utils/geometry'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { IWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { createMockCanvasPointerEvent } from '@/utils/__tests__/canvasTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
+import { createMockCanvasPointerEvent } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 vi.mock(import('@comfyorg/viewport3d/load3d/Load3d'), () => ({
   default: vi.fn()

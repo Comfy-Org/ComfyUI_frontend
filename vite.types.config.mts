@@ -22,8 +22,14 @@ export default defineConfig({
       bundleTypes: true,
       processor: 'vue',
       tsconfigPath: 'tsconfig.types.json',
+      aliases: [
+        {
+          find: /^#\/(.*)$/,
+          replacement: resolve(__dirname, 'packages/litegraph/src/$1')
+        }
+      ],
       beforeWriteFile: createLitegraphDeclarationTransform(
-        resolve(__dirname, 'src/lib/litegraph/src'),
+        resolve(__dirname, 'packages/litegraph/src'),
         resolve(__dirname, 'packages/graph-model/src')
       )
     })

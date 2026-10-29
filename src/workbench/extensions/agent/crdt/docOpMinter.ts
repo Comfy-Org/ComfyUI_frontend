@@ -20,15 +20,15 @@ import type {
 import { isEqual } from 'es-toolkit'
 
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
-import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
+import { registerDocBoundRootGraphProbe } from '@comfyorg/litegraph/docBoundGraphs'
 import { onGraphIntent } from '@comfyorg/graph-state/graphIntents'
 import type { GraphIntentEvent } from '@comfyorg/graph-state/graphIntents'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
+import type { LLink } from '@comfyorg/litegraph/LLink'
+import type { Subgraph } from '@comfyorg/litegraph/subgraph/Subgraph'
+import type { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -43,7 +43,7 @@ import {
   findSubgraphByUuid,
   findSubgraphNodePathById,
   traverseSubgraphPath
-} from '@/lib/litegraph/src/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 import {
   SUBSCRIBE_ACK_MAX_TIMEOUTS,

@@ -5,7 +5,7 @@ import { assert, beforeEach, describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
+import { stubCanvasGetContext } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 import type { ChartWidgetOptions } from './WidgetChart.types'
 import WidgetChart from './WidgetChart.vue'

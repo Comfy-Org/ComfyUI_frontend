@@ -2,7 +2,7 @@ import type { Point2D as Position } from '@comfyorg/shared-frontend-utils/geomet
 import { ref, shallowRef } from 'vue'
 
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import type { NodeAddSource } from '@comfyorg/telemetry/types'
 import { useToast } from '@/components/ui/toast/toastStore'

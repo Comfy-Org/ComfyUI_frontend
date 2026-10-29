@@ -10,7 +10,7 @@ import {
   createMockCanvasRenderingContext2D,
   createTestCanvasElement,
   setIntrinsicCanvasLayout
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 function createTransformTrackingCanvas(cssSize?: {
   width: number

@@ -13,8 +13,8 @@ import {
   addDynamicCombo
 } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { realignGroupWidgetChildLinks } from '@/lib/litegraph/src/linkDeduplication'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
+import { realignGroupWidgetChildLinks } from '@comfyorg/litegraph/linkDeduplication'
 import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'

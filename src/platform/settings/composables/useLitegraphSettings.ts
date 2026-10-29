@@ -1,11 +1,11 @@
 import { watch, watchEffect } from 'vue'
 
-import { clearLinkSelection } from '@/lib/litegraph/src/canvas/linkSelection'
+import { clearLinkSelection } from '@comfyorg/litegraph/canvas/linkSelection'
 import {
   CanvasPointer,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 // oxlint-disable-next-line comfy/no-restricted-paths

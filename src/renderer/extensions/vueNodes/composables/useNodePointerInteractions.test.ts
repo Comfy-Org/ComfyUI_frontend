@@ -6,15 +6,15 @@ import {
   createCanvas,
   pointerEvent,
   selectedTitles
-} from '@/lib/litegraph/src/__fixtures__/canvasHarness'
+} from '@comfyorg/litegraph/__fixtures__/canvasHarness'
 import type {
   PointerEventOptions,
   PointerEventType
-} from '@/lib/litegraph/src/__fixtures__/canvasHarness'
-import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import { LGraph, LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/__fixtures__/canvasHarness'
+import { CanvasPointer } from '@comfyorg/litegraph/CanvasPointer'
+import { LGraph, LGraphCanvas, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
@@ -22,7 +22,7 @@ import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/compo
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
+import { createNodeState } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 

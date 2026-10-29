@@ -31,11 +31,14 @@ const uniqueList = <T extends z.ZodString>(item: T, minimum = 0) =>
       message: 'must not contain duplicates'
     })
 
+/** Directories whose files domain records classify. */
+export const SOURCE_ROOTS = ['src', 'packages/litegraph/src']
+
 const sourcePath = z
   .string()
   .regex(
-    /^src\/[^*?[\]{}]+?(\/\*\*)?$/,
-    'must be a src/ file or a src/ directory ending in /**'
+    new RegExp(`^(${SOURCE_ROOTS.join('|')})/[^*?[\\]{}]+?(/\\*\\*)?$`),
+    'must be a source file or a source directory ending in /**'
   )
 
 export const domainRecordSchema = z

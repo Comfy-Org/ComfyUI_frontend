@@ -1,4 +1,4 @@
-import type * as Litegraph from '@/lib/litegraph/src/litegraph'
+import type * as Litegraph from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'

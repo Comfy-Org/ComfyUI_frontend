@@ -1,0 +1,930 @@
+import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+import { moveRerouteLayout } from './layout/graphLayoutAttachment'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import {
+  isSelectedIn,
+  setSelectedIn
+} from '@comfyorg/graph-state/selection/selectionStore'
+import { toSelectableKey } from '@comfyorg/graph-state/selection/selectionState'
+import {
+  EMPTY_MEMBERSHIP,
+  useRerouteStore
+} from '@comfyorg/graph-state/rerouteStore'
+import type { RerouteMembership } from '@comfyorg/graph-state/rerouteStore'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import {
+  graphScopeOf,
+  toOwningGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
+import type {
+  FloatingRerouteSlot,
+  RerouteChain
+} from '@comfyorg/graph-model/rerouteChain'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { UUID } from '@comfyorg/graph-model/uuid'
+import type {
+  Point2D as LayoutPoint,
+  PointTuple as Point,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
+
+function isPointLike(value: unknown): value is ArrayLike<number> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'length' in value &&
+    typeof value.length === 'number' &&
+    value.length >= 2
+  )
+}
+
+function hasPointLength(value: unknown): boolean {
+  return Array.isArray(value) && value.length === 2
+}
+
+import { LGraphBadge } from './LGraphBadge'
+
+import { LLink } from './LLink'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { createMutationView } from './infrastructure/createMutationView'
+import type {
+  CanvasColour,
+  LinkSegment,
+  Positionable
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import type {
+  LinkNetwork,
+  ReadonlyLinkNetwork
+} from '@comfyorg/graph-model/linkNetwork'
+import { litegraph } from './litegraphInstance'
+import { distance, isPointInRect } from './measure'
+import type {
+  Serialisable,
+  SerialisableReroute
+} from '@comfyorg/graph-model/serialisation'
+
+export type { FloatingRerouteSlot } from '@comfyorg/graph-model/rerouteChain'
+export type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+
+/**
+ * Represents an additional point on the graph that a link path will travel through.  Used for visual organisation only.
+ *
+ * Requires no disposal or clean up.
+ * Stores only primitive values (IDs) to reference other items in its network,
+ * and a `WeakRef` to a {@link LinkNetwork} to resolve them.
+ */
+export class Reroute
+  implements Positionable, LinkSegment, Serialisable<SerialisableReroute>
+{
+  static radius: number = 10
+  /** Maximum distance from reroutes to their bezier curve control points. */
+  static maxSplineOffset: number = 80
+  static drawIdBadge: boolean = false
+  static slotRadius: number = 5
+  /** Distance from reroute centre to slot centre. */
+  static get slotOffset(): number {
+    const gap = Reroute.slotRadius * 0.33
+    return Reroute.radius + gap + Reroute.slotRadius
+  }
+
+  public readonly id: RerouteId
+
+  /** The network this reroute belongs to.  Contains all valid links and reroutes. */
+  private readonly network: WeakRef<LinkNetwork>
+  private readonly rootGraphId: UUID
+  private readonly position: Point = [0, 0]
+  private readonly positionView = createMutationView(this.position, {
+    synchronize: () => this.syncPosition(),
+    commit: () => this.commitPosition()
+  })
+
+  /**
+   * The reroute's chain state. Once registered with {@link useRerouteStore},
+   * this is the store's reactive proxy, so field writes are tracked.
+   */
+  _chain: RerouteChain
+
+  /** The graph this reroute is registered with in {@link useRerouteStore}, if any. */
+  _graphScope?: GraphScope
+
+  public get parentId(): RerouteId | undefined {
+    return this._chain.parentId
+  }
+
+  /** Ignores attempts to create an infinite loop. @inheritdoc */
+  public set parentId(value) {
+    if (value === this.id) return
+    if (value !== undefined && this.createsParentCycle(value)) return
+    this._chain.parentId = value
+  }
+
+  /** Walks the prospective parent chain from `value`, reporting whether it loops back to this reroute. */
+  private createsParentCycle(value: RerouteId): boolean {
+    const network = this.network.deref()
+    const visited = new Set<RerouteId>([this.id])
+
+    let nextId: RerouteId | undefined = value
+    while (nextId !== undefined) {
+      if (visited.has(nextId)) return true
+      visited.add(nextId)
+      nextId = network?.reroutes.get(nextId)?.parentId
+    }
+    return false
+  }
+
+  public get parent(): Reroute | undefined {
+    return this.network.deref()?.getReroute(this._chain.parentId)
+  }
+
+  /** This property is only defined on the last reroute of a floating reroute chain (closest to input end). */
+  get floating(): FloatingRerouteSlot | undefined {
+    return this._chain.floating
+  }
+
+  set floating(value: FloatingRerouteSlot | undefined) {
+    this._chain.floating = value
+  }
+
+  /** Stable position view, synchronized with {@link layoutStore} while attached. */
+  get pos(): Point {
+    return this.positionView
+  }
+
+  set pos(value: Point) {
+    if (!isPointLike(value))
+      throw new TypeError(
+        'Reroute.pos is an x,y point, and expects an indexable with at least two values.'
+      )
+
+    this.position[0] = value[0]
+    this.position[1] = value[1]
+    moveRerouteLayout(this, {
+      x: value[0],
+      y: value[1]
+    })
+  }
+
+  syncPosition(): void {
+    const { x, y } = this.storedPosition
+    this.position.length = 2
+    this.position[0] = x
+    this.position[1] = y
+  }
+
+  private commitPosition(): void {
+    if (!hasPointLength(this.position)) {
+      this.syncPosition()
+      return
+    }
+    this.pos = [this.position[0], this.position[1]]
+  }
+
+  private get storedPosition(): Readonly<LayoutPoint> {
+    return (
+      layoutStore.getRerouteLayout(this.rootGraphId, this.id)?.position ?? {
+        x: this.position[0],
+        y: this.position[1]
+      }
+    )
+  }
+
+  /** @inheritdoc */
+  get boundingRect(): ReadOnlyRect {
+    const { radius } = Reroute
+    const { x, y } = this.storedPosition
+    return [x - radius, y - radius, 2 * radius, 2 * radius]
+  }
+
+  /**
+   * Slightly over-sized rectangle, guaranteed to contain the entire surface area for hover detection.
+   * Eliminates most hover positions using an extremely cheap check.
+   */
+  private get hoverArea(): ReadOnlyRect {
+    const xOffset = 2 * Reroute.slotOffset
+    const yOffset = 2 * Math.max(Reroute.radius, Reroute.slotRadius)
+
+    const { x, y } = this.storedPosition
+    return [x - xOffset, y - yOffset, 2 * xOffset, 2 * yOffset]
+  }
+
+  /** The total number of links & floating links using this reroute */
+  get totalLinks(): number {
+    return this.linkIds.size + this.floatingLinkIds.size
+  }
+
+  /** @inheritdoc */
+  get selected(): boolean {
+    return isSelectedIn(this._graphScope, toSelectableKey('reroute', this.id))
+  }
+
+  set selected(value: boolean | undefined) {
+    setSelectedIn(
+      this._graphScope,
+      toSelectableKey('reroute', this.id),
+      !!value
+    )
+  }
+
+  private get membership(): RerouteMembership {
+    return this._graphScope
+      ? useRerouteStore().getMembership(this._graphScope, this.id)
+      : EMPTY_MEMBERSHIP
+  }
+
+  /**
+   * The ID ({@link LLink.id}) of every link using this reroute.
+   * Derived from the links' parentId chains; never stored.
+   */
+  get linkIds(): ReadonlySet<LinkId> {
+    return this.membership.linkIds
+  }
+
+  /** The ID ({@link LLink.id}) of every floating link using this reroute */
+  get floatingLinkIds(): ReadonlySet<LinkId> {
+    return this.membership.floatingLinkIds
+  }
+
+  /** Cached cos */
+  cos: number = 0
+  sin: number = 0
+
+  /** Bezier curve control point for the "target" (input) side of the link */
+  controlPoint: Point = [0, 0]
+
+  /** @inheritdoc */
+  path?: Path2D
+  /** @inheritdoc */
+  _centreAngle?: number
+  /** @inheritdoc */
+  _pos: Point = [0, 0]
+
+  /** @inheritdoc */
+  _dragging?: boolean
+
+  /** Colour of the first link that rendered this reroute */
+  _colour?: CanvasColour
+
+  /** Colour of the first link that rendered this reroute */
+  get colour(): CanvasColour {
+    return this._colour ?? '#18184d'
+  }
+
+  /**
+   * Used to ensure reroute angles are only executed once per frame.
+   * @todo Calculate on change instead.
+   */
+  private lastRenderTime: number = -Infinity
+
+  private readonly inputSlot = new RerouteSlot(this, true)
+  private readonly outputSlot = new RerouteSlot(this, false)
+
+  get isSlotHovered(): boolean {
+    return this.isInputHovered || this.isOutputHovered
+  }
+
+  get isInputHovered(): boolean {
+    return this.inputSlot.hovering
+  }
+
+  get isOutputHovered(): boolean {
+    return this.outputSlot.hovering
+  }
+
+  get firstLink(): LLink | undefined {
+    const linkId = this.linkIds.values().next().value
+    return linkId === undefined
+      ? undefined
+      : this.network.deref()?.links.get(linkId)
+  }
+
+  get firstFloatingLink(): LLink | undefined {
+    const linkId = this.floatingLinkIds.values().next().value
+    return linkId === undefined
+      ? undefined
+      : this.network.deref()?.floatingLinks.get(linkId)
+  }
+
+  /** @inheritdoc */
+  get origin_id(): NodeId | undefined {
+    return this.firstLink?.origin_id
+  }
+
+  /** @inheritdoc */
+  get origin_slot(): number | undefined {
+    return this.firstLink?.origin_slot
+  }
+
+  /**
+   * Initialises a new link reroute object.
+   * @param id Unique identifier for this reroute
+   * @param network The network of links this reroute belongs to.  Internally converted to a WeakRef.
+   * @param pos Position in graph coordinates
+   */
+  constructor(
+    id: RerouteId,
+    network: LinkNetwork,
+    pos?: Point,
+    parentId?: RerouteId
+  ) {
+    this.id = id
+    this.network = new WeakRef(network)
+    this.rootGraphId = network.rootGraph.id
+    this._chain = { id, graphId: toOwningGraphId(zeroUuid) }
+    this.parentId = parentId
+
+    this.position[0] = pos?.[0] ?? 0
+    this.position[1] = pos?.[1] ?? 0
+  }
+
+  /**
+   * Retrieves an ordered array of all reroutes from the node output.
+   * @param visited Internal.  A set of reroutes that this function
+   * has already visited whilst recursing up the chain.
+   * @returns An ordered array of all reroutes from the node output to this reroute, inclusive.
+   * `null` if an infinite loop is detected.
+   * `undefined` if the reroute chain or {@link LinkNetwork} are invalid.
+   */
+  getReroutes(visited = new Set<Reroute>()): Reroute[] | null {
+    // No parentId - last in the chain
+    if (this._chain.parentId === undefined) return [this]
+    // Invalid chain - looped
+    if (visited.has(this)) return null
+    visited.add(this)
+
+    const parent = this.network.deref()?.reroutes.get(this._chain.parentId)
+    // Invalid parent (or network) - drop silently to recover
+    if (!parent) {
+      this._chain.parentId = undefined
+      return [this]
+    }
+
+    const reroutes = parent.getReroutes(visited)
+    reroutes?.push(this)
+    return reroutes
+  }
+
+  /**
+   * Internal.  Called by {@link LLink.findNextReroute}.  Not intended for use by itself.
+   * @param withParentId The rerouteId to look for
+   * @param visited A set of reroutes that have already been visited
+   * @returns The reroute that was found, `undefined` if no reroute was found, or `null` if an infinite loop was detected.
+   */
+  findNextReroute(
+    withParentId: RerouteId,
+    visited = new Set<Reroute>()
+  ): Reroute | null | undefined {
+    if (this._chain.parentId === withParentId) return this
+    if (visited.has(this)) return null
+    visited.add(this)
+    if (this._chain.parentId === undefined) return
+
+    return this.network
+      .deref()
+      ?.reroutes.get(this._chain.parentId)
+      ?.findNextReroute(withParentId, visited)
+  }
+
+  /**
+   * Finds the output node and output slot of the first link passing through this reroute.
+   * @returns The output node and output slot of the first link passing through this reroute, or `undefined` if no link is found.
+   */
+  findSourceOutput():
+    | { node: LGraphNode; output: INodeOutputSlot }
+    | undefined {
+    const link = this.firstLink ?? this.firstFloatingLink
+    if (!link) return
+
+    const node = this.network.deref()?.getNodeById(link.origin_id)
+    if (!node) return
+
+    return {
+      node,
+      output: node.outputs[link.origin_slot]
+    }
+  }
+
+  /**
+   * Finds the inputs and nodes of (floating) links passing through this reroute.
+   * @returns An array of objects containing the node and input slot of each link passing through this reroute.
+   */
+  findTargetInputs():
+    | { node: LGraphNode; input: INodeInputSlot; link: LLink }[]
+    | undefined {
+    const network = this.network.deref()
+    if (!network) return
+
+    const results: {
+      node: LGraphNode
+      input: INodeInputSlot
+      link: LLink
+    }[] = []
+
+    addAllResults(network, this.linkIds, network.links)
+    addAllResults(network, this.floatingLinkIds, network.floatingLinks)
+
+    return results
+
+    function addAllResults(
+      network: ReadonlyLinkNetwork,
+      linkIds: Iterable<LinkId>,
+      links: ReadonlyMap<LinkId, LLink>
+    ) {
+      for (const linkId of linkIds) {
+        const link = links.get(linkId)
+        if (!link) continue
+
+        const node = network.getNodeById(link.target_id)
+        const input = node?.inputs[link.target_slot]
+        if (!input) continue
+
+        results.push({ node, input, link })
+      }
+    }
+  }
+
+  /**
+   * Retrieves all floating links passing through this reroute.
+   * @param from Filters the links by the currently connected link side.
+   * @returns An array of floating links
+   */
+  getFloatingLinks(from: 'input' | 'output'): LLink[] | undefined {
+    const floatingLinks = this.network.deref()?.floatingLinks
+    if (!floatingLinks) return
+
+    const idProp = from === 'input' ? 'origin_id' : 'target_id'
+    const out: LLink[] = []
+
+    for (const linkId of this.floatingLinkIds) {
+      const link = floatingLinks.get(linkId)
+      if (link?.[idProp] === UNASSIGNED_NODE_ID) out.push(link)
+    }
+    return out
+  }
+
+  /**
+   * Changes the origin node/output of all floating links that pass through this reroute.
+   * @param node The new origin node
+   * @param index The slot index of the new origin output
+   */
+  setFloatingLinkOrigin(node: LGraphNode, index: number) {
+    const floatingOutLinks = this.getFloatingLinks('output')
+    if (!floatingOutLinks) {
+      console.error('[setFloatingLinkOrigin]: Invalid network.')
+      return
+    }
+
+    for (const link of floatingOutLinks) {
+      link.updateEndpoints({ originNodeId: node.id, originSlot: index })
+    }
+  }
+
+  /** @inheritdoc */
+  move(deltaX: number, deltaY: number) {
+    const { x, y } = this.storedPosition
+    this.pos = [x + deltaX, y + deltaY]
+  }
+
+  /** @inheritdoc */
+  snapToGrid(snapTo: number): boolean {
+    if (!snapTo) return false
+
+    const offsetY = litegraph().NODE_SLOT_HEIGHT * 0.7
+    const { x, y } = this.storedPosition
+    const snappedX = snapTo * Math.round(x / snapTo)
+    const snappedY = snapTo * Math.round((y - offsetY) / snapTo) + offsetY
+    if (snappedX === x && snappedY === y) return false
+
+    this.pos = [snappedX, snappedY]
+    return true
+  }
+
+  removeAllFloatingLinks() {
+    const network = this.network.deref()
+    if (!network) return
+
+    for (const linkId of Array.from(this.floatingLinkIds)) {
+      const floatingLink = network.floatingLinks.get(linkId)
+      if (floatingLink) network.removeFloatingLink(floatingLink)
+    }
+  }
+
+  remove() {
+    const network = this.network.deref()
+    if (!network) return
+
+    network.removeReroute(this.id)
+  }
+
+  calculateAngle(
+    lastRenderTime: number,
+    network: ReadonlyLinkNetwork,
+    linkStart: Point
+  ): void {
+    // Ensure we run once per render
+    if (!(lastRenderTime > this.lastRenderTime)) return
+    this.lastRenderTime = lastRenderTime
+
+    const { id, pos: thisPos } = this
+
+    // Add all link angles
+    const angles: number[] = []
+    let sum = 0
+    calculateAngles(this.linkIds, network.links)
+    calculateAngles(this.floatingLinkIds, network.floatingLinks)
+
+    // Invalid - reset
+    if (!angles.length) {
+      this.cos = 0
+      this.sin = 0
+      this.controlPoint[0] = 0
+      this.controlPoint[1] = 0
+      return
+    }
+
+    sum /= angles.length
+
+    const { x, y } = this.storedPosition
+    const originToReroute = Math.atan2(y - linkStart[1], x - linkStart[0])
+    let diff = (originToReroute - sum) * 0.5
+    if (Math.abs(diff) > Math.PI * 0.5) diff += Math.PI
+    const dist = Math.min(
+      Reroute.maxSplineOffset,
+      distance(linkStart, [x, y]) * 0.25
+    )
+
+    // Store results
+    const originDiff = originToReroute - diff
+    const cos = Math.cos(originDiff)
+    const sin = Math.sin(originDiff)
+
+    this.cos = cos
+    this.sin = sin
+    this.controlPoint[0] = dist * -cos
+    this.controlPoint[1] = dist * -sin
+
+    /**
+     * Calculates the direction of each link and adds it to the array.
+     * @param linkIds The IDs of the links to calculate
+     * @param links The link container from the link network.
+     */
+    function calculateAngles(
+      linkIds: Iterable<LinkId>,
+      links: ReadonlyMap<LinkId, LLink>
+    ) {
+      for (const linkId of linkIds) {
+        const link = links.get(linkId)
+        const pos = getNextPos(network, link, id)
+        if (!pos) continue
+
+        const angle = getDirection(thisPos, pos)
+        angles.push(angle)
+        sum += angle
+      }
+    }
+  }
+
+  /**
+   * Renders the reroute on the canvas.
+   * @param ctx Canvas context to draw on
+   * @param backgroundPattern The canvas background pattern; used to make floating reroutes appear washed out.
+   * @remarks Leaves {@link ctx}.fillStyle, strokeStyle, and lineWidth dirty (perf.).
+   */
+  draw(ctx: CanvasRenderingContext2D, backgroundPattern?: CanvasPattern): void {
+    const { globalAlpha } = ctx
+    const { pos } = this
+
+    ctx.beginPath()
+    ctx.arc(pos[0], pos[1], Reroute.radius, 0, 2 * Math.PI)
+
+    if (this.linkIds.size === 0) {
+      ctx.fillStyle = backgroundPattern ?? '#797979'
+      ctx.fill()
+      ctx.globalAlpha = globalAlpha * 0.33
+    }
+
+    ctx.fillStyle = this.colour
+    ctx.lineWidth = Reroute.radius * 0.1
+    ctx.strokeStyle = 'rgb(0,0,0,0.5)'
+    ctx.fill()
+    ctx.stroke()
+
+    ctx.fillStyle = '#ffffff55'
+    ctx.strokeStyle = 'rgb(0,0,0,0.3)'
+    ctx.beginPath()
+    ctx.arc(pos[0], pos[1], Reroute.radius * 0.8, 0, 2 * Math.PI)
+    ctx.fill()
+    ctx.stroke()
+
+    if (this.selected) {
+      ctx.strokeStyle = '#fff'
+      ctx.beginPath()
+      ctx.arc(pos[0], pos[1], Reroute.radius * 1.2, 0, 2 * Math.PI)
+      ctx.stroke()
+    }
+
+    if (Reroute.drawIdBadge) {
+      const idBadge = new LGraphBadge({ text: this.id.toString() })
+      const x = pos[0] - idBadge.getWidth(ctx) * 0.5
+      const y = pos[1] - idBadge.height - Reroute.radius - 2
+      idBadge.draw(ctx, x, y)
+    }
+
+    ctx.globalAlpha = globalAlpha
+  }
+
+  /**
+   * Draws the input and output slots on the canvas, if the slots are visible.
+   * @param ctx The canvas context to draw on.
+   */
+  drawSlots(ctx: CanvasRenderingContext2D): void {
+    this.inputSlot.draw(ctx)
+    this.outputSlot.draw(ctx)
+  }
+
+  drawHighlight(ctx: CanvasRenderingContext2D, colour: CanvasColour): void {
+    const { pos } = this
+
+    const { strokeStyle, lineWidth } = ctx
+    ctx.strokeStyle = colour
+    ctx.lineWidth = 1
+
+    ctx.beginPath()
+    ctx.arc(pos[0], pos[1], Reroute.radius * 1.5, 0, 2 * Math.PI)
+    ctx.stroke()
+
+    ctx.strokeStyle = strokeStyle
+    ctx.lineWidth = lineWidth
+  }
+
+  /**
+   * Updates visibility of the input and output slots, based on the position of the pointer.
+   * @param pos The position of the pointer.
+   * @returns `true` if any changes require a redraw.
+   */
+  updateVisibility(pos: Point): boolean {
+    const input = this.inputSlot
+    const output = this.outputSlot
+    input.dirty = false
+    output.dirty = false
+
+    const { firstFloatingLink } = this
+    const hasLink = !!this.firstLink
+
+    const showInput = hasLink || firstFloatingLink?.isFloatingOutput
+    const showOutput = hasLink || firstFloatingLink?.isFloatingInput
+    const showEither = showInput || showOutput
+
+    // Check if even in the vicinity
+    if (showEither && isPointInRect(pos, this.hoverArea)) {
+      const outlineOnly = this.contains(pos)
+
+      if (showInput) input.update(pos, outlineOnly)
+      if (showOutput) output.update(pos, outlineOnly)
+    } else {
+      this.hideSlots()
+    }
+
+    return output.dirty
+  }
+
+  /** Prevents rendering of the input and output slots. */
+  hideSlots() {
+    this.inputSlot.hide()
+    this.outputSlot.hide()
+  }
+
+  /**
+   * Precisely determines if {@link pos} is inside this reroute.
+   * @param pos The position to check (canvas space)
+   * @returns `true` if {@link pos} is within the reroute's radius.
+   */
+  containsPoint(pos: Point): boolean {
+    return isPointInRect(pos, this.hoverArea) && this.contains(pos)
+  }
+
+  private contains(pos: Point): boolean {
+    return distance(this.pos, pos) <= Reroute.radius
+  }
+
+  /** @inheritdoc */
+  asSerialisable(): SerialisableReroute {
+    const { id, parentId, pos, linkIds } = this
+    return {
+      id,
+      parentId,
+      pos: [pos[0], pos[1]],
+      linkIds: [...linkIds].sort((a, b) => a - b),
+      floating: this.floating ? { slotType: this.floating.slotType } : undefined
+    }
+  }
+}
+
+/**
+ * Represents a slot on a reroute.
+ * @private Designed for internal use within this module.
+ */
+class RerouteSlot {
+  /** The reroute that the slot belongs to. */
+  private readonly reroute: Reroute
+
+  private readonly offsetMultiplier: 1 | -1
+  /** Centre point of this slot. */
+  get pos(): Point {
+    const [x, y] = this.reroute.pos
+    return [x + Reroute.slotOffset * this.offsetMultiplier, y]
+  }
+
+  /** Whether any changes require a redraw. */
+  dirty: boolean = false
+
+  private hoveringInternal = false
+  /** Whether the pointer is hovering over the slot itself. */
+  get hovering() {
+    return this.hoveringInternal
+  }
+
+  set hovering(value) {
+    if (!Object.is(this.hoveringInternal, value)) {
+      this.hoveringInternal = value
+      this.dirty = true
+    }
+  }
+
+  private showOutlineInternal = false
+  /** Whether the slot outline / faint background is visible. */
+  get showOutline() {
+    return this.showOutlineInternal
+  }
+
+  set showOutline(value) {
+    if (!Object.is(this.showOutlineInternal, value)) {
+      this.showOutlineInternal = value
+      this.dirty = true
+    }
+  }
+
+  constructor(reroute: Reroute, isInput: boolean) {
+    this.reroute = reroute
+    this.offsetMultiplier = isInput ? -1 : 1
+  }
+
+  /**
+   * Updates the slot's visibility based on the position of the pointer.
+   * @param pos The position of the pointer.
+   * @param outlineOnly If `true`, slot will display with the faded outline only ({@link showOutline}).
+   */
+  update(pos: Point, outlineOnly?: boolean) {
+    if (outlineOnly) {
+      this.hovering = false
+      this.showOutline = true
+    } else {
+      const dist = distance(this.pos, pos)
+      this.hovering = dist <= 2 * Reroute.slotRadius
+      this.showOutline = dist <= 5 * Reroute.slotRadius
+    }
+  }
+
+  /** Hides the slot. */
+  hide() {
+    this.hovering = false
+    this.showOutline = false
+  }
+
+  /**
+   * Draws the slot on the canvas.
+   * @param ctx The canvas context to draw on.
+   */
+  draw(ctx: CanvasRenderingContext2D): void {
+    const { fillStyle, strokeStyle, lineWidth } = ctx
+    const {
+      showOutline,
+      hovering,
+      pos: [x, y]
+    } = this
+    if (!showOutline) return
+
+    try {
+      ctx.fillStyle = hovering ? this.reroute.colour : 'rgba(127,127,127,0.3)'
+      ctx.strokeStyle = 'rgb(0,0,0,0.5)'
+      ctx.lineWidth = 1
+
+      ctx.beginPath()
+      ctx.arc(x, y, Reroute.slotRadius, 0, 2 * Math.PI)
+      ctx.fill()
+      ctx.stroke()
+    } finally {
+      ctx.fillStyle = fillStyle
+      ctx.strokeStyle = strokeStyle
+      ctx.lineWidth = lineWidth
+    }
+  }
+}
+
+/**
+ * Retrieves the position of the next reroute in the chain, or the destination input slot on this link.
+ * @param network The network of links
+ * @param link The link representing the current reroute chain
+ * @param id The ID of "this" reroute
+ * @returns The position of the next reroute or the input slot target, otherwise `undefined`.
+ */
+function getNextPos(
+  network: ReadonlyLinkNetwork,
+  link: LLink | undefined,
+  id: RerouteId
+) {
+  if (!link) return
+
+  const linkPos = LLink.findNextReroute(network, link, id)?.pos
+  if (linkPos) return linkPos
+
+  // Floating link with no input to find
+  if (link.target_id === UNASSIGNED_NODE_ID || link.target_slot === -1) return
+
+  return network.getNodeById(link.target_id)?.getInputPos(link.target_slot)
+}
+
+/** Returns the direction from one point to another in radians. */
+function getDirection(fromPos: Point, toPos: Point) {
+  return Math.atan2(toPos[1] - fromPos[1], toPos[0] - fromPos[0])
+}
+
+/**
+ * Marks a link's reroute chain as no longer floating: clears each reroute's
+ * floating marker and drag state, and removes any floating link that
+ * terminates at the chain's last reroute. Call when a real link connects
+ * through the chain.
+ * @param network The network containing the chain
+ * @param link The link whose chain was just connected
+ */
+export function anchorRerouteChain(network: LinkNetwork, link: LLink): void {
+  const reroutes = LLink.getReroutes(network, link)
+  for (const reroute of reroutes) {
+    reroute.floating = undefined
+    reroute._dragging = undefined
+  }
+
+  const lastReroute = reroutes.at(-1)
+  if (!lastReroute) return
+  for (const linkId of lastReroute.floatingLinkIds) {
+    const floatingLink = network.floatingLinks.get(linkId)
+    if (floatingLink?.parentId === lastReroute.id) {
+      network.removeFloatingLink(floatingLink)
+    }
+  }
+}
+
+/**
+ * Registers a reroute's chain state into {@link useRerouteStore} and adopts
+ * the store's reactive proxy as {@link Reroute._chain}, so the store and the
+ * reroute always agree and field writes are tracked.  Call this at every
+ * site that adds a reroute to a graph's reroute map.
+ * @param graph The graph (or subgraph) the reroute belongs to
+ * @param reroute The reroute to register
+ */
+export function registerRerouteChain(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  reroute: Reroute
+): boolean {
+  const scope = graphScopeOf(graph)
+  const registered = useRerouteStore().registerReroute(scope, reroute._chain)
+  if (!registered) return false
+  reroute._chain = registered
+  reroute._graphScope = scope
+  return true
+}
+
+/**
+ * Removes a reroute's chain state from {@link useRerouteStore} and detaches
+ * the reroute. No-op for reroutes that were never registered.
+ * @param reroute The reroute to unregister
+ */
+export function unregisterRerouteChain(reroute: Reroute): void {
+  if (!reroute._graphScope) return
+  useRerouteStore().deleteReroute(reroute._graphScope, reroute._chain)
+  reroute._graphScope = undefined
+}
+
+/**
+ * Unregisters every reroute a graph owns. Used when a graph's reroutes
+ * leave the store without a whole-bucket wipe: subgraph-definition removal,
+ * and clearing a graph that shares its bucket with other graphs.
+ * @param graph The graph whose reroutes should be unregistered
+ */
+export function unregisterAllRerouteChains(
+  graph: Pick<LGraph, 'reroutes'>
+): void {
+  for (const reroute of graph.reroutes.values()) unregisterRerouteChain(reroute)
+}
+
+type RegisteredReroute = Reroute
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface Reroute extends RegisteredReroute {}
+}

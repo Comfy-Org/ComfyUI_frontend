@@ -1,7 +1,7 @@
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IComboWidget } from '@comfyorg/graph-model/widgets'
 import type { ResultItem } from '@comfyorg/graph-model/nodeOutput'
 import type { ResultItemType } from '@comfyorg/graph-model/resultItemTypeSchema'

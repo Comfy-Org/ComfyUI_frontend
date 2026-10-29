@@ -6,7 +6,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'

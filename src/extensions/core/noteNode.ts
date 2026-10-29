@@ -2,7 +2,7 @@ import {
   LGraphCanvas,
   LiteGraph,
   LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 
 import { app } from '@/scripts/app'
 import { ComfyWidgets } from '@/scripts/widgets'

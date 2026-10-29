@@ -7,7 +7,7 @@ import type {
   Subgraph,
   SubgraphEventMap,
   SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 
 interface PromotionErrorReconcilerHandlers {
   /** Drops candidates whose widget is no longer the editable value owner. */

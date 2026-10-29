@@ -1,5 +1,5 @@
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 
 import { app } from '@/scripts/app'
 

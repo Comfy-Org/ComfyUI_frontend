@@ -17,12 +17,12 @@ import type {
   LGraphGroup,
   LGraphNode,
   Positionable
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { useCopy } from '@/composables/useCopy'
-import { CANVAS_CLIPBOARD_KEY } from '@/lib/litegraph/src/canvas/clipboardStorage'
+import { CANVAS_CLIPBOARD_KEY } from '@comfyorg/litegraph/canvas/clipboardStorage'
 import { app } from '@/scripts/app'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import { createNode } from '@/utils/createNode'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 import {

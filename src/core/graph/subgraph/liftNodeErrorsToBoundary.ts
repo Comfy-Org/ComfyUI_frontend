@@ -1,13 +1,13 @@
 import { groupBy, partition } from 'es-toolkit'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { isNodeLevelValidationError } from '@/utils/executionErrorUtil'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
-import { getNodeByExecutionId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
-import { isSubgraph } from '@/lib/litegraph/src/utils/graphTypeGuards'
+import { getNodeByExecutionId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
+import { isSubgraph } from '@comfyorg/litegraph/utils/graphTypeGuards'
 
 export interface LiftedErrorExtraInfo {
   input_name: string

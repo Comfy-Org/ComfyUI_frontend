@@ -1,5 +1,5 @@
-import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { resolveNodeRootGraphId } from '@comfyorg/litegraph/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useTextPreviewWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useProgressTextWidget'
 import { useApp } from '@/scripts/appInstance'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'

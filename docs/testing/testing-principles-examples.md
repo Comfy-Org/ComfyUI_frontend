@@ -76,7 +76,7 @@ Documented public contracts are different. Serialization formats, extension
 callbacks such as `onConnectionsChange`, and `node.serialize()` reach 40+
 custom node repositories. A break ships to the ecosystem before any internal
 evidence appears, so one narrow test per contract is written up front.
-[`LGraph.linkPresentation.test.ts`](../../src/lib/litegraph/src/LGraph.linkPresentation.test.ts)
+[`LGraph.linkPresentation.test.ts`](../../packages/litegraph/src/LGraph.linkPresentation.test.ts)
 pins link presentation serialization this way;
 [`storeCollisionContracts.test.ts`](../../src/stores/storeCollisionContracts.test.ts)
 pins store ID collision behavior.
@@ -145,7 +145,7 @@ it.for(['canvas', 'panel', 'inspector'])('hides on %s', (surface) => {
 invariant ("every link has a presentation") is a property of the whole set, so
 assert it on the whole set. The failure message then shows the offending
 element and its index instead of stopping at the first miss
-(compare [LGraph.linkPresentationTransfer.test.ts](../../src/lib/litegraph/src/LGraph.linkPresentationTransfer.test.ts)):
+(compare [LGraph.linkPresentationTransfer.test.ts](../../packages/litegraph/src/LGraph.linkPresentationTransfer.test.ts)):
 
 ```ts
 for (const link of rootGraph.links.values()) {

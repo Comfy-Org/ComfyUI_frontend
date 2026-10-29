@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useComputedWithWidgetWatch } from '@/composables/node/useWatchWidget'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 // Mock useChainCallback
 vi.mock<unknown>(import('@/composables/functional/useChainCallback'), () => ({

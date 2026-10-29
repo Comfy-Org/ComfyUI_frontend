@@ -41,6 +41,9 @@ const config: KnipConfig = {
     'packages/graph-state': {
       project: ['src/**/*.ts']
     },
+    'packages/litegraph': {
+      project: ['src/**/*.ts']
+    },
     'packages/keybindings': {
       project: ['src/**/*.ts']
     },

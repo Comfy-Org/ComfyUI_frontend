@@ -24,11 +24,11 @@
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/LightInfoWidget.test.ts",
+      "path": "packages/litegraph/src/widgets/LightInfoWidget.test.ts",
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/LightInfoWidget.ts",
+      "path": "packages/litegraph/src/widgets/LightInfoWidget.ts",
       "role": "integration"
     },
     {
@@ -61,7 +61,7 @@
     {
       "name": "Light widget state, editor controls, and node registration preserve light authoring",
       "checks": [
-        "src/lib/litegraph/src/widgets/LightInfoWidget.test.ts",
+        "packages/litegraph/src/widgets/LightInfoWidget.test.ts",
         "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts",
         "src/extensions/core/load3d/composables/useLightInfo.test.ts",
         "src/extensions/core/load3d/components/lightInfo/LightInfo.test.ts",

@@ -11,10 +11,10 @@ import {
   measureViewportFromElement
 } from '@comfyorg/graph-state/layout/canvasViewport'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
-import { selectedCanvasNodes } from '@/lib/litegraph/src/canvas/selectionAdapter'
+import { selectedCanvasNodes } from '@comfyorg/litegraph/canvas/selectionAdapter'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
-import { resolveConcretePromotedWidget } from '@/lib/litegraph/src/subgraph/promotion/resolveConcretePromotedWidget'
+import { resolveConcretePromotedWidget } from '@comfyorg/litegraph/subgraph/promotion/resolveConcretePromotedWidget'
 import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -26,18 +26,18 @@ import {
   pasteFromClipspace
 } from '@/scripts/clipspace'
 import type { Clipspace } from '@/scripts/clipspace'
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
+import type { IContextMenuValue } from '@comfyorg/litegraph/types/contextMenu'
 import { withGraphIntentSource } from '@comfyorg/graph-state/graphIntents'
-import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
+import { createMutationView } from '@comfyorg/litegraph/infrastructure/createMutationView'
 import {
   inputAsSerialisable,
   LGraph,
   LGraphCanvas,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
-import { snapPoint } from '@/lib/litegraph/src/measure'
-import type { ISerialisedGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
+import { snapPoint } from '@comfyorg/litegraph/measure'
+import type { ISerialisedGraph, Vector2 } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
@@ -89,7 +89,7 @@ import type { NodeError } from '@/platform/remote/comfyui/types'
 import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
-import type { BaseDOMWidget } from '@/lib/litegraph/src/types/domWidget'
+import type { BaseDOMWidget } from '@comfyorg/litegraph/types/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -137,7 +137,7 @@ import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-import { getCnrIdFromProperties } from '@/lib/litegraph/src/utils/cnrIdUtil'
+import { getCnrIdFromProperties } from '@comfyorg/litegraph/utils/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
 import {
@@ -162,7 +162,7 @@ import {
   getNodeByExecutionId,
   isAncestorPathActive,
   triggerCallbackOnAllNodes
-} from '@/lib/litegraph/src/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import {
   executeWidgetsCallback,
   isImageNode,

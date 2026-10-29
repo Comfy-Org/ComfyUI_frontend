@@ -1,0 +1,59 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { LGraph, LGraphCanvas } from './litegraph'
+
+describe('LGraphCanvas.renderInfo', () => {
+  let lgCanvas: LGraphCanvas
+  let ctx: CanvasRenderingContext2D
+
+  beforeEach(() => {
+    const canvasElement = document.createElement('canvas')
+    ctx = {
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      font: '',
+      fillStyle: '',
+      textAlign: 'left' as CanvasTextAlign,
+      fillText: vi.fn()
+    } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
+
+    canvasElement.getContext = vi.fn().mockReturnValue(ctx)
+
+    const graph = new LGraph()
+    lgCanvas = new LGraphCanvas(canvasElement, graph, {
+      skip_render: true,
+      skip_events: true
+    })
+  })
+
+  it('does not access canvas.offsetHeight when y is provided', () => {
+    const spy = vi.spyOn(lgCanvas.canvas, 'offsetHeight', 'get')
+
+    lgCanvas.renderInfo(ctx, 10, 500)
+
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('draws every line at the x it was given', () => {
+    lgCanvas.renderInfo(ctx, 100, 500)
+
+    expect(ctx.translate).toHaveBeenCalledWith(100, 500)
+
+    const drawnAt = vi.mocked(ctx.fillText).mock.calls
+    expect(drawnAt.length).toBeGreaterThan(0)
+    expect(drawnAt.map(([, x]) => x)).toEqual(drawnAt.map(() => 0))
+  })
+
+  it('uses canvas.height divided by dpr as y fallback', () => {
+    lgCanvas.canvas.width = 1920
+    lgCanvas.canvas.height = 2160
+    lgCanvas.dpr = 2
+
+    lgCanvas.renderInfo(ctx, 10, 0)
+
+    // lineCount = 5 (graph present, no info_text), lineHeight = 13
+    // y = canvas.height / DPR - (lineCount + 1) * lineHeight
+    expect(ctx.translate).toHaveBeenCalledWith(10, 2160 / 2 - 6 * 13)
+  })
+})

@@ -9,8 +9,8 @@ import type {
   Rect,
   Point2D as Point
 } from '@comfyorg/shared-frontend-utils/geometry'
-import { getSelectedLinksAnchor } from '@/lib/litegraph/src/canvas/linkSelection'
-import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { getSelectedLinksAnchor } from '@comfyorg/litegraph/canvas/linkSelection'
+import { LGraphGroup, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { useLinkSelectionStore } from '@comfyorg/graph-state/linkSelectionStore'

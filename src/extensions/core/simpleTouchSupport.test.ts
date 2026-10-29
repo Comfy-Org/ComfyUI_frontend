@@ -2,8 +2,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { shallowRef } from 'vue'
 
-import type { DragAndScale } from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { DragAndScale } from '@comfyorg/litegraph/litegraph'
+import { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import type { app as comfyApp } from '@/scripts/app'
 
 import { simpleTouchSupportExtension } from './simpleTouchSupport'

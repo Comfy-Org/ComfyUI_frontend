@@ -4,12 +4,12 @@ import type {
   ExportedSubgraphInstance,
   Subgraph,
   TWidgetValue
-} from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
+import { LGraphNode, SubgraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 

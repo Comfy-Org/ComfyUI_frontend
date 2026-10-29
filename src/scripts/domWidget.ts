@@ -6,10 +6,10 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 // exports it after SubgraphNode, so a litegraph-internal importer of this file
 // would hit its TDZ. LGraphNode/LiteGraph must stay barrel-sourced — a direct
 // LGraphNode import re-triggers the LGraph<->Subgraph cycle.
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { wasWidgetRefused } from '@/lib/litegraph/src/node/widgetsView'
+import { LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
+import { wasWidgetRefused } from '@comfyorg/litegraph/node/widgetsView'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
+import { LegacyWidget } from '@comfyorg/litegraph/widgets/LegacyWidget'
 import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import type {
@@ -18,7 +18,7 @@ import type {
   ComponentWidgetCustomProps,
   DOMWidget,
   DOMWidgetOptions
-} from '@/lib/litegraph/src/types/domWidget'
+} from '@comfyorg/litegraph/types/domWidget'
 import { generateUUID } from '@/utils/formatUtil'
 
 function readDomWidgetValue<V extends object | string>(

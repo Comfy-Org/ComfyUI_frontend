@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { DragAndScale } from '@comfyorg/litegraph/DragAndScale'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   clearCoachmarks,

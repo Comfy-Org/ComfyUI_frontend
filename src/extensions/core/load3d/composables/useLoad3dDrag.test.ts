@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import { useLoad3dDrag } from '@/extensions/core/load3d/composables/useLoad3dDrag'
 import { SUPPORTED_EXTENSIONS } from '@comfyorg/viewport3d/load3d/constants'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { createMockFileList } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockFileList } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 vi.mock(import('@/i18n'))
 

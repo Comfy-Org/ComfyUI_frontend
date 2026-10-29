@@ -8,7 +8,7 @@
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/MarkdownWidget.ts",
+      "path": "packages/litegraph/src/widgets/MarkdownWidget.ts",
       "role": "integration"
     },
     {

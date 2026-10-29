@@ -1,6 +1,6 @@
 import { SELECTION_BOUNDS_PADDING } from '@/base/common/selectionBounds'
-import type { LGraphCanvas, Rectangle } from '@/lib/litegraph/src/litegraph'
-import { createBounds } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, Rectangle } from '@comfyorg/litegraph/litegraph'
+import { createBounds } from '@comfyorg/litegraph/litegraph'
 import { app } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 

@@ -2,7 +2,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -19,7 +19,7 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('@/lib/litegraph/src/utils/graphTraversalUtil'),
+  import('@comfyorg/litegraph/utils/graphTraversalUtil'),
   () => ({
     executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
   })

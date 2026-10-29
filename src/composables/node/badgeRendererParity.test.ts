@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { effectScope } from 'vue'
 
-import { badgeDrawObjects } from '@/lib/litegraph/src/nodeBadgeDraw'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { badgeDrawObjects } from '@comfyorg/litegraph/nodeBadgeDraw'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   LGraph,
   LGraphNode as LGraphNodeClass
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

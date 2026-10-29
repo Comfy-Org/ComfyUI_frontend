@@ -1,6 +1,6 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { partition } from 'es-toolkit'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 
 interface FileInputOptions {
   accept?: string

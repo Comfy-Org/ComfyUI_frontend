@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
 import { t } from '@/i18n'
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'

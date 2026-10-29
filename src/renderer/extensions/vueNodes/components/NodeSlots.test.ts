@@ -10,14 +10,14 @@ import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { NodeId as VueNodeId } from '@comfyorg/graph-state/layout/types'
 import { app } from '@/scripts/app'
@@ -28,7 +28,7 @@ import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionEr
 import {
   createMockNodeInputSlot,
   createMockNodeOutputSlot
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 import NodeSlots from './NodeSlots.vue'
 

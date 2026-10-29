@@ -4,7 +4,7 @@ import type {
   ISerialisedNode,
   SerialisableGraph
 } from '@comfyorg/graph-model/serialisation'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import type { LayoutOperation } from '@comfyorg/graph-state/layout/types'
 import { installErrorNodeWidgets } from '@/scripts/errorNodeWidgets'

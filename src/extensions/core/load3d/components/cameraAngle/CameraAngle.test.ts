@@ -96,7 +96,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraphOrUndefined: rootGraph }
 }))
 vi.mock<unknown>(
-  import('@/lib/litegraph/src/utils/graphTraversalUtil'),
+  import('@comfyorg/litegraph/utils/graphTraversalUtil'),
   () => ({
     getNodeByLocatorId: getNodeByLocatorIdMock
   })

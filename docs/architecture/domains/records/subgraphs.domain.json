@@ -20,19 +20,19 @@
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputLink.test.ts",
+      "path": "packages/litegraph/src/subgraph/promotion/resolveSubgraphInputLink.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputLink.ts",
+      "path": "packages/litegraph/src/subgraph/promotion/resolveSubgraphInputLink.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget.test.ts",
+      "path": "packages/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget.ts",
+      "path": "packages/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget.ts",
       "role": "domain"
     },
     {
@@ -44,39 +44,39 @@
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/constants.ts",
+      "path": "packages/litegraph/src/constants.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/infrastructure/SubgraphEventMap.ts",
+      "path": "packages/litegraph/src/infrastructure/SubgraphEventMap.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/infrastructure/SubgraphInputEventMap.ts",
+      "path": "packages/litegraph/src/infrastructure/SubgraphInputEventMap.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/subgraph/**",
+      "path": "packages/litegraph/src/subgraph/**",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.test.ts",
+      "path": "packages/litegraph/src/subgraph/ExecutableNodeDTO.test.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts",
+      "path": "packages/litegraph/src/subgraph/ExecutableNodeDTO.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/subgraph/__fixtures__/**",
+      "path": "packages/litegraph/src/subgraph/__fixtures__/**",
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/subgraph/svgBitmapCache.test.ts",
+      "path": "packages/litegraph/src/subgraph/svgBitmapCache.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/subgraph/svgBitmapCache.ts",
+      "path": "packages/litegraph/src/subgraph/svgBitmapCache.ts",
       "role": "presentation"
     },
     {
@@ -107,26 +107,26 @@
     {
       "name": "Converting, unpacking, and serialising subgraphs preserves links and definitions",
       "checks": [
-        "src/lib/litegraph/src/subgraph/SubgraphConversion.test.ts",
-        "src/lib/litegraph/src/subgraph/SubgraphConversion.nestedDefinitions.test.ts",
-        "src/lib/litegraph/src/subgraph/SubgraphSerialization.test.ts",
-        "src/lib/litegraph/src/subgraph/subgraphDeduplication.test.ts",
+        "packages/litegraph/src/subgraph/SubgraphConversion.test.ts",
+        "packages/litegraph/src/subgraph/SubgraphConversion.nestedDefinitions.test.ts",
+        "packages/litegraph/src/subgraph/SubgraphSerialization.test.ts",
+        "packages/litegraph/src/subgraph/subgraphDeduplication.test.ts",
         "browser_tests/tests/subgraph/subgraphSerialization.spec.ts"
       ]
     },
     {
       "name": "Subgraph IO slots connect, rename, and emit events consistently",
       "checks": [
-        "src/lib/litegraph/src/subgraph/SubgraphIO.test.ts",
-        "src/lib/litegraph/src/subgraph/SubgraphSlotConnections.test.ts",
-        "src/lib/litegraph/src/subgraph/SubgraphEvents.test.ts",
-        "src/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget.test.ts"
+        "packages/litegraph/src/subgraph/SubgraphIO.test.ts",
+        "packages/litegraph/src/subgraph/SubgraphSlotConnections.test.ts",
+        "packages/litegraph/src/subgraph/SubgraphEvents.test.ts",
+        "packages/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget.test.ts"
       ]
     },
     {
       "name": "Execution flattening and error lifting resolve nodes inside subgraphs",
       "checks": [
-        "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.test.ts",
+        "packages/litegraph/src/subgraph/ExecutableNodeDTO.test.ts",
         "src/core/graph/subgraph/liftNodeErrorsToBoundary.test.ts"
       ]
     },

@@ -74,7 +74,7 @@ describe('loadArchitectureConfiguration', () => {
     {
       name: 'a glob other than a trailing /**',
       overrides: { modules: [{ path: 'src/images/*.ts', role: 'domain' }] },
-      error: 'must be a src/ file or a src/ directory ending in /**'
+      error: 'must be a source file or a source directory ending in /**'
     },
     {
       name: 'an unknown domain reference',

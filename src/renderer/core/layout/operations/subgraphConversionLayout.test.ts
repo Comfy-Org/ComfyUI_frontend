@@ -4,16 +4,16 @@ import type {
   LGraph,
   Positionable,
   Subgraph
-} from '@/lib/litegraph/src/litegraph'
-import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+} from '@comfyorg/litegraph/litegraph'
+import { createTestNode } from '@comfyorg/litegraph/__fixtures__/nodeHelpers'
 import {
   createTestRootGraph,
   enableSubgraphNodeCreation,
   resetSubgraphFixtureState
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 
-import { setNodePosition } from '@/lib/litegraph/src/layout/graphLayoutAttachment'
+import { setNodePosition } from '@comfyorg/litegraph/layout/graphLayoutAttachment'
 
 beforeEach(() => {
   resetSubgraphFixtureState()

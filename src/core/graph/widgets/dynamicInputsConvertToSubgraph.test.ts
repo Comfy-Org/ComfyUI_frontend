@@ -7,13 +7,13 @@ import {
   test
 } from 'vitest'
 
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, Positionable } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
+import type { LGraph, Positionable } from '@comfyorg/litegraph/litegraph'
 import {
   createTestRootGraph,
   enableSubgraphNodeCreation,
   resetSubgraphFixtureState
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 

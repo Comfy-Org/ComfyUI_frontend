@@ -3,7 +3,7 @@ import type { ComputedRef } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'

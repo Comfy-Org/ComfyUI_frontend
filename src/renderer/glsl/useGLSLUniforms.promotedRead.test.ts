@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { describe, expect, it } from 'vitest'
 
 import type { CurveData } from '@comfyorg/graph-model/curve'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import type { extractUniformSources } from '@/renderer/glsl/useGLSLUniforms'
 import { useGLSLUniforms } from '@/renderer/glsl/useGLSLUniforms'

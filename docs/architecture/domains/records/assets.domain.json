@@ -20,7 +20,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/AssetWidget.ts",
+      "path": "packages/litegraph/src/widgets/AssetWidget.ts",
       "role": "integration"
     },
     {

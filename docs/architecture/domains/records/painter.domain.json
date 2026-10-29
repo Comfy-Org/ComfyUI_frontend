@@ -16,7 +16,7 @@
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/PainterWidget.ts",
+      "path": "packages/litegraph/src/widgets/PainterWidget.ts",
       "role": "integration"
     },
     {

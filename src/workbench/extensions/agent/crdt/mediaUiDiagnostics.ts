@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { isDOMWidget } from '@/scripts/domWidget'
 import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 

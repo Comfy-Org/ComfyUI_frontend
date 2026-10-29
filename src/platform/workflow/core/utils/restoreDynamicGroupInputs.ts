@@ -1,5 +1,5 @@
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { ComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyInputsSpec } from '@/schemas/nodeDefSchema'
 import {

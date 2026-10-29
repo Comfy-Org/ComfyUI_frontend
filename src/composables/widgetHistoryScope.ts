@@ -1,4 +1,4 @@
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import { app } from '@/scripts/app'
 import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'

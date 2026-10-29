@@ -6,14 +6,14 @@ import {
   LGraphNode,
   LiteGraph,
   LLink
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   ISerialisedNode
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
+import { LegacyWidget } from '@comfyorg/litegraph/widgets/LegacyWidget'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'

@@ -1,6 +1,6 @@
 import { defineAsyncComponent } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const TopBarHeader = defineAsyncComponent(

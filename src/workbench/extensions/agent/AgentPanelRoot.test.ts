@@ -45,9 +45,9 @@ setupInlinePromptEditorDom()
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { Subgraph } from '@comfyorg/litegraph/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { createTestSubgraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import {
   toOwningGraphId,
   toRootGraphId
@@ -92,15 +92,15 @@ import {
 } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import {
   createMockLoadedWorkflow,
-  createMockChangeTracker,
-  createMockLGraphNode
-} from '@/utils/__tests__/litegraphTestUtils'
+  createMockChangeTracker
+} from '@/utils/__tests__/workflowTestUtils'
 import {
   createMockCanvasRenderingContext2D,
   createTestDragAndScale
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 const getServerFeature = vi.hoisted(() =>
   vi.fn((_name: string, defaultValue?: unknown) => defaultValue)
@@ -214,7 +214,7 @@ let executionErrors: Mocked<ReturnType<typeof useExecutionErrorStore>>
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), async () => {
-  const { LGraphNode } = await import('@/lib/litegraph/src/litegraph')
+  const { LGraphNode } = await import('@comfyorg/litegraph/litegraph')
   return {
     isLGraphNode: (item: unknown): item is LGraphNode =>
       item instanceof LGraphNode ||

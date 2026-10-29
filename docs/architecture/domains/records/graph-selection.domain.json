@@ -4,7 +4,7 @@
   "description": "The single graph-scoped selection store, its serialisable selection keys, and the legacy canvas.selectedItems view that adapts it for LiteGraph callers. Canvas gestures that change selection stay in the graph canvas domain.",
   "modules": [
     {
-      "path": "src/lib/litegraph/src/canvas/SelectedItemsView.ts",
+      "path": "packages/litegraph/src/canvas/SelectedItemsView.ts",
       "role": "integration"
     }
   ],

@@ -1,4 +1,4 @@
-import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedGraph } from '@comfyorg/litegraph/litegraph'
 import type { SystemStats } from '@/platform/remote/comfyui/types'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 

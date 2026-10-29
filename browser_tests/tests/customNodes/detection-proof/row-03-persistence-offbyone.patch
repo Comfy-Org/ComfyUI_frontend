@@ -1,7 +1,7 @@
-diff --git a/src/lib/litegraph/src/LGraphNode.ts b/src/lib/litegraph/src/LGraphNode.ts
+diff --git a/packages/litegraph/src/LGraphNode.ts b/packages/litegraph/src/LGraphNode.ts
 index 3fb1eec569..4603da81ae 100644
---- a/src/lib/litegraph/src/LGraphNode.ts
-+++ b/src/lib/litegraph/src/LGraphNode.ts
+--- a/packages/litegraph/src/LGraphNode.ts
++++ b/packages/litegraph/src/LGraphNode.ts
 @@ -1191,6 +1191,20 @@ export class LGraphNode
          let positionalIndex = 0
          for (const widget of this.widgets) {

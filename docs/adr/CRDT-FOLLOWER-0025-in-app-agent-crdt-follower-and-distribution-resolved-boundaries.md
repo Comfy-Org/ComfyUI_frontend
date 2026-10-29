@@ -93,7 +93,7 @@ one applier, and it is not in the frontend.
   for a human edit: as a consequence of the graph API, through the same
   litegraph callbacks. No store action takes a remote-context parameter.
 - **Provenance is call-carried.** Every remote write runs inside
-  `withGraphIntentSource('agent-remote', ...)` (`src/lib/litegraph/src/graphIntents.ts`)
+  `withGraphIntentSource('agent-remote', ...)` (`packages/litegraph/src/graphIntents.ts`)
   and `layoutStore.withActor(actor, ...)`. `LGraph.add/remove/_addLink/_removeLink/clear`,
   the widget value setter, and the node `title`/`mode` setters plus
   `collapse()`/`pin()` announce `GraphIntent` events tagged with that source;

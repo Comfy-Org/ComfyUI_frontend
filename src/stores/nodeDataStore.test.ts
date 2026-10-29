@@ -1,8 +1,8 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import { transferReplacementOwnership } from '@/lib/litegraph/src/node/nodeShell/nodeShellState'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { transferReplacementOwnership } from '@comfyorg/litegraph/node/nodeShell/nodeShellState'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import {
   toOwningGraphId,
@@ -11,7 +11,7 @@ import {
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
+import { createNodeState } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import type { UUID } from '@comfyorg/graph-model/uuid'
 
 import { useNodeDataStore } from '@comfyorg/graph-state/nodeDataStore'
@@ -322,10 +322,10 @@ describe('nodeDataStore registration via LGraph', () => {
 
   it('does not crash the litegraph module graph on load', async () => {
     vi.resetModules()
-    await import('@/lib/litegraph/src/LGraphGroup')
+    await import('@comfyorg/litegraph/LGraphGroup')
     await import('@comfyorg/graph-state/nodeDataStore')
     const { SubgraphNode } =
-      await import('@/lib/litegraph/src/subgraph/SubgraphNode')
+      await import('@comfyorg/litegraph/subgraph/SubgraphNode')
 
     expect(SubgraphNode).toBeTypeOf('function')
   })

@@ -6,7 +6,7 @@ import { afterEach, beforeAll, beforeEach, vi } from 'vitest'
 import './vitest.mocks.setup'
 import './vitest.network.setup'
 
-import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
+import { clearRegisteredLiteGraphTypes } from '@comfyorg/litegraph/litegraphInstance'
 import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 import { StubPath2D } from '@/utils/__tests__/stubPath2D'
 

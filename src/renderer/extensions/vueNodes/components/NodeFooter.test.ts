@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import { RenderShape } from '@/lib/litegraph/src/litegraph'
+import { RenderShape } from '@comfyorg/litegraph/litegraph'
 import NodeFooter from '@/renderer/extensions/vueNodes/components/NodeFooter.vue'
 
 vi.mock<unknown>(import('@comfyorg/graph-state/layout/layoutStore'), () => {

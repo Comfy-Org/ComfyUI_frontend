@@ -4,7 +4,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IComboWidget } from '@comfyorg/graph-model/widgets'
 import type { ResultItem } from '@comfyorg/graph-model/nodeOutput'
 import { useToast } from '@/components/ui/toast/toastStore'

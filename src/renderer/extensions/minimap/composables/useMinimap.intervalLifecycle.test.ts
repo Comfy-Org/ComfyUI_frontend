@@ -13,16 +13,16 @@ import type {
   LGraph,
   LGraphNode,
   LGraphCanvas
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import { createMockLinks } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLinks } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import {
   createMockCanvasRenderingContext2D,
   createMockMinimapCanvas
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 const mockNodes = fromPartial<LGraphNode[]>([
   {

@@ -5,7 +5,7 @@ import {
   buildPromotedWidgetExecutionSources,
   hasActivePromotedWidgetConsumer,
   resolveActivePromotedWidgetConsumers
-} from '@/lib/litegraph/src/subgraph/promotion/resolveConcretePromotedWidget'
+} from '@comfyorg/litegraph/subgraph/promotion/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
 import { isComboInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
@@ -17,15 +17,15 @@ import type {
   MissingMediaGroup,
   MediaType
 } from './types'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { IBaseWidget, IComboWidget } from '@comfyorg/graph-model/widgets'
 import {
   collectAllNodes,
   getExecutionIdByNode,
   getNodeByExecutionId,
   isExecutionPathActive
-} from '@/lib/litegraph/src/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'

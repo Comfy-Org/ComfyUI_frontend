@@ -17,7 +17,7 @@
 /src/components/imagecrop/                        @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/composables/useImageCrop.ts                  @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/composables/useImageCrop.test.ts             @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/lib/litegraph/src/widgets/ImageCropWidget.ts @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/packages/litegraph/src/widgets/ImageCropWidget.ts @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Image Compare
 /src/extensions/core/imageCompare.ts                                                @jtydhr88 @Comfy-Org/comfy_frontend_devs
@@ -26,13 +26,13 @@
 /src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts      @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.test.ts @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts      @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/lib/litegraph/src/widgets/ImageCompareWidget.ts                                @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/packages/litegraph/src/widgets/ImageCompareWidget.ts                                @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Painter
 /src/extensions/core/painter.ts                                             @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/renderer/extensions/painter/                                          @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts   @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/lib/litegraph/src/widgets/PainterWidget.ts                             @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/packages/litegraph/src/widgets/PainterWidget.ts                             @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Image Compositor / Layer Editor
 /src/extensions/core/imageCompositor.ts                                      @jtydhr88 @Comfy-Org/comfy_frontend_devs
@@ -41,7 +41,7 @@
 /src/renderer/extensions/compositor/                                         @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/renderer/extensions/layerEditor/                                        @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/lib/litegraph/src/widgets/CompositorWidget.ts                           @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/packages/litegraph/src/widgets/CompositorWidget.ts                           @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # GLSL
 /src/renderer/glsl/                               @jtydhr88 @christian-byrne @Comfy-Org/comfy_frontend_devs

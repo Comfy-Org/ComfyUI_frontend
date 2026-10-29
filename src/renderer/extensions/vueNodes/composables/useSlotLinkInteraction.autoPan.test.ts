@@ -49,7 +49,7 @@ const {
   }
 })
 
-vi.mock<unknown>(import('@/lib/litegraph/src/canvas/useAutoPan'), () => ({
+vi.mock<unknown>(import('@comfyorg/litegraph/canvas/useAutoPan'), () => ({
   AutoPanController: class {
     updatePointer = vi.fn()
     start = vi.fn()
@@ -144,7 +144,7 @@ vi.mock<unknown>(
 
 vi.mock(import('@comfyorg/graph-state/layout/layoutStore'))
 
-vi.mock<unknown>(import('@/lib/litegraph/src/canvas/slotCalculations'), () => ({
+vi.mock<unknown>(import('@comfyorg/litegraph/canvas/slotCalculations'), () => ({
   getGraphSlotLayout: () => ({
     nodeId: 'node1',
     index: 0,
@@ -200,12 +200,12 @@ vi.mocked(useEventListener).mockImplementation((event, handler) => {
 })
 vi.mocked(tryOnScopeDispose).mockImplementation(() => true)
 
-vi.mock<unknown>(import('@/lib/litegraph/src/LLink'), () => ({
+vi.mock<unknown>(import('@comfyorg/litegraph/LLink'), () => ({
   LLink: { getReroutes: () => [] },
   slotFloatingLinks: () => []
 }))
 
-vi.mock(import('@/lib/litegraph/src/canvas/linkSelection'), { spy: true })
+vi.mock(import('@comfyorg/litegraph/canvas/linkSelection'), { spy: true })
 
 vi.mock<unknown>(import('@/utils/rafBatch'), () => ({
   createRafBatch: (fn: () => void) => ({
@@ -215,7 +215,7 @@ vi.mock<unknown>(import('@/utils/rafBatch'), () => ({
   })
 }))
 
-import { selectSlotLinks } from '@/lib/litegraph/src/canvas/linkSelection'
+import { selectSlotLinks } from '@comfyorg/litegraph/canvas/linkSelection'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 

@@ -1,4 +1,4 @@
-import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, Subgraph } from '@comfyorg/litegraph/litegraph'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type {
   NodeExecutionId,

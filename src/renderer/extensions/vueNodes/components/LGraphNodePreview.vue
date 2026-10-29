@@ -38,7 +38,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, RenderShape } from '@comfyorg/litegraph/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
