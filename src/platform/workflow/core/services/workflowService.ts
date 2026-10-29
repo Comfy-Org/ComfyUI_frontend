@@ -540,8 +540,8 @@ export const useWorkflowService = () => {
         const load = () =>
           useApp().loadGraphData(
             toRaw(workflow.activeState) as ComfyWorkflowJSON,
-            /* clean=*/ true,
-            /* restore_view=*/ true,
+            true,
+            true,
             workflow,
             {
               checkForRerouteMigration: false,

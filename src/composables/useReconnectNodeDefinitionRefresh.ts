@@ -1,5 +1,6 @@
 import { useEventListener } from '@vueuse/core'
 import { delay } from 'es-toolkit'
+import { onScopeDispose } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
@@ -7,8 +8,6 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -19,10 +18,8 @@ const IDLE_TIMEOUT_MS = 30_000
 
 async function fetchServerNodeTypes(): Promise<string[] | undefined> {
   try {
-    const response = await api.fetchNodeDefs()
-    if (!response.ok) return undefined
-    const defs: Record<string, ComfyNodeDef> = await response.json()
-    return Object.keys(defs)
+    const fetched = await app.fetchNodeDefs()
+    return fetched.ok ? Object.keys(fetched.defs) : undefined
   } catch {
     return undefined
   }
@@ -73,12 +70,22 @@ function useUserBusy(): () => boolean {
   return () => pointerHeld || isTextField(document.activeElement)
 }
 
+function useScopeDisposed(): () => boolean {
+  let disposed = false
+  onScopeDispose(() => {
+    disposed = true
+  })
+  return () => disposed
+}
+
 async function rebuildWhenIdle(
   workflow: LoadedComfyWorkflow,
-  isUserBusy: () => boolean
+  isUserBusy: () => boolean,
+  isDisposed: () => boolean
 ): Promise<void> {
   const workflowStore = useWorkflowStore()
-  const isActive = () => workflowStore.activeWorkflow === workflow
+  const isActive = () =>
+    !isDisposed() && workflowStore.activeWorkflow === workflow
   const isIdle = () =>
     workflow.changeTracker.changeCount === 0 &&
     !workflow.changeTracker._restoringState &&
@@ -110,12 +117,14 @@ export function useReconnectNodeDefinitionRefresh() {
   if (isCloud) return async () => {}
 
   const isUserBusy = useUserBusy()
+  const isDisposed = useScopeDisposed()
   let inFlight: Promise<void> | null = null
   let reconnects = 0
 
   async function refreshAndRebuild(): Promise<void> {
+    if (isDisposed()) return
     const serverTypes = await fetchServerNodeTypes()
-    if (!serverTypes) return
+    if (!serverTypes || isDisposed()) return
     if (serverTypes.some((type) => !isRegistered(type))) {
       await useCommandStore().execute('Comfy.RefreshNodeDefinitions', {
         errorHandler: (error) => {
@@ -123,8 +132,9 @@ export function useReconnectNodeDefinitionRefresh() {
         }
       })
     }
+    if (isDisposed()) return
     const workflow = useWorkflowStore().activeWorkflow
-    if (workflow) await rebuildWhenIdle(workflow, isUserBusy)
+    if (workflow) await rebuildWhenIdle(workflow, isUserBusy, isDisposed)
   }
 
   async function refreshUntilSettled(): Promise<void> {

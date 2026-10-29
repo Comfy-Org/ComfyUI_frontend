@@ -28,7 +28,6 @@ const test = mergeTests(comfyPageFixture, webSocketFixture).extend<{
     await use(server)
   }
 })
-const proofNodeId = toNodeId(1)
 
 test.describe(
   'Node definitions after a ComfyUI restart',
@@ -51,7 +50,7 @@ test.describe(
               node?.widgets?.some((widget) => widget.name === 'steps') === true,
             seed: node?.widgets?.find((widget) => widget.name === 'seed')?.value
           }
-        }, proofNodeId)
+        }, toNodeId(1))
 
       await comfyPage.workflow.loadWorkflow('agent/restart_node_refresh')
       await expect.poll(proofNode).toEqual({

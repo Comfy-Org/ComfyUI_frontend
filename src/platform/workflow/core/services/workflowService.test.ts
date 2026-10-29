@@ -4,7 +4,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-di
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { fromAny } from '@total-typescript/shoehorn'
 
@@ -563,10 +563,22 @@ describe('useWorkflowService', () => {
         })
       })
 
-      it('keeps unsaved edits marked as unsaved after a reload', async () => {
+      it('keeps unsaved edits and history after a reload', async () => {
+        const undo = makeWorkflowData({ previousEdit: true })
+        workflow.changeTracker.undoQueue = [undo]
+        vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
+          assert.exists(data)
+          await useWorkflowService().afterLoadNewGraph(workflow, data)
+          return true
+        })
+
         await useWorkflowService().reloadCurrentWorkflow()
 
         expect(workflow.changeTracker.initialState).toBe(saved)
+        expect(workflow.changeTracker.activeState.extra).toMatchObject({
+          unsavedEdit: true
+        })
+        expect(workflow.changeTracker.undoQueue).toContainEqual(undo)
         expect(workflow.isModified).toBe(true)
       })
 
@@ -619,7 +631,9 @@ describe('useWorkflowService', () => {
 
         await useWorkflowService().reloadCurrentWorkflow()
 
-        expect(workflow.changeTracker.initialState).not.toBe(saved)
+        expect(workflow.changeTracker.initialState).toEqual(
+          workflow.changeTracker.activeState
+        )
         expect(workflow.isModified).toBe(false)
       })
 
@@ -633,7 +647,9 @@ describe('useWorkflowService', () => {
 
         await useWorkflowService().reloadCurrentWorkflow()
 
-        expect(workflow.changeTracker.initialState).not.toBe(saved)
+        expect(workflow.changeTracker.initialState).toEqual(
+          workflow.changeTracker.activeState
+        )
         expect(workflow.isModified).toBe(false)
       })
 
@@ -654,7 +670,9 @@ describe('useWorkflowService', () => {
       it('resets the baseline to the reloaded state without the option', async () => {
         await useWorkflowService().openWorkflow(workflow, { force: true })
 
-        expect(workflow.changeTracker.initialState).not.toBe(saved)
+        expect(workflow.changeTracker.initialState).toEqual(
+          workflow.changeTracker.activeState
+        )
         expect(workflow.isModified).toBe(false)
       })
     })

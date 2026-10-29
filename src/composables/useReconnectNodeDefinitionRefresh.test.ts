@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -20,7 +21,7 @@ import {
   createMockLoadedWorkflow
 } from '@/utils/__tests__/litegraphTestUtils'
 
-import { useReconnectNodeDefinitionRefresh } from './useReconnectNodeDefinitionRefresh'
+import { useReconnectNodeDefinitionRefresh as createReconnectRefresh } from './useReconnectNodeDefinitionRefresh'
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 
@@ -78,7 +79,11 @@ function registerRefreshCommand(
 }
 
 describe('useReconnectNodeDefinitionRefresh', () => {
+  let scope: ReturnType<typeof effectScope>
+
   beforeEach(() => {
+    const testScope = effectScope()
+    scope = testScope
     distribution.isCloud = false
     showCanvas()
     useWorkflowStore().activeWorkflow = createMockLoadedWorkflow({
@@ -86,7 +91,14 @@ describe('useReconnectNodeDefinitionRefresh', () => {
       changeTracker: createMockChangeTracker({ changeCount: 0 })
     })
     vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
+    return () => testScope.stop()
   })
+
+  function useReconnectNodeDefinitionRefresh() {
+    const handler = scope.run(createReconnectRefresh)
+    assert.exists(handler)
+    return handler
+  }
 
   it('refreshes node definitions and reloads the open workflow when the server came back with a node the canvas shows as missing', async () => {
     const order: string[] = []
@@ -109,6 +121,10 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     await useReconnectNodeDefinitionRefresh()()
 
     expect(order).toEqual(['refresh', 'reload'])
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      useWorkflowStore().activeWorkflow,
+      expect.objectContaining({ force: true, keepSavedBaseline: true })
+    )
   })
 
   it('refreshes node definitions but keeps the open workflow when the new node is not on the canvas', async () => {
@@ -238,6 +254,18 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('does nothing when the node definitions come back as something other than definitions', async () => {
+    const refresh = registerRefreshCommand()
+    vi.spyOn(api, 'fetchNodeDefs').mockResolvedValue(
+      Response.json('unavailable')
+    )
+
+    await useReconnectNodeDefinitionRefresh()()
+
+    expect(refresh).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+  })
+
   it('reports a failed refresh and keeps the open workflow', async () => {
     const failure = new Error('refresh failed')
     registerRefreshCommand(
@@ -307,19 +335,6 @@ describe('useReconnectNodeDefinitionRefresh', () => {
 
     await onReconnected()
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
-  })
-
-  it('rebuilds with the saved baseline kept', async () => {
-    registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
-    showCanvas(node('NewPackNode', { missing: true }))
-    serverHas('NewPackNode')
-
-    await useReconnectNodeDefinitionRefresh()()
-
-    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
-      useWorkflowStore().activeWorkflow,
-      expect.objectContaining({ force: true, keepSavedBaseline: true })
-    )
   })
 
   it.for([
@@ -410,6 +425,26 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     await done
 
     expect(openWorkflow).toHaveBeenCalledOnce()
+  })
+
+  it('drops a waiting rebuild when the view that started it goes away', async () => {
+    registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
+    showCanvas(node('NewPackNode', { missing: true }))
+    serverHas('NewPackNode')
+    const closedView = effectScope()
+    const onReconnected = closedView.run(createReconnectRefresh)
+    assert.exists(onReconnected)
+    const tracker = useWorkflowStore().activeWorkflow!.changeTracker
+    tracker.changeCount = 1
+
+    const done = onReconnected()
+    await vi.advanceTimersByTimeAsync(200)
+    closedView.stop()
+    tracker.changeCount = 0
+    await vi.advanceTimersByTimeAsync(1_000)
+    await done
+
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
   it('skips the rebuild when an edit stays in progress', async () => {
