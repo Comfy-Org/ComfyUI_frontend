@@ -92,6 +92,24 @@ describe('Comfy.SlotDefaults', () => {
     expect(LiteGraph.slot_types_default_out).toEqual({ IMAGE: ['MyNode'] })
   })
 
+  it('includes queued node defs when defaults are set before the idle fill', async () => {
+    respondToFetch(/\/object_info$/, () =>
+      Response.json({
+        PreviewImage: objectInfoEntry('PreviewImage', ['IMAGE', {}])
+      })
+    )
+    const defs = await app.getNodeDefs()
+    await slotDefaultsExtension.beforeRegisterNodeDef?.(
+      LGraphNode,
+      defs.PreviewImage,
+      app
+    )
+
+    slotDefaultsExtension.setDefaults()
+
+    expect(LiteGraph.slot_types_default_out.IMAGE).toContain('PreviewImage')
+  })
+
   it('lists a node constructed before the deferred fill only once', async () => {
     respondToFetch(/\/object_info$/, () =>
       Response.json({

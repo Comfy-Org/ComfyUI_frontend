@@ -129,6 +129,7 @@ export const slotDefaultsExtension: SlotDefaultsExtension = {
     pendingIdleFill ??= runWhenGlobalIdle(() => LiteGraph.flushSlotTypeTables())
   },
   setDefaults(this: SlotDefaultsExtension, maxNum?: number | null) {
+    LiteGraph.flushSlotTypeTables()
     const max = maxNum ?? undefined
     const nextOut: typeof LiteGraph.slot_types_default_out = {}
     const nextIn: typeof LiteGraph.slot_types_default_in = {}
