@@ -1,6 +1,5 @@
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
-import { parseFilePath } from '@/utils/formatUtil'
 
 const GRID_THUMBNAIL_PREVIEW_FORMAT = 'webp;75'
 
@@ -33,19 +32,8 @@ export function getGridThumbnailUrl(url: string): string {
     : `${parsed.pathname}${parsed.search}`
 }
 
-function isSplittableRelativePath(filepath: string): boolean {
-  const segments = filepath.split(/[\\/]/)
-  return (
-    segments[0] !== '' &&
-    !segments[0].includes(':') &&
-    segments.at(-1) !== '' &&
-    !segments.includes('..')
-  )
-}
-
 /**
  * Parses an image widget value like "subfolder/filename [type]" into its parts.
- * Absolute, drive, parent-relative and trailing-separator paths stay whole in `filename`.
  */
 export function parseImageWidgetValue(raw: string): {
   filename: string
@@ -53,9 +41,13 @@ export function parseImageWidgetValue(raw: string): {
   type: string
 } {
   const { filepath, rootFolder: type } = parseAnnotatedPath(raw)
-  if (!isSplittableRelativePath(filepath))
-    return { filename: filepath, subfolder: '', type }
-  return { ...parseFilePath(filepath), type }
+  const path = filepath.replaceAll('\\', '/')
+  const slashIndex = path.lastIndexOf('/')
+  return {
+    filename: path.slice(slashIndex + 1),
+    subfolder: path.slice(0, Math.max(slashIndex, 0)),
+    type
+  }
 }
 
 export const is_all_same_aspect_ratio = (imgs: HTMLImageElement[]): boolean => {

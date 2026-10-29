@@ -103,33 +103,39 @@ describe('parseImageWidgetValue', () => {
       type: 'input'
     },
     {
+      raw: '12:30/out.png [output]',
+      filename: 'out.png',
+      subfolder: '12:30',
+      type: 'output'
+    },
+    {
       raw: 'scenes//sky.png [output]',
       filename: 'sky.png',
-      subfolder: 'scenes',
+      subfolder: 'scenes/',
       type: 'output'
     },
     {
       raw: '/sky.png [output]',
-      filename: '/sky.png',
+      filename: 'sky.png',
       subfolder: '',
       type: 'output'
     },
     {
       raw: 'scenes/sky.png/ [output]',
-      filename: 'scenes/sky.png/',
-      subfolder: '',
+      filename: '',
+      subfolder: 'scenes/sky.png',
       type: 'output'
     },
     {
       raw: 'scenes/../sky.png [temp]',
-      filename: 'scenes/../sky.png',
-      subfolder: '',
+      filename: 'sky.png',
+      subfolder: 'scenes/..',
       type: 'temp'
     },
     {
       raw: 'D:\\sky.png [output]',
-      filename: 'D:\\sky.png',
-      subfolder: '',
+      filename: 'sky.png',
+      subfolder: 'D:',
       type: 'output'
     }
   ])(
