@@ -267,6 +267,7 @@ const paywallBilling = vi.hoisted(() => ({
 const paywallHasFunds = ref<boolean | null>(false)
 const paywallAgentHasFunds = ref<boolean | undefined>()
 const paywallAgentScopedHasFunds = ref<boolean | undefined>()
+const paywallAgentScopedHasFundsAuthoritative = ref(false)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -390,7 +391,9 @@ beforeEach(() => {
               hasFunds: paywallHasFunds.value,
               agentHasFunds:
                 paywallAgentHasFunds.value ?? paywallHasFunds.value,
-              agentScopedHasFunds: paywallAgentScopedHasFunds.value
+              agentScopedHasFunds: paywallAgentScopedHasFunds.value,
+              agentScopedHasFundsAuthoritative:
+                paywallAgentScopedHasFundsAuthoritative.value
             })
       ),
       tier: computed(() => paywallBilling.tier),
@@ -518,6 +521,7 @@ beforeEach(() => {
   paywallHasFunds.value = false
   paywallAgentHasFunds.value = undefined
   paywallAgentScopedHasFunds.value = undefined
+  paywallAgentScopedHasFundsAuthoritative.value = false
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -710,6 +714,7 @@ describe('AgentPanelRoot first-use experience', () => {
   function placeFundedFreeUseNotice() {
     paywallHasFunds.value = true
     paywallAgentScopedHasFunds.value = true
+    paywallAgentScopedHasFundsAuthoritative.value = true
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
       fromPartial({
         variant: ref('top-banner'),
@@ -742,6 +747,17 @@ describe('AgentPanelRoot first-use experience', () => {
   ])('says nothing about free turns when $label', async ({ scoped }) => {
     placeFundedFreeUseNotice()
     paywallAgentScopedHasFunds.value = scoped
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    expect(reportFreeUseNotice).not.toHaveBeenCalled()
+  })
+
+  it('rejects a billing-disabled fallback that reports a grant without a rail', async () => {
+    placeFundedFreeUseNotice()
+    paywallAgentScopedHasFundsAuthoritative.value = false
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
@@ -8593,6 +8609,42 @@ describe('AgentPanelRoot workflow binding', () => {
     await waitFor(() => expect(bodies).toHaveLength(1))
   })
 
+  it.for(['workspace', 'legacy'] as const)(
+    'refreshes $ billing after successful consent before resuming the first send',
+    async (billingType) => {
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      paywallBilling.type = billingType
+      paywallAgentHasFunds.value = true
+      Object.assign(useAgentConsentStore(), { accepted: false })
+      withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
+        Object.assign(useAgentConsentStore(), { accepted: true })
+        onAccept()
+      })
+      renderWithSelectedTarget()
+
+      await sendFromComposer('build me a workflow')
+
+      expect(paywallBilling.fetchStatus).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for(['workspace', 'legacy'] as const)(
+    'refreshes $ billing when consent succeeds outside the first send',
+    async (billingType) => {
+      paywallBilling.type = billingType
+      Object.assign(useAgentConsentStore(), { accepted: false })
+      renderWithSelectedTarget()
+      paywallBilling.fetchStatus.mockClear()
+
+      Object.assign(useAgentConsentStore(), { accepted: true })
+
+      await waitFor(() =>
+        expect(paywallBilling.fetchStatus).toHaveBeenCalledOnce()
+      )
+    }
+  )
+
   it('asks signed-out users in a browser tab on a local Core to sign in before consent', async () => {
     distribution.isCloud = false
     makeTab('wf-42')
@@ -8602,7 +8654,6 @@ describe('AgentPanelRoot workflow binding', () => {
     Object.assign(useAgentConsentStore(), { accepted: false })
     const bodies = mockMessagesEndpoint('wf-42')
     renderWithSelectedTarget()
-
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('build me a workflow')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
