@@ -137,12 +137,49 @@ describe('upsert-comment-section content containing section markers', () => {
     const { comments, github } = fakeGitHub()
     const videoMarker = '<!-- playwright-video-new-tests -->'
 
-    await upsert(github, 'a', `${videoMarker} <!-- PLAYWRIGHT_TEST_STATUS -->`)
+    await upsert(
+      github,
+      'a',
+      `${videoMarker} <!-- PLAYWRIGHT_TEST_STATUS --> <!-- unrelated-report -->`
+    )
     await upsert(github, 'videos', 'video report', videoMarker)
 
     expect(comments).toHaveLength(2)
-    expect(comments[0].body).not.toContain(videoMarker)
-    expect(comments[0].body).not.toContain('<!-- PLAYWRIGHT_TEST_STATUS -->')
-    expect(sectionNamesIn(comments[0].body)).toEqual(['a'])
+    expect(comments[0].body).toBe(
+      `${COMMENT_MARKER}\n\n<!-- section:a:start -->\n<!--\u200B playwright-video-new-tests --> <!--\u200B PLAYWRIGHT_TEST_STATUS --> <!--\u200B unrelated-report -->\n<!-- section:a:end -->`
+    )
+  })
+
+  it('escapes markers read through the file input', async () => {
+    const { comments, github } = fakeGitHub()
+
+    await new AsyncFunction(
+      'github',
+      'context',
+      'core',
+      'require',
+      'process',
+      String(script)
+    )(
+      github,
+      { repo: { owner: 'owner', repo: 'repo' } },
+      { warning: () => {} },
+      () => ({
+        readFileSync: () => '<!-- section:b:start -->file<!-- section:b:end -->'
+      }),
+      {
+        env: {
+          INPUT_PR_NUMBER: '1',
+          INPUT_SECTION_NAME: 'a',
+          INPUT_SECTION_CONTENT: '',
+          INPUT_SECTION_CONTENT_FILE: 'report.md',
+          INPUT_COMMENT_MARKER: COMMENT_MARKER
+        }
+      }
+    )
+
+    expect(comments[0].body).toBe(
+      `${COMMENT_MARKER}\n\n<!-- section:a:start -->\n<!--\u200B section:b:start -->file<!--\u200B section:b:end -->\n<!-- section:a:end -->`
+    )
   })
 })
