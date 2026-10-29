@@ -2,6 +2,7 @@ import type { IComboWidget } from '@comfyorg/graph-model/widgets'
 import type { WorkspaceDeployment } from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
@@ -103,8 +104,15 @@ describe('model widgets on a deployment', () => {
   describe('the workspace library', () => {
     const library = new Map<string, string[]>()
 
-    function settle() {
-      return new Promise<void>((resolve) => setTimeout(resolve))
+    async function libraryAnswered() {
+      await vi
+        .mocked(assetService.getWorkspaceLibraryModels)
+        .mock.results.at(-1)?.value
+      await nextTick()
+    }
+
+    function libraryLoaded(widget: IComboWidget) {
+      return getComboWidgetInventory(widget)?.waitForSettled()
     }
 
     function models(...names: string[]): string[] {
@@ -160,7 +168,6 @@ describe('model widgets on a deployment', () => {
       vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = false
       library.set('loras', models('my_style_v2.safetensors'))
       const widget = loraWidget()
-      await settle()
 
       expect(assetService.getWorkspaceLibraryModels).not.toHaveBeenCalled()
       expect(widget.options.values).toEqual(['release.safetensors'])
@@ -171,11 +178,10 @@ describe('model widgets on a deployment', () => {
       vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = false
       library.set('loras', models('my_style_v2.safetensors'))
       const widget = loraWidget()
-      await settle()
 
       vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = true
       expect(widget.options.values).toEqual(['release.safetensors'])
-      await settle()
+      await libraryLoaded(widget)
       expect(widget.options.values).toEqual([
         'release.safetensors',
         'my_style_v2.safetensors'
@@ -183,7 +189,6 @@ describe('model widgets on a deployment', () => {
 
       vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = false
       widget.options.values = ['release.safetensors']
-      await settle()
       expect(widget.options.values).toEqual(['release.safetensors'])
       expect(assetService.getWorkspaceLibraryModels).toHaveBeenCalledOnce()
     })
@@ -199,7 +204,7 @@ describe('model widgets on a deployment', () => {
         'release.safetensors',
         'other.safetensors'
       ])
-      await settle()
+      await libraryLoaded(widget)
 
       expect(assetService.getWorkspaceLibraryModels).toHaveBeenCalledWith(
         'loras'
@@ -253,7 +258,7 @@ describe('model widgets on a deployment', () => {
       library.set('loras', models('b_lora.safetensors'))
       expect(widget.options.values).toEqual(['release.safetensors'])
       answerA(models('a_lora.safetensors'))
-      await settle()
+      await libraryLoaded(widget)
 
       expect(widget.options.values).toEqual([
         'release.safetensors',
@@ -264,21 +269,20 @@ describe('model widgets on a deployment', () => {
     it('drops the library while signed out of every workspace', async () => {
       library.set('loras', models('a_lora.safetensors'))
       const widget = loraWidget()
-      await settle()
+      await libraryLoaded(widget)
 
       onWorkspace(null)
-      await settle()
 
       expect(widget.options.values).toEqual(['release.safetensors'])
     })
 
     it('reads the library again when the Release options are refreshed', async () => {
       const widget = loraWidget()
-      await settle()
+      await libraryLoaded(widget)
       library.set('loras', models('uploaded.safetensors'))
 
       widget.options.values = ['release.safetensors', 'release_v2.safetensors']
-      await settle()
+      await libraryAnswered()
 
       expect(widget.options.values).toEqual([
         'release.safetensors',
@@ -289,7 +293,7 @@ describe('model widgets on a deployment', () => {
 
     it('reads the library again when a model upload into its folder completes', async () => {
       const widget = loraWidget()
-      await settle()
+      await libraryLoaded(widget)
       library.set('loras', models('uploaded.safetensors'))
 
       useAssetDownloadStore().lastCompletedDownload = {
@@ -297,25 +301,27 @@ describe('model widgets on a deployment', () => {
         modelType: 'loras',
         timestamp: 1
       }
-      await settle()
+      await nextTick()
+      await libraryAnswered()
 
       expect(widget.options.values).toContain('uploaded.safetensors')
     })
 
     it('lets the newest read of the library win when an older one answers last', async () => {
       let answerOlder: (names: string[]) => void = () => {}
+      const olderRead = new Promise<string[]>((resolve) => {
+        answerOlder = resolve
+      })
       vi.mocked(assetService.getWorkspaceLibraryModels).mockReturnValueOnce(
-        new Promise((resolve) => {
-          answerOlder = resolve
-        })
+        olderRead
       )
       const widget = loraWidget()
       library.set('loras', models('uploaded.safetensors'))
       useDeploymentLibraryModelsStore().refresh('loras')
-      await settle()
+      await libraryAnswered()
 
       answerOlder(models('before_upload.safetensors'))
-      await settle()
+      await olderRead
 
       expect(widget.options.values).toEqual([
         'release.safetensors',
@@ -329,7 +335,7 @@ describe('model widgets on a deployment', () => {
         models('my_style_v2.safetensors', 'teammate_portrait.safetensors')
       )
       const widget = loraWidget()
-      await settle()
+      await libraryLoaded(widget)
       expect(widget.options.values).toContain('my_style_v2.safetensors')
 
       vi.mocked(api.fetchApi).mockResolvedValueOnce(
@@ -337,7 +343,7 @@ describe('model widgets on a deployment', () => {
       )
       library.set('loras', models('teammate_portrait.safetensors'))
       await assetService.deleteAsset('3f0b6c1e-0000-4000-8000-000000000001')
-      await settle()
+      await libraryAnswered()
 
       expect(widget.options.values).toEqual([
         'release.safetensors',
@@ -381,21 +387,20 @@ describe('model widgets on a deployment', () => {
           new Promise(() => {})
         )
         const widget = loraWidget()
-        const inventory = getComboWidgetInventory(widget)
-        let settled = false
-        void inventory?.waitForSettled().then(() => {
-          settled = true
-        })
-        await settle()
-        expect(settled).toBe(false)
+        const settled = libraryLoaded(widget)
+        await expect(
+          Promise.race([
+            settled?.then(() => 'settled'),
+            nextTick(() => 'waiting')
+          ])
+        ).resolves.toBe('waiting')
 
         library.set('loras', models('newer.safetensors'))
         apply()
-        await settle()
+        await settled
 
-        expect(inventory?.getStatus()).toBe('ready')
+        expect(getComboWidgetInventory(widget)?.getStatus()).toBe('ready')
         expect(widget.options.values).toEqual(expected)
-        expect(settled).toBe(true)
       }
     )
 
@@ -412,14 +417,14 @@ describe('model widgets on a deployment', () => {
       expect(promoted.options.values).toEqual(['release.safetensors'])
 
       answer(models('my_style_v2.safetensors'))
-      await settle()
+      await libraryAnswered()
       expect(promoted.options.values).toEqual([
         'release.safetensors',
         'my_style_v2.safetensors'
       ])
 
       vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = false
-      await settle()
+      await nextTick()
       expect(promoted.options.values).toEqual(['release.safetensors'])
     })
 
@@ -436,7 +441,7 @@ describe('model widgets on a deployment', () => {
           })
         )
       ].map(promotedLoader)
-      await settle()
+      await libraryAnswered()
       vi.mocked(syncPromotedComboHostOptions).mockClear()
 
       library.set('loras', models('uploaded.safetensors'))
@@ -445,17 +450,18 @@ describe('model widgets on a deployment', () => {
         modelType: 'loras',
         timestamp: 1
       }
-      await settle()
+      await nextTick()
+      await libraryAnswered()
 
       expect(syncPromotedComboHostOptions).toHaveBeenCalledExactlyOnceWith(
         first.rootGraph
       )
-      for (const widget of promoted) {
-        expect(widget.options.values).toEqual([
-          'release.safetensors',
-          'uploaded.safetensors'
-        ])
-      }
+      const withUpload = ['release.safetensors', 'uploaded.safetensors']
+      expect(promoted.map((widget) => widget.options.values)).toEqual([
+        withUpload,
+        withUpload,
+        withUpload
+      ])
     })
 
     it('keeps the Release models and reports when the library cannot be read', async () => {
@@ -463,7 +469,7 @@ describe('model widgets on a deployment', () => {
         new Error('Server returned 500')
       )
       const widget = loraWidget()
-      await settle()
+      await libraryLoaded(widget)
 
       expect(widget.options.values).toEqual(['release.safetensors'])
       expect(getComboWidgetInventory(widget)?.getStatus()).toBe('error')
