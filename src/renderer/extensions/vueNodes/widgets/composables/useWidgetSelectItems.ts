@@ -66,15 +66,14 @@ function getMediaUrl(
 }
 
 function isPlainRelativePath(filepath: string): boolean {
-  return filepath
-    .split(/[\\/]/)
-    .every(
-      (segment) =>
-        segment !== '' &&
-        segment !== '.' &&
-        segment !== '..' &&
-        !segment.includes(':')
+  const segments = filepath.split(/[\\/]/)
+  const hasDrivePrefix = segments.length > 1 && segments[0].endsWith(':')
+  return (
+    !hasDrivePrefix &&
+    segments.every(
+      (segment) => segment !== '' && segment !== '.' && segment !== '..'
     )
+  )
 }
 
 function getAnnotatedValueMediaUrl(
