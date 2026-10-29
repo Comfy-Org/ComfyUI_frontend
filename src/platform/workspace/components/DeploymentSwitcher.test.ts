@@ -399,7 +399,7 @@ describe('DeploymentSwitcher', () => {
     await waitFor(() =>
       expect(useDeploymentPickStore().state.phase).toBe('hidden')
     )
-    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1')
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1', [])
     expect(screen.queryByTestId('deployment-switcher')).toBeNull()
   })
 
@@ -1810,6 +1810,27 @@ describe('DeploymentSwitcher, starting a stopped deployment', () => {
       })
     )
   }
+
+  it('names the started deployment on the listing asked for after its Start', async () => {
+    offerStart()
+    let current = withStaging('stopped')
+    mockWorkspaceApi.listDeployments.mockImplementation(async () => current)
+    mockWorkspaceApi.startDeployment.mockImplementation(async () => {
+      current = withStaging('queued', false)
+      return { deployment_id: D1, status: 'queued' }
+    })
+    const user = renderSwitcher()
+    await openList(user)
+
+    await startStaging(user)
+
+    await waitFor(() =>
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith(
+        'ws-1',
+        [D1]
+      )
+    )
+  })
 
   it('shows a started deployment that failed to come up as failed, and offers Start again', async () => {
     offerStart()

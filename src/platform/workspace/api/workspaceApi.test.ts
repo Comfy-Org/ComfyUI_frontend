@@ -359,11 +359,15 @@ describe('workspaceApi', () => {
       const data = { items: [], builds_visible: true }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.listDeployments('ws-1')
+      const result = await workspaceApi.listDeployments('ws-1', [])
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/workspaces/ws-1/deployments',
-        { headers: AUTH_HEADER, timeout: 30_000, __skipStatusRetry: true }
+        expect.objectContaining({
+          headers: AUTH_HEADER,
+          timeout: 30_000,
+          __skipStatusRetry: true
+        })
       )
       expect(result).toEqual(data)
     })

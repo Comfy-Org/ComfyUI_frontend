@@ -140,7 +140,8 @@ export const workspaceApi = {
     }
   },
   async listDeployments(
-    workspaceId: WorkspaceId
+    workspaceId: WorkspaceId,
+    startedDeploymentIds: readonly string[]
   ): Promise<WorkspaceDeploymentList> {
     const auth = await requestAuth()
     try {
@@ -148,6 +149,8 @@ export const workspaceApi = {
         ingestApiUrl(`/workspaces/${workspaceId}/deployments`),
         {
           ...auth,
+          params: { started_deployment_id: startedDeploymentIds },
+          paramsSerializer: { indexes: null },
           timeout: DEPLOYMENT_LISTING_TIMEOUT_MS,
           __skipStatusRetry: true
         }

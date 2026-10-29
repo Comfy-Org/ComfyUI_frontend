@@ -87,6 +87,7 @@ export const useDeploymentStartStore = defineStore('deploymentStart', () => {
       dispatch({ type: 'refused', deploymentId, ...refusalOf(err) })
       return
     }
+    pickStore.followStart(deploymentId)
     await pickStore.load()
     dispatch({ type: 'taken', deploymentId })
   }
