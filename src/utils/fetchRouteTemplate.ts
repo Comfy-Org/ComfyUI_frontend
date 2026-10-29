@@ -1,9 +1,4 @@
-/**
- * Route groups whose name is safe to send to telemetry. Anything after the
- * group, and any group not listed, is collapsed so user-chosen names (files,
- * workflows, folders) and ids never leave the client.
- */
-const FETCH_ROUTE_GROUPS = new Set([
+const TELEMETRY_SAFE_ROUTE_GROUPS = new Set([
   'assets',
   'billing',
   'customers',
@@ -43,11 +38,13 @@ const FETCH_ROUTE_GROUPS = new Set([
   'workspaces'
 ])
 
+/** A route reduced to its allowlisted group, safe to send to telemetry. */
 export function getFetchRouteTemplate(route: string): string {
   const segments = (route.split(/[?#]/)[0] ?? '').split('/').filter(Boolean)
   const routeSegments = segments[0] === 'api' ? segments.slice(1) : segments
   const [routeGroup, ...resources] = routeSegments
 
-  if (!routeGroup || !FETCH_ROUTE_GROUPS.has(routeGroup)) return '/other'
+  if (!routeGroup || !TELEMETRY_SAFE_ROUTE_GROUPS.has(routeGroup))
+    return '/other'
   return `/${routeGroup}${resources.length ? '/:resource' : ''}`
 }

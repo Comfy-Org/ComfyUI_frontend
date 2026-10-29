@@ -7,13 +7,7 @@ import type {
 import { getFetchRouteTemplate } from '@/utils/fetchRouteTemplate'
 import type { RetryStopReason } from '@/utils/retryPolicy'
 
-/**
- * How one request's retry loop ended, as the transport saw it:
- * `answered` returned or rejected with a status the loop does not retry,
- * `attempts_spent` and `retry_after_too_long` stopped on a retryable status,
- * `timeout` ran out of the request's time, `network` had no response, and
- * `cancelled` was the caller's own abort.
- */
+/** How a request's retry loop ended. */
 export type StatusRetryEnd =
   | 'answered'
   | Exclude<RetryStopReason, 'not_retryable'>
@@ -30,11 +24,7 @@ export interface StatusRetrySettlement {
   readonly retryScheduled: boolean
 }
 
-/**
- * What to record for a settled request, or `undefined` when there is nothing
- * to record: no retryable status was seen, the read opted out of retrying, or
- * the caller cancelled.
- */
+/** The outcome to record for a settled request, or `undefined` for none. */
 export function classifyStatusRetry({
   end,
   attempts,
@@ -60,57 +50,76 @@ export function classifyStatusRetry({
   }
 }
 
-/** Maps a stop on an answer to how the loop ended. */
+/** How the loop ended when it stopped on an answer. */
 export function endForStop(reason: RetryStopReason): StatusRetryEnd {
   return reason === 'not_retryable' ? 'answered' : reason
 }
 
-/** Per page load, per host, route and outcome, so an outage cannot flood RUM. */
 const MAX_EVENTS_PER_KEY = 20
-const sentPerKey = new Map<string, number>()
+const eventsSentPerKey = new Map<string, number>()
+
+/** Forgets how many events each key has sent. */
+export function clearStatusRetryBudget(): void {
+  eventsSentPerKey.clear()
+}
+
+function telemetryHost(host: string): string {
+  const knownHost =
+    host === location.host ||
+    host === 'comfy.org' ||
+    host.endsWith('.comfy.org')
+  return knownHost ? host : 'other'
+}
 
 function describeUrl(
   url: string
 ): Pick<FetchStatusRetryMetadata, 'host' | 'route'> {
   const parsed = new URL(url, location.href)
-  return { host: parsed.host, route: getFetchRouteTemplate(parsed.pathname) }
+  return {
+    host: telemetryHost(parsed.host),
+    route: getFetchRouteTemplate(parsed.pathname)
+  }
 }
 
 interface StatusRetryReport extends StatusRetrySettlement {
   readonly transport: FetchStatusRetryMetadata['transport']
   readonly method: string
-  /** Read only when there is something to record. */
   readonly url: () => string
 }
 
-/** Records one settled request that hit a retryable status. Never throws. */
+function recordStatusRetry(report: StatusRetryReport): void {
+  const outcome = classifyStatusRetry(report)
+  const telemetry = useTelemetry()
+  if (!outcome || !telemetry) return
+  const { host, route } = describeUrl(report.url())
+  const key = `${host} ${route} ${outcome}`
+  const sent = eventsSentPerKey.get(key) ?? 0
+  if (sent >= MAX_EVENTS_PER_KEY) return
+  eventsSentPerKey.set(key, sent + 1)
+
+  telemetry.trackFetchStatusRetry({
+    transport: report.transport,
+    method: report.method.toUpperCase(),
+    host,
+    route,
+    attempts: report.attempts,
+    ...(report.finalStatus !== undefined && {
+      final_status: report.finalStatus
+    }),
+    outcome
+  })
+}
+
+/** Records one settled request that hit a retryable status; never throws. */
 export function trackStatusRetry(report: StatusRetryReport): void {
   try {
-    const outcome = classifyStatusRetry(report)
-    if (!outcome) return
-    const { host, route } = describeUrl(report.url())
-    const key = `${host} ${route} ${outcome}`
-    const sent = sentPerKey.get(key) ?? 0
-    if (sent >= MAX_EVENTS_PER_KEY) return
-    sentPerKey.set(key, sent + 1)
-
-    useTelemetry()?.trackFetchStatusRetry({
-      transport: report.transport,
-      method: report.method.toUpperCase(),
-      host,
-      route,
-      attempts: report.attempts,
-      ...(report.finalStatus !== undefined && {
-        final_status: report.finalStatus
-      }),
-      outcome
-    })
-  } catch {
-    // Telemetry must never change how a request ends.
+    recordStatusRetry(report)
+  } catch (error) {
+    console.warn('[telemetry] status retry event dropped', error)
   }
 }
 
-/** Whether an aborted request was the request timeout or the caller. */
+/** Whether a failed or aborted fetch was the request timeout, the caller, or the network. */
 export function abortEnd(signal: AbortSignal | undefined): StatusRetryEnd {
   if (!signal?.aborted) return 'network'
   const reason: unknown = signal.reason

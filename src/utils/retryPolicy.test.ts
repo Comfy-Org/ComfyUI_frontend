@@ -35,8 +35,9 @@ describe('parseRetryAfterMs', () => {
 })
 
 describe('nextRetry delay', () => {
-  /** The scheduled delay, or `undefined` when it stops. */
-  const decide = (overrides: Partial<Parameters<typeof nextRetry>[0]> = {}) => {
+  const scheduledDelayMs = (
+    overrides: Partial<Parameters<typeof nextRetry>[0]> = {}
+  ) => {
     const decision = nextRetry({
       method: 'GET',
       status: 503,
@@ -50,24 +51,24 @@ describe('nextRetry delay', () => {
   }
 
   it.for([429, 502, 503, 504])('retries status %i', (status) => {
-    expect(decide({ status })).toBeDefined()
+    expect(scheduledDelayMs({ status })).toBeDefined()
   })
 
   it.for([200, 400, 401, 403, 404, 409, 500, 501])(
     'does not retry status %i',
     (status) => {
-      expect(decide({ status })).toBeUndefined()
+      expect(scheduledDelayMs({ status })).toBeUndefined()
     }
   )
 
   it.for(['GET', 'get', 'HEAD', 'OPTIONS'])('retries %s', (method) => {
-    expect(decide({ method })).toBeDefined()
+    expect(scheduledDelayMs({ method })).toBeDefined()
   })
 
   it.for(['POST', 'PUT', 'PATCH', 'DELETE'])(
     'does not retry %s by default',
     (method) => {
-      expect(decide({ method })).toBeUndefined()
+      expect(scheduledDelayMs({ method })).toBeUndefined()
     }
   )
 
@@ -76,13 +77,13 @@ describe('nextRetry delay', () => {
       ...DEFAULT_RETRY_POLICY,
       retryNonIdempotent: true
     }
-    expect(decide({ method: 'POST', policy })).toBeDefined()
+    expect(scheduledDelayMs({ method: 'POST', policy })).toBeDefined()
   })
 
   it('stops once the attempts are spent', () => {
     const { maxAttempts } = DEFAULT_RETRY_POLICY
-    expect(decide({ attempt: maxAttempts - 1 })).toBeDefined()
-    expect(decide({ attempt: maxAttempts })).toBeUndefined()
+    expect(scheduledDelayMs({ attempt: maxAttempts - 1 })).toBeDefined()
+    expect(scheduledDelayMs({ attempt: maxAttempts })).toBeUndefined()
   })
 
   it('backs off exponentially up to the cap', () => {
@@ -93,7 +94,7 @@ describe('nextRetry delay', () => {
       retryNonIdempotent: false
     }
     const delays = [1, 2, 3, 4, 5].map((attempt) =>
-      decide({ attempt, policy, random: () => 1 })
+      scheduledDelayMs({ attempt, policy, random: () => 1 })
     )
     expect(delays).toEqual([100, 200, 400, 500, 500])
   })
@@ -101,7 +102,7 @@ describe('nextRetry delay', () => {
   it.for([0, 0.25, 0.5, 0.99, 1])(
     'keeps jitter within half to full backoff (random=%f)',
     (random) => {
-      const delay = decide({ attempt: 2, random: () => random })
+      const delay = scheduledDelayMs({ attempt: 2, random: () => random })
       const backoff = DEFAULT_RETRY_POLICY.baseDelayMs * 2
       expect(delay).toBeGreaterThanOrEqual(backoff / 2)
       expect(delay).toBeLessThanOrEqual(backoff)
@@ -114,15 +115,15 @@ describe('nextRetry delay', () => {
   ])(
     'adds jitter on top of Retry-After, never below it (random=%f)',
     ([random, expected]) => {
-      expect(decide({ readRetryAfter: () => '4', random: () => random })).toBe(
-        expected
-      )
+      expect(
+        scheduledDelayMs({ readRetryAfter: () => '4', random: () => random })
+      ).toBe(expected)
     }
   )
 
   it('reads an HTTP-date Retry-After against the clock', () => {
     expect(
-      decide({
+      scheduledDelayMs({
         readRetryAfter: () => 'Sun, 18 Oct 2026 12:00:03 GMT',
         random: () => 0
       })
@@ -131,20 +132,20 @@ describe('nextRetry delay', () => {
 
   it('gives up when Retry-After exceeds the cap', () => {
     const tooLong = String(DEFAULT_RETRY_POLICY.maxDelayMs / 1000 + 1)
-    expect(decide({ readRetryAfter: () => tooLong })).toBeUndefined()
+    expect(scheduledDelayMs({ readRetryAfter: () => tooLong })).toBeUndefined()
   })
 
   it('accepts Retry-After exactly at the cap', () => {
     const atCap = String(DEFAULT_RETRY_POLICY.maxDelayMs / 1000)
-    expect(decide({ readRetryAfter: () => atCap })).toBe(
+    expect(scheduledDelayMs({ readRetryAfter: () => atCap })).toBe(
       DEFAULT_RETRY_POLICY.maxDelayMs
     )
   })
 
   it('does not read the header for a response it will not retry', () => {
     const readRetryAfter = vi.fn(() => '1')
-    decide({ status: 500, readRetryAfter })
-    decide({ method: 'POST', readRetryAfter })
+    scheduledDelayMs({ status: 500, readRetryAfter })
+    scheduledDelayMs({ method: 'POST', readRetryAfter })
     expect(readRetryAfter).not.toHaveBeenCalled()
   })
 })

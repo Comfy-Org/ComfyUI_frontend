@@ -1430,14 +1430,7 @@ export interface FetchTimeoutMetadata {
   timeout_ms: number
 }
 
-/**
- * How a request that got a retryable status (429/502/503/504) ended.
- * `recovered`: a retry got a success. `exhausted`: every attempt got a
- * retryable status. `retry_after_too_long`: an answer's `Retry-After` was past
- * the retry cap, so it stopped there. `timeout_budget`: the request's own
- * timeout ran out during or before a retry. `failed`: a retry got a
- * non-retryable error status or no response at all.
- */
+/** How a request that got a retryable status (429/502/503/504) ended. */
 export type FetchStatusRetryOutcome =
   | 'recovered'
   | 'exhausted'

@@ -4,12 +4,16 @@ import type {
   AxiosResponse,
   InternalAxiosRequestConfig
 } from 'axios'
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 
 import type { RetryPolicy } from '@/utils/retryPolicy'
 import { nextRetry, sleep as sleepFor } from '@/utils/retryPolicy'
 import type { StatusRetryEnd } from '@/utils/statusRetryTelemetry'
-import { endForStop, trackStatusRetry } from '@/utils/statusRetryTelemetry'
+import {
+  abortEnd,
+  endForStop,
+  trackStatusRetry
+} from '@/utils/statusRetryTelemetry'
 
 export interface AxiosRetryableStatusOptions {
   readonly policy?: RetryPolicy
@@ -54,7 +58,9 @@ async function runAttempt(
 ): Promise<AxiosResponse> {
   try {
     const response = await adapter(
-      remaining === undefined ? config : { ...config, timeout: remaining }
+      remaining === undefined
+        ? config
+        : { ...config, timeout: Math.max(1, remaining) }
     )
     response.config = config
     return response
@@ -64,16 +70,22 @@ async function runAttempt(
   }
 }
 
-/** How a request that got no response ended. */
+function isTimeout(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false
+  if (error.code === AxiosError.ETIMEDOUT) return true
+  return (
+    error.code === AxiosError.ECONNABORTED && /timeout/i.test(error.message)
+  )
+}
+
 function noResponseEnd(error: unknown): StatusRetryEnd {
-  if (axios.isCancel(error)) return 'cancelled'
-  if (
-    axios.isAxiosError(error) &&
-    (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT')
-  ) {
-    return 'timeout'
-  }
-  return 'network'
+  if (isTimeout(error)) return 'timeout'
+  const cancelled =
+    axios.isCancel(error) ||
+    (axios.isAxiosError(error) &&
+      (error.code === AxiosError.ERR_CANCELED ||
+        error.code === AxiosError.ECONNABORTED))
+  return cancelled ? 'cancelled' : 'network'
 }
 
 interface StatusRetryTracker {
@@ -103,8 +115,7 @@ function statusRetryTracker(
   }
 }
 
-/** The wait before the next attempt; rethrows `error` when there is none. */
-function delayAfterFailure(
+function delayOrRethrow(
   error: unknown,
   config: InternalAxiosRequestConfig,
   attempt: number,
@@ -143,11 +154,16 @@ function retryingAdapter(
 ): AxiosAdapter {
   const { sleep = sleepFor } = options
 
-  async function pause(delay: number, config: InternalAxiosRequestConfig) {
+  async function pause(
+    delay: number,
+    config: InternalAxiosRequestConfig,
+    settleAbort: (signal: AbortSignal | undefined) => void
+  ) {
     const signal = cancellationSignal(config)
     try {
       await sleep(delay, signal)
     } catch (error) {
+      settleAbort(signal)
       if (!signal?.aborted) throw error
       throw new axios.CanceledError('canceled', config)
     }
@@ -161,7 +177,7 @@ function retryingAdapter(
 
     for (let attempt = 1; ; attempt++) {
       const remaining = remainingMs()
-      if (remaining !== undefined && remaining <= 0) {
+      if (attempt > 1 && remaining !== undefined && remaining <= 0) {
         tracker.settle('timeout', attempt - 1)
         throw lastError
       }
@@ -171,7 +187,7 @@ function retryingAdapter(
         return response
       } catch (error) {
         lastError = error
-        const delay = delayAfterFailure(
+        const delay = delayOrRethrow(
           error,
           config,
           attempt,
@@ -179,7 +195,9 @@ function retryingAdapter(
           tracker,
           options
         )
-        await pause(delay, config)
+        await pause(delay, config, (signal) =>
+          tracker.settle(abortEnd(signal), attempt)
+        )
       }
     }
   }

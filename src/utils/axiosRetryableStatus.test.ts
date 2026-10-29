@@ -1,11 +1,16 @@
-import type { AxiosAdapter, AxiosResponse } from 'axios'
+import type {
+  AxiosAdapter,
+  AxiosResponse,
+  InternalAxiosRequestConfig
+} from 'axios'
 import axios, { AxiosError } from 'axios'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import { attachRetryableStatusRetry } from '@/utils/axiosRetryableStatus'
 import { DEFAULT_RETRY_POLICY } from '@/utils/retryPolicy'
+import { clearStatusRetryBudget } from '@/utils/statusRetryTelemetry'
 
 vi.mock(import('@comfyorg/telemetry'))
 
@@ -282,6 +287,25 @@ describe('attachRetryableStatusRetry', () => {
 describe('attachRetryableStatusRetry status retry telemetry', () => {
   const tracked = () => vi.mocked(useTelemetry()!.trackFetchStatusRetry)
 
+  beforeEach(() => clearStatusRetryBudget())
+
+  function failThenThrow(
+    second: (config: InternalAxiosRequestConfig) => never
+  ) {
+    return vi
+      .fn<AxiosAdapter>()
+      .mockImplementationOnce(async (config) => {
+        throw new AxiosError(
+          'Request failed with status code 503',
+          AxiosError.ERR_BAD_RESPONSE,
+          config,
+          null,
+          { data: {}, status: 503, statusText: '503', headers: {}, config }
+        )
+      })
+      .mockImplementationOnce(async (config) => second(config))
+  }
+
   it('records a request that recovered after a retry', async () => {
     const { client } = makeClient([{ status: 503 }, { status: 200 }])
 
@@ -346,20 +370,13 @@ describe('attachRetryableStatusRetry status retry telemetry', () => {
   })
 
   it('records a retry that hit the request timeout', async () => {
-    const adapter = vi
-      .fn<AxiosAdapter>()
-      .mockImplementationOnce(async (config) => {
-        throw new AxiosError(
-          'Request failed with status code 503',
-          AxiosError.ERR_BAD_RESPONSE,
-          config,
-          null,
-          { data: {}, status: 503, statusText: '503', headers: {}, config }
-        )
-      })
-      .mockImplementationOnce(async (config) => {
-        throw new AxiosError('timeout', AxiosError.ECONNABORTED, config)
-      })
+    const adapter = failThenThrow((config) => {
+      throw new AxiosError(
+        'timeout of 60000ms exceeded',
+        AxiosError.ECONNABORTED,
+        config
+      )
+    })
     const client = axios.create({ adapter })
     attachRetryableStatusRetry(client, {
       sleep: async () => {},
@@ -373,6 +390,53 @@ describe('attachRetryableStatusRetry status retry telemetry', () => {
     expect(tracked()).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         attempts: 2,
+        final_status: 503,
+        outcome: 'timeout_budget'
+      })
+    )
+  })
+
+  it.for([
+    ['a cancellation error', AxiosError.ERR_CANCELED, 'canceled'],
+    ['a browser abort', AxiosError.ECONNABORTED, 'Request aborted']
+  ])(
+    'records nothing when a retry ends in %s',
+    async ([_name, code, message]) => {
+      const adapter = failThenThrow((config) => {
+        throw new AxiosError(message, code, config)
+      })
+      const client = axios.create({ adapter })
+      attachRetryableStatusRetry(client, {
+        sleep: async () => {},
+        random: () => 1
+      })
+
+      await expect(client.get('https://api/x')).rejects.toMatchObject({ code })
+
+      expect(tracked()).not.toHaveBeenCalled()
+    }
+  )
+
+  it('records a request whose own timeout signal fired while it waited to retry', async () => {
+    const controller = new AbortController()
+    const timeout = new DOMException('signal timed out', 'TimeoutError')
+    const adapter = scriptedAdapter([{ status: 503 }, { status: 200 }])
+    const client = axios.create({ adapter })
+    attachRetryableStatusRetry(client, {
+      random: () => 1,
+      sleep: async () => {
+        controller.abort(timeout)
+        throw timeout
+      }
+    })
+
+    await expect(
+      client.get('https://api/x', { signal: controller.signal })
+    ).rejects.toBeInstanceOf(axios.CanceledError)
+
+    expect(tracked()).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        attempts: 1,
         final_status: 503,
         outcome: 'timeout_budget'
       })

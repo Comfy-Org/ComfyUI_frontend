@@ -90,13 +90,13 @@ export async function fetchWithRetry(
       return response
     }
     lastRetryStatus = response.status
+    await response.body?.cancel().catch(() => undefined)
     try {
       await sleep(decision.delayMs, signal)
     } catch (error) {
       settle(abortEnd(signal), attempt)
       throw error
     }
-    await response.body?.cancel()
   }
 }
 

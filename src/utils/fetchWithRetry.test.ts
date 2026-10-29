@@ -1,9 +1,11 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import { fetchWithRetry } from '@/utils/fetchWithRetry'
 import { DEFAULT_RETRY_POLICY, NO_RETRY_POLICY } from '@/utils/retryPolicy'
+import { clearStatusRetryBudget } from '@/utils/statusRetryTelemetry'
 
 vi.mock(import('@comfyorg/telemetry'))
 
@@ -288,6 +290,8 @@ describe('fetchWithRetry status retry telemetry', () => {
   const balanceUrl = 'https://api.comfy.org/customers/balance'
   const tracked = () => vi.mocked(useTelemetry()!.trackFetchStatusRetry)
 
+  beforeEach(() => clearStatusRetryBudget())
+
   it('records a request that recovered after a retry', async () => {
     const fetchImpl = scriptedFetch(respond(503), respond(200))
 
@@ -416,15 +420,74 @@ describe('fetchWithRetry status retry telemetry', () => {
   })
 
   it('stops recording one route and outcome after 20 events', async () => {
-    for (let i = 0; i < 25; i++) {
-      await fetchWithRetry(
-        'https://budget.example/api/queue',
-        {},
-        { fetchImpl: scriptedFetch(respond(503), respond(200)), sleep, random }
+    await Promise.all(
+      Array.from({ length: 25 }, () =>
+        fetchWithRetry(
+          'https://cloud.comfy.org/api/queue',
+          {},
+          {
+            fetchImpl: scriptedFetch(respond(503), respond(200)),
+            sleep,
+            random
+          }
+        )
       )
-    }
+    )
 
     expect(tracked()).toHaveBeenCalledTimes(20)
+  })
+
+  it('does not spend the budget before telemetry is ready', async () => {
+    vi.mocked(useTelemetry).mockReturnValueOnce(null)
+    await fetchWithRetry(
+      balanceUrl,
+      {},
+      { fetchImpl: scriptedFetch(respond(503), respond(200)), sleep, random }
+    )
+
+    await fetchWithRetry(
+      balanceUrl,
+      {},
+      { fetchImpl: scriptedFetch(respond(503), respond(200)), sleep, random }
+    )
+
+    expect(tracked()).toHaveBeenCalledOnce()
+  })
+
+  it('reports a host outside Comfy as other', async () => {
+    const fetchImpl = scriptedFetch(respond(503), respond(200))
+
+    await fetchWithRetry(
+      'https://10.0.0.7:8443/api/queue',
+      {},
+      { fetchImpl, sleep, random }
+    )
+
+    expect(tracked()).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ host: 'other', route: '/queue' })
+    )
+  })
+
+  it('still retries when discarding the retryable body fails', async () => {
+    const broken = fromPartial<Response>({
+      status: 503,
+      headers: new Headers(),
+      body: fromPartial<ReadableStream>({
+        cancel: vi.fn().mockRejectedValue(new Error('stream errored'))
+      })
+    })
+    const fetchImpl = scriptedFetch(broken, respond(200))
+
+    const result = await fetchWithRetry(
+      balanceUrl,
+      {},
+      { fetchImpl, sleep, random }
+    )
+
+    expect(result.status).toBe(200)
+    expect(tracked()).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'recovered' })
+    )
   })
 
   it('records nothing for a request that never saw a retryable status', async () => {
