@@ -390,14 +390,13 @@ import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { useFocusNode } from '@/composables/canvas/useFocusNode'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { useWorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
@@ -413,8 +412,6 @@ import { isCloud } from '@/platform/distribution/types'
 import Button from '@comfyorg/design-system/button/Button'
 import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
-import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
-import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup, ErrorGroupSeverity } from './types'
@@ -435,6 +432,14 @@ interface ContextStrip {
   count: number
   nodes: number
 }
+
+const { selectedItems = [] } = defineProps<{
+  selectedItems?: readonly Positionable[]
+}>()
+
+const emit = defineEmits<{
+  locateNode: [nodeId: string, executionIdMap?: Map<string, LGraphNode>]
+}>()
 
 /** Count-only `none` keys keep node-less errors from reading as "0 nodes". */
 const SUMMARY_KEYPATHS = {
@@ -465,14 +470,15 @@ const SEVERITY_CHIP_CLASS = {
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
-const { focusNode } = useFocusNode()
 const rightSidePanelStore = useRightSidePanelStore()
 const missingModelStore = useMissingModelStore()
-const { shouldShowManagerButtons, shouldShowInstallButton } = useManagerState()
-const { openManager } = useManagerDialog()
-const { missingNodePacks } = useMissingNodes()
+const manager = useWorkflowErrorManager()
+const { shouldShowManagerButtons, shouldShowInstallButton } =
+  manager.useManagerState()
+const { openManager } = manager
+const { missingNodePacks } = manager.useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
-  usePackInstall(() => missingNodePacks.value)
+  manager.usePackInstall(() => missingNodePacks.value)
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
 
 const searchQuery = ref('')
@@ -551,7 +557,7 @@ const {
   selectionMatchedAssetNodeIds,
   selectionErrorCount,
   errorNodeCount
-} = useErrorGroups(searchQuery)
+} = useErrorGroups(searchQuery, () => selectedItems)
 
 const errorCount = computed(() =>
   filteredGroups.value
@@ -868,23 +874,23 @@ watch(
 )
 
 function handleLocateNode(nodeId: string) {
-  focusNode(nodeId, errorNodeCache.value)
+  emit('locateNode', nodeId, errorNodeCache.value)
 }
 
 function handleLocateMissingNode(nodeId: string) {
-  focusNode(nodeId, missingNodeCache.value)
+  emit('locateNode', nodeId, missingNodeCache.value)
 }
 
 function handleLocateAssetNode(nodeId: string) {
-  focusNode(nodeId)
+  emit('locateNode', nodeId)
 }
 
 function handleOpenManagerInfo(packId: string) {
   const isKnownToRegistry = missingNodePacks.value.some((p) => p.id === packId)
   if (isKnownToRegistry) {
-    openManager({ initialTab: ManagerTab.Missing, initialPackId: packId })
+    openManager({ initialTab: 'missing', initialPackId: packId })
   } else {
-    openManager({ initialTab: ManagerTab.All, initialPackId: packId })
+    openManager({ initialTab: 'all', initialPackId: packId })
   }
 }
 

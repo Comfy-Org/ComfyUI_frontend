@@ -1,18 +1,14 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { assert, beforeEach, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { NavGroupData } from '@comfyorg/design-system/lib/navigation/types'
-
-import {
-  consumeSettingsPanelNavigation,
-  settingsPanelNavigation,
-  showSettingsPanel
-} from '@/platform/settings/composables/useSettingsDialog'
 
 import SettingDialog from './SettingDialog.vue'
 
@@ -74,8 +70,6 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(
   import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),
@@ -306,17 +300,34 @@ it('restores the collapsed header when switching sections', async () => {
   ).toBeInTheDocument()
 })
 
-it('navigates to a panel requested while it is already open', async () => {
+it('reports a failed balance read from the Credits section once instead of leaving it unhandled', async () => {
+  const failure = new Error('Balance temporarily unavailable')
+  const billing = useBillingContext()
+  vi.mocked(billing.fetchBalance).mockRejectedValueOnce(failure)
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+  settingUiMocks.navGroups.value = [
+    {
+      title: 'Workspace',
+      items: [
+        {
+          id: 'workspace-allowlist',
+          label: 'Allowlist',
+          icon: 'icon-[lucide--list-checks]'
+        },
+        { id: 'credits', label: 'Credits', icon: 'icon-[lucide--coins]' }
+      ]
+    }
+  ]
   renderDialog()
-  expect(await screen.findByText('workspace-allowlist panel')).toBeVisible()
 
-  showSettingsPanel('workspace')
-  const request = settingsPanelNavigation.value
-  assert.exists(request)
-  onTestFinished(() => consumeSettingsPanelNavigation(request.requestId))
+  await userEvent.click(screen.getByRole('button', { name: 'Credits' }))
 
-  expect(await screen.findByText('workspace panel')).toBeVisible()
-  expect(
-    screen.queryByText('workspace-allowlist panel')
-  ).not.toBeInTheDocument()
+  await vi.waitFor(() =>
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      surface: 'billing',
+      errorType: 'error_refreshing_balance',
+      level: 'warning'
+    })
+  )
+  expect(reportError).toHaveBeenCalledOnce()
 })

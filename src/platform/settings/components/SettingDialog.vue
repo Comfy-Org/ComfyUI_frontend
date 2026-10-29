@@ -126,6 +126,7 @@ import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
 import NavItem from '@comfyorg/design-system/navigation/NavItem'
 import NavTitle from '@comfyorg/design-system/navigation/NavTitle'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -315,7 +316,7 @@ watch(activeCategoryKey, (newKey, oldKey) => {
     activeCategoryKey.value = oldKey
   }
   if (newKey === 'credits') {
-    void fetchBalance()
+    void refreshBalanceInBackground(fetchBalance)
   }
   if (newKey) {
     void nextTick(() => {

@@ -13,8 +13,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   MissingPackGroup,
   SwapNodeGroup
-} from '@/components/rightSidePanel/errors/useErrorGroups'
-import type { ErrorGroup } from '@/components/rightSidePanel/errors/types'
+} from '@/platform/workflowErrors/panel/useErrorGroups'
+import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 
@@ -29,7 +29,7 @@ const mockErrorGroups = vi.hoisted(() => ({
 const mockAllErrorGroups = mockErrorGroups.allErrorGroups
 
 vi.mock<unknown>(
-  import('@/components/rightSidePanel/errors/useErrorGroups'),
+  import('@/platform/workflowErrors/panel/useErrorGroups'),
   () => ({
     useErrorGroups: () => mockErrorGroups
   })

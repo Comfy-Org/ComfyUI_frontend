@@ -16,8 +16,12 @@
       @add-credits="addCredits('settings_billing_panel')"
     />
     <BillingParkedBanner
-      :parked="capabilities.hasParkedBillingOperation.value"
+      :parked="
+        capabilities.hasParkedBillingOperation.value &&
+        capabilities.canManageBilling.value
+      "
     />
+    <BillingStatusBanner section="billing" />
     <BillingLocalCreditBanner
       :suppressed="suppressCreditBanner"
       :add-credits-variant="addCreditsVariant"
@@ -56,7 +60,6 @@
         :action="action"
         :sales-variant="salesVariant"
         :can-manage-subscription="capabilities.canManageSubscription.value"
-        @open-plan="openPlan"
       />
     </section>
 
@@ -85,9 +88,27 @@
         {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.label`) }}
       </h2>
       <div
-        class="flex items-center justify-end rounded-xl border border-card px-5 py-4"
+        class="flex items-center gap-4 rounded-xl border border-card px-5 py-4"
         data-testid="billing-handoff-card"
       >
+        <i18n-t
+          v-if="handoffAudience === 'owner'"
+          keypath="workspacePanel.billingTab.handoff.owner.line"
+          tag="p"
+          class="m-0 text-sm text-muted-foreground"
+        >
+          <template #platform>
+            <a
+              :href="handoffHref"
+              target="_blank"
+              rel="noopener"
+              class="text-muted-foreground underline"
+              @click="trackHandoff"
+            >
+              {{ $t('workspacePanel.billingTab.handoff.owner.platform') }}
+            </a>
+          </template>
+        </i18n-t>
         <Button
           as="a"
           :href="handoffHref"
@@ -95,7 +116,7 @@
           rel="noopener"
           variant="secondary"
           size="md"
-          class="shrink-0"
+          class="ml-auto shrink-0"
           @click="trackHandoff"
         >
           {{
@@ -105,6 +126,29 @@
         </Button>
       </div>
     </section>
+
+    <footer class="flex items-center gap-4" data-testid="billing-footer">
+      <Button
+        as="a"
+        :href="partnerNodesPricingHref"
+        target="_blank"
+        rel="noopener"
+        variant="muted-textonly"
+        size="md"
+      >
+        <i class="icon-[lucide--coins] size-3.5" aria-hidden="true" />
+        {{ $t('workspacePanel.billingTab.footer.partnerNodesPricing') }}
+      </Button>
+      <Button
+        variant="muted-textonly"
+        size="md"
+        :loading="isLoadingSupport"
+        @click="handleMessageSupport"
+      >
+        <i class="icon-[lucide--message-circle] size-3.5" aria-hidden="true" />
+        {{ $t('workspacePanel.billingTab.footer.messageSupport') }}
+      </Button>
+    </footer>
   </div>
 </template>
 
@@ -115,8 +159,9 @@ import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useExternalLink } from '@/composables/useExternalLink'
+import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue'
@@ -125,6 +170,7 @@ import BillingPlanCheckoutBanner from '@/platform/billing/components/billingTab/
 import BillingParkedBanner from '@/platform/billing/components/billingTab/BillingParkedBanner.vue'
 import BillingPausedBanner from '@/platform/billing/components/billingTab/BillingPausedBanner.vue'
 import BillingTopupCheckoutBanner from '@/platform/billing/components/billingTab/BillingTopupCheckoutBanner.vue'
+import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
 import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/billing/components/billingTab/BillingCreditsCard.vue'
@@ -161,8 +207,12 @@ const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
 const planCreditNote = useTopUpPlanCreditCopy()
 const { showTopUpCreditsDialog } = useBillingDialogs()
-const { showSubscriptionDialog } = useSubscriptionPaywall()
 const telemetry = useTelemetry()
+const { isLoadingSupport, handleMessageSupport } = useMessageSupport()
+const { buildDocsUrl, docsPaths } = useExternalLink()
+const partnerNodesPricingHref = computed(() =>
+  buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
+)
 
 const HANDOFF = {
   owner: { path: '/profile/billing', target: 'open_billing' },
@@ -223,10 +273,6 @@ const handoffIcon = computed(() =>
 
 async function retryBalance() {
   await billing.fetchBalance().catch(() => undefined)
-}
-
-function openPlan() {
-  showSubscriptionDialog({ reason: 'settings_billing_panel' })
 }
 
 function addCredits(source: 'credits_panel' | 'settings_billing_panel') {
