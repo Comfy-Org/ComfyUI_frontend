@@ -4,8 +4,8 @@ import type { Page } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { desktopAgentConsentTest as test } from '@e2e/fixtures/desktopAgentConsentFixture'
+import { AGENT_COACH_SEEN_KEY } from '@e2e/fixtures/utils/agentCoachSeenKey'
 import {
-  AGENT_COACH_SEEN_KEY,
   MESSAGE_DONE_EVENT,
   agentMessageDeltaEvent,
   pushAgentEvent

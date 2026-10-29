@@ -81,7 +81,7 @@ function mount(steps = STEPS) {
         }
       },
       template:
-        '<button>Outside tour</button><div id="panel" /><div id="composer" /><div id="history" data-testid="history" /><button data-testid="coach-restart" @click="replay" /><OnboardingCoach ref="coach" :steps="steps" :storage-key="storageKey" />'
+        '<button>Outside tour</button><div id="panel" /><div id="composer" /><div id="history" data-testid="history" /><button data-testid="coach-restart" @click="replay" /><OnboardingCoach ref="coach" :steps :storage-key />'
     },
     { global: { plugins: [i18n] } }
   )
@@ -312,7 +312,7 @@ describe('OnboardingCoach', () => {
         components: { OnboardingCoach },
         setup: () => ({ steps: STEPS, holdNotice }),
         template:
-          '<div id="panel" /><div id="composer" /><div id="history" /><OnboardingCoach :steps="steps" storage-key="coach-hold" :hold-notice="holdNotice" />'
+          '<div id="panel" /><div id="composer" /><div id="history" /><OnboardingCoach :steps storage-key="coach-hold" :hold-notice />'
       },
       { global: { plugins: [i18n] } }
     )
@@ -468,7 +468,7 @@ describe('OnboardingCoach', () => {
         components: { OnboardingCoach },
         setup: () => ({ steps, storageKey, onFinished }),
         template:
-          '<div id="panel" /><div id="composer" /><div id="history" /><OnboardingCoach :steps="steps" :storage-key="storageKey" @finished="onFinished" />'
+          '<div id="panel" /><div id="composer" /><div id="history" /><OnboardingCoach :steps :storage-key @finished="onFinished" />'
       },
       { global: { plugins: [i18n] } }
     )

@@ -5,11 +5,13 @@ import { escapeRegExp } from 'es-toolkit'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
+import { AgentTourCard } from '@e2e/fixtures/components/AgentTourCard'
 import type { AgentAdmissionDenialMock } from '@e2e/fixtures/data/agent/agentAdmissionDenials'
 import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
 import type { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { AGENT_COACH_SEEN_KEY } from '@e2e/fixtures/utils/agentCoachSeenKey'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -474,22 +476,20 @@ export class AgentPanel {
     await expect(this.composer).toHaveText('')
   }
 
-  async expectTourCard(
-    title: string,
-    description: string,
-    progress: string
-  ): Promise<Locator> {
-    const card = this.page.getByRole('dialog', { name: title })
-    await expect(card).toBeVisible()
-    await expect(card).toHaveAccessibleDescription(description)
-    await expect(card).toContainText(progress)
-    await expect(this.page.getByTestId('agent-coach-spotlight')).toBeVisible()
-    await expect(card).toBeInViewport({ ratio: 1 })
-    return card
+  /** One card of the onboarding tour, addressed by its title. */
+  tourCard(title: string): AgentTourCard {
+    return new AgentTourCard(this.page, title)
   }
 
-  tourSkipButton(card: Locator): Locator {
-    return card.getByRole('button', { name: enMessages.agent.skip })
+  /**
+   * The persisted "tour seen" flag for the e2e user and workspace, read from
+   * the page rather than asserted on, so a caller can poll it.
+   */
+  async coachSeenFlag(): Promise<string | null> {
+    return this.page.evaluate(
+      (key) => localStorage.getItem(key),
+      AGENT_COACH_SEEN_KEY
+    )
   }
 
   async enterNodeSelectionMode(): Promise<void> {
