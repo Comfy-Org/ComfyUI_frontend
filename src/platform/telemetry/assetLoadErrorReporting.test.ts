@@ -10,7 +10,7 @@ import {
   reportPreloadErrorUnlessExtensionImport,
   reportResourceLoadError
 } from './assetLoadErrorReporting'
-import { claimExtensionImportError } from './extensionLoadTelemetry'
+import { claimExtensionImportError } from './customNodeLoadTelemetry'
 
 describe('asset load error reporting', () => {
   beforeEach(() => {})

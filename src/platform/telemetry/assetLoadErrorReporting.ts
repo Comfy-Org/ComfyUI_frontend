@@ -2,7 +2,7 @@ import { parsePreloadError } from '@/utils/preloadErrorUtil'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-import { isExtensionImportError } from './extensionLoadTelemetry'
+import { isExtensionImportError } from './customNodeLoadTelemetry'
 
 /**
  * Whether a failed resource is one we ship, and can therefore act on.

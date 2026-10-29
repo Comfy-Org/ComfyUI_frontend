@@ -18,7 +18,7 @@ vi.mock<unknown>(import('@/components/dialog/GlobalDialog.vue'), () => ({
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
 vi.mock(import('@/platform/telemetry/assetLoadErrorReporting'))
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useConflictDetection'),
+  import('@/platform/customNodes/manager/composables/useConflictDetection'),
   () => ({
     useConflictDetection: () => ({
       initializeConflictDetection: vi.fn()

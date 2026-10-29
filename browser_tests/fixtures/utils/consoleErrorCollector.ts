@@ -2,9 +2,9 @@ import type { ConsoleMessage, Page, TestInfo } from '@playwright/test'
 
 import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry'
 
-import { EXTENSION_LOAD_ERROR_TYPE } from '@/platform/telemetry/extensionLoadTelemetry'
+import { CUSTOM_NODE_LOAD_ERROR_TYPE } from '@/platform/telemetry/customNodeLoadTelemetry'
 
-const EXTENSION_LOAD_REPORT = `${REPORTED_ERROR_PREFIX}${EXTENSION_LOAD_ERROR_TYPE}`
+const EXTENSION_LOAD_REPORT = `${REPORTED_ERROR_PREFIX}${CUSTOM_NODE_LOAD_ERROR_TYPE}`
 
 const FAILED_EXTENSION_LINE_RE = /^Failed extension: (.+)$/gm
 

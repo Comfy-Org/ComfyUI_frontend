@@ -63,6 +63,7 @@ const CRITICAL_COVERAGE_DIRS = [
   'src/platform/assets/schemas',
   'src/platform/assets/services',
   'src/platform/assets/utils',
+  'src/platform/extensions',
   'src/platform/billing/api',
   'src/platform/billing/composables',
   'src/platform/billing/stores',
@@ -88,10 +89,10 @@ const CRITICAL_COVERAGE_DIRS = [
   'src/services',
   'src/stores',
   'src/utils',
-  'src/workbench/extensions/manager/composables',
-  'src/workbench/extensions/manager/services',
-  'src/workbench/extensions/manager/stores',
-  'src/workbench/extensions/manager/utils',
+  'src/platform/customNodes/manager/composables',
+  'src/platform/customNodes/manager/services',
+  'src/platform/customNodes/manager/stores',
+  'src/platform/customNodes/manager/utils',
   'src/workbench/utils'
 ]
 
