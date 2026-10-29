@@ -122,10 +122,10 @@ export function sectionRows<Row extends MarkedRow>(
 
 /**
  * The Run on menu's rows under their headings, and the picked row's value.
- * Only a ready deployment can be picked. A stopped or failed one offers Start,
- * in place when the `deployment_start_enabled` flag is on and on the Developer
- * Platform when it is off. Any row but the current one that cannot be picked
- * says why.
+ * Only a ready deployment can be picked. One the listing says can start
+ * offers Start, in place when the `deployment_start_enabled` flag is on and on
+ * the Developer Platform when it is off. Any row but the current one that
+ * cannot be picked says why.
  */
 export function useDeploymentRows() {
   const { t, locale } = useI18n()
@@ -241,15 +241,14 @@ export function useDeploymentRows() {
     const label = deploymentFullLabel(deployment)
     const mark = markFor(deployment.deployment_id)
     const start = starts.value.get(deployment.deployment_id)
-    const action = deploymentRowAction(deployment.status, start, {
+    const action = deploymentRowAction(deployment, start, {
       startOffered: flags.deploymentStartEnabled
     })
-    const isStarting =
-      start?.phase === 'requested' || start?.phase === 'accepted'
+    const isStarting = start?.phase === 'requested'
     const reason =
       deployment.deployment_id === pickedDeploymentId.value
         ? null
-        : deploymentRowReason(deployment.status, action, start)
+        : deploymentRowReason(deployment, action, start)
     return {
       ...labels,
       detail: isStarting

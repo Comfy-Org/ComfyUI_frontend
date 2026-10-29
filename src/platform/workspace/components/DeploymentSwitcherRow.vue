@@ -4,7 +4,7 @@
       v-bind="$attrs"
       :value
       :disabled
-      :aria-describedby="note ? noteId : undefined"
+      :aria-describedby="describedBy"
       :class="
         cn(
           switcherItemClass,
@@ -70,6 +70,7 @@
   </TextTooltip>
   <div
     v-if="problem"
+    :id="problemId"
     role="status"
     class="w-0 min-w-full pr-2 pb-2 pl-7.5 text-xs text-pretty"
     data-testid="deployment-row-problem"
@@ -135,6 +136,12 @@ const emit = defineEmits<{
 }>()
 
 const noteId = useId()
+const problemId = useId()
+const describedBy = computed(
+  () =>
+    [note && noteId, problem && problemId].filter(Boolean).join(' ') ||
+    undefined
+)
 
 const showsAction = computed(() => actionLabel !== null && !switching)
 const detailClass = computed(() =>

@@ -14,22 +14,33 @@ import {
 
 const ID = 'dep-a1a1a1a1-0000-4000-8000-000000000001'
 
-function listedAs(status: string): DeploymentStartEvent {
-  const deployment: WorkspaceDeployment = {
+function deploymentAt(status: string, canStart = false): WorkspaceDeployment {
+  return {
     deployment_id: ID,
     release_id: 'r-1',
     status,
+    can_start: canStart,
     created_at: '2026-10-01T00:00:00Z'
   }
-  return { type: 'listed', deployments: [deployment] }
 }
 
 function startsWith(start?: DeploymentStart) {
   return new Map(start ? [[ID, start]] : [])
 }
 
+const refused: DeploymentStart = {
+  phase: 'refused',
+  reason: 'noCredits',
+  message: 'No credits'
+}
+
 describe('reduceDeploymentStarts', () => {
-  it.for([
+  it.for<{
+    name: string
+    before: DeploymentStart | undefined
+    event: DeploymentStartEvent
+    after: DeploymentStart | undefined
+  }>([
     {
       name: 'a Start is asked for',
       before: undefined,
@@ -37,217 +48,210 @@ describe('reduceDeploymentStarts', () => {
       after: { phase: 'requested' }
     },
     {
-      name: 'a second Start while one is on its way',
-      before: { phase: 'accepted', seenStarting: false },
-      event: { type: 'requested', deploymentId: ID },
-      after: { phase: 'accepted', seenStarting: false }
-    },
-    {
       name: 'a retry after a refusal',
-      before: { phase: 'refused', reason: 'noCredits', message: null },
+      before: refused,
       event: { type: 'requested', deploymentId: ID },
       after: { phase: 'requested' }
     },
     {
-      name: 'the server takes the Start and says it is on its way',
+      name: 'the server takes the Start and the listing after it lands',
       before: { phase: 'requested' },
-      event: {
-        type: 'answered',
-        deploymentId: ID,
-        outcome: { ok: true, status: 'starting' }
-      },
-      after: { phase: 'accepted', seenStarting: true }
-    },
-    {
-      name: 'the server takes the Start before it is on its way',
-      before: { phase: 'requested' },
-      event: {
-        type: 'answered',
-        deploymentId: ID,
-        outcome: { ok: true, status: 'stopped' }
-      },
-      after: { phase: 'accepted', seenStarting: false }
+      event: { type: 'taken', deploymentId: ID },
+      after: undefined
     },
     {
       name: 'the server refuses the Start',
       before: { phase: 'requested' },
       event: {
-        type: 'answered',
+        type: 'refused',
         deploymentId: ID,
-        outcome: { ok: false, reason: 'noCredits', message: 'No credits' }
+        reason: 'noCredits',
+        message: 'No credits'
       },
-      after: { phase: 'refused', reason: 'noCredits', message: 'No credits' }
+      after: refused
     },
     {
-      name: 'an answer nobody is waiting for',
+      name: 'a refusal for a Start no longer asked for',
       before: undefined,
       event: {
-        type: 'answered',
+        type: 'refused',
         deploymentId: ID,
-        outcome: { ok: true, status: 'starting' }
+        reason: 'failed',
+        message: null
       },
       after: undefined
     },
     {
-      name: 'the listing shows it on its way',
-      before: { phase: 'accepted', seenStarting: false },
-      event: listedAs('provisioning'),
-      after: { phase: 'accepted', seenStarting: true }
+      name: 'a listing while the Start is asked for',
+      before: { phase: 'requested' },
+      event: { type: 'listed', deployments: [deploymentAt('stopped', true)] },
+      after: { phase: 'requested' }
     },
     {
-      name: 'the listing still shows it stopped right after the Start',
-      before: { phase: 'accepted', seenStarting: false },
-      event: listedAs('stopped'),
-      after: { phase: 'accepted', seenStarting: false }
+      name: 'a listing that says the refused deployment can still start',
+      before: refused,
+      event: { type: 'listed', deployments: [deploymentAt('failed', true)] },
+      after: refused
     },
     {
-      name: 'it fails after the listing showed it on its way',
-      before: { phase: 'accepted', seenStarting: true },
-      event: listedAs('failed'),
-      after: { phase: 'refused', reason: 'failed', message: null }
-    },
-    {
-      name: 'it settles on neither starting nor stopped after starting',
-      before: { phase: 'accepted', seenStarting: true },
-      event: listedAs('unhealthy'),
-      after: { phase: 'refused', reason: 'failed', message: null }
-    },
-    {
-      name: 'it is ready',
-      before: { phase: 'accepted', seenStarting: true },
-      event: listedAs('ready'),
+      name: 'a listing that shows the refused deployment started elsewhere',
+      before: refused,
+      event: { type: 'listed', deployments: [deploymentAt('queued')] },
       after: undefined
     },
     {
-      name: 'a refused one is started elsewhere and is ready',
-      before: { phase: 'refused', reason: 'tooManyRunning', message: null },
-      event: listedAs('ready'),
-      after: undefined
-    },
-    {
-      name: 'a refused one is started elsewhere',
-      before: { phase: 'refused', reason: 'tooManyRunning', message: null },
-      event: listedAs('starting'),
-      after: undefined
-    },
-    {
-      name: 'a refused one is still stopped',
-      before: { phase: 'refused', reason: 'tooManyRunning', message: null },
-      event: listedAs('stopped'),
-      after: { phase: 'refused', reason: 'tooManyRunning', message: null }
-    },
-    {
-      name: 'it is gone from the listing',
-      before: { phase: 'accepted', seenStarting: true },
+      name: 'a listing without the deployment',
+      before: { phase: 'requested' },
       event: { type: 'listed', deployments: [] },
       after: undefined
     }
-  ] satisfies {
-    name: string
-    before: DeploymentStart | undefined
-    event: DeploymentStartEvent
-    after: DeploymentStart | undefined
-  }[])('when $name', ({ before, event, after }) => {
+  ])('$name', ({ before, event, after }) => {
     expect(reduceDeploymentStarts(startsWith(before), event).get(ID)).toEqual(
       after
     )
   })
+
+  it('keeps the Start asked for when the same Start is asked for again', () => {
+    const starts = startsWith({ phase: 'requested' })
+
+    expect(
+      reduceDeploymentStarts(starts, { type: 'requested', deploymentId: ID })
+    ).toBe(starts)
+  })
 })
 
 describe('deploymentRowAction', () => {
-  it.for([
-    { status: 'ready', start: undefined, offered: true, action: 'pick' },
-    { status: 'stopped', start: undefined, offered: true, action: 'start' },
-    { status: 'failed', start: undefined, offered: true, action: 'start' },
-    { status: 'stopped', start: undefined, offered: false, action: 'open' },
-    { status: 'failed', start: undefined, offered: false, action: 'open' },
-    { status: 'stopping', start: undefined, offered: false, action: 'none' },
-    { status: 'starting', start: undefined, offered: true, action: 'none' },
-    { status: 'stopping', start: undefined, offered: true, action: 'none' },
+  it.for<{
+    name: string
+    deployment: WorkspaceDeployment
+    start?: DeploymentStart
+    startOffered: boolean
+    action: DeploymentRowAction
+  }>([
     {
-      status: 'stopped',
-      start: { phase: 'requested' },
-      offered: true,
+      name: 'a ready deployment is picked',
+      deployment: deploymentAt('ready'),
+      startOffered: true,
+      action: 'pick'
+    },
+    {
+      name: 'one the listing says can start offers Start',
+      deployment: deploymentAt('stopped', true),
+      startOffered: true,
+      action: 'start'
+    },
+    {
+      name: 'one the listing says can start opens the Developer Platform while Start is not offered',
+      deployment: deploymentAt('failed', true),
+      startOffered: false,
+      action: 'open'
+    },
+    {
+      name: 'one the listing says cannot start does nothing, whatever its status',
+      deployment: deploymentAt('stopped'),
+      startOffered: true,
       action: 'none'
     },
     {
-      status: 'stopped',
-      start: { phase: 'refused', reason: 'noCredits', message: null },
-      offered: true,
+      name: 'one on its way up does nothing',
+      deployment: deploymentAt('provisioning'),
+      startOffered: true,
+      action: 'none'
+    },
+    {
+      name: 'one whose Start is asked for does nothing',
+      deployment: deploymentAt('stopped', true),
+      start: { phase: 'requested' },
+      startOffered: true,
+      action: 'none'
+    },
+    {
+      name: 'a refused Start is retried',
+      deployment: deploymentAt('stopped', true),
+      start: refused,
+      startOffered: true,
       action: 'retry'
     },
     {
-      status: 'stopped',
+      name: 'a Start this editor cannot ask for opens the Developer Platform',
+      deployment: deploymentAt('stopped', true),
       start: { phase: 'refused', reason: 'unavailable', message: null },
-      offered: true,
+      startOffered: true,
       action: 'open'
     },
     {
-      status: 'stopped',
-      start: { phase: 'refused', reason: 'noCredits', message: null },
-      offered: false,
+      name: 'a refused Start opens the Developer Platform once Start is not offered',
+      deployment: deploymentAt('stopped', true),
+      start: refused,
+      startOffered: false,
       action: 'open'
     }
-  ] satisfies {
-    status: string
-    start: DeploymentStart | undefined
-    offered: boolean
-    action: string
-  }[])(
-    'a $status row with Start offered $offered and start $start.phase is $action',
-    ({ status, start, offered, action }) => {
-      expect(
-        deploymentRowAction(status, start, { startOffered: offered })
-      ).toBe(action)
-    }
-  )
+  ])('$name', ({ deployment, start, startOffered, action }) => {
+    expect(deploymentRowAction(deployment, start, { startOffered })).toBe(
+      action
+    )
+  })
 })
 
 describe('deploymentRowReason', () => {
-  it.for([
-    { status: 'ready', action: 'pick', start: undefined, reason: null },
-    { status: 'stopped', action: 'start', start: undefined, reason: 'stopped' },
-    { status: 'failed', action: 'start', start: undefined, reason: 'failed' },
+  it.for<{
+    name: string
+    deployment: WorkspaceDeployment
+    action: DeploymentRowAction
+    start?: DeploymentStart
+    reason: ReturnType<typeof deploymentRowReason>
+  }>([
     {
-      status: 'stopped',
-      action: 'open',
-      start: undefined,
-      reason: 'startElsewhere'
+      name: 'a ready row needs none',
+      deployment: deploymentAt('ready'),
+      action: 'pick',
+      reason: null
     },
-    { status: 'queued', action: 'none', start: undefined, reason: 'starting' },
     {
-      status: 'stopped',
+      name: 'a refused row says why in its own text',
+      deployment: deploymentAt('stopped', true),
+      action: 'retry',
+      start: refused,
+      reason: null
+    },
+    {
+      name: 'a row whose Start is asked for is starting',
+      deployment: deploymentAt('stopped', true),
       action: 'none',
-      start: { phase: 'accepted', seenStarting: false },
+      start: { phase: 'requested' },
       reason: 'starting'
     },
     {
-      status: 'stopping',
+      name: 'a row on its way up is starting',
+      deployment: deploymentAt('queued'),
       action: 'none',
-      start: undefined,
-      reason: 'notReady'
+      reason: 'starting'
     },
     {
-      status: 'stopped',
+      name: 'a stopped row offering Start is stopped',
+      deployment: deploymentAt('stopped', true),
+      action: 'start',
+      reason: 'stopped'
+    },
+    {
+      name: 'a failed row offering Start failed',
+      deployment: deploymentAt('failed', true),
+      action: 'start',
+      reason: 'failed'
+    },
+    {
+      name: 'a row opening the Developer Platform says to start it there',
+      deployment: deploymentAt('stopped', true),
       action: 'open',
-      start: { phase: 'refused', reason: 'unavailable', message: null },
-      reason: null
+      reason: 'startElsewhere'
     },
     {
-      status: 'stopped',
-      action: 'retry',
-      start: { phase: 'refused', reason: 'noCredits', message: null },
-      reason: null
+      name: 'any other row is not ready',
+      deployment: deploymentAt('stopping'),
+      action: 'none',
+      reason: 'notReady'
     }
-  ] satisfies {
-    status: string
-    action: DeploymentRowAction
-    start: DeploymentStart | undefined
-    reason: string | null
-  }[])(
-    'a $status row whose action is $action says $reason',
-    ({ status, action, start, reason }) => {
-      expect(deploymentRowReason(status, action, start)).toBe(reason)
-    }
-  )
+  ])('$name', ({ deployment, action, start, reason }) => {
+    expect(deploymentRowReason(deployment, action, start)).toBe(reason)
+  })
 })

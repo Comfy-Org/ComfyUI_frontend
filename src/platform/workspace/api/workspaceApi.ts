@@ -14,6 +14,7 @@ import type {
   PendingInvite,
   PickWorkspaceDeploymentRequest,
   ReleaseUnsupportedPacks,
+  StartWorkspaceDeploymentResult,
   UpdateWorkspaceRequest,
   WorkspaceDeployment,
   WorkspaceDeploymentCpuServer,
@@ -23,6 +24,7 @@ import type {
 import {
   zDeploymentCompatibility,
   zReleaseUnsupportedPacks,
+  zStartWorkspaceDeploymentResult,
   zWorkspaceDeploymentCpuServer
 } from '@comfyorg/ingest-types/zod'
 import {
@@ -66,11 +68,6 @@ export type { WorkspaceDeploymentList }
 export type { DeploymentCompatibility }
 
 export type { WorkspaceDeploymentCpuServer }
-
-interface StartedDeployment {
-  deployment_id: string
-  status: string
-}
 
 const CPU_SERVER_READ_TIMEOUT_MS = 15_000
 
@@ -180,17 +177,17 @@ export const workspaceApi = {
   async startDeployment(
     workspaceId: WorkspaceId,
     deploymentId: string
-  ): Promise<StartedDeployment> {
+  ): Promise<StartWorkspaceDeploymentResult> {
     const auth = await requestAuth()
     try {
-      const response = await workspaceApiClient.post<StartedDeployment>(
+      const response = await workspaceApiClient.post<unknown>(
         ingestApiUrl(
           `/workspaces/${workspaceId}/deployments/${encodeURIComponent(deploymentId)}/start`
         ),
         undefined,
         { ...auth, timeout: DEPLOYMENT_START_TIMEOUT_MS }
       )
-      return response.data
+      return zStartWorkspaceDeploymentResult.parse(response.data)
     } catch (err) {
       handleAxiosError(err, 'startDeployment')
     }

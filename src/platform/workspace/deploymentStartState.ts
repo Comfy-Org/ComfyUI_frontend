@@ -1,26 +1,20 @@
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
+import { deploymentStatusTone } from '@/platform/workspace/composables/useDeploymentLabels'
 
-/** Why the server would not start a deployment, or why it did not come up. */
+/** Why the server would not start a deployment. */
 export type DeploymentStartRefusal =
   | 'noCredits'
   | 'tooManyRunning'
   | 'unavailable'
   | 'failed'
 
-/** What asking the server to start a deployment did. */
-export type DeploymentStartOutcome =
-  | { ok: true; status: string }
-  | { ok: false; reason: DeploymentStartRefusal; message: string | null }
-
 /**
- * A Start this page asked for: `requested` while the request is in flight,
- * `accepted` once the server took it (`seenStarting` once the server or a
- * listing showed it on its way), `refused` with the server's reason.
+ * A Start this page asked for, until the listing after it lands, or the
+ * server's refusal of it.
  */
 export type DeploymentStart =
   | { phase: 'requested' }
-  | { phase: 'accepted'; seenStarting: boolean }
   | { phase: 'refused'; reason: DeploymentStartRefusal; message: string | null }
 
 /** The Starts this page asked for, by deployment id. */
@@ -28,33 +22,33 @@ export type DeploymentStarts = ReadonlyMap<string, DeploymentStart>
 
 export type DeploymentStartEvent =
   | { type: 'requested'; deploymentId: string }
+  | { type: 'taken'; deploymentId: string }
   | {
-      type: 'answered'
+      type: 'refused'
       deploymentId: string
-      outcome: DeploymentStartOutcome
+      reason: DeploymentStartRefusal
+      message: string | null
     }
   | { type: 'listed'; deployments: readonly WorkspaceDeployment[] }
 
 /** What choosing a deployment's row does. */
 export type DeploymentRowAction = 'pick' | 'start' | 'retry' | 'open' | 'none'
 
-const STARTING_STATUSES = new Set(['queued', 'provisioning', 'starting'])
-const STARTABLE_STATUSES = new Set(['stopped', 'failed'])
+function withoutStart(
+  starts: DeploymentStarts,
+  deploymentId: string
+): DeploymentStarts {
+  const next = new Map(starts)
+  next.delete(deploymentId)
+  return next
+}
 
-function afterListing(
+function lastsThrough(
   start: DeploymentStart,
-  status: string
-): DeploymentStart | null {
-  if (status === 'ready') return null
-  if (start.phase === 'refused') {
-    return STARTABLE_STATUSES.has(status) ? start : null
-  }
-  if (start.phase !== 'accepted') return start
-  if (STARTING_STATUSES.has(status)) return { ...start, seenStarting: true }
-  if (start.seenStarting) {
-    return { phase: 'refused', reason: 'failed', message: null }
-  }
-  return start
+  deployment: WorkspaceDeployment
+): boolean {
+  if (start.phase === 'requested') return true
+  return deployment.can_start
 }
 
 function listed(
@@ -64,9 +58,9 @@ function listed(
   const next = new Map<string, DeploymentStart>()
   for (const [deploymentId, start] of starts) {
     const deployment = deployments.find((d) => d.deployment_id === deploymentId)
-    if (!deployment) continue
-    const updated = afterListing(start, deployment.status)
-    if (updated) next.set(deploymentId, updated)
+    if (deployment && lastsThrough(start, deployment)) {
+      next.set(deploymentId, start)
+    }
   }
   return next
 }
@@ -76,50 +70,40 @@ export function reduceDeploymentStarts(
   event: DeploymentStartEvent
 ): DeploymentStarts {
   switch (event.type) {
-    case 'requested': {
-      const current = starts.get(event.deploymentId)
-      if (current && current.phase !== 'refused') return starts
+    case 'requested':
+      if (starts.get(event.deploymentId)?.phase === 'requested') return starts
       return new Map(starts).set(event.deploymentId, { phase: 'requested' })
-    }
-    case 'answered': {
+    case 'taken':
       if (starts.get(event.deploymentId)?.phase !== 'requested') return starts
-      const { outcome } = event
-      return new Map(starts).set(
-        event.deploymentId,
-        outcome.ok
-          ? {
-              phase: 'accepted',
-              seenStarting: STARTING_STATUSES.has(outcome.status)
-            }
-          : {
-              phase: 'refused',
-              reason: outcome.reason,
-              message: outcome.message
-            }
-      )
-    }
+      return withoutStart(starts, event.deploymentId)
+    case 'refused':
+      if (starts.get(event.deploymentId)?.phase !== 'requested') return starts
+      return new Map(starts).set(event.deploymentId, {
+        phase: 'refused',
+        reason: event.reason,
+        message: event.message
+      })
     case 'listed':
       return listed(starts, event.deployments)
   }
 }
 
 /**
- * What choosing a row does: only a ready deployment is picked. A stopped or
- * failed one is started when Start is offered, else it opens on the Developer
- * Platform. A refused Start is retried, or opened there when this editor cannot
- * start it or Start is no longer offered.
+ * Picks a ready row, starts one the listing says can start (or opens it on the
+ * Developer Platform while Start is not offered), and retries a refused Start.
  */
 export function deploymentRowAction(
-  status: string,
+  deployment: WorkspaceDeployment,
   start: DeploymentStart | undefined,
   { startOffered }: { startOffered: boolean }
 ): DeploymentRowAction {
+  if (start?.phase === 'requested') return 'none'
   if (start?.phase === 'refused') {
     return start.reason === 'unavailable' || !startOffered ? 'open' : 'retry'
   }
-  if (start) return 'none'
-  if (pendingServerFact('BE-24332', status === 'ready')) return 'pick'
-  if (!STARTABLE_STATUSES.has(status)) return 'none'
+  if (pendingServerFact('BE-24332', deployment.status === 'ready'))
+    return 'pick'
+  if (!deployment.can_start) return 'none'
   return startOffered ? 'start' : 'open'
 }
 
@@ -132,12 +116,16 @@ export type DeploymentRowReason =
   | 'notReady'
 
 export function deploymentRowReason(
-  status: string,
+  deployment: WorkspaceDeployment,
   action: DeploymentRowAction,
   start: DeploymentStart | undefined
 ): DeploymentRowReason | null {
   if (start?.phase === 'refused' || action === 'pick') return null
-  if (start || STARTING_STATUSES.has(status)) return 'starting'
-  if (action === 'start') return status === 'failed' ? 'failed' : 'stopped'
-  return STARTABLE_STATUSES.has(status) ? 'startElsewhere' : 'notReady'
+  if (start || deploymentStatusTone(deployment.status) === 'pending') {
+    return 'starting'
+  }
+  if (action === 'start') {
+    return deployment.status === 'failed' ? 'failed' : 'stopped'
+  }
+  return action === 'open' ? 'startElsewhere' : 'notReady'
 }

@@ -5,7 +5,6 @@ import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
-  DeploymentStartOutcome,
   DeploymentStartRefusal,
   DeploymentStartEvent,
   DeploymentStarts
@@ -14,53 +13,47 @@ import { reduceDeploymentStarts } from '@/platform/workspace/deploymentStartStat
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const REFUSALS_BY_STATUS = new Map<number, DeploymentStartRefusal>([
-  [402, 'noCredits'],
-  [403, 'unavailable'],
-  [404, 'unavailable'],
-  [405, 'unavailable'],
-  [429, 'tooManyRunning'],
-  [501, 'unavailable']
+const REFUSALS_BY_CODE = new Map<string, DeploymentStartRefusal>([
+  ['PAYMENT_REQUIRED', 'noCredits'],
+  ['CONCURRENCY_LIMIT', 'tooManyRunning']
 ])
 
-function refusalFor(err: WorkspaceApiError): DeploymentStartRefusal {
-  if (err.status === 429 && err.code === undefined) return 'failed'
-  return (
-    (err.status !== undefined && REFUSALS_BY_STATUS.get(err.status)) || 'failed'
-  )
+const UNAVAILABLE_STATUSES = new Set([403, 404, 405, 501])
+
+function reasonFor(err: WorkspaceApiError): DeploymentStartRefusal {
+  const byCode =
+    err.code === undefined ? undefined : REFUSALS_BY_CODE.get(err.code)
+  if (byCode) return byCode
+  if (err.status !== undefined && UNAVAILABLE_STATUSES.has(err.status)) {
+    return 'unavailable'
+  }
+  return 'failed'
 }
 
-async function startDeployment(
-  workspaceId: string,
-  deploymentId: string
-): Promise<DeploymentStartOutcome> {
-  try {
-    const started = await workspaceApi.startDeployment(
-      workspaceId,
-      deploymentId
-    )
-    return { ok: true, status: started.status }
-  } catch (err) {
-    if (!(err instanceof WorkspaceApiError)) {
-      reportError(err, {
-        surface: 'workspace',
-        errorType: 'error_starting_deployment'
-      })
-      return { ok: false, reason: 'failed', message: null }
-    }
-    return {
-      ok: false,
-      reason: refusalFor(err),
-      message: err.code === undefined ? null : err.message || null
-    }
+function refusalOf(err: unknown): {
+  reason: DeploymentStartRefusal
+  message: string | null
+} {
+  if (!(err instanceof WorkspaceApiError)) {
+    return { reason: 'failed', message: null }
+  }
+  return {
+    reason: reasonFor(err),
+    message: err.code === undefined ? null : err.message || null
   }
 }
 
+function isUnanswered(err: unknown): boolean {
+  return (
+    !(err instanceof WorkspaceApiError) ||
+    err.status === undefined ||
+    err.status >= 500
+  )
+}
+
 /**
- * The Starts this page asked for (DES-1279). A Start ends when the listing
- * shows the deployment ready, or when the server refuses it or it fails to
- * come up. A taken Start counts only once a listing asked for after it has
- * landed, so a listing sent before it cannot read as a failure.
+ * The Starts this page asked for: each lasts until the listing after it lands,
+ * and a refusal lasts while the listing says the deployment can still start.
  */
 export const useDeploymentStartStore = defineStore('deploymentStart', () => {
   const pickStore = useDeploymentPickStore()
@@ -80,12 +73,22 @@ export const useDeploymentStartStore = defineStore('deploymentStart', () => {
   async function start(deploymentId: string): Promise<void> {
     const workspaceId = workspaceStore.workspaceId
     if (!workspaceId) return
-    const current = starts.value.get(deploymentId)
-    if (current && current.phase !== 'refused') return
+    if (starts.value.get(deploymentId)?.phase === 'requested') return
     dispatch({ type: 'requested', deploymentId })
-    const outcome = await startDeployment(workspaceId, deploymentId)
-    if (outcome.ok) await pickStore.load()
-    dispatch({ type: 'answered', deploymentId, outcome })
+    try {
+      await workspaceApi.startDeployment(workspaceId, deploymentId)
+    } catch (err) {
+      if (isUnanswered(err)) {
+        reportError(err, {
+          surface: 'workspace',
+          errorType: 'error_starting_deployment'
+        })
+      }
+      dispatch({ type: 'refused', deploymentId, ...refusalOf(err) })
+      return
+    }
+    await pickStore.load()
+    dispatch({ type: 'taken', deploymentId })
   }
 
   return { starts, start }
