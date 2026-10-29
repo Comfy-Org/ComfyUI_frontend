@@ -16,7 +16,7 @@
 import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import { useAgentExtensionNotices } from '@/composables/useAgentExtensionNotices'
+import { useAgentExtensionNotices } from '@/platform/settings/composables/useAgentExtensionNotices'
 import config from '@/config'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
