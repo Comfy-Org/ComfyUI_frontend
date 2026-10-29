@@ -596,6 +596,7 @@
   "allowedDependencies": [
     "design-system",
     "ingest-api",
+    "keybindings",
     "server-facts",
     "telemetry"
   ],
