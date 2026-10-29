@@ -13,11 +13,8 @@ import {
   loadedEvent,
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
-import {
-  NOTHING_DISCARDED,
-  reloadForDeploymentSwitch
-} from '@/platform/workspace/deploymentSwitchReload'
-import { settleUnsavedWorkBeforeSwitch } from '@/platform/workspace/settleUnsavedWorkBeforeSwitch'
+import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
+import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import type { DeploymentChoice } from '@/platform/workspace/workflowDeploymentOffer'
 
@@ -34,17 +31,13 @@ vi.mock(import('@/composables/useExternalLink'), () => ({
     })
 }))
 
-vi.mock(import('@/platform/workspace/settleUnsavedWorkBeforeSwitch'), () => ({
-  settleUnsavedWorkBeforeSwitch: vi.fn(),
-  unsavedWorkBeforeSwitch: vi.fn(() => [])
+vi.mock(import('@/platform/workspace/confirmUnsavedWorkBeforeSwitch'), () => ({
+  confirmUnsavedWorkBeforeSwitch: vi.fn(),
+  unsavedWorkflows: vi.fn(() => [])
 }))
 
 vi.mock(import('@/platform/workspace/deploymentSwitchReload'), () => ({
-  NOTHING_DISCARDED: new Map(),
   reloadForDeploymentSwitch: vi.fn(),
-  takeDeploymentSwitchDiscard: vi.fn(() => null),
-  discardableState: vi.fn(() => null),
-  wasDiscardedOnSwitch: vi.fn(() => false),
   takeDeploymentSwitchLanding: vi.fn(() => false)
 }))
 
@@ -110,9 +103,7 @@ function renderCard() {
 
 describe('SwitchDeploymentCard', () => {
   beforeEach(() => {
-    vi.mocked(settleUnsavedWorkBeforeSwitch).mockResolvedValue(
-      NOTHING_DISCARDED
-    )
+    vi.mocked(confirmUnsavedWorkBeforeSwitch).mockResolvedValue(true)
   })
 
   it('offers the first deployment that runs the workflow, with Create on Platform second', () => {
@@ -124,14 +115,11 @@ describe('SwitchDeploymentCard', () => {
       })
     ).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Run on' })).toHaveTextContent(
-      /^Acme Studio pipeline\s*Studio production · v4\s*Runs this workflow$/
+      /^Acme Studio pipeline\s*Studio production\s*v4\s*Runs this workflow$/
     )
     expect(
       screen.getByRole('link', { name: /Create on Platform/ })
-    ).toHaveAttribute(
-      'href',
-      'https://platform.comfy.org/profile/builds'
-    )
+    ).toHaveAttribute('href', 'https://platform.comfy.org/profile/builds')
   })
 
   it('switches to the chosen deployment once unsaved work is settled', async () => {
@@ -141,10 +129,10 @@ describe('SwitchDeploymentCard', () => {
     await user.click(await screen.findByRole('option', { name: /staging/ }))
     await user.click(screen.getByRole('button', { name: 'Switch' }))
 
-    expect(settleUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
+    expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
       'Acme Studio pipeline · Studio staging'
     )
-    expect(pick).toHaveBeenCalledWith('dep-staging', NOTHING_DISCARDED)
+    expect(pick).toHaveBeenCalledWith('dep-staging')
   })
 
   it('lists the deployments that cannot run it muted, with what each lacks', async () => {
@@ -189,14 +177,11 @@ describe('SwitchDeploymentCard', () => {
 
     await user.click(screen.getByRole('button', { name: 'Switch' }))
 
-    expect(reloadForDeploymentSwitch).toHaveBeenCalledWith(
-      NOTHING_DISCARDED,
-      expect.any(Function)
-    )
+    expect(reloadForDeploymentSwitch).toHaveBeenCalledWith(expect.any(Function))
   })
 
   it('stays on Comfy Cloud when the user cancels the save prompt', async () => {
-    vi.mocked(settleUnsavedWorkBeforeSwitch).mockResolvedValue(null)
+    vi.mocked(confirmUnsavedWorkBeforeSwitch).mockResolvedValue(false)
     const { pick, user } = renderCard()
 
     await user.click(screen.getByRole('button', { name: 'Switch' }))

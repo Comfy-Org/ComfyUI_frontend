@@ -1,6 +1,6 @@
 <template>
   <dl
-    class="my-1 flex flex-col divide-y divide-border rounded-lg border border bg-secondary/40"
+    class="my-1 flex flex-col divide-y divide-border rounded-lg border bg-secondary/40"
   >
     <div
       v-for="row in rows"

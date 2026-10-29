@@ -23,7 +23,7 @@
             class="grid aspect-video w-full place-items-center rounded-lg bg-secondary"
           >
             <span
-              class="grid size-16 place-items-center rounded-full border border-base-foreground/30 bg-base-foreground/10 text-foreground"
+              class="grid size-16 place-items-center rounded-full border border-foreground/30 bg-foreground/10 text-foreground"
               aria-hidden="true"
             >
               <i class="icon-[lucide--play] size-6" />
@@ -56,7 +56,7 @@
           class="my-0 flex items-start gap-2 text-sm/5 text-foreground/75"
         >
           <i
-            class="mt-0.75 icon-[lucide--info] size-3.5 shrink-0 text-muted-foreground"
+            class="mt-0.75 icon-[lucide--info] size-3.5 text-muted-foreground"
             aria-hidden="true"
           />
           {{ pitch.note }}
@@ -71,7 +71,7 @@
             class="flex items-start gap-2.5 text-sm/5 text-foreground/75"
           >
             <i
-              class="mt-0.75 icon-[lucide--check] size-3.5 shrink-0 text-muted-foreground"
+              class="mt-0.75 icon-[lucide--check] size-3.5 text-muted-foreground"
               aria-hidden="true"
             />
             {{ point }}
@@ -93,7 +93,7 @@
           @click="copy(pitch.brief)"
         >
           <template v-if="copied">
-            <i class="icon-[lucide--check] size-4" aria-hidden="true" />
+            <i class="icon-[lucide--check]" aria-hidden="true" />
             {{ $t('deployToComfyApi.copied') }}
           </template>
           <template v-else>
@@ -114,7 +114,7 @@
         >
           {{ pitch.platformLabel }}
           <i
-            class="icon-[lucide--square-arrow-out-up-right] size-4"
+            class="icon-[lucide--square-arrow-out-up-right]"
             aria-hidden="true"
           />
         </Button>

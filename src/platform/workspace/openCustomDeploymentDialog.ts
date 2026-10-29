@@ -83,7 +83,7 @@ function loadWorkflowNeedsDeploymentCard() {
   return import('@/platform/workspace/components/WorkflowNeedsDeploymentCard.vue')
 }
 
-/** Loads the dialog a workflow that needs a custom deployment shows, so opening it later does not wait; false when it could not load. */
+/** Preloads the workflow deployment dialog; false if loading fails. */
 export function preloadWorkflowNeedsDeploymentDialog(): Promise<boolean> {
   return loadWorkflowNeedsDeploymentCard().then(
     () => true,
@@ -91,7 +91,7 @@ export function preloadWorkflowNeedsDeploymentDialog(): Promise<boolean> {
   )
 }
 
-/** Opens the dialog a workflow opened on Comfy Cloud shows when it needs a custom deployment, in place of one already open for an earlier workflow; false when it could not load. */
+/** Opens the workflow deployment dialog, replacing an earlier one. */
 export async function openWorkflowNeedsDeploymentDialog(): Promise<boolean> {
   const dialogStore = useDialogStore()
   if (dialogStore.isDialogOpen(WORKFLOW_NEEDS_DEPLOYMENT_KEY)) {

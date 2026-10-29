@@ -1,24 +1,26 @@
 <template>
   <DefineOption v-slot="{ choice }">
     <span class="flex w-full min-w-0 items-center gap-1.5">
-      <span class="truncate">{{ deploymentTitle(choice.deployment) }}</span>
+      <span class="truncate">{{
+        deploymentRowLabels(choice.deployment).title
+      }}</span>
       <span
-        v-if="deploymentRowSubtitle(choice.deployment)"
+        v-if="deploymentRowLabels(choice.deployment).name"
         class="truncate text-muted-foreground"
       >
-        {{ deploymentRowSubtitle(choice.deployment) }}
+        {{ deploymentRowLabels(choice.deployment).name }}
       </span>
       <span
-        v-if="deploymentMeta(choice.deployment)"
+        v-if="deploymentRowLabels(choice.deployment).detail"
         class="shrink-0 text-xs text-muted-foreground"
       >
-        {{ deploymentMeta(choice.deployment) }}
+        {{ deploymentRowLabels(choice.deployment).detail }}
       </span>
       <span
         :class="
           cn(
             'ml-auto flex shrink-0 items-center gap-1 pl-2 text-xs',
-            runs(choice) ? 'text-success-background' : 'text-muted-foreground'
+            runs(choice) ? 'text-success' : 'text-muted-foreground'
           )
         "
       >
@@ -90,7 +92,7 @@
         >
           {{ $t('deploymentSwitcher.customDeployment.createOnPlatform') }}
           <i
-            class="icon-[lucide--square-arrow-out-up-right] size-4"
+            class="icon-[lucide--square-arrow-out-up-right]"
             aria-hidden="true"
           />
         </Button>
@@ -130,14 +132,14 @@ import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploym
 import { customDeploymentCreateUrl } from '@/platform/workspace/customDeploymentPitch'
 import type { MissingItemsRow } from '@/platform/workspace/customDeploymentPitch'
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
-import type { DiscardedWork } from '@/platform/workspace/deploymentSwitchReload'
-import { settleUnsavedWorkBeforeSwitch } from '@/platform/workspace/settleUnsavedWorkBeforeSwitch'
+import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
+import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
+import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { canSwitchTo } from '@/platform/workspace/workflowDeploymentOffer'
 import type { DeploymentChoice } from '@/platform/workspace/workflowDeploymentOffer'
 
 const { choices, missing } = defineProps<{
-  /** Every deployment with its mark, the ones Switch can pick first. */
   choices: readonly DeploymentChoice[]
   missing: readonly MissingItemsRow[]
 }>()
@@ -150,12 +152,8 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const pickStore = useDeploymentPickStore()
 const { isSwitching: isPicking, changeSinceBoot } = storeToRefs(pickStore)
-const {
-  deploymentTitle,
-  deploymentRowSubtitle,
-  deploymentMeta,
-  deploymentFullLabel
-} = useDeploymentLabels()
+const { deploymentRowLabels, deploymentFullLabel } = useDeploymentLabels()
+const { withoutLeavePrompt } = useDeploymentSwitchGuard()
 
 const [DefineOption, ReuseOption] = createReusableTemplate<{
   choice: DeploymentChoice
@@ -191,9 +189,13 @@ function choose(value: AcceptableValue) {
 const isSettling = ref(false)
 const isSwitching = computed(() => isSettling.value || isPicking.value)
 
-function landWhenAlreadyPicked(discarded: DiscardedWork) {
+function landWhenAlreadyPicked() {
   if (isPicking.value || changeSinceBoot.value === null) return
-  reloadForDeploymentSwitch(discarded, () => void pickStore.load())
+  const keepLeavePrompt = skipLeavePromptOnce()
+  reloadForDeploymentSwitch(() => {
+    keepLeavePrompt()
+    void pickStore.load()
+  })
 }
 
 async function switchDeployment() {
@@ -201,13 +203,15 @@ async function switchDeployment() {
   if (!deployment || isSwitching.value) return
   isSettling.value = true
   try {
-    const discarded = await settleUnsavedWorkBeforeSwitch(
+    const confirmed = await confirmUnsavedWorkBeforeSwitch(
       deploymentFullLabel(deployment)
     )
-    if (discarded === null) return
-    const refusal = await pickStore.pick(deployment.deployment_id, discarded)
+    if (!confirmed) return
+    const refusal = await withoutLeavePrompt(() =>
+      pickStore.pick(deployment.deployment_id)
+    )
     if (refusal === null) {
-      landWhenAlreadyPicked(discarded)
+      landWhenAlreadyPicked()
       return
     }
     useToast().error(t('deploymentSwitcher.failedToSwitch'), {

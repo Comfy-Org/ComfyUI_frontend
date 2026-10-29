@@ -9,10 +9,7 @@
     rel="noopener noreferrer"
   >
     {{ $t('deployToComfyApi.readDocs') }}
-    <i
-      class="icon-[lucide--square-arrow-out-up-right] size-4"
-      aria-hidden="true"
-    />
+    <i class="icon-[lucide--square-arrow-out-up-right]" aria-hidden="true" />
   </Button>
 </template>
 
