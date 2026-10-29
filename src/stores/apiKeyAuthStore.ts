@@ -6,6 +6,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
+import { reportError as reportTelemetryError } from '@comfyorg/telemetry/reportError'
 import type { ApiKeyAuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 
@@ -14,15 +15,56 @@ type ComfyApiUser =
 
 const STORAGE_KEY = 'comfy_api_key'
 
+const SAVE_FAILURE_DETAIL = {
+  gone: 'auth.apiKey.storedForSessionDetail',
+  kept: 'auth.apiKey.storedForSessionPreviousKeptDetail',
+  unreadable: 'auth.apiKey.storedForSessionBlockedDetail'
+} as const
+
 export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const authStore = useAuthStoreAccess()
-  let storageUnavailable = false
+  let storageFailureReported = false
+  const reportStorageFailure = (error: unknown) => {
+    if (storageFailureReported) return
+    storageFailureReported = true
+    reportTelemetryError(error, {
+      surface: 'auth',
+      errorType: 'api_key_storage_failed',
+      level: 'warning'
+    })
+  }
+
   const apiKey = useStorage<string | null>(STORAGE_KEY, null, undefined, {
-    onError: (error) => {
-      storageUnavailable = true
-      console.error(error)
-    }
+    onError: reportStorageFailure
   })
+
+  const persistKey = (key: string): boolean => {
+    try {
+      localStorage.setItem(STORAGE_KEY, key)
+      return true
+    } catch (error) {
+      reportStorageFailure(error)
+      return false
+    }
+  }
+
+  const forgetPersistedKey = (): 'gone' | 'kept' | 'unreadable' => {
+    let stored: string | null
+    try {
+      stored = localStorage.getItem(STORAGE_KEY)
+    } catch (error) {
+      reportStorageFailure(error)
+      return 'unreadable'
+    }
+    if (stored === null) return 'gone'
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+      return 'gone'
+    } catch (error) {
+      reportStorageFailure(error)
+      return 'kept'
+    }
+  }
   const toast = useToast()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
@@ -71,11 +113,11 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   }
 
   const storeApiKey = wrapWithErrorHandlingAsync(async (newApiKey: string) => {
+    const persisted = persistKey(newApiKey)
     apiKey.value = newApiKey
-    await nextTick()
-    if (storageUnavailable) {
+    if (!persisted) {
       toast.warning(t('auth.apiKey.storedForSession'), {
-        description: t('auth.apiKey.storedForSessionDetail'),
+        description: t(SAVE_FAILURE_DETAIL[forgetPersistedKey()]),
         duration: 8000
       })
       return true
@@ -88,7 +130,19 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   }, reportError)
 
   const clearStoredApiKey = wrapWithErrorHandlingAsync(async () => {
+    const removal = forgetPersistedKey()
     apiKey.value = null
+    if (removal !== 'gone') {
+      toast.warning(t('auth.apiKey.clearedForSession'), {
+        description: t(
+          removal === 'kept'
+            ? 'auth.apiKey.clearedForSessionDetail'
+            : 'auth.apiKey.clearedForSessionBlockedDetail'
+        ),
+        duration: 8000
+      })
+      return true
+    }
     toast.success(t('auth.apiKey.cleared'), {
       description: t('auth.apiKey.clearedDetail'),
       duration: 5000

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAuthStore } from '@/stores/authStore'
 
 const CUSTOMERS_URL = /\/customers$/
@@ -24,6 +25,8 @@ vi.mock(
 vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@comfyorg/telemetry'))
+
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 vi.mock(import('@/services/dialogService'))
 
@@ -122,6 +125,196 @@ describe('API key authentication initialization', () => {
         kind: 'warning',
         title: 'API Key saved for this session only'
       })
+    )
+    await vi.waitFor(() =>
+      expect(apiKeyStore.currentUser).toEqual({ id: 'test-customer-id' })
+    )
+  })
+
+  it('does not bring back a previously saved key when saving a new one fails', async () => {
+    localStorage.setItem('comfy_api_key', 'key-a')
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Quota exceeded', 'QuotaExceededError')
+    })
+
+    await apiKeyStore.storeApiKey('key-b')
+
+    expect(apiKeyStore.getApiKey()).toBe('key-b')
+    expect(localStorage.getItem('comfy_api_key')).toBeNull()
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        description:
+          'Your browser could not save it, so the key will be cleared when you reload.'
+      })
+    )
+  })
+
+  it('says the previous key returns after reload when it cannot be removed', async () => {
+    localStorage.setItem('comfy_api_key', 'key-a')
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Quota exceeded', 'QuotaExceededError')
+    })
+    vi.spyOn(localStorage, 'removeItem').mockImplementation(() => {
+      throw new DOMException('Access is denied', 'SecurityError')
+    })
+
+    await apiKeyStore.storeApiKey('key-b')
+
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        description:
+          'Your browser could not save it. After you reload, your previously saved key will be used again.'
+      })
+    )
+  })
+
+  it('keeps warning when the same unsaved key is submitted again', async () => {
+    localStorage.setItem('comfy_api_key', 'key-a')
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Quota exceeded', 'QuotaExceededError')
+    })
+
+    await apiKeyStore.storeApiKey('key-b')
+    await apiKeyStore.storeApiKey('key-b')
+
+    expect(useToast().toasts.at(-1)).toEqual(
+      expect.objectContaining({ kind: 'warning' })
+    )
+    expect(localStorage.getItem('comfy_api_key')).toBeNull()
+  })
+
+  it('does not mention a previous key on a first save that cannot be stored', async () => {
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Quota exceeded', 'QuotaExceededError')
+    })
+    vi.spyOn(localStorage, 'removeItem').mockImplementation(() => {
+      throw new DOMException('Access is denied', 'SecurityError')
+    })
+
+    await apiKeyStore.storeApiKey('key-b')
+
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        description:
+          'Your browser could not save it, so the key will be cleared when you reload.'
+      })
+    )
+  })
+
+  it('confirms a save normally once storage works again', async () => {
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+    const setItem = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementationOnce(() => {
+        throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      })
+    await apiKeyStore.storeApiKey('key-a')
+    setItem.mockRestore()
+
+    await apiKeyStore.storeApiKey('key-b')
+
+    expect(localStorage.getItem('comfy_api_key')).toBe('key-b')
+    expect(useToast().toasts.at(-1)).toEqual(
+      expect.objectContaining({ kind: 'success' })
+    )
+  })
+
+  it('removes the saved key when clearing it', async () => {
+    localStorage.setItem('comfy_api_key', 'key-a')
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+
+    await apiKeyStore.clearStoredApiKey()
+
+    expect(localStorage.getItem('comfy_api_key')).toBeNull()
+    expect(useToast().toasts.at(-1)).toEqual(
+      expect.objectContaining({ kind: 'success' })
+    )
+  })
+
+  it('warns that a saved key may return when it cannot be removed', async () => {
+    localStorage.setItem('comfy_api_key', 'key-a')
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+    vi.spyOn(localStorage, 'removeItem').mockImplementation(() => {
+      throw new DOMException('Access is denied', 'SecurityError')
+    })
+
+    await apiKeyStore.clearStoredApiKey()
+
+    expect(apiKeyStore.getApiKey()).toBeNull()
+    expect(useToast().toasts.at(-1)).toEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'API Key cleared for this session only'
+      })
+    )
+  })
+
+  it('warns that an earlier key may return when saving with storage blocked', async () => {
+    localStorage.setItem('comfy_api_key', 'key-a')
+    vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new DOMException('Access is denied', 'SecurityError')
+    })
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+
+    await apiKeyStore.storeApiKey('key-b')
+
+    expect(useToast().toasts.at(-1)).toEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        description:
+          "Your browser is blocking site storage, so this key won't be kept after you reload. A key saved earlier may be used again if you re-enable storage."
+      })
+    )
+  })
+
+  it('warns on clear when localStorage is blocked', async () => {
+    localStorage.setItem('comfy_api_key', 'key-a')
+    vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new DOMException('Access is denied', 'SecurityError')
+    })
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+
+    await apiKeyStore.clearStoredApiKey()
+
+    expect(useToast().toasts.at(-1)).toEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        description:
+          'Your browser is blocking site storage. A key saved earlier may be used again if you re-enable storage.'
+      })
+    )
+  })
+
+  it('reports blocked storage once at startup', async () => {
+    vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new DOMException('Access is denied', 'SecurityError')
+    })
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+
+    await apiKeyStore.storeApiKey('key-b')
+    await apiKeyStore.clearStoredApiKey()
+
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(DOMException),
+      expect.objectContaining({ errorType: 'api_key_storage_failed' })
     )
   })
 
