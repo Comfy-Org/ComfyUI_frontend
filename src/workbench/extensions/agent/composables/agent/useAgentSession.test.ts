@@ -978,7 +978,7 @@ describe('useAgentSession (v1 composition root)', () => {
     rejectSettledRead(readFailure)
 
     await vi.waitFor(() =>
-      expect(reportError).toHaveBeenCalledWith('history unavailable', {
+      expect(reportError).toHaveBeenCalledWith(readFailure, {
         surface: 'agent',
         errorType: 'failure_recovering_agent_turn'
       })

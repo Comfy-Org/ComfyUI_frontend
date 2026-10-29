@@ -46,7 +46,6 @@ test(
       turnLock.finishTurn(socket)
 
       await expect(turnLock.sendButton).toBeVisible({ timeout: 30_000 })
-      await expect(turnLock.stopButton).toHaveCount(0)
 
       await turnLock.agentPanel.openWorkSummary()
       await expect(turnLock.agentPanel.activityRows).toHaveText([

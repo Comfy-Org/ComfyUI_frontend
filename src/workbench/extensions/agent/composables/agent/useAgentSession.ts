@@ -205,7 +205,7 @@ type TurnOutcome =
     }
   | { kind: 'thread-missing' }
   | { kind: 'streaming' }
-  | { kind: 'error'; message: string }
+  | { kind: 'error'; cause: unknown }
 
 function isTerminalTurnStatus(
   status: AgentMessages[number]['status']
@@ -266,10 +266,7 @@ function recoveryKey(turn: LiveTurn): string {
 function turnOutcomeFromError(error: unknown): TurnOutcome {
   if (error instanceof AgentApiError && error.status === 404)
     return { kind: 'thread-missing' }
-  return {
-    kind: 'error',
-    message: error instanceof Error ? error.message : String(error)
-  }
+  return { kind: 'error', cause: error }
 }
 
 const NON_RETRYABLE_REQUEST_STATUSES = new Set([
@@ -2024,7 +2021,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const outcome = await fetchTurnOutcome(turn, recovery.signal)
       if (generation !== sessionGeneration) return
       if (outcome.kind === 'error') {
-        reportError(outcome.message, {
+        reportError(outcome.cause, {
           surface: 'agent',
           errorType: 'failure_recovering_agent_turn'
         })
