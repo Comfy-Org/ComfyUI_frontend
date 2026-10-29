@@ -5,7 +5,7 @@ import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   agentTest as test,
