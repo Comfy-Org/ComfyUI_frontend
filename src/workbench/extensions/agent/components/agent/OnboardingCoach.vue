@@ -110,18 +110,28 @@ function reportStep(action: AgentOnboardingAction): void {
   useTelemetry()?.trackAgentOnboardingStep({ step: index.value + 1, action })
 }
 
+let finishedHere = false
+
 function onNext(): void {
   const finished = isLast.value
   reportStep(isLast.value ? 'finish' : 'next')
+  if (finished) finishedHere = true
   next()
   if (finished) emit('finished', 'finish')
 }
 
 function onSkip(): void {
   reportStep('skip')
+  finishedHere = true
   finish()
   emit('finished', 'skip')
 }
+
+const completed = computed(() => !active.value && !!step.value)
+watch(completed, (isCompleted) => {
+  if (isCompleted && !finishedHere) emit('finished', 'finish')
+  finishedHere = false
+})
 
 const targetObserver = new MutationObserver(resolveTargets)
 targetObserver.observe(document.body, {
