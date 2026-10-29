@@ -98,8 +98,8 @@ class RegistryDelta(unittest.TestCase):
             row(cf.BASELINE_PACK, registryForms=baseline()),
             row('breaker', registryForms=broken, formAgreement={'graph': {}}),
         ])
-        self.assertIn('A -> values_replaced', text)
-        self.assertIn("'breaker'", text)
+        self.assertIn('provable -> values_replaced', text)
+        self.assertIn('breaker', text)
 
     def test_a_pack_that_makes_a_refused_class_provable_is_also_named(self):
         # The delta has to be signed. A pack whose shim gives a class widgets
@@ -111,7 +111,8 @@ class RegistryDelta(unittest.TestCase):
             row(cf.BASELINE_PACK, registryForms=baseline()),
             row('fixer', registryForms=fixed, formAgreement={'graph': {}}),
         ])
-        self.assertIn('C -> widgets_not_serialized -> provable', text)
+        self.assertIn('widgets_not_serialized -> provable', text)
+        self.assertIn('fixer', text)
 
     def test_missing_baseline_says_so_rather_than_reporting_zero(self):
         # A report with no baseline could otherwise print "no pack changed any

@@ -152,11 +152,76 @@ def report_registry(baseline, packs):
         print(f"    order that would publish {json.dumps(probe['wrongOrder'])}")
         print(f"    values actually written  {json.dumps(probe['finalValues'])}")
 
-    # Pack effect: the delta against the baseline, per class.
-    base_verdicts = dict.fromkeys(baseline['refusals'], None)
-    base_verdicts.update(baseline['refusals'])
-    changed = collections.defaultdict(list)
+    measured, agreeing, failed, per_pack = pack_effect(baseline, packs)
+    print('\n' + '=' * 74)
+    print('PACK EFFECT on those classes  (delta vs the baseline above)')
+    print('=' * 74)
+    print(f'  packs whose sweep was measured:          {measured}')
+    print(f'  ...that changed NO class verdict:        {agreeing}')
+    print(f'  ...that changed at least one:            {measured - agreeing}')
+    if failed:
+        print(f'  measurement failed on {len(failed)} packs: {failed[:5]}')
+    if per_pack:
+        report_pack_effect(per_pack)
+    else:
+        print('  no pack changed any class verdict.')
+    report_census_phase_health(packs, measured)
+
+
+def report_census_phase_health(packs, measured):
+    """What the census phase itself saw: hook errors, and prototype patching.
+
+    Both are about the census phase specifically. The gated `hookErrors` channel
+    is read off before this phase starts, so these firings are a finding rather
+    than a floor -- they are what a pack's `beforeRegisterNodeDef` does when it
+    meets 3,857 real definitions instead of six.
+    """
+    hooks = [
+        (r['pack'], len(r['registryForms']['hookErrors']))
+        for r in packs
+        if r.get('registryForms', {}).get('hookErrors')
+    ]
+    print(f'\n  packs whose hooks errored while registering the real defs:'
+          f' {len(hooks)} of {measured}')
+    for pack, n in sorted(hooks, key=lambda kv: (-kv[1], kv[0]))[:10]:
+        print(f'    {n:4d} distinct  {pack}')
+    patched = [
+        r['pack']
+        for r in packs
+        if any(r.get('registryForms', {}).get('prototypePatched', {}).values())
+    ]
+    print(f'  packs that reassigned a prototype serialization entry point:'
+          f' {len(patched)} {sorted(patched)[:10]}')
+
+    # The population a form would RESCUE: object-shaped values, stored whole and
+    # opaquely today, round-tripping but not name-addressable, and dropped
+    # outright by the follower because it only accepts an array.
+    needs = {
+        r['pack']: r['registryForms']['needsForm']
+        for r in packs
+        if r.get('registryForms', {}).get('needsForm')
+    }
+    classes = sorted({c for v in needs.values() for c in v})
+    print(f'\n  needsFormButHasNone over registry classes:'
+          f' {len(classes)} classes across {len(needs)} packs')
+    for pack, found in sorted(needs.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        print(f'    {len(found):5d}  {pack}')
+    if classes:
+        print(f'    classes: {classes[:12]}'
+              f"{' ...' if len(classes) > 12 else ''}")
+
+
+def pack_effect(baseline, packs):
+    """Per pack: which class verdicts it moved, and to what.
+
+    Rolled up per PACK rather than per class, because the shape of the real
+    result is a handful of packs that register widgets onto hundreds of
+    widget-less classes. Listed per class that is one finding printed six
+    hundred times, which buries the three packs that break something.
+    """
+    base = baseline['refusals']
     measured, agreeing, failed = 0, 0, []
+    per_pack: dict[str, collections.Counter] = {}
     for row in packs:
         forms = row.get('registryForms')
         if not forms:
@@ -168,41 +233,48 @@ def report_registry(baseline, packs):
         if forms['digest'] == baseline['digest']:
             agreeing += 1
             continue
-        # Only classes whose verdict differs. A pack that merely refuses the
-        # same 643 classes the baseline refuses has changed nothing.
-        for cls, verdict in forms['refusals'].items():
-            if base_verdicts.get(cls) != verdict:
-                changed[(cls, verdict)].append(row['pack'])
-        for cls, verdict in baseline['refusals'].items():
-            if forms['refusals'].get(cls) != verdict:
-                changed[(cls, f'{verdict} -> provable')].append(row['pack'])
+        # Signed, and only where the verdict differs: a pack that merely refuses
+        # the same classes the baseline refuses has changed nothing, and a pack
+        # that makes a refused class provable has moved the number too.
+        moves: collections.Counter = collections.Counter()
+        theirs = forms['refusals']
+        for cls in set(base) | set(theirs):
+            was, now = base.get(cls, 'provable'), theirs.get(cls, 'provable')
+            if was != now:
+                moves[f'{was} -> {now}'] += 1
+        if moves:
+            per_pack[row['pack']] = moves
+    return measured, agreeing, failed, per_pack
 
-    print('\n' + '=' * 74)
-    print('PACK EFFECT on those classes  (delta vs the baseline above)')
-    print('=' * 74)
-    print(f'  packs whose sweep was measured:          {measured}')
-    print(f'  ...that changed NO class verdict:        {agreeing}')
-    print(f'  ...that changed at least one:            {measured - agreeing}')
-    if failed:
-        print(f'  measurement failed on {len(failed)} packs: {failed[:5]}')
-    if not changed:
-        print('  no pack changed any class verdict.')
-    for (cls, verdict), who in sorted(
-        changed.items(), key=lambda kv: (-len(kv[1]), kv[0])
+
+def report_pack_effect(per_pack, sample=12):
+    """Packs by how much they moved, then the transitions they caused."""
+    by_transition: dict[str, list[tuple[str, int]]] = collections.defaultdict(list)
+    for pack, moves in per_pack.items():
+        for transition, n in moves.items():
+            by_transition[transition].append((pack, n))
+
+    print('\n  by transition:')
+    for transition, who in sorted(
+        by_transition.items(), key=lambda kv: -sum(n for _, n in kv[1])
     ):
-        print(f'  {len(who):5d} packs  {cls} -> {verdict}')
-        print(f'             {sorted(who)[:8]}')
+        classes = sum(n for _, n in who)
+        print(f'    {classes:6d} class verdicts across {len(who):4d} packs'
+              f'  {transition}')
+        for pack, n in sorted(who, key=lambda kv: (-kv[1], kv[0]))[:sample]:
+            print(f'           {n:6d}  {pack}')
+        if len(who) > sample:
+            print(f'           ... and {len(who) - sample} more packs')
 
-    hooks = [(r['pack'], len(r['registryForms']['hookErrors'])) for r in packs
-             if r.get('registryForms', {}).get('hookErrors')]
-    print(f'\n  packs whose hooks errored while registering the real defs:'
-          f' {len(hooks)} of {measured}')
-    for pack, n in sorted(hooks, key=lambda kv: -kv[1])[:10]:
-        print(f'    {n:4d} distinct  {pack}')
-    patched = [r['pack'] for r in packs
-               if any(r.get('registryForms', {}).get('prototypePatched', {}).values())]
-    print(f'  packs that reassigned a prototype serialization entry point:'
-          f' {len(patched)} {sorted(patched)[:10]}')
+    print(f'\n  packs by total class verdicts moved (top {sample}):')
+    for pack, moves in sorted(
+        per_pack.items(), key=lambda kv: -sum(kv[1].values())
+    )[:sample]:
+        detail = ', '.join(
+            f'{t} x{n}' for t, n in moves.most_common()
+        )
+        print(f'    {sum(moves.values()):6d}  {pack}')
+        print(f'            {detail}')
 
 
 def report_pack_local(packs):
