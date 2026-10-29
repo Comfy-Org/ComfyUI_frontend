@@ -61,11 +61,9 @@ const visible = computed(() => active.value && target.value !== null)
 // Let surfaces like the What's New popup defer while a coach card is on
 // screen. The store drops the source with this component's scope on unmount.
 useOnboardingOverlayStore().registerSource(() => visible.value)
-const toolbar = ref<HTMLElement | null>(null)
 const card = ref<HTMLElement | null>(null)
 const tooltip = ref<HTMLElement | null>(null)
 const bounds = useElementBounding(target)
-const toolbarBounds = useElementBounding(toolbar)
 const tooltipBounds = useElementBounding(tooltip)
 const { width, height } = useWindowSize()
 let targetRetryTimer: ReturnType<typeof setTimeout> | undefined
@@ -83,14 +81,8 @@ function resolveTargets(): void {
   const nextTarget = active.value
     ? document.querySelector<HTMLElement>(step.value.target)
     : null
-  const nextToolbar =
-    active.value && step.value.toolbarTarget
-      ? document.querySelector<HTMLElement>(step.value.toolbarTarget)
-      : null
   if (target.value !== nextTarget) target.value = nextTarget
-  if (toolbar.value !== nextToolbar) toolbar.value = nextToolbar
   bounds.update()
-  toolbarBounds.update()
   scheduleTargetRetry()
 }
 
@@ -183,30 +175,13 @@ watch(
   { immediate: true, flush: 'post' }
 )
 
-const middleware = computed<Middleware[]>(() => {
-  const result = [
-    offset({
-      mainAxis: 16,
-      crossAxis: step.value?.placement === 'left-start' ? -16 : 0
-    })
-  ]
-  if (step.value?.placement === 'graph-bottom') {
-    const bottom = toolbar.value ? toolbarBounds.top.value : bounds.bottom.value
-    result.push({
-      name: 'graphBottom',
-      fn: ({ rects }) => ({
-        x:
-          rects.reference.x +
-          (rects.reference.width - rects.floating.width) / 2,
-        y:
-          Math.min(bottom, rects.reference.y + rects.reference.height) -
-          16 -
-          rects.floating.height
-      })
-    })
-  }
-  return [...result, shift({ padding: 8, crossAxis: true })]
-})
+const middleware = computed<Middleware[]>(() => [
+  offset({
+    mainAxis: 16,
+    crossAxis: step.value?.placement === 'left-start' ? -16 : 0
+  }),
+  shift({ padding: 8, crossAxis: true })
+])
 
 const { floatingStyles, isPositioned } = useFloating(target, card, {
   strategy: 'fixed',
@@ -345,9 +320,13 @@ useEventListener(
                 @click="previous"
                 >{{ $t('onboardingCoachmarks.back') }}</Button
               >
-              <Button variant="secondary" size="md" @click="onSkip">{{
-                $t('agent.skip')
-              }}</Button>
+              <Button
+                v-if="!isLast"
+                variant="secondary"
+                size="md"
+                @click="onSkip"
+                >{{ $t('agent.skip') }}</Button
+              >
               <Button variant="inverted" size="md" @click="onNext">{{
                 $t(isLast ? 'onboardingCoachmarks.done' : 'g.next')
               }}</Button>

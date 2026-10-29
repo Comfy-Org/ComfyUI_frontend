@@ -37,8 +37,8 @@ flag on; it does not bypass consent.
   If consent cannot load or save, resolve the authentication/API error and
   retry before checking the follower. Skip leaves Agent closed. Consent from
   another user or workspace does not satisfy the current scope.
-- After consent, complete the four-card Agent tour for the panel, composer,
-  graph and chat history. **Next** advances; **Done**, **Skip** or Escape marks
+- After consent, complete the three-card Agent tour for the panel, composer
+  and chat history. **Next** advances; **Done**, **Skip** or Escape marks
   the device-local tour complete for the current user and workspace. The tour
   waits while App Mode or another onboarding tour is active, then appears once
   you are back in graph mode with no other onboarding tour running.
