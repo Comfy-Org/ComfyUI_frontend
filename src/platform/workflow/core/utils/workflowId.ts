@@ -26,14 +26,6 @@ export function ensureWorkflowId(
   }
 }
 
-/** The same workflow with no document identity, so a caller mints a fresh one. */
-export function withoutWorkflowId({
-  id: _documentId,
-  ...workflowData
-}: ComfyWorkflowJSON): ComfyWorkflowJSON {
-  return workflowData
-}
-
 export function areWorkflowIdsEquivalent(
   existingId: string | undefined,
   incomingId: string | undefined,
