@@ -2,47 +2,49 @@
 import fs from 'fs'
 import path from 'path'
 
-interface TestStats {
-  expected?: number
-  unexpected?: number
-  flaky?: number
-  skipped?: number
-  finished?: number
-}
+import type {
+  JSONReport,
+  JSONReportSpec,
+  JSONReportSuite,
+  JSONReportTest
+} from '@playwright/test/reporter'
 
-interface TestCase {
-  status: 'skipped' | 'expected' | 'unexpected' | 'flaky'
-  projectName?: string
-}
-
-interface Spec {
-  id: string
-  title: string
-  file?: string
+// Shapes Playwright's JSON reporter writes, derived from its own exports so the
+// consumed fields cannot drift from the producer. Every field stays optional:
+// the fork deploy workflow runs this on report artifacts a fork PR uploaded, so
+// the content is untrusted and re-validated at use.
+type ReportConfig = Partial<
+  Pick<JSONReport['config'], 'rootDir' | 'configFile'>
+>
+type TestStats = Partial<JSONReport['stats']>
+type TestCase = Partial<Pick<JSONReportTest, 'status'>>
+type Spec = Partial<Pick<JSONReportSpec, 'id' | 'title' | 'file'>> & {
   tests?: TestCase[]
 }
-
-interface Suite {
-  title: string
-  file?: string
+type Suite = Partial<Pick<JSONReportSuite, 'title' | 'file'>> & {
   specs?: Spec[]
   suites?: Suite[]
 }
 
 interface FullReportData {
-  config?: { rootDir?: string; configFile?: string }
+  config?: ReportConfig
   stats?: TestStats
   suites?: Suite[]
-}
-
-interface ReportData {
-  stats?: TestStats
 }
 
 interface FailedTest {
   name: string
   file: string
-  traceUrl?: string
+  reportUrl?: string
+}
+
+/** What every failure entry needs beyond the spec it came from. */
+interface FailureContext {
+  config?: ReportConfig
+  /** Deployed HTML report the entries link into, when there is one. */
+  reportLinkBase?: string
+  /** Test root the caller states, used when the report states none. */
+  testRoot?: string
 }
 
 interface TestCounts {
@@ -55,6 +57,14 @@ interface TestCounts {
 }
 
 const MAX_LISTED_FAILURES = 20
+/** Longest failure title kept. Playwright does not bound a test title. */
+const MAX_FAILURE_NAME_CHARS = 200
+/**
+ * Character budget for the whole failure list. GitHub rejects a comment over
+ * 65,536 characters and this is one section of several in it, so the entry cap
+ * alone is not a size bound.
+ */
+const MAX_FAILURE_LIST_CHARS = 4000
 
 function toCount(value: unknown): number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
@@ -62,84 +72,139 @@ function toCount(value: unknown): number {
     : 0
 }
 
-function singleLine(text: string): string {
+/** The shell splits failure records on `|` and on newlines. */
+function stripReportFieldDelimiters(text: string): string {
   return text.replace(/[|\r\n]+/g, ' ')
 }
 
 function markdownSafe(text: string): string {
-  return singleLine(text)
+  return stripReportFieldDelimiters(text)
     .replace(/[\\[\]<>`]/g, '')
     .replace(/@/g, '@\u200b')
 }
 
-function repoRelativePath(
-  file: string,
-  config: FullReportData['config']
-): string {
-  if (!config?.rootDir || !config.configFile) return file
-  const testRoot = path.posix.relative(
-    path.posix.dirname(config.configFile),
-    config.rootDir
+/** Truncates by code point, so a clamped title cannot end mid-character. */
+function clamp(text: string, limit: number): string {
+  const characters = Array.from(text)
+  return characters.length <= limit
+    ? text
+    : `${characters.slice(0, limit).join('')}…`
+}
+
+/**
+ * Encodes one path or query segment for a Markdown link destination.
+ * `encodeURIComponent` leaves parentheses alone and an unescaped `)` ends the
+ * destination early.
+ */
+function urlSegment(segment: string): string {
+  return encodeURIComponent(segment).replace(/\(/g, '%28').replace(/\)/g, '%29')
+}
+
+/** A relative path that cannot escape the directory it is joined to. */
+function staysInside(candidate: string): boolean {
+  return (
+    !path.posix.isAbsolute(candidate) &&
+    candidate !== '..' &&
+    !candidate.startsWith('../')
   )
-  const outside =
-    testRoot === '' ||
-    testRoot === '..' ||
-    testRoot.startsWith('../') ||
-    path.posix.isAbsolute(testRoot)
-  return outside ? file : path.posix.join(testRoot, file)
 }
 
-function projectLabel(spec: Spec, test: TestCase): string {
-  return (spec.tests?.length ?? 0) > 1 && test.projectName
-    ? ` (${test.projectName})`
-    : ''
+/**
+ * Test root the report itself states, relative to the repository. `''` when
+ * tests live at the repository root; `undefined` when the report carries no
+ * usable mapping — `merge-reports` drops `configFile` unless it is given a
+ * config, so the sharded CI path reports none.
+ */
+function configuredTestRoot(config: ReportConfig = {}) {
+  const { rootDir, configFile } = config
+  if (!rootDir || !configFile) return undefined
+  const testRoot = path.posix.relative(path.posix.dirname(configFile), rootDir)
+  return staysInside(testRoot) ? testRoot : undefined
 }
 
-function specFailures(
+/** Accepts only a plain relative directory from the caller. */
+function callerTestRoot(argument: string | undefined) {
+  if (!argument) return undefined
+  const normalized = path.posix.normalize(argument)
+  return normalized !== '.' && staysInside(normalized) ? normalized : undefined
+}
+
+/** Repository-relative path of a test file, encoded for a Markdown link. */
+function linkedPath(file: string, context: FailureContext): string {
+  const testRoot = configuredTestRoot(context.config) ?? context.testRoot
+  const repoFile = testRoot ? path.posix.join(testRoot, file) : file
+  return repoFile.split('/').map(urlSegment).join('/')
+}
+
+function linkedReport(specId: string | undefined, context: FailureContext) {
+  return context.reportLinkBase && specId
+    ? `${context.reportLinkBase}/#?testId=${urlSegment(specId)}`
+    : undefined
+}
+
+/** A flaky test passed on retry and the comment script counts it as passing. */
+function failedUnexpectedly(spec: Spec): boolean {
+  return (spec.tests ?? []).some((test) => test.status === 'unexpected')
+}
+
+function specFailure(
   spec: Spec,
   suite: Suite,
   suitePath: string[],
-  config: FullReportData['config'],
-  reportLinkBase: string | undefined
+  context: FailureContext
 ): FailedTest[] {
   const file = spec.file || suite.file
-  if (!file) return []
+  if (!file || !failedUnexpectedly(spec)) return []
   const name = [...suitePath, spec.title].filter(Boolean).join(' › ')
-  const repoFile = repoRelativePath(singleLine(file), config)
-    .split('/')
-    .map(encodeURIComponent)
-    .join('/')
-  const traceUrl = reportLinkBase
-    ? `${reportLinkBase}/#?testId=${encodeURIComponent(spec.id)}`
-    : undefined
-  return (spec.tests ?? [])
-    .filter((test) => test.status === 'unexpected')
-    .map((test) => ({
-      name: markdownSafe(name + projectLabel(spec, test)),
-      file: repoFile,
-      traceUrl
-    }))
+  return [
+    {
+      name: clamp(markdownSafe(name), MAX_FAILURE_NAME_CHARS),
+      file: linkedPath(file, context),
+      reportUrl: linkedReport(spec.id, context)
+    }
+  ]
+}
+
+/** Keeps whole entries only, so every listed failure stays linkable. */
+function withinCommentBudget(failures: FailedTest[]): FailedTest[] {
+  const kept: FailedTest[] = []
+  let chars = 0
+  for (const failure of failures) {
+    chars +=
+      failure.name.length +
+      failure.file.length +
+      (failure.reportUrl?.length ?? 0)
+    if (chars > MAX_FAILURE_LIST_CHARS) break
+    kept.push(failure)
+  }
+  return kept
 }
 
 function extractFailedTests(
   reportData: FullReportData,
-  baseUrl?: string
+  baseUrl?: string,
+  testRoot?: string
 ): FailedTest[] {
-  const reportLinkBase = baseUrl?.startsWith('https://') ? baseUrl : undefined
+  const context: FailureContext = {
+    config: reportData.config,
+    reportLinkBase: baseUrl?.startsWith('https://') ? baseUrl : undefined,
+    testRoot: callerTestRoot(testRoot)
+  }
 
   function processSuite(suite: Suite, parentPath: string[]): FailedTest[] {
     const suitePath = suite.title ? [...parentPath, suite.title] : parentPath
     return [
       ...(suite.specs ?? []).flatMap((spec) =>
-        specFailures(spec, suite, suitePath, reportData.config, reportLinkBase)
+        specFailure(spec, suite, suitePath, context)
       ),
       ...(suite.suites ?? []).flatMap((child) => processSuite(child, suitePath))
     ]
   }
 
-  return (reportData.suites ?? [])
+  const failures = (reportData.suites ?? [])
     .flatMap((suite) => processSuite(suite, []))
     .slice(0, MAX_LISTED_FAILURES)
+  return withinCommentBudget(failures)
 }
 
 function countsFromStats(stats: TestStats): TestCounts {
@@ -159,23 +224,21 @@ function countsFromStats(stats: TestStats): TestCounts {
 
 function safeFailures(
   reportData: FullReportData,
-  baseUrl?: string
+  baseUrl?: string,
+  testRoot?: string
 ): FailedTest[] {
   try {
-    return extractFailedTests(reportData, baseUrl)
+    return extractFailedTests(reportData, baseUrl, testRoot)
   } catch (error) {
     console.error('Could not list failed tests:', error)
     return []
   }
 }
 
-function emptyCounts(): TestCounts {
-  return countsFromStats({})
-}
-
 function countsFromJsonReport(
   reportDir: string,
-  baseUrl?: string
+  baseUrl?: string,
+  testRoot?: string
 ): TestCounts | null {
   const jsonReportFile = path.join(reportDir, 'report.json')
   if (!fs.existsSync(jsonReportFile)) return null
@@ -184,13 +247,14 @@ function countsFromJsonReport(
   )
   if (!reportJson.stats) return null
   const counts = countsFromStats(reportJson.stats)
-  if (counts.failed > 0) counts.failures = safeFailures(reportJson, baseUrl)
+  if (counts.failed > 0)
+    counts.failures = safeFailures(reportJson, baseUrl, testRoot)
   return counts
 }
 
 function parseEmbeddedStats(json: string): TestCounts | null {
   try {
-    const reportData: ReportData = JSON.parse(json)
+    const reportData: FullReportData = JSON.parse(json)
     return reportData.stats ? countsFromStats(reportData.stats) : null
   } catch {
     return null
@@ -214,17 +278,10 @@ function countsFromRenderedStats(content: string): TestCounts | null {
     /(\d+)\s+passed[^0-9]*(\d+)\s+failed[^0-9]*(\d+)\s+flaky[^0-9]*(\d+)\s+skipped/i
   )
   if (!match) return null
-  const [passed, failed, flaky, skipped] = match
+  const [expected, unexpected, flaky, skipped] = match
     .slice(1)
-    .map((n) => toCount(Number(n)))
-  return {
-    passed,
-    failed,
-    flaky,
-    skipped,
-    total: passed + failed + flaky + skipped,
-    failures: []
-  }
+    .map((n) => Number(n))
+  return countsFromStats({ expected, unexpected, flaky, skipped })
 }
 
 function summaryCount(content: string, outcome: string): number {
@@ -235,13 +292,16 @@ function summaryCount(content: string, outcome: string): number {
 }
 
 function countsFromSummaryText(content: string): TestCounts {
-  const passed = summaryCount(content, 'passed')
-  const failed = summaryCount(content, 'failed')
-  const flaky = summaryCount(content, 'flaky')
-  const skipped = summaryCount(content, 'skipped')
-  const total =
-    summaryCount(content, '(?:total|ran)') || passed + failed + flaky + skipped
-  return { passed, failed, flaky, skipped, total, failures: [] }
+  const counts = countsFromStats({
+    expected: summaryCount(content, 'passed'),
+    unexpected: summaryCount(content, 'failed'),
+    flaky: summaryCount(content, 'flaky'),
+    skipped: summaryCount(content, 'skipped')
+  })
+  return {
+    ...counts,
+    total: summaryCount(content, '(?:total|ran)') || counts.total
+  }
 }
 
 function countsFromHtmlReport(reportDir: string): TestCounts | null {
@@ -255,31 +315,36 @@ function countsFromHtmlReport(reportDir: string): TestCounts | null {
   )
 }
 
-function extractTestCounts(reportDir: string, baseUrl?: string): TestCounts {
+function extractTestCounts(
+  reportDir: string,
+  baseUrl?: string,
+  testRoot?: string
+): TestCounts {
   try {
     return (
-      countsFromJsonReport(reportDir, baseUrl) ??
+      countsFromJsonReport(reportDir, baseUrl, testRoot) ??
       countsFromHtmlReport(reportDir) ??
-      emptyCounts()
+      countsFromStats({})
     )
   } catch (error) {
     console.error(`Error reading report from ${reportDir}:`, error)
-    return emptyCounts()
+    return countsFromStats({})
   }
 }
 
 // Main execution
 const reportDir = process.argv[2]
-const baseUrl = process.argv[3] // Optional: base URL for trace links
+const baseUrl = process.argv[3] // Optional: base URL of the deployed HTML report
+const testRoot = process.argv[4] // Optional: test root, relative to the repository
 
 if (!reportDir) {
   console.error(
-    'Usage: extract-playwright-counts.ts <report-directory> [base-url]'
+    'Usage: extract-playwright-counts.ts <report-directory> [base-url] [test-root]'
   )
   process.exit(1)
 }
 
-const counts = extractTestCounts(reportDir, baseUrl)
+const counts = extractTestCounts(reportDir, baseUrl, testRoot)
 
 // Output as JSON for easy parsing in shell script
 process.stdout.write(JSON.stringify(counts) + '\n')

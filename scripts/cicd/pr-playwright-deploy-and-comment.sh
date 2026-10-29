@@ -49,6 +49,10 @@ fi
 # Configuration
 COMMENT_MARKER="<!-- PLAYWRIGHT_TEST_STATUS -->"
 BROWSERS="chromium chromium-2x chromium-0.5x cloud desktop mobile-chrome mobile-safari"
+# Repository-relative test root. `merge-reports` drops the config file from the
+# JSON report, so the extractor cannot derive this from the report itself and
+# source links would point at the repository root instead.
+TEST_ROOT="browser_tests"
 
 # Install wrangler if not available (output to stderr for debugging)
 if ! command -v wrangler > /dev/null 2>&1; then
@@ -219,7 +223,7 @@ else
 
                 if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
                     echo "Extracting counts from $REPORT_DIR using $EXTRACT_SCRIPT" >&2
-                    counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$url" || echo '{}')
+                    counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$url" "$TEST_ROOT" || echo '{}')
                     echo "Extracted counts for $browser: $counts" >&2
                     echo "$counts" > "$temp_dir/$i.counts"
                 else
@@ -330,7 +334,7 @@ else
     if [ $total_failed -gt 0 ]; then
         comment="$comment
 
-> ❌ $total_failed tests failed. Expand the failed tests below, review their traces and fix the failures before merging.
+> ❌ $total_failed tests failed. Expand the failed tests below, review their reports and fix the failures before merging.
 
 <details>
 <summary>Failed tests</summary>
@@ -342,10 +346,10 @@ else
             
             if command -v jq > /dev/null 2>&1; then
                 # Extract failures array from JSON
-                failures=$(echo "$counts_json" | jq -r '.failures // [] | .[]? | "\(.name)|\(.file)|\(.traceUrl // "")"')
+                failures=$(echo "$counts_json" | jq -r '.failures // [] | .[]? | "\(.name)|\(.file)|\(.reportUrl // "")"')
                 
                 if [ -n "$failures" ]; then
-                    while IFS='|' read -r test_name test_file trace_url; do
+                    while IFS='|' read -r test_name test_file report_url; do
                         [ -z "$test_name" ] && continue
                         
                         # Convert file path to GitHub URL (relative to repo root)
@@ -354,8 +358,8 @@ else
                         # Build the failed test line
                         test_line="- [$test_name]($github_file_url)"
                         
-                        if [ -n "$trace_url" ] && [ "$trace_url" != "null" ]; then
-                            test_line="$test_line: [View trace]($trace_url)"
+                        if [ -n "$report_url" ] && [ "$report_url" != "null" ]; then
+                            test_line="$test_line: [View test report]($report_url)"
                         fi
                         
                         comment="$comment
