@@ -153,6 +153,7 @@ export function planRowAction(
   switch (state.kind) {
     case 'activating':
     case 'active':
+    case 'ending':
     case 'paused':
     case 'unknown':
       return 'manage'
@@ -160,7 +161,6 @@ export function planRowAction(
       return 'subscribe'
     case 'ended':
       return 'choosePlan'
-    case 'ending':
     case 'salesManaged':
       return null
   }

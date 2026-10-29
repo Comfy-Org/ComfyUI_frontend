@@ -2,6 +2,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
 import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -14,7 +15,6 @@ import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   nodeError,
@@ -210,10 +210,12 @@ function makeMedia(
   }
 }
 
+const selectedItems = ref<Positionable[]>([])
+
 function createErrorGroups() {
   const store = useExecutionErrorStore()
   const searchQuery = ref('')
-  const groups = useErrorGroups(searchQuery)
+  const groups = useErrorGroups(searchQuery, selectedItems)
   return { store, searchQuery, groups }
 }
 
@@ -225,6 +227,7 @@ function createSelectedNode(id: string): LGraphNode {
 
 describe('useErrorGroups', () => {
   beforeEach(() => {
+    selectedItems.value = []
     mockIsCloud.value = false
     vi.mocked(isLGraphNode).mockReturnValue(false)
     vi.mocked(forEachNode).mockImplementation(() => {})
@@ -853,7 +856,7 @@ describe('useErrorGroups', () => {
     it('includes prompt error when a node is selected', async () => {
       const { store, groups } = createErrorGroups()
       vi.mocked(isLGraphNode).mockReturnValue(true)
-      setCanvasSelection([createSelectedNode('1')])
+      selectedItems.value = [createSelectedNode('1')]
       store.recordPromptError({
         type: 'prompt_no_outputs',
         message: 'No outputs',
@@ -1239,7 +1242,7 @@ describe('useErrorGroups', () => {
         makeModel('b.safetensors', { nodeId: '2', directory: 'checkpoints' })
       ])
       vi.mocked(isLGraphNode).mockReturnValue(true)
-      setCanvasSelection([createSelectedNode('1')])
+      selectedItems.value = [createSelectedNode('1')]
       await nextTick()
 
       // Displayed groups never shrink with canvas selection — the count
@@ -1771,7 +1774,7 @@ describe('useErrorGroups', () => {
         vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
           fromAny<LGraphNode, unknown>({ id: nodeId.split(':').at(-1) })
         )
-        setCanvasSelection([createSelectedNode(selectedId)])
+        selectedItems.value = [createSelectedNode(selectedId)]
         store.surfaceMissingModels([
           {
             ...makeModel('missing.safetensors', { nodeId: '65' }),
@@ -1804,7 +1807,7 @@ describe('useErrorGroups', () => {
     it('never marks workflow-level prompt errors as matched by a selection', async () => {
       const { store, groups } = createErrorGroups()
       vi.mocked(isLGraphNode).mockReturnValue(true)
-      setCanvasSelection([createSelectedNode('1')])
+      selectedItems.value = [createSelectedNode('1')]
       store.recordPromptError({
         type: 'prompt_no_outputs',
         message: 'No outputs',
@@ -1846,7 +1849,7 @@ describe('useErrorGroups', () => {
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
         nodeId === '1' ? selectedNode : createSelectedNode(nodeId)
       )
-      setCanvasSelection([selectedNode])
+      selectedItems.value = [selectedNode]
       store.recordNodeErrors({
         '1': {
           class_type: 'KSampler',
@@ -1886,7 +1889,7 @@ describe('useErrorGroups', () => {
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
         createSelectedNode(nodeId)
       )
-      setCanvasSelection([createSelectedNode('2')])
+      selectedItems.value = [createSelectedNode('2')]
       missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('NodeB', { cnrId: 'pack-1', nodeId: '2' }),
         makeMissingNodeType('NodeC', { cnrId: 'pack-2', nodeId: '3' })
@@ -1915,7 +1918,7 @@ describe('useErrorGroups', () => {
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
         createSelectedNode(nodeId)
       )
-      setCanvasSelection([createSelectedNode('99')])
+      selectedItems.value = [createSelectedNode('99')]
       missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('NodeB', { cnrId: 'pack-1', nodeId: '2' })
       ])
@@ -1941,7 +1944,7 @@ describe('useErrorGroups', () => {
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
         nodeId === '2:5' ? selectedNode : null
       )
-      setCanvasSelection([selectedNode])
+      selectedItems.value = [selectedNode]
       store.recordNodeErrors({
         '2:5': {
           class_type: 'KSampler',
@@ -1969,7 +1972,7 @@ describe('useErrorGroups', () => {
       vi.mocked(getExecutionIdByNode).mockReturnValue(
         fromAny<NodeExecutionId, unknown>('2')
       )
-      setCanvasSelection([containerNode])
+      selectedItems.value = [containerNode]
       store.recordNodeErrors({
         '2:5': {
           class_type: 'KSampler',

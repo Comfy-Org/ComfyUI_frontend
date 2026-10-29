@@ -208,7 +208,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+    "Inventory preserves existing exports and runtime behavior without granting public entry points."
   ],
   "deepImports": "inventory"
 }
