@@ -37,7 +37,7 @@ async function readDefaultWorkflow(): Promise<ComfyWorkflowJSON | null> {
     const workflow = await validateComfyWorkflow(json, (error) => {
       reportFallback(new Error(error), 'DefaultWorkflowInvalid')
     })
-    return workflow && asTemplate(workflow)
+    return workflow
   } catch (cause) {
     reportFallback(cause, 'DefaultWorkflowFetchFailed')
     return null
@@ -78,9 +78,12 @@ export function initDefaultWorkflow(): Promise<void> {
   return prefetch
 }
 
-/** The backend's default workflow when one loaded, otherwise the bundled graph. */
+/**
+ * The backend's default workflow when one loaded, otherwise the bundled graph.
+ * Always free of a document identity, so each caller mints its own.
+ */
 export function getDefaultWorkflow(): ComfyWorkflowJSON {
-  return remoteDefaultWorkflow ?? defaultGraph
+  return asTemplate(remoteDefaultWorkflow ?? defaultGraph)
 }
 
 /** Drops the prefetched workflow so the request runs again. */
