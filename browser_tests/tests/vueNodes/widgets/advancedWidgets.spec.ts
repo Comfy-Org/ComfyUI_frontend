@@ -190,5 +190,6 @@ test.describe('Advanced socket-only input', { tag: '@vue-nodes' }, () => {
     await node.getByText(SHOW_ADVANCED_INPUTS).click()
     await expect(widgetRows).toHaveCount(1)
     await expect(widgetRows.getByTestId('slot-dot')).toBeVisible()
+    await expect(widgetRows).toHaveText('mask')
   })
 })

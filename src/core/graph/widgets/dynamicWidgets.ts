@@ -22,7 +22,7 @@ import {
   zMatchTypeOptions
 } from '@comfyorg/object-info-parser'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
-import { addShimWidget } from '@/core/graph/widgets/inputWidgetStub'
+import { addShimWidget } from '@/core/graph/widgets/inputWidgetShim'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import {
