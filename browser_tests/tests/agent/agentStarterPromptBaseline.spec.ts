@@ -13,7 +13,9 @@ test.describe('Agent starter prompt baseline', { tag: '@cloud' }, () => {
   test.use({
     connectWebSocketToServer: false,
     initialFeatureFlags: {
-      enable_telemetry: true,
+      enable_telemetry: true
+    },
+    agentRemoteConfig: {
       'agent-starter-prompt-set': 'control'
     }
   })
