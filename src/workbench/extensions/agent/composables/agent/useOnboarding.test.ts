@@ -38,6 +38,37 @@ describe('useOnboarding', () => {
   beforeEach(() => {
     window.localStorage.clear()
     vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
+    vi.spyOn(api, 'getSetting').mockResolvedValue([])
+  })
+
+  it('keeps a scope another tab finished when this tab finishes its own', async () => {
+    vi.mocked(api.getSetting).mockResolvedValue(['other.onboarded'])
+
+    useOnboarding(STEPS, KEY).finish()
+
+    await vi.waitFor(() =>
+      expect(api.storeSetting).toHaveBeenCalledWith(
+        AGENT_ONBOARDED_SCOPES_SETTING_ID,
+        ['other.onboarded', KEY]
+      )
+    )
+    await vi.waitFor(() =>
+      expect(onboardedScopes()).toEqual(['other.onboarded', KEY])
+    )
+  })
+
+  it('clears only its own scope when restarting a tour', async () => {
+    vi.mocked(api.getSetting).mockResolvedValue(['other.onboarded', KEY])
+    useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID] = [KEY]
+
+    useOnboarding(STEPS, KEY).restart()
+
+    await vi.waitFor(() =>
+      expect(api.storeSetting).toHaveBeenCalledWith(
+        AGENT_ONBOARDED_SCOPES_SETTING_ID,
+        ['other.onboarded']
+      )
+    )
   })
 
   it('stays finished on an origin whose localStorage never saw the tour', async () => {

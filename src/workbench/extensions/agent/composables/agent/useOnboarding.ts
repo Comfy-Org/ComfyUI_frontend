@@ -75,8 +75,7 @@ function settingsRecordSeen(scopedKey: string): boolean {
   return onboardedScopes().includes(scopedKey)
 }
 
-const unpersistedScopes = new Set<string>()
-let scopesVersion = 0
+const pendingScopeChanges = new Map<string, boolean>()
 let settingsWrites: Promise<void> = Promise.resolve()
 
 const ONBOARDING_WRITE_FAILURE = {
@@ -85,12 +84,32 @@ const ONBOARDING_WRITE_FAILURE = {
   level: 'warning'
 } as const
 
+function withScopeChanges(
+  scopes: readonly string[],
+  changes: ReadonlyMap<string, boolean>
+): string[] {
+  const kept = scopes.filter((scope) => !changes.has(scope))
+  const added = [...changes].filter(([, seen]) => seen).map(([scope]) => scope)
+  return [...kept, ...added]
+}
+
+async function storedOnboardedScopes(): Promise<string[]> {
+  const stored: unknown = await api.getSetting(
+    AGENT_ONBOARDED_SCOPES_SETTING_ID
+  )
+  if (!Array.isArray(stored)) return []
+  return stored.filter((scope): scope is string => typeof scope === 'string')
+}
+
 async function writeOnboardedScopes(): Promise<void> {
-  const version = scopesVersion
+  if (pendingScopeChanges.size === 0) return
+  const changes = new Map(pendingScopeChanges)
   try {
-    const response = await api.storeSetting(AGENT_ONBOARDED_SCOPES_SETTING_ID, [
-      ...onboardedScopes()
-    ])
+    const merged = withScopeChanges(await storedOnboardedScopes(), changes)
+    const response = await api.storeSetting(
+      AGENT_ONBOARDED_SCOPES_SETTING_ID,
+      merged
+    )
     if (!response.ok) {
       reportError(
         `Failed to store onboarded scopes (${response.status})`,
@@ -98,25 +117,26 @@ async function writeOnboardedScopes(): Promise<void> {
       )
       return
     }
+    for (const [scope, seen] of changes) {
+      if (pendingScopeChanges.get(scope) === seen)
+        pendingScopeChanges.delete(scope)
+    }
+    useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID] =
+      withScopeChanges(merged, pendingScopeChanges)
   } catch (error) {
     reportError(error, ONBOARDING_WRITE_FAILURE)
-    return
   }
-  if (version === scopesVersion) unpersistedScopes.clear()
 }
 
 function persistSeenToSettings(scopedKey: string, seen: boolean): void {
   if (
     settingsRecordSeen(scopedKey) === seen &&
-    !unpersistedScopes.has(scopedKey)
+    !pendingScopeChanges.has(scopedKey)
   )
     return
-  const otherScopes = onboardedScopes().filter((scope) => scope !== scopedKey)
-  useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID] = seen
-    ? [...otherScopes, scopedKey]
-    : otherScopes
-  unpersistedScopes.add(scopedKey)
-  scopesVersion += 1
+  pendingScopeChanges.set(scopedKey, seen)
+  useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID] =
+    withScopeChanges(onboardedScopes(), new Map([[scopedKey, seen]]))
   settingsWrites = settingsWrites.then(writeOnboardedScopes)
 }
 
