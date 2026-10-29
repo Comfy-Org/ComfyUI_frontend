@@ -106,9 +106,9 @@ describe('BillingCreditsCard', () => {
     },
     {
       case: 'a paused plan keeps the real balance and empties the plan line',
-      facts: { billingStatus: 'paused', planKind: 'unknown' },
+      facts: { billingStatus: 'paused', planKind: 'paused' },
       available: '1,477',
-      plan: '0 of 1,000',
+      plan: '0 of 1,000 Refills when the payment goes through',
       topUp: '633',
       inUse: false,
       addCredits: true,
@@ -231,6 +231,19 @@ describe('BillingCreditsCard', () => {
 
     expect(screen.getByTestId('billing-credits-plan').textContent.trim()).toBe(
       '844 of 1,000 Refills October 1, 2026'
+    )
+  })
+
+  it('waits for the payment instead of a renewal date on a paused plan', () => {
+    renderCard({
+      ...activeFacts,
+      billingStatus: 'paused',
+      planKind: 'paused',
+      renewalDate: '2026-11-23T00:00:00Z'
+    })
+
+    expect(screen.getByTestId('billing-credits-plan').textContent.trim()).toBe(
+      '0 of 1,000 Refills when the payment goes through'
     )
   })
 

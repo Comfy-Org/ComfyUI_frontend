@@ -86,6 +86,7 @@ interface Scenario {
   canTopUp?: boolean
   topUpDenial?: string
   isPaused?: boolean
+  billingStatus?: 'paid' | 'paused'
   hasParkedBillingOperation?: boolean
 }
 
@@ -122,7 +123,7 @@ function arrange(scenario: Scenario = {}) {
           : scenario.subscriptionStatus
       ),
       subscriptionState: computed(() => scenario.subscriptionState ?? null),
-      billingStatus: computed(() => 'paid'),
+      billingStatus: computed(() => scenario.billingStatus ?? 'paid'),
       manageSubscription,
       isTeamPlan: computed(() => false),
       plans: computed(() => [
@@ -844,6 +845,15 @@ describe('BillingTab', () => {
         screen.queryByRole('button', { name: 'Resume plan' })
       ).not.toBeInTheDocument()
     })
+  })
+
+  it('shows a paused plan by name with the paused line', () => {
+    arrange({ billingStatus: 'paused' })
+
+    expect(screen.getByRole('heading', { name: 'Pro' })).toBeInTheDocument()
+    expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
+      "Paused. The renewal payment didn't go through."
+    )
   })
 
   it('renders an unrecognised plan as Your plan', () => {
