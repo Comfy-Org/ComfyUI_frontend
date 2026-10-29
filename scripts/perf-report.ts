@@ -498,7 +498,7 @@ function renderHistoricalVariance(
   historical: PerfReport[]
 ): string[] {
   const lines = [
-    `<details><summary>Historical variance (last ${historical.length} runs)</summary>`,
+    `<details><summary>Historical variance (up to ${historical.length} runs per metric)</summary>`,
     '',
     '| Metric | μ | σ | CV |',
     '|--------|---|---|-----|'
@@ -536,7 +536,7 @@ function renderTrend(
   if (trendRows.length === 0) return []
   return [
     '',
-    `<details><summary>Trend (last ${historical.length} commits on main)</summary>`,
+    `<details><summary>Trend (up to ${historical.length} commits on main per metric)</summary>`,
     '',
     '| Metric | Trend | Dir | Latest |',
     '|--------|-------|-----|--------|',

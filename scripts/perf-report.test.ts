@@ -196,6 +196,9 @@ describe('perf-report baseline comparison', () => {
     expect(heading(output)).toBe(
       '## ⚡ Performance: ✅ No regressions detected'
     )
+    expect(output).toContain(
+      '<summary>Historical variance (up to 3 runs per metric)</summary>'
+    )
     expect(output).toContain('| steady: p95 frame time | 17ms | 1ms |')
     expect(output).toContain('| steady: TBT | 0ms | 0ms |')
   })
