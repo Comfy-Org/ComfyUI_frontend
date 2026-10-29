@@ -84,6 +84,14 @@ export const useSubscriptionDialog = () => {
     })
   }
 
+  function trackPaywallEntry(
+    reason?: PaymentIntentSource,
+    paymentIntentSource?: PaymentIntentSource
+  ) {
+    trackModalOpened(reason)
+    trackPaywallShown(paymentIntentSource)
+  }
+
   async function showInactiveMemberDialog(
     paymentIntentSource?: PaymentIntentSource
   ): Promise<boolean> {
@@ -92,7 +100,6 @@ export const useSubscriptionDialog = () => {
     const { permissions } = useBillingUI()
     if (permissions.value.canManageSubscription) return false
 
-    trackPaywallShown(paymentIntentSource)
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component: (
@@ -100,6 +107,7 @@ export const useSubscriptionDialog = () => {
       ).default,
       props: { onClose: hide }
     })
+    trackPaywallShown(paymentIntentSource)
     return true
   }
 
@@ -110,9 +118,6 @@ export const useSubscriptionDialog = () => {
     try {
       const paymentIntentSource = paymentIntentSourceOf(options)
       if (await showInactiveMemberDialog(paymentIntentSource)) return true
-
-      trackModalOpened(options?.reason)
-      trackPaywallShown(paymentIntentSource)
 
       const legacyPricingDialogProps = {
         dismissOnPointerDownOutside: false
@@ -144,6 +149,7 @@ export const useSubscriptionDialog = () => {
             },
             dialogComponentProps: legacyPricingDialogProps
           })
+          trackPaywallEntry(options?.reason, paymentIntentSource)
           return true
         }
 
@@ -168,6 +174,7 @@ export const useSubscriptionDialog = () => {
             dismissOnPointerDownOutside: false
           }
         })
+        trackPaywallEntry(options?.reason, paymentIntentSource)
         return true
       }
 
@@ -184,6 +191,7 @@ export const useSubscriptionDialog = () => {
         },
         dialogComponentProps: legacyPricingDialogProps
       })
+      trackPaywallEntry(options?.reason, paymentIntentSource)
       return true
     } catch (error) {
       reportError(error, {

@@ -464,6 +464,20 @@ describe('useSubscriptionDialog', () => {
       )
     })
 
+    it('withholds modal_opened and paywall_shown when the dialog never opens', async () => {
+      mockShowLayoutDialog.mockImplementation(() => {
+        throw new Error('pricing chunk unavailable')
+      })
+      const { showPricingTable } = useSubscriptionDialog()
+
+      await expect(
+        showPricingTable({ reason: 'upgrade_to_add_credits' })
+      ).resolves.toBe(false)
+
+      expect(useTelemetry()?.trackSubscription).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
+    })
+
     it('tracks modal_opened on the workspace (unified) path too', async () => {
       useBillingRouting().type = computed(() => 'workspace')
       useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
