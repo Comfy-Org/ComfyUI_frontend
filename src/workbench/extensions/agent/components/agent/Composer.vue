@@ -561,52 +561,8 @@ defineExpose({
     id="agent-composer"
     ref="composerContainerRef"
     data-testid="agent-composer"
-    class="relative flex min-w-0 flex-col rounded-lg border border-border/50 bg-background"
+    class="flex min-w-0 flex-col gap-2"
   >
-    <div
-      v-if="mentionVisible"
-      :id="REFERENCE_MENU_ID"
-      ref="mentionListRef"
-      data-testid="agent-reference-menu"
-      role="menu"
-      :aria-label="mentionMenuLabel"
-      class="absolute inset-x-0 bottom-full z-1100 -mb-8.75 max-h-64 overflow-y-auto rounded-lg border border-border/50 bg-secondary p-1 font-inter shadow-md"
-      @mousedown.prevent
-      @mouseleave="leaveDescription"
-    >
-      <div
-        v-if="mentionMenuHeading"
-        class="flex h-6 items-center px-1.5 py-1 text-xs/4 text-muted-foreground"
-      >
-        {{ mentionMenuHeading }}
-      </div>
-      <MentionMenuItem
-        v-for="(match, index) in mentionMatches"
-        :key="`${match.kind}:${match.id}`"
-        :match
-        :index
-        :active="index === mentionActive"
-        :disabled="isMentionDisabled(match)"
-        :node-reference-disabled-reason
-        :duplicate-node-titles="graphDupes"
-        :described-skill="describedSkill"
-        :description-id="SKILL_DESCRIPTION_ID"
-        @highlight="onMentionHover(index)"
-        @pick="pickMention(match)"
-        @description-enter="keepDescriptionOpen"
-        @description-leave="leaveDescription"
-        @description-focusout="onDescriptionFocusOut"
-        @description-release-focus="focusEditor"
-        @description-dismiss="onDescriptionDismiss"
-      />
-      <MentionMenuStatus
-        v-if="!mentionHasResults"
-        :label="emptyMentionLabel"
-        :retryable="skillsRetryVisible"
-        @retry="skills.ensurePacks()"
-      />
-    </div>
-
     <PromptQueue
       :items="queueRows"
       :expanded="promptQueue.expanded"
@@ -615,145 +571,191 @@ defineExpose({
       @delete="promptQueue.deleteItem"
     />
 
-    <div
-      v-if="$slots.header"
-      class="flex h-11 shrink-0 items-center rounded-t-lg bg-background px-2"
-    >
-      <slot name="header" />
-    </div>
-
-    <slot name="aboveInput" />
-
-    <div
-      data-testid="composer-input-box"
-      class="relative -m-px flex max-h-[50dvh] min-h-28 min-w-0 flex-col rounded-lg border border-border/50 bg-secondary transition-colors focus-within:border-muted-foreground"
-    >
-      <slot name="insideInput" />
-      <AssetTray
-        v-if="composer.attachments.value.length"
-        :attachments="composer.attachments.value"
-        :highlighted-ids="highlightedAssetIds"
-        @remove="removeAttachment"
-      />
-
+    <div class="relative rounded-lg border border-border/50 bg-background">
       <div
-        data-testid="composer-upload-status"
-        aria-live="polite"
-        aria-atomic="true"
-        :class="
-          cn(
-            'flex shrink-0 items-center gap-1 text-xs text-muted-foreground',
-            uploadingAttachmentCount > 0 && 'px-3 pb-2'
-          )
-        "
-      >
-        <template v-if="uploadingAttachmentCount > 0">
-          <i
-            aria-hidden="true"
-            class="icon-[lucide--loader-circle] size-3 animate-spin"
-          />
-          {{ t('agent.uploadingAttachments', uploadingAttachmentCount) }}
-        </template>
-      </div>
-
-      <div
-        data-testid="composer-inline-input"
-        class="flex max-h-100 min-h-16 flex-col overflow-x-hidden overflow-y-auto"
+        v-if="mentionVisible"
+        :id="REFERENCE_MENU_ID"
+        ref="mentionListRef"
+        data-testid="agent-reference-menu"
+        role="menu"
+        :aria-label="mentionMenuLabel"
+        class="absolute inset-x-0 bottom-full z-1100 -mb-8.75 max-h-64 overflow-y-auto rounded-lg border border-border/50 bg-secondary p-1 font-inter shadow-md"
+        @mousedown.prevent
+        @mouseleave="leaveDescription"
       >
         <div
-          v-if="workflowSelecting"
-          role="status"
-          class="-mb-2 flex items-center gap-1 px-3 pt-3 text-xs text-muted-foreground"
+          v-if="mentionMenuHeading"
+          class="flex h-6 items-center px-1.5 py-1 text-xs/4 text-muted-foreground"
         >
-          <i
-            aria-hidden="true"
-            class="icon-[lucide--loader-circle] size-3 animate-spin"
-          />
-          {{ t('agent.savingWorkflow') }}
+          {{ mentionMenuHeading }}
         </div>
-        <div class="grid flex-1">
-          <div
-            ref="editorHostRef"
-            class="col-start-1 row-start-1 flex flex-col"
-          >
-            <InlinePromptEditor
-              ref="editorRef"
-              :model-value="composer.prompt.value"
-              :label="placeholderLabel"
-              :expanded="mentionVisible"
-              :reference-menu-id="REFERENCE_MENU_ID"
-              :active-descendant="activeMentionDescendant"
-              :search-hint="skillSearchHint"
-              :history-epoch="composer.promptEpoch.value"
-              :editable-workflow-id
-              :skill-scope="skills.scope"
-              @keydown="onComposerKeydown"
-              @update:model-value="composer.applyEditorPrompt"
-              @resolve-skill-metadata="composer.resolveSkillMetadata"
-              @keyup="onComposerKeyup"
-              @input="onEditorInput"
-              @selection-change="onEditorSelectionChange"
-              @click="syncMention"
-              @blur="onEditorBlur"
-              @attach-files="emit('attachFiles', $event)"
-              @open-reference-workflow="
-                (id, name) => emit('openReferenceWorkflow', id, name)
-              "
-              @remove-node-reference="emit('removeTag', $event)"
-              @highlight-assets="highlightedAssetIds = $event"
-              @remove-workflow-reference="
-                emit('removeWorkflowReference', $event)
-              "
-            />
-          </div>
-
-          <ComposerPlaceholder
-            :label="placeholderLabel"
-            :visible="showPlaceholderHint"
-            :node-reference-disabled-reason
-            @select-nodes="onSelectNodes"
-          />
-        </div>
+        <MentionMenuItem
+          v-for="(match, index) in mentionMatches"
+          :key="`${match.kind}:${match.id}`"
+          :match
+          :index
+          :active="index === mentionActive"
+          :disabled="isMentionDisabled(match)"
+          :node-reference-disabled-reason
+          :duplicate-node-titles="graphDupes"
+          :described-skill="describedSkill"
+          :description-id="SKILL_DESCRIPTION_ID"
+          @highlight="onMentionHover(index)"
+          @pick="pickMention(match)"
+          @description-enter="keepDescriptionOpen"
+          @description-leave="leaveDescription"
+          @description-focusout="onDescriptionFocusOut"
+          @description-release-focus="focusEditor"
+          @description-dismiss="onDescriptionDismiss"
+        />
+        <MentionMenuStatus
+          v-if="!mentionHasResults"
+          :label="emptyMentionLabel"
+          :retryable="skillsRetryVisible"
+          @retry="skills.ensurePacks()"
+        />
       </div>
 
-      <div class="flex shrink-0 items-center justify-between px-3 py-2">
-        <div class="flex items-center gap-1">
-          <ComposerAddMenu
-            :can-attach
-            :can-open-assets
-            :node-reference-disabled-reason
-            :workflows="eligibleWorkflows"
-            :workflow-selecting
-            :select-workflow="selectWorkflow"
-            @select-nodes="onSelectNodes"
-            @attach="emit('attach')"
-            @open-assets="emit('openAssets')"
-            @request-workflow-references="emit('requestWorkflowReferences')"
-          />
-          <Button
-            :tooltip="t('agent.reference')"
-            type="button"
-            variant="muted-textonly"
-            size="icon"
-            :aria-label="t('agent.reference')"
-            @click="openReferenceMenu"
-          >
-            <span class="text-base/4 font-medium">@</span>
-          </Button>
+      <div
+        v-if="$slots.header"
+        class="flex h-11 shrink-0 items-center rounded-t-lg bg-background px-2"
+      >
+        <slot name="header" />
+      </div>
+
+      <slot name="aboveInput" />
+
+      <div
+        data-testid="composer-input-box"
+        class="relative -m-px flex max-h-[50dvh] min-h-28 min-w-0 flex-col rounded-lg border border-border/50 bg-secondary transition-colors focus-within:border-muted-foreground"
+      >
+        <slot name="insideInput" />
+        <AssetTray
+          v-if="composer.attachments.value.length"
+          :attachments="composer.attachments.value"
+          :highlighted-ids="highlightedAssetIds"
+          @remove="removeAttachment"
+        />
+
+        <div
+          data-testid="composer-upload-status"
+          aria-live="polite"
+          aria-atomic="true"
+          :class="
+            cn(
+              'flex shrink-0 items-center gap-1 text-xs text-muted-foreground',
+              uploadingAttachmentCount > 0 && 'px-3 pb-2'
+            )
+          "
+        >
+          <template v-if="uploadingAttachmentCount > 0">
+            <i
+              aria-hidden="true"
+              class="icon-[lucide--loader-circle] size-3 animate-spin"
+            />
+            {{ t('agent.uploadingAttachments', uploadingAttachmentCount) }}
+          </template>
         </div>
 
-        <ComposerSendCluster
-          :editing
-          :show-stop="showStop"
-          :tooltip="primaryActionTooltip"
-          :label="primaryActionLabel"
-          :shortcut="primaryActionShortcut"
-          :blocked-reason="sendBlockedReason"
-          :aria-disabled="primaryActionAriaDisabled"
-          :disabled="primaryActionDisabled"
-          @cancel-edit="promptQueue.cancelEdit()"
-          @primary="onPrimaryAction"
-        />
+        <div
+          data-testid="composer-inline-input"
+          class="flex max-h-100 min-h-16 flex-col overflow-x-hidden overflow-y-auto"
+        >
+          <div
+            v-if="workflowSelecting"
+            role="status"
+            class="-mb-2 flex items-center gap-1 px-3 pt-3 text-xs text-muted-foreground"
+          >
+            <i
+              aria-hidden="true"
+              class="icon-[lucide--loader-circle] size-3 animate-spin"
+            />
+            {{ t('agent.savingWorkflow') }}
+          </div>
+          <div class="grid flex-1">
+            <div
+              ref="editorHostRef"
+              class="col-start-1 row-start-1 flex flex-col"
+            >
+              <InlinePromptEditor
+                ref="editorRef"
+                :model-value="composer.prompt.value"
+                :label="placeholderLabel"
+                :expanded="mentionVisible"
+                :reference-menu-id="REFERENCE_MENU_ID"
+                :active-descendant="activeMentionDescendant"
+                :search-hint="skillSearchHint"
+                :history-epoch="composer.promptEpoch.value"
+                :editable-workflow-id
+                :skill-scope="skills.scope"
+                @keydown="onComposerKeydown"
+                @update:model-value="composer.applyEditorPrompt"
+                @resolve-skill-metadata="composer.resolveSkillMetadata"
+                @keyup="onComposerKeyup"
+                @input="onEditorInput"
+                @selection-change="onEditorSelectionChange"
+                @click="syncMention"
+                @blur="onEditorBlur"
+                @attach-files="emit('attachFiles', $event)"
+                @open-reference-workflow="
+                  (id, name) => emit('openReferenceWorkflow', id, name)
+                "
+                @remove-node-reference="emit('removeTag', $event)"
+                @highlight-assets="highlightedAssetIds = $event"
+                @remove-workflow-reference="
+                  emit('removeWorkflowReference', $event)
+                "
+              />
+            </div>
+
+            <ComposerPlaceholder
+              :label="placeholderLabel"
+              :visible="showPlaceholderHint"
+              :node-reference-disabled-reason
+              @select-nodes="onSelectNodes"
+            />
+          </div>
+        </div>
+
+        <div class="flex shrink-0 items-center justify-between px-3 py-2">
+          <div class="flex items-center gap-1">
+            <ComposerAddMenu
+              :can-attach
+              :can-open-assets
+              :node-reference-disabled-reason
+              :workflows="eligibleWorkflows"
+              :workflow-selecting
+              :select-workflow="selectWorkflow"
+              @select-nodes="onSelectNodes"
+              @attach="emit('attach')"
+              @open-assets="emit('openAssets')"
+              @request-workflow-references="emit('requestWorkflowReferences')"
+            />
+            <Button
+              :tooltip="t('agent.reference')"
+              type="button"
+              variant="muted-textonly"
+              size="icon"
+              :aria-label="t('agent.reference')"
+              @click="openReferenceMenu"
+            >
+              <span class="text-base/4 font-medium">@</span>
+            </Button>
+          </div>
+
+          <ComposerSendCluster
+            :editing
+            :show-stop="showStop"
+            :tooltip="primaryActionTooltip"
+            :label="primaryActionLabel"
+            :shortcut="primaryActionShortcut"
+            :blocked-reason="sendBlockedReason"
+            :aria-disabled="primaryActionAriaDisabled"
+            :disabled="primaryActionDisabled"
+            @cancel-edit="promptQueue.cancelEdit()"
+            @primary="onPrimaryAction"
+          />
+        </div>
       </div>
     </div>
   </div>

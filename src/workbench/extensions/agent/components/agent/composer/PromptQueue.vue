@@ -35,7 +35,7 @@ function statusIcon(status: PromptQueueRowStatus): string {
   <div
     v-if="items.length > 0"
     data-testid="agent-prompt-queue"
-    class="flex flex-col"
+    class="flex flex-col overflow-hidden rounded-lg border border-border/50 bg-background"
   >
     <button
       type="button"

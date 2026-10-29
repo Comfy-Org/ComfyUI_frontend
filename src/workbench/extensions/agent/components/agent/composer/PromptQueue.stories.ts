@@ -37,7 +37,7 @@ const meta: Meta<typeof PromptQueue> = {
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope w-80 rounded-lg border border-border/50 bg-background"><story /></div>'
+        '<div class="agent-scope flex w-80 flex-col gap-2"><story /><div class="h-28 rounded-lg border border-border/50 bg-background" /></div>'
     })
   ]
 }

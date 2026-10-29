@@ -4,6 +4,7 @@ import type {
   WorkflowReferenceOption
 } from '@/workbench/extensions/agent/types/workflowReference'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { useAgentPromptQueueStore } from '@/workbench/extensions/agent/stores/agent/agentPromptQueueStore'
 import {
   isInaccessible,
   render,
@@ -76,6 +77,25 @@ function mount(
 }
 
 describe('Composer', () => {
+  it('keeps queued messages in a card outside the composer card', () => {
+    const composer = useAgentComposerStore()
+    const queue = useAgentPromptQueueStore()
+    composer.setText('first')
+    queue.enqueueFromComposer('first', [], [])
+    queue.begin(queue.items[0].id)
+    composer.setText('second')
+    queue.enqueueFromComposer('second', [], [])
+    composer.clearDraft()
+    mount()
+
+    const queued = screen.getByTestId('agent-prompt-queue')
+    expect(queued).toBeVisible()
+    expect(
+      within(queued).queryByTestId('composer-input-box')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('composer-input-box')).toBeVisible()
+  })
+
   it.for(['@unmatched text', '@Nodes unmatched'])(
     'sends an unmatched mention query with Enter: %s',
     async (text) => {
