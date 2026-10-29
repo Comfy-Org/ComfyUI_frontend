@@ -58,8 +58,8 @@ it.for([
   )
 })
 
-const lockfileWithPlaywright = (catalogVersion: string, rootVersion: string) =>
-  [
+function lockfileWithPlaywright(catalogVersion: string, rootVersion: string) {
+  return [
     'catalogs:',
     '  default:',
     "    '@playwright/test':",
@@ -79,6 +79,7 @@ const lockfileWithPlaywright = (catalogVersion: string, rootVersion: string) =>
     'packages:',
     ''
   ].join('\n')
+}
 
 function readLockedPlaywrightVersion(lockfile: string) {
   const step = pipeline.jobs['merge-reports'].steps?.find(
@@ -119,9 +120,41 @@ describe('merge-reports Playwright version', () => {
       0,
       'version=1.3.0\n'
     ],
-    ['missing root entry', 'importers:\n  .:\n    devDependencies: {}\n', 1, '']
+    [
+      'missing root entry',
+      'importers:\n  .:\n    devDependencies: {}\n',
+      1,
+      ''
+    ],
+    [
+      'root entry without a version',
+      [
+        'importers:',
+        '  .:',
+        '    devDependencies:',
+        "      '@playwright/test':",
+        '        specifier: ^1.0.0',
+        "      '@vitest/ui':",
+        '        specifier: ^1.0.0',
+        '        version: 9.9.9',
+        ''
+      ].join('\n'),
+      1,
+      ''
+    ]
   ] as const)('%s', ([, lockfile, status, output]) => {
     expect(readLockedPlaywrightVersion(lockfile)).toEqual({ status, output })
+  })
+
+  it('checks out the lockfile it reads', () => {
+    expect(pipeline.jobs['merge-reports'].steps).toContainEqual(
+      expect.objectContaining({
+        uses: expect.stringMatching(/^actions\/checkout@/),
+        with: expect.objectContaining({
+          'sparse-checkout': expect.stringMatching(/^\/pnpm-lock\.yaml$/m)
+        })
+      })
+    )
   })
 
   it('matches the root importer in the repository lockfile', () => {

@@ -410,6 +410,7 @@ jobs:
         run: |
           set -euo pipefail
           version=$(awk '
+            in_entry && !/^        / { in_entry = 0 }
             /^importers:/ { in_importers = 1; next }
             in_importers && /^[^ ]/ { exit }
             in_importers && /^  [^ ]/ { in_root = ($0 == "  .:"); next }
