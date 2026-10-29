@@ -448,6 +448,45 @@ describe('OnboardingCoach', () => {
     expect(useOnboardingOverlayStore().active).toBe(true)
   })
 
+  function mountWithFinished(storageKey: string, onFinished: () => void) {
+    return render(
+      {
+        components: { OnboardingCoach },
+        setup: () => ({ steps: STEPS, storageKey, onFinished }),
+        template:
+          '<div id="panel" /><OnboardingCoach :steps="steps" :storage-key="storageKey" @finished="onFinished" />'
+      },
+      { global: { plugins: [i18n] } }
+    )
+  }
+
+  it('reports the tour finished when another tab completes it', async () => {
+    const onFinished = vi.fn()
+    mountWithFinished('coach-elsewhere', onFinished)
+    await screen.findByRole('dialog', { name: 'Meet the agent' })
+
+    localStorage.setItem('coach-elsewhere', 'true')
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'coach-elsewhere',
+        newValue: 'true',
+        storageArea: localStorage
+      })
+    )
+
+    await waitFor(() => expect(onFinished).toHaveBeenCalledOnce())
+  })
+
+  it('reports finished once when the user skips', async () => {
+    const onFinished = vi.fn()
+    mountWithFinished('coach-skip-once', onFinished)
+    await userEvent.click(await screen.findByRole('button', { name: 'Skip' }))
+    await nextTick()
+    await nextTick()
+
+    expect(onFinished).toHaveBeenCalledOnce()
+  })
+
   describe('reporting a step whose target never mounts', () => {
     const renderMissing = (target: string) =>
       render(OnboardingCoach, {
