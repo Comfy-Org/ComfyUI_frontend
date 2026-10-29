@@ -264,10 +264,11 @@ describe('BillingCreditsCard', () => {
       case: 'a paused plan keeps the pool but shows no usage',
       facts: {
         billingStatus: 'paused',
+        planKind: 'paused',
         renewalDate: '2026-10-01T00:00:00Z'
       },
       amount: '0 of 1,000',
-      date: 'Refills October 1, 2026',
+      date: 'Refills when the payment goes through',
       used: null,
       meter: null
     },

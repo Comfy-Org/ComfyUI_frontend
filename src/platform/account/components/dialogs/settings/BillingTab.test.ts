@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -11,6 +11,7 @@ import type {
   SubscriptionState
 } from '@comfyorg/ingest-types'
 
+import { i18n } from '@/i18n'
 import enMessages from '@/locales/en/main.json'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
@@ -564,32 +565,41 @@ describe('BillingTab', () => {
     }
   )
 
-  it.for([
-    { canManageBilling: true, line: true },
-    { canManageBilling: false, line: false }
-  ])(
-    'says where the rest of billing lives when can_manage_billing is $canManageBilling',
-    ({ canManageBilling, line }) => {
-      arrange({ canManageBilling })
+  it('tells an owner the rest of billing lives on the linked platform.comfy.org', () => {
+    arrange({ canManageBilling: true })
 
-      const card = screen.getByTestId('billing-handoff-card')
-      expect(
-        within(card).queryByText(/Manage everything else about billing on/) !==
-          null
-      ).toBe(line)
-      if (!line) return
-      const platformLink = within(card).getByRole('link', {
-        name: 'platform.comfy.org'
-      })
-      expect(platformLink).toHaveClass('underline')
-      expect(platformLink).toHaveAttribute(
-        'href',
-        expect.stringContaining('https://platform.test/profile/billing?')
-      )
-    }
-  )
+    const card = screen.getByTestId('billing-handoff-card')
+    expect(
+      within(card).getByText(/Manage everything else about billing on/)
+    ).toBeInTheDocument()
+    const platformLink = within(card).getByRole('link', {
+      name: 'platform.comfy.org'
+    })
+    expect(platformLink).toHaveClass('underline')
+    expect(platformLink).toHaveAttribute(
+      'href',
+      expect.stringContaining('https://platform.test/profile/billing?')
+    )
+  })
+
+  it('gives a member no platform.comfy.org line or link', () => {
+    arrange({ canManageBilling: false })
+
+    const card = screen.getByTestId('billing-handoff-card')
+    expect(
+      within(card).queryByText(/Manage everything else about billing on/)
+    ).not.toBeInTheDocument()
+    expect(
+      within(card).queryByRole('link', { name: 'platform.comfy.org' })
+    ).not.toBeInTheDocument()
+  })
 
   it('links Partner Nodes pricing to the docs and messages support from the footer', async () => {
+    const previousLocale = i18n.global.locale.value
+    i18n.global.locale.value = 'en'
+    onTestFinished(() => {
+      i18n.global.locale.value = previousLocale
+    })
     arrange()
     const footer = screen.getByTestId('billing-footer')
 
