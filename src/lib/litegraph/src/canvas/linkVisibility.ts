@@ -3,9 +3,9 @@ import type {
   LLink,
   Reroute
 } from '@comfyorg/graph-model/entityRegistry'
-import { st, t } from '@/i18n'
+import { translate } from '@/lib/litegraph/src/translate'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
@@ -101,7 +101,10 @@ export function deleteLinks(
 
 export function getLinkStackMenuOptions(): IContextMenuValue<string>[] {
   return [
-    { content: st('contextMenu.Show Links', 'Show Links'), value: 'Show Links' }
+    {
+      content: translate('contextMenu.Show Links', 'Show Links'),
+      value: 'Show Links'
+    }
   ]
 }
 
@@ -149,7 +152,7 @@ export function promptRenameLinkBadge(
   event: CanvasPointerEvent
 ): void {
   host.prompt(
-    t('contextMenu.Rename'),
+    translate('contextMenu.Rename', 'Rename'),
     useLinkPresentationStore().getPresentation(scope, linkId)?.label ?? '',
     (value) => renameLink(host, scope, linkId, value),
     event
@@ -167,7 +170,7 @@ export function getLinkMenuOptions(
   if (linkId !== undefined) {
     const actions = hidden ? ['Rename', 'Show Link'] : ['Hide Link']
     for (const value of actions) {
-      options.push({ content: st(`contextMenu.${value}`, value), value })
+      options.push({ content: translate(`contextMenu.${value}`, value), value })
     }
     options.push(null)
   }

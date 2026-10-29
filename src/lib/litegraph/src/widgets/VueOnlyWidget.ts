@@ -1,4 +1,4 @@
-import { st } from '@/i18n'
+import { translate } from '@/lib/litegraph/src/translate'
 
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { BaseWidget } from './BaseWidget'
@@ -14,7 +14,7 @@ export abstract class VueOnlyWidget<
     this.drawVueOnlyWarning(
       ctx,
       options,
-      st(`widgets.vueOnly.${this.vueOnlyLabel}`, this.vueOnlyLabel)
+      translate(`widgets.vueOnly.${this.vueOnlyLabel}`, this.vueOnlyLabel)
     )
   }
 

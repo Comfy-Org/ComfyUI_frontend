@@ -9,6 +9,7 @@ import { setAssertReporter } from '@/base/assert'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { provideTranslator } from '@/lib/litegraph/src/translate'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { provideTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
@@ -39,7 +40,7 @@ import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
 import './assets/css/style.css'
-import { i18n } from './i18n'
+import { i18n, st } from './i18n'
 
 const isCloud = __DISTRIBUTION__ === 'cloud'
 const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
@@ -180,6 +181,7 @@ async function bootstrap(): Promise<void> {
   }
 
   installSubgraphGraphHooks()
+  provideTranslator(st)
 
   void useBootstrapStore(pinia).startStoreBootstrap()
 

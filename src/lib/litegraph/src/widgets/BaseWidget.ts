@@ -2,7 +2,7 @@ import type {
   LGraphCanvas,
   LGraphNode
 } from '@comfyorg/graph-model/entityRegistry'
-import { t } from '@/i18n'
+import { translate } from '@/lib/litegraph/src/translate'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -17,7 +17,7 @@ import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { NodeBindable } from '@/lib/litegraph/src/utils/type'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   ensureUniqueWidgetNames,
@@ -622,7 +622,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     ctx.textBaseline = 'middle'
 
     ctx.fillText(
-      `${label}: ${t('widgets.node2only')}`,
+      `${label}: ${translate('widgets.node2only', 'Node 2.0 only')}`,
       width / 2,
       y + height / 2
     )

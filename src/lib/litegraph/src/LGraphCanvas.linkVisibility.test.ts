@@ -1,7 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { i18n, loadLocale } from '@/i18n'
+import { i18n, loadLocale, st } from '@/i18n'
+import { provideTranslator } from '@/lib/litegraph/src/translate'
 import type {
   CanvasPointerEvent,
   LGraphCanvas
@@ -16,8 +17,8 @@ import { LLink } from '@/lib/litegraph/src/LLink'
 import { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 import {
@@ -140,6 +141,8 @@ describe('LGraphCanvas link visibility interactions', () => {
       .spyOn(canvas, 'prompt')
       .mockReturnValue(document.createElement('div'))
     const originalLocale = i18n.global.locale.value
+    provideTranslator(st)
+    onTestFinished(() => provideTranslator(undefined))
 
     await loadLocale('fr')
     i18n.global.locale.value = 'fr'

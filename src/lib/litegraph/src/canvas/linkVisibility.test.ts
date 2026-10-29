@@ -1,11 +1,12 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { i18n, loadLocale } from '@/i18n'
+import { i18n, loadLocale, st } from '@/i18n'
+import { provideTranslator } from '@/lib/litegraph/src/translate'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
@@ -77,6 +78,8 @@ describe('link visibility mutations', () => {
     const host = createHost()
     const event = fromPartial<CanvasPointerEvent>({})
     const originalLocale = i18n.global.locale.value
+    provideTranslator(st)
+    onTestFinished(() => provideTranslator(undefined))
 
     await loadLocale('fr')
     i18n.global.locale.value = 'fr'
