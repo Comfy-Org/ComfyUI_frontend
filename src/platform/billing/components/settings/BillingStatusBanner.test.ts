@@ -303,6 +303,14 @@ describe('BillingStatusBanner', () => {
         text: 'Your Team plan ends on'
       },
       {
+        name: 'a scheduled change while out of credits',
+        enter: () => {
+          scheduledFor('pro-annual')
+          state.subscription = { ...state.subscription!, hasFunds: false }
+        },
+        text: 'Your plan changes to'
+      },
+      {
         name: 'plan ending while out of credits',
         enter: () => {
           state.subscription = {
@@ -337,6 +345,37 @@ describe('BillingStatusBanner', () => {
       const banner = screen.getByRole('status')
       expect(banner).toHaveTextContent(text)
       expect(within(banner).queryAllByRole('button')).toEqual([])
+    })
+
+    it.for([
+      {
+        name: 'a scheduled change',
+        enter: () => scheduledFor('pro-annual')
+      },
+      {
+        name: 'plan ended',
+        enter: () => {
+          state.subscriptionStatus = 'ended'
+          state.billingStatus = 'inactive'
+          state.canAccessSubscriptionFeatures = false
+          state.subscription = {
+            hasFunds: false,
+            isCancelled: true,
+            endDate: '2026-09-12T12:00:00Z',
+            scheduledChange: null,
+            tier: 'PRO'
+          }
+        }
+      }
+    ])('keeps $name after another tab dismisses it', async ({ enter }) => {
+      enter()
+      renderBanner('planCredits')
+      await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+
+      renderBanner('billing')
+
+      expect(screen.getByRole('status')).toBeInTheDocument()
     })
 
     it.for([

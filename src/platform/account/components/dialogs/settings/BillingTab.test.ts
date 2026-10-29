@@ -984,7 +984,7 @@ describe('BillingTab', () => {
       it('shows no lifecycle banner on an active plan', () => {
         arrangeOnCloud({})
 
-        expect(screen.queryByText(/plan ends on/)).not.toBeInTheDocument()
+        expect(screen.queryByRole('status')).not.toBeInTheDocument()
       })
     })
 

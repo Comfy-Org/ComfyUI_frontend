@@ -235,7 +235,9 @@ function useBillingBannerInternal() {
             ...bannerInputs.value,
             hasFunds: true,
             topUpDeniedPastDue: false,
-            runDeniedPastDue: false
+            runDeniedPastDue: false,
+            planEndedDismissed: false,
+            planChangeDismissed: false
           },
           now.value
         )
