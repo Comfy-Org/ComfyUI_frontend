@@ -183,9 +183,9 @@ it was built to decline, so a floor would fail the run for correct behaviour.
 ```bash
 # 1. the baseline: every registry class, no pack code (~8s)
 CENSUS_FORMS_OUT=.census/results/rows/_registry-baseline.json \
-  npx vitest run --config vitest.census.config.mts
+  pnpm exec vitest run --config vitest.census.config.mts
 # 2. the pack rows (the ordinary matrix run writes both pack channels)
-MATRIX_OUT=.census/results/rows npx vitest run --config vitest.matrix.config.mts
+MATRIX_OUT=.census/results/rows pnpm exec vitest run --config vitest.matrix.config.mts
 # 3. the report
 python3 scripts/registry-census/census_forms.py .census/results/rows
 ```

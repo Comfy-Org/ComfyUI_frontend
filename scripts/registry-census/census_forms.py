@@ -106,7 +106,7 @@ def report_registry(baseline, packs):
     """The class census, and each pack's delta against it."""
     if not baseline:
         print('\nNO BASELINE ROW. Run the baseline census first:')
-        print('  npx vitest run --config vitest.census.config.mts')
+        print('  pnpm exec vitest run --config vitest.census.config.mts')
         print('...then point this script at a directory holding both.')
         return
     if baseline.get('err'):

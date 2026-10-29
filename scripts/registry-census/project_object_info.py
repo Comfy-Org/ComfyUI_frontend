@@ -26,9 +26,9 @@ the full dump and at the projection and compare the two runs' `digest`, which
 is a hash of every class's verdict in sorted order:
 
     MATRIX_OBJECT_INFO=/path/to/cloud/.../object_info.json CENSUS_FORMS_OUT=full.json \
-      npx vitest run --config vitest.census.config.mts
+      pnpm exec vitest run --config vitest.census.config.mts
     CENSUS_FORMS_OUT=projected.json \
-      npx vitest run --config vitest.census.config.mts
+      pnpm exec vitest run --config vitest.census.config.mts
     # the two `registryForms.digest` values must be identical
 
 Do that on any bump. `--verify` is the cheaper, narrower check: that the
