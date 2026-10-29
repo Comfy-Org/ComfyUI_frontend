@@ -127,6 +127,10 @@ test.describe('Floating node badges', { tag: ['@vue-nodes', '@node'] }, () => {
 
   test.describe('Wide badges', () => {
     test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.nodeOps.addNode(DEPRECATED_NODE_TYPE, undefined, {
+        x: 400,
+        y: 300
+      })
       await comfyPage.page.evaluate(() => {
         const LGraphBadge = window.LGraphBadge!
         window.app!.registerExtension({
@@ -140,22 +144,30 @@ test.describe('Floating node badges', { tag: ['@vue-nodes', '@node'] }, () => {
           }
         })
       })
-      await comfyPage.nodeOps.addNode(DEPRECATED_NODE_TYPE)
+      await comfyPage.nodeOps.addNode(DEPRECATED_NODE_TYPE, undefined, {
+        x: 400,
+        y: 500
+      })
     })
 
     test('keeps wide badges outside expanded and collapsed node bounds', async ({
       comfyPage
     }) => {
-      const ref = await comfyPage.nodeOps.getNodeRefByType(DEPRECATED_NODE_TYPE)
+      const [baselineRef, ref] =
+        await comfyPage.nodeOps.getNodeRefsByType(DEPRECATED_NODE_TYPE)
+      const baseline = comfyPage.vueNodes.getNodeLocator(String(baselineRef.id))
       const node = comfyPage.vueNodes.getNodeLocator(String(ref.id))
+      await expect(baseline).toBeVisible()
       await expect(node).toBeVisible()
       const badges = node.getByTestId('node-badges')
       await expect(badges).toBeVisible()
       await expect(async () => {
+        const baselineBox = await baseline.boundingBox()
         const nodeBox = await node.boundingBox()
         const badgeBox = await badges.boundingBox()
-        if (!nodeBox || !badgeBox)
+        if (!baselineBox || !nodeBox || !badgeBox)
           throw new Error('Badge layout is unavailable')
+        expect(nodeBox.width).toBeCloseTo(baselineBox.width, 0)
         expect(badgeBox.width).toBeGreaterThan(nodeBox.width)
         expect(badgeBox.x + badgeBox.width).toBeCloseTo(
           nodeBox.x + nodeBox.width,
@@ -164,14 +176,18 @@ test.describe('Floating node badges', { tag: ['@vue-nodes', '@node'] }, () => {
         expect(nodeBox.y - (badgeBox.y + badgeBox.height)).toBeCloseTo(2, 0)
       }).toPass({ timeout: 5000 })
 
+      await baselineRef.toggleCollapse()
+      await expect(baseline).toHaveAttribute('data-collapsed', 'true')
       await ref.toggleCollapse()
       await expect(node).toHaveAttribute('data-collapsed', 'true')
       await expect(badges).toBeVisible()
       await expect(async () => {
+        const baselineBox = await baseline.boundingBox()
         const collapsedBox = await node.boundingBox()
         const collapsedBadgeBox = await badges.boundingBox()
-        if (!collapsedBox || !collapsedBadgeBox)
+        if (!baselineBox || !collapsedBox || !collapsedBadgeBox)
           throw new Error('Collapsed badge layout is unavailable')
+        expect(collapsedBox.width).toBeCloseTo(baselineBox.width, 0)
         expect(collapsedBadgeBox.x + collapsedBadgeBox.width).toBeCloseTo(
           collapsedBox.x + collapsedBox.width,
           0
