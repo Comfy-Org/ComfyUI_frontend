@@ -6750,11 +6750,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "使用 FLUX 超解析度將影片放大 1.5 至 3 倍，可精確保留來源內容或創意強化細節。",
-    "display_name": "Flux 影片放大",
+    "display_name": "Flux 影片放大（舊版）",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "自動將面積大於 3840x2160 像素的來源縮小，以符合輸入限制。會保留長寬比；較小的影片不受影響。"
+        "tooltip": "自動將像素面積大於 2560x1440 的來源縮小，以符合輸入限制。會保留長寬比；較小的影片不會受到影響。"
       },
       "control_after_generate": {
         "name": "生成後控制"
@@ -6782,6 +6782,48 @@
       "video": {
         "name": "video",
         "tooltip": "長度 1 至 20 秒、長寬比介於 1:4 至 4:1 的來源片段。輸出會以 24 fps 算繪，每幀上限約為 1,440 萬像素。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "使用 FLUX 超解析度將影片放大至 1080p、2K 或 4K，或放大 1.5 至 3 倍；可精確保留來源內容，或以創意方式增強其細節。",
+    "display_name": "Flux 影片放大",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動縮小",
+        "tooltip": "將過大的來源縮小而非拒絕：像素面積超過 2560x1440，或超過目標解析度的三分之二時（最小倍率為 1.5x）。會保留長寬比。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "'creative' 會還原並生成精細細節，最適合生成的影片、紋理與景觀。'precise' 會在不變更來源的情況下銳化，適用於臉部、產品與真實影片。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "可選填的片段描述，用於引導增強的細節。留空可進行中性放大。"
+      },
+      "safety_tolerance": {
+        "name": "安全容許度",
+        "tooltip": "內容審查容許度，0 為最嚴格。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於判斷節點是否應重新執行的種子；FLUX 會自行選擇種子，因此無論此值為何，實際結果皆不具決定性。"
+      },
+      "target_resolution": {
+        "name": "目標解析度",
+        "tooltip": "2K、4K 和 1080p 會讓輸出符合 2560x1440、3840x2160 或 1920x1080 的範圍內（直式片段會旋轉）。若來源在最大 3 倍放大下仍太小而無法填滿目標，則會放大 3 倍，輸出尺寸會較小。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "長度為 1 至 20 秒、長寬比介於 1:4 與 4:1 的來源片段。輸出會以 24 fps 算繪，且每個畫面上限約為 1,440 萬像素。"
       }
     },
     "outputs": {
@@ -15141,6 +15183,29 @@
       }
     }
   },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "使用潛在空間放大模型調整 MiniMax H3 潛在空間中影片的尺寸；音訊會原樣直通。",
+    "display_name": "MiniMax H3 潛在空間放大（使用模型）",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "samples": {
+        "name": "樣本"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ReferenceToVideo": {
     "description": "<Picture i> / <Video k> / <Audio j> 參考條件設定，適用於 MiniMax H3。提示時請使用相同標籤。",
     "display_name": "MiniMax H3 參考轉影片",
@@ -18928,6 +18993,288 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialExtractNode": {
+    "description": "依據提示詞，從輸入影像的區域中擷取可無縫平鋪的 PBR 材質（紋理影像 + PBR 貼圖）。",
+    "display_name": "Patina 材質擷取",
+    "inputs": {
+      "basecolor": {
+        "name": "基礎色彩",
+        "tooltip": "生成基礎色彩（反照率）貼圖。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "產生高度／位移貼圖。"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "要從中擷取紋理的影像。"
+      },
+      "image_size": {
+        "name": "影像尺寸",
+        "tooltip": "輸出紋理尺寸。選擇 'custom' 可設定介於 512 與 2048 之間的寬度／高度（8K 結果來自將貼圖放大 4 倍）。"
+      },
+      "metalness": {
+        "name": "金屬度",
+        "tooltip": "產生金屬度貼圖。"
+      },
+      "normal": {
+        "name": "法線",
+        "tooltip": "生成法線貼圖。"
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "用於紋理生成的去噪步數。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述要從影像中擷取的紋理（例如「牆面」）。"
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "使用 LLM 擴展提示詞，以取得更豐富的紋理細節。預設為關閉：擴展會將提示詞重新表述為照片，且往往會淡化金屬度貼圖。"
+      },
+      "roughness": {
+        "name": "粗糙度",
+        "tooltip": "生成粗糙度貼圖。"
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於可重現生成的種子。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "輸入影像的轉換程度。"
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "latent 空間中的圖塊大小（64 = 512px，128 = 1024px）。"
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "latent 空間中的圖塊步幅。"
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "平鋪方向：全向、水平或垂直。"
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "對 PBR 貼圖進行無縫 SeedVR 放大（不會放大基礎紋理）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "紋理",
+        "tooltip": null
+      },
+      "1": {
+        "name": "基礎色",
+        "tooltip": null
+      },
+      "2": {
+        "name": "法線",
+        "tooltip": null
+      },
+      "3": {
+        "name": "粗糙度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "金屬度",
+        "tooltip": null
+      },
+      "5": {
+        "name": "高度",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "從文字提示詞產生完整、可無縫平鋪的 PBR 材質（紋理影像 + PBR 貼圖），最高可達 8K。也可選擇以輸入影像（img2img）或影像 + 遮罩（inpaint）驅動。",
+    "display_name": "Patina 材質",
+    "inputs": {
+      "basecolor": {
+        "name": "基礎色",
+        "tooltip": "產生基礎色（反照率）貼圖。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "產生高度／位移貼圖。"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "選用的來源影像。僅提供影像 = 圖生圖；搭配 mask = 局部重繪。"
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "輸出紋理大小。選擇 'custom' 以設定介於 512 與 2048 之間的寬度／高度（8K 結果來自對貼圖進行 4 倍放大）。"
+      },
+      "mask": {
+        "name": "遮罩",
+        "tooltip": "選用的局部重繪遮罩（需要影像）。白色 = 重新生成，黑色 = 保留。"
+      },
+      "metalness": {
+        "name": "金屬度",
+        "tooltip": "產生金屬度貼圖。"
+      },
+      "normal": {
+        "name": "法線",
+        "tooltip": "產生法線貼圖。"
+      },
+      "num_inference_steps": {
+        "name": "推論步數",
+        "tooltip": "用於紋理生成的去噪步數。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述要產生的材質／紋理。"
+      },
+      "prompt_expansion": {
+        "name": "提示詞擴充",
+        "tooltip": "使用 LLM 擴充提示詞，以獲得更豐富的紋理細節。預設為關閉：擴充會將提示詞重新建構為照片，且往往會沖淡金屬度貼圖。"
+      },
+      "roughness": {
+        "name": "粗糙度",
+        "tooltip": "產生粗糙度貼圖。"
+      },
+      "safety_checker": {
+        "name": "安全檢查器"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於可重現生成的種子。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "變換輸入影像的程度。僅在提供影像時使用。"
+      },
+      "tile_size": {
+        "name": "圖塊大小",
+        "tooltip": "latent 空間中的圖塊大小（64 = 512px，128 = 1024px）。"
+      },
+      "tile_stride": {
+        "name": "圖塊步幅",
+        "tooltip": "latent 空間中的圖塊步幅。"
+      },
+      "tiling_mode": {
+        "name": "平鋪模式",
+        "tooltip": "平鋪方向：全向、水平或垂直。"
+      },
+      "upscale_factor": {
+        "name": "放大倍率",
+        "tooltip": "無縫 SeedVR 放大 PBR 貼圖（不會放大基礎紋理）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "紋理",
+        "tooltip": null
+      },
+      "1": {
+        "name": "基礎色",
+        "tooltip": null
+      },
+      "2": {
+        "name": "法線",
+        "tooltip": null
+      },
+      "3": {
+        "name": "粗糙度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "金屬度",
+        "tooltip": null
+      },
+      "5": {
+        "name": "高度",
+        "tooltip": null
+      },
+      "6": {
+        "name": "擴充後提示詞",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "從紋理影像產生 PBR 材質貼圖（基礎色、法線、粗糙度、金屬度、高度）。",
+    "display_name": "Patina PBR 材質貼圖",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動縮小",
+        "tooltip": "自動縮小最長邊超過 2048px（模型的輸入限制）的輸入影像，並保留長寬比；較小的影像維持不變。停用後，若影像尺寸過大則會改為引發錯誤。"
+      },
+      "basecolor": {
+        "name": "基礎色",
+        "tooltip": "產生基礎色（反照率）貼圖。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "產生高度／位移貼圖。"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "用於產生 PBR 貼圖的輸入照片或渲染圖。"
+      },
+      "metalness": {
+        "name": "金屬度",
+        "tooltip": "產生金屬度貼圖。"
+      },
+      "normal": {
+        "name": "法線",
+        "tooltip": "產生法線貼圖。"
+      },
+      "roughness": {
+        "name": "粗糙度",
+        "tooltip": "產生粗糙度貼圖。"
+      },
+      "safety_checker": {
+        "name": "安全檢查器"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於可重現去雜訊結果的種子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "基礎色",
+        "tooltip": null
+      },
+      "1": {
+        "name": "法線",
+        "tooltip": null
+      },
+      "2": {
+        "name": "粗糙度",
+        "tooltip": null
+      },
+      "3": {
+        "name": "金屬度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "高度",
         "tooltip": null
       }
     }
@@ -28537,6 +28884,33 @@
       "video": {
         "name": "影片",
         "tooltip": "含有語音音軌、長度短於 30 分鐘的影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "使用 VEED 將影片中的語音翻譯成另一種語言。每位說話者的聲音都會被複製，且其口型會與翻譯內容同步。",
+    "display_name": "VEED 配音",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "standard：價格較低、單聲道音訊；西班牙語為拉丁美洲西班牙語，葡萄牙語為巴西葡萄牙語。pro：提供地區口音與立體聲音訊。"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_source_language": {
+        "name": "來源語言"
+      },
+      "model_target_language": {
+        "name": "目標語言"
       }
     },
     "outputs": {
