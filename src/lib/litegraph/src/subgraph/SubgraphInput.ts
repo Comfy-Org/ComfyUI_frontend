@@ -66,12 +66,10 @@ export class SubgraphInput extends SubgraphSlot {
 
     // Allow nodes to block connection
     const inputIndex = node.inputs.indexOf(slot)
-    // A subgraph node's input may take a list while it is being made into one
-    const listable = node.isSubgraphNode() || listableNames(node, inputIndex)
-    if (this.list && (this.linkIds.length || !listable)) return
     if (
+      this._refusesList(node, inputIndex) ||
       node.onConnectInput?.(inputIndex, this.type, this, this.parent, -1) ===
-      false
+        false
     )
       return
 
@@ -155,6 +153,16 @@ export class SubgraphInput extends SubgraphSlot {
     } finally {
       subgraph.afterChange()
     }
+  }
+
+  /** A list feeds one dynamic input, with nothing connected after it. */
+  private _refusesList(node: LGraphNode, slot: number): boolean {
+    if (!this.list) return false
+    // A subgraph node's input may take a list while it is being made into one
+    return (
+      !!this.linkIds.length ||
+      !(node.isSubgraphNode() || listableNames(node, slot))
+    )
   }
 
   get labelPos(): Point {

@@ -167,7 +167,6 @@ import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import { provideSubgraphGuard } from './subgraph/subgraphTypeGuards'
-import { canBeList, notifyListTargets } from './subgraph/listInputs'
 import {
   captureUnpackedTargetInput,
   findUnavailableSubgraphNodeType,
@@ -176,9 +175,9 @@ import {
 } from './subgraph/unpackSubgraph'
 import type { UnpackedTargetInput } from './subgraph/unpackSubgraph'
 import {
-  findUnresolvableSubgraphLink,
   findOrphanedSubgraphs,
   findReleasableSubgraphs,
+  findUnresolvableSubgraphLink,
   findUsedSubgraphIds,
   getBoundaryLinks,
   groupResolvedByOutput,
@@ -187,6 +186,7 @@ import {
   multiClone,
   splitPositionables
 } from './subgraph/subgraphUtils'
+import { canBeList, notifyListTargets } from './subgraph/listInputs'
 import { Alignment, LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import type {
   LGraphTriggerAction,
@@ -3622,6 +3622,7 @@ export class Subgraph
       if (input.list) notifyListTargets(this, input)
   }
 
+  // fallow-ignore-next-line unused-class-member
   setInputList(input: SubgraphInput, { list }: { list: boolean }): void {
     if (!!input.list === list || (list && !canBeList(this, input))) return
     input.list = list || undefined

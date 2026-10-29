@@ -1,5 +1,5 @@
 import { useEventListener, whenever } from '@vueuse/core'
-import { mergeListRuns } from '@/core/graph/subgraph/subgraphListInputs'
+import { mergeListRuns } from '@/core/graph/widgets/dynamicWidgets'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 

@@ -185,9 +185,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
     // Link goes up and out of this subgraph
     if (subgraphNode && link.originIsIoNode) {
-      const hostSlot = subgraphNode.hostSlotOf(link.origin_slot)
-      const subgraphNodeInput = subgraphNode.inputs.at(hostSlot)
-      if (hostSlot === -1 || !subgraphNodeInput)
+      const host = subgraphNode.hostSlotOf(link.origin_slot)
+      if (!host)
         throw new SlotIndexError(
           `No input found for slot [${link.origin_slot}] ${input.name}`
         )
@@ -198,9 +197,9 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         )
       // Nothing connected
       const linkId =
-        inputLinkId(subgraphNode.graph, subgraphNode.id, hostSlot) ?? null
+        inputLinkId(subgraphNode.graph, subgraphNode.id, host.slot) ?? null
       if (linkId === null) {
-        const id = subgraphNodeInput.widgetId
+        const id = host.input.widgetId
         if (!id) return
 
         return {
@@ -254,41 +253,48 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     )
   }
 
+  // fallow-ignore-next-line unused-class-member
   resolveListInput(
     slot: number
   ): { name: string; resolved: ResolvedInput }[] | undefined {
-    const { subgraphNode } = this
-    const linkId = this.inputs.at(slot)?.linkId
-    if (!subgraphNode || linkId == null) return
-    const link = this.graph.getLink(linkId)
-    if (!link?.originIsIoNode) return
-    if (!subgraphNode.subgraph.inputs.at(link.origin_slot)?.list) return
-    const names = this.node.getListSlotNames?.(slot)
-    if (!names) return
-
-    const items = this._subgraphNodeDto()?.resolveListItems(link.origin_slot)
-    return (items ?? [])
+    const origin = this._listOrigin(slot)
+    const names = origin === undefined ? undefined : this.node.getListSlotNames?.(slot)
+    if (origin === undefined || !names) return
+    const items = this._subgraphNodeDto()?.resolveListItems(origin) ?? []
+    return items
       .slice(0, names.length)
       .map((resolved, item) => ({ name: names[item], resolved }))
   }
 
+  // fallow-ignore-next-line unused-class-member
   resolveListItems(index: number): ResolvedInput[] {
     const { node } = this
-    const { graph } = node
-    if (!node.isSubgraphNode() || !graph) return []
+    if (!node.isSubgraphNode()) return []
     const subgraphInput = node.subgraph.inputs.at(index)
+    return node.inputs.flatMap((input, slot) =>
+      subgraphInput && input._subgraphSlot === subgraphInput
+        ? this._resolveListItem(slot)
+        : []
+    )
+  }
 
-    return node.inputs.flatMap((input, slot) => {
-      if (!subgraphInput || input._subgraphSlot !== subgraphInput) return []
-      const linkId = inputLinkId(graph, node.id, slot)
-      const link = linkId == null ? undefined : graph.getLink(linkId)
-      if (
-        link?.originIsIoNode &&
-        this.subgraphNode?.subgraph.inputs.at(link.origin_slot)?.list
-      )
-        return this._subgraphNodeDto()?.resolveListItems(link.origin_slot) ?? []
-      return this.resolveInput(slot) ?? []
-    })
+  /** A list item fed by a list from further out contributes all of its items. */
+  private _resolveListItem(slot: number): ResolvedInput[] {
+    const origin = this._listOrigin(slot)
+    if (origin !== undefined)
+      return this._subgraphNodeDto()?.resolveListItems(origin) ?? []
+    const resolved = this.resolveInput(slot)
+    return resolved ? [resolved] : []
+  }
+
+  /** The index of the enclosing subgraph's list input feeding `slot`, if any. */
+  private _listOrigin(slot: number): number | undefined {
+    const linkId = this.inputs.at(slot)?.linkId
+    const link = linkId == null ? undefined : this.graph.getLink(linkId)
+    if (!link?.originIsIoNode) return undefined
+    return this.subgraphNode?.subgraph.inputs.at(link.origin_slot)?.list
+      ? link.origin_slot
+      : undefined
   }
 
   private _subgraphNodeDto(): ExecutableLGraphNode | undefined {

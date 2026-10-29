@@ -29,7 +29,14 @@ import {
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
-import { listSourceOf } from '@/lib/litegraph/src/subgraph/listInputs'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import type {
+  ResolvedConnection,
+  Subgraph,
+  SubgraphInput,
+  SubgraphNode
+} from '@comfyorg/graph-model/entityRegistry'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -41,7 +48,7 @@ type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'onConnectionsChange'> & {
     comfyDynamic: { matchType: Record<string, Record<string, string>> }
   }
-export interface AutogrowTemplate {
+interface AutogrowTemplate {
   min: number
   max: number
   inputSpecs: InputSpecV2[]
@@ -581,7 +588,7 @@ function feedFromList(
   node.size = [node.size[0], node.computeSize([...node.size])[1]]
 }
 
-export function listTemplateAt(
+function listTemplateAt(
   node: LGraphNode,
   slot: number
 ): (AutogrowTemplate & { slotNames: string[] }) | undefined {
@@ -754,9 +761,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   node.size = [node.size[0], node.computeSize([...node.size])[1]]
 }
 
-export function withComfyAutogrow(
-  node: LGraphNode
-): asserts node is AutogrowNode {
+function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   if (node.comfyDynamic?.autogrow) return
   node.comfyDynamic ??= {}
   node.comfyDynamic.autogrow = {}
@@ -875,7 +880,7 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
   })
 }
 
-export function applyAutogrowTemplate(
+function applyAutogrowTemplate(
   node: LGraphNode,
   groupName: string,
   template: AutogrowTemplate
@@ -891,4 +896,147 @@ export function applyAutogrowTemplate(
   }
   for (let i = 0; i === 0 || i < template.min + 1; i++)
     addAutogrowGroup(i, groupName, node)
+}
+
+/** The list input of the enclosing subgraph feeding `slot` of `node`, if any. */
+function listSourceOf(node: LGraphNode, slot: number) {
+  const { graph } = node
+  const link = graph?.getLink(node.inputs.at(slot)?.link)
+  if (!graph || graph.isRootGraph || link?.origin_id !== SUBGRAPH_INPUT_ID)
+    return undefined
+  const source = (graph as Subgraph).inputs.at(link.origin_slot)
+  return source?.list ? source : undefined
+}
+
+const listSlotsOf = (host: SubgraphNode, input: SubgraphInput) =>
+  host.inputs.filter((slot) => slot._subgraphSlot === input)
+
+export function syncListInputs(host: SubgraphNode) {
+  // Wire autogrow now: hooks that save and restore callbacks later drop handlers chained after them
+  withComfyAutogrow(host)
+  for (const input of host.subgraph.inputs) {
+    const slots = listSlotsOf(host, input)
+    const isGroup = slots.some((slot) => slot.name !== input.name)
+    if (input.list && !isGroup) {
+      const target = innerTarget(host.subgraph, input)
+      const template = target && listTemplateAt(...target)
+      if (!template) continue
+      applyAutogrowTemplate(host, `${input.name}[]`, template)
+      replaceSlots(host, slots, listSlotsOf(host, input).slice(slots.length))
+    } else if (!input.list && isGroup) {
+      host.addInput(input.name, input.type, { _subgraphSlot: input })
+      replaceSlots(host, slots, [host.inputs.at(-1)!])
+    } else if (input.list) {
+      replaceSlots(host, slots, slots)
+    }
+  }
+}
+
+function innerTarget(subgraph: Subgraph, input: SubgraphInput) {
+  const link = subgraph.getLink(input.linkIds[0])
+  const { inputNode, input: slot } = link?.resolve(subgraph) ?? {}
+  return inputNode && slot
+    ? ([inputNode, inputNode.inputs.indexOf(slot)] as const)
+    : undefined
+}
+
+function replaceSlots(
+  host: SubgraphNode,
+  from: INodeInputSlot[],
+  to: INodeInputSlot[]
+) {
+  const previous = captureInputLayout(host)
+  const at = host.inputs.indexOf(from[0] ?? to[0])
+  const kept = host.inputs.filter((i) => !from.includes(i) && !to.includes(i))
+  const before = host.inputs.slice(0, at).filter((i) => kept.includes(i))
+  kept.splice(before.length, 0, ...to)
+  const links = new Map(previous.links)
+  const carried = links.get(from[0])
+  if (carried && !links.has(to[0])) links.set(to[0], carried)
+  if (to[0] !== from[0]) links.delete(from[0])
+  if (!replaceNodeInputs(host, previous, kept, links).ok || !carried) return
+  const slot = host.inputs.indexOf(to[0])
+  // Firing the connect is what lets the group grow past the slot
+  host.onConnectionsChange?.(LiteGraph.INPUT, slot, true, carried, to[0])
+}
+
+const singleTarget = (subgraph: Subgraph, input: SubgraphInput) =>
+  input.linkIds.length === 1 ? innerTarget(subgraph, input) : undefined
+
+/** The inputs feeding consecutive slots of a group from `anchor`'s, if a list can take them over. */
+function listRunFrom(subgraph: Subgraph, anchor: SubgraphInput) {
+  const [node, slot] = singleTarget(subgraph, anchor) ?? []
+  const names = node?.getListSlotNames?.(slot!)
+  if (!node || !names) return undefined
+  const inputs: SubgraphInput[] = []
+  for (const name of names) {
+    const next = subgraph.inputs.find((input) => {
+      const [n, s] = singleTarget(subgraph, input) ?? []
+      return n === node && node.inputs[s!].name === name
+    })
+    if (!next) break
+    inputs.push(next)
+  }
+  const fedAfter = names
+    .slice(inputs.length)
+    .some((name) => node.inputs.find((i) => i.name === name)?.link != null)
+  return fedAfter ? undefined : { inputs, group: names[0] }
+}
+
+function renameList(host: SubgraphNode, list: SubgraphInput, slotName: string) {
+  const group = slotName
+    .slice(0, slotName.lastIndexOf('.'))
+    .replace(/\[\]$/, '')
+  const others = host.subgraph.inputs.filter((i) => i !== list)
+  list.name = nextUniqueName(
+    group,
+    others.map((i) => i.name)
+  )
+  for (const slot of listSlotsOf(host, list)) slot.name = list.name
+  list.localized_name = list.label = undefined
+}
+
+function connectListItems(
+  host: SubgraphNode,
+  list: SubgraphInput,
+  sources: (ResolvedConnection | null | undefined)[]
+) {
+  for (const [item, source] of sources.entries()) {
+    const slotIndex = host.inputs.indexOf(listSlotsOf(host, list)[item])
+    if (item === 0 || !source || slotIndex === -1) continue
+    if (source.subgraphInput)
+      source.subgraphInput.connect(host.inputs[slotIndex], host)
+    else source.outputNode?.connect(source.link.origin_slot, host, slotIndex)
+  }
+}
+
+export function mergeListRuns(host: SubgraphNode) {
+  const { subgraph } = host
+  const bySlot = (input: SubgraphInput) =>
+    singleTarget(subgraph, input)?.[1] ?? -1
+  const runs: {
+    anchor: SubgraphInput
+    sources: (ResolvedConnection | null | undefined)[]
+  }[] = []
+  for (const anchor of [...subgraph.inputs].sort(
+    (a, b) => bySlot(a) - bySlot(b)
+  )) {
+    const run = subgraph.inputs.includes(anchor)
+      ? listRunFrom(subgraph, anchor)
+      : undefined
+    if (!run) continue
+    const sources = run.inputs.map((input) => {
+      const link = host.graph?.getLink(listSlotsOf(host, input)[0]?.link)
+      return host.graph && link?.resolve(host.graph)
+    })
+    for (const input of run.inputs.slice(1)) subgraph.removeInput(input)
+    // Rename now: a group's new slots adopt any slot already named like them
+    renameList(host, anchor, run.group)
+    runs.push({ anchor, sources })
+  }
+  // Remove first: a disconnect right after a connect on one slot looks like a swap to autogrow
+  for (const { anchor, sources } of runs) {
+    subgraph.setInputList(anchor, { list: true })
+    connectListItems(host, anchor, sources)
+  }
 }
