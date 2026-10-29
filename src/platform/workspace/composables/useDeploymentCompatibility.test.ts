@@ -109,6 +109,7 @@ function deployment(id: string): WorkspaceDeployment {
     deployment_id: id,
     release_id: `r-${id}`,
     status: 'ready',
+    can_start: false,
     created_at: '2026-10-01T00:00:00Z'
   }
 }
