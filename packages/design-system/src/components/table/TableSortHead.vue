@@ -5,12 +5,9 @@
       <i
         v-if="direction"
         :class="
-          cn(
-            'size-4',
-            direction === 'ascending'
-              ? 'icon-[lucide--arrow-up]'
-              : 'icon-[lucide--arrow-down]'
-          )
+          direction === 'ascending'
+            ? 'icon-[lucide--arrow-up]'
+            : 'icon-[lucide--arrow-down]'
         "
         aria-hidden="true"
       />
@@ -20,8 +17,6 @@
 
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@comfyorg/design-system/button/Button'
 

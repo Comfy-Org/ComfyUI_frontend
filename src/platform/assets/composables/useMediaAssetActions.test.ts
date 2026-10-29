@@ -15,7 +15,10 @@ import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
+import {
+  MediaAssetKey,
+  parseAssetInfo
+} from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { seedMediaNodeDefs } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
@@ -29,6 +32,8 @@ import { clearNodePreviewCacheForValues } from '@/platform/assets/utils/clearNod
 import { markDeletedAssetsAsMissingMedia } from '@/platform/assets/utils/markDeletedAssetsAsMissingMedia'
 import { getAssetType } from '@/platform/assets/utils/assetTypeUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { useMediaAssetActions as createMediaAssetActions } from './useMediaAssetActions'
 
 // Use vi.hoisted to create a mutable reference for isCloud
@@ -42,7 +47,7 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
 }))
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -383,14 +388,12 @@ describe('useMediaAssetActions', () => {
       it('annotates a single output asset with its metadata subfolder', async () => {
         const addedNodes = captureAddedNodes()
         mockGetAssetType.mockReturnValue('output')
-        mockGetOutputAssetMetadata.mockReturnValue({
-          subfolder: 'runs/2026'
-        })
         const actions = useMediaAssetActions()
 
         await actions.addWorkflow(
           createMockAsset({
-            name: 'generated.png'
+            name: 'generated.png',
+            user_metadata: { subfolder: 'runs/2026' }
           })
         )
 
@@ -1927,14 +1930,12 @@ describe('useMediaAssetActions', () => {
     it('emits the [output]-annotated variant for output assets, including subfolder', async () => {
       mockDeleteAsset.mockResolvedValue(undefined)
       mockGetAssetType.mockReturnValue('output')
-      mockGetOutputAssetMetadata.mockReturnValue({
-        subfolder: 'outputs/2025'
-      })
       const actions = useMediaAssetActions()
       const asset = createMockAsset({
         id: 'asset-output',
         name: 'gen.png',
-        tags: ['output']
+        tags: ['output'],
+        user_metadata: { subfolder: 'outputs/2025' }
       })
 
       await actions.deleteAssets(asset)
@@ -2092,7 +2093,10 @@ describe('useMediaAssetActions', () => {
           addLoadImageNode('ComfyUI_temp_00001_.png [temp]'),
           addLoadImageNode('bb12cd34.png [output]'),
           addLoadImageNode('aa7ecf08.png'),
-          addLoadImageNode('bb12cd34.png [input]')
+          addLoadImageNode('bb12cd34.png [input]'),
+          addLoadImageNode('previews/aa7ecf08.png [output]'),
+          addLoadImageNode('previews/aa7ecf08.png [input]'),
+          addLoadImageNode('previews/ComfyUI_temp_00001_.png [output]')
         ]
 
         await expect(actions.deleteAssets(deletionTargets())).resolves.toBe(
@@ -2124,10 +2128,35 @@ describe('useMediaAssetActions', () => {
           kept('ComfyUI_temp_00001_.png [temp]'),
           kept('bb12cd34.png [output]'),
           kept('aa7ecf08.png'),
-          kept('bb12cd34.png [input]')
+          kept('bb12cd34.png [input]'),
+          kept('previews/aa7ecf08.png [output]'),
+          kept('previews/aa7ecf08.png [input]'),
+          kept('previews/ComfyUI_temp_00001_.png [output]')
         ])
       }
     )
+
+    it('writes and clears the temp root for an asset tagged output and temp without a preview URL', async () => {
+      const outputTaggedTempAsset = createMockAsset({
+        ...job,
+        id: 'output-tagged-temp-asset',
+        name: 'ComfyUI_temp_00003_.png',
+        hash: 'ee12ab34.png',
+        tags: ['output', 'temp'],
+        user_metadata: { jobId: 'job-1', subfolder: '' }
+      })
+      const { actions, nodes } = await addReferencesTo([outputTaggedTempAsset])
+      const sameHashOutput = addLoadImageNode('ee12ab34.png [output]')
+
+      await actions.deleteAssets(unflattenOutputAssets([outputTaggedTempAsset]))
+
+      expect(nodes.map(referenceState)).toEqual([
+        cleared('ee12ab34.png [temp]')
+      ])
+      expect(referenceState(sameHashOutput)).toEqual(
+        kept('ee12ab34.png [output]')
+      )
+    })
 
     it.for([
       'aa7ecf08.png[temp]',
@@ -2249,6 +2278,326 @@ describe('useMediaAssetActions', () => {
         expect(referenceState(otherRoot)).toEqual(kept(otherRootReference))
       }
     )
+
+    it('clears a temp reference to an asset with no job and keeps same-hash references in other roots', async () => {
+      const flatTempAsset = createMockAsset({
+        id: 'flat-temp-asset',
+        name: 'flat_temp.png',
+        hash: 'ff34ab12.png',
+        tags: ['output', 'temp']
+      })
+      const { actions, nodes } = await addReferencesTo([flatTempAsset])
+      const survivors = [
+        addLoadImageNode('ff34ab12.png [output]'),
+        addLoadImageNode('ff34ab12.png'),
+        addLoadImageNode('flat_temp.png [input]')
+      ]
+
+      await actions.deleteAssets(flatTempAsset)
+
+      expect(nodes.map(referenceState)).toEqual([
+        cleared('ff34ab12.png [temp]')
+      ])
+      expect(survivors.map(referenceState)).toEqual([
+        kept('ff34ab12.png [output]'),
+        kept('ff34ab12.png'),
+        kept('flat_temp.png [input]')
+      ])
+    })
+
+    describe('temp tags only mark a generated output as temp', () => {
+      const inputRootSurvivors = [
+        'ab12cd34.png [temp]',
+        'ab12cd34.png [output]'
+      ]
+      const tempRootSurvivors = [
+        'ab12cd34.png [output]',
+        'ab12cd34.png [input]',
+        'ab12cd34.png'
+      ]
+
+      it.for([
+        [
+          'an input asset tagged temp',
+          { tags: ['input', 'temp'] },
+          'ab12cd34.png',
+          ['ab12cd34.png [input]'],
+          inputRootSurvivors
+        ],
+        [
+          'an input asset tagged temp whose preview URL says input',
+          {
+            tags: ['input', 'temp'],
+            preview_url: '/api/view?filename=probe.png&type=input'
+          },
+          'ab12cd34.png',
+          ['ab12cd34.png [input]'],
+          inputRootSurvivors
+        ],
+        [
+          'an output tagged temp whose preview URL says input',
+          {
+            tags: ['output', 'temp'],
+            preview_url: '/api/view?filename=probe.png&type=input'
+          },
+          'ab12cd34.png',
+          ['ab12cd34.png [input]'],
+          inputRootSurvivors
+        ],
+        [
+          'a model asset tagged temp',
+          { tags: ['models', 'temp'] },
+          'ab12cd34.png',
+          ['ab12cd34.png [input]'],
+          inputRootSurvivors
+        ],
+        [
+          'an input asset with a metadata subfolder',
+          { tags: ['input'], user_metadata: { subfolder: 'clipspace' } },
+          'clipspace/ab12cd34.png',
+          ['clipspace/ab12cd34.png [input]'],
+          [
+            'clipspace/ab12cd34.png [temp]',
+            'clipspace/ab12cd34.png [output]',
+            'ab12cd34.png',
+            'ab12cd34.png [input]'
+          ]
+        ],
+        [
+          'a generated output tagged temp with a type-less preview URL',
+          {
+            tags: ['output', 'temp'],
+            preview_url: '/api/assets/probe-asset/content'
+          },
+          'ab12cd34.png [temp]',
+          [],
+          tempRootSurvivors
+        ],
+        [
+          'a generated output whose preview URL says temp',
+          {
+            tags: ['output'],
+            preview_url: '/api/view?filename=probe.png&type=temp'
+          },
+          'ab12cd34.png [temp]',
+          [],
+          tempRootSurvivors
+        ]
+      ] as const)(
+        'writes %s at its own root and deleting it clears only that root',
+        async ([, shape, written, sameRoot, otherRoots]) => {
+          const asset = createMockAsset({
+            id: 'probe-asset',
+            name: 'probe.png',
+            hash: 'ab12cd34.png',
+            ...shape,
+            tags: [...shape.tags]
+          })
+          const { actions } = mountMediaActions()
+          await actions.addWorkflow(asset)
+          const inserted = graph.nodes.at(-1)!
+          await actions.addMultipleToWorkflow([asset])
+          const bulk = graph.nodes.at(-1)!
+          const sameRootNodes = sameRoot.map(addLoadImageNode)
+          const survivors = otherRoots.map(addLoadImageNode)
+
+          expect([inserted, bulk].map(serializedImageValue)).toEqual([
+            written,
+            written
+          ])
+
+          await actions.deleteAssets(asset)
+
+          expect([inserted, bulk].map(referenceState)).toEqual([
+            cleared(written),
+            cleared(written)
+          ])
+          expect(sameRootNodes.map(serializedImageValue)).toEqual(
+            sameRoot.map(() => '')
+          )
+          expect(survivors.map(serializedImageValue)).toEqual([...otherRoots])
+        }
+      )
+    })
+
+    describe('a temp asset with no job whose metadata names only its subfolder', () => {
+      const folderTempAsset = createMockAsset({
+        id: 'folder-temp-asset',
+        name: 'flat_temp.png',
+        hash: 'ff34ab12.png',
+        tags: ['output', 'temp'],
+        user_metadata: { subfolder: 'previews' }
+      })
+
+      beforeEach(() => {
+        mockGetOutputAssetMetadata.mockReturnValue(null)
+      })
+
+      it.for([
+        [
+          'inserted as a node',
+          async (asset: AssetItem) => {
+            const { actions } = mountMediaActions()
+            await actions.addWorkflow(asset)
+            return { actions, nodes: [...graph.nodes] }
+          }
+        ],
+        ['inserted in bulk', (asset: AssetItem) => addReferencesTo([asset])]
+      ] as const)(
+        'is %s at its folder and temp root, and deleting it clears only that reference',
+        async ([, insert]) => {
+          const { actions, nodes } = await insert(folderTempAsset)
+          const survivors = [
+            addLoadImageNode('previews/ff34ab12.png [output]'),
+            addLoadImageNode('previews/ff34ab12.png [input]'),
+            addLoadImageNode('previews/flat_temp.png [output]'),
+            addLoadImageNode('previews/flat_temp.png [input]')
+          ]
+
+          expect(nodes.map(serializedImageValue)).toEqual([
+            'previews/ff34ab12.png [temp]'
+          ])
+
+          await actions.deleteAssets(folderTempAsset)
+
+          expect(nodes.map(referenceState)).toEqual([
+            cleared('previews/ff34ab12.png [temp]')
+          ])
+          expect(survivors.map(referenceState)).toEqual([
+            kept('previews/ff34ab12.png [output]'),
+            kept('previews/ff34ab12.png [input]'),
+            kept('previews/flat_temp.png [output]'),
+            kept('previews/flat_temp.png [input]')
+          ])
+        }
+      )
+
+      it('deleting it clears a reference written at its folder by drag or dropdown', async () => {
+        const dropped = addLoadImageNode('previews/flat_temp.png [temp]')
+        const selected = addLoadImageNode('previews/ff34ab12.png [temp]')
+        const { actions } = mountMediaActions()
+
+        await actions.deleteAssets(folderTempAsset)
+
+        expect([dropped, selected].map(referenceState)).toEqual([
+          cleared('previews/flat_temp.png [temp]'),
+          cleared('previews/ff34ab12.png [temp]')
+        ])
+      })
+    })
+
+    describe('references written from an expanded-stack child', () => {
+      const outputTaggedTempAsset = createMockAsset({
+        ...job,
+        id: 'output-tagged-temp-asset',
+        name: 'ComfyUI_temp_00003_.png',
+        tags: ['output', 'temp'],
+        user_metadata: { jobId: 'job-1', subfolder: 'previews' }
+      })
+
+      async function expandedChildOf(asset: AssetItem) {
+        mockResolveOutputAssetItems.mockRestore()
+        vi.mocked(api.getJobAssets).mockResolvedValue({
+          assets: [
+            fromPartial({
+              id: asset.id,
+              name: asset.name,
+              preview_url: `/api/assets/${asset.id}/content`
+            })
+          ],
+          complete: true
+        })
+        const [group] = unflattenOutputAssets([asset])
+        const groupMetadata = getOutputAssetMetadata(group.user_metadata)
+        assert.exists(groupMetadata)
+        const [child] = await resolveOutputAssetItems(groupMetadata)
+        assert.exists(child)
+        return child
+      }
+
+      async function insertAsNode(child: AssetItem) {
+        const { actions } = mountMediaActions()
+        await actions.addWorkflow(child)
+        return { actions, node: graph.nodes.at(-1)! }
+      }
+
+      async function dropOnLoadImage(child: AssetItem) {
+        const dataTransfer = new DataTransfer()
+        const event = new DragEvent('dragstart')
+        Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+        startAssetDrag(event, child)
+        const dropped = parseAssetInfo(dataTransfer)
+        assert.exists(dropped)
+        const { actions } = mountMediaActions()
+        return {
+          actions,
+          node: addLoadImageNode(createAnnotatedPath(dropped))
+        }
+      }
+
+      const atRoot = (asset: AssetItem) =>
+        createMockAsset({
+          ...asset,
+          user_metadata: { jobId: 'job-1', subfolder: '' }
+        })
+
+      it.for([
+        [
+          'inserted as a node',
+          'tag temp',
+          insertAsNode,
+          () => tempAsset,
+          'previews/ComfyUI_temp_00001_.png [temp]'
+        ],
+        [
+          'inserted as a node',
+          'tags output and temp',
+          insertAsNode,
+          () => outputTaggedTempAsset,
+          'previews/ComfyUI_temp_00003_.png [temp]'
+        ],
+        [
+          'dropped on Load Image',
+          'tag temp',
+          dropOnLoadImage,
+          () => atRoot(tempAsset),
+          'ComfyUI_temp_00001_.png [temp]'
+        ],
+        [
+          'dropped on Load Image',
+          'tags output and temp',
+          dropOnLoadImage,
+          () => atRoot(outputTaggedTempAsset),
+          'ComfyUI_temp_00003_.png [temp]'
+        ],
+        [
+          'dropped on Load Image',
+          'tag temp in a subfolder',
+          dropOnLoadImage,
+          () => tempAsset,
+          'previews/ComfyUI_temp_00001_.png [temp]'
+        ],
+        [
+          'dropped on Load Image',
+          'tags output and temp in a subfolder',
+          dropOnLoadImage,
+          () => outputTaggedTempAsset,
+          'previews/ComfyUI_temp_00003_.png [temp]'
+        ]
+      ] as const)(
+        'writes the temp root for a child %s from an asset with %s, so deleting the child clears it',
+        async ([, , writeReference, source, written]) => {
+          const child = await expandedChildOf(source())
+          const { actions, node } = await writeReference(child)
+
+          expect(serializedImageValue(node)).toBe(written)
+
+          await actions.deleteAssets({ ...child })
+
+          expect(referenceState(node)).toEqual(cleared(written))
+        }
+      )
+    })
 
     it('ignores stored identity fields supplied in server metadata', async () => {
       const unrelated = addLoadImageNode('unrelated.png')

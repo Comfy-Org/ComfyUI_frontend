@@ -34,11 +34,11 @@
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="ml-auto icon-[lucide--external-link] size-4 text-primary"
+            class="ml-auto icon-[lucide--external-link] text-primary"
           />
           <i
             v-if="menuItem.key === 'more'"
-            class="pi pi-chevron-right ml-auto"
+            class="ml-auto icon-[lucide--chevron-right]"
           />
         </button>
       </nav>
@@ -140,13 +140,16 @@
         role="status"
         aria-live="polite"
       >
-        <i class="pi pi-spin pi-spinner help-menu-icon" aria-hidden="true" />
+        <i
+          class="help-menu-icon icon-[lucide--loader-circle] animate-spin motion-reduce:animate-none"
+          aria-hidden="true"
+        />
         <span>{{ $t('helpCenter.loadingReleases') }}</span>
       </div>
 
       <!-- No Releases State -->
       <div v-else class="help-menu-item" role="status">
-        <i class="pi pi-info-circle help-menu-icon" aria-hidden="true" />
+        <i class="help-menu-icon icon-[lucide--info]" aria-hidden="true" />
         <span>{{ $t('helpCenter.noRecentReleases') }}</span>
       </div>
     </section>
@@ -164,18 +167,18 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildFeedbackTypeformUrl } from '@/platform/support/config'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
-import { useCommandStore } from '@/stores/commandStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { electronAPI } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
-import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
-import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
-import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
+import { useComfyManagerService } from '@/platform/customNodes/manager/services/comfyManagerService'
+import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 
 // Types
 interface MenuItem {

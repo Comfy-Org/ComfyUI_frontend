@@ -20,9 +20,9 @@ import { useAuthStore } from '@/stores/authStore'
 
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import {
   clearCheckoutJourney,
   getActiveCheckoutJourney,
@@ -414,9 +414,9 @@ vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -1566,12 +1566,12 @@ describe('useSubscriptionCheckout', () => {
     describe('payment recovery on the SDK rail', () => {
       const RAIL_PORTAL = 'https://billing.stripe.com/rail-portal'
 
-      /** Only `billing_status` is read, but the response requires six more. */
       function railStatus(
         billing_status: BillingStatus
       ): BillingStatusResponse {
         return {
           billing_status,
+          ended_at: null,
           has_funds: true,
           is_active: true,
           max_seats: 1,

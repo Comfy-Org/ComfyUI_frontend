@@ -4,7 +4,7 @@ import { startDesktopHostSession } from '@/platform/auth/desktopHost/desktopHost
 import type { LocalWebAuthEnvironment } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createLocalWebAuthBridge } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createStorageTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 /**
  * Hosts whose origin Cloud allows to read `/oauth/token` responses. `[::1]` is
@@ -47,21 +47,26 @@ function browserEnvironment(): LocalWebAuthEnvironment {
   }
 }
 
+export type LocalWebSessionStart = 'off' | 'started' | 'sign-in-failed'
+
 /**
  * Signs a local ComfyUI in to Cloud from the browser when Desktop does not
  * host it. Off unless `local_web_sso` is on and the page is on a loopback
  * host; a sign-in the redirect brought back is finished before the session
  * starts, so the first state consumers read already includes it.
+ * `sign-in-failed` means the returned sign-in failed for a reason other than
+ * the person declining consent, so the page should say so once it mounts.
  */
 export async function startLocalWebSession(
   env: LocalWebAuthEnvironment = browserEnvironment()
-): Promise<boolean> {
-  if (!useFeatureFlags().flags.localWebSsoEnabled) return false
-  if (!LOOPBACK_HOSTNAMES.has(new URL(env.pageUrl()).hostname)) return false
+): Promise<LocalWebSessionStart> {
+  if (!useFeatureFlags().flags.localWebSsoEnabled) return 'off'
+  if (!LOOPBACK_HOSTNAMES.has(new URL(env.pageUrl()).hostname)) return 'off'
 
   const bridge = createLocalWebAuthBridge(env)
   const outcome = await bridge.completeSignIn()
-  if (outcome.kind === 'failed' && outcome.reason !== 'denied') {
+  const failed = outcome.kind === 'failed' && outcome.reason !== 'denied'
+  if (failed) {
     reportError(new Error(`local web sign-in failed: ${outcome.reason}`), {
       errorType: 'local_web_sign_in_failed',
       surface: 'auth',
@@ -69,5 +74,5 @@ export async function startLocalWebSession(
     })
   }
   await startDesktopHostSession(bridge)
-  return true
+  return failed ? 'sign-in-failed' : 'started'
 }

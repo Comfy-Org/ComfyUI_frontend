@@ -7,7 +7,7 @@ import type { AboutPageBadge } from '@/types/comfy'
 import { electronAPI } from '@/utils/envUtil'
 import { formatCommitHash } from '@/utils/formatUtil'
 
-import { useExtensionStore } from './extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useSystemStatsStore } from './systemStatsStore'
 
 export const useAboutPanelStore = defineStore('aboutPanel', () => {
@@ -32,8 +32,6 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
   )
 
   const coreBadges = computed<AboutPageBadge[]>(() => [
-    // In electron, the ComfyUI is packaged without the git repo,
-    // so the python server's API doesn't have the version info.
     {
       label: `ComfyUI ${
         isDesktop
@@ -41,19 +39,19 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
           : formatCommitHash(coreVersion.value)
       }`,
       url: isCloud ? staticUrls.comfyOrg : staticUrls.github,
-      icon: isCloud ? 'pi pi-cloud' : 'pi pi-github'
+      icon: isCloud ? 'icon-[lucide--cloud]' : 'icon-[lucide--github]'
     },
     {
       label: `ComfyUI_frontend v${frontendVersion}`,
       url: staticUrls.githubFrontend,
-      icon: 'pi pi-github'
+      icon: 'icon-[lucide--github]'
     },
     ...(templatesVersion.value
       ? [
           {
             label: `Templates v${templatesVersion.value}`,
             url: 'https://pypi.org/project/comfyui-workflow-templates/',
-            icon: 'pi pi-book',
+            icon: 'icon-[lucide--book]',
             ...(isTemplatesOutdated.value
               ? { severity: 'danger' as const }
               : {})
@@ -65,7 +63,11 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
       url: staticUrls.discord,
       icon: 'pi pi-discord'
     },
-    { label: 'ComfyOrg', url: staticUrls.comfyOrg, icon: 'pi pi-globe' }
+    {
+      label: 'ComfyOrg',
+      url: staticUrls.comfyOrg,
+      icon: 'icon-[lucide--globe]'
+    }
   ])
 
   const allBadges = computed<AboutPageBadge[]>(() => [

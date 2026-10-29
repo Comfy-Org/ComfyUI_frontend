@@ -1,7 +1,7 @@
 <template>
   <div class="flex w-full items-center justify-between gap-2 border-b p-2">
     <div class="flex items-center gap-2">
-      <i class="icon-[lucide--square-dashed] size-4" />
+      <i class="icon-[lucide--square-dashed]" />
       <h3 class="m-0 text-sm font-semibold">
         {{ $t('boundingBoxes.editorTitle') }}
       </h3>
@@ -15,7 +15,7 @@
       <DialogClose :aria-label="$t('g.close')">
         <Button variant="outline" size="md">
           {{ $t('g.close') }}
-          <i class="icon-[lucide--x] size-4" />
+          <i class="icon-[lucide--x]" />
         </Button>
       </DialogClose>
     </div>

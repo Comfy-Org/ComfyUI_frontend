@@ -8,12 +8,7 @@
       v-model:open="isOpen"
       :modal="false"
       :side-offset="8"
-      :class="
-        cn(
-          'max-w-[min(25rem,calc(100vw-1rem))] min-w-56',
-          switcherMenuMotionClass
-        )
-      "
+      :class="cn(switcherMenuWidthClass, switcherMenuMotionClass)"
       @update:open="onOpenChange"
     >
       <template #trigger>
@@ -33,7 +28,7 @@
             ring-class="ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
           />
           <i
-            class="icon-[lucide--chevron-down] size-3 shrink-0 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
+            class="icon-[lucide--chevron-down] size-3 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
             aria-hidden="true"
           />
         </Button>
@@ -63,7 +58,10 @@ import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
 import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
 import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
-import { switcherMenuMotionClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
+import {
+  switcherMenuMotionClass,
+  switcherMenuWidthClass
+} from '@/platform/workspace/components/deploymentSwitcherStyles'
 import {
   COMFY_CLOUD_ROW,
   deploymentStatusTone,

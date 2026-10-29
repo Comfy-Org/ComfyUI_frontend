@@ -15,6 +15,7 @@ export function createSubscriptionStatus(
     billing_rail: 'legacy_stripe',
     max_seats: 0,
     occupied_seats: 0,
+    ended_at: null,
     team_credit_stop: null,
     scheduled_change: null,
     ...overrides

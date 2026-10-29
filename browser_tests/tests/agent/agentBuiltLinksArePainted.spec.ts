@@ -9,8 +9,8 @@ import {
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const CASE = 'agent-rec-refiner-between'
 

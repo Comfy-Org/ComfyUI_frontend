@@ -158,7 +158,7 @@ const iconClass = computed(() => {
   }
   switch (variant.value) {
     case 'error':
-      return 'pi pi-exclamation-circle'
+      return 'icon-[lucide--circle-alert]'
     case 'warning':
       return 'icon-[lucide--triangle-alert]'
     case 'info':

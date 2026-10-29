@@ -632,6 +632,7 @@ describe('FullPageCheckoutView', () => {
           max_seats: 1,
           occupied_seats: 1,
           scheduled_change: scheduled,
+          ended_at: null,
           team_credit_stop: null
         }
       })
@@ -1451,6 +1452,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
         max_seats: 1,
         occupied_seats: 1,
         scheduled_change: null,
+        ended_at: null,
         team_credit_stop: null,
         cancel_at: '2026-07-28T00:00:00.000Z'
       }
@@ -3327,6 +3329,7 @@ describe('FullPageCheckoutView promo codes', () => {
             max_seats: 1,
             occupied_seats: 1,
             scheduled_change: null,
+            ended_at: null,
             team_credit_stop: null,
             cancel_at: '2026-07-28T00:00:00.000Z'
           }
