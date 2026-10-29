@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -121,24 +121,23 @@ describe('LGraphCanvas.startRendering', () => {
     const ctx = createMockCanvasRenderingContext2D()
     vi.spyOn(LGraphCanvas.prototype, 'draw')
       .mockImplementation(() => {})
-      .mockImplementationOnce(() => {
+      .mockImplementationOnce(function (this: LGraphCanvas) {
+        this.dirty_canvas = false
+        this.dirty_bgcanvas = false
         throw new TypeError('mid-frame')
       })
 
+    vi.stubGlobal('devicePixelRatio', 2)
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+    })
     const canvas = new LGraphCanvas(
       createTestCanvasElement({ ctx }),
       new LGraph(),
       { skip_events: true }
     )
 
-    expect(ctx.setTransform).toHaveBeenLastCalledWith(
-      canvas.dpr,
-      0,
-      0,
-      canvas.dpr,
-      0,
-      0
-    )
+    expect(ctx.setTransform).toHaveBeenLastCalledWith(2, 0, 0, 2, 0, 0)
     expect([canvas.dirty_canvas, canvas.dirty_bgcanvas]).toEqual([true, true])
   })
 

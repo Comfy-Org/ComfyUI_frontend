@@ -2591,8 +2591,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   private resetDrawingContexts(): void {
     const { dpr } = this
     for (const canvas of new Set([this.canvas, this.bgcanvas])) {
-      // oxlint-disable-next-line no-self-assign
-      canvas.width = canvas.width
+      const { width } = canvas
+      canvas.width = width
       canvas.getContext('2d')?.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
   }
