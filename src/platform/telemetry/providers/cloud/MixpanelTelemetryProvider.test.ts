@@ -42,8 +42,8 @@ import type {
   TemplateMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata
-} from '@/platform/telemetry/types'
-import { TelemetryEvents } from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 const waitForMixpanelInit = () =>
   vi.waitFor(() => expect(mockMixpanel.init).toHaveBeenCalled())

@@ -9,7 +9,11 @@ import {
   MaskBlendMode,
   Tools
 } from './types'
-import type { Brush, ImageLayer, Offset, Point } from './types'
+import type { Brush, ImageLayer } from './types'
+import type {
+  Point2D as Offset,
+  Point2D as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { useCanvasHistory } from './useCanvasHistory'
 
 export const useMaskEditorStore = defineStore('maskEditor', () => {

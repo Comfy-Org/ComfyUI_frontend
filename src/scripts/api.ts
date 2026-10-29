@@ -34,8 +34,8 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
   AgentStatusWsMessage,
@@ -74,8 +74,8 @@ import type {
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/workflowSchema'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   JobAssetsResult,
   JobDetail,
@@ -83,7 +83,7 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { retryingSend } from '@/utils/fetchWithRetry'
 import { NO_RETRY_POLICY } from '@/utils/retryPolicy'
 import type { RetryPolicy } from '@/utils/retryPolicy'

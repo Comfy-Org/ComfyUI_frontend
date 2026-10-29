@@ -10,7 +10,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import { useAgentDockMount } from './useAgentDockMount'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 const billingContext = useBillingContext()
