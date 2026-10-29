@@ -15985,6 +15985,31 @@ function signInAs({ firebase, apiKeyUser }: AgentAccount): void {
     apiKeyUser === null ? null : { id: apiKeyUser }
 }
 
+async function startDesktopHostSessionOn(initialWorkspaceId: string) {
+  const hostOn = (workspaceId: string) =>
+    fromPartial<DesktopHostAuthState>({
+      status: 'signed_in',
+      userId: 'account-a',
+      workspaceId
+    })
+  let notify: (state: DesktopHostAuthState) => void = () => {}
+  await startDesktopHostSession({
+    getState: async () => hostOn(initialWorkspaceId),
+    getWorkspaceToken: async () => 'host-token',
+    requestSignIn: async () => hostOn(initialWorkspaceId),
+    signOut: async () => ({ status: 'signed_out' }),
+    switchWorkspace: async (workspaceId) => hostOn(workspaceId),
+    onChanged: (listener) => {
+      notify = listener
+      return () => {}
+    }
+  })
+  return {
+    hostOn,
+    notifyHostChanged: (state: DesktopHostAuthState) => notify(state)
+  }
+}
+
 describe('AgentPanelRoot agent socket', () => {
   it.for([
     {
@@ -16092,20 +16117,7 @@ describe('AgentPanelRoot agent socket', () => {
       reset,
       stop: () => {}
     })
-    const hostOn = (workspaceId: string) =>
-      fromPartial<DesktopHostAuthState>({
-        status: 'signed_in',
-        userId: 'account-a',
-        workspaceId
-      })
-    await startDesktopHostSession({
-      getState: async () => hostOn('ws-host'),
-      getWorkspaceToken: async () => 'host-token',
-      requestSignIn: async () => hostOn('ws-host'),
-      signOut: async () => ({ status: 'signed_out' }),
-      switchWorkspace: async () => hostOn('ws-host'),
-      onChanged: () => () => {}
-    })
+    await startDesktopHostSessionOn('ws-host')
     try {
       signInAs({ firebase: 'account-a', apiKeyUser: null })
       const workspaces = useTeamWorkspaceStore()
@@ -16133,24 +16145,8 @@ describe('AgentPanelRoot agent socket', () => {
       reset,
       stop: () => {}
     })
-    const hostOn = (workspaceId: string) =>
-      fromPartial<DesktopHostAuthState>({
-        status: 'signed_in',
-        userId: 'account-a',
-        workspaceId
-      })
-    let notifyHostChanged: (state: DesktopHostAuthState) => void = () => {}
-    await startDesktopHostSession({
-      getState: async () => hostOn('ws-a'),
-      getWorkspaceToken: async () => 'host-token',
-      requestSignIn: async () => hostOn('ws-a'),
-      signOut: async () => ({ status: 'signed_out' }),
-      switchWorkspace: async (workspaceId) => hostOn(workspaceId),
-      onChanged: (listener) => {
-        notifyHostChanged = listener
-        return () => {}
-      }
-    })
+    const { hostOn, notifyHostChanged } =
+      await startDesktopHostSessionOn('ws-a')
     try {
       signInAs({ firebase: 'account-a', apiKeyUser: null })
       const workspaces = useTeamWorkspaceStore()

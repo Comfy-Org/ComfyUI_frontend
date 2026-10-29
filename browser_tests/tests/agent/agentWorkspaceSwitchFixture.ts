@@ -1,6 +1,7 @@
 import type {
   AgentIdentity,
   AgentRunMode,
+  ExchangeTokenRequest,
   ListMembersResponse
 } from '@comfyorg/ingest-types'
 import { mergeTests } from '@playwright/test'
@@ -56,9 +57,7 @@ export const agentWorkspaceSwitcherTest = base.extend<{
           )
         )
         await page.route('**/api/auth/token', async (route) => {
-          const request = route.request().postDataJSON() as {
-            workspace_id?: string
-          }
+          const request = route.request().postDataJSON() as ExchangeTokenRequest
           workspaceId = request.workspace_id ?? 'ws-personal'
           const workspace = WORKSPACE_SWITCHER_WORKSPACES.find(
             ({ id }) => id === workspaceId
