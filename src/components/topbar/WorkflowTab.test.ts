@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { TabsList, TabsRoot } from 'reka-ui'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -142,34 +142,31 @@ describe('WorkflowTab - workflow status indicator', () => {
     vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue(undefined)
   })
 
-  // These exact fake-timer boundaries are the behavior under test. userEvent's
-  // timer integration advances the same queue and makes the assertions flaky.
-  /* oxlint-disable testing-library/prefer-user-event */
   it('delays hover preview without moving focus and dismisses after leaving', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderTab()
     const tab = screen.getByTestId('workflow-tab')
     const trigger = screen.getByRole('tab')
     trigger.focus()
 
-    await fireEvent.mouseEnter(tab)
+    await user.hover(tab)
     await vi.advanceTimersByTimeAsync(199)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await vi.advanceTimersByTimeAsync(1)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(trigger).toHaveFocus()
 
-    await fireEvent.mouseLeave(tab)
-    await fireEvent.mouseEnter(screen.getByRole('dialog'))
+    await user.unhover(tab)
+    await user.hover(screen.getByRole('dialog'))
     await vi.advanceTimersByTimeAsync(100)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
 
-    await fireEvent.mouseLeave(screen.getByRole('dialog'))
+    await user.unhover(screen.getByRole('dialog'))
     await vi.advanceTimersByTimeAsync(99)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     await vi.advanceTimersByTimeAsync(1)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
-  /* oxlint-enable testing-library/prefer-user-event */
 
   it('does not reopen a click-dismissed preview when the hover delay expires', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
