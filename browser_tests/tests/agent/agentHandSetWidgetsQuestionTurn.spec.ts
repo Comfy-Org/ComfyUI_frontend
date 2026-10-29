@@ -25,6 +25,7 @@ import {
 } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const WORKFLOW_ID = '3601a000-0000-4000-8000-000000000001'
@@ -206,6 +207,8 @@ test.describe(
       )
 
       async function setWidgetsByHand(): Promise<void> {
+        // The agent places both nodes; bring them into view before clicking.
+        await fitToViewInstant(comfyPage)
         await comfyPage.vueNodes.setInputNumberValue(
           comfyPage.vueNodes.getWidgetRowByLabel(samplerNode, 'cfg'),
           String(HAND_CFG)
