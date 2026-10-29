@@ -6,6 +6,7 @@ import ts from 'typescript'
 const bundle = resolve('dist/index.d.ts')
 const declarations = readFileSync(bundle, 'utf8')
 const privateImports = [
+  '@comfyorg/keybindings',
   '@comfyorg/shared-frontend-utils/geometry',
   '@comfyorg/telemetry'
 ].filter((specifier) => declarations.includes(specifier))

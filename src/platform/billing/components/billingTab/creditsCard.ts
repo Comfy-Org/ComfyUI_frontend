@@ -1,5 +1,5 @@
 import type { BalanceInfo } from '@/platform/billing/composables/types'
-import type { BillingStatus } from '@comfyorg/billing-core'
+import type { AutoReloadSettings, BillingStatus } from '@comfyorg/billing-core'
 import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'
 
 export interface CreditsCardFacts {
@@ -22,7 +22,9 @@ export type CreditsCardState =
       topUpCents: number
       topUpInUse: boolean
       showUsage: boolean
-      planDate: { kind: 'refills' | 'availableUntil'; date: string | null }
+      planDate:
+        | { kind: 'refills' | 'availableUntil'; date: string | null }
+        | { kind: 'afterPayment' }
     }
 
 export type PlanCreditsState = Extract<CreditsCardState, { kind: 'plan' }>
@@ -61,9 +63,38 @@ export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
     showUsage: facts.billingStatus
       ? PLAN_USAGE_SHOWN[facts.billingStatus]
       : true,
-    planDate:
-      facts.planKind === 'ending'
-        ? { kind: 'availableUntil', date: facts.endDate }
-        : { kind: 'refills', date: facts.renewalDate }
+    planDate: planDateFor(facts)
+  }
+}
+
+export interface AddCreditsEmphasisFacts {
+  availableCents: number | null
+  canTopUp: boolean
+  autoTopUpStatus: AutoReloadSettings['status'] | null
+  planActionIsPrimary: boolean
+}
+
+/** White when out of credits, auto top-up won't refill, and no plan action already takes white. */
+export function addCreditsEmphasis(
+  facts: AddCreditsEmphasisFacts
+): 'secondary' | 'inverted' {
+  const outOfCredits =
+    facts.availableCents !== null && facts.availableCents <= 0
+  return outOfCredits &&
+    facts.canTopUp &&
+    facts.autoTopUpStatus !== 'on' &&
+    !facts.planActionIsPrimary
+    ? 'inverted'
+    : 'secondary'
+}
+
+function planDateFor(facts: CreditsCardFacts): PlanCreditsState['planDate'] {
+  switch (facts.planKind) {
+    case 'paused':
+      return { kind: 'afterPayment' }
+    case 'ending':
+      return { kind: 'availableUntil', date: facts.endDate }
+    default:
+      return { kind: 'refills', date: facts.renewalDate }
   }
 }

@@ -43,7 +43,7 @@
         </Button>
         <Button
           v-if="banner.action === 'addCredits'"
-          variant="secondary"
+          :variant="addCreditsVariant"
           size="md"
           @click="handleAddCredits"
         >
@@ -64,7 +64,10 @@
 </template>
 
 <script setup lang="ts">
-import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import {
+  centsToCredits,
+  formatCreditsFromCents
+} from '@/base/credits/comfyCredits'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLongDate } from '@/platform/billing/composables/useLongDate'
@@ -96,13 +99,14 @@ interface BannerView {
 
 const bs = 'workspacePanel.billingStatus'
 
-const { suppressed = false } = defineProps<{
+const { suppressed = false, addCreditsVariant = 'secondary' } = defineProps<{
   suppressed?: boolean
+  addCreditsVariant?: 'secondary' | 'inverted'
 }>()
 
 const billing = useBillingContext()
 const { flags } = useFeatureFlags()
-const { permissions } = useBillingUI()
+const { permissions, workspaceType } = useBillingUI()
 const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
@@ -235,10 +239,22 @@ function creditsLeft(): string {
   })
 }
 
+function lowCreditsBodyKey(): string {
+  if (!isCloud) return `${bs}.lowCredits.localBody`
+  if (workspaceType.value !== 'team') return `${bs}.lowCredits.personalBody`
+  return canManageBilling.value
+    ? `${bs}.lowCredits.ownerBody`
+    : `${bs}.lowCredits.memberBody`
+}
+
 function lowCreditsView(): BannerView {
   return {
     title: t(`${bs}.lowCredits.title`),
-    body: t(`${bs}.lowCredits.localBody`, { credits: creditsLeft() }),
+    body: t(
+      lowCreditsBodyKey(),
+      { credits: creditsLeft() },
+      centsToCredits(availableCents.value ?? 0)
+    ),
     action: canTopUp.value ? 'addCredits' : null,
     dismissible: true
   }

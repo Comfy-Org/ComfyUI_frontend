@@ -122,6 +122,8 @@ const planUsedPercent = computed(() => {
 })
 
 const planDateLine = computed(() => {
+  if (plan.planDate.kind === 'afterPayment')
+    return t('subscription.refillsAfterPayment')
   const date = longDate(plan.planDate.date)
   return date ? t(PLAN_DATE_KEY[plan.planDate.kind], { date }) : ''
 })
