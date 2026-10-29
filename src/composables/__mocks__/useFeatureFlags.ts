@@ -29,6 +29,7 @@ const defaultFlags: FeatureFlags = {
   deploymentCompatibilityMarksEnabled: false,
   lateCustomNodesEnabled: false,
   runtimeLibraryModelsEnabled: false,
+  modelUploadFolders: [],
   hostedBillingDestination: 'stripe',
   hostedBillingWebEnabled: false,
   showSignInButton: undefined,
