@@ -89,7 +89,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["keybindings"],
+  "allowedDependencies": ["extension-manager", "keybindings"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

@@ -36,7 +36,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
+import type { components as ManagerComponents } from '@/platform/customNodes/manager/types/generatedManagerTypes'
 import type {
   AgentStatusWsMessage,
   AssetDownloadWsMessage,

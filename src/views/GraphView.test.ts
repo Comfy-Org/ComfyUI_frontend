@@ -200,7 +200,7 @@ vi.mock<unknown>(
   () => stubModule
 )
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/components/ManagerProgressToast.vue'),
+  import('@/platform/customNodes/manager/components/ManagerProgressToast.vue'),
 
   () => stubModule
 )
