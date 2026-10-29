@@ -261,12 +261,6 @@ function toolCallIdsOf(parts: AssistantMessage['parts']): string[] {
   return parts.flatMap((part) => (part.type === 'tool' ? [part.callId] : []))
 }
 
-/**
- * How many of the turn's tool calls had already run when the live row opened.
- * A snapshot-restored row carries only what streamed after the reload, so its
- * tool counts sit this far behind the stored row's. Keyed on shared call ids,
- * falling back to the trailing count when they do not line up.
- */
 function liveToolOffset(
   liveParts: AssistantMessage['parts'],
   persistedParts: AssistantMessage['parts']
@@ -281,13 +275,6 @@ function liveToolOffset(
   return trailing
 }
 
-/**
- * Whether a stored and a live round are the same round. Only ever asked of
- * two rounds already aligned to the same inter-tool interval: equal text
- * alone is not identity, since one sentence can be narrated twice. Within an
- * interval, a mid-round reload leaves the live copy a suffix of the stored
- * one and a truncated stored round a prefix of the live one.
- */
 function sameThinkingRound(stored: ThinkingPart, live: ThinkingPart): boolean {
   return stored.text.includes(live.text) || live.text.includes(stored.text)
 }
@@ -302,16 +289,13 @@ function liveThinkingAnchors(
 
 function mergeSnapshotThinking(
   liveParts: AssistantMessage['parts'],
-  persistedParts: AssistantMessage['parts']
+  persistedParts: AssistantMessage['parts'],
+  offset: number
 ): AssistantMessage['parts'] {
   const merged = [...persistedParts]
-  const offset = liveToolOffset(liveParts, persistedParts)
   const stored = anchorThinking(persistedParts)
   const claimed = new Set<number>()
   const unmatchedLive: AnchoredLocalPart[] = []
-  // Newest first, so each live round claims the latest stored round still
-  // unclaimed in its interval: the live rounds of the interval the reload
-  // fell inside are that interval's last ones.
   for (const anchor of liveThinkingAnchors(liveParts).reverse()) {
     const toolCount = anchor.toolCount + offset
     const candidate = stored.findLast(
@@ -351,17 +335,19 @@ function preserveCanvasConfirmation(
 
 function reconcileSnapshotParts(
   liveParts: AssistantMessage['parts'],
-  persistedParts: AssistantMessage['parts']
+  persistedParts: AssistantMessage['parts'],
+  offset: number
 ): AssistantMessage['parts'] {
   return preserveCanvasConfirmation(
     liveParts,
-    mergeSnapshotThinking(liveParts, persistedParts)
+    mergeSnapshotThinking(liveParts, persistedParts, offset)
   )
 }
 
 function finishWithPersistedParts(
   message: AssistantMessage,
-  persistedParts: AssistantMessage['parts'] | undefined
+  persistedParts: AssistantMessage['parts'] | undefined,
+  localToolOffset = 0
 ): void {
   if (persistedParts === undefined) {
     message.parts = message.parts.filter((part) => !isOpenAskPart(part))
@@ -383,9 +369,12 @@ function finishWithPersistedParts(
   )
   message.parts = interleaveLocalParts(
     persistedParts,
-    anchorLocalParts(message.parts).filter(
-      ({ part }) => !persistedHasThinking || part.type !== 'thinking'
-    )
+    anchorLocalParts(message.parts)
+      .filter(({ part }) => !persistedHasThinking || part.type !== 'thinking')
+      .map((anchor) => ({
+        ...anchor,
+        toolCount: anchor.toolCount + localToolOffset
+      }))
   )
 }
 
@@ -886,9 +875,6 @@ export const useAgentConversationStore = defineStore(
         unreconciled.transport.hasPendingCanvasSync()
       )
         return
-      // Nothing is held, so this transport has no reason to stay reachable --
-      // and a later retireAsk() would otherwise republish its own copy of the
-      // row over the reconciled one.
       settledActiveTransports.delete(unreconciled.transport)
       unreconciled.announced = true
       void snapshotTurnSettled.trigger(unreconciled.turn)
@@ -908,9 +894,12 @@ export const useAgentConversationStore = defineStore(
       )
       if (index < 0) return
       const reconciled = { ...messages.value[index] }
+      const liveParts = reconciled.parts
+      const offset = liveToolOffset(liveParts, persistedParts)
       finishWithPersistedParts(
         reconciled,
-        reconcileSnapshotParts(reconciled.parts, persistedParts)
+        reconcileSnapshotParts(liveParts, persistedParts, offset),
+        offset
       )
       messages.value[index] = reconciled
     }
