@@ -48,6 +48,13 @@ describe('API key authentication initialization', () => {
 
   const customerResponse = (id: string) => Response.json({ id })
 
+  const waitForCustomer = (
+    apiKeyStore: ReturnType<typeof useApiKeyAuthStore>
+  ) =>
+    vi.waitFor(() =>
+      expect(apiKeyStore.currentUser).toEqual({ id: 'test-customer-id' })
+    )
+
   const settleQueuedTasks = () => new Promise((resolve) => setTimeout(resolve))
 
   const initializeStoreWithPendingLookup = async () => {
@@ -150,6 +157,7 @@ describe('API key authentication initialization', () => {
           'Your browser could not save it, so the key will be cleared when you reload.'
       })
     )
+    await waitForCustomer(apiKeyStore)
   })
 
   it('says the previous key returns after reload when it cannot be removed', async () => {
@@ -172,6 +180,7 @@ describe('API key authentication initialization', () => {
           'Your browser could not save it. After you reload, your previously saved key will be used again.'
       })
     )
+    await waitForCustomer(apiKeyStore)
   })
 
   it('keeps warning when the same unsaved key is submitted again', async () => {
@@ -189,6 +198,7 @@ describe('API key authentication initialization', () => {
       expect.objectContaining({ kind: 'warning' })
     )
     expect(localStorage.getItem('comfy_api_key')).toBeNull()
+    await waitForCustomer(apiKeyStore)
   })
 
   it('does not mention a previous key on a first save that cannot be stored', async () => {
@@ -210,6 +220,67 @@ describe('API key authentication initialization', () => {
           'Your browser could not save it, so the key will be cleared when you reload.'
       })
     )
+    await waitForCustomer(apiKeyStore)
+  })
+
+  it('does not persist the key after a one-time write failure', async () => {
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+    vi.spyOn(localStorage, 'setItem').mockImplementationOnce(() => {
+      throw new DOMException('Quota exceeded', 'QuotaExceededError')
+    })
+
+    await apiKeyStore.storeApiKey('key-b')
+    await waitForCustomer(apiKeyStore)
+
+    expect(localStorage.getItem('comfy_api_key')).toBeNull()
+    expect(useToast().toasts.at(-1)).toEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'API Key saved for this session only'
+      })
+    )
+  })
+
+  it('follows a key saved in another tab', async () => {
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'comfy_api_key',
+        newValue: 'other-tab-key',
+        storageArea: localStorage
+      })
+    )
+
+    expect(apiKeyStore.getApiKey()).toBe('other-tab-key')
+    await waitForCustomer(apiKeyStore)
+  })
+
+  it('follows a key removed in another tab and ignores sessionStorage', async () => {
+    localStorage.setItem('comfy_api_key', 'key-a')
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+    await waitForCustomer(apiKeyStore)
+
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'comfy_api_key',
+        newValue: 'session-value',
+        storageArea: sessionStorage
+      })
+    )
+    expect(apiKeyStore.getApiKey()).toBe('key-a')
+
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'comfy_api_key',
+        newValue: null,
+        storageArea: localStorage
+      })
+    )
+    expect(apiKeyStore.getApiKey()).toBeNull()
   })
 
   it('confirms a save normally once storage works again', async () => {
@@ -229,6 +300,7 @@ describe('API key authentication initialization', () => {
     expect(useToast().toasts.at(-1)).toEqual(
       expect.objectContaining({ kind: 'success' })
     )
+    await waitForCustomer(apiKeyStore)
   })
 
   it('removes the saved key when clearing it', async () => {
@@ -280,6 +352,7 @@ describe('API key authentication initialization', () => {
           "Your browser is blocking site storage, so this key won't be kept after you reload. A key saved earlier may be used again if you re-enable storage."
       })
     )
+    await waitForCustomer(apiKeyStore)
   })
 
   it('warns on clear when localStorage is blocked', async () => {

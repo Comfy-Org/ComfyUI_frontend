@@ -1,4 +1,4 @@
-import { useStorage } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, nextTick, ref, watch } from 'vue'
 
@@ -34,8 +34,25 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     })
   }
 
-  const apiKey = useStorage<string | null>(STORAGE_KEY, null, undefined, {
-    onError: reportStorageFailure
+  const readPersistedKey = (): string | null => {
+    try {
+      return localStorage.getItem(STORAGE_KEY)
+    } catch (error) {
+      reportStorageFailure(error)
+      return null
+    }
+  }
+
+  const apiKey = ref<string | null>(readPersistedKey())
+
+  useEventListener(window, 'storage', (event: StorageEvent) => {
+    if (event.key !== null && event.key !== STORAGE_KEY) return
+    try {
+      if (event.storageArea !== localStorage) return
+    } catch {
+      return
+    }
+    apiKey.value = event.newValue
   })
 
   const persistKey = (key: string): boolean => {
@@ -80,6 +97,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       })
     if (apiKey.value !== watchedApiKey) return
     if (!createCustomerResponse) {
+      forgetPersistedKey()
       apiKey.value = null
       throw new Error(t('auth.login.noAssociatedUser'))
     }
