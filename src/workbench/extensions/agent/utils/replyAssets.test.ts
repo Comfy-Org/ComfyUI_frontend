@@ -36,15 +36,20 @@ function servedUnder(subpath: string) {
 
 function removeUrlParse() {
   const descriptor = Object.getOwnPropertyDescriptor(URL, 'parse')
-  Reflect.deleteProperty(URL, 'parse')
+  Object.defineProperty(URL, 'parse', {
+    configurable: true,
+    value: undefined
+  })
   onTestFinished(() => {
     if (descriptor) Object.defineProperty(URL, 'parse', descriptor)
+    else Reflect.deleteProperty(URL, 'parse')
   })
 }
 
 describe('resolveAgentAssetUrl', () => {
   it('re-homes a loopback asset when URL.parse is unavailable', () => {
     removeUrlParse()
+    expect(URL.parse).toBeUndefined()
 
     expect(resolveAgentAssetUrl(LOOPBACK_VIEW)).toBe(
       `${window.location.origin}/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
