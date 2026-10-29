@@ -128,11 +128,17 @@
   "allowedDependencies": [
     "account",
     "error-reporting",
+    "extension-manager",
     "keybindings",
     "telemetry",
     "vue-node-renderer"
   ],
-  "allowedConsumers": ["error-reporting", "selection-toolbox"],
+  "allowedConsumers": [
+    "agent",
+    "error-reporting",
+    "extension-manager",
+    "selection-toolbox"
+  ],
   "characterizationScenarios": [
     {
       "name": "Graph canvas restores detached Vue node elements and retains focus and link-drag sources while panning",
@@ -161,7 +167,7 @@
   ],
   "adrs": ["docs/adr/TELEMETRY-STARTUP-0030-production-startup-telemetry.md"],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior; GraphCanvas consumes the Vue node renderer viewport keep-alive composables."
+    "Inventory preserves existing exports and runtime behavior without granting public entry points."
   ],
   "deepImports": "inventory"
 }

@@ -36,16 +36,21 @@ vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
 }))
 
 const configured: AutoReloadSettings = {
+  card_expiry: null,
   configured: true,
   cycle_resets_at: '2026-11-28T00:00:00Z',
+  declined_payment_method: null,
   disabled_reason: null,
   enabled: true,
   last_failure_at: null,
   last_failure_reason: null,
   max_monthly_budget_cents: 100000,
+  max_reload_credits: 100000,
   min_reload_credits: 1000,
   monthly_budget_cents: 20000,
+  monthly_budget_is_default: false,
   paused_by_budget: false,
+  paused_by_budget_remainder: false,
   paused_by_decline: false,
   reload_amount_cents: 2500,
   reload_credits: 5275,
@@ -201,7 +206,7 @@ describe('BillingAutoTopUpCard', () => {
     },
     {
       status: 'paused_by_budget',
-      label: 'Paused',
+      label: 'Limit reached',
       lines: [RULE, 'Monthly limit reached. Resumes November 28.'],
       action: 'Manage',
       expectedIcon: 'icon-[lucide--arrow-up-right]'
@@ -413,7 +418,7 @@ describe('BillingAutoTopUpCard', () => {
     {
       reread: 'a different status',
       settings: { ...configured, status: 'paused_by_budget' as const },
-      label: 'Paused',
+      label: 'Limit reached',
       views: 2
     }
   ])(

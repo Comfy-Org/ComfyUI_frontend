@@ -55,9 +55,10 @@
         :detail="row.detail"
         :tooltip="row.tooltip"
         :tone="row.tone"
-        :compatibility-note="row.compatibilityNote"
+        :note="row.note"
+        :muted="row.muted"
         :switching="row.switching"
-        :disabled="isSwitching"
+        :disabled="row.disabled"
         :data-focus-row="row.value"
         :data-testid="row.testId"
         @select="choose($event, row.deploymentId)"
@@ -178,7 +179,9 @@ const listedSections = computed(() =>
     rows: section.rows.map((row) => ({
       ...row,
       testId: `deployment-row-${row.deploymentId ?? 'cloud'}`,
-      switching: isSwitching.value && switchingTo === row.value
+      switching: isSwitching.value && switchingTo === row.value,
+      muted: !row.pickable && !isSwitching.value,
+      disabled: isSwitching.value || !row.pickable
     }))
   }))
 )

@@ -550,7 +550,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             (workflowId, workflowName) =>
               emit('openReferenceWorkflow', workflowId, workflowName)
           "
-          @paywall-action="emit('paywallAction', $event, 'refused_send')"
+          @paywall-action="
+            (action, surface) => emit('paywallAction', action, surface)
+          "
         />
         <div
           v-if="showChatLoading"

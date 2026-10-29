@@ -43,7 +43,7 @@
         </Button>
         <Button
           v-if="banner.action === 'addCredits'"
-          variant="secondary"
+          :variant="addCreditsVariant"
           size="md"
           @click="handleAddCredits"
         >
@@ -64,9 +64,13 @@
 </template>
 
 <script setup lang="ts">
-import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import {
+  centsToCredits,
+  formatCreditsFromCents
+} from '@/base/credits/comfyCredits'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useLongDate } from '@/platform/billing/composables/useLongDate'
 
 import Button from '@comfyorg/design-system/button/Button'
 import BillingAutoTopUpBanner from '@/platform/billing/components/billingTab/BillingAutoTopUpBanner.vue'
@@ -95,17 +99,19 @@ interface BannerView {
 
 const bs = 'workspacePanel.billingStatus'
 
-const { suppressed = false } = defineProps<{
+const { suppressed = false, addCreditsVariant = 'secondary' } = defineProps<{
   suppressed?: boolean
+  addCreditsVariant?: 'secondary' | 'inverted'
 }>()
 
 const billing = useBillingContext()
 const { flags } = useFeatureFlags()
-const { permissions } = useBillingUI()
+const { permissions, workspaceType } = useBillingUI()
 const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
-const { t, d, locale } = useI18n()
+const { t, locale } = useI18n()
+const { longDate } = useLongDate()
 
 const outOfCreditsDismissed = ref(false)
 const lowCreditsDismissed = ref(false)
@@ -166,12 +172,6 @@ watch(availableCents, (cents, previous) => {
 })
 
 const audience = computed(() => (isTeamPlan.value ? 'team' : 'personal'))
-
-function longDate(raw: string | null | undefined): string {
-  const date = raw ? new Date(raw) : null
-  if (!date || Number.isNaN(date.getTime())) return ''
-  return d(date, { year: 'numeric', month: 'long', day: 'numeric' })
-}
 
 const cycleResetDate = computed(() =>
   longDate(billing.renewalDate?.value ?? null)
@@ -239,10 +239,22 @@ function creditsLeft(): string {
   })
 }
 
+function lowCreditsBodyKey(): string {
+  if (!isCloud) return `${bs}.lowCredits.localBody`
+  if (workspaceType.value !== 'team') return `${bs}.lowCredits.personalBody`
+  return canManageBilling.value
+    ? `${bs}.lowCredits.ownerBody`
+    : `${bs}.lowCredits.memberBody`
+}
+
 function lowCreditsView(): BannerView {
   return {
     title: t(`${bs}.lowCredits.title`),
-    body: t(`${bs}.lowCredits.localBody`, { credits: creditsLeft() }),
+    body: t(
+      lowCreditsBodyKey(),
+      { credits: creditsLeft() },
+      centsToCredits(availableCents.value ?? 0)
+    ),
     action: canTopUp.value ? 'addCredits' : null,
     dismissible: true
   }
