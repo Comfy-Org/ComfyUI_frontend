@@ -24,7 +24,7 @@ import {
 } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
-import { pinCanvasTransform } from '@e2e/fixtures/utils/pinCanvasTransform'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const WORKFLOW_ID = '3601a000-0000-4000-8000-000000000001'
@@ -155,6 +155,20 @@ function canvasValues(page: Page): Promise<HandSetValues> {
   )
 }
 
+// The canvas places agent-added nodes beside the boot workflow, often under
+// the agent panel; scroll the canvas so the node sits in the open top-left.
+async function panToNode(page: Page, nodeId: number): Promise<void> {
+  await page.evaluate((id) => {
+    const app = window.app!
+    const node = app.graph.getNodeById(id)
+    if (!node) throw new Error(`node ${String(id)} is not on the canvas`)
+    app.canvas.ds.scale = 1
+    app.canvas.ds.offset = [160 - node.pos[0], 160 - node.pos[1]]
+    app.canvas.setDirty(true, true)
+  }, toNodeId(nodeId))
+  await nextFrame(page)
+}
+
 function parsePost(body: string | null): AgentPostMessageRequest {
   const parsed: unknown = JSON.parse(body ?? '{}')
   return zAgentPostMessageRequest.parse(parsed)
@@ -231,10 +245,12 @@ test.describe(
       )
 
       async function setWidgetsByHand(): Promise<void> {
+        await panToNode(page, SAMPLER_ID)
         await comfyPage.vueNodes.setInputNumberValue(
           comfyPage.vueNodes.getWidgetRowByLabel(samplerNode, 'cfg'),
           String(HAND_CFG)
         )
+        await panToNode(page, LOAD_IMAGE_ID)
         await new WidgetSelectDropdownFixture(
           comfyPage.vueNodes.getWidgetRowByLabel(loadImageNode, 'image')
         ).selectOption(HAND_IMAGE)
@@ -255,7 +271,6 @@ test.describe(
           .poll(() => canvasValues(page))
           .toEqual({ cfg: AGENT_CFG, image: AGENT_IMAGE })
         await expect(panel.sendButton).toBeVisible()
-        await pinCanvasTransform(page)
       }
 
       async function askQuestion(): Promise<AgentPostMessageRequest> {
