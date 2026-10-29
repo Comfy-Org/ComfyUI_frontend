@@ -8,6 +8,7 @@ import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
+import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
 import { commonType } from '@/lib/litegraph/src/utils/type'
 import {
   getWidgetIds,
@@ -30,6 +31,7 @@ import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import {
   captureInputLayout,
+  inputLink,
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
@@ -55,6 +57,7 @@ type AutogrowNode = LGraphNode &
           inputSpecs: InputSpecV2[]
           prefix?: string
           names?: string[]
+          inputSpec: InputSpecV2
         }
       >
     }
@@ -473,7 +476,7 @@ function addAutogrowGroup(
 ) {
   const { addNodeInput } = useLitegraphServiceAccess()
   const { max, min, inputSpecs } = node.comfyDynamic.autogrow[groupName]
-  if (ordinal >= max) return
+  if (ordinal >= max || isAutogrowGroupConnected(node, groupName)) return
 
   const previous = captureInputLayout(node)
   const inputLinks = new Map(previous.links)
@@ -515,8 +518,8 @@ function addAutogrowGroup(
     groupName,
     node
   ).name
-  const lastIndex = node.inputs.findLastIndex((inp) =>
-    inp.name.startsWith(targetName)
+  const lastIndex = node.inputs.findLastIndex(
+    (inp) => inp.name.startsWith(targetName) || inp.name === groupName
   )
   const insertionIndex = lastIndex === -1 ? node.inputs.length : lastIndex + 1
   node.inputs.splice(insertionIndex, 0, ...newInputs)
@@ -627,13 +630,14 @@ export function growAutogrowInput(
   return index === -1 ? undefined : index
 }
 
-function autogrowInputDisconnected(index: number, node: AutogrowNode) {
-  const input = node.inputs.at(index)
-  if (!input) return
+function autogrowInputDisconnected(input: INodeInputSlot, node: AutogrowNode) {
+  //The slot may have moved or been removed before this deferred compaction ran
+  const index = node.inputs.indexOf(input)
+  if (index === -1) return
   //The slot was reconnected before this deferred compaction ran (e.g. a
   //connect/disconnect/reconnect sequence in immediate succession); the
   //compaction is stale and must not run against the slot's new link.
-  if (node.getInputLink(index)) return
+  if (node.isInputConnected(index)) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
   const autogrowGroup = Object.hasOwn(node.comfyDynamic.autogrow, groupName)
     ? node.comfyDynamic.autogrow[groupName]
@@ -699,20 +703,73 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   }
   for (const input of toRemove) {
     const widgetName = input.widget?.name
-    if (!widgetName) continue
-    for (const widget of remove(node.widgets, (w) => w.name === widgetName)) {
-      widget.onRemove?.()
-      if (widget.widgetId) useWidgetValueStore().deleteWidget(widget.widgetId)
-    }
+    const widget = node.widgets.find((w) => w.name === widgetName)
+    if (!widget) continue
+    node.removeWidget(widget)
     syncNodeWidgetOrder(node)
   }
   node.size = [node.size[0], node.computeSize([...node.size])[1]]
 }
 
+/**
+ * Whether a group is connected as a whole. Its link carries the group's own
+ * type, which tells it apart from a link left on its slot while a graph
+ * configures.
+ */
+function isAutogrowGroupConnected(node: LGraphNode, groupName: string) {
+  const index = node.inputs.findIndex((input) => input.name === groupName)
+  if (index === -1 || !node.graph) return false
+  return inputLink(node.graph, node.id, index)?.type === node.inputs[index].type
+}
+
+/** A connected group owns no children; a disconnected one regrows them. */
+function syncAutogrowGroup(node: AutogrowNode, groupName: string) {
+  const children = node.inputs.filter((input) =>
+    input.name.startsWith(`${groupName}.`)
+  )
+  if (isAutogrowGroupConnected(node, groupName))
+    removeAutogrowChildren(node, groupName)
+  else if (!children.length) growAutogrowToMin(node, groupName)
+  else for (const input of children) ensureWidgetForInput(node, input)
+}
+
+function growAutogrowToMin(node: AutogrowNode, groupName: string) {
+  const { min } = node.comfyDynamic.autogrow[groupName]
+  for (let i = 0; i === 0 || i < min + 1; i++)
+    addAutogrowGroup(i, groupName, node)
+}
+
+/** Disconnects and removes every child of an autogrow group. */
+function removeAutogrowChildren(node: AutogrowNode, groupName: string) {
+  const prefix = `${groupName}.`
+  for (let slot = node.inputs.length - 1; slot >= 0; slot--) {
+    if (
+      node.inputs[slot].name.startsWith(prefix) &&
+      node.isInputConnected(slot)
+    )
+      node.disconnectInput(slot)
+  }
+  const previous = captureInputLayout(node)
+  const finalInputs = previous.inputs.filter(
+    (input) => !input.name.startsWith(prefix)
+  )
+  if (finalInputs.length === previous.inputs.length) return
+  const result = replaceNodeInputs(node, previous, finalInputs)
+  if (!result.ok) return
+  for (const widget of node.widgets.filter((w) => w.name.startsWith(prefix)))
+    node.removeWidget(widget)
+  for (const nested of Object.keys(node.comfyDynamic.autogrow))
+    if (nested.startsWith(prefix)) delete node.comfyDynamic.autogrow[nested]
+  syncNodeWidgetOrder(node)
+  node.size = [node.size[0], node.computeSize([...node.size])[1]]
+  node.graph?.setDirtyCanvas(true, true)
+}
+
 function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   if (node.comfyDynamic?.autogrow) return
   node.comfyDynamic ??= {}
-  node.comfyDynamic.autogrow = {}
+  const groups: AutogrowNode['comfyDynamic']['autogrow'] = {}
+  node.comfyDynamic.autogrow = groups
 
   let pendingConnection: number | undefined
   //Whether the input-side `connect` event for `pendingConnection` has
@@ -743,6 +800,14 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
 
   const originalOnConnectInput = node.onConnectInput
   node.onConnectInput = function (slot: number, ...args) {
+    //A group is only promoted whole, from a subgraph input
+    const groupInput = this.inputs.at(slot)
+    if (
+      groupInput &&
+      Object.hasOwn(groups, groupInput.name) &&
+      !isSubgraphInput(args[1])
+    )
+      return false
     pendingConnection = slot
     pendingConnectionSeen = false
     requestAnimationFrame(() => {
@@ -751,6 +816,14 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
     })
     return originalOnConnectInput?.apply(this, [slot, ...args]) ?? true
   }
+
+  node.onAfterGraphConfigured = useChainCallback(
+    node.onAfterGraphConfigured,
+    function (this: AutogrowNode) {
+      for (const groupName of Object.keys(groups))
+        syncAutogrowGroup(this, groupName)
+    }
+  )
 
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
@@ -763,6 +836,12 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
     ) {
       const input = this.inputs.at(slot)
       if (contype !== LiteGraph.INPUT || !input) return
+      if (Object.hasOwn(this.comfyDynamic.autogrow, input.name)) {
+        //Links sit on stale slots until a configuring graph realigns them,
+        //so groups are synced once it has configured
+        if (!useApp().configuringGraph) syncAutogrowGroup(this, input.name)
+        return
+      }
       //Return if input isn't known autogrow
       const key = input.name.slice(0, input.name.lastIndexOf('.'))
       const autogrowGroup = Object.hasOwn(this.comfyDynamic.autogrow, key)
@@ -787,14 +866,20 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
           })
           return
         }
-        requestAnimationFrame(() => autogrowInputDisconnected(slot, this))
+        requestAnimationFrame(() => autogrowInputDisconnected(input, this))
       }
     }
   )
 }
 function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
-  if (!node.widgets?.some((w) => w.name === inputSpecV2.name))
-    addAutogrowGroupWidget(node, inputSpecV2.name, inputSpecV2.display_name)
+  const groupName = inputSpecV2.name
+  const groupInput =
+    node.inputs.find((input) => input.name === groupName) ??
+    node.addInput(groupName, inputSpecV2.type, {
+      localized_name: inputSpecV2.display_name
+    })
+  if (!node.widgets?.some((w) => w.name === groupName))
+    addAutogrowGroupWidget(node, groupInput)
   withComfyAutogrow(node)
 
   const parseResult = zAutogrowOptions.safeParse(inputSpecV2)
@@ -811,13 +896,67 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
       transformInputSpecV1ToV2(v, { name, isOptional: index === 1 })
     )
   )
-  node.comfyDynamic.autogrow[inputSpecV2.name] = {
+  node.comfyDynamic.autogrow[groupName] = {
     names,
     min,
     max: names?.length ?? max,
     prefix,
-    inputSpecs: inputsV2
+    inputSpecs: inputsV2,
+    inputSpec: inputSpecV2
   }
-  for (let i = 0; i === 0 || i < min + 1; i++)
-    addAutogrowGroup(i, inputSpecV2.name, node)
+  growAutogrowToMin(node, groupName)
+}
+
+/**
+ * Binds `input` of a subgraph node to the interior autogrow group it is
+ * linked to, by applying the group's original input definition to the
+ * subgraph node, which then owns and grows its own children.
+ * @returns Whether `interiorInput` is an autogrow group.
+ */
+export function bindPromotedAutogrowGroup(
+  node: LGraphNode,
+  input: INodeInputSlot,
+  interiorNode: LGraphNode,
+  interiorInput: INodeInputSlot
+): boolean {
+  if (
+    !hasAutogrowGroups(interiorNode) ||
+    !Object.hasOwn(interiorNode.comfyDynamic.autogrow, interiorInput.name)
+  )
+    return false
+  if (
+    hasAutogrowGroups(node) &&
+    Object.hasOwn(node.comfyDynamic.autogrow, input.name)
+  )
+    return true
+  const { inputSpec } = interiorNode.comfyDynamic.autogrow[interiorInput.name]
+  applyAutogrow(node, {
+    ...inputSpec,
+    name: input.name,
+    display_name: input.label ?? inputSpec.display_name
+  })
+  return true
+}
+
+/**
+ * Removes an autogrow group a subgraph node owns through `input`, along with
+ * its children.
+ * @returns Whether `input` was an autogrow group.
+ */
+export function unbindPromotedAutogrowGroup(
+  node: LGraphNode,
+  input: INodeInputSlot
+): boolean {
+  if (
+    !hasAutogrowGroups(node) ||
+    !Object.hasOwn(node.comfyDynamic.autogrow, input.name)
+  )
+    return false
+  removeAutogrowChildren(node, input.name)
+  delete node.comfyDynamic.autogrow[input.name]
+  const groupWidget = node.widgets.find((w) => w.name === input.name)
+  if (groupWidget) node.removeWidget(groupWidget)
+  input.widget = undefined
+  syncNodeWidgetOrder(node)
+  return true
 }

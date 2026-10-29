@@ -167,7 +167,9 @@ function inHoveredGroup(widgetName: string) {
 
 const renderedRows = computed(() =>
   processedWidgets.flatMap((widget) => {
-    if (widget.simplified.type === AUTOGROW_GROUP_WIDGET_TYPE) {
+    const isAutogrowGroup =
+      widget.simplified.type === AUTOGROW_GROUP_WIDGET_TYPE
+    if (isAutogrowGroup && !widget.slotMetadata?.linked) {
       if (!ioInputDragActive.value) return []
       return [
         {
@@ -184,10 +186,12 @@ const renderedRows = computed(() =>
     }
     const isConverted = isConvertedWidgetType(widget.simplified.type)
     const showsControl = !isConverted && widget.visible
+    //A connected group renders as an ordinary connected row
+    const suppressedByConnection =
+      !!widget.suppressedByConnection || isAutogrowGroup
     const shouldRender = isConverted
       ? !!widget.slotMetadata
-      : widget.visible ||
-        (!!widget.suppressedByConnection && !!widget.slotMetadata)
+      : widget.visible || (suppressedByConnection && !!widget.slotMetadata)
     if (!shouldRender) return []
     const highlighted = inHoveredGroup(widget.simplified.name)
 
@@ -207,7 +211,7 @@ const renderedRows = computed(() =>
             highlighted) &&
             'opacity-100'
         ),
-        standalone: !showsControl && !!widget.suppressedByConnection,
+        standalone: !showsControl && suppressedByConnection,
         testId: showsControl ? 'node-widget' : undefined,
         rowSize:
           showsControl &&
