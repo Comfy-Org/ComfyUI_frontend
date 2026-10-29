@@ -7,24 +7,16 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'
 
+import { useAgentExtensionActions } from './useAgentExtensionActions'
+
 export function useAgentExtensionNotices() {
   const { t } = useI18n()
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
   const toast = useToast()
   const settingsDialog = useSettingsDialog()
-  const notified = new Set(
-    settingStore.get('Comfy.Extension.SeenAgentExtensions')
-  )
-
-  function disableExtension(extension: ComfyExtension) {
-    const disabled = settingStore.get('Comfy.Extension.Disabled')
-    if (!disabled.includes(extension.name)) {
-      void settingStore
-        .set('Comfy.Extension.Disabled', [...disabled, extension.name])
-        .then(() => window.location.reload())
-    }
-  }
+  const { disableExtension } = useAgentExtensionActions()
+  const notified = new Set<string>()
 
   function showNotice(extension: ComfyExtension) {
     toast.info(t('g.agentExtensionAdded', { name: extension.name }), {
@@ -44,11 +36,15 @@ export function useAgentExtensionNotices() {
 
   watch(
     [
+      () => settingStore.isReady,
       () => extensionStore.agentExtensions,
       () => extensionStore.areLateExtensionsPending
     ],
-    ([extensions, pending]) => {
-      if (pending) return
+    ([settingsReady, extensions, pending]) => {
+      if (!settingsReady || pending) return
+      const seen =
+        settingStore.settingValues['Comfy.Extension.SeenAgentExtensions'] ?? []
+      seen.forEach((name) => notified.add(name))
       const unseen = extensions.filter(({ name }) => !notified.has(name))
       if (!unseen.length) return
 

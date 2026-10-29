@@ -151,27 +151,60 @@ test.describe(
       const tab = page.getByTestId('agent-cushions-tab-button')
       await expect(tab).toHaveAccessibleName('Agent cushions (Agent-created)')
 
-      for (const size of ['normal', 'small']) {
-        await comfyPage.settings.setSetting('Comfy.Sidebar.Size', size)
-        const count = await tab.getByText('123').boundingBox()
-        const provenance = await tab.getByText('AI').boundingBox()
-        expect(count).not.toBeNull()
-        expect(provenance).not.toBeNull()
-        expect(
-          count!.x + count!.width <= provenance!.x ||
-            provenance!.x + provenance!.width <= count!.x ||
-            count!.y + count!.height <= provenance!.y ||
-            provenance!.y + provenance!.height <= count!.y
-        ).toBe(true)
-      }
+      await test.step('Keep both badges separate in the normal sidebar', async () => {
+        await comfyPage.settings.setSetting('Comfy.Sidebar.Size', 'normal')
+        await expect(async () => {
+          const count = await tab.getByText('123').boundingBox()
+          const provenance = await tab.getByText('AI').boundingBox()
+          expect(count).not.toBeNull()
+          expect(provenance).not.toBeNull()
+          expect(
+            count!.x + count!.width <= provenance!.x ||
+              provenance!.x + provenance!.width <= count!.x ||
+              count!.y + count!.height <= provenance!.y ||
+              provenance!.y + provenance!.height <= count!.y
+          ).toBe(true)
+        }).toPass({ timeout: 5_000 })
+      })
 
-      await tab.click({ button: 'right' })
-      await expect(
-        comfyPage.contextMenu.menuItem('Manage extensions')
-      ).toBeVisible()
-      await expect(
-        comfyPage.contextMenu.menuItem('Disable extension')
-      ).toBeVisible()
+      await test.step('Keep both badges separate in the small sidebar', async () => {
+        await comfyPage.settings.setSetting('Comfy.Sidebar.Size', 'small')
+        await expect(async () => {
+          const count = await tab.getByText('123').boundingBox()
+          const provenance = await tab.getByText('AI').boundingBox()
+          expect(count).not.toBeNull()
+          expect(provenance).not.toBeNull()
+          expect(
+            count!.x + count!.width <= provenance!.x ||
+              provenance!.x + provenance!.width <= count!.x ||
+              count!.y + count!.height <= provenance!.y ||
+              provenance!.y + provenance!.height <= count!.y
+          ).toBe(true)
+        }).toPass({ timeout: 5_000 })
+      })
+
+      await test.step('Open the agent extension menu', async () => {
+        await page.route('**/api/settings/Comfy.Extension.Disabled', (route) =>
+          route.request().method() === 'POST'
+            ? route.fulfill({ status: 403 })
+            : route.fallback()
+        )
+        await tab.click({ button: 'right' })
+        await expect(
+          comfyPage.contextMenu.menuItem('Manage extensions')
+        ).toBeVisible()
+        await expect(
+          comfyPage.contextMenu.menuItem('Disable extension')
+        ).toBeVisible()
+      })
+
+      await test.step('Keep the page open when the disable is refused', async () => {
+        await comfyPage.contextMenu.menuItem('Disable extension').click()
+        await expect(tab).toBeVisible()
+        await expect(
+          comfyPage.toast.withText("Couldn't disable the extension. Try again.")
+        ).toBeVisible()
+      })
     })
   }
 )

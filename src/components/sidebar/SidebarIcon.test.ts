@@ -47,19 +47,6 @@ describe('SidebarIcon', () => {
     expect(screen.getByText(badge)).toBeInTheDocument()
   })
 
-  it.for([false, true])(
-    'separates provenance from a multi-digit icon badge when isSmall is %s',
-    (isSmall) => {
-      renderSidebarIcon({
-        iconBadge: '123',
-        provenanceBadge: 'AI',
-        isSmall
-      })
-      expect(screen.getByText('123')).toHaveClass('-top-1', '-right-1')
-      expect(screen.getByText('AI')).toHaveClass('-bottom-1', '-left-1')
-    }
-  )
-
   it('names the provenance in the accessible name', () => {
     renderSidebarIcon({
       tooltip: 'Assets',

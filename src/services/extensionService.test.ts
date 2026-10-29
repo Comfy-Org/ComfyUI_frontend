@@ -5,11 +5,13 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { useExtensionService } from './extensionService'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('firebase/auth'))
 
 describe('invokeExtensionsAsync', () => {
   const HOOK = 'addCustomNodeDefs'
@@ -413,10 +415,10 @@ describe('invokeExtensionsAsync', () => {
         app,
         'extensionManager'
       )
-      const registerSidebarTabForExtension = vi.fn()
+      const workspaceStore = useWorkspaceStore()
       Object.defineProperty(app, 'extensionManager', {
         configurable: true,
-        value: { registerSidebarTabForExtension }
+        value: workspaceStore
       })
       try {
         register({
@@ -438,10 +440,14 @@ describe('invokeExtensionsAsync', () => {
         else delete (app as Partial<typeof app>).extensionManager
       }
 
-      expect(registerSidebarTabForExtension).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 'agent-tab' }),
-        'agent.tools.sidebar'
-      )
+      expect(
+        workspaceStore.sidebarTab.sidebarTabs.find(
+          ({ id }) => id === 'agent-tab'
+        )
+      ).toMatchObject({ title: 'Agent tab' })
+      expect(
+        workspaceStore.sidebarTab.getSourceExtensionName('agent-tab')
+      ).toBe('agent.tools.sidebar')
     })
   })
 })

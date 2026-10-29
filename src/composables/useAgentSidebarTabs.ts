@@ -2,10 +2,11 @@ import { useI18n } from 'vue-i18n'
 
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
+
+import { useAgentExtensionActions } from './useAgentExtensionActions'
 
 export type AgentSidebarTab = SidebarTabExtension
 
@@ -13,8 +14,8 @@ export function useAgentSidebarTabs() {
   const { t } = useI18n()
   const workspaceStore = useWorkspaceStore()
   const extensionStore = useExtensionStore()
-  const settingStore = useSettingStore()
   const settingsDialog = useSettingsDialog()
+  const { disableExtension } = useAgentExtensionActions()
 
   function sourceExtension(tab: SidebarTabExtension) {
     const name = workspaceStore.sidebarTab.getSourceExtensionName(tab.id)
@@ -31,13 +32,7 @@ export function useAgentSidebarTabs() {
   async function disableTabExtension(tab: SidebarTabExtension) {
     const extension = sourceExtension(tab)
     if (!extension) return
-    const disabled = settingStore.get('Comfy.Extension.Disabled')
-    if (disabled.includes(extension.name)) return
-    await settingStore.set('Comfy.Extension.Disabled', [
-      ...disabled,
-      extension.name
-    ])
-    window.location.reload()
+    await disableExtension(extension)
   }
 
   function getTabContextMenu(tab: SidebarTabExtension): MenuItem[] {

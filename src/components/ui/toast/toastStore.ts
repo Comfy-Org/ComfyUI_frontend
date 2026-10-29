@@ -8,7 +8,6 @@ import type { ToastAction, ToastOptions } from '@/types/toastOptions'
 type ToastKind = 'error' | 'info' | 'loading' | 'success' | 'warning'
 
 export interface Toast {
-  action?: ToastAction
   closable: boolean
   duration: number
   id: ToastId
@@ -28,7 +27,6 @@ export const useToast = defineStore('toast', () => {
     toasts.value = [
       ...toasts.value.filter((toast) => toast.id !== id),
       {
-        action: options.action,
         actions: [
           ...(options.action ? [options.action] : []),
           ...(options.actions ?? [])

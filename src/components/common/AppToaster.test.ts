@@ -124,6 +124,9 @@ describe('AppToaster', () => {
       ]
     })
     await nextTick()
+    expect(
+      screen.getByRole('status', { name: 'Notification' })
+    ).toHaveTextContent('Extension added. Manage. Disable')
     await user.click(screen.getByRole('button', { name: 'Manage' }))
     expect(manage).toHaveBeenCalledOnce()
     expect(disable).not.toHaveBeenCalled()
