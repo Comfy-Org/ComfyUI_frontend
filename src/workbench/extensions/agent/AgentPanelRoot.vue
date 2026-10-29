@@ -817,7 +817,6 @@ function reportWithheldDraft(workflowId: string | undefined): void {
     surface: 'agent',
     errorType,
     level: 'warning',
-    fingerprint: [errorType],
     tags: {
       failure_kind: 'bad_state',
       feature_area: 'agent',
