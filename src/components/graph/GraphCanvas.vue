@@ -590,6 +590,7 @@ onMounted(async () => {
     await useFirstRunEntry().handleStartupOutcome(startupOutcome)
     bootstrapOutcome = 'completed'
   } finally {
+    workflowStore.markTabsRestored()
     workspaceStore.spinner = false
     bootstrapTracer.complete(bootstrapOutcome)
   }
