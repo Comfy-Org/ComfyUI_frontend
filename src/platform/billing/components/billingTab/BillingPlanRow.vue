@@ -89,6 +89,11 @@ const title = computed(() => {
   if (state.kind === 'unknown') {
     return t('workspacePanel.billingTab.plan.unknown.title')
   }
+  if (state.kind === 'salesManaged') {
+    return (
+      state.planName ?? t('workspacePanel.billingTab.plan.salesManaged.title')
+    )
+  }
   return state.planName
 })
 
@@ -127,6 +132,13 @@ const statusLine = computed(() => {
   if (state.kind === 'active') return activeLine(state)
   if (state.kind === 'paused') return t(`${key}.paused`)
   if (state.kind === 'noPlan') return noPlanLine(state)
+  if (state.kind === 'salesManaged') {
+    return state.renewsAt
+      ? t(`${key}.salesManaged.renews`, {
+          date: formatPlanDate(state.renewsAt, locale.value, state.cadence)
+        })
+      : t(`${key}.salesManaged.line`)
+  }
   if (state.kind === 'ending') {
     return t(`${key}.ending`, {
       date: formatPlanDate(state.endsAt, locale.value, state.cadence)

@@ -478,6 +478,52 @@ describe('BillingTab', () => {
   )
 
   it.for([
+    {
+      case: 'a served renewal date',
+      renewalDate: '2027-10-28T00:00:00Z',
+      line: 'Billed by contract. Renews October 28, 2027.'
+    },
+    {
+      case: 'no renewal date',
+      renewalDate: null,
+      line: 'Billed by contract.'
+    }
+  ])(
+    'shows an active sales-managed plan as Enterprise with $case',
+    ({ renewalDate, line }) => {
+      arrange({
+        planKind: 'sales_managed',
+        canOpenPlans: false,
+        subscription: {
+          ...activeSubscription,
+          tier: 'ENTERPRISE',
+          duration: 'ANNUAL',
+          renewalDate
+        }
+      })
+
+      expect(
+        screen.getByRole('heading', { name: 'Enterprise' })
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+        line
+      )
+      expect(
+        screen.getByRole('link', { name: 'Contact sales' })
+      ).toHaveAttribute('href', 'https://comfy.org/contact/')
+    }
+  )
+
+  it('picks the contract-billing row by plan_kind and keeps the served plan name on a PRO tier', () => {
+    arrange({ planKind: 'sales_managed', canOpenPlans: false })
+
+    expect(screen.getByRole('heading', { name: 'Pro' })).toBeInTheDocument()
+    expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+      'Billed by contract. Renews November 15.'
+    )
+  })
+
+  it.for([
     { name: 'Manage', scenario: {} },
     {
       name: 'Subscribe',
