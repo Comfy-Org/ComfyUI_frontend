@@ -184,6 +184,11 @@ describe('renderShortcutKeycaps', () => {
     expect(out).toContain('<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>+</kbd>')
   })
 
+  it('leaves an alternation of different modifiers as prose', () => {
+    const html = '<p>Ctrl/Alt+B is not one shortcut.</p>'
+    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
+  })
+
   it('leaves a word that begins with a key letter alone', () => {
     const html = '<p>Ctrl+click a node to add it to the selection.</p>'
     expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)

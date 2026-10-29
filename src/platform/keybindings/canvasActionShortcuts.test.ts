@@ -2,30 +2,37 @@ import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { describe, expect, it } from 'vitest'
 
 import {
-  CANVAS_ACTION_COMMAND_IDS,
   canvasCommandForWrittenKeys,
   modifierLabel
 } from './canvasActionShortcuts'
 import { CORE_KEYBINDINGS } from './defaults'
 
-describe('CANVAS_ACTION_COMMAND_IDS', () => {
-  it('lists only actions a reply could name, which needs a modifier', () => {
-    const unreachable = CORE_KEYBINDINGS.filter(
-      (keybinding) =>
-        CANVAS_ACTION_COMMAND_IDS.has(keybinding.commandId) &&
-        !new KeybindingImpl(keybinding).combo.hasModifier
-    ).map((keybinding) => keybinding.commandId)
+describe('canvasCommandForWrittenKeys over the shipped defaults', () => {
+  it('answers for every modifier-bearing default the app ships', () => {
+    const unreachable = CORE_KEYBINDINGS.filter((keybinding) => {
+      const combo = new KeybindingImpl(keybinding).combo
+      return (
+        combo.hasModifier &&
+        canvasCommandForWrittenKeys(combo.getKeySequences()) === undefined
+      )
+    }).map((keybinding) => keybinding.commandId)
 
     expect(unreachable).toEqual([])
   })
 
-  it('lists only commands the app actually ships a default for', () => {
-    const shipped = new Set(CORE_KEYBINDINGS.map((it) => it.commandId))
-    const missing = [...CANVAS_ACTION_COMMAND_IDS].filter(
-      (commandId) => !shipped.has(commandId)
+  it('answers for a shortcut outside the canvas, such as paste and connect', () => {
+    expect(canvasCommandForWrittenKeys(['Ctrl', 'Shift', 'v'])).toBe(
+      'Comfy.Canvas.PasteFromClipboardWithConnect'
     )
+  })
 
-    expect(missing).toEqual([])
+  it('has no command for a default that needs no modifier', () => {
+    const pin = CORE_KEYBINDINGS.find(
+      (keybinding) => keybinding.commandId === 'Comfy.Canvas.ToggleSelected.Pin'
+    )
+    const keys = new KeybindingImpl(pin!).combo.getKeySequences()
+
+    expect(canvasCommandForWrittenKeys(keys)).toBeUndefined()
   })
 })
 

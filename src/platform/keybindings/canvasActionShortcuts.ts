@@ -3,21 +3,6 @@ import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 
 import { CORE_KEYBINDINGS } from './defaults'
 
-/** The canvas actions whose shipped default a reply may name. */
-export const CANVAS_ACTION_COMMAND_IDS = new Set([
-  'Comfy.Canvas.ToggleSelectedNodes.Bypass',
-  'Comfy.Canvas.ToggleSelectedNodes.Mute',
-  'Comfy.Canvas.ToggleSelectedNodes.Collapse',
-  'Comfy.Graph.GroupSelectedNodes',
-  'Comfy.Graph.ConvertToSubgraph',
-  'Comfy.QueuePrompt',
-  'Comfy.Interrupt',
-  'Comfy.SaveWorkflow',
-  'Comfy.Canvas.SelectAll',
-  'Comfy.Canvas.ZoomIn',
-  'Comfy.Canvas.ZoomOut'
-])
-
 const EQUIVALENT_MODIFIER: Record<string, string> = {
   CMD: 'CTRL',
   COMMAND: 'CTRL',
@@ -69,12 +54,14 @@ export function canonicalCombo(keys: string[]): string {
 }
 
 const COMMAND_ID_BY_DEFAULT_COMBO = new Map(
-  CORE_KEYBINDINGS.filter((keybinding) =>
-    CANVAS_ACTION_COMMAND_IDS.has(keybinding.commandId)
-  ).map((keybinding) => [
-    canonicalCombo(new KeybindingImpl(keybinding).combo.getKeySequences()),
-    keybinding.commandId
-  ])
+  CORE_KEYBINDINGS.map(
+    (keybinding) => [new KeybindingImpl(keybinding).combo, keybinding] as const
+  )
+    .filter(([combo]) => combo.hasModifier)
+    .map(([combo, keybinding]) => [
+      canonicalCombo(combo.getKeySequences()),
+      keybinding.commandId
+    ])
 )
 
 /** The canvas command that ships `keys` as a default, else undefined. */

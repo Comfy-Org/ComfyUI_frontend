@@ -73,18 +73,28 @@ function keycaps(sequences: string[]): DocumentFragment {
   return fragment
 }
 
-function slotKey(slot: string): string {
-  const [spelling] = slot.split('/')
-  return modifierLabel(spelling.trim()) ?? slot
+function slotKey(slot: string): string | undefined {
+  const spellings = slot.split('/')
+  if (spellings.length === 1) return modifierLabel(slot) ?? slot
+  if (spellings.some((spelling) => !spelling.trim())) return slot
+
+  const labels = spellings.map((spelling) => modifierLabel(spelling.trim()))
+  const [first] = labels
+  return first && labels.every((label) => label === first) ? first : undefined
 }
 
-function comboKeys(combo: string): string[] {
+function comboKeys(combo: string): string[] | undefined {
   const slots = combo.split(/\s*\+\s*/)
   const keys: string[] = []
-  slots.forEach((slot, index) => {
-    if (slot) keys.push(slotKey(slot))
-    else if (index > 0 && index === slots.length - 1) keys.push('+')
-  })
+  for (const [index, slot] of slots.entries()) {
+    if (!slot) {
+      if (index > 0 && index === slots.length - 1) keys.push('+')
+      continue
+    }
+    const key = slotKey(slot)
+    if (key === undefined) return undefined
+    keys.push(key)
+  }
   return keys
 }
 
@@ -109,7 +119,8 @@ interface Match {
 function matchesIn(text: string, resolve: KeySequenceResolver): Match[] {
   const matches: Match[] = []
   for (const match of text.matchAll(new RegExp(MODIFIER_BEARING_COMBO, 'gi'))) {
-    const keys = liveKeys(comboKeys(match[0]), resolve)
+    const written = comboKeys(match[0])
+    const keys = written && liveKeys(written, resolve)
     if (keys) {
       matches.push({
         start: match.index,
