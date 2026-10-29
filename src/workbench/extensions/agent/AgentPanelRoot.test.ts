@@ -335,6 +335,7 @@ function syncFakeSelection() {
 }
 
 beforeEach(() => {
+  useWorkflowStore().markTabsRestored()
   distribution.isCloud = true
   distribution.isDesktop = false
   agentSocket = createFakeAgentSocket()
