@@ -30,6 +30,7 @@ import type {
   JobStatus
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import {
   loadedEvent,
   reduceDeploymentPick
@@ -643,7 +644,7 @@ describe('TopMenuSection', () => {
 
   it.for([
     {
-      listing: 'shows Builds to this account',
+      listing: 'was served',
       state: reduceDeploymentPick(
         { phase: 'idle' },
         loadedEvent({ builds_visible: true, items: [] })
@@ -652,13 +653,13 @@ describe('TopMenuSection', () => {
       surveyCount: 0
     },
     {
-      listing: 'hides Builds from this account',
+      listing: 'was served without Build names',
       state: reduceDeploymentPick(
         { phase: 'idle' },
         loadedEvent({ builds_visible: false, items: [] })
       ),
-      pitchCount: 0,
-      surveyCount: 1
+      pitchCount: 1,
+      surveyCount: 0
     },
     {
       listing: 'refused this account',
@@ -667,7 +668,7 @@ describe('TopMenuSection', () => {
       surveyCount: 1
     }
   ] as const)(
-    'on Comfy Cloud, Extensions pitches deploying custom nodes only when the deployments listing $listing',
+    'on Comfy Cloud, Extensions chooses between the custom deployment pitch and the survey when the deployments listing $listing',
     async ({ state, pitchCount, surveyCount }) => {
       distribution.isCloud = true
       onTestFinished(() => {
@@ -691,6 +692,28 @@ describe('TopMenuSection', () => {
       expect(managerSurveyDialog.show).toHaveBeenCalledTimes(surveyCount)
     }
   )
+
+  it('on Comfy Cloud, Extensions opens the survey when the deployments listing has not answered in time', async () => {
+    distribution.isCloud = true
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      distribution.isCloud = false
+      vi.useRealTimers()
+    })
+    vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
+      new Promise(() => {})
+    )
+    createWrapper()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+    await user.click(
+      screen.getByRole('button', { name: 'menu.manageExtensions' })
+    )
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS)
+
+    expect(managerSurveyDialog.show).toHaveBeenCalledOnce()
+    expect(openDeployCustomNodesDialog).not.toHaveBeenCalled()
+  })
 
   it('keeps the floating actionbar container open for the extensions button', async () => {
     localStorage.setItem('Comfy.MenuPosition.Docked', 'false')

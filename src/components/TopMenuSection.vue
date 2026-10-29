@@ -201,6 +201,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -373,10 +374,20 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(legacyContentCheckRafId)
 })
 
+function waitForDeploymentListing(): Promise<void> {
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  return Promise.race([
+    deploymentPickStore.loadOnce(),
+    new Promise<void>((resolve) => {
+      timeout = setTimeout(resolve, DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS)
+    })
+  ]).finally(() => clearTimeout(timeout))
+}
+
 async function pitchDeployingCustomNodes(): Promise<boolean> {
   if (!deploymentSwitcherOffered.value) return false
-  await deploymentPickStore.loadOnce()
-  if (!deploymentPickStore.buildsVisible) return false
+  await waitForDeploymentListing()
+  if (!deploymentPickStore.isVisible) return false
   return openDeployCustomNodesDialog()
 }
 
