@@ -36,15 +36,14 @@ const UNSUPPORTED: MissingNodeType[] = [
   { type: 'BiRefNet', cnrId: 'comfyui-birefnet', isReplaceable: false }
 ]
 
-function listing(
-  buildsVisible: boolean,
-  bootDeployment: WorkspaceDeployment | null
-) {
+function listing(served: boolean, bootDeployment: WorkspaceDeployment | null) {
   const store = useDeploymentPickStore()
-  store.state = reduceDeploymentPick(
-    { phase: 'idle' },
-    loadedEvent({ builds_visible: buildsVisible, items: [] })
-  )
+  store.state = served
+    ? reduceDeploymentPick(
+        { phase: 'idle' },
+        loadedEvent({ builds_visible: true, items: [] })
+      )
+    : { phase: 'hidden' }
   store.bootDeployment = bootDeployment
 }
 
@@ -55,7 +54,7 @@ describe(noticeMissingNodes, () => {
     vi.mocked(openWorkflowNeedsDeploymentDialog).mockResolvedValue(true)
   })
 
-  it('offers a custom deployment instead of the overlay on Comfy Cloud, to an account that may create Builds', async () => {
+  it('offers a custom deployment instead of the overlay on Comfy Cloud, to an account served the deployments listing', async () => {
     listing(true, null)
 
     noticeMissingNodes(UNSUPPORTED)
@@ -70,42 +69,42 @@ describe(noticeMissingNodes, () => {
     {
       when: 'the editor is not on Comfy Cloud',
       offer: false,
-      builds: true,
+      served: true,
       boot: null,
       nodes: UNSUPPORTED
     },
     {
       when: 'it runs on a deployment',
       offer: true,
-      builds: true,
+      served: true,
       boot: deployment,
       nodes: UNSUPPORTED
     },
     {
-      when: 'the account may not create Builds',
+      when: 'the deployments listing was not served',
       offer: true,
-      builds: false,
+      served: false,
       boot: null,
       nodes: UNSUPPORTED
     },
     {
       when: 'every missing node has a replacement',
       offer: true,
-      builds: true,
+      served: true,
       boot: null,
       nodes: [{ type: 'OldSampler', isReplaceable: true }]
     }
   ] satisfies {
     when: string
     offer: boolean
-    builds: boolean
+    served: boolean
     boot: WorkspaceDeployment | null
     nodes: MissingNodeType[]
   }[])(
     'shows the error overlay when $when',
-    async ({ offer, builds, boot, nodes }) => {
+    async ({ offer, served, boot, nodes }) => {
       offered.value = offer
-      listing(builds, boot)
+      listing(served, boot)
 
       noticeMissingNodes(nodes)
 

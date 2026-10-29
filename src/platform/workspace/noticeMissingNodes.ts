@@ -9,13 +9,13 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 async function offerCustomDeployment(): Promise<boolean> {
   const store = useDeploymentPickStore()
   await store.loadOnce()
-  if (!store.buildsVisible || store.bootDeployment !== null) return false
+  if (!store.isVisible || store.bootDeployment !== null) return false
   return openWorkflowNeedsDeploymentDialog()
 }
 
 /**
  * Tells the user that a workflow just opened needs nodes this editor lacks.
- * On Comfy Cloud, to an account that may create Builds, nodes with no
+ * On Comfy Cloud, to an account served the deployments listing, nodes with no
  * replacement open the custom deployment dialog; otherwise the error overlay.
  */
 export function noticeMissingNodes(
