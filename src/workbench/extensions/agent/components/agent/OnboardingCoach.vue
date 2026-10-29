@@ -70,12 +70,10 @@ const visible = computed(() => active.value && target.value !== null)
 // Let surfaces like the What's New popup defer while a coach card is on
 // screen. The store drops the source with this component's scope on unmount.
 useOnboardingOverlayStore().registerSource(() => visible.value)
-const toolbar = ref<HTMLElement | null>(null)
 const card = ref<HTMLElement | null>(null)
 const arrowElement = ref<HTMLElement | null>(null)
 const tooltip = ref<HTMLElement | null>(null)
 const bounds = useElementBounding(target)
-const toolbarBounds = useElementBounding(toolbar)
 const tooltipBounds = useElementBounding(tooltip)
 const { width, height } = useWindowSize()
 let targetRetryTimer: ReturnType<typeof setTimeout> | undefined
@@ -93,14 +91,8 @@ function resolveTargets(): void {
   const nextTarget = active.value
     ? document.querySelector<HTMLElement>(step.value.target)
     : null
-  const nextToolbar =
-    active.value && step.value.toolbarTarget
-      ? document.querySelector<HTMLElement>(step.value.toolbarTarget)
-      : null
   if (target.value !== nextTarget) target.value = nextTarget
-  if (toolbar.value !== nextToolbar) toolbar.value = nextToolbar
   bounds.update()
-  toolbarBounds.update()
   scheduleTargetRetry()
 }
 
@@ -408,9 +400,13 @@ useEventListener(
                 @click="previous"
                 >{{ $t('onboardingCoachmarks.back') }}</Button
               >
-              <Button variant="secondary" size="md" @click="onSkip">{{
-                $t('agent.skip')
-              }}</Button>
+              <Button
+                v-if="!isLast"
+                variant="secondary"
+                size="md"
+                @click="onSkip"
+                >{{ $t('agent.skip') }}</Button
+              >
               <Button variant="inverted" size="md" @click="onNext">{{
                 $t(advanceLabelKey)
               }}</Button>

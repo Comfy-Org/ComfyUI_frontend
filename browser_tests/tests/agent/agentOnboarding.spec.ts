@@ -139,7 +139,7 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       .not.toBe('true')
   })
 
-  test('walks all four accessible cards and persists completion', async ({
+  test('walks every accessible card and persists completion', async ({
     page,
     agentFlagEnabled
   }) => {
@@ -150,7 +150,6 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     const steps = [
       [enMessages.agent.coachTitle, enMessages.agent.coachBody],
       [enMessages.agent.coachWorkflowTitle, enMessages.agent.coachWorkflowBody],
-      [enMessages.agent.coachGraphTitle, enMessages.agent.coachGraphBody],
       [enMessages.agent.coachHistoryTitle, enMessages.agent.coachHistoryBody]
     ] as const
 
@@ -161,6 +160,10 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       await expect(dialog).toContainText(`${index + 1} of ${steps.length}`)
       await expect(page.getByTestId('agent-coach-spotlight')).toBeVisible()
       await expect(dialog).toBeInViewport({ ratio: 1 })
+      // The last card has nothing left to skip, so Done is its only way out.
+      await expect(
+        dialog.getByRole('button', { name: enMessages.agent.skip })
+      ).toHaveCount(index === steps.length - 1 ? 0 : 1)
       await dialog
         .getByRole('button', {
           name:

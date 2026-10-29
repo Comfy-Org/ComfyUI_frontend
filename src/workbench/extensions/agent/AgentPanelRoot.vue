@@ -1929,13 +1929,6 @@ const coachSteps = computed<CoachStep[]>(() => [
     body: t('agent.coachWorkflowBody')
   },
   {
-    target: '.graph-canvas-panel',
-    placement: 'graph-bottom',
-    toolbarTarget: '.graph-canvas-panel [role="toolbar"]',
-    title: t('agent.coachGraphTitle'),
-    body: t('agent.coachGraphBody')
-  },
-  {
     target: '#agent-chat-history',
     placement: 'left-start',
     tooltip: t('agent.showChatHistory'),
