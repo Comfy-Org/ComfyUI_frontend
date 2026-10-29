@@ -9,7 +9,6 @@
       :modal="false"
       :side-offset="8"
       :class="cn(switcherMenuWidthClass, switcherMenuMotionClass)"
-      @update:open="onOpenChange"
     >
       <template #trigger>
         <Button
@@ -108,7 +107,6 @@ const switchingTo = ref<string | null>(null)
 watch(switcherOpenAsks, () => {
   if (!isOffered.value || !isVisible.value) return
   isOpen.value = true
-  onOpenChange(true)
 })
 
 let pendingRetry: Promise<void> | undefined
@@ -149,14 +147,14 @@ function rememberSeen() {
     )
 }
 
-function onOpenChange(open: boolean) {
+watch(isOpen, (open) => {
   if (!open) {
     markedUntilClose.value = false
     return
   }
   void store.load()
   if (!settingStore.get('Comfy.DeploymentSwitcher.Seen')) rememberSeen()
-}
+})
 
 const currentTone = computed(() =>
   pickedDeployment.value

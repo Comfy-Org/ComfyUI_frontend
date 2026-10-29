@@ -12,7 +12,7 @@ describe('custom deployment dialogs', () => {
     {
       open: openCreateCustomDeploymentDialog,
       key: 'global-create-custom-deployment',
-      title: 'Create a custom Deployment',
+      title: 'Create a custom deployment',
       firstPoint: "Use custom nodes and models that aren't on Comfy Cloud",
       platformLabel: 'Create on Platform'
     },

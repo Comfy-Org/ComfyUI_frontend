@@ -1204,6 +1204,28 @@ describe('DeploymentSwitcher', () => {
       }
     )
 
+    it('drops the first-open mark when it closes its list to ask about them', async () => {
+      useSettingStore().$patch({
+        settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
+      const user = renderSwitcher()
+      await openList(user)
+
+      await user.click(screen.getByTestId(`deployment-row-${D2}`))
+
+      await waitFor(() =>
+        expect(useDialogService().confirm).toHaveBeenCalledOnce()
+      )
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId('deployment-switcher-new')
+        ).not.toBeInTheDocument()
+      )
+    })
+
     it('stays put when a save does not finish', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
       vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)

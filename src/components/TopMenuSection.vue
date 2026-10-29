@@ -207,7 +207,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
-import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -237,7 +236,6 @@ const isActionBarsHidden = computed(() => canvasStore.isPickingNodes)
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
 const deploymentPickStore = useDeploymentPickStore()
-const deploymentSwitcherOffered = useDeploymentSwitcherOffered()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
@@ -390,7 +388,6 @@ function waitForDeploymentListing(): Promise<void> {
 }
 
 async function pitchDeployingCustomNodes(): Promise<boolean> {
-  if (!deploymentSwitcherOffered.value) return false
   await waitForDeploymentListing()
   if (!deploymentPickStore.isVisible) return false
   return openDeployCustomNodesDialog()

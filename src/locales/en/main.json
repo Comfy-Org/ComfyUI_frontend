@@ -4126,7 +4126,7 @@
     "manageDeployments": "Manage deployments",
     "manageDeploymentsTooltip": "Manage your Builds and their deployments on the Developer Platform.",
     "customDeployment": {
-      "title": "Create a custom Deployment",
+      "title": "Create a custom deployment",
       "body": "A custom deployment adds the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
       "pointNodes": "Use custom nodes and models that aren't on Comfy Cloud",
       "pointGpu": "Work in ComfyUI on the GPU you choose",
