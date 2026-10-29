@@ -207,7 +207,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     await expect(summary).toHaveCount(0)
 
-    const activityRows = panel.getByRole('listitem')
+    const activityRows = panel
+      .getByTestId(TestIds.agent.activityTrace)
+      .getByRole('listitem')
     await expect(activityRows).toHaveCount(5)
     await expect(activityRows.filter({ hasText: 'Set widget' })).toBeVisible()
     await expect(panel.getByText('0.5s', { exact: true })).toHaveCount(0)
@@ -878,15 +880,18 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect.poll(() => postedMessages.length).toBe(1)
 
     await expect(
-      panel.getByRole('button', { name: enMessages.g.edit })
+      panel.getByRole('button', { name: enMessages.g.edit, exact: true })
     ).toHaveCount(0)
     await panel.getByRole('button', { name: enMessages.agent.stop }).click()
     await expect(
-      panel.getByRole('button', { name: enMessages.g.edit })
+      panel.getByRole('button', { name: enMessages.g.edit, exact: true })
     ).toHaveCount(0)
 
     pushEvent(await getAgentSocket(), MESSAGE_DONE_EVENT)
-    const editButton = panel.getByRole('button', { name: enMessages.g.edit })
+    const editButton = panel.getByRole('button', {
+      name: enMessages.g.edit,
+      exact: true
+    })
     await expect(editButton).toHaveCount(1)
     await expect(editButton).toHaveCSS('pointer-events', 'none')
 

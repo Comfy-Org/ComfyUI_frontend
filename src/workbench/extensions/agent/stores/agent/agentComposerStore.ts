@@ -97,6 +97,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     referenceIndex: 0
   })
   const retiredAssets = new Set<string>()
+  const heldAssetIds = ref<string[]>([])
   const thumbnailJobs = new Map<
     string,
     { source: string; controller: AbortController }
@@ -515,10 +516,15 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     removeReference(`asset:${id}`)
   }
 
+  function holdAssets(ids: readonly string[]): void {
+    heldAssetIds.value = [...ids]
+  }
+
   function releaseUnusedAssets(): void {
     const retained = new Set(attachments.value.map(({ id }) => id))
     for (const attachment of submission.value?.snapshot.attachments ?? [])
       retained.add(attachment.id)
+    for (const id of heldAssetIds.value) retained.add(id)
     for (const [id, attachment] of assetsById)
       if (!retained.has(id)) {
         cancelThumbnail(id)
@@ -586,6 +592,17 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     }
   }
 
+  function clearDraft(): void {
+    rejectedDraft.value = null
+    promptOrigin.value = 'typed'
+    starterPrompt.value = null
+    attachmentIds.value = []
+    updateDraft({ text: '', references: [] })
+    insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
+    resetPromptHistory()
+    releaseUnusedAssets()
+  }
+
   return {
     draftState,
     draft,
@@ -625,6 +642,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     startSubmission,
     settleSubmission,
     takeFailedSubmission,
-    invalidateSubmission
+    invalidateSubmission,
+    holdAssets,
+    clearDraft
   }
 })

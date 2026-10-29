@@ -90,7 +90,7 @@ export function useAgentDraftSubmission(
     text: string,
     attachments: ComposerAttachment[],
     references: WorkflowReference[] = []
-  ): Promise<void> {
+  ): Promise<boolean> {
     const target = options.target()
     if (
       !options.canSubmit() ||
@@ -99,7 +99,7 @@ export function useAgentDraftSubmission(
       (!text.trim() && attachments.length === 0) ||
       attachments.some((attachment) => attachment.uploading)
     )
-      return
+      return false
 
     options.onSubmit()
     const prompt = composer.prompt
@@ -127,6 +127,7 @@ export function useAgentDraftSubmission(
       { clientMessageId: uuidv4(), inputMethod, starterPrompt }
     )
     composer.settleSubmission(submissionId, sent)
+    return sent
   }
 
   return { submit }

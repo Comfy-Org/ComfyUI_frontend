@@ -69,6 +69,24 @@ describe('composer reference ownership', () => {
     expect(store.prompt).toEqual({ text: 'Keep this', references: [workflow] })
   })
 
+  it('keeps held attachment previews when the draft is cleared', () => {
+    const store = useAgentComposerStore()
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const held = {
+      id: 'held',
+      name: 'held.png',
+      ref: 'held.png',
+      previewUrl: 'blob:held'
+    }
+    store.addAttachment(held)
+    store.holdAssets(['held'])
+    store.clearDraft()
+    expect(revoke).not.toHaveBeenCalled()
+    store.restorePrompt({ text: 'back', references: [] }, [held])
+    expect(store.attachments).toEqual([held])
+    revoke.mockRestore()
+  })
+
   it('releases invalidated snapshot previews while retaining the current tray and ignoring repeated invalidation and stale settlement', () => {
     const store = useAgentComposerStore()
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})

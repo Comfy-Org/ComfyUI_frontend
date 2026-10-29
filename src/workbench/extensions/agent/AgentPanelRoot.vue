@@ -15,6 +15,7 @@ import {
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { v4 as uuidv4 } from 'uuid'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -113,6 +114,8 @@ import {
 } from './composables/agent/useAttachment'
 import type { ActiveTab } from './types/activeTab'
 import type { SelectedNode } from './composables/agent/useCanvasSelection'
+import type { ComposerAttachment } from './types/composerAttachment'
+import type { WorkflowReference } from './types/workflowReference'
 import {
   selectedNodeKey,
   useCanvasSelection
@@ -142,7 +145,10 @@ import {
   trackAgentError,
   useAgentSession
 } from './composables/agent/useAgentSession'
+import type { SubmissionMeta } from './composables/agent/useAgentDraftSubmission'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
+import { useAgentPromptQueue } from './composables/agent/useAgentPromptQueue'
+import { useAgentPromptQueueStore } from './stores/agent/agentPromptQueueStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import {
   agentRequestFailureFingerprint,
@@ -530,6 +536,7 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const composerStore = useAgentComposerStore()
+const promptQueueStore = useAgentPromptQueueStore()
 const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
   storeToRefs(agentPanelStore)
@@ -1866,6 +1873,7 @@ async function onSelectHistory(
   provisionalTitle.value = undefined
   if (currentChatReady.value && id === threadId.value)
     return onShowTarget(isCurrent, warnRestoreFailed)
+  promptQueueStore.clear()
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   agentPanelStore.beginWorkflowRestoration()
@@ -1878,7 +1886,12 @@ async function onSelectHistory(
 }
 
 function userEngaged(): boolean {
-  return composerStore.hasDraft || isSending.value || workflowSelecting.value
+  return (
+    composerStore.hasDraft ||
+    isSending.value ||
+    workflowSelecting.value ||
+    promptQueueStore.hasWaiting
+  )
 }
 
 function restoreChatWorkflow(
@@ -1982,7 +1995,108 @@ async function consentAllowsSubmission(
   )
 }
 
-const { submit: onSend } = useAgentDraftSubmission({
+async function ensureSendAllowed(
+  submissionId: number | undefined
+): Promise<boolean> {
+  if (!consentAccepted.value && !(await consentAllowsSubmission(submissionId)))
+    return false
+  if (!hasAgentCredential()) {
+    const identityBeforeSignIn = consentIdentity.value
+    if (!(await ensureSignedIn())) return false
+    if (
+      composerStore.submission?.id !== submissionId ||
+      !consentAccepted.value ||
+      consentIdentity.value !== identityBeforeSignIn
+    )
+      return false
+  }
+  return true
+}
+
+function workflowIdOf(
+  origin: ReturnType<typeof targetWorkflowTurnContext>
+): string | null {
+  if (origin === undefined) return null
+  return origin.id ?? null
+}
+
+function originTab(
+  origin: ReturnType<typeof targetWorkflowTurnContext>
+): TurnOrigin {
+  if (origin === undefined) return null
+  return { tabPath: origin.tabPath }
+}
+
+function starterPromptId(starter: SubmissionMeta['starterPrompt']) {
+  if (!starter) return null
+  return starter.id
+}
+
+function starterClickId(starter: SubmissionMeta['starterPrompt']) {
+  if (!starter) return null
+  return starter.clickId ?? null
+}
+
+function applyStarterExperiment(
+  metadata: AgentMessageSentMetadata,
+  starter: SubmissionMeta['starterPrompt']
+): void {
+  if (starter?.assignment)
+    metadata['$feature/agent-starter-prompt-set'] = starter.assignment
+}
+
+function armPendingSend(
+  attachments: ComposerAttachment[],
+  nodes: SelectedNode[],
+  meta: SubmissionMeta
+): void {
+  const origin = targetWorkflowTurnContext()
+  const starter = meta.starterPrompt
+  const metadata: AgentMessageSentMetadata = {
+    attachment_count: attachments.length,
+    node_tag_count: nodes.length,
+    thread_id: threadId.value,
+    workflow_id: workflowIdOf(origin),
+    client_message_id: meta.clientMessageId,
+    input_method: meta.inputMethod,
+    starter_prompt_id: starterPromptId(starter),
+    starter_prompt_click_id: starterClickId(starter)
+  }
+  applyStarterExperiment(metadata, starter)
+  pendingSend = {
+    metadata,
+    origin: originTab(origin)
+  }
+}
+
+async function sendTurn(
+  text: string,
+  attachments: ComposerAttachment[],
+  nodes: SelectedNode[],
+  references: WorkflowReference[],
+  meta: SubmissionMeta
+): Promise<boolean> {
+  if (!(await ensureSendAllowed(composerStore.submission?.id))) return false
+  armPendingSend(attachments, nodes, meta)
+  const selectionWorkflow = selectedTarget.value
+  try {
+    return await sendWithFundsRecheck((onAccepted) =>
+      sendMessage(
+        text,
+        attachments,
+        nodes,
+        references,
+        () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
+        meta.clientMessageId,
+        onAccepted
+      )
+    )
+  } finally {
+    reportPendingSend()
+  }
+}
+
+const { submit: submitDraft } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
   onSubmit: agentPanelStore.retainWorkflowTarget,
   target: () => selectedTarget.value,
@@ -1994,63 +2108,29 @@ const { submit: onSend } = useAgentDraftSubmission({
     replace: replaceSelectionTags,
     exit: canvasStore.stopNodePicking
   },
-  // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
-  send: async (text, attachments, nodes, references, meta) => {
-    const submissionId = composerStore.submission?.id
-    if (
-      !consentAccepted.value &&
-      !(await consentAllowsSubmission(submissionId))
-    )
-      return false
-    if (!hasAgentCredential()) {
-      const identityBeforeSignIn = consentIdentity.value
-      if (!(await ensureSignedIn())) return false
-      if (
-        composerStore.submission?.id !== submissionId ||
-        !consentAccepted.value ||
-        consentIdentity.value !== identityBeforeSignIn
-      )
-        return false
-    }
+  send: sendTurn
+})
 
-    const originContext = targetWorkflowTurnContext()
-    pendingSend = {
-      metadata: {
-        attachment_count: attachments.length,
-        node_tag_count: nodes.length,
-        thread_id: threadId.value,
-        workflow_id: originContext?.id ?? null,
-        client_message_id: meta.clientMessageId,
-        input_method: meta.inputMethod,
-        starter_prompt_id: meta.starterPrompt?.id ?? null,
-        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null,
-        ...(meta.starterPrompt?.assignment
-          ? {
-              '$feature/agent-starter-prompt-set': meta.starterPrompt.assignment
-            }
-          : {})
-      },
-      origin:
-        originContext === undefined ? null : { tabPath: originContext.tabPath }
-    }
-    const selectionWorkflow = selectedTarget.value
-    try {
-      return await sendWithFundsRecheck((onAccepted) =>
-        sendMessage(
-          text,
-          attachments,
-          nodes,
-          references,
-          () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
-          meta.clientMessageId,
-          onAccepted
-        )
-      )
-    } finally {
-      reportPendingSend()
-    }
+const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
+  isBusy: () => isStreaming.value || isSending.value,
+  submitDraft,
+  sendItem: (item) =>
+    sendTurn(item.text, item.attachments, item.nodes, item.references, {
+      clientMessageId: uuidv4(),
+      inputMethod: 'typed',
+      starterPrompt: null
+    }),
+  deferCapture: () => {
+    canvasStore.stopNodePicking()
+    consumeSelection()
   }
 })
+watch(
+  () => isStreaming.value || isSending.value,
+  (busy, wasBusy) => {
+    if (wasBusy && !busy) void settleActiveAndPump()
+  }
+)
 
 // The session owns the acknowledgement boundary: a stop that lands before the
 // POST acks is remembered there and committed at ack (see stopPendingAck).
@@ -2079,6 +2159,7 @@ function onDeleteHistory(id: string): void {
 function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   retireFollow()
   provisionalTitle.value = undefined
+  promptQueueStore.clear()
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
@@ -2450,7 +2531,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
       @starter-prompt-rendered="exposeStarterPromptSet"
       @free-use-notice="onFreeUseNotice"
-      @send="onSend"
+      @send="handleComposerSend"
       @stop="onStop"
       @attach="onAttach"
       @attach-files="onAttachFiles"

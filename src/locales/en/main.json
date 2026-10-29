@@ -6109,6 +6109,14 @@
     "runModeLimit": "Auto-run with limits",
     "runModeLimitDescription": "Comfy will only confirm when a workflow run exceeds your credit limit",
     "runModeSaveFailed": "Could not save run permissions. Please try again.",
+    "queue": {
+      "queued": "{count} Queued",
+      "expand": "Show queued messages",
+      "collapse": "Hide queued messages",
+      "edit": "Edit queued message",
+      "delete": "Delete queued message",
+      "cancelEdit": "Cancel"
+    },
     "send": "Send",
     "sendBlockedByInvalidAttachments": "{count} files can’t be sent. Remove them to send.",
     "sendBlockedByInvalidVideo": "{name} isn’t a valid video. Remove it to send.",

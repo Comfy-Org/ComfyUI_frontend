@@ -9936,7 +9936,7 @@ describe('AgentPanelRoot workflow binding', () => {
       )
       if (restored)
         expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
-      else expect(screen.getByRole('button', { name: 'Stop' })).toBeEnabled()
+      else expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
       expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
       expect(workflowStore.activeWorkflow?.path).toBe(target.path)
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
