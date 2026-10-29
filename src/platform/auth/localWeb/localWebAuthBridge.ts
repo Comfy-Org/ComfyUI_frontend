@@ -295,7 +295,8 @@ export function createLocalWebAuthBridge(
 
   async function finishSignIn(
     params: URLSearchParams,
-    redirectUri: string
+    redirectUri: string,
+    stillWanted: () => boolean = () => true
   ): Promise<SignInCallbackOutcome> {
     const pending = takePendingSignIn(env.sessionStorage)
     const response = readAuthorizationResponse(params, pending?.state)
@@ -312,6 +313,7 @@ export function createLocalWebAuthBridge(
     if (!result.ok) {
       return { kind: 'failed', reason: result.reason, error: result.error }
     }
+    if (!stillWanted()) return { kind: 'none' }
     forgetOtherAccount(result.tokens)
     const adopted = adopt(result.tokens, { forNewTabs: true })
     if (adopted !== 'adopted') return { kind: 'failed', reason: adopted }
@@ -347,8 +349,15 @@ export function createLocalWebAuthBridge(
     })
   }
 
-  async function finishPopupSignIn(search: string): Promise<void> {
-    const outcome = await finishSignIn(new URLSearchParams(search), callbackUri)
+  async function finishPopupSignIn(
+    search: string,
+    stillWanted: () => boolean
+  ): Promise<void> {
+    const outcome = await finishSignIn(
+      new URLSearchParams(search),
+      callbackUri,
+      stillWanted
+    )
     if (outcome.kind === 'failed' && outcome.reason !== 'denied') {
       env.reportSignInFailure(outcome)
     }
@@ -365,7 +374,8 @@ export function createLocalWebAuthBridge(
     }
     popup.location.href = url
     const search = await callbackFrom(popup)
-    if (search !== undefined) await finishPopupSignIn(search)
+    if (search !== undefined && stillWanted())
+      await finishPopupSignIn(search, stillWanted)
     return currentState()
   }
 

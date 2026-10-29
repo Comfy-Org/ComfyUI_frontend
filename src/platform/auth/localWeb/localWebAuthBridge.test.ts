@@ -802,6 +802,54 @@ describe('switchWorkspace', () => {
     expect(authorizeUrlOf(env)).toBeUndefined()
   })
 
+  it('drops a switch consent that comes back after sign-out', async () => {
+    const { bridge, env, storage, popup, post, tokens } = await signedIn()
+    const switching = bridge.switchWorkspace?.('ws-2')
+    await authorized(env)
+    const { state } = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
+
+    await bridge.signOut()
+    post({
+      origin: ISSUER,
+      source: popup,
+      data: {
+        type: 'comfy-local-web-sign-in',
+        search: `?code=code-2&state=${encodeURIComponent(state)}`
+      }
+    })
+
+    await expect(switching).resolves.toEqual({ status: 'signed_out' })
+    expect(env.fetchImpl).not.toHaveBeenCalled()
+    expect(tokens.read()).toBeUndefined()
+  })
+
+  it('drops a switch consent whose code exchange finishes after sign-out', async () => {
+    const { bridge, env, storage, popup, post, tokens } = await signedIn()
+    let answer: (response: Response) => void = () => {}
+    env.fetchImpl.mockImplementation(
+      () => new Promise((resolve) => (answer = resolve))
+    )
+    const switching = bridge.switchWorkspace?.('ws-2')
+    await authorized(env)
+    const { state } = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
+    post({
+      origin: ISSUER,
+      source: popup,
+      data: {
+        type: 'comfy-local-web-sign-in',
+        search: `?code=code-2&state=${encodeURIComponent(state)}`
+      }
+    })
+    await vi.waitFor(() => expect(env.fetchImpl).toHaveBeenCalledOnce())
+
+    await bridge.signOut()
+    answer(tokenResponse(WS2_TOKEN, 'refresh-ws2'))
+
+    await expect(switching).resolves.toEqual({ status: 'signed_out' })
+    expect(tokens.read()).toBeUndefined()
+    expect(env.reportSignInFailure).not.toHaveBeenCalled()
+  })
+
   it('forgets every workspace on sign-out', async () => {
     const { bridge, env, tokens } = await signedInToBothWorkspaces()
     await bridge.signOut()
