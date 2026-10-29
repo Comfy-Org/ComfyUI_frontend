@@ -35,22 +35,21 @@ const filterScript = () => {
 }
 
 const GH_STUB = `#!/usr/bin/env bash
-state="" head="" base="" search="" filter="." fields=""
+state="" head="" base="" filter="." fields=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --state) state="$2"; shift 2 ;;
     --head) head="$2"; shift 2 ;;
     --base) base="$2"; shift 2 ;;
-    --search) search="$2"; shift 2 ;;
     --json) fields="$2"; shift 2 ;;
     --jq) filter="$2"; shift 2 ;;
     *) shift ;;
   esac
 done
-matches=$(jq -c --arg state "$state" --arg head "$head" --arg base "$base" --arg search "$search" '
+matches=$(jq -c --arg state "$state" --arg head "$head" --arg base "$base" '
   map(select(.state == $state
     and ($base == "" or .base == $base)
-    and ($search != "" or .head == $head)))
+    and ($head == "" or .head == $head)))
   | map({
       number,
       headRefName: .head,
@@ -260,6 +259,10 @@ describe('pr-backport filter-targets', () => {
         }
       },
       {
+        name: 'a head branch that is the only reference',
+        pr: { ...handMade, body: 'Same change, adapted to this branch.' }
+      },
+      {
         name: 'a head branch named backport-<number>',
         pr: {
           ...handMade,
@@ -288,6 +291,15 @@ describe('pr-backport filter-targets', () => {
       {
         name: 'a backport title for another branch',
         pr: { ...handMade, title: '[backport cloud/1.57] fix(agent): answer' }
+      },
+      {
+        name: "the bot's backport of another PR",
+        pr: {
+          ...handMade,
+          head: 'backport-21900-to-core-1.57',
+          title: '[backport core/1.57] fix: follow-up (#21829)',
+          body: 'Backport of #21829 follow-up.'
+        }
       },
       {
         name: 'a ticket key with the same number in the head branch',
@@ -347,6 +359,21 @@ describe('pr-backport filter-targets', () => {
         skip: 'false',
         'pending-targets': 'core/1.57'
       })
+    })
+
+    it('matches a target name with capitals', () => {
+      expect(
+        runFilter({
+          targets: ['Release/Hotfix-1'],
+          prs: [
+            {
+              ...handMade,
+              base: 'Release/Hotfix-1',
+              title: '[backport Release/Hotfix-1] fix(agent): answer'
+            }
+          ]
+        })
+      ).toMatchObject({ skip: 'true', 'all-merged': 'true' })
     })
 
     it('prefers the bot backport when both exist', () => {
