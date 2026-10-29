@@ -40,7 +40,10 @@ const { state, deploy } = useInstallationDeploy()
 function track(buttonId: string) {
   useTelemetry()?.trackUiButtonClicked({
     button_id: buttonId,
-    element_group: 'deploy_to_comfy_api'
+    element_group: 'deploy_to_comfy_api',
+    ...(state.value.status === 'ready'
+      ? { bundle_id: state.value.bundleId }
+      : {})
   })
 }
 

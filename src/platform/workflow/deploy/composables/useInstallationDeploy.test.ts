@@ -76,7 +76,11 @@ describe(useInstallationDeploy, () => {
         body: '{}'
       })
     )
-    expect(state.value).toEqual({ status: 'ready', url: BUILDER_URL })
+    expect(state.value).toEqual({
+      status: 'ready',
+      url: BUILDER_URL,
+      bundleId: BUNDLE_ID
+    })
   })
 
   it('uploads the open workflow as it stands on the canvas', async () => {
@@ -110,7 +114,11 @@ describe(useInstallationDeploy, () => {
       vi.mocked(api.fetchApi).mock.calls.map(([, init]) => init?.body)
     ).toEqual([JSON.stringify({ workflow: CANVAS_GRAPH }), '{}'])
     expect(useToast().error).not.toHaveBeenCalled()
-    expect(state.value).toEqual({ status: 'ready', url: BUILDER_URL })
+    expect(state.value).toEqual({
+      status: 'ready',
+      url: BUILDER_URL,
+      bundleId: BUNDLE_ID
+    })
   })
 
   it('does not retry without the workflow when the builder is busy', async () => {
@@ -205,7 +213,11 @@ describe(useInstallationDeploy, () => {
         }
       })
     )
-    expect(state.value).toEqual({ status: 'ready', url: BUILDER_URL })
+    expect(state.value).toEqual({
+      status: 'ready',
+      url: BUILDER_URL,
+      bundleId: BUNDLE_ID
+    })
   })
 
   it('reports a sign-in prompt that fails to open, and lets the next deploy try again', async () => {

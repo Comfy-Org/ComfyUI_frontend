@@ -121,6 +121,7 @@
 
 <script setup lang="ts">
 import { createReusableTemplate } from '@vueuse/core'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -171,6 +172,10 @@ const summary = computed(() =>
 
 async function copyHandoff() {
   if (isCopying.value) return
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'deploy_to_comfy_api_agent_clicked',
+    element_group: 'deploy_to_comfy_api'
+  })
   isCopying.value = true
   copied.value = false
   try {

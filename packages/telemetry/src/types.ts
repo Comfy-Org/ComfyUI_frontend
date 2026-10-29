@@ -640,6 +640,7 @@ export interface TemplateFilterMetadata {
 export interface UiButtonClickMetadata {
   button_id: string
   element_group: string
+  bundle_id?: string
 }
 
 /**

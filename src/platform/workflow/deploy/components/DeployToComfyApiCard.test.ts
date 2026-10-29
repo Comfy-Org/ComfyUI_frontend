@@ -120,6 +120,12 @@ describe('DeployToComfyApiCard', () => {
     await user.click(screen.getByTestId('deploy-to-comfy-api-agent'))
 
     expect(useAgentHandoff().copyBrief).toHaveBeenCalledOnce()
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      button_id: 'deploy_to_comfy_api_agent_clicked',
+      element_group: 'deploy_to_comfy_api'
+    })
     expect(screen.getByTestId('deploy-to-comfy-api-agent')).toHaveTextContent(
       /^Copied/
     )
@@ -151,6 +157,7 @@ describe('DeployToComfyApiCard', () => {
   it('links to the developer platform in a new tab without a referrer, and reports done', async () => {
     const { onDone, user } = renderCard()
     const link = screen.getByRole('link', { name: 'Deploy on Platform' })
+    link.addEventListener('click', (event) => event.preventDefault())
 
     expect(link).toHaveAttribute('href', 'https://platform.comfy.org')
     expect(link).toHaveAttribute('target', '_blank')
@@ -200,9 +207,14 @@ describe('DeployToComfyApiCard', () => {
   ])(
     'links to the build wizard once the bundle is ready, and reports done on $gesture',
     async ({ keys }) => {
-      fakeInstallationDeploy({ status: 'ready', url: BUILDER_URL })
+      fakeInstallationDeploy({
+        status: 'ready',
+        url: BUILDER_URL,
+        bundleId: 'b-1'
+      })
       const { onDone, user } = renderCard({ deploysInstallation: true })
       const link = screen.getByRole('link', { name: 'Open the build wizard' })
+      link.addEventListener('click', (event) => event.preventDefault())
 
       expect(link).toHaveAttribute('href', BUILDER_URL)
       await user.pointer({ keys, target: link })
@@ -212,13 +224,18 @@ describe('DeployToComfyApiCard', () => {
         useTelemetry()?.trackUiButtonClicked
       ).toHaveBeenCalledExactlyOnceWith({
         button_id: 'deploy_to_comfy_api_builder_opened',
-        element_group: 'deploy_to_comfy_api'
+        element_group: 'deploy_to_comfy_api',
+        bundle_id: 'b-1'
       })
     }
   )
 
   it('keeps the dialog open when the build wizard link is right-clicked', async () => {
-    fakeInstallationDeploy({ status: 'ready', url: BUILDER_URL })
+    fakeInstallationDeploy({
+      status: 'ready',
+      url: BUILDER_URL,
+      bundleId: 'b-1'
+    })
     const { onDone, user } = renderCard({ deploysInstallation: true })
 
     await user.pointer({
