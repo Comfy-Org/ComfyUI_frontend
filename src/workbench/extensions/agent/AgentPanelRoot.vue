@@ -1280,8 +1280,7 @@ const canvasEmptyAfterTurn = computed(
     boundCanvasNodeCount.value === 0
 )
 
-function refreshBillingAfterTurn(): void {
-  if (billingType.value !== 'workspace') return
+function refreshAgentBillingStatus(): void {
   void refreshBillingStatus().catch((error: unknown) => {
     reportError(error, {
       surface: 'agent',
@@ -1289,6 +1288,15 @@ function refreshBillingAfterTurn(): void {
     })
   })
 }
+
+watch(
+  [consentAccepted, consentIdentity],
+  ([accepted, identity], [previousAccepted, previousIdentity]) => {
+    if (accepted && (!previousAccepted || identity !== previousIdentity))
+      refreshAgentBillingStatus()
+  },
+  { flush: 'sync' }
+)
 
 // Adoption (onWorkflowAdopted) and tab activation (onAgentActiveTab) are the
 // primary spinner setters; the non-idle branch only re-arms it after the
@@ -1310,7 +1318,7 @@ watch(
     }
     if (completedTurn) {
       graphActivity.finishTurn()
-      refreshBillingAfterTurn()
+      if (billingType.value === 'workspace') refreshAgentBillingStatus()
     }
   },
   { immediate: true, flush: 'sync' }
@@ -1636,21 +1644,17 @@ const { copy } = useClipboard({ legacy: true })
 // DES-1221. Read while the panel is on screen, so the experiment's denominator
 // is the panel openers the hypothesis is about.
 const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
-  useFreeUsePlacement()
+  useFreeUsePlacement(isCloud)
 const {
   assignment: starterPromptAssignment,
   attributeExperiment: attributeStarterPromptExperiment,
   expose: exposeStarterPromptSet
 } = useStarterPromptSet()
 
-/**
- * `Try your first chat for free!` is a claim about the Agent's own granted
- * allowance, so it renders on `scoped_has_funds.agent` as received. `=== true`
- * is the whole gate: an absent field, an unsettled read and a rail that reports
- * no scoped balance all fail closed without a separate branch.
- */
 const freeUseGrantActive = computed(
-  () => subscription.value?.agentScopedHasFunds === true
+  () =>
+    subscription.value?.agentScopedHasFundsAuthoritative === true &&
+    subscription.value.agentScopedHasFunds === true
 )
 
 const freeUsePlacement = computed(() =>
