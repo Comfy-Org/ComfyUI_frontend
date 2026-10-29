@@ -31,13 +31,14 @@ in `index.ts` registers them from an explicit ordered list and decides which
 ones load — some are unconditional, some are gated on the build distribution,
 and the 3D stack is deferred behind a lazy loader. Two modules export a
 registration function instead of an object: `electronAdapter.ts` and
-`agentPanel.ts`. `load3dLazy.ts` registers the 3D extensions from its own list
-when the first 3D node appears. The tables below follow that grouping.
+`agentPanel.ts`. `load3d/load3dLazy.ts` registers the 3D extensions from its own
+list when the first 3D node appears. The tables below follow that grouping.
 
 ### Always Loaded
 
 | Extension               | Registered name                                               | Description                                           | Category |
 | ----------------------- | ------------------------------------------------------------- | ----------------------------------------------------- | -------- |
+| agentPanel.ts           | `Comfy.AgentPanel`                                            | In-app agent chat panel                               | Agent    |
 | clipspace.ts            | `Comfy.Clipspace`                                             | Clipspace feature for passing images between nodes    | Image    |
 | contextMenuFilter.ts    | `Comfy.ContextMenuFilter`                                     | Filter box for long context menus                     | UI       |
 | createBoundingBoxes.ts  | `Comfy.CreateBoundingBoxes`                                   | Bounding-box editor widget                            | Image    |
@@ -51,7 +52,7 @@ when the first 3D node appears. The tables below follow that grouping.
 | imageCompositor.ts      | `Comfy.ImageCompositor`                                       | Layer compositing widget                              | Image    |
 | imageCrop.ts            | `Comfy.ImageCrop`                                             | Image crop widget                                     | Image    |
 | layerEditor.ts          | `Comfy.LayerEditor`                                           | Layer editing widget                                  | Image    |
-| load3dLazy.ts           | `Comfy.Load3DLazy`                                            | Defers the THREE.js 3D stack until a 3D node is used  | 3D       |
+| load3d/load3dLazy.ts    | `Comfy.Load3DLazy`                                            | Defers the THREE.js 3D stack until a 3D node is used  | 3D       |
 | maskeditor.ts           | `Comfy.MaskEditor`                                            | Mask editor for image masking operations              | Image    |
 | noteNode.ts             | `Comfy.NoteNode`                                              | Note nodes for documentation within workflows         | Graph    |
 | painter.ts              | `Comfy.Painter`                                               | Freehand painting widget                              | Image    |
@@ -69,26 +70,30 @@ when the first 3D node appears. The tables below follow that grouping.
 
 ### Conditionally Loaded
 
-| Extension                    | Registered name             | Loads when                                                             |
-| ---------------------------- | --------------------------- | ---------------------------------------------------------------------- |
-| nodeTemplates.ts             | `Comfy.NodeTemplates`       | not a Cloud build                                                      |
-| cloudRemoteConfig.ts         | `Comfy.Cloud.RemoteConfig`  | Cloud build                                                            |
-| agentPanel.ts                | `Comfy.AgentPanel`          | Cloud build, or `VITE_AGENT_STANDALONE=true` in any other distribution |
-| cloudBadges.ts               | `Comfy.Cloud.Badges`        | Cloud build                                                            |
-| cloudSessionCookie.ts        | `Comfy.Cloud.SessionCookie` | Cloud build                                                            |
-| cloudFeedbackTopbarButton.ts | `Comfy.FeedbackButton`      | Cloud or nightly build                                                 |
-| nightlyBadges.ts             | `Comfy.Nightly.Badges`      | nightly build that is not Cloud                                        |
+| Extension                    | Registered name             | Loads when             |
+| ---------------------------- | --------------------------- | ---------------------- |
+| nodeTemplates.ts             | `Comfy.NodeTemplates`       | not a Cloud build      |
+| cloudRemoteConfig.ts         | `Comfy.Cloud.RemoteConfig`  | Cloud build            |
+| cloudBadges.ts               | `Comfy.Cloud.Badges`        | Cloud build            |
+| cloudSessionCookie.ts        | `Comfy.Cloud.SessionCookie` | Cloud build            |
+| cloudFeedbackTopbarButton.ts | `Comfy.FeedbackButton`      | Cloud or nightly build |
 
 The Cloud block is gated on a literal `__DISTRIBUTION__ === 'cloud'` comparison
 rather than the `isCloud` constant — that literal is what lets the bundler
 dead-code-eliminate the block, and its `posthog-js` import, from OSS builds.
+
 `agentPanel.ts` registers through an exported `registerAgentPanelExtension()`
-rather than on import.
+rather than on import, and `index.ts` calls it in every distribution. The panel
+is not gated at registration: its own `setup()` watches
+`agentPanelStore.comfyAgent?.state === 'ready'` and only enables the UI once the
+agent reports ready. In a development build, `VITE_AGENT_STANDALONE=true`
+forces both that enable flag and the settled gate on without a ready agent.
 
 ### Lazily Loaded (3D)
 
-`load3dLazy.ts` dynamically imports the following the first time a 3D node
-appears, so THREE.js (~1.8 MB) stays out of the initial bundle:
+`load3d/load3dLazy.ts` dynamically imports the following siblings in
+`src/extensions/core/load3d/` the first time a 3D node appears, so THREE.js
+(~1.8 MB) stays out of the initial bundle:
 
 | Extension                  | Registered name(s)                                                                                         | Description                        |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------- |
@@ -97,16 +102,21 @@ appears, so THREE.js (~1.8 MB) stays out of the initial bundle:
 | load3dPreviewExtensions.ts | `Comfy.PreviewGaussianSplat`, `Comfy.PreviewPointCloud`, `Comfy.SaveGaussianSplat`, `Comfy.SavePointCloud` | Splat and point-cloud preview/save |
 | saveMesh.ts                | `Comfy.SaveGLB`                                                                                            | 3D mesh saving                     |
 | cameraInfo.ts              | `Comfy.CreateCameraInfo`                                                                                   | Interactive camera-info widget     |
+| cameraAngle.ts             | `Comfy.CameraAngle`                                                                                        | Camera angle widget                |
+| lightInfo.ts               | `Comfy.CreateLightInfo`                                                                                    | Scene light-info widget            |
 
 ### Shared Helper Modules
 
 These live alongside the extensions but register nothing themselves; they are
 imported by the extensions above:
 
-| File                      | Used by                               |
-| ------------------------- | ------------------------------------- |
-| textPreviewWidgets.ts     | `previewAny.ts`, `saveText.ts`        |
-| widgetValuePropagation.ts | `customWidgets.ts`, `widgetInputs.ts` |
+| File                      | Used by                                       |
+| ------------------------- | --------------------------------------------- |
+| slotDefaultTypes.ts       | `slotDefaults.ts`                             |
+| textPreviewWidgets.ts     | `previewAny.ts`, `saveText.ts`                |
+| touchCanvasAccess.ts      | `simpleTouchSupport.ts`                       |
+| touchPointerGuards.ts     | `simpleTouchSupport.ts`, `extensionLoader.ts` |
+| widgetValuePropagation.ts | `customWidgets.ts`, `widgetInputs.ts`         |
 
 The `load3d/` subdirectory holds the TypeScript manager classes backing the 3D
 viewport (`SceneManager`, `CameraManager`, `ControlsManager`, `LoaderManager`,
