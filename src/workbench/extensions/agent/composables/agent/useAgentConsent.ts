@@ -4,13 +4,13 @@ import { storeToRefs } from 'pinia'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   AgentConsentDecision,
   AgentConsentOfferExit,
   AgentConsentTrigger
-} from '@/platform/telemetry/types'
-import { reportError } from '@/platform/telemetry/reportError'
+} from '@comfyorg/telemetry/types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -195,6 +195,7 @@ export function useAgentConsent() {
           }
         },
         dialogComponentProps: {
+          centerOnViewport: true,
           dismissOnPointerDownOutside: true,
           headless: true,
           onClose: () => {

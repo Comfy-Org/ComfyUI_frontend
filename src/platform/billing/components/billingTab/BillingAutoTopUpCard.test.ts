@@ -7,8 +7,8 @@ import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
@@ -29,7 +29,7 @@ vi.mock(import('@/platform/billing/composables/usePausedBanner'))
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string, correlationId?: string) =>
     `https://platform.test${path}?correlation_id=${correlationId}`
@@ -201,7 +201,7 @@ describe('BillingAutoTopUpCard', () => {
     },
     {
       status: 'paused_by_budget',
-      label: 'Paused',
+      label: 'Limit reached',
       lines: [RULE, 'Monthly limit reached. Resumes November 28.'],
       action: 'Manage',
       expectedIcon: 'icon-[lucide--arrow-up-right]'
@@ -413,7 +413,7 @@ describe('BillingAutoTopUpCard', () => {
     {
       reread: 'a different status',
       settings: { ...configured, status: 'paused_by_budget' as const },
-      label: 'Paused',
+      label: 'Limit reached',
       views: 2
     }
   ])(

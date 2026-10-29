@@ -96,7 +96,7 @@
             variant="secondary"
             @click="signInWithGithub"
           >
-            <i class="pi pi-github mr-2"></i>
+            <i class="mr-2 icon-[lucide--github]"></i>
             {{
               isSignIn
                 ? t('auth.login.loginWithGithub')
@@ -145,7 +145,7 @@
           closable
         >
           <template #icon>
-            <i class="pi pi-info-circle" />
+            <i class="icon-[lucide--info]" />
           </template>
           {{ t('toastMessages.useApiKeyTip') }}
         </Message>
