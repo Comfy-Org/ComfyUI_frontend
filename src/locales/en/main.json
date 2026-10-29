@@ -3207,6 +3207,7 @@
     "creditsYouveAdded": "Additional",
     "remaining": "remaining",
     "refillsDate": "Refills {date}",
+    "refillsAfterPayment": "Refills when the payment goes through",
     "refillsNextCycle": "Refills next cycle",
     "creditsUsed": "{used} used",
     "creditsLeftOfTotal": "{remaining} left of {total}",
@@ -3678,6 +3679,7 @@
           "line": "Subscribe to run workflows on Cloud.",
           "title": "This workspace has no active plan"
         },
+        "paused": "Paused. The renewal payment didn't go through.",
         "resumeConfirm": {
           "body": "Your plan will renew on {date}. You can cancel again anytime.",
           "title": "Resume your {plan} plan?"

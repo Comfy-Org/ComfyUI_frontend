@@ -21,6 +21,7 @@ export type CreditsCardState =
       topUpCents: number
       topUpInUse: boolean
       renewalDate: string | null
+      refillAwaitsPayment: boolean
     }
 
 /** Maps the served balance and plan state onto the Credits card. */
@@ -45,6 +46,7 @@ export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
     planPoolCredits: facts.planPoolCredits,
     topUpCents,
     topUpInUse: planCents === 0 && topUpCents > 0,
-    renewalDate: facts.renewalDate
+    renewalDate: facts.renewalDate,
+    refillAwaitsPayment: facts.planKind === 'paused'
   }
 }
