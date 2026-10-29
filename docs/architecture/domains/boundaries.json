@@ -6493,8 +6493,10 @@
       {
         "from": "node-library/domain",
         "allow": [
+          "extension-manager/domain",
           "keybindings/domain",
           "node-library/domain",
+          "extension-manager/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -6503,15 +6505,19 @@
         "from": "node-library/application",
         "allow": [
           "keybindings/application/public",
+          "extension-manager/domain",
+          "extension-manager/infrastructure",
           "keybindings/domain",
           "node-library/domain",
           "node-library/application",
           "node-library/infrastructure",
           "telemetry/application",
           "telemetry/infrastructure",
+          "extension-manager/domain/outer-1",
           "keybindings/application/outer-1",
           "node-library/application/outer-1",
           "telemetry/domain/outer-1",
+          "extension-manager/application/outer-2",
           "unclassified"
         ]
       },
@@ -6519,15 +6525,19 @@
         "from": "node-library/infrastructure",
         "allow": [
           "keybindings/application/public",
+          "extension-manager/domain",
+          "extension-manager/infrastructure",
           "keybindings/domain",
           "node-library/domain",
           "node-library/application",
           "node-library/infrastructure",
           "telemetry/application",
           "telemetry/infrastructure",
+          "extension-manager/domain/outer-1",
           "keybindings/application/outer-1",
           "node-library/application/outer-1",
           "telemetry/domain/outer-1",
+          "extension-manager/application/outer-2",
           "unclassified"
         ]
       },
@@ -6535,15 +6545,20 @@
         "from": "node-library/presentation",
         "allow": [
           "keybindings/application/public",
+          "extension-manager/domain",
+          "extension-manager/presentation",
           "keybindings/domain",
           "keybindings/presentation",
           "node-library/domain",
           "node-library/application",
           "node-library/presentation",
           "telemetry/application",
+          "extension-manager/domain/outer-1",
+          "extension-manager/presentation/outer-1",
           "keybindings/application/outer-1",
           "node-library/application/outer-1",
           "telemetry/domain/outer-1",
+          "extension-manager/application/outer-2",
           "unclassified"
         ]
       },
@@ -6552,6 +6567,10 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/integration/public",
+          "extension-manager/domain",
+          "extension-manager/infrastructure",
+          "extension-manager/presentation",
+          "extension-manager/integration",
           "keybindings/domain",
           "keybindings/presentation",
           "keybindings/integration",
@@ -6563,10 +6582,13 @@
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
+          "extension-manager/domain/outer-1",
+          "extension-manager/presentation/outer-1",
           "keybindings/application/outer-1",
           "node-library/application/outer-1",
           "telemetry/domain/outer-1",
           "telemetry/integration/outer-1",
+          "extension-manager/application/outer-2",
           "unclassified"
         ]
       },
@@ -8597,15 +8619,19 @@
         "from": "node-library/application/outer-1",
         "allow": [
           "keybindings/application/public",
+          "extension-manager/domain",
+          "extension-manager/infrastructure",
           "keybindings/domain",
           "node-library/domain",
           "node-library/application",
           "node-library/infrastructure",
           "telemetry/application",
           "telemetry/infrastructure",
+          "extension-manager/domain/outer-1",
           "keybindings/application/outer-1",
           "node-library/application/outer-1",
           "telemetry/domain/outer-1",
+          "extension-manager/application/outer-2",
           "unclassified"
         ]
       },

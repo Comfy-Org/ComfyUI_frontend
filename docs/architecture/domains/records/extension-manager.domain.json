@@ -79,6 +79,7 @@
     "extension-runtime",
     "help-center",
     "node-definition",
+    "node-library",
     "subgraphs",
     "workbench-shell",
     "workflow-errors"
