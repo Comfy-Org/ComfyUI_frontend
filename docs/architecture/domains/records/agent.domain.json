@@ -794,6 +794,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [
+    "app-host",
     "authentication",
     "design-system",
     "dialog-host",

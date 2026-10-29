@@ -37,6 +37,12 @@ const meta: Meta<typeof AgentConsentCard> = {
     onAccept: fn(),
     onReject: fn()
   },
+  argTypes: {
+    error: {
+      control: 'select',
+      options: ['', 'save', 'load', 'signIn']
+    }
+  },
   decorators: [
     () => ({
       template:
@@ -64,7 +70,12 @@ export const Loading: Story = {
 }
 
 export const Error: Story = {
-  args: { error: enMessages.agent.consent.saveError }
+  args: { error: 'save' }
+}
+
+export const SignInError: Story = {
+  ...SignedOut,
+  args: { ...SignedOut.args, error: 'signIn' }
 }
 
 export const InLightApp: Story = {
@@ -94,5 +105,10 @@ export const InNarrowPanel: Story = {
 
 export const SignedOutInNarrowPanel: Story = {
   ...SignedOut,
+  decorators: [narrowPanel]
+}
+
+export const ErrorInNarrowPanel: Story = {
+  ...Error,
   decorators: [narrowPanel]
 }
