@@ -1,10 +1,15 @@
+import type { ReleaseUnsupportedPack } from '@comfyorg/ingest-types'
 import { render, screen } from '@testing-library/vue'
+import type { UserEvent } from '@testing-library/user-event'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
+import { groupMissingModelCandidates } from '@/platform/workflowErrors/missingModel/missingModelGrouping'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { testI18n } from '@/utils/__tests__/testI18n'
 
 import DeploymentBuildActions from './DeploymentBuildActions.vue'
@@ -53,16 +58,30 @@ const missingModelGroups: MissingModelGroup[] = [
   }
 ]
 
-function renderActions(build: Partial<WorkspaceDeployment> = {}) {
+function renderActions(
+  props: Partial<ComponentProps<typeof DeploymentBuildActions>> = {}
+) {
   render(DeploymentBuildActions, {
-    props: {
-      deployment: { ...deployment, ...build },
-      missingPackGroups,
-      missingModelGroups
-    },
+    props: { deployment, missingPackGroups, missingModelGroups, ...props },
     global: { plugins: [testI18n] }
   })
   return userEvent.setup()
+}
+
+async function copiedBrief(user: UserEvent): Promise<string> {
+  copyToClipboard.mockResolvedValue(true)
+  await user.click(
+    screen.getByRole('button', { name: /Build with your agent/ })
+  )
+  const [brief] = copyToClipboard.mock.lastCall ?? []
+  return String(brief)
+}
+
+const nvidiaVfx: ReleaseUnsupportedPack = {
+  folder: 'ComfyUI-NVIDIA-VFX',
+  registry_id: 'comfyui-nvidia-vfx',
+  repository: 'https://github.com/NVIDIA/ComfyUI-NVIDIA-VFX',
+  cause: 'needs a GPU'
 }
 
 describe('DeploymentBuildActions', () => {
@@ -76,7 +95,7 @@ describe('DeploymentBuildActions', () => {
   ])(
     'links to the Build on Platform when its id $build',
     ({ buildId, path }) => {
-      renderActions({ build_id: buildId })
+      renderActions({ deployment: { ...deployment, build_id: buildId } })
 
       const link = screen.getByRole('link', { name: /Edit build on Platform/ })
       expect(new URL(link.getAttribute('href') ?? '').pathname).toBe(path)
@@ -102,5 +121,50 @@ describe('DeploymentBuildActions', () => {
     expect(
       await screen.findByRole('button', { name: /Copied/ })
     ).toBeInTheDocument()
+  })
+
+  it('gives a custom-node model its folder though Comfy Cloud groups it without one', async () => {
+    const user = renderActions({
+      missingPackGroups: [],
+      missingModelGroups: groupMissingModelCandidates(
+        [
+          {
+            nodeId: '5',
+            nodeType: 'NVVFXLoader',
+            widgetName: 'lora_name',
+            name: 'custom-node-model.safetensors',
+            directory: 'loras',
+            isAssetSupported: false,
+            isMissing: true
+          }
+        ],
+        true
+      )
+    })
+
+    expect((await copiedBrief(user)).split('\n')).toContain(
+      '- `custom-node-model.safetensors` in `models/loras`'
+    )
+  })
+
+  it('briefs a pack the Build has but cannot load with why it fails', async () => {
+    vi.spyOn(useDeploymentPickStore(), 'unsupportedPackFor').mockImplementation(
+      (cnrId) => (cnrId === nvidiaVfx.registry_id ? nvidiaVfx : undefined)
+    )
+    const user = renderActions({
+      missingPackGroups: [
+        {
+          packId: 'comfyui-nvidia-vfx',
+          nodeTypes: [
+            { type: 'NVVFXSuperRes', nodeId: '7', cnrId: 'comfyui-nvidia-vfx' }
+          ],
+          isResolving: false
+        }
+      ]
+    })
+
+    expect((await copiedBrief(user)).split('\n')).toContain(
+      '- Pack `comfyui-nvidia-vfx`: `NVVFXSuperRes` (fails with: needs a GPU)'
+    )
   })
 })

@@ -9,6 +9,7 @@ import { defineComponent, provide } from 'vue'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
@@ -331,42 +332,46 @@ describe('ErrorGroupList selection emphasis', () => {
     })
   })
 
+  const production: WorkspaceDeployment = {
+    deployment_id: 'dep-1',
+    deployment_name: 'production',
+    build_id: 'build-7',
+    build_name: 'video-minimax-h3 copy',
+    release_id: 'rel-3',
+    status: 'ready',
+    created_at: '2026-10-01T00:00:00Z'
+  }
+
+  function showMissingModelOn(bootDeployment: WorkspaceDeployment | null) {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    const pinia = getActivePinia()!
+    useDeploymentPickStore(pinia).bootDeployment = bootDeployment
+    useMissingModelStore(pinia).setMissingModels([
+      {
+        nodeId: '1',
+        nodeType: 'VAELoader',
+        widgetName: 'vae_name',
+        name: 'qwen_image_2.1_vae.safetensors',
+        directory: 'vae',
+        isMissing: true,
+        isAssetSupported: true
+      }
+    ])
+    renderList(pinia)
+    return screen.getByTestId('errors-summary-hero')
+  }
+
   it.for([
     { runsOn: 'a deployment', sendsToBuild: true },
     { runsOn: 'Comfy Cloud', sendsToBuild: false }
   ])(
     'on $runsOn, the summary sends a missing model to the Build: $sendsToBuild',
     ({ sendsToBuild }) => {
-      distribution.isCloud = true
-      onTestFinished(() => {
-        distribution.isCloud = false
-      })
-      const pinia = getActivePinia()!
-      useDeploymentPickStore(pinia).bootDeployment = sendsToBuild
-        ? {
-            deployment_id: 'dep-1',
-            deployment_name: 'production',
-            build_id: 'build-7',
-            build_name: 'video-minimax-h3 copy',
-            release_id: 'rel-3',
-            status: 'ready',
-            created_at: '2026-10-01T00:00:00Z'
-          }
-        : null
-      useMissingModelStore(pinia).setMissingModels([
-        {
-          nodeId: '1',
-          nodeType: 'VAELoader',
-          widgetName: 'vae_name',
-          name: 'qwen_image_2.1_vae.safetensors',
-          directory: 'vae',
-          isMissing: true,
-          isAssetSupported: true
-        }
-      ])
-      renderList(pinia)
+      const hero = showMissingModelOn(sendsToBuild ? production : null)
 
-      const hero = screen.getByTestId('errors-summary-hero')
       expect(
         within(hero).queryByText(
           "Add these to production's build on Platform, then deploy a new release."
@@ -383,6 +388,19 @@ describe('ErrorGroupList selection emphasis', () => {
       ).toBe(sendsToBuild)
     }
   )
+
+  it('names the deployment in the summary as its owner wrote it', () => {
+    const hero = showMissingModelOn({
+      ...production,
+      deployment_name: "R&D's studio"
+    })
+
+    expect(
+      within(hero).getByText(
+        "Add these to R&D's studio's build on Platform, then deploy a new release."
+      )
+    ).toBeInTheDocument()
+  })
 
   it('labels a missing-only selection as an issue', async () => {
     const pinia = getActivePinia()!

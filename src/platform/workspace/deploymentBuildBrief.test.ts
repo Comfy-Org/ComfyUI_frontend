@@ -13,6 +13,11 @@ const deployment: WorkspaceDeployment = {
   created_at: '2026-10-01T00:00:00Z'
 }
 
+function section(brief: string, title: string): string {
+  const [, rest = ''] = brief.split(`## ${title}\n`)
+  return rest.split('\n## ')[0]
+}
+
 describe(deploymentBuildBrief, () => {
   it('names the deployment, its Build and release, and lists what it lacks', () => {
     const brief = deploymentBuildBrief(
@@ -49,6 +54,61 @@ describe(deploymentBuildBrief, () => {
     expect(brief).toContain('comfy skills show comfy-build')
     expect(brief).toContain('you deploy it to **production**.')
   })
+
+  it('lists a node type once however many nodes in the workflow use it', () => {
+    const brief = deploymentBuildBrief(
+      deployment,
+      [
+        {
+          packId: 'comfyui-kjnodes',
+          nodeTypes: ['ImageResizeKJ', 'ImageResizeKJ']
+        }
+      ],
+      []
+    )
+
+    expect(brief.split('\n')).toContain(
+      '- Pack `comfyui-kjnodes`: `ImageResizeKJ`'
+    )
+  })
+
+  it.for([
+    {
+      logged: 'a cause',
+      cause: 'needs a GPU',
+      line: '- Pack `comfyui-nvidia-vfx`: `NVVFXSuperRes` (fails with: needs a GPU)'
+    },
+    {
+      logged: 'no cause',
+      cause: '',
+      line: '- Pack `comfyui-nvidia-vfx`: `NVVFXSuperRes`'
+    }
+  ])(
+    'asks to fix, not add, a pack the Build cannot load when ComfyUI logged $logged',
+    ({ cause, line }) => {
+      const brief = deploymentBuildBrief(
+        deployment,
+        [
+          {
+            packId: 'comfyui-nvidia-vfx',
+            nodeTypes: ['NVVFXSuperRes'],
+            loadFailure: { cause }
+          },
+          { packId: 'comfyui-kjnodes', nodeTypes: ['ImageResizeKJ'] }
+        ],
+        []
+      )
+
+      const failing = section(brief, 'Packs the Build has but cannot load')
+      expect(failing).toContain('do not add them again')
+      expect(failing.split('\n')).toContain(line)
+      expect(section(brief, 'Custom nodes').split('\n')).toEqual([
+        '',
+        '- Pack `comfyui-kjnodes`: `ImageResizeKJ`',
+        ''
+      ])
+    }
+  )
 
   it.for([
     { lacks: 'only models', packs: [], section: '## Custom nodes' },

@@ -740,9 +740,11 @@ const hero = computed(() => {
       countClass: 'text-warning',
       title: t('rightSidePanel.setupRequired'),
       description: buildFixesAllSetup.value
-        ? t('rightSidePanel.addToDeploymentBuild', {
-            deployment: bootDeploymentLabel.value
-          })
+        ? t(
+            'rightSidePanel.addToDeploymentBuild',
+            { deployment: bootDeploymentLabel.value },
+            { escapeParameter: false }
+          )
         : t('rightSidePanel.finishSetupBeforeRun')
     }
   }

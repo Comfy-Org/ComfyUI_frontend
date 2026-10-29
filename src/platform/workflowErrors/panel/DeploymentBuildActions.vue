@@ -48,7 +48,9 @@ import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/
 import AgentMarks from '@/platform/workflow/deploy/components/AgentMarks.vue'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
+import type { MissingBuildPack } from '@/platform/workspace/deploymentBuildBrief'
 import { deploymentBuildBrief } from '@/platform/workspace/deploymentBuildBrief'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const { deployment, missingPackGroups, missingModelGroups } = defineProps<{
   deployment: WorkspaceDeployment
@@ -56,6 +58,7 @@ const { deployment, missingPackGroups, missingModelGroups } = defineProps<{
   missingModelGroups: readonly MissingModelGroup[]
 }>()
 
+const deploymentPick = useDeploymentPickStore()
 const { isCopying, copied, copy } = useBriefCopy()
 
 const buildsUrl = `${getComfyPlatformBaseUrl()}/profile/builds`
@@ -69,17 +72,28 @@ function nodeTypeName(nodeType: MissingNodeType): string {
   return typeof nodeType === 'string' ? nodeType : nodeType.type
 }
 
+function buildPack(group: MissingPackGroup): MissingBuildPack {
+  const pack = {
+    packId: group.packId,
+    nodeTypes: group.nodeTypes.map(nodeTypeName)
+  }
+  const unsupported =
+    group.packId !== null
+      ? deploymentPick.unsupportedPackFor(group.packId)
+      : undefined
+  return unsupported
+    ? { ...pack, loadFailure: { cause: unsupported.cause } }
+    : pack
+}
+
 function brief(): string {
   return deploymentBuildBrief(
     deployment,
-    missingPackGroups.map((group) => ({
-      packId: group.packId,
-      nodeTypes: group.nodeTypes.map(nodeTypeName)
-    })),
+    missingPackGroups.map(buildPack),
     missingModelGroups.flatMap((group) =>
       group.models.map((model) => ({
         name: model.name,
-        directory: group.directory,
+        directory: model.representative.directory || group.directory,
         url: model.representative.url
       }))
     )

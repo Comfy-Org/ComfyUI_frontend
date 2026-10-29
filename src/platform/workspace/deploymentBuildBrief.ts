@@ -1,3 +1,5 @@
+import { partition, uniq } from 'es-toolkit'
+
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { BUILD_RECIPE_SECTION } from '@/platform/workspace/customDeploymentBrief'
 
@@ -5,6 +7,8 @@ import { BUILD_RECIPE_SECTION } from '@/platform/workspace/customDeploymentBrief
 export interface MissingBuildPack {
   packId: string | null
   nodeTypes: readonly string[]
+  /** Set when the Build has the pack but its release cannot load it. */
+  loadFailure?: { cause: string }
 }
 
 /** A model a deployment lacks, with its models/ folder and download link. */
@@ -15,8 +19,15 @@ export interface MissingBuildModel {
 }
 
 function packLine({ packId, nodeTypes }: MissingBuildPack): string {
-  const nodes = nodeTypes.map((type) => `\`${type}\``).join(', ')
+  const nodes = uniq(nodeTypes)
+    .map((type) => `\`${type}\``)
+    .join(', ')
   return packId ? `- Pack \`${packId}\`: ${nodes}` : `- Pack unknown: ${nodes}`
+}
+
+function failingPackLine(pack: MissingBuildPack): string {
+  const cause = pack.loadFailure?.cause
+  return cause ? `${packLine(pack)} (fails with: ${cause})` : packLine(pack)
 }
 
 function modelLine({ name, directory, url }: MissingBuildModel): string {
@@ -27,6 +38,19 @@ function modelLine({ name, directory, url }: MissingBuildModel): string {
 
 function listSection(title: string, lines: readonly string[]): string[] {
   return lines.length > 0 ? [`## ${title}`, '', ...lines, ''] : []
+}
+
+function failingPackSection(packs: readonly MissingBuildPack[]): string[] {
+  if (packs.length === 0) return []
+  return [
+    '## Packs the Build has but cannot load',
+    '',
+    'The Build already has these packs, so do not add them again. Find out why',
+    'each one fails to load, and fix that.',
+    '',
+    ...packs.map(failingPackLine),
+    ''
+  ]
 }
 
 function buildReference(deployment: WorkspaceDeployment): string {
@@ -42,6 +66,10 @@ export function deploymentBuildBrief(
   models: readonly MissingBuildModel[]
 ): string {
   const deploymentName = deployment.deployment_name ?? deployment.deployment_id
+  const [failingPacks, absentPacks] = partition(
+    packs,
+    (pack) => pack.loadFailure !== undefined
+  )
   return [
     '# Add custom nodes and models to a Comfy Cloud deployment',
     '',
@@ -50,15 +78,16 @@ export function deploymentBuildBrief(
     `${buildReference(deployment)} on the Comfy developer platform. That release`,
     'lacks these custom nodes and models the workflow uses:',
     '',
-    ...listSection('Custom nodes', packs.map(packLine)),
+    ...listSection('Custom nodes', absentPacks.map(packLine)),
+    ...failingPackSection(failingPacks),
     ...listSection('Models', models.map(modelLine)),
     BUILD_RECIPE_SECTION,
     '',
     '## Where the user decides',
     '',
     'Find the pack for any node under an unknown pack, and a download link for',
-    'any model without one. Show the user what you will add to the Build, and',
-    'wait for a yes. Then cut a new release of it, as the recipe says.',
+    'any model without one. Show the user what you will change in the Build,',
+    'and wait for a yes. Then cut a new release of it, as the recipe says.',
     '',
     '## When you are done',
     '',
