@@ -201,7 +201,10 @@ const BILLING_STATUS = {
   team_credit_stop: null
 } satisfies BillingStatusResponse
 
-function installFetchRecorder(features: Record<string, unknown>) {
+function installFetchRecorder(
+  features: Record<string, unknown>,
+  billingStatusBody: unknown = BILLING_STATUS
+) {
   const all: RecordedRequest[] = []
   let pending: RecordedRequest[] = []
   let socketCloses = 0
@@ -235,7 +238,7 @@ function installFetchRecorder(features: Record<string, unknown>) {
   }
 
   const billingStatusResponse = (): Response => {
-    if (billingUnauthorized === 0) return jsonResponse(BILLING_STATUS)
+    if (billingUnauthorized === 0) return jsonResponse(billingStatusBody)
     billingUnauthorized -= 1
     return jsonResponse({ message: 'invalid auth token' }, 401)
   }
@@ -652,6 +655,42 @@ describe.for([
       billingStatusRead('cloud-jwt-2')
     ])
   })
+
+  it.for([
+    {
+      name: 'an older response without an end date',
+      body: { ...BILLING_STATUS, ended_at: undefined },
+      expected: { status: 'ok', value: { has_funds: true } }
+    },
+    {
+      name: 'a malformed supplied end date',
+      body: { ...BILLING_STATUS, ended_at: 'not-a-date' },
+      expected: { status: 'error', code: 'MALFORMED_RESPONSE', httpStatus: 200 }
+    }
+  ])(
+    'handles $name through the Firebase billing rail',
+    async ({ body, expected }) => {
+      const recorder = installFetchRecorder(
+        { ...BILLING_SDK_RAILS, ...features },
+        body
+      )
+      await refreshRemoteConfig({ useAuth: false })
+      hooks = wireSessionCookieExtension()
+      await useAuthStore().login('user-a@example.com', 'password')
+      await vi.waitFor(() =>
+        expect(recorder.pending).toContainEqual(CUSTOMER_PROVISIONING)
+      )
+      recorder.take()
+      const rail = useBillingReadRail()
+      assert.exists(rail)
+
+      const result = await rail.readStatus()
+
+      expect(result).toMatchObject(expected)
+      expect(result).not.toHaveProperty('value.ended_at')
+      expect(recorder.take()).toEqual([billingStatusRead('cloud-jwt-1')])
+    }
+  )
 
   it('takes the capabilities the server resolved for its own id of the Firebase user', async () => {
     const recorder = installFetchRecorder({

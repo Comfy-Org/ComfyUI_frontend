@@ -6,7 +6,7 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatus,
-  BillingStatusResponse,
+  BillingStatusResponse as GeneratedBillingStatusResponse,
   CancelSubscriptionRequest,
   CancelSubscriptionResponse,
   CreateTopupCheckoutRequest,
@@ -84,7 +84,11 @@ export type BillingSubscriptionStatus = NonNullable<
 >
 
 export type { BillingStatus }
-export type { BillingStatusResponse }
+export type BillingStatusResponse = Omit<
+  GeneratedBillingStatusResponse,
+  'ended_at'
+> &
+  Partial<Pick<GeneratedBillingStatusResponse, 'ended_at'>>
 export type { RenewalInvoice }
 export type { ScheduledPlanChange }
 
