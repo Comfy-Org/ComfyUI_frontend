@@ -43,6 +43,18 @@ export const agentWorkspaceSwitcherTest = base.extend<{
       credit_limit: null
     }
 
+    await page.addInitScript(
+      (workspaceIds) => {
+        for (const workspaceId of workspaceIds) {
+          localStorage.setItem(
+            `Comfy.AgentPanel.onboarded.test-user-e2e.${workspaceId}`,
+            'true'
+          )
+        }
+      },
+      ['ws-personal', 'ws-team']
+    )
+
     await bootAgentApp(page, agentFlagEnabled, {
       features: WORKSPACE_SWITCHER_REMOTE_CONFIG,
       settings: { 'Comfy.UseNewMenu': 'Top' },
