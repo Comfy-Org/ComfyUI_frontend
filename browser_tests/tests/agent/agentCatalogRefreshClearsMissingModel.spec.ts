@@ -37,7 +37,7 @@ test.describe(
             'https://comfy-organization.slack.com/archives/C0BGH348Z0C/p1792786656089399'
         }
       },
-      async ({ agentPanel, comfyPage, getAgentSocket }) => {
+      async ({ agentPanel, comfyPage, getWebSocket }) => {
         const page = comfyPage.page
         const missingModelsGroup = page.getByTestId(
           TestIds.dialogs.missingModelsGroup
@@ -59,7 +59,7 @@ test.describe(
         })
 
         await agentPanel.open()
-        const ws = await getAgentSocket()
+        const ws = await getWebSocket()
         const objectInfoResponse = page.waitForResponse((response) => {
           const url = new URL(response.url())
           return url.pathname.endsWith('/object_info') && response.ok()
