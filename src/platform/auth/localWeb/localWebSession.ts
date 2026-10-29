@@ -33,9 +33,15 @@ function withOriginLock<T>(task: () => Promise<T>): Promise<T> {
   return navigator.locks.request(REFRESH_LOCK_NAME, task)
 }
 
-function browserEnvironment(
+interface SignInFailureNotices {
   onPopupBlocked: () => void
-): LocalWebAuthEnvironment {
+  onSignInFailed: () => void
+}
+
+function browserEnvironment({
+  onPopupBlocked,
+  onSignInFailed
+}: SignInFailureNotices): LocalWebAuthEnvironment {
   return {
     issuer: getComfyCloudBaseUrl(),
     pageUrl: () => window.location.href,
@@ -67,6 +73,7 @@ function browserEnvironment(
     reportSignInFailure(failure) {
       reportSignInFailure(failure)
       if (failure.reason === 'popup-blocked') onPopupBlocked()
+      else onSignInFailed()
     }
   }
 }
@@ -82,8 +89,8 @@ export type LocalWebSessionStart = 'off' | 'started' | 'sign-in-failed'
  * the person declining consent, so the page should say so once it mounts.
  */
 export async function startLocalWebSession(
-  { onPopupBlocked }: { onPopupBlocked: () => void },
-  env: LocalWebAuthEnvironment = browserEnvironment(onPopupBlocked)
+  notices: SignInFailureNotices,
+  env: LocalWebAuthEnvironment = browserEnvironment(notices)
 ): Promise<LocalWebSessionStart> {
   if (!useFeatureFlags().flags.localWebSsoEnabled) return 'off'
   if (!LOOPBACK_HOSTNAMES.has(new URL(env.pageUrl()).hostname)) return 'off'

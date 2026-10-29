@@ -334,8 +334,10 @@ export function createLocalWebAuthBridge(
     const state = `${pkce.state}~${encodeURIComponent(pageOrigin)}`
     if (
       !savePendingSignIn(env.sessionStorage, { verifier: pkce.verifier, state })
-    )
+    ) {
+      env.reportSignInFailure({ kind: 'failed', reason: 'storage-unavailable' })
       return undefined
+    }
     return authorizeUrl({
       issuer: env.issuer,
       clientId: LOCAL_WEB_CLIENT_ID,

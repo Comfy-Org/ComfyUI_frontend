@@ -216,7 +216,7 @@ describe('requestSignIn', () => {
   })
 
   it('closes the blank popup when the sign-in cannot be prepared', async () => {
-    const { bridge, storage, popup } = setup()
+    const { bridge, env, storage, popup } = setup()
     storage.setItem = () => {
       throw new DOMException('full')
     }
@@ -225,6 +225,10 @@ describe('requestSignIn', () => {
 
     expect(popup.closed).toBe(true)
     expect(popup.location.href).toBe('about:blank')
+    expect(env.reportSignInFailure).toHaveBeenCalledWith({
+      kind: 'failed',
+      reason: 'storage-unavailable'
+    })
   })
 
   it('shares one popup and one code exchange between concurrent sign-ins', async () => {
