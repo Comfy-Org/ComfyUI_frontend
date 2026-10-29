@@ -728,6 +728,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
       g: { agentInputNeededShort: 'Answer needed' }
     })
     try {
+      i18n.global.locale.value = 'en'
       renderPanel()
       await send('install the video nodes')
 

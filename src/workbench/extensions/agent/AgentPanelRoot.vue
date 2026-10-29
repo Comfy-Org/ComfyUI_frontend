@@ -1240,8 +1240,6 @@ watch(
   (tabs) => tabActivity.setAgentTurnTabs(tabs),
   { immediate: true, flush: 'sync' }
 )
-// The source translates, so a locale change re-translates the prefix. Not a
-// watchEffect: setPrefix reads the store it writes, and a clear would re-set it.
 watch(
   () =>
     conversationStore.awaitingApproval ? t('g.agentInputNeededShort') : null,

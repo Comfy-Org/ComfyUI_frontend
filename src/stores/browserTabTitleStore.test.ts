@@ -48,4 +48,15 @@ describe('useBrowserTabTitleStore', () => {
     store.setPrefix('feature-a', undefined)
     expect(store.prefix).toBe('')
   })
+
+  it('moves a source to the end when it clears and sets again', () => {
+    const store = useBrowserTabTitleStore()
+    store.setPrefix('first', 'One')
+    store.setPrefix('second', 'Two')
+
+    store.setPrefix('first', null)
+    store.setPrefix('first', 'One')
+
+    expect(store.prefix).toBe('[Two] [One] ')
+  })
 })

@@ -4,7 +4,8 @@ import { computed, shallowRef } from 'vue'
 /**
  * Prefixes for the browser tab title.
  * A source clears its prefix by setting an empty value (`''`, `null` or `undefined`).
- * Prefixes show in the original order in which they were set.
+ * Prefixes show in the order each source set one; a source that clears
+ * and sets again moves to the end.
  */
 export const useBrowserTabTitleStore = defineStore('browserTabTitle', () => {
   const prefixes = shallowRef<ReadonlyMap<string, string>>(new Map())
