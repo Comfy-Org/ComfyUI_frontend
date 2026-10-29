@@ -170,6 +170,24 @@ export function askIdOf(part: MessagePart): string | undefined {
   return 'askId' in part ? part.askId : undefined
 }
 
+const ASK_KIND_BY_PART_TYPE: Record<AskPart['type'], RenderedAskKind> = {
+  runApproval: 'run_approval',
+  askUser: 'ask_user',
+  deleteApproval: 'delete_approval'
+}
+
+/** The wire kind of the ask card with this id, if one is among the parts. */
+export function askKindOf(
+  parts: readonly MessagePart[],
+  askId: string
+): RenderedAskKind | undefined {
+  const part = parts.find(
+    (candidate): candidate is AskPart =>
+      isAskPart(candidate) && candidate.askId === askId
+  )
+  return part && ASK_KIND_BY_PART_TYPE[part.type]
+}
+
 export function retireAskParts(
   parts: MessagePart[],
   askId: string,

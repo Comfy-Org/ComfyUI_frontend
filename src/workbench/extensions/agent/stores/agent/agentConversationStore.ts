@@ -9,6 +9,7 @@ import type { AgentTurnTab } from '@/stores/workflowTabActivityStore'
 
 import type {
   AgentMessages,
+  RenderedAskKind,
   TurnId
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -25,6 +26,7 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   askIdOf,
+  askKindOf,
   createAssistantMessage,
   isOpenAskPart,
   isPendingAskPart,
@@ -258,6 +260,11 @@ function finishWithPersistedParts(
 }
 
 const MAX_DEPARTED_TURNS = 32
+
+interface SubmittedAskAnswer {
+  answer: AgentAnswerRequest
+  kind: RenderedAskKind | 'unknown'
+}
 
 export const useAgentConversationStore = defineStore(
   'agentConversation',
@@ -542,15 +549,24 @@ export const useAgentConversationStore = defineStore(
       return retired
     }
 
-    const submittedAskAnswers = new Map<string, AgentAnswerRequest>()
+    const submittedAskAnswers = new Map<string, SubmittedAskAnswer>()
 
+    /**
+     * Keeps the answer and the kind of card it was given on. The kind is read
+     * now, while the card is on screen, so a report after a thread switch
+     * still names it.
+     */
     function recordAskAnswer(askId: string, answer: AgentAnswerRequest): void {
-      submittedAskAnswers.set(askId, answer)
+      const kind =
+        messages.value
+          .map((message) => askKindOf(message.parts, askId))
+          .find((found) => found !== undefined) ?? 'unknown'
+      submittedAskAnswers.set(askId, { answer, kind })
     }
 
     function takeSubmittedAskAnswer(
       askId: string
-    ): AgentAnswerRequest | undefined {
+    ): SubmittedAskAnswer | undefined {
       const answer = submittedAskAnswers.get(askId)
       submittedAskAnswers.delete(askId)
       return answer
