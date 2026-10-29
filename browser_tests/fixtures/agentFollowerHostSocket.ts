@@ -145,6 +145,8 @@ export class AgentFollowerHostSocket {
   private refusedSubscribes = 0
 
   private socket: WebSocketRoute | null = null
+  private agentProcessDown = false
+  private refusedConnections = 0
   private comfySocket: WebSocketRoute | null = null
   private comfyConnections = 0
   private connections = 0
@@ -229,10 +231,43 @@ export class AgentFollowerHostSocket {
       )
     })
     await this.page.routeWebSocket(AGENT_SOCKET_URL, (socket) => {
+      // A down agent process refuses the connection outright, so the page's
+      // reconnect ladder keeps backing off instead of landing on a host that
+      // answers. The refusal is not counted as a connection.
+      if (this.agentProcessDown) {
+        this.refusedConnections += 1
+        void socket.close()
+        return
+      }
       this.connections += 1
       this.socket = socket
       socket.onMessage((raw) => this.onClientFrame(raw))
     })
+  }
+
+  /**
+   * Models the agent process going down: the live socket closes and every
+   * reconnect is refused until {@link endAgentOutage}. Unlike
+   * {@link disconnect}, which the page recovers from within its first backoff
+   * step, this holds the outage open for as long as the test needs — long
+   * enough to outlast the op sender's transport retry budget, which is what
+   * PM-2392 turns on.
+   */
+  async beginAgentOutage(): Promise<void> {
+    this.agentProcessDown = true
+    const socket = this.socket
+    this.socket = null
+    await socket?.close()
+  }
+
+  /** Lets the page's next reconnect attempt through. */
+  endAgentOutage(): void {
+    this.agentProcessDown = false
+  }
+
+  /** Reconnect attempts refused during an outage, so a test can prove the page kept trying. */
+  refusedConnectionCount(): number {
+    return this.refusedConnections
   }
 
   send(frame: AgentWsEvent | AgentAskServerFrame | HostFrame): void {

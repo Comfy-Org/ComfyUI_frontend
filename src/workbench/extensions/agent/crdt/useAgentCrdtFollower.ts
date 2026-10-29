@@ -820,6 +820,13 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       forgetUnsyncedAtLoad(subscribedWorkflowId.value)
       resumeHeldOpsIfSubscribed()
+      // Edits made while the socket was down are held by the sender rather
+      // than discarded, so the confirmed subscription is where they go out
+      // (PM-2392). Driven from the ack, not from the socket-live edge: the
+      // host answers a subscribe before it reads the ops frame, so the
+      // catch-up `doc_update` is already on the wire ahead of the resend and
+      // the holds that protect those registers outlive it.
+      sender.retryTransport()
     } else {
       handleRejectedSubscription(detail)
     }
