@@ -5,6 +5,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
 import { assetService } from '@/platform/assets/services/assetService'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
@@ -17,6 +18,34 @@ interface LibraryFolder {
 
 const NO_NAMES: readonly string[] = []
 
+const WORKER_MODEL_FOLDERS = new Set([
+  'checkpoints',
+  'loras',
+  'vae',
+  'vae_approx',
+  'controlnet',
+  't2i_adapter',
+  'clip',
+  'clip_vision',
+  'text_encoders',
+  'diffusion_models',
+  'unet',
+  'upscale_models',
+  'latent_upscale_models',
+  'embeddings',
+  'hypernetworks',
+  'style_models',
+  'gligen',
+  'photomaker',
+  'model_patches',
+  'audio_encoders',
+  'background_removal',
+  'frame_interpolation',
+  'geometry_estimation',
+  'optical_flow',
+  'detection'
+])
+
 /** The workspace library's model names by folder, offered after the Release's in a deployment's loader dropdowns. */
 export const useDeploymentLibraryModelsStore = defineStore(
   'deploymentLibraryModels',
@@ -26,9 +55,16 @@ export const useDeploymentLibraryModelsStore = defineStore(
     const deploymentPick = useDeploymentPickStore()
     const downloads = useAssetDownloadStore()
     const folders = shallowReactive(new Map<string, LibraryFolder>())
+    const watchedFolders = new Map<string, number>()
     const latestRequest = new Map<string, number>()
     const listeners = effectScope()
     let generation = 0
+
+    function loadWatchedFolders() {
+      for (const folder of watchedFolders.keys()) {
+        if (!folders.has(folder)) refresh(folder)
+      }
+    }
 
     watch(
       () => workspaceStore.workspaceId,
@@ -36,9 +72,14 @@ export const useDeploymentLibraryModelsStore = defineStore(
         generation++
         folders.clear()
         latestRequest.clear()
+        loadWatchedFolders()
       },
       { flush: 'sync' }
     )
+
+    watch(() => flags.runtimeLibraryModelsEnabled, loadWatchedFolders, {
+      flush: 'sync'
+    })
 
     watch(
       () => downloads.lastCompletedDownload,
@@ -49,22 +90,35 @@ export const useDeploymentLibraryModelsStore = defineStore(
     )
 
     onScopeDispose(
-      assetService.onAssetDeleted(() => {
+      assetService.onAssetsChanged(() => {
         for (const folder of folders.keys()) refresh(folder)
       })
     )
 
+    function deploymentDownloads(folder: string, name?: string): boolean {
+      return pendingServerFact(
+        'BE-24448',
+        !!deploymentPick.bootDeployment &&
+          WORKER_MODEL_FOLDERS.has(folder) &&
+          (name === undefined ||
+            (!name.startsWith('.') &&
+              !/[/\\\0]/.test(name) &&
+              !name.includes('..') &&
+              name.toLowerCase().endsWith('.safetensors')))
+      )
+    }
+
     function folderFor(nodeType: string, widgetName: string) {
-      if (!deploymentPick.bootDeployment) return undefined
       if (!assetService.isAssetBrowserEligible(nodeType, widgetName)) {
         return undefined
       }
-      return useModelToNodeStore().getCategoryForNodeType(nodeType)
+      const folder = useModelToNodeStore().getCategoryForNodeType(nodeType)
+      return folder && deploymentDownloads(folder) ? folder : undefined
     }
 
-    function refresh(folder: string): LibraryFolder | undefined {
+    function refresh(folder: string) {
       if (!flags.runtimeLibraryModelsEnabled || !workspaceStore.workspaceId) {
-        return undefined
+        return
       }
       const startedIn = generation
       const request = (latestRequest.get(folder) ?? 0) + 1
@@ -80,7 +134,10 @@ export const useDeploymentLibraryModelsStore = defineStore(
       void assetService.getWorkspaceLibraryModels(folder).then(
         (names) => {
           if (!isCurrent()) return
-          folders.set(folder, { names, status: 'ready' })
+          folders.set(folder, {
+            names: names.filter((name) => deploymentDownloads(folder, name)),
+            status: 'ready'
+          })
         },
         (err: unknown) => {
           if (!isCurrent()) return
@@ -93,29 +150,38 @@ export const useDeploymentLibraryModelsStore = defineStore(
           })
         }
       )
-      return entry
     }
 
-    function current(folder: string): LibraryFolder | undefined {
-      if (!flags.runtimeLibraryModelsEnabled) return undefined
-      return folders.get(folder) ?? refresh(folder)
-    }
-
-    function prepare(folder: string) {
-      current(folder)
+    function loaded(folder: string): LibraryFolder | undefined {
+      return flags.runtimeLibraryModelsEnabled ? folders.get(folder) : undefined
     }
 
     function namesIn(folder: string): readonly string[] {
-      return current(folder)?.names ?? NO_NAMES
-    }
-
-    function onNamesChange(folder: string, callback: () => void): () => void {
-      const stop = listeners.run(() => watch(() => namesIn(folder), callback))
-      return stop ?? (() => {})
+      return loaded(folder)?.names ?? NO_NAMES
     }
 
     function statusOf(folder: string): ComboWidgetInventoryStatus {
-      return current(folder)?.status ?? 'ready'
+      return loaded(folder)?.status ?? 'ready'
+    }
+
+    /**
+     * Loads the folder and calls back each time its names change, until the returned stop is called.
+     */
+    function watchFolder(folder: string, onChange: () => void): () => void {
+      watchedFolders.set(folder, (watchedFolders.get(folder) ?? 0) + 1)
+      if (!folders.has(folder)) refresh(folder)
+      const stopWatch = listeners.run(() =>
+        watch(() => namesIn(folder), onChange)
+      )
+      let stopped = false
+      return () => {
+        if (stopped) return
+        stopped = true
+        stopWatch?.()
+        const count = (watchedFolders.get(folder) ?? 1) - 1
+        if (count > 0) watchedFolders.set(folder, count)
+        else watchedFolders.delete(folder)
+      }
     }
 
     function waitForSettled(folder: string): Promise<void> {
@@ -137,9 +203,8 @@ export const useDeploymentLibraryModelsStore = defineStore(
 
     return {
       folderFor,
-      prepare,
+      watchFolder,
       namesIn,
-      onNamesChange,
       statusOf,
       waitForSettled,
       refresh

@@ -95,7 +95,20 @@ function addLibraryModelOptions(
   folder: string
 ) {
   const library = useDeploymentLibraryModelsStore()
-  library.prepare(folder)
+  const stopWatching = library.watchFolder(folder, () => {
+    if (node.graph) syncPromotedHostsOnce(node.graph.rootGraph)
+    else stopWatching()
+  })
+  const { onRemoved } = node
+  node.onRemoved = function () {
+    onRemoved?.call(this)
+    stopWatching()
+  }
+  const { onRemove } = widget
+  widget.onRemove = function () {
+    onRemove?.call(this)
+    stopWatching()
+  }
   registerComboWidgetInventory(widget, {
     getStatus: () => library.statusOf(folder),
     waitForSettled: () => library.waitForSettled(folder)
@@ -120,10 +133,6 @@ function addLibraryModelOptions(
     },
     () => library.refresh(folder)
   )
-  const stopSyncingHosts = library.onNamesChange(folder, () => {
-    if (node.graph) syncPromotedHostsOnce(node.graph.rootGraph)
-    else stopSyncingHosts()
-  })
 }
 
 const addMultiSelectWidget = (

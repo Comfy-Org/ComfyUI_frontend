@@ -7,7 +7,7 @@ import { nextTick } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import { syncPromotedComboHostOptions } from '@/core/graph/widgets/syncPromotedComboHostOptions'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
@@ -115,10 +115,6 @@ describe('model widgets on a deployment', () => {
       return getComboWidgetInventory(widget)?.waitForSettled()
     }
 
-    function models(...names: string[]): string[] {
-      return names
-    }
-
     function loraWidget(options = ['release.safetensors']) {
       const node = new LGraphNode('LoraLoader')
       node.comfyClass = 'LoraLoader'
@@ -129,6 +125,13 @@ describe('model widgets on a deployment', () => {
         app
       )
       return widget as IComboWidget
+    }
+
+    function loaderNode(nodeType: string, input: string) {
+      const node = new LGraphNode(nodeType)
+      node.comfyClass = nodeType
+      ComfyWidgets.COMBO(node, input, [['release.safetensors'], {}], app)
+      return node
     }
 
     function onWorkspace(workspaceId: string | null) {
@@ -166,7 +169,7 @@ describe('model widgets on a deployment', () => {
 
     it('leaves the dropdown as the Release lists it and asks for no library while the flag is off', async () => {
       vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = false
-      library.set('loras', models('my_style_v2.safetensors'))
+      library.set('loras', ['my_style_v2.safetensors'])
       const widget = loraWidget()
 
       expect(assetService.getWorkspaceLibraryModels).not.toHaveBeenCalled()
@@ -176,7 +179,7 @@ describe('model widgets on a deployment', () => {
 
     it('follows the flag when it flips while the page is open', async () => {
       vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = false
-      library.set('loras', models('my_style_v2.safetensors'))
+      library.set('loras', ['my_style_v2.safetensors'])
       const widget = loraWidget()
 
       vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = true
@@ -194,10 +197,7 @@ describe('model widgets on a deployment', () => {
     })
 
     it('lists the Release models first, then library models not already listed', async () => {
-      library.set(
-        'loras',
-        models('my_style_v2.safetensors', 'release.safetensors')
-      )
+      library.set('loras', ['my_style_v2.safetensors', 'release.safetensors'])
       const widget = loraWidget(['release.safetensors', 'other.safetensors'])
 
       expect(widget.options.values).toEqual([
@@ -226,6 +226,103 @@ describe('model widgets on a deployment', () => {
       expect(library.folderFor('LoraLoader', 'lora_name')).toBeUndefined()
     })
 
+    it('offers no library models in a custom-node folder the deployment worker does not stage', async () => {
+      useNodeDefStore().nodeDefsByName = {
+        IPAdapterModelLoader: fromPartial({ name: 'IPAdapterModelLoader' })
+      }
+      expect(
+        assetService.isAssetBrowserEligible(
+          'IPAdapterModelLoader',
+          'ipadapter_file'
+        )
+      ).toBe(true)
+      library.set('ipadapter', ['ip_style.safetensors'])
+      const node = new LGraphNode('IPAdapterModelLoader')
+      node.comfyClass = 'IPAdapterModelLoader'
+      const { widget } = ComfyWidgets.COMBO(
+        node,
+        'ipadapter_file',
+        [['release_ipadapter.safetensors'], {}],
+        app
+      )
+      await libraryAnswered()
+
+      expect(
+        useDeploymentLibraryModelsStore().folderFor(
+          'IPAdapterModelLoader',
+          'ipadapter_file'
+        )
+      ).toBeUndefined()
+      expect(assetService.getWorkspaceLibraryModels).not.toHaveBeenCalled()
+      expect(widget.options.values).toEqual(['release_ipadapter.safetensors'])
+    })
+
+    it('offers only the library models a deployment can download: a bare .safetensors file name', async () => {
+      library.set('loras', [
+        'my_style.ckpt',
+        'my_style.pt',
+        'nested/my_style.safetensors',
+        'flux..v2.safetensors',
+        '.hidden.safetensors',
+        'Upper_Case.SAFETENSORS'
+      ])
+      const widget = loraWidget()
+      await libraryLoaded(widget)
+
+      expect(widget.options.values).toEqual([
+        'release.safetensors',
+        'Upper_Case.SAFETENSORS'
+      ])
+    })
+
+    it('reads nothing from the network when a dropdown or the missing-model check only looks', () => {
+      const library = useDeploymentLibraryModelsStore()
+
+      expect(library.namesIn('loras')).toEqual([])
+      expect(library.statusOf('loras')).toBe('ready')
+      expect(assetService.getWorkspaceLibraryModels).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      {
+        removal: 'its node is deleted',
+        remove: (node: LGraphNode) => node.graph?.remove(node)
+      },
+      {
+        removal: 'its widget is removed',
+        remove: (node: LGraphNode) => {
+          const [widget] = node.widgets ?? []
+          node.removeWidget(widget)
+        }
+      }
+    ])(
+      'stops reading the library for a loader once $removal',
+      async ({ remove }) => {
+        const graph = new LGraph()
+        const loras = [
+          loaderNode('LoraLoader', 'lora_name'),
+          loaderNode('LoraLoader', 'lora_name')
+        ]
+        const checkpoint = loaderNode('CheckpointLoaderSimple', 'ckpt_name')
+        for (const node of [...loras, checkpoint]) graph.add(node)
+        await Promise.all(
+          vi
+            .mocked(assetService.getWorkspaceLibraryModels)
+            .mock.results.map((result) => result.value)
+        )
+
+        remove(loras[0])
+        remove(checkpoint)
+        vi.mocked(assetService.getWorkspaceLibraryModels).mockClear()
+        onWorkspace('ws-2')
+        await nextTick()
+
+        expect(
+          vi.mocked(assetService.getWorkspaceLibraryModels).mock.calls
+        ).toEqual([['loras']])
+      }
+    )
+
     it('holds the missing-model check until the library answers', async () => {
       let answer: (names: string[]) => void = () => {}
       vi.mocked(assetService.getWorkspaceLibraryModels).mockReturnValueOnce(
@@ -238,7 +335,7 @@ describe('model widgets on a deployment', () => {
 
       expect(inventory?.getStatus()).toBe('loading')
       const settled = inventory?.waitForSettled()
-      answer(models('my_style_v2.safetensors'))
+      answer(['my_style_v2.safetensors'])
       await settled
 
       expect(inventory?.getStatus()).toBe('ready')
@@ -254,10 +351,10 @@ describe('model widgets on a deployment', () => {
       )
       const widget = loraWidget()
 
+      library.set('loras', ['b_lora.safetensors'])
       onWorkspace('ws-2')
-      library.set('loras', models('b_lora.safetensors'))
       expect(widget.options.values).toEqual(['release.safetensors'])
-      answerA(models('a_lora.safetensors'))
+      answerA(['a_lora.safetensors'])
       await libraryLoaded(widget)
 
       expect(widget.options.values).toEqual([
@@ -267,7 +364,7 @@ describe('model widgets on a deployment', () => {
     })
 
     it('drops the library while signed out of every workspace', async () => {
-      library.set('loras', models('a_lora.safetensors'))
+      library.set('loras', ['a_lora.safetensors'])
       const widget = loraWidget()
       await libraryLoaded(widget)
 
@@ -279,7 +376,7 @@ describe('model widgets on a deployment', () => {
     it('reads the library again when the Release options are refreshed', async () => {
       const widget = loraWidget()
       await libraryLoaded(widget)
-      library.set('loras', models('uploaded.safetensors'))
+      library.set('loras', ['uploaded.safetensors'])
 
       widget.options.values = ['release.safetensors', 'release_v2.safetensors']
       await libraryAnswered()
@@ -294,7 +391,7 @@ describe('model widgets on a deployment', () => {
     it('reads the library again when a model upload into its folder completes', async () => {
       const widget = loraWidget()
       await libraryLoaded(widget)
-      library.set('loras', models('uploaded.safetensors'))
+      library.set('loras', ['uploaded.safetensors'])
 
       useAssetDownloadStore().lastCompletedDownload = {
         taskId: 'task-1',
@@ -307,6 +404,50 @@ describe('model widgets on a deployment', () => {
       expect(widget.options.values).toContain('uploaded.safetensors')
     })
 
+    it.for([
+      {
+        answer: 'the model is already in storage (200)',
+        response: () =>
+          new Response(
+            JSON.stringify({
+              id: '3f0b6c1e-0000-4000-8000-000000000010',
+              name: 'imported.safetensors',
+              tags: ['models', 'loras'],
+              created_at: '2026-10-29T00:00:00Z',
+              updated_at: '2026-10-29T00:00:00Z'
+            }),
+            { status: 200 }
+          )
+      },
+      {
+        answer: 'the import task is already complete (202)',
+        response: () =>
+          new Response(
+            JSON.stringify({ task_id: 'task-1', status: 'completed' }),
+            { status: 202 }
+          )
+      }
+    ])(
+      'reads the library again when an import finishes at once because $answer',
+      async ({ response }) => {
+        const widget = loraWidget()
+        await libraryLoaded(widget)
+        library.set('loras', ['imported.safetensors'])
+
+        vi.mocked(api.fetchApi).mockResolvedValueOnce(response())
+        await assetService.uploadAssetAsync({
+          source_url: 'https://civitai.com/api/download/models/1',
+          tags: ['models', 'loras']
+        })
+        await libraryAnswered()
+
+        expect(widget.options.values).toEqual([
+          'release.safetensors',
+          'imported.safetensors'
+        ])
+      }
+    )
+
     it('lets the newest read of the library win when an older one answers last', async () => {
       let answerOlder: (names: string[]) => void = () => {}
       const olderRead = new Promise<string[]>((resolve) => {
@@ -316,11 +457,11 @@ describe('model widgets on a deployment', () => {
         olderRead
       )
       const widget = loraWidget()
-      library.set('loras', models('uploaded.safetensors'))
+      library.set('loras', ['uploaded.safetensors'])
       useDeploymentLibraryModelsStore().refresh('loras')
       await libraryAnswered()
 
-      answerOlder(models('before_upload.safetensors'))
+      answerOlder(['before_upload.safetensors'])
       await olderRead
 
       expect(widget.options.values).toEqual([
@@ -330,10 +471,10 @@ describe('model widgets on a deployment', () => {
     })
 
     it('drops a deleted model from the dropdown once the deletion succeeds', async () => {
-      library.set(
-        'loras',
-        models('my_style_v2.safetensors', 'teammate_portrait.safetensors')
-      )
+      library.set('loras', [
+        'my_style_v2.safetensors',
+        'teammate_portrait.safetensors'
+      ])
       const widget = loraWidget()
       await libraryLoaded(widget)
       expect(widget.options.values).toContain('my_style_v2.safetensors')
@@ -341,7 +482,7 @@ describe('model widgets on a deployment', () => {
       vi.mocked(api.fetchApi).mockResolvedValueOnce(
         new Response(null, { status: 204 })
       )
-      library.set('loras', models('teammate_portrait.safetensors'))
+      library.set('loras', ['teammate_portrait.safetensors'])
       await assetService.deleteAsset('3f0b6c1e-0000-4000-8000-000000000001')
       await libraryAnswered()
 
@@ -395,7 +536,7 @@ describe('model widgets on a deployment', () => {
           ])
         ).resolves.toBe('waiting')
 
-        library.set('loras', models('newer.safetensors'))
+        library.set('loras', ['newer.safetensors'])
         apply()
         await settled
 
@@ -416,7 +557,7 @@ describe('model widgets on a deployment', () => {
       )
       expect(promoted.options.values).toEqual(['release.safetensors'])
 
-      answer(models('my_style_v2.safetensors'))
+      answer(['my_style_v2.safetensors'])
       await libraryAnswered()
       expect(promoted.options.values).toEqual([
         'release.safetensors',
@@ -444,7 +585,7 @@ describe('model widgets on a deployment', () => {
       await libraryAnswered()
       vi.mocked(syncPromotedComboHostOptions).mockClear()
 
-      library.set('loras', models('uploaded.safetensors'))
+      library.set('loras', ['uploaded.safetensors'])
       useAssetDownloadStore().lastCompletedDownload = {
         taskId: 'task-1',
         modelType: 'loras',

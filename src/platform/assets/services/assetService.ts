@@ -1,3 +1,4 @@
+import type { ListAssetsData } from '@comfyorg/ingest-types'
 import { uniq } from 'es-toolkit'
 import { fromZodError } from 'zod-validation-error'
 import { z } from 'zod'
@@ -238,14 +239,9 @@ function compareLoaderPaths(a: string, b: string): number {
   return 0
 }
 
-function isDeploymentDownloadableName(name: string): boolean {
-  return (
-    !name.startsWith('.') &&
-    !/[/\\\0]/.test(name) &&
-    !name.includes('..') &&
-    name.toLowerCase().endsWith('.safetensors')
-  )
-}
+const WORKSPACE_LIBRARY_PARAM = 'workspace_library' satisfies keyof NonNullable<
+  ListAssetsData['query']
+>
 
 /**
  * Validates asset response data using Zod schema
@@ -280,7 +276,7 @@ function validateUploadedAssetResponse(
  * Not exposed globally - used internally by ComfyApi
  */
 function createAssetService() {
-  const deletionListeners = new Set<() => void>()
+  const assetChangeListeners = new Set<() => void>()
 
   /**
    * Model assets bucketed by folder category, built from a single walk of the
@@ -345,7 +341,7 @@ function createAssetService() {
       queryParams.set('include_public', includePublic ? 'true' : 'false')
     }
     if (workspaceLibrary) {
-      queryParams.set('workspace_library', 'true')
+      queryParams.set(WORKSPACE_LIBRARY_PARAM, 'true')
     }
 
     const url = `${ASSETS_ENDPOINT}?${queryParams.toString()}`
@@ -781,7 +777,7 @@ function createAssetService() {
   }
 
   /**
-   * Lists the unique loader names in one folder of the workspace library that a deployment can download.
+   * Lists the unique loader names in one folder of the workspace library.
    */
   async function getWorkspaceLibraryModels(folder: string): Promise<string[]> {
     const assets = await walkAssetPages(
@@ -802,11 +798,7 @@ function createAssetService() {
     return uniq(
       assets
         .map((asset) => asset.loader_path ?? getAssetFilename(asset))
-        .filter(
-          (name) =>
-            assetFilenameSchema.safeParse(name).success &&
-            isDeploymentDownloadableName(name)
-        )
+        .filter((name) => assetFilenameSchema.safeParse(name).success)
     )
   }
 
@@ -828,16 +820,20 @@ function createAssetService() {
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
     }
-    for (const listener of deletionListeners) listener()
+    notifyAssetsChanged()
+  }
+
+  function notifyAssetsChanged() {
+    for (const listener of assetChangeListeners) listener()
   }
 
   /**
-   * Calls back after each asset this client deletes; returns the unsubscribe.
+   * Calls back after this client deletes an asset or an import finishes at once; returns the unsubscribe.
    */
-  function onAssetDeleted(callback: () => void): () => void {
-    deletionListeners.add(callback)
+  function onAssetsChanged(callback: () => void): () => void {
+    assetChangeListeners.add(callback)
     return () => {
-      deletionListeners.delete(callback)
+      assetChangeListeners.delete(callback)
     }
   }
 
@@ -1110,6 +1106,12 @@ function createAssetService() {
           )
         )
       }
+      if (
+        result.data.type === 'async' &&
+        result.data.task.status === 'completed'
+      ) {
+        notifyAssetsChanged()
+      }
       return result.data
     }
 
@@ -1125,6 +1127,7 @@ function createAssetService() {
         )
       )
     }
+    notifyAssetsChanged()
     return result.data
   }
 
@@ -1172,7 +1175,7 @@ function createAssetService() {
     getAllAssetsByTag,
     getWorkspaceLibraryModels,
     deleteAsset,
-    onAssetDeleted,
+    onAssetsChanged,
     updateAsset,
     addAssetTags,
     removeAssetTags,
