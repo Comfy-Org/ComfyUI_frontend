@@ -5868,7 +5868,6 @@
           "off": "끔",
           "on": "켬",
           "onHold": "보류 중",
-          "paused": "일시 중지됨",
           "turnedOff": "꺼짐"
         },
         "title": "자동 충전",
@@ -5931,7 +5930,6 @@
         },
         "scheduledChange": "{date}에 {plan}(으)로 변경됩니다.",
         "stayConfirm": {
-          "body": "{date}에 요금제가 {plan}(으)로 변경되지 않습니다. 언제든 다시 변경을 예약할 수 있습니다.",
           "title": "{plan}(으)로 변경을 취소하시겠습니까?"
         },
         "unknown": {
