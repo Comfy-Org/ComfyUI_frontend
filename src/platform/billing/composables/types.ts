@@ -4,7 +4,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type { SettledSubscribeResponse } from '@/platform/billing/sdk/subscriptionOperationView'
 import type {
   BillingStatus,
@@ -86,6 +86,8 @@ export interface SubscriptionInfo {
    * disabled, absent when the server does not report it.
    */
   agentScopedHasFunds?: boolean
+  /** True only when the billing status names the rail that supplied the grant. */
+  agentScopedHasFundsAuthoritative?: boolean
 }
 
 /**

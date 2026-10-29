@@ -34,6 +34,7 @@ const STATUS = {
   occupied_seats: 4,
   pending_billing_op_id: 'op-1',
   pending_billing_op_type: 'subscription',
+  ended_at: null,
   scheduled_change: null,
   team_credit_stop: null
 }
@@ -57,6 +58,58 @@ describe('createBillingStatusReader', () => {
       userId: 'uid-1',
       workspaceId: 'ws-1',
       role: 'owner'
+    })
+  })
+
+  it.for([
+    { name: 'omitted on an older server', endedAt: undefined },
+    { name: 'unknown', endedAt: null },
+    { name: 'recorded', endedAt: '2026-10-27T12:00:00Z' }
+  ])(
+    'preserves an $name end date without inventing one',
+    async ({ endedAt }) => {
+      const { scopeSource } = fakeSession()
+      const body: unknown = JSON.parse(
+        JSON.stringify({ ...STATUS, ended_at: endedAt })
+      )
+      const { transport } = fakeTransport([httpOk(body)])
+      const reader = createBillingStatusReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result).toMatchObject({
+        status: 'ok',
+        value: { status: { has_funds: true } }
+      })
+      expect(reader.getSnapshot()?.status.ended_at).toBe(endedAt)
+      expect(
+        Object.hasOwn(reader.getSnapshot()?.status ?? {}, 'ended_at')
+      ).toBe(endedAt !== undefined)
+    }
+  )
+
+  it.for([
+    { name: 'malformed date', body: { ...STATUS, ended_at: 'not-a-date' } },
+    { name: 'numeric date', body: { ...STATUS, ended_at: 1730000000 } },
+    { name: 'malformed core field', body: { ...STATUS, has_funds: 'true' } },
+    { name: 'missing core field', body: { ...STATUS, is_active: undefined } }
+  ])('rejects a $name without replacing valid status', async ({ body }) => {
+    const { scopeSource } = fakeSession()
+    const { transport } = fakeTransport([httpOk(STATUS), httpOk(body)])
+    const reader = createBillingStatusReader({ transport, scopeSource })
+    await reader.read()
+
+    const result = await reader.read()
+
+    expect(result).toEqual({
+      status: 'error',
+      code: 'MALFORMED_RESPONSE',
+      httpStatus: 200
+    })
+    expect(reader.getSnapshot()?.status).toMatchObject({
+      ended_at: null,
+      has_funds: true,
+      is_active: true
     })
   })
 

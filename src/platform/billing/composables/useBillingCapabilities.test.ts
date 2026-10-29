@@ -1,5 +1,5 @@
-import { setTelemetryRegistry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -31,7 +31,7 @@ const mockIsCloud = vi.hoisted(() => ({ value: true }))
 
 vi.mock(import('@/platform/billing/api/billingApi'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -61,6 +61,7 @@ function capabilitiesResponse(
   overrides: Partial<BillingCapabilitiesResponse['capabilities']> = {}
 ): BillingCapabilitiesResponse {
   return {
+    auto_top_up_enabled: false,
     resolved_for: {
       user_id: 'canonical-user-1',
       workspace_id: workspaceId

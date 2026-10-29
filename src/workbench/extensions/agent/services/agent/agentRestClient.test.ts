@@ -4,10 +4,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  markErrorReported,
-  reportError
-} from '@/platform/telemetry/reportError'
+import { markErrorReported, reportError } from '@comfyorg/telemetry/reportError'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
@@ -646,7 +643,7 @@ describe('postMessage wire body', () => {
     const parsed = JSON.parse(init.body as string) as Record<string, unknown>
     expect(parsed).toEqual({
       content: 'build it',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       workflow_id: 'wf-9',
       selection: { nodeId: 3 },
       attachments: ['a1'],
@@ -664,7 +661,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'add a node',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       current_tab_unbound: true,
       client_version: buildVersion
     })
@@ -676,7 +673,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'just text',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       client_version: buildVersion
     })
   })
@@ -694,7 +691,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'build it',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
       client_version: buildVersion
     })
@@ -720,7 +717,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'run it',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       client_id: 'tab-socket-id',
       client_version: buildVersion
     })
@@ -744,7 +741,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: "what's on my canvas",
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } },
       client_version: buildVersion
     })

@@ -5,7 +5,7 @@ import type {
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 
@@ -36,7 +36,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: mockWorkspaceApi
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
 const listing: WorkspaceDeploymentList = {
   builds_visible: true,
@@ -50,6 +50,7 @@ const listing: WorkspaceDeploymentList = {
       build_name: 'Studio Build',
       release_version: 2,
       status: 'ready',
+      can_start: false,
       created_at: '2026-10-01T00:00:00Z'
     },
     {
@@ -59,6 +60,7 @@ const listing: WorkspaceDeploymentList = {
       build_name: 'Studio Build',
       release_version: 1,
       status: 'stopped',
+      can_start: true,
       created_at: '2026-09-20T00:00:00Z'
     }
   ]

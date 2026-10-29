@@ -25,7 +25,7 @@ import {
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   applyCanvasSelection,
   applyClickSelection,
@@ -99,7 +99,7 @@ import { inputHasLink, nodeLinkIds, outputLinks } from './node/slotLinks'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { Reroute } from './Reroute'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import type { CanvasInteractionModeReader } from './canvas/CanvasInteractionMode'
+import type { CanvasInteractionModeReader } from '@comfyorg/graph-model/CanvasInteractionMode'
 import { LinkConnector } from './canvas/LinkConnector'
 import { findRerouteAtPoint } from './canvas/hitTesting'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'

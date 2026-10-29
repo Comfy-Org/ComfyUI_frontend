@@ -107,6 +107,7 @@ describe(assetService.shouldUseWidgetAssetPicker, () => {
       deployment_id: 'dep-release',
       release_id: 'release-1',
       status: 'ready',
+      can_start: false,
       created_at: '2026-10-01T00:00:00Z'
     }
 

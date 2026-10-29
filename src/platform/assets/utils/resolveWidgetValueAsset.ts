@@ -29,7 +29,11 @@ export async function resolveWidgetValueAsset(
   if (!useFeatureFlags().flags.assetsEnabled) return undefined
   if (!hashFilename) return null
 
-  const query = encodeParams({ limit: 1, hash: hashFilename })
+  const query = encodeParams({
+    limit: 1,
+    hash: hashFilename,
+    include_public: true
+  })
   const resp = await api.fetchApi(`/assets?${query}`, { signal })
   const json = await resp.json().catch(() => {})
   const parseResult = assetResponseSchema.safeParse(json)

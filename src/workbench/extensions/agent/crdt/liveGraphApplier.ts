@@ -33,7 +33,7 @@ import type {
 } from '@comfyorg/graph-model/serialisation'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { zComfyNode } from '@comfyorg/graph-model/workflowSchema'
 import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
 import type { LinkId } from '@comfyorg/graph-model/linkId'

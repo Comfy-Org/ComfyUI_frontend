@@ -1,5 +1,5 @@
 import { isCloud } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 const REPLAY_KEY = 'Comfy.OnboardingReplay'
 

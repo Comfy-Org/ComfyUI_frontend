@@ -8,13 +8,7 @@
       v-model:open="isOpen"
       :modal="false"
       :side-offset="8"
-      :class="
-        cn(
-          'max-w-[min(25rem,calc(100vw-1rem))] min-w-56',
-          switcherMenuMotionClass
-        )
-      "
-      @update:open="onOpenChange"
+      :class="cn(switcherMenuWidthClass, switcherMenuMotionClass)"
     >
       <template #trigger>
         <Button
@@ -27,11 +21,19 @@
           class="group h-8 gap-1 rounded-lg pr-1.5 pl-2 data-[state=open]:bg-accent"
           data-testid="deployment-switcher-trigger"
         >
-          <DeploymentStatusIcon
-            :tone="currentTone"
-            icon-class="size-4"
-            ring-class="ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
-          />
+          <span class="relative flex">
+            <DeploymentStatusIcon
+              :tone="currentTone"
+              icon-class="size-4"
+              ring-class="ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
+            />
+            <span
+              v-if="isNew"
+              class="absolute -top-0.75 -right-0.75 size-2 rounded-full bg-foreground ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
+              aria-hidden="true"
+              data-testid="deployment-switcher-new"
+            />
+          </span>
           <i
             class="icon-[lucide--chevron-down] size-3 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
             aria-hidden="true"
@@ -44,6 +46,7 @@
         @follow="follow"
         @set-default="changeDefault"
         @reload="reload"
+        @create-custom-deployment="createCustomDeployment"
       />
     </Menu>
   </div>
@@ -59,23 +62,29 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
 import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
 import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
-import { switcherMenuMotionClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
+import {
+  switcherMenuMotionClass,
+  switcherMenuWidthClass
+} from '@/platform/workspace/components/deploymentSwitcherStyles'
 import {
   COMFY_CLOUD_ROW,
   deploymentStatusTone,
   useDeploymentLabels
 } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
-import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import {
   confirmUnsavedWorkBeforeSwitch,
   unsavedWorkflows
 } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
+import { openCreateCustomDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const { t } = useI18n()
@@ -87,6 +96,7 @@ const {
   listingRefused,
   switcherOpenAsks
 } = storeToRefs(store)
+const settingStore = useSettingStore()
 const isOffered = useDeploymentSwitcherOffered()
 const { currentLabel } = useDeploymentLabels()
 const { targetLabel, withoutLeavePrompt } = useDeploymentSwitchGuard()
@@ -97,7 +107,6 @@ const switchingTo = ref<string | null>(null)
 watch(switcherOpenAsks, () => {
   if (!isOffered.value || !isVisible.value) return
   isOpen.value = true
-  void store.load()
 })
 
 let pendingRetry: Promise<void> | undefined
@@ -120,9 +129,32 @@ useEventListener(window, 'focus', () => {
   })
 })
 
-function onOpenChange(open: boolean) {
-  if (open) void store.load()
+const markedUntilClose = ref(false)
+const isNew = computed(
+  () =>
+    markedUntilClose.value || !settingStore.get('Comfy.DeploymentSwitcher.Seen')
+)
+
+function rememberSeen() {
+  markedUntilClose.value = true
+  settingStore
+    .set('Comfy.DeploymentSwitcher.Seen', true)
+    .catch((error: unknown) =>
+      reportError(error, {
+        errorType: 'error_saving_deployment_switcher_seen',
+        surface: 'platform'
+      })
+    )
 }
+
+watch(isOpen, (open) => {
+  if (!open) {
+    markedUntilClose.value = false
+    return
+  }
+  void store.load()
+  if (!settingStore.get('Comfy.DeploymentSwitcher.Seen')) rememberSeen()
+})
 
 const currentTone = computed(() =>
   pickedDeployment.value
@@ -132,7 +164,7 @@ const currentTone = computed(() =>
 const isReady = computed(
   () => currentTone.value === undefined || currentTone.value === 'ready'
 )
-const triggerLabel = computed(() =>
+const statusLabel = computed(() =>
   isReady.value
     ? t(
         'deploymentSwitcher.triggerLabel',
@@ -144,6 +176,15 @@ const triggerLabel = computed(() =>
         { status: hoverTooltip.value },
         { escapeParameter: false }
       )
+)
+const triggerLabel = computed(() =>
+  isNew.value
+    ? t(
+        'deploymentSwitcher.triggerLabelNew',
+        { label: statusLabel.value },
+        { escapeParameter: false }
+      )
+    : statusLabel.value
 )
 function tooltipKey(): string {
   if (isReady.value) return 'deploymentSwitcher.currentTooltip'
@@ -198,6 +239,10 @@ async function changeDefault(deploymentId: string | null) {
     t('deploymentSwitcher.failedToSetDefault'),
     await withoutLeavePrompt(() => store.setDefault(deploymentId))
   )
+}
+
+function createCustomDeployment() {
+  void openCreateCustomDeploymentDialog()
 }
 
 async function reload() {
