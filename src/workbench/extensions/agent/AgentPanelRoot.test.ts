@@ -1,5 +1,10 @@
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
+import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import { setImmediate } from 'node:timers/promises'
 
 import type {
@@ -151,6 +156,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
     getServerFeature,
     socket: { readyState: 1, send: socketSend },
+    resetSocket: vi.fn(async () => {}),
     dispatchCustomEvent: vi.fn(),
     addEventListener: ws.add,
     removeEventListener: ws.remove,
@@ -16037,6 +16043,31 @@ function signInAs({ firebase, apiKeyUser }: AgentAccount): void {
     apiKeyUser === null ? null : { id: apiKeyUser }
 }
 
+async function startDesktopHostSessionOn(initialWorkspaceId: string) {
+  const hostOn = (workspaceId: string) =>
+    fromPartial<DesktopHostAuthState>({
+      status: 'signed_in',
+      userId: 'account-a',
+      workspaceId
+    })
+  let notify: (state: DesktopHostAuthState) => void = () => {}
+  await startDesktopHostSession({
+    getState: async () => hostOn(initialWorkspaceId),
+    getWorkspaceToken: async () => 'host-token',
+    requestSignIn: async () => hostOn(initialWorkspaceId),
+    signOut: async () => ({ status: 'signed_out' }),
+    switchWorkspace: async (workspaceId) => hostOn(workspaceId),
+    onChanged: (listener) => {
+      notify = listener
+      return () => {}
+    }
+  })
+  return {
+    hostOn,
+    notifyHostChanged: (state: DesktopHostAuthState) => notify(state)
+  }
+}
+
 describe('AgentPanelRoot agent socket', () => {
   it.for([
     {
@@ -16082,6 +16113,141 @@ describe('AgentPanelRoot agent socket', () => {
       expect(reset).toHaveBeenCalledOnce()
     }
   )
+
+  it('reconnects the socket and looks the identity up again on a workspace switch', async () => {
+    const reset = vi.fn()
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({
+        status: 'resolved',
+        userId: 'account-a'
+      }),
+      reset,
+      stop: () => {}
+    })
+    signInAs({ firebase: 'account-a', apiKeyUser: null })
+    const workspaces = useTeamWorkspaceStore()
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    agentSocket.reconnect.mockClear()
+
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-b' })
+    await nextTick()
+
+    expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+    expect(reset).toHaveBeenCalledOnce()
+  })
+
+  it('handshakes once for a workspace switch that passes through null', async () => {
+    const reset = vi.fn()
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({
+        status: 'resolved',
+        userId: 'account-a'
+      }),
+      reset,
+      stop: () => {}
+    })
+    signInAs({ firebase: 'account-a', apiKeyUser: null })
+    const workspaces = useTeamWorkspaceStore()
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    agentSocket.reconnect.mockClear()
+
+    Object.assign(workspaces, { activeWorkspaceId: null })
+    await nextTick()
+    expect(agentSocket.reconnect).not.toHaveBeenCalled()
+    expect(reset).not.toHaveBeenCalled()
+
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-b' })
+    await nextTick()
+
+    expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+    expect(reset).toHaveBeenCalledOnce()
+  })
+
+  it('drops the socket when the workspace goes null while Desktop pins another', async () => {
+    const reset = vi.fn()
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({
+        status: 'resolved',
+        userId: 'account-a'
+      }),
+      reset,
+      stop: () => {}
+    })
+    await startDesktopHostSessionOn('ws-host')
+    try {
+      signInAs({ firebase: 'account-a', apiKeyUser: null })
+      const workspaces = useTeamWorkspaceStore()
+      Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      agentSocket.reconnect.mockClear()
+
+      Object.assign(workspaces, { activeWorkspaceId: null })
+      await nextTick()
+
+      expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+      expect(reset).toHaveBeenCalledOnce()
+    } finally {
+      stopDesktopHostSession()
+    }
+  })
+
+  it('reconnects when only the Desktop host workspace moves', async () => {
+    const reset = vi.fn()
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({
+        status: 'resolved',
+        userId: 'account-a'
+      }),
+      reset,
+      stop: () => {}
+    })
+    const { hostOn, notifyHostChanged } =
+      await startDesktopHostSessionOn('ws-a')
+    try {
+      signInAs({ firebase: 'account-a', apiKeyUser: null })
+      const workspaces = useTeamWorkspaceStore()
+      Object.assign(workspaces, { activeWorkspaceId: null })
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      agentSocket.reconnect.mockClear()
+
+      notifyHostChanged(hostOn('ws-b'))
+      await nextTick()
+
+      expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+      expect(reset).toHaveBeenCalledOnce()
+    } finally {
+      stopDesktopHostSession()
+    }
+  })
+
+  it('still drops the socket when a sign-out clears the workspace too', async () => {
+    signInAs({ firebase: 'account-a', apiKeyUser: null })
+    const workspaces = useTeamWorkspaceStore()
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    agentSocket.reconnect.mockClear()
+
+    signInAs({ firebase: null, apiKeyUser: null })
+    Object.assign(workspaces, { activeWorkspaceId: null })
+    await nextTick()
+
+    expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+  })
+
+  it('leaves the socket alone when neither the account nor the workspace moves', async () => {
+    signInAs({ firebase: 'account-a', apiKeyUser: null })
+    const workspaces = useTeamWorkspaceStore()
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    agentSocket.reconnect.mockClear()
+
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+    await nextTick()
+
+    expect(agentSocket.reconnect).not.toHaveBeenCalled()
+  })
 
   it('opens the events socket under the api base path', async () => {
     vi.mocked(api.apiURL).mockImplementation((route) => `/comfy/api${route}`)

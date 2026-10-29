@@ -47,6 +47,7 @@ import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useAuthStore } from '@/stores/authStore'
 import {
   AGENT_ATTACH_ACCEPT,
@@ -273,13 +274,35 @@ onBeforeUnmount(() => agentIdentity.stop())
 
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
-const agentAccountId = computed(
-  () => authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null
+const teamWorkspaceStore = useTeamWorkspaceStore()
+const agentSocketIdentity = computed(() => [
+  authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
+  teamWorkspaceStore.activeWorkspaceId ?? null,
+  desktopHostUser.value?.workspaceId ?? null
+])
+watch(
+  agentSocketIdentity,
+  (
+    [account, workspace, hostWorkspace],
+    [wasAccount, wasWorkspace, wasHostWorkspace]
+  ) => {
+    if (
+      account === wasAccount &&
+      workspace === wasWorkspace &&
+      hostWorkspace === wasHostWorkspace
+    )
+      return
+    if (
+      workspace === null &&
+      account === wasAccount &&
+      account !== null &&
+      hostWorkspace === null
+    )
+      return
+    events.reconnect()
+    agentIdentity.reset()
+  }
 )
-watch(agentAccountId, () => {
-  events.reconnect()
-  agentIdentity.reset()
-})
 
 function onPaywallAction(
   action: AgentPaywallAction,
@@ -641,7 +664,7 @@ onBeforeUnmount(() =>
   })
 )
 const { withConsent } = useAgentConsent()
-const workspaceStore = useTeamWorkspaceStore()
+const workspaceStore = teamWorkspaceStore
 const onboardingKey = computed(() =>
   scopedOnboardingKey(
     resolvedUserInfo.value?.id,
