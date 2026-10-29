@@ -614,14 +614,14 @@ describe('BillingTab', () => {
       return arranged
     }
 
-    it('confirms with the target and date the scheduled change carries, and no amount', async () => {
+    it('confirms that the current plan stays, with no amount', async () => {
       await openStay()
 
       const dialog = screen.getByRole('dialog', {
         name: 'Cancel your change to Creator?'
       })
       expect(dialog).toHaveTextContent(
-        "Your plan won't change to Creator on October 28, 2026. You can schedule a change again anytime."
+        "You'll stay on Pro. You can schedule a change again anytime."
       )
       expect(dialog).not.toHaveTextContent('$')
     })
