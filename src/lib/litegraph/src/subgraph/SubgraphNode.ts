@@ -563,10 +563,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
-  /** The list input a slot belongs to: its slots are named `<list>.<item>`. */
+  /** The list input a slot belongs to: its slots are named `<list>[].<item>`. */
   private _listInputFor(name: string) {
     return this.subgraph.inputs.find(
-      (slot) => slot.list && name.startsWith(`${slot.name}.`)
+      (slot) => slot.list && name.startsWith(`${slot.name}[].`)
     )
   }
 

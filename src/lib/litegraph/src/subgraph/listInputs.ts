@@ -62,3 +62,14 @@ export function listSourceOf(
   const source = (graph as Subgraph).inputs.at(link.origin_slot)
   return source?.list ? source : undefined
 }
+
+/** Whether `input` can be a list: it has one link, into a slot that can take one. */
+export function canBeList(subgraph: Subgraph, input: SubgraphInput): boolean {
+  const link = input.linkIds.length === 1 && subgraph.getLink(input.linkIds[0])
+  const { inputNode, input: slot } = link ? link.resolve(subgraph) : {}
+  return !!(
+    slot &&
+    inputNode?.inputs &&
+    listableNames(inputNode, inputNode.inputs.indexOf(slot))
+  )
+}

@@ -29,13 +29,13 @@ export function syncListInputs(host: SubgraphNode) {
   withComfyAutogrow(host)
   for (const input of host.subgraph.inputs) {
     const slots = hostInputsOf(host, input)
-    // A list's slots are named `<input>.<item>`; a single slot is `<input>`
+    // A list's slots are named `<input>[].<item>`; a single slot is `<input>`
     const isGroup = slots.some((slot) => slot.name !== input.name)
     if (input.list && !isGroup) {
       const target = innerTarget(host.subgraph, input)
       const template = target && listTemplateAt(...target)
       if (!template) continue
-      applyAutogrowTemplate(host, input.name, template)
+      applyAutogrowTemplate(host, `${input.name}[]`, template)
       replaceSlots(host, slots, hostInputsOf(host, input).slice(slots.length))
     } else if (!input.list && isGroup) {
       host.addInput(input.name, input.type, { _subgraphSlot: input })
@@ -115,14 +115,16 @@ export function mergeListRuns(host: SubgraphNode) {
     })
     for (const input of inputs.slice(1)) subgraph.removeInput(input)
     // Rename now: a group's new slots adopt any slot already named like them
-    const group = names[0].slice(0, names[0].lastIndexOf('.'))
+    const group = names[0]
+      .slice(0, names[0].lastIndexOf('.'))
+      .replace(/\[\]$/, '')
     const others = subgraph.inputs.filter((i) => i !== anchor)
     anchor.name = nextUniqueName(
       group,
       others.map((i) => i.name)
     )
     for (const slot of hostInputsOf(host, anchor)) slot.name = anchor.name
-    anchor.localized_name = undefined
+    anchor.localized_name = anchor.label = undefined
     runs.push({ anchor, sources })
   }
   // Removals and renames first: autogrow reads a disconnect right after a

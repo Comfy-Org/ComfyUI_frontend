@@ -560,6 +560,9 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
   addAutogrowGroup(ordinal + 1, groupName, node)
 }
 
+/** A list's group name without the `[]` a subgraph node gives it. */
+const listLabel = (groupName: string) => groupName.replace(/\[\]$/, '')
+
 /**
  * A list from the enclosing subgraph feeds `input`: it supplies the slots
  * after it, so drop those, and show the list and its minimum on the slot.
@@ -579,7 +582,7 @@ function feedFromList(
   const kept = node.inputs.filter((inp) => !later.includes(inp))
   if (later.length && !replaceNodeInputs(node, previous, kept).ok) return
   const min = node.comfyDynamic.autogrow[groupName].min - ordinal
-  input.label = `${groupName} (list${min > 1 ? `, min ${min}` : ''})`
+  input.label = `${listLabel(groupName)} (list${min > 1 ? `, min ${min}` : ''})`
   node.size = [node.size[0], node.computeSize([...node.size])[1]]
 }
 
@@ -823,7 +826,10 @@ export function withComfyAutogrow(
         ? this.comfyDynamic.autogrow[key]
         : undefined
       if (!autogrowGroup) return
-      if (!listSourceOf(this, slot) && input.label?.startsWith(`${key} (list`))
+      if (
+        !listSourceOf(this, slot) &&
+        input.label?.startsWith(`${listLabel(key)} (list`)
+      )
         input.label = undefined
       if (useApp().configuringGraph && input.widget)
         ensureWidgetForInput(node, input)
@@ -843,7 +849,11 @@ export function withComfyAutogrow(
           })
           return
         }
-        requestAnimationFrame(() => autogrowInputDisconnected(slot, this))
+        //Find the slot again: others may have moved it by the next frame
+        requestAnimationFrame(() => {
+          const index = this.inputs.indexOf(input)
+          if (index !== -1) autogrowInputDisconnected(index, this)
+        })
       }
     }
   )

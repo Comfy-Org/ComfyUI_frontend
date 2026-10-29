@@ -167,7 +167,7 @@ import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import { provideSubgraphGuard } from './subgraph/subgraphTypeGuards'
-import { notifyListTargets } from './subgraph/listInputs'
+import { canBeList, notifyListTargets } from './subgraph/listInputs'
 import {
   captureUnpackedTargetInput,
   findUnavailableSubgraphNodeType,
@@ -3624,7 +3624,7 @@ export class Subgraph
 
   /** Makes `input` a list input, feeding a whole dynamic group, or single. */
   setInputList(input: SubgraphInput, { list }: { list: boolean }): void {
-    if (!!input.list === list) return
+    if (!!input.list === list || (list && !canBeList(this, input))) return
     input.list = list || undefined
     notifyListTargets(this, input)
     this.events.dispatch('input-list-changed', { input })
