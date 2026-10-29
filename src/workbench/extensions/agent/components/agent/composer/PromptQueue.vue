@@ -62,7 +62,7 @@ function statusIcon(status: PromptQueueRowStatus): string {
         "
       />
     </button>
-    <ul v-if="expanded" class="flex flex-col">
+    <ul v-if="expanded" class="m-0 flex list-none flex-col p-0">
       <li
         v-for="item in items"
         :key="item.id"
