@@ -148,6 +148,8 @@ export class AgentFollowerHostSocket {
   private comfySocket: WebSocketRoute | null = null
   private comfyConnections = 0
   private connections = 0
+  private connectionsHeld = false
+  private refusedConnections = 0
   private unansweredHumanBatches = 0
   private readonly subscribes = new Map<string, number>()
   private subscribeAnswer = (stateVector: string): HostFrame[] => [
@@ -197,6 +199,23 @@ export class AgentFollowerHostSocket {
     this.answerSubscribe(workflowId, stateVector)
   }
 
+  /**
+   * Closes every new agent socket until {@link releaseConnections}, so the
+   * page stays offline across its reconnect attempts.
+   */
+  holdConnections(): void {
+    this.connectionsHeld = true
+  }
+
+  releaseConnections(): void {
+    this.connectionsHeld = false
+  }
+
+  /** Agent socket attempts closed by {@link holdConnections}. */
+  refusedConnectionCount(): number {
+    return this.refusedConnections
+  }
+
   /** Pins the `status` sid; `''` models a socket with no id. */
   reportSocketSid(sid: string): this {
     this.fixedSid = sid
@@ -229,6 +248,11 @@ export class AgentFollowerHostSocket {
       )
     })
     await this.page.routeWebSocket(AGENT_SOCKET_URL, (socket) => {
+      if (this.connectionsHeld) {
+        this.refusedConnections += 1
+        void socket.close()
+        return
+      }
       this.connections += 1
       this.socket = socket
       socket.onMessage((raw) => this.onClientFrame(raw))
