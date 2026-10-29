@@ -48,14 +48,7 @@ function registerPendingSlotTypes(extension: SlotDefaultsExtension) {
       })
     }
   }
-  try {
-    extension.setDefaults(extension.suggestionsNumber?.value)
-  } catch (cause) {
-    reportError(cause, {
-      errorType: 'error_setting_slot_defaults',
-      surface: 'graph'
-    })
-  }
+  extension.setDefaults(extension.suggestionsNumber?.value)
 }
 
 function registerSlotTypes(
@@ -129,20 +122,27 @@ export const slotDefaultsExtension: SlotDefaultsExtension = {
     pendingIdleFill ??= runWhenGlobalIdle(() => LiteGraph.flushSlotTypeTables())
   },
   setDefaults(this: SlotDefaultsExtension, maxNum?: number | null) {
-    LiteGraph.flushSlotTypeTables()
-    const max = maxNum ?? undefined
-    const nextOut: typeof LiteGraph.slot_types_default_out = {}
-    const nextIn: typeof LiteGraph.slot_types_default_in = {}
+    try {
+      LiteGraph.flushSlotTypeTables()
+      const max = maxNum ?? undefined
+      const nextOut: typeof LiteGraph.slot_types_default_out = {}
+      const nextIn: typeof LiteGraph.slot_types_default_in = {}
 
-    for (const type in this.slot_types_default_out) {
-      nextOut[type] = this.slot_types_default_out[type].slice(0, max)
-    }
-    for (const type in this.slot_types_default_in) {
-      nextIn[type] = this.slot_types_default_in[type].slice(0, max)
-    }
+      for (const type in this.slot_types_default_out) {
+        nextOut[type] = this.slot_types_default_out[type].slice(0, max)
+      }
+      for (const type in this.slot_types_default_in) {
+        nextIn[type] = this.slot_types_default_in[type].slice(0, max)
+      }
 
-    LiteGraph.slot_types_default_out = nextOut
-    LiteGraph.slot_types_default_in = nextIn
+      LiteGraph.slot_types_default_out = nextOut
+      LiteGraph.slot_types_default_in = nextIn
+    } catch (cause) {
+      reportError(cause, {
+        errorType: 'error_setting_slot_defaults',
+        surface: 'graph'
+      })
+    }
   }
 }
 

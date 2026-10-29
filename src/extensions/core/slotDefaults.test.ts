@@ -191,4 +191,22 @@ describe('Comfy.SlotDefaults', () => {
       expect.objectContaining({ errorType: 'error_setting_slot_defaults' })
     )
   })
+
+  it('contains a defaults failure from a direct settings update', () => {
+    LiteGraph.slot_types_default_out = { IMAGE: ['ExistingNode'] }
+    Object.defineProperty(slotDefaultsExtension.slot_types_default_out, 'BAD', {
+      value: null,
+      enumerable: true
+    })
+
+    expect(() => slotDefaultsExtension.setDefaults(5)).not.toThrow()
+
+    expect(LiteGraph.slot_types_default_out).toEqual({
+      IMAGE: ['ExistingNode']
+    })
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(TypeError),
+      expect.objectContaining({ errorType: 'error_setting_slot_defaults' })
+    )
+  })
 })
