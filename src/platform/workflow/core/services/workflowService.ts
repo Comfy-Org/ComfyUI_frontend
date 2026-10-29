@@ -530,9 +530,13 @@ export const useWorkflowService = () => {
         }
 
         workflow.changeTracker?.prepareForSave()
-        const savedBaseline = options.keepSavedBaseline
-          ? workflow.changeTracker?.initialState
-          : undefined
+        const savedBaseline =
+          options.keepSavedBaseline && workflow.isModified
+            ? {
+                state: workflow.changeTracker?.initialState,
+                content: workflow.content
+              }
+            : undefined
         const loaded = await useApp()
           .loadGraphData(
             toRaw(workflow.activeState) as ComfyWorkflowJSON,
@@ -547,7 +551,11 @@ export const useWorkflowService = () => {
             }
           )
           .finally(() => {
-            if (savedBaseline) restoreSavedBaseline(workflow, savedBaseline)
+            if (
+              savedBaseline?.state &&
+              workflow.content === savedBaseline.content
+            )
+              restoreSavedBaseline(workflow, savedBaseline.state)
           })
         if (loaded === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)

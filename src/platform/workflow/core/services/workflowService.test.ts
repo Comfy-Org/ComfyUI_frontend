@@ -553,6 +553,7 @@ describe('useWorkflowService', () => {
           saved: true,
           unsavedEdit: true
         })
+        workflow.isModified = true
         useWorkflowStore().activeWorkflow = workflow
         app.rootGraph.extra.unsavedEdit = true
         vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
@@ -610,6 +611,29 @@ describe('useWorkflowService', () => {
         await Promise.all([otherLoad, reload])
 
         expect(workflow.changeTracker.initialState).toEqual(savedNow)
+        expect(workflow.isModified).toBe(false)
+      })
+
+      it('keeps a clean workflow clean when the reloaded graph serializes differently', async () => {
+        workflow.isModified = false
+
+        await useWorkflowService().reloadCurrentWorkflow()
+
+        expect(workflow.changeTracker.initialState).not.toBe(saved)
+        expect(workflow.isModified).toBe(false)
+      })
+
+      it('keeps a save made while the reload was loading', async () => {
+        vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
+          workflow.changeTracker.reset(data)
+          workflow.content = JSON.stringify(data)
+          workflow.isModified = false
+          return true
+        })
+
+        await useWorkflowService().reloadCurrentWorkflow()
+
+        expect(workflow.changeTracker.initialState).not.toBe(saved)
         expect(workflow.isModified).toBe(false)
       })
 

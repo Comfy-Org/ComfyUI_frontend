@@ -360,6 +360,41 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     expect(openWorkflow).toHaveBeenCalledTimes(2)
   })
 
+  it('waits for a held pointer to be released before rebuilding', async () => {
+    registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
+    showCanvas(node('NewPackNode', { missing: true }))
+    serverHas('NewPackNode')
+    const onReconnected = useReconnectNodeDefinitionRefresh()
+    window.dispatchEvent(new PointerEvent('pointerdown'))
+
+    const done = onReconnected()
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+
+    window.dispatchEvent(new PointerEvent('pointerup'))
+    await vi.advanceTimersByTimeAsync(200)
+    await done
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+  })
+
+  it('waits while a text field has focus before rebuilding', async () => {
+    registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
+    showCanvas(node('NewPackNode', { missing: true }))
+    serverHas('NewPackNode')
+    const input = document.createElement('input')
+    document.body.append(input)
+    input.focus()
+
+    const done = useReconnectNodeDefinitionRefresh()()
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+
+    input.remove()
+    await vi.advanceTimersByTimeAsync(200)
+    await done
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+  })
+
   it('does not retry a rebuild whose load failed', async () => {
     registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
     showCanvas(node('NewPackNode', { missing: true }))

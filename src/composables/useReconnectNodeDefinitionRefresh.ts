@@ -1,3 +1,4 @@
+import { useEventListener } from '@vueuse/core'
 import { delay } from 'es-toolkit'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -43,22 +44,53 @@ function canvasHasRebuildablePlaceholder(): boolean {
   return found
 }
 
-function isIdle(workflow: LoadedComfyWorkflow): boolean {
-  const tracker = workflow.changeTracker
-  return tracker.changeCount === 0 && !tracker._restoringState
+function isTextField(element: Element | null): boolean {
+  return (
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement ||
+    (element instanceof HTMLElement && element.isContentEditable)
+  )
 }
 
-async function rebuildWhenIdle(workflow: LoadedComfyWorkflow): Promise<void> {
+function useUserBusy(): () => boolean {
+  let pointerHeld = false
+  useEventListener(
+    window,
+    'pointerdown',
+    () => {
+      pointerHeld = true
+    },
+    { capture: true }
+  )
+  useEventListener(
+    window,
+    ['pointerup', 'pointercancel'],
+    () => {
+      pointerHeld = false
+    },
+    { capture: true }
+  )
+  return () => pointerHeld || isTextField(document.activeElement)
+}
+
+async function rebuildWhenIdle(
+  workflow: LoadedComfyWorkflow,
+  isUserBusy: () => boolean
+): Promise<void> {
   const workflowStore = useWorkflowStore()
   const isActive = () => workflowStore.activeWorkflow === workflow
+  const isIdle = () =>
+    workflow.changeTracker.changeCount === 0 &&
+    !workflow.changeTracker._restoringState &&
+    !isUserBusy()
   const deadline = Date.now() + IDLE_TIMEOUT_MS
   while (isActive() && canvasHasRebuildablePlaceholder()) {
-    if (isIdle(workflow)) {
+    if (isIdle()) {
       const attempt = { deferred: false }
       const rebuilt = await useWorkflowService().openWorkflow(workflow, {
         force: true,
         isCurrent: () => {
-          attempt.deferred = !(isActive() && isIdle(workflow))
+          attempt.deferred = !(isActive() && isIdle())
           return !attempt.deferred
         },
         keepSavedBaseline: true
@@ -77,6 +109,7 @@ async function rebuildWhenIdle(workflow: LoadedComfyWorkflow): Promise<void> {
 export function useReconnectNodeDefinitionRefresh() {
   if (isCloud) return async () => {}
 
+  const isUserBusy = useUserBusy()
   let inFlight: Promise<void> | null = null
   let reconnects = 0
 
@@ -91,7 +124,7 @@ export function useReconnectNodeDefinitionRefresh() {
       })
     }
     const workflow = useWorkflowStore().activeWorkflow
-    if (workflow) await rebuildWhenIdle(workflow)
+    if (workflow) await rebuildWhenIdle(workflow, isUserBusy)
   }
 
   async function refreshUntilSettled(): Promise<void> {
