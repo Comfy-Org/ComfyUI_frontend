@@ -252,8 +252,8 @@ const askResolved = (
     }
   })
 const PAST_ANSWER_RETRY_BACKOFF_MS = 5_000
-const deleteApproval = (id: string, askId = 'turn-1:call-1') =>
-  wire({
+function deleteApproval(id: string, askId = 'turn-1:call-1') {
+  return wire({
     type: 'agent_ask',
     data: {
       thread_id: 'th-1',
@@ -271,6 +271,7 @@ const deleteApproval = (id: string, askId = 'turn-1:call-1') =>
       allow_other: false
     }
   })
+}
 const askUser = (id: string, askId = 'turn-1:call-1') =>
   wire({
     type: 'agent_ask',
@@ -2234,14 +2235,16 @@ describe('useAgentSession (v1 composition root)', () => {
     ).toBe(false)
   })
 
-  // FRONT-3663: the superseded-answer report says which card lost, so a spike
-  // can be traced to run approvals, questions or delete approvals.
   describe('superseded-answer report names the ask kind', () => {
-    const parkedOn = async (
+    async function parkedOn(
       frame: unknown,
-      receipt: AgentAnswerReceipt = { status: 'answered' }
-    ) => {
-      const answerAsk = vi.fn<AgentRestClient['answerAsk']>(async () => receipt)
+      receipt: AgentAnswerReceipt | Promise<AgentAnswerReceipt> = {
+        status: 'answered'
+      }
+    ) {
+      const answerAsk = vi.fn<AgentRestClient['answerAsk']>(() =>
+        Promise.resolve(receipt)
+      )
       const { source, emit } = fakeEvents()
       const session = useAgentSession({
         rest: fakeRest({ answerAsk }),
@@ -2288,6 +2291,29 @@ describe('useAgentSession (v1 composition root)', () => {
         expect.objectContaining({
           errorType: 'agent_ask_answer_superseded',
           tags: expect.objectContaining({ ask_kind: 'unknown' })
+        })
+      )
+    })
+
+    it('keeps the kind when a new chat starts before the answer settles', async () => {
+      let resolve: (receipt: AgentAnswerReceipt) => void = () => {}
+      const promise = new Promise<AgentAnswerReceipt>((settle) => {
+        resolve = settle
+      })
+      const { session } = await parkedOn(askUser('msg-1'), promise)
+      const answered = session.answerAsk('turn-1:call-1', {
+        selected: ['sdxl']
+      })
+
+      session.newChat()
+      resolve({ status: 'answered', selected: ['flux'] })
+      await answered
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_ask_answer_superseded',
+          tags: expect.objectContaining({ ask_kind: 'ask_user' })
         })
       )
     })

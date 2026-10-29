@@ -551,11 +551,6 @@ export const useAgentConversationStore = defineStore(
 
     const submittedAskAnswers = new Map<string, SubmittedAskAnswer>()
 
-    /**
-     * Keeps the answer and the kind of card it was given on. The kind is read
-     * now, while the card is on screen, so a report after a thread switch
-     * still names it.
-     */
     function recordAskAnswer(askId: string, answer: AgentAnswerRequest): void {
       const kind =
         messages.value
