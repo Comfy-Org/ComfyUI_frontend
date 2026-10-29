@@ -150,12 +150,6 @@ function planReplacementTopology(
   return { error, updates: [...updates.values()], removals }
 }
 
-/**
- * Prefers the name-keyed `widgets_values_named`, which every workflow saved
- * with a compacted `widgets_values` also carries. Older workflows have only
- * the positional array, padded with an empty slot per `serialize: false`
- * widget, so `old_widget_ids` indexes it by full widget position.
- */
 function readOldWidgetValue(
   serialized: ISerialisedNode,
   oldWidgetIds: string[] | null,
@@ -232,8 +226,6 @@ function generateDefaultMapping(
     }
   }
 
-  // Positions into the legacy widgets_values array, so every widget counts —
-  // filtering out `serialize === false` widgets here would shift the indices.
   const oldWidgetIds = (newNode.widgets ?? []).map((w) => w.name)
   for (const widget of newNode.widgets ?? []) {
     if (!oldInputNames.has(widget.name)) {
