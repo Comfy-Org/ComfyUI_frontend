@@ -8,8 +8,10 @@ import {
   setStorageIdentity,
   setStorageWorkspaceId
 } from '@/platform/workflow/persistence/base/storageIO'
-import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
+import {
+  resolveStorageScope,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 import { useScopedLocalStorage } from './useScopedLocalStorage'
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
@@ -18,6 +20,13 @@ function requireDefined<T>(value: T | undefined): T {
   expect(value).toBeDefined()
   if (value === undefined) throw new Error('Expected setup result to exist')
   return value
+}
+
+function cloudScope(userId: string, workspaceId: string) {
+  const scope = resolveStorageScope(userId, workspaceId)
+  expect(scope).not.toBeNull()
+  if (scope === null) throw new Error('Expected Cloud scope to resolve')
+  return scope
 }
 
 function parseStoredValue(key: string): unknown {
@@ -75,7 +84,7 @@ describe('useScopedLocalStorage', () => {
   })
 
   it('loads the resolved identity scope when identity arrives', async () => {
-    const resolvedScope = unsafeStorageScope('user-a:workspace-1')
+    const resolvedScope = cloudScope('user-a', 'workspace-1')
     localStorage.setItem(
       StorageKeys.agentChatTitles(resolvedScope),
       JSON.stringify({ thread: 'Persisted title' })
@@ -101,7 +110,7 @@ describe('useScopedLocalStorage', () => {
   })
 
   it('removes a resolved scoped value through the storage adapter', async () => {
-    const resolvedScope = unsafeStorageScope('user-a:workspace-1')
+    const resolvedScope = cloudScope('user-a', 'workspace-1')
     const key = StorageKeys.agentChatTitles(resolvedScope)
     localStorage.setItem(key, JSON.stringify({ thread: 'Persisted title' }))
     setStorageIdentity('user-a')
@@ -124,8 +133,8 @@ describe('useScopedLocalStorage', () => {
   })
 
   it('detaches during a workspace transition and binds the destination scope', async () => {
-    const firstScope = unsafeStorageScope('user-a:workspace-1')
-    const secondScope = unsafeStorageScope('user-a:workspace-2')
+    const firstScope = cloudScope('user-a', 'workspace-1')
+    const secondScope = cloudScope('user-a', 'workspace-2')
     localStorage.setItem(
       StorageKeys.agentChatTitles(firstScope),
       JSON.stringify({ thread: 'First workspace' })
@@ -162,8 +171,8 @@ describe('useScopedLocalStorage', () => {
   })
 
   it('rebinds the same workspace to a new identity without overwriting the old identity', async () => {
-    const firstScope = unsafeStorageScope('user-a:workspace-1')
-    const secondScope = unsafeStorageScope('user-b:workspace-1')
+    const firstScope = cloudScope('user-a', 'workspace-1')
+    const secondScope = cloudScope('user-b', 'workspace-1')
     localStorage.setItem(
       StorageKeys.agentChatTitles(firstScope),
       JSON.stringify({ thread: 'User A title' })
