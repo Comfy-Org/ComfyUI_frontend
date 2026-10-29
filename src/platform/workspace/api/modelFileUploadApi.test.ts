@@ -228,41 +228,21 @@ describe('modelFileUploadApi.uploadModelFile', () => {
     }
   )
 
-  it('starts again from a new signed URL when storage already holds the object', async () => {
-    const second = {
-      ...started,
-      upload_id: '5a1c9e2b-7d3f-4b8a-9c6e-2f4d8b1a3c70',
-      upload_url: `${SIGNED_URL}&second=1`
-    }
+  it('finishes the same upload when storage already holds its object', async () => {
     const calls = serverAnswers(
       json(201, started),
-      json(201, second),
       json(202, { task_id: TASK_ID, status: 'created' })
     )
     const { result } = upload()
 
-    ;(await storageRequest(1)).finish(412)
-    const retry = await storageRequest(2)
-    expect(retry.url).toBe(second.upload_url)
-    retry.finish(200)
+    ;(await storageRequest()).finish(412)
 
     await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+    expect(StorageRequest.sent).toHaveLength(1)
     expect(calls.map((call) => call.route)).toEqual([
       '/assets/uploads',
-      '/assets/uploads',
-      '/assets/uploads/5a1c9e2b-7d3f-4b8a-9c6e-2f4d8b1a3c70/complete'
+      `/assets/uploads/${UPLOAD_ID}/complete`
     ])
-  })
-
-  it('gives up when storage refuses the second signed URL the same way', async () => {
-    const calls = serverAnswers(json(201, started), json(201, started))
-    const { result } = upload()
-
-    ;(await storageRequest(1)).finish(412)
-    ;(await storageRequest(2)).finish(412)
-
-    await expect(result).resolves.toMatchObject({ ok: false, reason: 'failed' })
-    expect(calls).toHaveLength(2)
   })
 
   it('fails without completing when storage refuses the bytes', async () => {

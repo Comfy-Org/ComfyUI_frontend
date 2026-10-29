@@ -12,7 +12,7 @@ import {
 import { api } from '@/scripts/api'
 
 const UPLOADS_ENDPOINT = '/assets/uploads'
-const STORAGE_PRECONDITION_FAILED = 412
+const STORAGE_OBJECT_ALREADY_WRITTEN = 412
 
 type ModelFileUploadFailure =
   | 'unsupportedFile'
@@ -63,7 +63,7 @@ function putFile(
   start: Pick<ModelUploadStarted, 'method' | 'upload_url' | 'headers'>,
   file: File,
   { signal, onProgress }: ModelFileUploadOptions
-): Promise<ModelFileUploadStopped | 'alreadyWritten' | undefined> {
+): Promise<ModelFileUploadStopped | undefined> {
   return new Promise((resolve) => {
     if (signal.aborted) {
       resolve({ ok: false, reason: 'cancelled' })
@@ -86,11 +86,9 @@ function putFile(
   })
 }
 
-function readStorageAnswer(
-  status: number
-): ModelFileUploadStopped | 'alreadyWritten' | undefined {
+function readStorageAnswer(status: number): ModelFileUploadStopped | undefined {
   if (status >= 200 && status < 300) return undefined
-  if (status === STORAGE_PRECONDITION_FAILED) return 'alreadyWritten'
+  if (status === STORAGE_OBJECT_ALREADY_WRITTEN) return undefined
   return { ok: false, reason: 'failed', cause: `storage ${status}` }
 }
 
@@ -106,7 +104,7 @@ async function postJson(route: string, body: unknown, signal: AbortSignal) {
 async function stageFile(
   file: File,
   options: ModelFileUploadOptions
-): Promise<string | ModelFileUploadStopped | 'alreadyWritten'> {
+): Promise<string | ModelFileUploadStopped> {
   const startRes = await postJson(
     UPLOADS_ENDPOINT,
     {
@@ -130,11 +128,7 @@ async function uploadModelFile(
 ): Promise<ModelFileUploadResult> {
   const { tags, signal } = options
   try {
-    let staged = await stageFile(file, options)
-    if (staged === 'alreadyWritten') staged = await stageFile(file, options)
-    if (staged === 'alreadyWritten') {
-      return { ok: false, reason: 'failed', cause: 'storage 412 twice' }
-    }
+    const staged = await stageFile(file, options)
     if (typeof staged !== 'string') return staged
 
     const completeRes = await postJson(
