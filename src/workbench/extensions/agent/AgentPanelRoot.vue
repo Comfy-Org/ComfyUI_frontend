@@ -599,9 +599,9 @@ const coachDeferredBy = computed(() =>
         ? 'dialog_open'
         : null
 )
-const coachCompletionWaiters = new Set<() => void>()
-function releaseCoachCompletionWaiters(): void {
-  for (const resolve of coachCompletionWaiters) resolve()
+const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
+function releaseCoachCompletionWaiters(proceed = true): void {
+  for (const resolve of coachCompletionWaiters) resolve(proceed)
   coachCompletionWaiters.clear()
 }
 watch(
@@ -613,13 +613,27 @@ watch(
   { immediate: true }
 )
 const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
+const sendHeldByCoach = ref(false)
 
-async function waitForCoachCompletion(): Promise<void> {
+async function waitForCoachCompletion(): Promise<boolean> {
   const key = onboardingKey.value
-  if (!key || hasSeenCoach(key)) return
+  if (!key || hasSeenCoach(key)) return true
   await nextTick()
-  if (coachDeferredBy.value !== null || !coachRef.value) return
-  await new Promise<void>((resolve) => coachCompletionWaiters.add(resolve))
+  if (
+    key !== onboardingKey.value ||
+    !consentAccepted.value ||
+    coachDeferredBy.value !== null ||
+    !coachRef.value
+  )
+    return true
+  sendHeldByCoach.value = true
+  try {
+    return await new Promise<boolean>((resolve) =>
+      coachCompletionWaiters.add(resolve)
+    )
+  } finally {
+    sendHeldByCoach.value = false
+  }
 }
 
 function restartCoach(): void {
@@ -1394,10 +1408,13 @@ void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   runPanelTeardown({
     releaseCoachCompletionWaiters: () => {
-      releaseCoachCompletionWaiters()
+      releaseCoachCompletionWaiters(
+        coachDeferredBy.value !== null && agentPanelStore.isVisible
+      )
     },
     invalidateConsentHeldSubmission: () => {
       if (
+        !sendHeldByCoach.value &&
         (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
         composerStore.submission?.id === consentHeldSubmissionId
       )
@@ -1602,17 +1619,23 @@ async function consentAllowsSubmission(
   submissionId: number | undefined
 ): Promise<boolean> {
   let hasConsent = false
+  let coachReleased = false
   consentHeldSubmissionId = submissionId
   try {
     await withConsent('first_message', () => {
       hasConsent = true
     })
-    if (hasConsent) await waitForCoachCompletion()
+    if (hasConsent) coachReleased = await waitForCoachCompletion()
   } finally {
     if (consentHeldSubmissionId === submissionId)
       consentHeldSubmissionId = undefined
   }
-  return composerStore.submission?.id === submissionId && hasConsent
+  return (
+    composerStore.submission?.id === submissionId &&
+    hasConsent &&
+    coachReleased &&
+    consentAccepted.value
+  )
 }
 
 const { submit: onSend } = useAgentDraftSubmission({
@@ -2102,7 +2125,9 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       ref="coachRef"
       :steps="coachSteps"
       :storage-key="onboardingKey"
+      :hold-notice="sendHeldByCoach ? t('agent.coachHoldNotice') : undefined"
       @finished="releaseCoachCompletionWaiters"
+      @stalled="releaseCoachCompletionWaiters"
     />
   </div>
 </template>
