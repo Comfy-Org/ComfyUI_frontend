@@ -14079,7 +14079,6 @@ describe('AgentPanelRoot workflow binding', () => {
 
       expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
       expect(bodies[1]).not.toHaveProperty('draft')
-      // PM-2118: production evidence that the gate fires, one warning per withheld send.
       expect(reportError).toHaveBeenCalledTimes(1)
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',
