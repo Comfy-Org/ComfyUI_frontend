@@ -62,6 +62,27 @@ describe('textMeasureCache', () => {
     expect(ctx.measureText).toHaveBeenCalledTimes(2)
   })
 
+  it('uses updated font metrics after fonts finish loading without a draw', async () => {
+    const fonts = new EventTarget()
+    vi.stubGlobal(
+      'document',
+      fromPartial<Document>({
+        fonts: fromPartial<FontFaceSet>(fonts)
+      })
+    )
+    vi.resetModules()
+    const { cachedMeasureText } = await import('./textMeasureCache')
+    const ctx = createMockCtx()
+
+    expect(cachedMeasureText(ctx, 'hello')).toBe(35)
+    vi.mocked(ctx.measureText).mockReturnValue(
+      fromPartial<TextMetrics>({ width: 51 })
+    )
+    fonts.dispatchEvent(new Event('loadingdone'))
+
+    expect(cachedMeasureText(ctx, 'hello')).toBe(51)
+  })
+
   it('measures requested fonts without changing subsequent drawing', () => {
     const ctx = createMockCtx('12px sans-serif')
     vi.mocked(ctx.measureText).mockImplementation(() =>

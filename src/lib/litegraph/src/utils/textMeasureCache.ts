@@ -23,3 +23,7 @@ export function cachedMeasureText(
 export function clearTextMeasureCache(): void {
   cache.clear()
 }
+
+if (typeof document !== 'undefined' && 'fonts' in document) {
+  document.fonts.addEventListener('loadingdone', clearTextMeasureCache)
+}
