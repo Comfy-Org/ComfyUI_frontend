@@ -11436,7 +11436,6 @@ describe('AgentPanelRoot workflow binding', () => {
         surface: 'agent',
         errorType: 'agent_canvas_draft_withheld_stale',
         level: 'warning',
-        fingerprint: ['agent_canvas_draft_withheld_stale'],
         tags: {
           failure_kind: 'bad_state',
           feature_area: 'agent',
