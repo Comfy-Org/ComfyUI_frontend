@@ -39,7 +39,7 @@ const { run: commentRun, env: commentEnv } = commentStep
 // fails here rather than silently skipping the manual path.
 const forceRerunExpression =
   /^\$\{\{ github\.event_name == '([a-z_]+)' && inputs\.force_rerun \|\| 'false' \}\}$/.exec(
-    commentEnv.FORCE_RERUN ?? ''
+    commentEnv.FORCE_RERUN
   )
 if (!forceRerunExpression) {
   throw new Error(
