@@ -174,11 +174,11 @@ import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { electronAPI } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
-import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
-import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
-import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
+import { useComfyManagerService } from '@/platform/customNodes/manager/services/comfyManagerService'
+import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 
 // Types
 interface MenuItem {

@@ -218,11 +218,11 @@ import {
   openShareDialog,
   prefetchShareDialog
 } from '@/platform/workflow/sharing/composables/lazyShareDialog'
-import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
-import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
-import { useManagerSurveyDialog } from '@/workbench/extensions/manager/composables/useManagerSurveyDialog'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
+import { useManagerSurveyDialog } from '@/platform/customNodes/manager/composables/useManagerSurveyDialog'
+import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const settingStore = useSettingStore()

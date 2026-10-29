@@ -277,7 +277,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/platform/settings/components/ExtensionPanel.vue')
+      () => import('@/platform/extensions/components/ExtensionPanel.vue')
     )
   }
 

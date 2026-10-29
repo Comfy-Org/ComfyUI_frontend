@@ -50,7 +50,7 @@
 /src/extensions/core/load3d/                      @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Manager
-/src/workbench/extensions/manager/                @christian-byrne @ltdrdata @Comfy-Org/comfy_frontend_devs
+/src/platform/customNodes/manager/                @christian-byrne @ltdrdata @Comfy-Org/comfy_frontend_devs
 
 # Model-to-node mappings (cloud team)
 /src/platform/assets/mappings/                    @deepme987 @Comfy-Org/comfy_frontend_devs

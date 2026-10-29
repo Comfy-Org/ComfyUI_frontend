@@ -169,7 +169,7 @@
         "src/scripts/api.ts",
         "packages/api-client/src/ComfyApi.ts",
         "src/scripts/domWidget.ts",
-        "src/services/extensionService.ts",
+        "src/platform/extensions/services/extensionService.ts",
         "src/stores/workspaceStore.ts",
         "src/types/index.ts",
         "src/types/comfy.ts",

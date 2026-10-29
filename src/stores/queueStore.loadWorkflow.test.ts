@@ -4,15 +4,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { JobDetail, JobListItem } from '@comfyorg/api-client/jobTypes'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyApp } from '@/scripts/app'
-import { provideExtensionService } from '@/services/extensionServiceAccess'
+import { provideExtensionService } from '@/platform/extensions/services/extensionServiceAccess'
 import * as jobOutputCache from '@/services/jobOutputCache'
 import { TaskItemImpl } from '@/stores/queueStore'
 
-vi.mock<unknown>(import('@/services/extensionService'), () => ({
-  useExtensionService: vi.fn(() => ({
-    invokeExtensions: vi.fn()
-  }))
-}))
+vi.mock<unknown>(
+  import('@/platform/extensions/services/extensionService'),
+  () => ({
+    useExtensionService: vi.fn(() => ({
+      invokeExtensions: vi.fn()
+    }))
+  })
+)
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 

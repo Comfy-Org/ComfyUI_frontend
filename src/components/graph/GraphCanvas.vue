@@ -198,7 +198,7 @@ import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
-import { loadExtensions } from '@/services/extensionLoader'
+import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import {
@@ -542,7 +542,7 @@ useEventListener(
 )
 
 let disposed = false
-const lateExtensionWork = new AbortController()
+const lateCustomNodeWork = new AbortController()
 const startupOwner = Symbol()
 
 function finishStartup(outcome: 'completed' | 'failed') {
@@ -604,7 +604,7 @@ onMounted(async () => {
     }
 
     await bootstrapTracer.settle('bootstrap/extensions-load', () =>
-      loadExtensions(lateExtensionWork.signal)
+      loadExtensions(lateCustomNodeWork.signal)
     )
 
     const canvas = canvasRef.value
@@ -679,7 +679,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   disposed = true
-  lateExtensionWork.abort()
+  lateCustomNodeWork.abort()
   void nextTick(() => {
     if (activeStartup !== startupOwner) return
     activeStartup = undefined
