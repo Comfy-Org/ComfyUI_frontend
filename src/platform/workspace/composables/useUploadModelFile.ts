@@ -7,7 +7,10 @@ import type { UploadModelSuccess } from '@/platform/assets/composables/useUpload
 import { modelFileUploadApi } from '@/platform/workspace/api/modelFileUploadApi'
 import type { ModelFileUploadResult } from '@/platform/workspace/api/modelFileUploadApi'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import {
+  isDownloadCancelled,
+  useAssetDownloadStore
+} from '@/stores/assetDownloadStore'
 
 const MODEL_FILE_EXTENSION = '.safetensors'
 const DEFAULT_MODEL_TYPE = 'loras'
@@ -83,32 +86,44 @@ export function useUploadModelFile() {
     return failure.message ?? t('assetBrowser.fileUpload.failed')
   }
 
+  function taskOutcome(
+    taskId: string,
+    file: File,
+    type: string
+  ): ModelFileUpload | undefined {
+    if (downloads.lastCompletedDownload?.taskId === taskId) {
+      return { status: 'done', file, modelType: type }
+    }
+    const download = downloads.downloadList.find((d) => d.taskId === taskId)
+    if (!download) return undefined
+    if (download.status === 'completed') {
+      return { status: 'done', file, modelType: type }
+    }
+    if (download.status === 'failed') {
+      return {
+        status: 'failed',
+        file,
+        error: download.error || t('assetBrowser.fileUpload.failed')
+      }
+    }
+    if (isDownloadCancelled(download.status)) {
+      return {
+        status: 'failed',
+        file,
+        error: t('assetBrowser.fileUpload.cancelled')
+      }
+    }
+    return undefined
+  }
+
   function followTask(taskId: string, file: File, type: string) {
     const run = generation
     downloads.trackDownload(taskId, type, file.name)
     state.value = { status: 'saving', file }
     stopTaskWatch = watch(
-      () => {
-        const download = downloads.downloadList.find((d) => d.taskId === taskId)
-        return download && { status: download.status, error: download.error }
-      },
-      (download) => {
-        if (run !== generation || !download) return
-        if (download.status === 'completed') {
-          state.value = { status: 'done', file, modelType: type }
-        } else if (download.status === 'failed') {
-          state.value = {
-            status: 'failed',
-            file,
-            error: download.error || t('assetBrowser.fileUpload.failed')
-          }
-        } else if (download.status === 'cancelled') {
-          state.value = {
-            status: 'failed',
-            file,
-            error: t('assetBrowser.fileUpload.cancelled')
-          }
-        }
+      () => taskOutcome(taskId, file, type),
+      (outcome) => {
+        if (run === generation && outcome) state.value = outcome
       },
       { immediate: true }
     )

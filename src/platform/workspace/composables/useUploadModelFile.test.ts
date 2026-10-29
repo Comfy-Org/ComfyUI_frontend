@@ -392,6 +392,54 @@ describe('useUploadModelFile', () => {
     })
   })
 
+  it('says the upload was canceled when the cancel is never confirmed, and finishes if the task completes after its row is dismissed', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    vi.spyOn(taskService, 'cancelTask').mockResolvedValue({
+      ok: true,
+      value: 'cancelling'
+    })
+    vi.spyOn(taskService, 'getTask').mockResolvedValue({
+      ok: true,
+      value: {
+        id: TASK_ID,
+        idempotency_key: 'upload-1',
+        task_name: 'task:download_file',
+        payload: {},
+        status: 'running',
+        create_time: new Date().toISOString(),
+        update_time: new Date().toISOString()
+      }
+    })
+    const { upload } = setup()
+    const server = pendingUpload()
+    upload.choose(lora)
+
+    const result = upload.upload()
+    server.finish({ ok: true, taskId: TASK_ID })
+    await result
+    taskUpdate('running')
+
+    const downloads = useAssetDownloadStore()
+    await downloads.cancelDownload(TASK_ID)
+    await vi.advanceTimersByTimeAsync(120_000)
+    expect(downloads.downloadList[0]?.status).toBe('cancellation_unconfirmed')
+    expect(upload.state.value).toEqual({
+      status: 'failed',
+      file: lora,
+      error: 'Upload canceled.'
+    })
+
+    downloads.clearDismissibleDownloads()
+    expect(downloads.downloadList).toEqual([])
+    taskUpdate('completed')
+    await nextTick()
+    expect(upload.state.value).toEqual({
+      status: 'done',
+      file: lora,
+      modelType: 'loras'
+    })
+  })
+
   it('keeps saving when a different import finishes', async () => {
     const otherImport = '0f9e8d7c-6b5a-4c3d-8e2f-1a0b9c8d7e6f'
     const { upload } = setup()
