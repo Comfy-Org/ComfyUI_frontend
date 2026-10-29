@@ -322,18 +322,53 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     )
   })
 
-  it('waits for an undo or redo to finish before rebuilding', async () => {
+  it.for([
+    {
+      busy: 'an edit in progress',
+      start: () => {
+        useWorkflowStore().activeWorkflow!.changeTracker.changeCount = 1
+        return () => {
+          useWorkflowStore().activeWorkflow!.changeTracker.changeCount = 0
+        }
+      }
+    },
+    {
+      busy: 'an undo or redo',
+      start: () => {
+        useWorkflowStore().activeWorkflow!.changeTracker._restoringState = true
+        return () => {
+          useWorkflowStore().activeWorkflow!.changeTracker._restoringState = false
+        }
+      }
+    },
+    {
+      busy: 'a held pointer',
+      start: () => {
+        window.dispatchEvent(new PointerEvent('pointerdown'))
+        return () => window.dispatchEvent(new PointerEvent('pointerup'))
+      }
+    },
+    {
+      busy: 'a focused text field',
+      start: () => {
+        const input = document.createElement('input')
+        document.body.append(input)
+        input.focus()
+        return () => input.remove()
+      }
+    }
+  ])('waits for $busy to finish before rebuilding', async ({ start }) => {
     registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
     showCanvas(node('NewPackNode', { missing: true }))
     serverHas('NewPackNode')
-    const tracker = useWorkflowStore().activeWorkflow!.changeTracker
-    tracker._restoringState = true
+    const onReconnected = useReconnectNodeDefinitionRefresh()
+    const finish = start()
 
-    const done = useReconnectNodeDefinitionRefresh()()
+    const done = onReconnected()
     await vi.advanceTimersByTimeAsync(1_000)
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
 
-    tracker._restoringState = false
+    finish()
     await vi.advanceTimersByTimeAsync(200)
     await done
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
@@ -360,41 +395,6 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     expect(openWorkflow).toHaveBeenCalledTimes(2)
   })
 
-  it('waits for a held pointer to be released before rebuilding', async () => {
-    registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
-    showCanvas(node('NewPackNode', { missing: true }))
-    serverHas('NewPackNode')
-    const onReconnected = useReconnectNodeDefinitionRefresh()
-    window.dispatchEvent(new PointerEvent('pointerdown'))
-
-    const done = onReconnected()
-    await vi.advanceTimersByTimeAsync(1_000)
-    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
-
-    window.dispatchEvent(new PointerEvent('pointerup'))
-    await vi.advanceTimersByTimeAsync(200)
-    await done
-    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
-  })
-
-  it('waits while a text field has focus before rebuilding', async () => {
-    registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
-    showCanvas(node('NewPackNode', { missing: true }))
-    serverHas('NewPackNode')
-    const input = document.createElement('input')
-    document.body.append(input)
-    input.focus()
-
-    const done = useReconnectNodeDefinitionRefresh()()
-    await vi.advanceTimersByTimeAsync(1_000)
-    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
-
-    input.remove()
-    await vi.advanceTimersByTimeAsync(200)
-    await done
-    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
-  })
-
   it('does not retry a rebuild whose load failed', async () => {
     registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
     showCanvas(node('NewPackNode', { missing: true }))
@@ -410,23 +410,6 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     await done
 
     expect(openWorkflow).toHaveBeenCalledOnce()
-  })
-
-  it('waits for an edit in progress to finish before rebuilding', async () => {
-    registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
-    showCanvas(node('NewPackNode', { missing: true }))
-    serverHas('NewPackNode')
-    const tracker = useWorkflowStore().activeWorkflow!.changeTracker
-    tracker.changeCount = 1
-
-    const done = useReconnectNodeDefinitionRefresh()()
-    await vi.advanceTimersByTimeAsync(1_000)
-    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
-
-    tracker.changeCount = 0
-    await vi.advanceTimersByTimeAsync(200)
-    await done
-    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
   })
 
   it('skips the rebuild when an edit stays in progress', async () => {

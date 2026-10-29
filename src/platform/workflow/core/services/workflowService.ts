@@ -156,12 +156,12 @@ async function keepingSavedBaseline<T>(
   load: () => Promise<T>
 ): Promise<T> {
   const savedState = workflow.changeTracker?.initialState
-  const savedContent = workflow.content
+  const savedContent = workflow.originalContent
   try {
     return await load()
   } finally {
     const tracker = workflow.changeTracker
-    if (tracker && savedState && workflow.content === savedContent) {
+    if (tracker && savedState && workflow.originalContent === savedContent) {
       tracker.initialState = savedState
       workflow.isModified = !ChangeTracker.graphEqual(
         savedState,

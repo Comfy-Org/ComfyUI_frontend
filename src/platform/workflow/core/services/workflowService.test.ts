@@ -626,7 +626,7 @@ describe('useWorkflowService', () => {
       it('keeps a save made while the reload was loading', async () => {
         vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
           workflow.changeTracker.reset(data)
-          workflow.content = JSON.stringify(data)
+          workflow.originalContent = workflow.content = JSON.stringify(data)
           workflow.isModified = false
           return true
         })
@@ -635,6 +635,20 @@ describe('useWorkflowService', () => {
 
         expect(workflow.changeTracker.initialState).not.toBe(saved)
         expect(workflow.isModified).toBe(false)
+      })
+
+      it('keeps the saved baseline when a save during the reload fails to write', async () => {
+        vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
+          workflow.changeTracker.reset(data)
+          workflow.content = JSON.stringify(data)
+          workflow.isModified = false
+          return true
+        })
+
+        await useWorkflowService().reloadCurrentWorkflow()
+
+        expect(workflow.changeTracker.initialState).toBe(saved)
+        expect(workflow.isModified).toBe(true)
       })
 
       it('resets the baseline to the reloaded state without the option', async () => {
