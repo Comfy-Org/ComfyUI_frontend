@@ -17,7 +17,12 @@ export type {
   BillingSession,
   BillingTransport
 } from './billingContracts'
-export { matchesServerCode, unwrapServerCode } from './billingContracts'
+export {
+  isPurchaseRefusal,
+  matchesServerCode,
+  PURCHASE_REFUSAL_SERVER_CODES,
+  unwrapServerCode
+} from './billingContracts'
 export type { SessionBillingTransportOptions } from './transport'
 export { createSessionBillingTransport } from './transport'
 export type {
@@ -230,10 +235,12 @@ export {
 } from './paymentCopy'
 export type {
   CreateHostedTopupCheckoutInput,
+  CreateInteractiveTopupInput,
   CreateTopupCheckoutInput,
   HostedTopupCheckout,
   HostedTopupCheckoutFailure,
   HostedTopupCheckoutResult,
+  InteractiveTopupPayment,
   QuoteTopupInput,
   TopupCommand,
   TopupCommandOptions,
@@ -251,6 +258,7 @@ export type {
   TopupUnsettled
 } from './topup'
 export {
+  INTERACTIVE_TOPUP_ROUTE,
   TOPUP_CHECKOUT_ROUTE,
   TOPUP_QUOTE_ROUTE,
   TOPUP_ROUTE,

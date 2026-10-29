@@ -20,10 +20,10 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
@@ -34,7 +34,7 @@ setupInlinePromptEditorDom()
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 const fetchApi = vi.mocked(api.fetchApi)
 const telemetryProvider = useTelemetry()
@@ -494,6 +494,31 @@ describe('Composer', () => {
     expect(consultEscapeOverride(event)).toBe(true)
     expect(emitted().stop).toHaveLength(1)
   })
+
+  it.for([false, true])(
+    'keeps composer commands idle while opening a chat with streaming=%s',
+    async (streaming) => {
+      useAgentComposerStore().setText('Keep this draft')
+      const { emitted } = mount({ openingChat: true, streaming })
+      const event = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        cancelable: true
+      })
+
+      expect(consultEscapeOverride(event)).toBe(false)
+      const action = screen.getByRole('button', {
+        name: streaming ? 'Stop' : 'Send'
+      })
+      expect(action).toBeDisabled()
+      await userEvent.click(action)
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.keyboard('{Enter}{Escape}')
+
+      expect(emitted().send).toBeUndefined()
+      expect(emitted().stop).toBeUndefined()
+      expect(useAgentComposerStore().draft).toBe('Keep this draft')
+    }
+  )
 
   it('does not stop the run on Escape once focus has left the composer entirely', async () => {
     const onStop = vi.fn()

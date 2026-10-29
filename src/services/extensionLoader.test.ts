@@ -2,7 +2,7 @@ import { assert, describe, expect, it, vi } from 'vitest'
 
 import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { EXTENSION_FAILURES_TRUNCATED_FIELD } from '@/platform/telemetry/extensionLoadTelemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 import type { ExtensionLoadFailure } from './extensionLoader'
@@ -11,8 +11,6 @@ import {
   reportExtensionLoadFailures,
   shouldLoadExtension
 } from './extensionLoader'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const coreLoad = vi.hoisted(() => ({
   onConfigure: undefined as unknown,

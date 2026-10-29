@@ -13,6 +13,7 @@ import {
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
   zAgentToolCallData as zGeneratedAgentToolCallData,
+  zAgentThinkingEntry,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
   zToolCallSummary,
   zWorkflowResponse,
@@ -28,8 +29,9 @@ import type {
 } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
+import { isNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
-import { isNodeLocatorId } from '@/types/nodeIdentification'
 
 export { zAgentAdmissionError, zAgentCancelAccepted }
 export type {
@@ -56,7 +58,8 @@ export type AgentTurnAccepted = GeneratedAgentTurnAccepted & {
 export const RENDERED_ASK_KINDS = [
   'run_approval',
   'ask_user',
-  'delete_approval'
+  'delete_approval',
+  'paused'
 ] as const satisfies readonly AgentAskKind[]
 export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
 
@@ -106,10 +109,9 @@ export const zPersistedToolCallSummary = zToolCallSummary.extend({
 })
 export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
 
-export const zPersistedThinkingEntry = z.object({
-  text: z.string(),
-  tool_call_id: z.string().nullish()
-})
+export const zPersistedThinkingEntry = zAgentThinkingEntry
+  .pick({ text: true })
+  .extend({ tool_call_id: z.string().nullish() })
 
 const zAgentMessageContent = zGeneratedAgentMessage.shape.content
   .unwrap()

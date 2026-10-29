@@ -1,0 +1,29 @@
+{
+  "name": "@comfyorg/graph-model",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./dist-types/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.declarations.json",
+    "typecheck": "tsc --noEmit",
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check"
+  },
+  "dependencies": {
+    "@comfyorg/layer-editor": "workspace:*",
+    "@comfyorg/object-info-parser": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
+    "@comfyorg/viewport3d": "workspace:*",
+    "zod": "catalog:",
+    "zod-validation-error": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

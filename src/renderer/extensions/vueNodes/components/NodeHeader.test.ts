@@ -3,11 +3,11 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import enMessages from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'

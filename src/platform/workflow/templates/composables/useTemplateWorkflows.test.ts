@@ -7,15 +7,13 @@ import { defineComponent } from 'vue'
 import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useFeatureUsageTracker } from '@/platform/surveys/useFeatureUsageTracker'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 function deferred<T>() {
   let resolve: (value: T | PromiseLike<T>) => void = () => {}
@@ -81,7 +79,7 @@ const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
   mockTrackTemplate: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+vi.mock<unknown>(import('@comfyorg/telemetry'), () => ({
   useTelemetry: () =>
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
 }))
@@ -849,7 +847,7 @@ describe('useTemplateWorkflows', () => {
     vi.mocked(api.fetchApi).mockResolvedValue(
       Response.json({ name: 'kitten_cop (1).mp4', type: 'input' })
     )
-    const refreshed = deferred<void>()
+    const refreshed = deferred<boolean>()
     vi.mocked(app.reloadNodeDefs).mockImplementation(() => refreshed.promise)
     const { loader } = mountTemplateWorkflows()
     const result = loader.loadWorkflowTemplate('video', 'default')
@@ -859,7 +857,7 @@ describe('useTemplateWorkflows', () => {
     download.resolve(new Response('video'))
     await vi.waitFor(() => expect(app.reloadNodeDefs).toHaveBeenCalled())
     expect(app.loadGraphData).not.toHaveBeenCalled()
-    refreshed.resolve()
+    refreshed.resolve(true)
     expect(await result).toBe('loaded')
     expect(app.loadGraphData).toHaveBeenCalledWith(
       expect.objectContaining({

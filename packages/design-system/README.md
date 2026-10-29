@@ -1,7 +1,8 @@
 # @comfyorg/design-system
 
-Shared design tokens, theme, and icon set for Comfy Org frontends. Ships raw CSS
-and SVG so consumers compile them with their own Tailwind build.
+Shared design tokens, theme, icon set, and Vue components for Comfy Org
+frontends. Ships raw CSS and SVG so consumers compile them with their own
+Tailwind build, plus compiled Vue components with declarations.
 
 ## Install
 
@@ -20,6 +21,9 @@ Import the full theme from your app's entry stylesheet:
 @import '@comfyorg/design-system/css/style.css';
 ```
 
+Use this package import rather than a filesystem path into the package. Its
+published export registers the compiled component sources for Tailwind.
+
 This pulls in the fonts, the color palette, the Tailwind theme and utilities
 layers, `tw-animate-css`, the PrimeUI plugin, and the Comfy and Lucide icon
 plugins.
@@ -32,19 +36,78 @@ For the palette and fonts without the Tailwind layers or icon plugins:
 
 ## Exports
 
-| Path                            | Contents                                                             |
-| ------------------------------- | -------------------------------------------------------------------- |
-| `./css/style.css`               | Full theme — palette, fonts, Tailwind layers, icon plugins           |
-| `./css/base.css`                | Palette and fonts only                                               |
-| `./css/_palette.css`            | Color variables                                                      |
-| `./css/fonts.css`               | Font faces                                                           |
-| `./css/_deprecated-aliases.css` | Deprecated variable names kept for extensions; scheduled for removal |
-| `./css/_legacy-palette.css`     | Pre-theme palette variables (`--fg-color`, `--comfy-menu-bg`, ...)   |
-| `./icons/*.svg`                 | Comfy icon set source SVGs                                           |
-| `./workspaceAvatar`             | Deterministic workspace avatar styles by plan and name               |
+| Path                            | Contents                                                                         |
+| ------------------------------- | -------------------------------------------------------------------------------- |
+| `./css/style.css`               | Full theme — palette, fonts, Tailwind layers, icon plugins                       |
+| `./css/theme.css`               | Full theme without automatic component source registration                       |
+| `./css/base.css`                | Palette and fonts only                                                           |
+| `./css/_palette.css`            | Color variables                                                                  |
+| `./css/fonts.css`               | Font faces                                                                       |
+| `./css/_deprecated-aliases.css` | Deprecated variable names kept for extensions; scheduled for removal             |
+| `./css/_legacy-palette.css`     | Pre-theme palette variables (`--fg-color`, `--comfy-menu-bg`, ...)               |
+| `./icons/*.svg`                 | Comfy icon set source SVGs                                                       |
+| `./workspaceAvatar`             | Deterministic workspace avatar styles by plan and name                           |
+| `./button.variants`             | Button class recipes                                                             |
+| `./select.variants`             | Select class recipes                                                             |
+| `./tag.variants`                | Tag class recipes                                                                |
+| `./<folder>/<Component>`        | Compiled Vue components, for example `./card/Card`                               |
+| `./components.css`              | Built scoped component styles and animations, for published consumers only       |
+| `./lib/<folder>/<module>`       | Component support types, recipes and composables, for example `./lib/menu/types` |
 
 Icons are exposed to Tailwind as `icon-[comfy--*]` and `icon-mask-[comfy--*]`
 utilities. Size them with `size-*`, not font-size classes.
+
+## Vue components
+
+Install the component peers alongside the package:
+
+```sh
+pnpm add vue reka-ui vue-component-type-helpers @vueuse/core @vueuse/integrations
+```
+
+Published components are compiled ES modules with declarations for TypeScript's
+`Bundler` module resolution; workspace imports use their Vue source. Reka is a
+peer so host providers and packaged components share its injection contexts.
+Its declarations require `vue-component-type-helpers`, which Reka currently
+omits from its published dependencies. VueUse provides the component composables
+and search integration. These peers are optional for CSS-only consumers and are
+not automatically installed. Install them explicitly when using Vue components.
+
+With strict dependency checking, VueUse also requires the `web-bluetooth`
+ambient types. Install `@types/web-bluetooth` and include `web-bluetooth` if your
+TypeScript configuration restricts `compilerOptions.types`.
+
+Workspace and published component imports both use the theme imported above,
+which scans the component classes for Tailwind utilities.
+
+Published consumers must also import the component stylesheet for scoped styles
+and animations:
+
+```ts
+import '@comfyorg/design-system/components.css'
+```
+
+Import supporting types and recipes through the `./lib/` entries listed in the
+[exports table](#exports); other `lib/` paths are not exported.
+
+Components that retain `pi-*` icon classes require the host to load
+`primeicons/primeicons.css` separately.
+
+```vue
+<script setup lang="ts">
+import Card from '@comfyorg/design-system/card/Card'
+import CardHeader from '@comfyorg/design-system/card/CardHeader'
+import CardFooter from '@comfyorg/design-system/card/CardFooter'
+</script>
+
+<template>
+  <Card surface="secondary">
+    <CardHeader>Workspace</CardHeader>
+    <p>Shared workspace content</p>
+    <CardFooter>Actions</CardFooter>
+  </Card>
+</template>
+```
 
 ## Releasing
 
@@ -55,9 +118,10 @@ it with the `Release` label. Publishing to npm happens automatically on merge.
 
 This package follows SemVer for everything it exports: the CSS entry points
 (`style.css`, `base.css`, and every `./css/*` path in the [exports
-table](#exports)) and the icon SVGs are the public surface, and removing or
-repurposing tokens, `@font-face` declarations, or an entire file from that
-surface is a **major** bump — even when no in-repo consumer breaks, because
+table](#exports)), the icon SVGs, the component paths, the `./lib/` entries, and
+component props, events, and slots are the public surface. Removing or
+repurposing tokens, `@font-face` declarations, a component or `./lib/` entry, a
+component prop, or an entire file from that surface is a **major** bump — even when no in-repo consumer breaks, because
 published consumers pin this package by version.
 
 Precedent (updated 2026-09-28): #14790 ("move the brand layer into the

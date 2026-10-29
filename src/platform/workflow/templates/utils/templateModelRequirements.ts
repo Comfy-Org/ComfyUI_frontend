@@ -8,8 +8,8 @@ import {
   getSelectedModelsMetadata,
   isNodeAndAncestorsActive
 } from '@/platform/workflow/core/utils/modelRequirements'
-import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { zModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
+import { zModelFile } from '@comfyorg/graph-model/workflowSchema'
 
 function toModelFile(value: unknown): ModelFile | undefined {
   const result = zModelFile.safeParse(value)

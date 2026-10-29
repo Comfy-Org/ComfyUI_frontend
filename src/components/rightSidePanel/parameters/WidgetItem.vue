@@ -2,10 +2,10 @@
 import { computed, customRef, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import EditableText from '@/components/common/EditableText.vue'
+import EditableText from '@comfyorg/design-system/common/EditableText'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { draggableItemClass } from '@/scripts/ui/draggableList'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
@@ -14,7 +14,7 @@ import {
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   stripGraphPrefix,
@@ -26,7 +26,7 @@ import type {
   SimplifiedWidget,
   WidgetValue as SimplifiedWidgetValue
 } from '@/types/simplifiedWidget'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { renameWidget } from '@/utils/widgetUtil'

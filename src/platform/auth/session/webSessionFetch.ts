@@ -96,6 +96,7 @@ export async function fetchOnWebSession(
 
 /** What a signed-in tab's requests need from the web session. */
 export interface WebSessionRequests {
+  readonly refreshSession: () => Promise<void>
   /** Undefined unless this tab is signed in on the session. */
   readonly scope: () => Promise<WebSessionRequestScope | undefined>
   /** The signed-in session's team workspace, for URLs that carry no header. */

@@ -1,3 +1,4 @@
+import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 import * as THREE from 'three'
 
 import type { RendererView } from '#/three/RendererView'
@@ -22,9 +23,7 @@ type PreviewViewport = Pick<
   'setViewport' | 'setScissor' | 'setScissorTest'
 >
 
-interface InsetPreviewLayout {
-  width: number
-  height: number
+interface InsetPreviewLayout extends Size2D {
   marginRight: number
   marginBottom: number
 }
@@ -39,7 +38,7 @@ const DEFAULT_LAYOUT: InsetPreviewLayout = {
 export interface InsetPreviewTarget {
   renderer: PreviewRenderer
   view: PreviewViewport
-  canvas: { width: number; height: number }
+  canvas: Size2D
   scene: THREE.Scene
   camera: THREE.Camera
   hidden: readonly Hideable[]
