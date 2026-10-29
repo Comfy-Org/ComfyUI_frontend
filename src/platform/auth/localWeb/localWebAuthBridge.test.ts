@@ -764,6 +764,32 @@ describe('across tabs sharing stored tokens', () => {
     expect(first.tokens.read()).toBeUndefined()
   })
 
+  it('does not go to consent when another tab signs out while this tab switches', async () => {
+    const shared = memoryStorage()
+    const events = new EventTarget()
+    const withRefreshLock = handOverLock()
+    const open = () =>
+      setup(undefined, {
+        tokens: createStorageTokenStore(shared, events),
+        withRefreshLock
+      })
+    const switching = open()
+    const signingOut = open()
+    switching.tokens.write({
+      accessToken: WS1_TOKEN,
+      refreshToken: 'refresh-1',
+      expiresAt: NOW + 3_600_000,
+      scope: 'comfy-cloud:user:read'
+    })
+
+    const switched = switching.bridge.switchWorkspace?.('ws-2')
+    const signedOut = signingOut.bridge.signOut()
+
+    await expect(switched).resolves.toEqual({ status: 'signed_out' })
+    await signedOut
+    expect(switching.env.navigate).not.toHaveBeenCalled()
+  })
+
   it('keeps a tab on its workspace, signed out, when that workspace has no tokens left', async () => {
     const { bridge, tokens, storage } = setup()
     storage.setItem(TAB_WORKSPACE_KEY, 'ws-1')

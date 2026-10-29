@@ -78,7 +78,6 @@ export function createLocalWebAuthBridge(
 ): LocalWebAuthBridge {
   const listeners = new Set<(state: DesktopHostAuthState) => void>()
   let refreshing: Promise<OAuthTokens | undefined> | undefined
-  let signOuts = 0
 
   const tokenOptions = () => ({
     issuer: env.issuer,
@@ -173,7 +172,6 @@ export function createLocalWebAuthBridge(
   }
 
   function signOutLocally(): DesktopHostAuthState {
-    signOuts += 1
     env.tokens.clear()
     pinTab(undefined)
     emit()
@@ -228,13 +226,18 @@ export function createLocalWebAuthBridge(
 
   env.tokens.subscribe(emit)
 
+  function isSignedInAs(userId: string): boolean {
+    const state = currentState()
+    return state.status === 'signed_in' && state.userId === userId
+  }
+
   async function requestSignIn(
-    signOutsAtStart = signOuts
+    stillWanted: () => boolean = () => true
   ): Promise<DesktopHostAuthState> {
-    if (signOuts !== signOutsAtStart) return currentState()
+    if (!stillWanted()) return currentState()
     const pkce = await createPkceRequest().catch(() => undefined)
     if (
-      signOuts !== signOutsAtStart ||
+      !stillWanted() ||
       !pkce ||
       !savePendingSignIn(env.sessionStorage, {
         verifier: pkce.verifier,
@@ -273,9 +276,8 @@ export function createLocalWebAuthBridge(
     requestSignIn: () => requestSignIn(),
 
     async switchWorkspace(workspaceId) {
-      const signOutsAtStart = signOuts
       const current = currentState()
-      if (current.status !== 'signed_in') return requestSignIn(signOutsAtStart)
+      if (current.status !== 'signed_in') return requestSignIn()
       if (current.workspaceId === workspaceId) return current
       const outcome = await env.withRefreshLock(async () => {
         const kept = await keptWorkspaceTokens(workspaceId, current.userId)
@@ -285,7 +287,8 @@ export function createLocalWebAuthBridge(
         return adopted === 'storage-unavailable' ? 'unavailable' : 'missing'
       })
       if (outcome === 'unavailable') return currentState()
-      if (outcome === 'missing') return requestSignIn(signOutsAtStart)
+      if (outcome === 'missing')
+        return requestSignIn(() => isSignedInAs(current.userId))
       emit()
       return currentState()
     },
