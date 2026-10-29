@@ -57,7 +57,13 @@ and keeps the bundled graph as the fallback.
   ComfyUI#16956), a server error, a body that is not JSON, a body that fails
   `validateComfyWorkflow`, and a failed request all resolve to the bundled
   graph. Only a 404 is silent, because that is simply what an older backend
-  says; the rest warn.
+  says. The rest go through `reportError` with a distinct `errorType`, so a
+  core that starts serving a workflow this schema rejects is visible.
+- The whole prefetch is bounded, body read included, not just the request.
+  `fetchApi` clears its timeout once the response arrives, so a backend that
+  sends headers and then stalls mid-body would otherwise leave `res.json()`
+  pending and hold the editor closed for as long as the socket lives. On expiry
+  the bundled graph is used and `setup` continues.
 - Builds with `VITE_USE_LEGACY_DEFAULT_GRAPH=true` skip the request entirely.
   Those builds run against a real core, so fetching would serve the current
   default and undo the test pinning that hundreds of specs depend on. The flag
@@ -98,16 +104,16 @@ Alternatives considered and rejected:
 ### Negative
 
 - Boot awaits one more request. It is started early and awaited last, so it
-  adds nothing unless it outlasts the rest of `setup`; on a slow or hanging
-  backend it delays the editor opening, because there is no timeout of its own
-  beyond `fetchApi`'s.
+  adds nothing unless it outlasts the rest of `setup`. A slow backend can still
+  delay the editor opening by up to the prefetch bound.
 - The default is now a network-dependent value, so two users on the same
   frontend build can land on different workflows. That is the point, but it
   makes "what did the user see" unanswerable from the frontend version alone.
 - A core that serves a workflow this frontend's schema rejects falls back
-  silently apart from a console warning. Nothing tells core that its workflow
-  was refused; a server-side contract test, or a telemetry event on fallback,
-  is the follow-up.
+  without telling the user. The fallback is reported, so it is visible in
+  telemetry rather than only in a console, but nothing tells core at publish
+  time that its workflow would be refused. A server-side contract test against
+  this schema is the follow-up.
 - E2E builds do not exercise the fetch path at all, by construction. The unit
   tests cover it; no browser test does.
 - `defaultGraph` remains exported and bundled, so the workflow is still shipped

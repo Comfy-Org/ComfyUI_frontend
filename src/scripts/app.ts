@@ -896,9 +896,6 @@ export class ComfyApp implements IComfyApp {
 
     this.canvasElRef.value = canvasEl
 
-    // Started here and awaited at the end of setup so the request overlaps the
-    // rest of boot instead of adding to it. The startup workflow load runs
-    // after setup returns, so the default is resolved before anything needs it.
     const defaultWorkflowReady = initDefaultWorkflow()
 
     await bootstrapTracer.settle('bootstrap/sync-workflows', () =>

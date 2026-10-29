@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
@@ -11,33 +12,32 @@ import {
 } from './defaultWorkflowService'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const fetchApi = vi.mocked(api.fetchApi)
 
-/** A valid workflow that is not the bundled default, so the two are telling apart. */
 const servedWorkflow: ComfyWorkflowJSON = {
   ...blankGraph,
   last_node_id: 42
 }
 
 const jsonResponse = (body: unknown) =>
-  ({
-    ok: true,
+  new Response(JSON.stringify(body), {
     status: 200,
-    json: () => Promise.resolve(body)
-  }) as unknown as Response
+    headers: { 'Content-Type': 'application/json' }
+  })
 
-const errorResponse = (status: number) =>
-  ({
-    ok: false,
-    status,
-    json: () => Promise.reject(new Error('should not be read'))
-  }) as unknown as Response
+const errorResponse = (status: number) => new Response('', { status })
+
+const notJsonResponse = () =>
+  new Response('<html>nope</html>', {
+    status: 200,
+    headers: { 'Content-Type': 'text/html' }
+  })
 
 describe('defaultWorkflowService', () => {
   beforeEach(() => {
     resetDefaultWorkflowForTesting()
-    fetchApi.mockReset()
   })
 
   it('serves the backend workflow once the route has answered', async () => {
@@ -49,12 +49,13 @@ describe('defaultWorkflowService', () => {
     expect(getDefaultWorkflow()).toEqual(servedWorkflow)
   })
 
-  it('serves the bundled default until the route has answered', () => {
+  it('serves the bundled default until the route has answered', async () => {
     fetchApi.mockResolvedValue(jsonResponse(servedWorkflow))
 
-    void initDefaultWorkflow()
-
+    const ready = initDefaultWorkflow()
     expect(getDefaultWorkflow()).toBe(defaultGraph)
+
+    await ready
   })
 
   it('falls back to the bundled default on a backend without the route', async () => {
@@ -65,42 +66,48 @@ describe('defaultWorkflowService', () => {
     expect(getDefaultWorkflow()).toBe(defaultGraph)
   })
 
-  it('does not warn about a 404, which is how older backends answer', async () => {
+  it('does not report a 404, which is how older backends answer', async () => {
     fetchApi.mockResolvedValue(errorResponse(404))
 
     await initDefaultWorkflow()
 
-    expect(console.warn).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('falls back to the bundled default on a server error', async () => {
+  it('reports a server error and falls back to the bundled default', async () => {
     fetchApi.mockResolvedValue(errorResponse(500))
 
     await initDefaultWorkflow()
 
     expect(getDefaultWorkflow()).toBe(defaultGraph)
-    expect(console.warn).toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'DefaultWorkflowRouteUnavailable' })
+    )
   })
 
-  it('falls back to the bundled default when the route serves an invalid workflow', async () => {
+  it('reports an invalid workflow and falls back to the bundled default', async () => {
     fetchApi.mockResolvedValue(jsonResponse({ not: 'a workflow' }))
 
     await initDefaultWorkflow()
 
     expect(getDefaultWorkflow()).toBe(defaultGraph)
-    expect(console.warn).toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'DefaultWorkflowInvalid' })
+    )
   })
 
   it('falls back to the bundled default when the body is not JSON', async () => {
-    fetchApi.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.reject(new SyntaxError('Unexpected token <'))
-    } as unknown as Response)
+    fetchApi.mockResolvedValue(notJsonResponse())
 
     await initDefaultWorkflow()
 
     expect(getDefaultWorkflow()).toBe(defaultGraph)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'DefaultWorkflowFetchFailed' })
+    )
   })
 
   it('falls back to the bundled default when the request fails outright', async () => {
@@ -122,13 +129,28 @@ describe('defaultWorkflowService', () => {
 
     expect(fetchApi).toHaveBeenCalledTimes(1)
   })
+
+  it('opens with the bundled default when the body never arrives', async () => {
+    vi.useFakeTimers()
+    fetchApi.mockReturnValue(new Promise<Response>(() => {}))
+
+    const ready = initDefaultWorkflow()
+    await vi.advanceTimersByTimeAsync(10_000)
+    await ready
+
+    expect(getDefaultWorkflow()).toBe(defaultGraph)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'DefaultWorkflowTimedOut' })
+    )
+    vi.useRealTimers()
+  })
 })
 
 describe('defaultWorkflowService in e2e builds', () => {
   beforeEach(() => {
     resetDefaultWorkflowForTesting()
     vi.stubEnv('VITE_USE_LEGACY_DEFAULT_GRAPH', 'true')
-    fetchApi.mockReset()
     fetchApi.mockResolvedValue(jsonResponse(servedWorkflow))
   })
 
