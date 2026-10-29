@@ -19,17 +19,11 @@ import {
   withComfyAutogrow
 } from '@/core/graph/widgets/dynamicWidgets'
 
-/**
- * Shows each list input of `host` as the autogrow group it feeds, with the
- * same minimum and maximum, and each other input as a single slot.
- */
 export function syncListInputs(host: SubgraphNode) {
-  // Wire autogrow from the start: hooks added later save and restore the
-  // node's callbacks, which would drop a handler chained after them
+  // Wire autogrow now: hooks that save and restore callbacks later drop handlers chained after them
   withComfyAutogrow(host)
   for (const input of host.subgraph.inputs) {
     const slots = hostInputsOf(host, input)
-    // A list's slots are named `<input>[].<item>`; a single slot is `<input>`
     const isGroup = slots.some((slot) => slot.name !== input.name)
     if (input.list && !isGroup) {
       const target = innerTarget(host.subgraph, input)
@@ -41,7 +35,7 @@ export function syncListInputs(host: SubgraphNode) {
       host.addInput(input.name, input.type, { _subgraphSlot: input })
       replaceSlots(host, slots, [host.inputs.at(-1)!])
     } else if (input.list) {
-      replaceSlots(host, slots, slots) // a load can put list items at the end
+      replaceSlots(host, slots, slots)
     }
   }
 }
@@ -54,7 +48,6 @@ function innerTarget(subgraph: Subgraph, input: SubgraphInput) {
     : undefined
 }
 
-/** Puts `to` where `from` starts, in place of it, moving its first link over. */
 function replaceSlots(
   host: SubgraphNode,
   from: INodeInputSlot[],
@@ -70,15 +63,11 @@ function replaceSlots(
   if (carried && !links.has(to[0])) links.set(to[0], carried)
   if (to[0] !== from[0]) links.delete(from[0])
   if (!replaceNodeInputs(host, previous, kept, links).ok || !carried) return
-  // Let the group grow past the slot that took the link
   const slot = host.inputs.indexOf(to[0])
+  // Firing the connect is what lets the group grow past the slot
   host.onConnectionsChange?.(NodeSlotType.INPUT, slot, true, carried, to[0])
 }
 
-/**
- * After converting to a subgraph, merges the inputs that feed consecutive
- * slots of one autogrow group, from its first, into one list input.
- */
 export function mergeListRuns(host: SubgraphNode) {
   const { subgraph } = host
   const target = (input: SubgraphInput) =>
@@ -108,17 +97,16 @@ export function mergeListRuns(host: SubgraphNode) {
       .slice(inputs.length)
       .some((name) => node.inputs.find((i) => i.name === name)?.link != null)
     if (fedAfter) continue
-    // Keep the first input as the list, and move the others' sources onto it
     const sources = inputs.map((input) => {
       const link = host.graph?.getLink(hostInputsOf(host, input)[0]?.link)
       return host.graph && link?.resolve(host.graph)
     })
     for (const input of inputs.slice(1)) subgraph.removeInput(input)
-    // Rename now: a group's new slots adopt any slot already named like them
     const group = names[0]
       .slice(0, names[0].lastIndexOf('.'))
       .replace(/\[\]$/, '')
     const others = subgraph.inputs.filter((i) => i !== anchor)
+    // Rename now: a group's new slots adopt any slot already named like them
     anchor.name = nextUniqueName(
       group,
       others.map((i) => i.name)
@@ -127,8 +115,7 @@ export function mergeListRuns(host: SubgraphNode) {
     anchor.localized_name = anchor.label = undefined
     runs.push({ anchor, sources })
   }
-  // Removals and renames first: autogrow reads a disconnect right after a
-  // connect on the same slot as a link swap
+  // Remove first: a disconnect right after a connect on one slot looks like a swap to autogrow
   for (const { anchor, sources } of runs) {
     subgraph.setInputList(anchor, { list: true })
     for (const [item, source] of sources.entries()) {

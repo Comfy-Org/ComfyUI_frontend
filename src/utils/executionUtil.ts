@@ -150,8 +150,7 @@ export const graphToPrompt = async (
       }
     }
 
-    // Store all node links. A slot fed by a list input of the enclosing
-    // subgraph expands to one input per item.
+    // Store all node links
     for (const [i, input] of node.inputs.entries()) {
       const entries = node.resolveListInput(i) ?? [
         { name: input.name, resolved: node.resolveInput(i) }

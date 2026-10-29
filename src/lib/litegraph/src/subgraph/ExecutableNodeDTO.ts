@@ -254,10 +254,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     )
   }
 
-  /**
-   * For a slot fed by a list input of the enclosing subgraph: one entry per
-   * connected item, named after the slot it fills. Otherwise `undefined`.
-   */
   resolveListInput(
     slot: number
   ): { name: string; resolved: ResolvedInput }[] | undefined {
@@ -276,10 +272,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       .map((resolved, item) => ({ name: names[item], resolved }))
   }
 
-  /**
-   * For a subgraph node: what feeds each slot of its list input `index`, in
-   * order, expanding a slot fed by a list from further out.
-   */
   resolveListItems(index: number): ResolvedInput[] {
     const { node } = this
     const { graph } = node
@@ -299,7 +291,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     })
   }
 
-  /** The DTO of the subgraph node this node is inside. */
   private _subgraphNodeDto(): ExecutableLGraphNode | undefined {
     return this.nodesByExecutionId.get(this.subgraphNodePath.join(':'))
   }

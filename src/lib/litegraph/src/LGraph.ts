@@ -3622,7 +3622,6 @@ export class Subgraph
       if (input.list) notifyListTargets(this, input)
   }
 
-  /** Makes `input` a list input, feeding a whole dynamic group, or single. */
   setInputList(input: SubgraphInput, { list }: { list: boolean }): void {
     if (!!input.list === list || (list && !canBeList(this, input))) return
     input.list = list || undefined
