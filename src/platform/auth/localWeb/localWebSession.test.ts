@@ -71,10 +71,7 @@ describe('startLocalWebSession', () => {
     )
 
     await expect(
-      startLocalWebSession(
-        { onPopupBlocked: () => {}, onSignInFailed: () => {} },
-        env
-      )
+      startLocalWebSession({ onPopupBlocked: () => {} }, env)
     ).resolves.toBe('off')
 
     expect(isDesktopHostSessionActive()).toBe(false)
@@ -93,10 +90,7 @@ describe('startLocalWebSession', () => {
     const { env } = environment(url)
 
     await expect(
-      startLocalWebSession(
-        { onPopupBlocked: () => {}, onSignInFailed: () => {} },
-        env
-      )
+      startLocalWebSession({ onPopupBlocked: () => {} }, env)
     ).resolves.toBe('off')
 
     expect(isDesktopHostSessionActive()).toBe(false)
@@ -109,10 +103,7 @@ describe('startLocalWebSession', () => {
     )
 
     await expect(
-      startLocalWebSession(
-        { onPopupBlocked: () => {}, onSignInFailed: () => {} },
-        env
-      )
+      startLocalWebSession({ onPopupBlocked: () => {} }, env)
     ).resolves.toBe('started')
 
     expect(desktopHostUser.value).toEqual({
@@ -137,10 +128,7 @@ describe('startLocalWebSession', () => {
     )
 
     await expect(
-      startLocalWebSession(
-        { onPopupBlocked: () => {}, onSignInFailed: () => {} },
-        env
-      )
+      startLocalWebSession({ onPopupBlocked: () => {} }, env)
     ).resolves.toBe('sign-in-failed')
 
     expect(isDesktopHostSessionActive()).toBe(true)
@@ -161,10 +149,7 @@ describe('startLocalWebSession', () => {
     )
 
     await expect(
-      startLocalWebSession(
-        { onPopupBlocked: () => {}, onSignInFailed: () => {} },
-        env
-      )
+      startLocalWebSession({ onPopupBlocked: () => {} }, env)
     ).resolves.toBe('started')
 
     expect(reportError).not.toHaveBeenCalled()

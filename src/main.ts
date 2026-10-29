@@ -87,9 +87,7 @@ async function startLocalAuthSession(): Promise<boolean> {
     const { startLocalWebSession } =
       await import('@/platform/auth/localWeb/localWebSession')
     const started = await startLocalWebSession({
-      onPopupBlocked: () =>
-        useToast().error(t('auth.desktopHost.popupBlocked')),
-      onSignInFailed: () => useToast().error(t('auth.desktopHost.signInFailed'))
+      onPopupBlocked: () => useToast().error(t('auth.desktopHost.popupBlocked'))
     })
     return started === 'sign-in-failed'
   })

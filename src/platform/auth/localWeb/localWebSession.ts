@@ -35,12 +35,10 @@ function withOriginLock<T>(task: () => Promise<T>): Promise<T> {
 
 interface SignInFailureNotices {
   onPopupBlocked: () => void
-  onSignInFailed: () => void
 }
 
 function browserEnvironment({
-  onPopupBlocked,
-  onSignInFailed
+  onPopupBlocked
 }: SignInFailureNotices): LocalWebAuthEnvironment {
   return {
     issuer: getComfyCloudBaseUrl(),
@@ -73,7 +71,6 @@ function browserEnvironment({
     reportSignInFailure(failure) {
       reportSignInFailure(failure)
       if (failure.reason === 'popup-blocked') onPopupBlocked()
-      else onSignInFailed()
     }
   }
 }
