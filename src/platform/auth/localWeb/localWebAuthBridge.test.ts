@@ -14,6 +14,7 @@ import {
 const ISSUER = 'https://cloud.example.test'
 const NOW = 1_700_000_000_000
 const PENDING_KEY = 'Comfy.LocalWebSignIn.Pending'
+const TAB_WORKSPACE_KEY = 'Comfy.LocalWebSignIn.TabWorkspace'
 
 function base64Url(value: unknown): string {
   return btoa(JSON.stringify(value))
@@ -574,6 +575,39 @@ describe('switchWorkspace', () => {
     })
   })
 
+  it('does not go to consent when sign-out lands before a switch falls back to it', async () => {
+    const harness = setup(undefined, { withRefreshLock: handOverLock() })
+    const { bridge, env, tokens } = harness
+    tokens.write({
+      accessToken: WS1_TOKEN,
+      refreshToken: 'refresh-1',
+      expiresAt: NOW + 3_600_000,
+      scope: 'comfy-cloud:user:read'
+    })
+
+    const switching = bridge.switchWorkspace?.('ws-2')
+    const signingOut = bridge.signOut()
+
+    await expect(switching).resolves.toEqual({ status: 'signed_out' })
+    await signingOut
+    expect(env.navigate).not.toHaveBeenCalled()
+  })
+
+  it('stays put without reporting a switch when the tab cannot remember the workspace', async () => {
+    const { bridge, env, storage, states } = await signedInToBothWorkspaces()
+    const setItem = storage.setItem
+    storage.setItem = (key, value) => {
+      if (key === TAB_WORKSPACE_KEY) throw new DOMException('full')
+      setItem(key, value)
+    }
+
+    await expect(bridge.switchWorkspace?.('ws-1')).resolves.toMatchObject({
+      workspaceId: 'ws-2'
+    })
+    expect(states).toEqual([])
+    expect(env.navigate).not.toHaveBeenCalled()
+  })
+
   it('forgets every workspace on sign-out', async () => {
     const { bridge, env, tokens } = await signedInToBothWorkspaces()
     await bridge.signOut()
@@ -728,6 +762,39 @@ describe('across tabs sharing stored tokens', () => {
     await refresh
     await expect(signOut).resolves.toEqual({ status: 'signed_out' })
     expect(first.tokens.read()).toBeUndefined()
+  })
+
+  it('keeps a tab on its workspace, signed out, when that workspace has no tokens left', async () => {
+    const { bridge, tokens, storage } = setup()
+    storage.setItem(TAB_WORKSPACE_KEY, 'ws-1')
+    tokens.write({
+      accessToken: WS2_TOKEN,
+      refreshToken: 'refresh-ws2',
+      expiresAt: NOW + 3_600_000,
+      scope: 'comfy-cloud:user:read'
+    })
+
+    await expect(bridge.getState()).resolves.toEqual({ status: 'signed_out' })
+    expect(storage.getItem(TAB_WORKSPACE_KEY)).toBe('ws-1')
+  })
+
+  it('reports a sign-in whose workspace it could not keep and leaves new tabs on the old tokens', async () => {
+    const memory = createMemoryTokenStore()
+    const { bridge, env, storage } = setup(
+      'http://127.0.0.1:8188/?code=code-1&state=state-1',
+      { tokens: { ...memory, writeWorkspace: () => false } }
+    )
+    storage.setItem(
+      PENDING_KEY,
+      JSON.stringify({ verifier: 'verifier-1', state: 'state-1' })
+    )
+    env.fetchImpl.mockResolvedValueOnce(tokenResponse(WS1_TOKEN, 'refresh-1'))
+
+    await expect(bridge.completeSignIn()).resolves.toEqual({
+      kind: 'failed',
+      reason: 'storage-unavailable'
+    })
+    expect(memory.read()).toBeUndefined()
   })
 
   it('tells listeners when another tab signs out', async () => {
