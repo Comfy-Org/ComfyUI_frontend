@@ -181,7 +181,7 @@ So the rule is not "derive the order from `node.widgets`". It is:
 > produced from `node.widgets`. Where it cannot prove that, emit nothing.**
 
 Deriving is a guess dressed as a declaration; proving is not. `proveWidgetForm`
-(`src/lib/litegraph/src/node/widgetFormProof.ts`) is that predicate, and it returns an order
+(`src/lib/litegraph/src/widgets/widgetFormProof.ts`) is that predicate, and it returns an order
 **only** alongside `provable: true` — never a partial order beside a refusal.
 
 ### Why deriving does not work, measured
@@ -216,9 +216,15 @@ Three predicates look interchangeable and are deliberately different:
 
 `addWidget` does not hoist the options-bag flag onto the widget, so a widget flagged only there
 **does occupy a positional slot.** That is why every `KSampler` serializes 7 values
-(`control_after_generate`) and every `LoadImage` serializes 2 (its upload button). A form built
-from `options.serialize` is one slot short on both, and both lengths are pinned as literals in
-`widgetFormProof.test.ts` so the mistake cannot land twice.
+(`control_after_generate`) and every `LoadImage` serializes 2 (its upload button). A form built from `options.serialize` is one slot
+short on both.
+
+`widgetFormProof.test.ts` pins the _rule_ on a synthetic node — a two-widget case where the
+second is options-bag-flagged and still occupies a slot. It does **not** instantiate a real
+`KSampler` or `LoadImage`, so the 7 and the 2 above are measurements of production code, not
+assertions this file makes. Pinning them against the real widget lists needs the extension
+constructors and so lives in the stacked test PR; until that lands, treat those two numbers as
+evidence for the rule rather than as regression cover for it.
 
 ### Refusals, each a measured shape
 
