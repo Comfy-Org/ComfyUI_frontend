@@ -487,7 +487,7 @@ export type ModelUploadStarted = {
   upload_url: string
   method: 'PUT'
   /**
-   * Every header the PUT must send, with exactly these values (`Content-Type` and `x-goog-content-length-range`).
+   * Every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
    */
   headers: {
     [key: string]: string
@@ -10337,7 +10337,7 @@ export type StartModelUploadData = {
 
 export type StartModelUploadErrors = {
   /**
-   * `INVALID_BODY` (bad filename, size or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`), `UNSUPPORTED_MODEL_TYPE` (`models` plus a folder not in `model_upload_folders` of GET /api/features) or `FILE_TOO_LARGE` (over 2 GiB; the message is "Files can be up to 2 GB.")
+   * `INVALID_BODY` (bad filename, size or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`: a pickle format such as `.ckpt`, `.pt` or `.bin` can run code when loaded), `UNSUPPORTED_MODEL_TYPE` (`models` plus a folder not in `model_upload_folders` of GET /api/features) or `FILE_TOO_LARGE` (over 2 GiB; the message is "Files can be up to 2 GB.")
    */
   400: ErrorResponse
   /**
@@ -10345,13 +10345,17 @@ export type StartModelUploadErrors = {
    */
   401: ErrorResponse
   /**
-   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, or a refused session write (see `SessionWriteForbidden`)
+   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), or a refused session write (see `SessionWriteForbidden`)
    */
   403: ErrorResponse
   /**
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * Private-model eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
 }
 
 export type StartModelUploadError =
@@ -10390,7 +10394,7 @@ export type CompleteModelUploadData = {
 
 export type CompleteModelUploadErrors = {
   /**
-   * `INVALID_BODY` (bad filename or tag list), `UNSUPPORTED_MODEL_TYPE` (a folder not in `model_upload_folders`) or `FILE_TOO_LARGE` (the stored object is over 2 GiB; the message is "Files can be up to 2 GB.")
+   * `INVALID_BODY` (bad filename or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`), `UNSUPPORTED_MODEL_TYPE` (a folder not in `model_upload_folders`) or `FILE_TOO_LARGE` (the stored object is over 2 GiB; the message is "Files can be up to 2 GB.")
    */
   400: ErrorResponse
   /**
@@ -10398,7 +10402,7 @@ export type CompleteModelUploadErrors = {
    */
   401: ErrorResponse
   /**
-   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, or a refused session write (see `SessionWriteForbidden`)
+   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), or a refused session write (see `SessionWriteForbidden`)
    */
   403: ErrorResponse
   /**
@@ -10409,6 +10413,10 @@ export type CompleteModelUploadErrors = {
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * Private-model eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
 }
 
 export type CompleteModelUploadError =
