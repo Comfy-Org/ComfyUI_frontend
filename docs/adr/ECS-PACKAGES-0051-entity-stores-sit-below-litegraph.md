@@ -4,7 +4,7 @@ Date: 2026-10-29
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -144,29 +144,39 @@ about 3% and did not change native typecheck wall time.
 
 ## Consequences
 
-- Graph-state needs an active Pinia, and its package tests reuse the testing
-  Pinia setup.
+- Graph-state needs an active Pinia. Its package tests run in the root
+  `frontend` Vitest project, whose setup installs a fresh testing Pinia per
+  test, and they import no app module.
 - Modules change paths, but their ownership rules (store identity, teardown,
   Y.Doc lifetime) do not.
 - The app keeps compiling litegraph's large public types, so typecheck time
   stays roughly the same.
 
-## Follow-ups
+## Implementation
 
-Each step leaves main shippable. Steps 2 to 5 are independent of each other.
+All seven steps landed in one change instead of the sequence first planned:
 
-1. Add the dependency-cruiser allowlist rule (decision 7).
-2. Move the leaves to their packages and delete the app forwarding modules
-   (decision 5). Each leaf family can land separately.
-3. Add the translation port and give every litegraph call site a fallback
-   (decision 6).
-4. Move the adapters into `src/lib/litegraph` (decision 4). These are plain
-   moves that remove the cycles crossing the future boundary.
-5. Move the store back-edges down so that no store imports litegraph
-   (decision 3).
-6. After steps 2 and 5, create `@comfyorg/graph-state` and move the stores into
-   it (decision 1). The layout store and the ECS stores can move in separate
-   changes.
-7. After all earlier steps, move litegraph into a declaration-backed package.
-   Point the types build at it and replace the allowlist with a rule that
-   forbids package-to-app imports.
+1. Dependency-cruiser forbids every import from litegraph into the app. The
+   allowlist of decision 7 was never needed, because the boundary closed in the
+   same change. The litegraph package typecheck has no `@/` alias, so tests are
+   held to the same rule.
+2. The leaves moved down (decision 5), and the app forwarding modules are gone.
+3. Litegraph translates through `provideTranslator` and `translate(key,
+fallback)` (decision 6).
+4. The adapters moved into litegraph (decision 4).
+5. The store back-edges moved down (decision 3). The stores only needed the
+   `LGraphState` contract from ID allocation, so that contract went to
+   graph-model while allocation and the graph-intent emitters stay in
+   litegraph. Graph-state types the owning graph and node structurally instead
+   of importing litegraph classes.
+6. `@comfyorg/graph-state` holds the stores (decision 1). Graph-state tests that
+   build litegraph graphs stay in the app.
+7. Litegraph is the declaration-backed `@comfyorg/litegraph` package. The app
+   imports `@comfyorg/litegraph/*`, and the package imports `#/*`. Litegraph
+   tests that exercise app modules live next to those modules.
+
+The types build compiles litegraph from package source, and its output is
+unchanged. Contract types that appear in the public surface, such as
+`LGraphState`, live in graph-model, and the types consumer check rejects any
+`@comfyorg/graph-state` import in the bundle. The architecture records treat
+`packages/litegraph/src` as a second source root.
