@@ -306,7 +306,7 @@ function toPausedPart(ask: AskInput): PausedPart | undefined {
       ask.options.map(({ id }) => id),
       ['resume']
     ) &&
-    ask.min_selections === 1 &&
+    ask.min_selections <= 1 &&
     ask.max_selections === 1 &&
     !ask.allow_other
   if (!offersResume) return undefined

@@ -9,8 +9,6 @@ import {
   pausedAskFrame
 } from '@e2e/fixtures/data/agent/agentAskFrames'
 
-const [, RECHECK_PLURAL] = enMessages.agent.paused.recheck.split(' | ')
-
 test.describe('Agent credits pause card', { tag: ['@cloud', '@agent'] }, () => {
   test('names a mid-task credits stop and offers a way out', async ({
     startAskTurn
@@ -41,7 +39,7 @@ test.describe('Agent credits pause card', { tag: ['@cloud', '@agent'] }, () => {
 
     await test.step('it says the agent retries on its own', async () => {
       await expect(pauseCard).toContainText(
-        RECHECK_PLURAL.replace('{seconds}', '60')
+        'It will try again on its own in about 60 seconds.'
       )
     })
 

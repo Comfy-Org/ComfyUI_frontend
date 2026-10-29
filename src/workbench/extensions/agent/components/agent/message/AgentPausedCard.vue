@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type { PausedPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import { NO_FUNDS_PAUSE_REASON } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
@@ -56,11 +57,13 @@ const body = computed(() => part.message || part.prompt)
     <div class="flex w-full items-start gap-2">
       <i
         aria-hidden="true"
-        class="mt-0.5 size-5"
         :class="
-          outOfCredits
-            ? 'icon-[lucide--gauge] text-destructive'
-            : 'icon-[lucide--pause] text-muted-foreground'
+          cn(
+            'mt-0.5 size-5',
+            outOfCredits
+              ? 'icon-[lucide--gauge] text-destructive'
+              : 'icon-[lucide--pause] text-muted-foreground'
+          )
         "
       />
       <div class="min-w-0 flex-1 text-sm/5">

@@ -324,6 +324,13 @@ describe('toAskPart paused', () => {
     })
   })
 
+  it('accepts a Resume option when selecting it is optional on the wire', () => {
+    expect(toAskPart(pausedAsk({ min_selections: 0 }))).toMatchObject({
+      type: 'paused',
+      askId: 'turn-1:call-1'
+    })
+  })
+
   it.for<{ name: string; ask: Partial<AskInput> }>([
     {
       name: 'a selection minimum Resume cannot meet',
