@@ -189,6 +189,17 @@ describe('renderShortcutKeycaps', () => {
     expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
   })
 
+  it('scans a long run of modifiers with no key in bounded time', () => {
+    const hostile = `<p>${'Ctrl+'.repeat(16000)}</p>`
+
+    const started = performance.now()
+    const out = renderShortcutKeycaps(hostile, resolveDefaults)
+    const elapsed = performance.now() - started
+
+    expect(out).toBe(hostile)
+    expect(elapsed).toBeLessThan(1000)
+  })
+
   it('leaves a word that begins with a key letter alone', () => {
     const html = '<p>Ctrl+click a node to add it to the selection.</p>'
     expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)

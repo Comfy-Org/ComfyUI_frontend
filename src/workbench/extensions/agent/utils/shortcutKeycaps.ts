@@ -47,7 +47,7 @@ const INLINE_ELEMENTS = new Set([
 
 const MODIFIER = String.raw`ctrl|control|cmd|command|meta|⌘|alt|option|opt|⌥|shift|⇧`
 
-const MODIFIER_SLOT = String.raw`(?:${MODIFIER})(?:\s*/\s*(?:${MODIFIER}))*`
+const MODIFIER_SLOT = String.raw`(?:${MODIFIER})(?:\s*/\s*(?:${MODIFIER})){0,3}`
 
 const NAMED_KEY = String.raw`f\d{1,2}|enter|return|escape|esc|spacebar|space|tab|delete|del|backspace|home|end|pageup|pagedown|up|down|left|right`
 
@@ -55,7 +55,7 @@ const SINGLE_KEY =
   String.raw`[a-z0-9` + '`' + String.raw`~!@#$%^&*()\-_=+\[\]{}\\|;:'",.<>/?]`
 
 const MODIFIER_BEARING_COMBO =
-  String.raw`(?<![a-z0-9/])${MODIFIER_SLOT}(?:\s*\+\s*${MODIFIER_SLOT})*` +
+  String.raw`(?<![a-z0-9/])${MODIFIER_SLOT}(?:\s*\+\s*${MODIFIER_SLOT}){0,3}` +
   String.raw`\s*\+\s*(?:${NAMED_KEY}|${SINGLE_KEY})(?![a-z0-9])`
 
 function keyLabel(sequence: string): string {
