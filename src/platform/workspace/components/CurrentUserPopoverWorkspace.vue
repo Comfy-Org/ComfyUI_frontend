@@ -272,6 +272,7 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { refreshBalanceInBackground } from '@/platform/workspace/refreshBalanceInBackground'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
@@ -465,6 +466,6 @@ const closeWorkspaceSwitcherFromKeyboard = () => {
 }
 
 onMounted(() => {
-  if (!accountActionsOnly) void fetchBalance()
+  if (!accountActionsOnly) void refreshBalanceInBackground(fetchBalance)
 })
 </script>

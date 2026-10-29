@@ -14,6 +14,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { DesktopHostAuthBridge } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import {
@@ -27,6 +28,8 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const state = vi.hoisted(() => {
   function initialPlanSlug(): string | null {
@@ -254,6 +257,22 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.keyboard('{Escape}')
 
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it('reports a failed balance read once instead of leaving it unhandled', async () => {
+    const failure = new Error('Balance temporarily unavailable')
+    vi.mocked(useBillingContext().fetchBalance).mockRejectedValueOnce(failure)
+
+    renderComponent()
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'billing',
+        errorType: 'error_refreshing_balance',
+        level: 'warning'
+      })
+    )
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('keeps account actions available without workspace context', () => {
