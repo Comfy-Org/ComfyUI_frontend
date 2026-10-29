@@ -1,30 +1,23 @@
 import { expect } from '@playwright/test'
 
-import type { Asset } from '@comfyorg/ingest-types'
 import { createIncludePublicAssetsFixture } from '@e2e/fixtures/assetApiFixture'
-
-const createdAt = new Date().toISOString()
-
-function makeAsset(id: string, name: string, tags: string[]): Asset {
-  return {
-    id,
-    name,
-    tags,
-    preview_url: `/api/view?filename=${name}&type=input`,
-    created_at: createdAt,
-    updated_at: createdAt
-  }
-}
+import { createListedAsset } from '@e2e/fixtures/data/assetFixtures'
 
 const test = createIncludePublicAssetsFixture(
   [
-    makeAsset('own-input', 'my_upload.png', ['input']),
-    makeAsset('own-output', 'my_render.png', ['output'])
+    createListedAsset('own-input', 'my_upload.png', ['input']),
+    createListedAsset('own-output', 'my_render.png', ['output'])
   ],
   [
-    makeAsset('public-template-input-a', 'template_sample_a.png', ['input']),
-    makeAsset('public-template-input-b', 'template_sample_b.png', ['input']),
-    makeAsset('public-published-output', 'published_render.png', ['output'])
+    createListedAsset('public-template-input-a', 'template_sample_a.png', [
+      'input'
+    ]),
+    createListedAsset('public-template-input-b', 'template_sample_b.png', [
+      'input'
+    ]),
+    createListedAsset('public-published-output', 'published_render.png', [
+      'output'
+    ])
   ]
 )
 

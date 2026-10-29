@@ -95,11 +95,7 @@ export function createCloudAssetsFixture(assets: ReadonlyArray<Asset>) {
   })
 }
 
-/**
- * Mocks `/api/assets` like Cloud ingest: public assets are returned unless the
- * request sends `include_public=false`, because the server defaults it to true.
- * `includePublicValues(tag)` reports what each list request for that tag sent.
- */
+/** Mocks `/api/assets` with public assets included unless `include_public=false`. */
 export function createIncludePublicAssetsFixture(
   ownAssets: ReadonlyArray<Asset>,
   publicAssets: ReadonlyArray<Asset>
