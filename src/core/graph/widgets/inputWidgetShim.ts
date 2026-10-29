@@ -39,20 +39,19 @@ export function addShimWidget(
 export const AUTOGROW_GROUP_WIDGET_TYPE = 'autogrow_group'
 
 /**
- * Stands in for a whole autogrow group, which has no input of its own. It is
- * hidden and never serialized; the Vue widget grid reveals it as a drop row
- * while a subgraph input link is dragged.
+ * Pairs an autogrow group's own input with a hidden, never serialized widget.
+ * The row only renders while the group input is connected, or, in the Vue
+ * widget grid, as a drop row while a subgraph input link is dragged.
  */
 export function addAutogrowGroupWidget(
   node: LGraphNode,
-  name: string,
-  label?: string
+  input: INodeInputSlot
 ) {
   node.addCustomWidget(
     new ShimWidget(
       {
-        name,
-        label,
+        name: input.name,
+        label: input.label ?? input.localized_name,
         hidden: true,
         options: { serialize: false },
         serialize: false,
@@ -63,4 +62,5 @@ export function addAutogrowGroupWidget(
       node
     )
   )
+  input.widget = { name: input.name }
 }
