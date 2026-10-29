@@ -68,7 +68,7 @@ const { pricing = [] } = defineProps<{
     <div
       v-for="badge in pricing"
       :key="badge.required"
-      class="flex items-center"
+      class="flex items-center gap-1"
     >
       <CreditBadge :text="badge.required" :rest="badge.rest" />
     </div>
