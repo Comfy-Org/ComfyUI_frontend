@@ -820,6 +820,7 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       forgetUnsyncedAtLoad(subscribedWorkflowId.value)
       resumeHeldOpsIfSubscribed()
+      sender.retryTransport()
     } else {
       handleRejectedSubscription(detail)
     }
