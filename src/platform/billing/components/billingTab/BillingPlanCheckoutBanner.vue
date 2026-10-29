@@ -2,19 +2,16 @@
   <div
     v-if="banner"
     role="status"
-    class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 sm:flex-row sm:items-center sm:gap-2"
+    class="flex flex-col gap-3 rounded-xl border border-border/60 bg-background p-3 sm:flex-row sm:items-center sm:gap-2"
     data-testid="billing-plan-checkout-banner"
   >
-    <div class="flex min-w-0 flex-1 flex-col gap-1">
+    <div class="flex min-w-0 flex-1 flex-col gap-2">
       <div class="flex items-center gap-2">
         <i
           :class="
-            cn(
-              'size-4 shrink-0',
-              banner.kind === 'verifyPayment'
-                ? 'icon-[lucide--triangle-alert] text-warning'
-                : 'icon-[lucide--circle-alert] text-muted-foreground'
-            )
+            banner.kind === 'verifyPayment'
+              ? 'icon-[lucide--triangle-alert] text-warning'
+              : 'icon-[lucide--circle-alert] text-muted-foreground'
           "
           aria-hidden="true"
         />
@@ -23,7 +20,12 @@
       <p class="m-0 pl-6 text-sm text-muted-foreground">{{ copy?.body }}</p>
     </div>
     <div class="flex shrink-0 flex-wrap items-center gap-2 pl-6 sm:pl-0">
-      <Button variant="textonly" size="lg" @click="emit('dismiss')">
+      <Button
+        v-if="banner.kind !== 'verifyPayment'"
+        variant="textonly"
+        size="md"
+        @click="emit('dismiss')"
+      >
         {{ $t('workspacePanel.billingStatus.planCheckout.dismiss') }}
       </Button>
       <Button
@@ -32,8 +34,8 @@
         :href="banner.actionUrl"
         target="_blank"
         rel="noopener"
-        variant="secondary"
-        size="lg"
+        variant="inverted"
+        size="md"
         class="no-underline"
       >
         {{
@@ -45,11 +47,10 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { PlanCheckoutBanner } from '@/platform/billing/components/billingTab/planCheckoutBanner'
 
 const { banner } = defineProps<{

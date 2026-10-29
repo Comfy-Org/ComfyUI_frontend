@@ -7,11 +7,11 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isWithinEnterpriseEndingNotice } from '@/platform/billing/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
-import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
+import type { SubscriptionTier } from '@comfyorg/billing-core'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
 import { isTopUpDeniedPastDue } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 export type BillingBannerKind =
   | 'paused'
@@ -196,7 +196,7 @@ function useBillingBannerInternal() {
     isTeamPlan,
     billingStatus
   } = useBillingContext()
-  const { permissions } = useWorkspaceUI()
+  const { permissions } = useBillingUI()
   const { flags } = useFeatureFlags()
   const { topUpDenial, runDeniedPaymentPastDue } = useBillingCapabilities()
 
@@ -228,6 +228,21 @@ function useBillingBannerInternal() {
   const kind = computed<BillingBannerKind | null>(() =>
     isCloud ? deriveBillingBanner(bannerInputs.value, now.value) : null
   )
+  const lifecycleKind = computed<BillingBannerKind | null>(() =>
+    isCloud
+      ? deriveBillingBanner(
+          {
+            ...bannerInputs.value,
+            hasFunds: true,
+            topUpDeniedPastDue: false,
+            runDeniedPastDue: false,
+            planEndedDismissed: false,
+            planChangeDismissed: false
+          },
+          now.value
+        )
+      : null
+  )
   const audience = computed(() => billingBannerAudience(bannerInputs.value))
 
   const hasExhaustedFunds = computed(
@@ -243,7 +258,7 @@ function useBillingBannerInternal() {
     if (kind.value === 'planChange') planChangeDismissed.value = true
   }
 
-  return { kind, audience, dismiss }
+  return { kind, lifecycleKind, audience, dismiss }
 }
 
 export const useBillingBanner = createSharedComposable(useBillingBannerInternal)

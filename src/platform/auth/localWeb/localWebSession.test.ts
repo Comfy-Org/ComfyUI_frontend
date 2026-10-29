@@ -9,13 +9,12 @@ import {
 import type { LocalWebAuthEnvironment } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createMemoryTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
 import { startLocalWebSession } from '@/platform/auth/localWeb/localWebSession'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const ACCESS_TOKEN = `e30.${btoa(
-  JSON.stringify({ sub: 'user-1', workspace_id: 'ws-1' })
+  JSON.stringify({ sub: 'user-1', name: 'Ada Lovelace', workspace_id: 'ws-1' })
 )
   .replace(/\+/g, '-')
   .replace(/\//g, '_')
@@ -69,7 +68,7 @@ describe('startLocalWebSession', () => {
       'http://127.0.0.1:8188/?code=code-1&state=state-1'
     )
 
-    await expect(startLocalWebSession(env)).resolves.toBe(false)
+    await expect(startLocalWebSession(env)).resolves.toBe('off')
 
     expect(isDesktopHostSessionActive()).toBe(false)
     expect(page.url).toBe('http://127.0.0.1:8188/?code=code-1&state=state-1')
@@ -86,7 +85,7 @@ describe('startLocalWebSession', () => {
     vi.mocked(useFeatureFlags().flags).localWebSsoEnabled = true
     const { env } = environment(url)
 
-    await expect(startLocalWebSession(env)).resolves.toBe(false)
+    await expect(startLocalWebSession(env)).resolves.toBe('off')
 
     expect(isDesktopHostSessionActive()).toBe(false)
   })
@@ -97,17 +96,18 @@ describe('startLocalWebSession', () => {
       'http://localhost:8188/?code=code-1&state=state-1'
     )
 
-    await expect(startLocalWebSession(env)).resolves.toBe(true)
+    await expect(startLocalWebSession(env)).resolves.toBe('started')
 
     expect(desktopHostUser.value).toEqual({
       id: 'user-1',
       email: undefined,
+      name: 'Ada Lovelace',
       workspaceId: 'ws-1'
     })
     expect(page.url).toBe('http://localhost:8188/')
   })
 
-  it('starts signed out and reports a failed exchange', async () => {
+  it('starts signed out and reports a failed exchange so the page can say so', async () => {
     vi.mocked(useFeatureFlags().flags).localWebSsoEnabled = true
     const { env } = environment(
       'http://127.0.0.1:8188/?code=code-1&state=state-1'
@@ -119,7 +119,7 @@ describe('startLocalWebSession', () => {
         })
     )
 
-    await startLocalWebSession(env)
+    await expect(startLocalWebSession(env)).resolves.toBe('sign-in-failed')
 
     expect(isDesktopHostSessionActive()).toBe(true)
     expect(desktopHostUser.value).toBeNull()
@@ -138,7 +138,7 @@ describe('startLocalWebSession', () => {
       'http://127.0.0.1:8188/?error=access_denied&state=state-1'
     )
 
-    await startLocalWebSession(env)
+    await expect(startLocalWebSession(env)).resolves.toBe('started')
 
     expect(reportError).not.toHaveBeenCalled()
   })

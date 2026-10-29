@@ -4,7 +4,7 @@ import type {
   LGraphCanvas,
   SubgraphInputNode,
   SubgraphOutputNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import type {
   SelectableKey,
   SelectionCommand
@@ -14,7 +14,7 @@ import {
   toSelectableKey
 } from '@/core/selection/selectionState'
 
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
@@ -22,9 +22,9 @@ import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeB
 import { isSubgraph } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
 
 import { useSelectionStore } from '@/core/selection/selectionStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
 type SelectableItem =
   | LGraphNode

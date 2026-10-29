@@ -1,5 +1,9 @@
 <template>
-  <BaseModalLayout :content-title="$t('assetBrowser.checkpoints')">
+  <BaseModalLayout
+    :labels="modalLayoutLabels"
+    :content-title="$t('assetBrowser.checkpoints')"
+    @close="onClose"
+  >
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
         <template #header-icon>
@@ -114,23 +118,26 @@
 </template>
 
 <script setup lang="ts">
-import { computed, provide, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import CardBottom from '@/components/card/CardBottom.vue'
-import CardContainer from '@/components/card/CardContainer.vue'
-import CardTop from '@/components/card/CardTop.vue'
-import Tag from '@/components/chip/Tag.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
+import CardContainer from '@comfyorg/design-system/content-card/CardContainer'
+import CardTop from '@comfyorg/design-system/content-card/CardTop'
+import Tag from '@comfyorg/design-system/chip/Tag'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
-import Button from '@/components/ui/button/Button.vue'
-import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
-import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
-import type { NavGroupData, NavItemData } from '@/types/navTypes'
-import { OnCloseKey } from '@/types/widgetTypes'
+import Button from '@comfyorg/design-system/button/Button'
+import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
+import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
+import type {
+  NavGroupData,
+  NavItemData
+} from '@comfyorg/design-system/lib/navigation/types'
+import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 import { createGridStyle } from '@/utils/gridUtil'
 
 const frameworkOptions = ref([
@@ -189,7 +196,7 @@ const moreMenuItems: MenuItem[] = [
   }
 ]
 
-provide(OnCloseKey, onClose)
+const modalLayoutLabels = useModalLayoutLabels()
 
 const searchQuery = ref<string>('')
 const searchText = ref<string>('')

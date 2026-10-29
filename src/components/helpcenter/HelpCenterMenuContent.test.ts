@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import axios from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, h } from 'vue'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -10,8 +10,8 @@ import enCommands from '@/locales/en/commands.json' with { type: 'json' }
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
 
 import HelpCenterMenuContent from './HelpCenterMenuContent.vue'
 
@@ -43,29 +43,22 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock<unknown>(import('@/utils/envUtil'), () => ({
   electronAPI: () => null
 }))
 
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useConflictAcknowledgment'),
+  import('@/platform/customNodes/manager/composables/useConflictAcknowledgment'),
 
   () => ({
     useConflictAcknowledgment: () => ({ shouldShowRedDot: { value: false } })
   })
 )
 
-vi.mock(import('@/workbench/extensions/manager/composables/useManagerDialog'))
-vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
-
-vi.mock(import('@/components/icons/PuzzleIcon.vue'), () => ({
-  default: defineComponent({
-    name: 'PuzzleIconStub',
-    render: () => h('div')
-  })
-}))
+vi.mock(import('@/platform/customNodes/manager/composables/useManagerDialog'))
+vi.mock(import('@/platform/customNodes/manager/composables/useManagerState'))
 
 function renderComponent() {
   const user = userEvent.setup()

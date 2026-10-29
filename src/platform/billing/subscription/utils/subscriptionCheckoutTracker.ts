@@ -14,7 +14,7 @@ import type {
   PaymentIntentSource,
   ResubscribeClickMetadata,
   SubscriptionSuccessMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 
 const PENDING_SUBSCRIPTION_CHECKOUT_MAX_AGE_MS = 6 * 60 * 60 * 1000
 const PENDING_SUBSCRIPTION_CHECKOUT_MAX_FUTURE_SKEW_MS = 5 * 60 * 1000

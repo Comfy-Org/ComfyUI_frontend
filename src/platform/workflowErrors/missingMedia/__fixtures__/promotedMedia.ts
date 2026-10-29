@@ -14,9 +14,9 @@ import * as missingMediaScan from '@/platform/workflowErrors/missingMedia/missin
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 type NonEmptyIds = readonly [number, ...number[]]
 

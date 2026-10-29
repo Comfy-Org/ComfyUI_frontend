@@ -2,19 +2,16 @@
   <div
     v-if="isPaused"
     role="status"
-    class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 sm:flex-row sm:items-center sm:gap-2"
+    class="flex flex-col gap-3 rounded-xl border border-border/60 bg-background p-3 sm:flex-row sm:items-center sm:gap-2"
     data-testid="billing-paused-banner"
   >
-    <div class="flex min-w-0 flex-1 flex-col gap-1">
+    <div class="flex min-w-0 flex-1 flex-col gap-2">
       <div class="flex items-center gap-2">
         <i
           :class="
-            cn(
-              'size-4 shrink-0',
-              paused.muted
-                ? 'icon-[lucide--circle-alert] text-muted-foreground'
-                : 'icon-[lucide--triangle-alert] text-warning'
-            )
+            paused.muted
+              ? 'icon-[lucide--circle-alert] text-muted-foreground'
+              : 'icon-[lucide--triangle-alert] text-warning'
           "
         />
         <span class="text-sm text-foreground">{{ $t(paused.titleKey) }}</span>
@@ -26,7 +23,7 @@
     <Button
       v-if="paused.action === 'updatePayment'"
       variant="inverted"
-      size="lg"
+      size="md"
       class="shrink-0"
       :loading="isUpdatingPayment"
       @click="updatePayment"
@@ -37,10 +34,9 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import {
   pausedBannerCopy,
   usePausedBanner
