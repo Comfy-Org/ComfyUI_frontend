@@ -115,12 +115,7 @@ export function topupVerdictOf(result: TopupResult): PayVerdict {
   }
 }
 
-/**
- * The card an operation's own verdict earns, through the shared projection.
- * A pending attempt the bank did not confirm is not verified, never "not
- * charged". Nothing for one succeeded or still in flight, a poll budget that
- * ran out or an operation parked for a human (rule 12).
- */
+/** The card an operation's own verdict earns, or none when its outcome is unknown. */
 export function operationOutcomeOf(
   operation: BillingOperationState
 ): OperationOutcome | undefined {
