@@ -1,7 +1,5 @@
-import { defineStore } from 'pinia'
-
-import { agentSettingsAuthHeader } from '@/workbench/extensions/agent/services/agent/agentAuth'
 import { computed, ref, watch } from 'vue'
+import { defineStore } from 'pinia'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
@@ -14,6 +12,7 @@ import {
   setGlobalSetting
 } from '@/platform/settings/globalSettingsApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { agentSettingsAuthHeader } from '@/workbench/extensions/agent/services/agent/agentAuth'
 
 class AgentConsentAuthenticationError extends Error {
   override name = 'AgentConsentAuthenticationError'

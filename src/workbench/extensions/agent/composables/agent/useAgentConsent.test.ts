@@ -140,8 +140,6 @@ describe('useAgentConsent', () => {
     vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue({
       Authorization: 'Bearer account-a-token'
     })
-    // Consent is written with the workspace credential, not the personal one: the
-    // row is keyed by workspace_id and user_id together.
     Object.assign(useAuthStore(), { isAuthenticated: true })
     vi.mocked(useAuthStore().getWorkspaceAuthTokenOrThrow).mockResolvedValue(
       'workspace-a-token'
@@ -623,10 +621,6 @@ describe('useAgentConsent', () => {
     expect(reportError).toHaveBeenCalledOnce()
   })
 
-  // The point of writing consent with the workspace credential is that a user who
-  // has a personal one but no workspace token must not quietly fall back to it: the
-  // row would land under the wrong workspace, and the grant check reads workspace_id
-  // and user_id together, so the user would appear not to have consented.
   it('writes no consent when the account has no workspace token', async () => {
     const onOpen = vi.fn()
     const request = useAgentConsent().withConsent('button_click', onOpen)
@@ -651,8 +645,6 @@ describe('useAgentConsent', () => {
     expect(useAuthStore().getUserAuthHeader).not.toHaveBeenCalled()
     expect(onOpen).not.toHaveBeenCalled()
 
-    // A failed save leaves the card open, so settle the request rather than letting
-    // it and its scope watcher outlive the test.
     useDialogStore().closeDialog({ key: 'agent-consent' })
     await request
   })

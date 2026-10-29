@@ -34,21 +34,7 @@ async function agentAuthHeader(): Promise<AuthHeader | null> {
   }
 }
 
-/**
- * Credential for the agent's Global Settings rows, which today means consent.
- *
- * The row (`Comfy.AgentPanel.ConsentAccepted`) is keyed by BOTH `workspace_id` and
- * `user_id`, so the credential has to pin the workspace as well as identify the user.
- * A personal session header would leave the workspace to resolve on its own and write
- * the row under the wrong one.
- *
- * Resolves `null` rather than rejecting when no workspace credential can be obtained:
- * callers read `null` as "authentication required", and `agentAuthHeader()` rejects
- * (not resolves) when a signed-in user's workspace token cannot be minted -- a failed
- * exchange, or a tab that is not on the provided web session. Letting that through
- * would surface a generic load/write failure plus a `reportError` where the caller
- * wants its authentication branch.
- */
+/** Returns the credential for Agent-owned Global Settings rows. */
 export async function agentSettingsAuthHeader(): Promise<AuthHeader | null> {
   try {
     if (isCloud) return await useAuthStore().getWorkspaceAuthHeader()

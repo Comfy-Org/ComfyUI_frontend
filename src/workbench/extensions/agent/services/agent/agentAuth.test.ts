@@ -70,9 +70,6 @@ function signInWithout(token: undefined | Error, apiKey: boolean) {
 }
 
 describe('agentSettingsAuthHeader', () => {
-  // The consent row is keyed by workspace_id AND user_id, so the credential has to
-  // pin the workspace. Off-cloud this used to fall back to the personal header, which
-  // left the workspace to resolve on its own.
   it('carries the workspace bearer off-cloud, not the personal header', async () => {
     signInPersonal()
     workspaceToken('workspace-token')
@@ -101,8 +98,6 @@ describe('agentSettingsAuthHeader', () => {
     })
   })
 
-  // Minting rejects rather than resolving null. Consent reads null as "authentication
-  // required"; a rejection reaches it as a generic load/write failure instead.
   it.for(missingWorkspaceTokens)(
     'resolves null rather than rejecting with $label',
     async ({ token, apiKey }) => {
