@@ -1437,10 +1437,7 @@ describe('attachDocOpMinter', () => {
         promoted: {
           value_index: 1,
           instance_path: [String(host.id)],
-          host_widgets_values: [
-            'an interior default',
-            'a prompt pasted while the agent panel is open'
-          ]
+          host_widgets_values: ['an interior default', undefined]
         }
       }
     ])
@@ -1466,6 +1463,44 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
+  it('keeps a large promoted host write inside the cost budget by leaving the edited value out of the host array', async () => {
+    const { host, doc } = seedPromotedHost()
+    const counterfactualDoc = mintDocFrom(graph)
+    seededPromotedDocs.add(counterfactualDoc)
+    const pasted = 'c'.repeat(140_000)
+
+    host.widgets[1].value = pasted
+    await afterFlush()
+
+    expect(minted).toHaveLength(1)
+    const [write] = minted
+    assert(write.op === 'set_widget' && write.path == null)
+    expect(write.promoted?.host_widgets_values).toEqual([
+      'an interior default',
+      undefined
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    expect(
+      project(doc, CATALOG).nodes.find(
+        (node) => String(node.id) === String(host.id)
+      )?.widgets_values
+    ).toEqual(['an interior default', pasted])
+    expect(
+      applyMinted(counterfactualDoc, [
+        {
+          ...write,
+          promoted: {
+            ...write.promoted,
+            host_widgets_values: ['an interior default', pasted]
+          }
+        } as GraphOperation
+      ])
+    ).toEqual(['rejected'])
+
+    doc.destroy()
+    counterfactualDoc.destroy()
+  })
+
   it('builds the array from the host values when the document holds none', async () => {
     const { host, doc } = seedPromotedHost([])
 
@@ -1477,7 +1512,7 @@ describe('attachDocOpMinter', () => {
         promoted: {
           value_index: 1,
           instance_path: [String(host.id)],
-          host_widgets_values: ['an interior default', 'pasted']
+          host_widgets_values: ['an interior default', undefined]
         }
       })
     ])
@@ -1629,7 +1664,11 @@ describe('attachDocOpMinter', () => {
     const [write] = minted
     assert(write.op === 'set_widget' && write.path == null)
     expect(write.promoted?.host_widgets_values).toEqual(
-      host.serialize().widgets_values
+      host
+        .serialize()
+        .widgets_values?.map((value, index) =>
+          index === write.promoted?.value_index ? undefined : value
+        )
     )
 
     // Over the wire, where an unset sibling becomes the same `null` a saved
@@ -1731,7 +1770,7 @@ describe('attachDocOpMinter', () => {
       const [write] = minted
       assert(write.op === 'set_widget')
       expect(write.value).toBe('second')
-      expect(write.promoted?.host_widgets_values[1]).toBe('second')
+      expect(write.promoted?.host_widgets_values[1]).toBeUndefined()
       doc.destroy()
     })
 
@@ -1770,7 +1809,7 @@ describe('attachDocOpMinter', () => {
       assert(last?.op === 'set_widget')
       expect(last.promoted?.host_widgets_values).toEqual([
         'prefix edit',
-        'text edit'
+        undefined
       ])
       doc.destroy()
     })
@@ -2560,6 +2599,7 @@ describe('attachDocOpMinter', () => {
     )
     expect(minted[0]).not.toHaveProperty('old')
     expect(applyMinted(doc, minted)).toEqual(['applied'])
+    expect(readDocWidgetValue(doc, String(node.id), 'text')).toBe(`${held}x`)
     expect(
       applyMinted(counterfactualDoc, [
         { ...minted[0], old: held } as GraphOperation
