@@ -26,41 +26,12 @@ const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/sentry.js'
 ])
 
-function getExtensionPath(extension: string): string | undefined {
-  try {
-    const pathname = new URL(extension, window.location.href).pathname
-    return pathname.match(/^\/extensions\/[^/]+\//)?.[0]
-  } catch {
-    return undefined
-  }
-}
-
-export function isSafeExtensionBoot(search: string): boolean {
-  const value = new URLSearchParams(search).get('safe')
-  return value === '' || value === '1' || value === 'true'
-}
-
 export function shouldLoadExtension(
   extension: string,
-  {
-    isCloudBuild,
-    disabledExtensionPaths = [],
-    disableAllCustomExtensions = false
-  }: {
-    isCloudBuild: boolean
-    disabledExtensionPaths?: readonly string[]
-    disableAllCustomExtensions?: boolean
-  }
+  isCloudBuild: boolean
 ): boolean {
   if (extension.includes('extensions/core')) return false
-  if (isCloudBuild && INLINED_CLOUD_EXTENSIONS.has(extension)) return false
-  if (disableAllCustomExtensions) return false
-
-  const extensionPath = getExtensionPath(extension)
-  return (
-    extensionPath === undefined ||
-    !disabledExtensionPaths.includes(extensionPath)
-  )
+  return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
 }
 
 const MAX_EXTENSION_PATH_LENGTH = 512
@@ -150,32 +121,14 @@ export async function loadExtensions(
   signal: AbortSignal = new AbortController().signal
 ) {
   const extensionStore = useExtensionStore()
-  const settingStore = useSettingStore()
   extensionStore.loadDisabledExtensionNames(
-    settingStore.get('Comfy.Extension.Disabled')
+    useSettingStore().get('Comfy.Extension.Disabled')
   )
-  const disabledExtensionPaths = settingStore.get(
-    'Comfy.Extension.DisabledPacks'
-  )
-  const disableAllCustomExtensions = isSafeExtensionBoot(window.location.search)
 
   const firstCpuServerReading = lateLoadingApplies()
     ? askCpuServer()
     : undefined
   const extensions = await api.getExtensions()
-  extensionStore.loadExtensionPaths(
-    extensions
-      .filter((extension) =>
-        shouldLoadExtension(extension, {
-          isCloudBuild: __DISTRIBUTION__ === 'cloud'
-        })
-      )
-      .flatMap((extension) => {
-        const extensionPath = getExtensionPath(extension)
-        return extensionPath === undefined ? [] : [extensionPath]
-      }),
-    disabledExtensionPaths
-  )
 
   installErrorNodeWidgets()
   installTouchPointerGuards()
@@ -185,11 +138,7 @@ export async function loadExtensions(
   })
   extensionStore.captureCoreExtensions()
   const customExtensions = extensions.filter((extension) =>
-    shouldLoadExtension(extension, {
-      isCloudBuild: __DISTRIBUTION__ === 'cloud',
-      disabledExtensionPaths,
-      disableAllCustomExtensions
-    })
+    shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
   )
   if (firstCpuServerReading) {
     await bootstrapTracer.settle('bootstrap/extensions-load-custom', () =>

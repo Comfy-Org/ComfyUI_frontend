@@ -179,7 +179,7 @@ describe('useInviteUrlLoader', () => {
       )
       expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          actions: [expect.objectContaining({ label: 'View workspace' })],
+          action: expect.objectContaining({ label: 'View workspace' }),
           description: 'You have been added to Test Workspace',
           kind: 'success',
           title: 'Invite Accepted'
@@ -218,7 +218,7 @@ describe('useInviteUrlLoader', () => {
         switchWorkspace
       )
       await useInviteUrlLoader().loadInviteFromUrl()
-      const action = useToast().toasts.at(-1)?.actions[0]
+      const action = useToast().toasts.at(-1)?.action
       assert(action)
 
       await action.onClick()
@@ -621,16 +621,12 @@ describe('useInviteUrlLoader', () => {
           kind: 'info',
           title: enMessages.workspace.inviteNeedsSignIn,
           description: enMessages.workspace.inviteNeedsSignInDetail,
-          actions: [
-            expect.objectContaining({
-              label: enMessages.workspace.inviteSignIn
-            })
-          ]
+          action: { label: enMessages.workspace.inviteSignIn }
         })
         expect(location.assign).not.toHaveBeenCalled()
 
-        assert(toast.actions[0])
-        await toast.actions[0].onClick()
+        assert(toast.action)
+        await toast.action.onClick()
 
         expect(location.assign).toHaveBeenCalledWith(
           '/cloud/login?switchAccount=true&previousFullPath=%252F%253Finvite%253Dvalid-token'

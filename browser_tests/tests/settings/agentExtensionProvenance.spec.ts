@@ -2,7 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { Request } from '@playwright/test'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 test.describe(
   'Agent-created extension provenance',
@@ -27,7 +27,9 @@ test.describe(
         await comfyPage.settingDialog.open()
         await comfyPage.settingDialog.category('Extension').click()
         await expect(page.getByText('Created by agent')).toBeVisible()
-        await expect(page.getByText(/Adds cushion controls/)).toBeVisible()
+        await expect(
+          comfyPage.settingDialog.contentArea.getByText(/Adds cushion controls/)
+        ).toBeVisible()
       })
 
       await test.step('Show only agent-created extensions', async () => {
@@ -39,89 +41,31 @@ test.describe(
           page.getByRole('switch', { name: 'Manual.Toolbar' })
         ).toBeHidden()
       })
-    })
 
-    test('preserves an agent disable when another extension is disabled before it settles', async ({
-      comfyPage,
-      page
-    }) => {
-      let batchRequest: Request | undefined
-      let nameRequest: Request | undefined
-      let acceptBatch = () => {}
-      let acceptName = () => {}
-      const batchAccepted = new Promise<void>((resolve) => {
-        acceptBatch = resolve
-      })
-      const nameAccepted = new Promise<void>((resolve) => {
-        acceptName = resolve
-      })
-
-      await page.route('**/settings', async (route) => {
-        if (route.request().method() !== 'POST') return route.fallback()
-        batchRequest = route.request()
-        await batchAccepted
-        await route.fulfill({ status: 200 })
-      })
-      await page.route(
-        '**/settings/Comfy.Extension.Disabled',
-        async (route) => {
-          if (route.request().method() !== 'POST') return route.fallback()
-          nameRequest = route.request()
-          await nameAccepted
-          await route.fulfill({ status: 200 })
-        }
-      )
-      await page.evaluate(() => {
-        window.app!.registerExtension({ name: 'Manual.Toolbar' })
-        window.app!.registerExtension({ name: 'agent.standalone.toolbar' })
-      })
-
-      try {
+      await test.step('Disable every agent-created extension', async () => {
         const dialog = comfyPage.settingDialog
-
-        await test.step('Start disabling every agent-created extension', async () => {
-          await dialog.open()
-          await dialog.openExtensionActions()
-          await comfyPage.contextMenu
-            .menuItem('Disable all agent-created')
-            .click()
-          await expect.poll(() => batchRequest).toBeDefined()
-        })
-
-        await test.step('Disable another extension before the batch settles', async () => {
-          await dialog.root
-            .getByRole('switch', { name: 'Manual.Toolbar' })
-            .click()
-          acceptBatch()
-          await expect.poll(() => nameRequest).toBeDefined()
-        })
-
-        await test.step('Preserve both disables through save settlement', async () => {
-          expect(batchRequest!.postDataJSON()).toEqual({
-            'Comfy.Extension.Disabled': ['agent.standalone.toolbar'],
-            'Comfy.Extension.DisabledPacks': []
-          })
-          expect(nameRequest!.postDataJSON()).toEqual([
-            'agent.standalone.toolbar',
-            'Manual.Toolbar'
-          ])
-          await expect(
-            dialog.root.getByRole('button', {
-              name: 'Reload to apply changes'
-            })
-          ).toBeDisabled()
-
-          acceptName()
-          await expect(
-            dialog.root.getByRole('button', {
-              name: 'Reload to apply changes'
-            })
-          ).toBeEnabled()
-        })
-      } finally {
-        acceptBatch()
-        acceptName()
-      }
+        await dialog.openExtensionActions()
+        await comfyPage.contextMenu
+          .menuItem('Disable all agent-created')
+          .click()
+        await expect(
+          dialog.root.getByRole('switch', { name: 'agent.cushions.toolbar' })
+        ).not.toBeChecked()
+        await expect(
+          dialog.root.getByRole('button', { name: 'Reload to apply changes' })
+        ).toBeVisible()
+        await expect
+          .poll(() =>
+            comfyPage.settings.getPersistedSetting<string[]>(
+              'Comfy.Extension.Disabled'
+            )
+          )
+          .toContain('agent.cushions.toolbar')
+        await dialog.root.getByRole('button', { name: 'All' }).click()
+        await expect(
+          dialog.root.getByRole('switch', { name: 'Manual.Toolbar' })
+        ).toBeChecked()
+      })
     })
 
     test('disables the bulk action when every agent extension is read-only', async ({
@@ -141,6 +85,93 @@ test.describe(
       await expect(
         comfyPage.contextMenu.menuItem('Disable all agent-created')
       ).toBeDisabled()
+    })
+
+    test('announces a newly registered agent extension with both actions', async ({
+      comfyPage,
+      page
+    }) => {
+      await page.evaluate(() => {
+        window.app!.registerExtension({
+          name: 'agent.cushions.notices',
+          provenance: {
+            createdBy: 'comfy-agent',
+            summary: 'Adds cushion controls'
+          }
+        })
+      })
+
+      const notice = comfyPage.toast.withText(
+        'Your agent added agent.cushions.notices'
+      )
+      await expect(notice).toBeVisible()
+      await expect(notice).toContainText('Adds cushion controls')
+      await expect(
+        notice.getByRole('button', { name: 'Disable extension' })
+      ).toBeVisible()
+
+      await notice.getByRole('button', { name: 'Manage extensions' }).click()
+      await expect(comfyPage.settingDialog.root).toBeVisible()
+      await expect(
+        comfyPage.settingDialog.contentArea.getByRole('switch', {
+          name: 'agent.cushions.notices'
+        })
+      ).toBeVisible()
+      await expect
+        .poll(() =>
+          comfyPage.settings.getPersistedSetting<string[]>(
+            'Comfy.Extension.SeenAgentExtensions'
+          )
+        )
+        .toContain('agent.cushions.notices')
+    })
+
+    test('badges an attributed sidebar tab without covering its count', async ({
+      comfyPage,
+      page
+    }) => {
+      await page.evaluate(() => {
+        const name = 'agent.cushions.sidebar'
+        window.app!.registerExtension({ name })
+        const workspace = window.app!.extensionManager as WorkspaceStore
+        workspace.sidebarTab.registerSidebarTab(
+          {
+            id: 'agent-cushions',
+            icon: 'icon-[lucide--panel-left]',
+            iconBadge: '123',
+            title: 'Agent cushions',
+            type: 'vue',
+            component: {}
+          },
+          undefined,
+          name
+        )
+      })
+
+      const tab = page.getByTestId('agent-cushions-tab-button')
+      await expect(tab).toHaveAccessibleName('Agent cushions (Agent-created)')
+
+      for (const size of ['normal', 'small']) {
+        await comfyPage.settings.setSetting('Comfy.Sidebar.Size', size)
+        const count = await tab.getByText('123').boundingBox()
+        const provenance = await tab.getByText('AI').boundingBox()
+        expect(count).not.toBeNull()
+        expect(provenance).not.toBeNull()
+        expect(
+          count!.x + count!.width <= provenance!.x ||
+            provenance!.x + provenance!.width <= count!.x ||
+            count!.y + count!.height <= provenance!.y ||
+            provenance!.y + provenance!.height <= count!.y
+        ).toBe(true)
+      }
+
+      await tab.click({ button: 'right' })
+      await expect(
+        comfyPage.contextMenu.menuItem('Manage extensions')
+      ).toBeVisible()
+      await expect(
+        comfyPage.contextMenu.menuItem('Disable extension')
+      ).toBeVisible()
     })
   }
 )

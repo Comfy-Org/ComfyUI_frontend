@@ -40,7 +40,7 @@
           </span>
           <span
             v-if="provenanceBadge"
-            class="sidebar-icon-provenance-badge absolute -top-1 -left-1 min-w-[16px] rounded-full bg-secondary py-0.25 text-2xs leading-[14px] font-medium text-foreground"
+            class="sidebar-icon-provenance-badge absolute -bottom-1 -left-1 min-w-[16px] rounded-full bg-secondary py-0.25 text-2xs leading-[14px] font-medium text-foreground"
           >
             {{ provenanceBadge }}
           </span>

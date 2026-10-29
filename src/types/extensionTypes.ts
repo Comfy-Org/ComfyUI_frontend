@@ -24,10 +24,6 @@ interface BaseSidebarTabExtension {
   tooltip?: string
   label?: string
   onToggle?: () => boolean | Promise<boolean>
-  source?: {
-    extensionName: string
-    provenance?: ExtensionProvenance
-  }
 }
 
 interface BaseBottomPanelExtension {

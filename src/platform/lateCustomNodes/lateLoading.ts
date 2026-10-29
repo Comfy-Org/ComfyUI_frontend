@@ -38,7 +38,6 @@ interface ScriptLoader {
     options?: { retry?: boolean }
   ) => Promise<LateScriptFailure | undefined>
   reportFailures: (failures: LateScriptFailure[]) => void
-  afterLateRegistration: () => void
 }
 
 const LATE_EXTENSION_WAIT_MS = 2000
@@ -284,8 +283,7 @@ interface BatchOutcome {
 
 async function runLateBatch(
   work: ReturnType<typeof watchLateWork>,
-  last: boolean,
-  afterLateRegistration: () => void
+  last: boolean
 ): Promise<BatchOutcome> {
   await until(() => !useWorkspaceStore().spinner || work.isAborted()).toBe(true)
   await until(() => !work.isArtistBusy() || work.isAborted()).toBe(true, {
@@ -294,7 +292,6 @@ async function runLateBatch(
   if (work.isAborted()) return { turnedOn: false, allStarted: false }
 
   const { registered, allRegistered } = registerHeldExtensions(last)
-  if (registered.length > 0) afterLateRegistration()
   const allHooksRan =
     registered.length === 0 || (await startLateExtensions(registered))
   if (work.isAborted()) return { turnedOn: false, allStarted: false }
@@ -359,11 +356,7 @@ async function turnOnInBatches(
   run.loader.reportFailures(otherFailures)
   const scriptsLoaded = otherFailures.length === 0
   if (fetchFailures.length === 0) {
-    const batch = await runLateBatch(
-      work,
-      true,
-      run.loader.afterLateRegistration
-    )
+    const batch = await runLateBatch(work, true)
     return {
       turnedOn: batch.turnedOn,
       allStarted: batch.allStarted && scriptsLoaded,
@@ -374,13 +367,9 @@ async function turnOnInBatches(
   fetchFailures.forEach(({ ext }) => run.waiting.add(ext))
   onWaitingChange()
   const retries = retryFetchFailures(fetchFailures, run)
-  const first = await runLateBatch(
-    work,
-    false,
-    run.loader.afterLateRegistration
-  )
+  const first = await runLateBatch(work, false)
   const failedAgain = await retries
-  const last = await runLateBatch(work, true, run.loader.afterLateRegistration)
+  const last = await runLateBatch(work, true)
   return {
     turnedOn: first.turnedOn || last.turnedOn,
     allStarted: first.allStarted && last.allStarted && scriptsLoaded,

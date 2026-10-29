@@ -5,6 +5,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { useExtensionService } from './extensionService'
@@ -124,7 +125,7 @@ describe('invokeExtensionsAsync', () => {
   it('skips disabled extensions', async () => {
     const hook = vi.fn()
     register({ name: 'off', [HOOK]: hook }, { name: 'on', [HOOK]: hook })
-    useExtensionStore().loadBootDisabledExtensionNames(['off'])
+    useExtensionStore().loadDisabledExtensionNames(['off'])
 
     await invoke()
 
@@ -405,6 +406,26 @@ describe('invokeExtensionsAsync', () => {
 
       expect(setup).toHaveBeenCalledOnce()
       expect(setup.mock.calls[0]).toHaveLength(1)
+    })
+
+    it('attributes sidebar tabs to the extension whose setup registered them', async () => {
+      register({
+        name: 'agent.tools.sidebar',
+        setup: (app: ReturnType<typeof useApp>) => {
+          app.extensionManager.registerSidebarTab({
+            id: 'agent-tab',
+            title: 'Agent tab',
+            type: 'vue',
+            component: {}
+          })
+        }
+      })
+
+      await useExtensionService().invokeExtensionsAsync('setup')
+
+      expect(useSidebarTabStore().getSourceExtensionName('agent-tab')).toBe(
+        'agent.tools.sidebar'
+      )
     })
   })
 })

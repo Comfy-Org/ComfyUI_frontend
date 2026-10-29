@@ -513,14 +513,14 @@ describe('ComfyApp', () => {
       const [offer] = useToast().toasts
       expect(offer).toEqual(
         expect.objectContaining({
-          actions: [expect.objectContaining({ label: t('g.migrate') })],
+          action: expect.objectContaining({ label: t('g.migrate') }),
           kind: 'warning',
           title: t('toastMessages.migrateToLitegraphReroute')
         })
       )
       const reload = vi.spyOn(app, 'loadGraphData').mockResolvedValue(true)
 
-      await offer.actions[0]?.onClick()
+      await offer.action?.onClick()
 
       const [migrated] = reload.mock.calls[0]
       expect(migrated?.nodes.map((node) => node.type)).not.toContain('Reroute')

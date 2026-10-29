@@ -981,11 +981,9 @@ describe('deployment model options at startup', () => {
       kind: 'error',
       description: 'deploymentSwitcher.lookupUnavailableDetail',
       duration: Number.POSITIVE_INFINITY,
-      actions: [
-        { label: 'deploymentSwitcher.reload', onClick: expect.any(Function) }
-      ]
+      action: { label: 'deploymentSwitcher.reload' }
     })
-    toast?.actions[0]?.onClick()
+    toast?.action?.onClick()
     expect(reload).toHaveBeenCalledOnce()
     store.bootDeployment = {
       deployment_id: 'dep-1',

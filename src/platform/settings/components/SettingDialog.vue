@@ -134,7 +134,6 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
-import { settingsPanelNavigation } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
@@ -213,13 +212,6 @@ watch(navItems, (items) => {
   const activeKey = activeCategoryKey.value
   if (!activeKey || items.some(({ id }) => id === activeKey)) return
   activeCategoryKey.value = items[0]?.id ?? null
-})
-
-watch(settingsPanelNavigation, (request) => {
-  if (!request || !findPanelByKey(request.panel)) return
-  searchQuery.value = ''
-  handleSearch('')
-  activeCategoryKey.value = request.panel
 })
 
 watch(

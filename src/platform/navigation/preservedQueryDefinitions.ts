@@ -40,8 +40,7 @@ export const PRESERVED_QUERY_DEFINITIONS: PreservedQueryDefinition[] = [
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.SETTINGS,
-    keys: ['settings', 'filter'],
-    requiredKey: 'settings'
+    keys: ['settings']
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.ASSETS,

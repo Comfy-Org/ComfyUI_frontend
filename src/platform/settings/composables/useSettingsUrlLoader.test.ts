@@ -2,7 +2,7 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
 
-import { showSettingsPanel } from './useSettingsDialog'
+import { useSettingsDialog } from './useSettingsDialog'
 import { useSettingsUrlLoader } from './useSettingsUrlLoader'
 
 const preservedQueryMocks = vi.hoisted(() => ({
@@ -28,14 +28,13 @@ describe('useSettingsUrlLoader', () => {
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(showSettingsPanel).not.toHaveBeenCalled()
+    expect(useSettingsDialog().show).not.toHaveBeenCalled()
     expect(useRouter().replace).not.toHaveBeenCalled()
   })
 
   it.for([
     ['plan-credits', 'workspace'],
-    ['members', 'workspace-members'],
-    ['extension', 'extension']
+    ['members', 'workspace-members']
   ] as const)(
     'opens the panel for ?settings=%s and strips the param',
     async ([param, panel]) => {
@@ -44,9 +43,7 @@ describe('useSettingsUrlLoader', () => {
       const { loadSettingsFromUrl } = useSettingsUrlLoader()
       await loadSettingsFromUrl()
 
-      expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith(panel, {
-        extensionFilter: undefined
-      })
+      expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(panel)
       expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
       expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
         'settings'
@@ -66,42 +63,13 @@ describe('useSettingsUrlLoader', () => {
     })
   })
 
-  it('applies a recognized extension filter and strips it', async () => {
-    useRoute().query.settings = 'extension'
-    useRoute().query.filter = 'agent'
-
-    const { loadSettingsFromUrl } = useSettingsUrlLoader()
-    await loadSettingsFromUrl()
-
-    expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith('extension', {
-      extensionFilter: 'agentCreated'
-    })
-    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
-  })
-
-  it.for(['constructor', 'toString', '__proto__', 'nonsense'] as const)(
-    'rejects ?filter=%s and keeps the param',
-    async (filter) => {
-      useRoute().query.settings = 'extension'
-      useRoute().query.filter = filter
-
-      const { loadSettingsFromUrl } = useSettingsUrlLoader()
-      await loadSettingsFromUrl()
-
-      expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith('extension', {
-        extensionFilter: undefined
-      })
-      expect(useRouter().replace).toHaveBeenCalledWith({ query: { filter } })
-    }
-  )
-
   it('strips but does not open for an unrecognized panel value', async () => {
     useRoute().query.settings = 'garbage'
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(showSettingsPanel).not.toHaveBeenCalled()
+    expect(useSettingsDialog().show).not.toHaveBeenCalled()
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'settings'
@@ -114,7 +82,7 @@ describe('useSettingsUrlLoader', () => {
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(showSettingsPanel).not.toHaveBeenCalled()
+    expect(useSettingsDialog().show).not.toHaveBeenCalled()
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
@@ -124,7 +92,7 @@ describe('useSettingsUrlLoader', () => {
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(showSettingsPanel).not.toHaveBeenCalled()
+    expect(useSettingsDialog().show).not.toHaveBeenCalled()
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
@@ -139,8 +107,8 @@ describe('useSettingsUrlLoader', () => {
     expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
       'settings'
     )
-    expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith('workspace', {
-      extensionFilter: undefined
-    })
+    expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(
+      'workspace'
+    )
   })
 })

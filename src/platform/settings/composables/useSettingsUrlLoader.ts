@@ -6,16 +6,12 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { showSettingsPanel } from '@/platform/settings/composables/useSettingsDialog'
-import type {
-  ExtensionFilterType,
-  SettingPanelType
-} from '@/platform/settings/types'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import type { SettingPanelType } from '@/platform/settings/types'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.SETTINGS
 
 const DEEP_LINKABLE_PANELS: Record<string, SettingPanelType> = {
-  extension: 'extension',
   'plan-credits': 'workspace',
   members: 'workspace-members'
 }
@@ -29,31 +25,14 @@ const DEEP_LINKABLE_PANELS: Record<string, SettingPanelType> = {
  * silent no-op with the param stripped. Survives the login redirect via the
  * preserved-query system, like the top-up URL loader.
  */
-const EXTENSION_FILTER_PARAMS: Record<string, ExtensionFilterType> = {
-  agent: 'agentCreated'
-}
-
-function resolveExtensionFilter(
-  panel: unknown,
-  filter: unknown
-): ExtensionFilterType | undefined {
-  if (panel !== 'extension' || typeof filter !== 'string') return undefined
-  if (!Object.hasOwn(EXTENSION_FILTER_PARAMS, filter)) return undefined
-  return EXTENSION_FILTER_PARAMS[filter]
-}
-
-function resolveDeepLinkablePanel(
-  param: unknown
-): SettingPanelType | undefined {
-  if (typeof param !== 'string' || !param) return undefined
-  if (!Object.hasOwn(DEEP_LINKABLE_PANELS, param)) return undefined
-  return DEEP_LINKABLE_PANELS[param]
-}
-
 export function useSettingsUrlLoader() {
   const route = useRoute()
   const router = useRouter()
+  const settingsDialog = useSettingsDialog()
 
+  /** Reads `?settings=`, strips it, and opens the mapped Settings panel.
+   * Resolves once the strip has landed, so the loader that runs next reads a
+   * query this one has already cleaned rather than restoring the param. */
   async function loadSettingsFromUrl() {
     hydratePreservedQuery(NAMESPACE)
     const query =
@@ -61,18 +40,23 @@ export function useSettingsUrlLoader() {
     const param = query.settings
     if (param === undefined) return
 
-    const extensionFilter = resolveExtensionFilter(param, query.filter)
-
+    // Strip any present settings param (even unrecognized or malformed values)
+    // and write the clean URL in a single replace, so a clean URL is
+    // guaranteed even if the replace rejects or no panel matches.
     const cleanQuery = { ...query }
     delete cleanQuery.settings
-    if (extensionFilter) delete cleanQuery.filter
     const stripped = router.replace({ query: cleanQuery }).catch((error) => {
       console.warn('[useSettingsUrlLoader] Failed to clean URL params:', error)
     })
     clearPreservedQuery(NAMESPACE)
 
-    const panel = resolveDeepLinkablePanel(param)
-    if (panel) showSettingsPanel(panel, { extensionFilter })
+    if (
+      typeof param === 'string' &&
+      param &&
+      Object.hasOwn(DEEP_LINKABLE_PANELS, param)
+    ) {
+      settingsDialog.show(DEEP_LINKABLE_PANELS[param])
+    }
 
     await stripped
   }

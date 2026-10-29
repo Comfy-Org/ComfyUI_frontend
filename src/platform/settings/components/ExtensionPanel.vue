@@ -16,21 +16,9 @@
           </span>
           {{ ext.name }}
         </li>
-        <li v-for="path in changedExtensionPaths" :key="path">
-          <span>
-            {{
-              extensionStore.isExtensionPathEnabledAtBoot(path) ? '[-]' : '[+]'
-            }}
-          </span>
-          {{ extensionNameFromPath(path) }}
-        </li>
       </ul>
       <div class="flex justify-end">
-        <Button
-          variant="destructive"
-          :disabled="extensionStore.isSavingExtensionPaths"
-          @click="applyChanges"
-        >
+        <Button variant="destructive" @click="applyChanges">
           {{ $t('g.reloadToApplyChanges') }}
         </Button>
       </div>
@@ -46,35 +34,108 @@
         </ToggleGroupItem>
       </ToggleGroup>
     </div>
-    <ExtensionPathTable
-      :paths="extensionStore.extensionPaths"
-      :enabled-by-path
-      :disabled="extensionStore.isSavingExtensionPaths"
-      @set-enabled="handleExtensionPathEnabled"
-    />
-    <ExtensionListTable
-      v-model:direction="nameSortDirection"
-      :extensions="visibleExtensions"
-      :selected-names
-      :enabled-by-name
-      :select-all-state
-      :actions
-      @toggle-all="toggleAllVisible"
-      @set-selected="setExtensionSelected"
-      @set-enabled="setExtensionEnabled"
-    />
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead class="w-12">
+            <Checkbox
+              :model-value="selectAllState"
+              :aria-label="$t('g.selectAll')"
+              @update:model-value="toggleAllVisible"
+            />
+          </TableHead>
+          <TableSortHead v-model:direction="nameSortDirection">
+            {{ $t('g.extensionName') }}
+          </TableSortHead>
+          <TableHead class="w-20 text-right">
+            <Menu :items="extensionActions" align="end">
+              <template #trigger>
+                <Button
+                  size="icon"
+                  variant="muted-textonly"
+                  :aria-label="$t('g.moreOptions')"
+                >
+                  <i class="icon-[lucide--ellipsis]" />
+                </Button>
+              </template>
+            </Menu>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableRow
+          v-for="extension in visibleExtensions"
+          :key="extension.name"
+          class="cursor-pointer"
+          :data-state="
+            selectedExtensionNames.has(extension.name) ? 'selected' : undefined
+          "
+          @click="
+            setExtensionSelected(
+              extension.name,
+              !selectedExtensionNames.has(extension.name)
+            )
+          "
+        >
+          <TableCell>
+            <Checkbox
+              :model-value="selectedExtensionNames.has(extension.name)"
+              :aria-label="$t('g.selectItem', { name: extension.name })"
+              @click.stop
+              @update:model-value="
+                (selected) => setExtensionSelected(extension.name, selected)
+              "
+            />
+          </TableCell>
+          <TableCell>
+            {{ extension.name }}
+            <Badge :severity="extensionBadge(extension).severity">
+              {{ extensionBadge(extension).label }}
+            </Badge>
+            <div
+              v-if="extension.provenance?.summary"
+              class="text-xs text-muted-foreground"
+            >
+              {{ extension.provenance.summary }}
+            </div>
+          </TableCell>
+          <TableCell class="text-right">
+            <Switch
+              :model-value="editingEnabledExtensions[extension.name]"
+              :disabled="extensionStore.isExtensionReadOnly(extension.name)"
+              :aria-label="extension.name"
+              @click.stop
+              @update:model-value="
+                (enabled) => setExtensionEnabled(extension.name, enabled)
+              "
+            />
+          </TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { CheckboxCheckedState } from 'reka-ui'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
+import Checkbox from '@comfyorg/design-system/checkbox/Checkbox'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import Message from '@comfyorg/design-system/message/Message'
 import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import Switch from '@comfyorg/design-system/switch/Switch'
+import Table from '@comfyorg/design-system/table/Table'
+import TableBody from '@comfyorg/design-system/table/TableBody'
+import TableCell from '@comfyorg/design-system/table/TableCell'
+import TableHead from '@comfyorg/design-system/table/TableHead'
+import TableHeader from '@comfyorg/design-system/table/TableHeader'
+import TableRow from '@comfyorg/design-system/table/TableRow'
+import TableSortHead from '@comfyorg/design-system/table/TableSortHead'
 import {
   filterByQuery,
   sortByText
@@ -82,11 +143,7 @@ import {
 import type { TableSortDirection } from '@comfyorg/design-system/lib/table/tableUtils'
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
-import { useToast } from '@/components/ui/toast/toastStore'
-import ExtensionListTable from '@/platform/settings/components/ExtensionListTable.vue'
-import ExtensionPathTable from '@/platform/settings/components/ExtensionPathTable.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { extensionNameFromPath } from '@/platform/settings/utils/extensionPath'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 const { t } = useI18n()
@@ -100,15 +157,27 @@ const filterTypes = computed(() =>
   }))
 )
 const filterType = ref<FilterTypeKey>('all')
-const selectedNames = ref(new Set<string>())
+const selectedExtensionNames = ref(new Set<string>())
 const searchQuery = ref('')
 const nameSortDirection = ref<TableSortDirection | null>(null)
 
 const extensionStore = useExtensionStore()
 const settingStore = useSettingStore()
-const toast = useToast()
 
-const enabledByName = ref<Record<string, boolean>>({})
+const editingEnabledExtensions = ref<Record<string, boolean>>({})
+
+function extensionBadge(extension: (typeof extensionStore.extensions)[number]) {
+  if (extensionStore.isAgentCreatedExtension(extension)) {
+    return { label: t('g.createdByAgent'), severity: 'info' as const }
+  }
+  if (extensionStore.isCoreExtension(extension.name)) {
+    return { label: t('g.core'), severity: undefined }
+  }
+  return {
+    label: t('g.custom'),
+    severity: 'info' as const
+  }
+}
 
 const filteredExtensions = computed(() => {
   const extensions = extensionStore.extensions
@@ -143,7 +212,7 @@ const visibleExtensions = computed(() => {
 
 const selectAllState = computed<CheckboxCheckedState>(() => {
   const selectedCount = visibleExtensions.value.filter((extension) =>
-    selectedNames.value.has(extension.name)
+    selectedExtensionNames.value.has(extension.name)
   ).length
   if (selectedCount === 0) return false
   return selectedCount === visibleExtensions.value.length
@@ -152,62 +221,48 @@ const selectAllState = computed<CheckboxCheckedState>(() => {
 })
 
 function setExtensionSelected(name: string, selected: CheckboxCheckedState) {
-  const names = new Set(selectedNames.value)
+  const names = new Set(selectedExtensionNames.value)
   if (selected === true) names.add(name)
   else names.delete(name)
-  selectedNames.value = names
+  selectedExtensionNames.value = names
 }
 
 function toggleAllVisible(selected: CheckboxCheckedState) {
-  selectedNames.value = new Set(
+  selectedExtensionNames.value = new Set(
     selected === true
       ? visibleExtensions.value.map((extension) => extension.name)
       : []
   )
 }
 
-onMounted(() => {
-  extensionStore.extensions.forEach((ext) => {
-    enabledByName.value[ext.name] = extensionStore.isExtensionEnabled(ext.name)
-  })
-})
-
-const enabledByPath = computed(() => {
-  const disabledPaths = new Set(
-    extensionStore.getCurrentDisabledExtensionPaths()
-  )
-  return Object.fromEntries(
-    extensionStore.extensionPaths.map((path) => [
-      path,
-      !disabledPaths.has(path)
-    ])
-  )
-})
+watch(
+  () => extensionStore.extensions,
+  (extensions) => {
+    extensions.forEach((ext) => {
+      if (ext.name in editingEnabledExtensions.value) return
+      editingEnabledExtensions.value[ext.name] =
+        extensionStore.isExtensionEnabled(ext.name)
+    })
+  },
+  { immediate: true }
+)
 
 const changedExtensions = computed(() => {
   return extensionStore.extensions.filter(
     (ext) =>
-      enabledByName.value[ext.name] !==
+      editingEnabledExtensions.value[ext.name] !==
       extensionStore.isExtensionEnabled(ext.name)
   )
 })
 
-const changedExtensionPaths = computed(() => {
-  return extensionStore.extensionPaths.filter(
-    (path) =>
-      enabledByPath.value[path] !==
-      extensionStore.isExtensionPathEnabledAtBoot(path)
-  )
-})
-
 const hasChanges = computed(() => {
-  return (
-    changedExtensions.value.length > 0 || changedExtensionPaths.value.length > 0
-  )
+  return changedExtensions.value.length > 0
 })
 
 const updateExtensionStatus = async () => {
-  const editingDisabledExtensionNames = Object.entries(enabledByName.value)
+  const editingDisabledExtensionNames = Object.entries(
+    editingEnabledExtensions.value
+  )
     .filter(([_, enabled]) => !enabled)
     .map(([name]) => name)
 
@@ -218,30 +273,15 @@ const updateExtensionStatus = async () => {
 }
 
 async function setExtensionEnabled(name: string, enabled: boolean) {
-  enabledByName.value[name] = enabled
+  editingEnabledExtensions.value[name] = enabled
   await updateExtensionStatus()
-}
-
-async function handleExtensionPathEnabled(path: string, enabled: boolean) {
-  const result = await extensionStore.setExtensionPathEnabled(path, enabled)
-  if (result === 'refused') {
-    toast.warning(t('g.warning'), {
-      description: t('g.extensionPathSaveRefused'),
-      duration: 5000
-    })
-  } else if (result === 'unconfirmed') {
-    toast.warning(t('g.warning'), {
-      description: t('g.extensionPathSaveUnconfirmed'),
-      duration: 5000
-    })
-  }
 }
 
 const enableAllExtensions = async () => {
   extensionStore.extensions.forEach((ext) => {
     if (extensionStore.isExtensionReadOnly(ext.name)) return
 
-    enabledByName.value[ext.name] = true
+    editingEnabledExtensions.value[ext.name] = true
   })
   await updateExtensionStatus()
 }
@@ -250,7 +290,7 @@ const disableAllExtensions = async () => {
   extensionStore.extensions.forEach((ext) => {
     if (extensionStore.isExtensionReadOnly(ext.name)) return
 
-    enabledByName.value[ext.name] = false
+    editingEnabledExtensions.value[ext.name] = false
   })
   await updateExtensionStatus()
 }
@@ -259,7 +299,7 @@ const disableThirdPartyExtensions = async () => {
   extensionStore.extensions.forEach((ext) => {
     if (extensionStore.isCoreExtension(ext.name)) return
 
-    enabledByName.value[ext.name] = false
+    editingEnabledExtensions.value[ext.name] = false
   })
   await updateExtensionStatus()
 }
@@ -268,26 +308,24 @@ async function disableAgentExtensions() {
   extensionStore.agentExtensions.forEach((ext) => {
     if (extensionStore.isExtensionReadOnly(ext.name)) return
 
-    enabledByName.value[ext.name] = false
+    editingEnabledExtensions.value[ext.name] = false
   })
   await updateExtensionStatus()
 }
 
 const applyChanges = () => {
-  const url = new URL(window.location.href)
-  url.searchParams.delete('safe')
-  window.history.replaceState(window.history.state, '', url)
+  // Refresh the page to apply changes
   window.location.reload()
 }
 
-const actions = computed<MenuItem[]>(() => [
+const extensionActions = computed<MenuItem[]>(() => [
   {
     label: t('g.enableSelected'),
     icon: 'icon-[lucide--check]',
     command: async () => {
-      selectedNames.value.forEach((name) => {
+      selectedExtensionNames.value.forEach((name) => {
         if (!extensionStore.isExtensionReadOnly(name)) {
-          enabledByName.value[name] = true
+          editingEnabledExtensions.value[name] = true
         }
       })
       await updateExtensionStatus()
@@ -297,9 +335,9 @@ const actions = computed<MenuItem[]>(() => [
     label: t('g.disableSelected'),
     icon: 'icon-[lucide--x]',
     command: async () => {
-      selectedNames.value.forEach((name) => {
+      selectedExtensionNames.value.forEach((name) => {
         if (!extensionStore.isExtensionReadOnly(name)) {
-          enabledByName.value[name] = false
+          editingEnabledExtensions.value[name] = false
         }
       })
       await updateExtensionStatus()

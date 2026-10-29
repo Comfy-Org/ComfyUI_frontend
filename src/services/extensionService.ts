@@ -12,6 +12,7 @@ import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
 import { useApp } from '@/scripts/appInstance'
@@ -62,6 +63,27 @@ function createGraphLoadHookApp(app: ComfyApp) {
       dispatching = false
     }
   }
+}
+
+function createSetupHookApp(app: ComfyApp, extensionName: string): ComfyApp {
+  const manager = Object(app.extensionManager) as ComfyApp['extensionManager']
+  const extensionManager = new Proxy(manager, {
+    get(target, property) {
+      if (property === 'registerSidebarTab') {
+        return (tab: Parameters<typeof target.registerSidebarTab>[0]) =>
+          useSidebarTabStore().registerSidebarTab(tab, undefined, extensionName)
+      }
+      const value: unknown = Reflect.get(target, property, target)
+      return typeof value === 'function' ? value.bind(target) : value
+    }
+  })
+  return new Proxy(app, {
+    get(target, property) {
+      if (property === 'extensionManager') return extensionManager
+      const value: unknown = Reflect.get(target, property, target)
+      return typeof value === 'function' ? value.bind(target) : value
+    }
+  })
 }
 
 type StartupHook =
@@ -281,7 +303,11 @@ export const useExtensionService = () => {
             (async () => {
               legacyMenuCompat.setCurrentExtension(ext.name)
               try {
-                return await fn.call(ext, ...args, app)
+                return await fn.call(
+                  ext,
+                  ...args,
+                  createSetupHookApp(app, ext.name)
+                )
               } finally {
                 legacyMenuCompat.setCurrentExtension(null)
               }
@@ -321,7 +347,13 @@ export const useExtensionService = () => {
         if (typeof fn !== 'function') continue
         if (method === 'setup')
           legacyMenuCompat.setCurrentExtension(extension.name)
-        await fn.call(extension, ...args, useApp())
+        await fn.call(
+          extension,
+          ...args,
+          method === 'setup'
+            ? createSetupHookApp(useApp(), extension.name)
+            : useApp()
+        )
       } catch (error) {
         failures.push({ extension, method, error })
       } finally {
