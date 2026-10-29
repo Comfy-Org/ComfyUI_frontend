@@ -7,7 +7,7 @@
  * never as part of the gated ecosystem matrix:
  *
  *     CENSUS_FORMS_OUT=.census/results/registry-forms.json \
- *       npx vitest run --config vitest.census.config.mts
+ *       pnpm exec vitest run --config vitest.census.config.mts
  *
  * It is a measurement, so it asserts only that the measurement happened —
  * population size and registration success. Asserting a provable RATE here
