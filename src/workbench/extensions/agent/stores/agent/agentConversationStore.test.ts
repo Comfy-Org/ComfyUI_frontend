@@ -2015,14 +2015,6 @@ describe('useAgentConversationStore', () => {
     }
   )
 
-  // FRONT-3659. A turn restored from a reload's snapshot settles on the
-  // socket's terminal frame, the one completion path that fetches nothing, so
-  // the rounds that streamed before the reload are missing from the trace. The
-  // store announces such a turn at settle so the session can read the stored
-  // row once and fold it in. Row id and turn id are deliberately different in
-  // these cases: the snapshot keys the turn by row id while the transcript
-  // message is keyed by turn id, and conflating them is what makes the
-  // reconcile land on nothing.
   describe('reconciling a snapshot-restored turn settled on the socket', () => {
     const SNAPSHOT_ROW_ID = 'assistant-row-7' as TurnId
     const SNAPSHOT_TURN_ID = 'turn-7' as TurnId
@@ -2072,9 +2064,6 @@ describe('useAgentConversationStore', () => {
 
       const message = store.messages.find((m) => m.id === SNAPSHOT_TURN_ID)
       expect(message?.streaming).toBe(false)
-      // One copy of the round that did stream: the stored row is authoritative
-      // for reasoning, so the local part it already holds is dropped rather
-      // than shown twice.
       expect(message?.parts).toEqual(storedParts())
     })
 
@@ -2090,6 +2079,58 @@ describe('useAgentConversationStore', () => {
       expect(
         store.messages.find((m) => m.id === SNAPSHOT_TURN_ID)?.parts
       ).toEqual(storedParts())
+    })
+
+    it('waits for a held tool call to clear before announcing the turn', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      expect(settled).toEqual([])
+
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      expect(
+        store.messages.find((m) => m.id === SNAPSHOT_TURN_ID)?.parts
+      ).toEqual(storedParts())
+    })
+
+    it('announces a held turn only once when the canvas reports twice', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(done(SNAPSHOT_ROW_ID))
+
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
     })
 
     it('leaves a turn this client started alone', () => {
@@ -2112,13 +2153,17 @@ describe('useAgentConversationStore', () => {
     it('drops the registration when the thread is left', () => {
       const { store } = restoredAndSettled()
       store.reset()
+      store.setThreadId('th')
+      store.startTurn(SNAPSHOT_TURN_ID)
 
       store.reconcileSettledTurn(
         { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
         storedParts()
       )
 
-      expect(store.messages).toEqual([])
+      expect(
+        store.messages.find((m) => m.id === SNAPSHOT_TURN_ID)?.parts
+      ).toEqual([])
     })
   })
 

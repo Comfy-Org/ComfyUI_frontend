@@ -64,6 +64,7 @@ import {
   isAttachmentKind,
   normalizeAgentTranscript
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
 import type { LiveTurn } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
@@ -193,12 +194,6 @@ const HYDRATION_MAILBOX_MS = 5 * 60_000
 const MAX_HYDRATION_EVENTS = 256
 const MAX_HYDRATION_MAILBOXES = 32
 
-/**
- * After a reconnect the server may still be finishing the turn, and its
- * terminal event may or may not reach the new socket. Poll the persisted row
- * with backoff; once the schedule is exhausted the socket alone is trusted.
- */
-const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 /** Upper bound on one recovery job, including any history fetch still in flight. */
 const TURN_RECOVERY_DEADLINE_MS = 60_000
 
@@ -2015,27 +2010,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  /**
-   * FRONT-3659: the socket's terminal frame has settled a turn whose liveness
-   * came from a transcript snapshot, so its trace holds only the rounds that
-   * streamed after the reload -- the snapshot's running row carries no
-   * thinking, and the stored row is where the rounds before it live. Read that
-   * row once and fold it in, which is what the reconnect recovery already does
-   * through `settleTurn`; this is the same read on the one completion path
-   * that fetches nothing.
-   *
-   * Deliberately after the settle, not instead of it: the turn is already
-   * finished, so holding it open for a round trip would delay the composer's
-   * handback and strand it outright if the read failed. Reconciling afterwards
-   * means a failed read leaves the turn exactly as it is today.
-   */
   async function reconcileSettledSnapshotTurn(turn: LiveTurn): Promise<void> {
     const generation = ownedGeneration
     const key = recoveryKey(turn)
-    // The recovery this turn's hydrate armed is now pointless -- it exists to
-    // settle a turn whose terminal frame might never arrive, and the frame
-    // arrived. Aborting it also frees the key, which it only ever releases for
-    // whichever controller still owns the slot.
     recoveringTurns.get(key)?.abort()
     const recovery = new AbortController()
     recoveringTurns.set(key, recovery)

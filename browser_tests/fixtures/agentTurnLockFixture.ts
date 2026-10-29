@@ -18,6 +18,7 @@ import { escapeRegExp } from 'es-toolkit'
 import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
 import type {
   AgentWsEvent,
   zTurnInProgressError
@@ -70,7 +71,6 @@ const TURN_IN_PROGRESS: TurnInProgressBody = {
 }
 
 export const TURN_THINKING_TEXT = 'Wiring the audio output node.'
-/** A round the agent narrates after the client has come back (FRONT-3659). */
 export const LATE_THINKING_TEXT = 'Back online, so I can finish the wiring.'
 export const POST_RECONNECT_TEXT = 'Reconnected, and the graph is ready.'
 export const PERSISTED_BEFORE_TOOL_TEXT = 'Prepared the graph. '
@@ -229,7 +229,6 @@ class TurnLockServer {
     return this.posts
   }
 
-  /** Every transcript GET the server answered, hydration and polling alike. */
   get transcriptReadCount(): number {
     return this.transcriptReads
   }
@@ -360,12 +359,6 @@ class TurnLockServer {
                 status: 'success'
               }
             ],
-            // Every round's reasoning, written once the turn finishes
-            // (Comfy-Org/cloud#14903's `finalizeTurn`). The anchored entry
-            // lands ahead of its round's tool call and the unanchored one at
-            // the tail, so a client reading this row back gets the narration
-            // in the order the user saw it stream -- including the rounds a
-            // mid-turn reload took off the screen (FRONT-3659).
             thinking: [
               { text: TURN_THINKING_TEXT, tool_call_id: 'call-add-node' },
               { text: LATE_THINKING_TEXT }
@@ -624,6 +617,17 @@ export class AgentTurnLockHarness {
 
   transcriptReads(): number {
     return this.server.transcriptReadCount
+  }
+
+  /**
+   * Resolves once the reload's turn-recovery poll has run out of attempts, so
+   * only the socket can settle the turn after this.
+   */
+  async waitForRecoveryExhausted(): Promise<void> {
+    const hydrationRead = 1
+    await expect
+      .poll(() => this.server.transcriptReadCount, { timeout: 90_000 })
+      .toBeGreaterThanOrEqual(TURN_RECOVERY_DELAYS_MS.length + hydrationRead)
   }
 
   /** Opens the panel on a blank workflow and points the composer at that tab. */

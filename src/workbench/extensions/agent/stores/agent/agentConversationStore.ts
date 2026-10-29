@@ -119,6 +119,13 @@ export interface LiveTurn {
   messageId: TurnId
 }
 
+interface UnreconciledSnapshotTurn {
+  turn: LiveTurn
+  messageId: string
+  transport: AgentEventTransport
+  announced: boolean
+}
+
 interface AnchoredLocalPart {
   part: AssistantMessage['parts'][number]
   toolCount: number
@@ -304,16 +311,10 @@ export const useAgentConversationStore = defineStore(
     const backgroundTurns = shallowReactive(new Map<string, BackgroundTurn>())
     let resolveTurnTab: () => TurnTab = () => UNKNOWN_TAB
     const turnCompleted = createEventHook<string>()
-    // FRONT-3659: a turn restored from a reload's snapshot shows none of the
-    // thinking that streamed before the reload. The row the snapshot came from
-    // is still running, and the backend writes `content.thinking` only once the
-    // turn finishes, so the rounds before the reload exist nowhere the panel
-    // reads. Settling on the socket's terminal frame is the one completion path
-    // that fetches nothing, which is why the pre-reload rounds surface only on
-    // the next hydrate. Row id -> transcript message id for each such turn,
-    // recorded here because this is the one point the snapshot origin is known,
-    // and consumed by `reconcileSettledTurn` for exactly one fetch.
-    const unreconciledSnapshotTurns = new Map<TurnId, string>()
+    const unreconciledSnapshotTurns = new Map<
+      TurnId,
+      UnreconciledSnapshotTurn
+    >()
     const snapshotTurnSettled = createEventHook<LiveTurn>()
     const workflowStore = useWorkflowStore()
     const openTabPaths = computed(
@@ -393,6 +394,9 @@ export const useAgentConversationStore = defineStore(
 
     function publishMessage(turnId: TurnId, message: AssistantMessage): void {
       replaceActive(message)
+      const unreconciled = unreconciledSnapshotTurns.get(turnId)
+      if (unreconciled !== undefined)
+        announceReconcilableSnapshotTurn(unreconciled)
       const entry = backgroundTurns.get(turnId)
       if (!entry) return
       const pendingAskIds = pendingAskIdsOf(message)
@@ -725,55 +729,62 @@ export const useAgentConversationStore = defineStore(
     // something pending -- a settled transport with nothing held has no
     // reason to stay reachable.
     function settleActiveTurn(activeTransport: AgentEventTransport): void {
-      const restoredFromSnapshot = recordUnreconciledSnapshotTurn()
       rememberDepartedActiveTurn('settled-turn')
       activeTransport.settle()
+      const restoredFromSnapshot = recordUnreconciledSnapshotTurn()
       if (activeTransport.hasPendingCanvasSync())
         settledActiveTransports.add(activeTransport)
       clearActive()
       if (restoredFromSnapshot)
-        void snapshotTurnSettled.trigger(restoredFromSnapshot)
+        announceReconcilableSnapshotTurn(restoredFromSnapshot)
     }
 
-    /**
-     * Registers the active turn for one post-settle reconcile when its
-     * liveness came from a transcript snapshot rather than from a turn this
-     * client started or stashed (FRONT-3659). Returns the turn to announce, or
-     * `undefined` when there is nothing to reconcile.
-     */
-    function recordUnreconciledSnapshotTurn(): LiveTurn | undefined {
+    function recordUnreconciledSnapshotTurn():
+      | UnreconciledSnapshotTurn
+      | undefined {
       const slot = activeSlot.value
       if (slot?.origin !== 'snapshot' || slot.threadId === null)
         return undefined
-      unreconciledSnapshotTurns.set(slot.turnId, slot.message.id)
-      return { threadId: slot.threadId, messageId: slot.turnId }
+      const unreconciled: UnreconciledSnapshotTurn = {
+        turn: { threadId: slot.threadId, messageId: slot.turnId },
+        messageId: slot.message.id,
+        transport: slot.transport,
+        announced: false
+      }
+      unreconciledSnapshotTurns.set(slot.turnId, unreconciled)
+      return unreconciled
+    }
+
+    function announceReconcilableSnapshotTurn(
+      unreconciled: UnreconciledSnapshotTurn
+    ): void {
+      if (
+        unreconciled.announced ||
+        unreconciled.transport.hasPendingCanvasSync()
+      )
+        return
+      unreconciled.announced = true
+      void snapshotTurnSettled.trigger(unreconciled.turn)
     }
 
     /**
-     * Folds the stored row's parts into a snapshot-restored turn that has
-     * already settled on the socket, the same way `settleTurn` does for a turn
-     * the reconnect recovery settles. One shot per turn: the registration is
-     * taken, so a later fetch for the same turn is inert, and `reset` /
-     * `hydrate` drop it because both replace the transcript the parts would
-     * land in.
+     * Folds the stored row's parts into a snapshot-restored turn that settled
+     * on the socket, as `settleTurn` does for one the reconnect recovery
+     * settles. One shot per turn; `reset` and `hydrate` drop the registration.
      */
     function reconcileSettledTurn(
       turn: LiveTurn,
       persistedParts: AssistantMessage['parts'] | undefined
     ): void {
-      const messageId = unreconciledSnapshotTurns.get(turn.messageId)
-      if (messageId === undefined) return
+      const unreconciled = unreconciledSnapshotTurns.get(turn.messageId)
+      if (unreconciled === undefined) return
       unreconciledSnapshotTurns.delete(turn.messageId)
       if (persistedParts === undefined || threadId.value !== turn.threadId)
         return
       const index = messages.value.findIndex(
-        (message) => message.id === messageId
+        (message) => message.id === unreconciled.messageId
       )
       if (index < 0) return
-      // A new object rather than a mutation: the turn's transport is settled
-      // and disposed by now, so nothing is left to publish the change, and
-      // `replaceActive`'s emit is what every other write to a settled row
-      // relies on.
       const reconciled = { ...messages.value[index] }
       finishWithPersistedParts(reconciled, persistedParts)
       messages.value[index] = reconciled
