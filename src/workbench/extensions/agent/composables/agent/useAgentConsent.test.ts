@@ -453,40 +453,50 @@ describe('useAgentConsent', () => {
     expect(onOpen).not.toHaveBeenCalled()
   })
 
-  it.for([
-    { stored: false, opens: false },
-    { stored: true, opens: true }
-  ])(
-    'records no answer or decision after a load retry (stored: $stored)',
-    async ({ stored, opens }) => {
-      fetchWithUnifiedRemint
-        .mockRejectedValueOnce(new Error('offline'))
-        .mockResolvedValueOnce(settingResponse(stored))
-      const onOpen = vi.fn()
-      const request = useAgentConsent().withConsent('button_click', onOpen)
-      const dialog = await waitForConsentDialog()
-      await renderConsentCard(dialog)
+  async function retryFailedLoad(stored: boolean) {
+    fetchWithUnifiedRemint
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(settingResponse(stored))
+    const onOpen = vi.fn()
+    const request = useAgentConsent().withConsent('button_click', onOpen)
+    const dialog = await waitForConsentDialog()
+    await renderConsentCard(dialog)
 
-      await userEvent.click(
-        screen.getByRole('button', {
-          name: i18n.global.t('agent.consent.tryAgain')
-        })
-      )
-      await vi.waitFor(() =>
-        expect(fetchWithUnifiedRemint).toHaveBeenCalledTimes(2)
-      )
-      await setImmediate()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.consent.tryAgain')
+      })
+    )
+    await vi.waitFor(() =>
+      expect(fetchWithUnifiedRemint).toHaveBeenCalledTimes(2)
+    )
+    await setImmediate()
+    return { onOpen, request, dialog }
+  }
 
-      expect(onOpen).toHaveBeenCalledTimes(opens ? 1 : 0)
-      expect(
-        useAgentConsentIntroductionStore().hasResponded('account-a.workspace-a')
-      ).toBe(false)
-      expect(telemetry.trackAgentConsentResolved).not.toHaveBeenCalled()
+  it('keeps the card open without an answer or decision when a load retry finds no consent', async () => {
+    const { onOpen, request, dialog } = await retryFailedLoad(false)
 
-      if (!opens) dismissConsent(dialog)
-      await request
-    }
-  )
+    expect(onOpen).not.toHaveBeenCalled()
+    expect(
+      useAgentConsentIntroductionStore().hasResponded('account-a.workspace-a')
+    ).toBe(false)
+    expect(telemetry.trackAgentConsentResolved).not.toHaveBeenCalled()
+
+    dismissConsent(dialog)
+    await request
+  })
+
+  it('opens the agent without an answer or decision when a load retry finds stored consent', async () => {
+    const { onOpen, request } = await retryFailedLoad(true)
+    await request
+
+    expect(onOpen).toHaveBeenCalledOnce()
+    expect(
+      useAgentConsentIntroductionStore().hasResponded('account-a.workspace-a')
+    ).toBe(false)
+    expect(telemetry.trackAgentConsentResolved).not.toHaveBeenCalled()
+  })
 
   it('separates a failed scope probe from a failed consent read', async () => {
     // Signed in, but the account has not resolved to a user id, so `ensureScope`
