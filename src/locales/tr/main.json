@@ -5816,7 +5816,6 @@
           "off": "Kapalı",
           "on": "Açık",
           "onHold": "Beklemede",
-          "paused": "Duraklatıldı",
           "turnedOff": "Kapatıldı"
         },
         "title": "Otomatik kredi yükleme",
@@ -5880,7 +5879,6 @@
         },
         "scheduledChange": "{date} tarihinde {plan} planına geçilecek.",
         "stayConfirm": {
-          "body": "Planınız {date} tarihinde {plan} planına geçmeyecek. İstediğiniz zaman tekrar değişiklik planlayabilirsiniz.",
           "title": "{plan} planındaki değişiklik iptal edilsin mi?"
         },
         "unknown": {
