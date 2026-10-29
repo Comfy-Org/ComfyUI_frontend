@@ -61,6 +61,13 @@ function cardPlacement(card: HTMLElement, target: DOMRect) {
   }
 }
 
+async function expectCard(step: CoachStep, progress: string) {
+  const dialog = await screen.findByRole('dialog', { name: step.title })
+  expect(dialog).toHaveAccessibleDescription(step.body)
+  await waitFor(() => expect(screen.getByText(progress)).toBeVisible())
+  expect(localStorage.getItem(KEY)).toBe('false')
+}
+
 function mount(steps = STEPS) {
   return render(
     {
@@ -121,19 +128,12 @@ describe('OnboardingCoach', () => {
   it('presents every card in order and finishes with Done', async () => {
     const user = userEvent.setup()
     const { unmount } = mount()
-    for (const [index, step] of STEPS.entries()) {
-      const dialog = await screen.findByRole('dialog', { name: step.title })
-      expect(dialog).toHaveAccessibleDescription(step.body)
-      await waitFor(() =>
-        expect(
-          screen.getByText(`${index + 1} of ${STEPS.length}`)
-        ).toBeVisible()
-      )
-      expect(localStorage.getItem(KEY)).toBe('false')
-      await user.click(
-        screen.getByRole('button', { name: index === LAST ? 'Done' : 'Next' })
-      )
-    }
+    await expectCard(STEPS[0], '1 of 3')
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await expectCard(STEPS[1], '2 of 3')
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await expectCard(STEPS[2], '3 of 3')
+    await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(localStorage.getItem(KEY)).toBe('true')
     unmount()
