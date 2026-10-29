@@ -474,6 +474,24 @@ export class AgentPanel {
     await expect(this.composer).toHaveText('')
   }
 
+  async expectTourCard(
+    title: string,
+    description: string,
+    progress: string
+  ): Promise<Locator> {
+    const card = this.page.getByRole('dialog', { name: title })
+    await expect(card).toBeVisible()
+    await expect(card).toHaveAccessibleDescription(description)
+    await expect(card).toContainText(progress)
+    await expect(this.page.getByTestId('agent-coach-spotlight')).toBeVisible()
+    await expect(card).toBeInViewport({ ratio: 1 })
+    return card
+  }
+
+  tourSkipButton(card: Locator): Locator {
+    return card.getByRole('button', { name: enMessages.agent.skip })
+  }
+
   async enterNodeSelectionMode(): Promise<void> {
     await this.open()
     await this.selectWorkflow()
