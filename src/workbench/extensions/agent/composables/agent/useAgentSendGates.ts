@@ -18,40 +18,46 @@ type HoldEnd =
   | ({ gate: 'coach' } & CoachHoldEnd)
 
 interface Hold {
+  gate: HeldGate
   clientMessageId: string
+  threadId: string | null
   since: number
 }
 
-/**
- * Reports what happens to a send before its turn POST. Each gate holds at most
- * one send, and only the first `end` after a `hold` is reported, so every
- * `held` gets exactly one `released` or `dropped`.
- */
+/** Reports what happens to a send before its turn POST. */
 export function useAgentSendGates(threadId: () => string | null) {
-  const holds = new Map<HeldGate, Hold>()
+  const holds = new Set<Hold>()
 
   function hold(gate: HeldGate, clientMessageId: string): void {
-    holds.set(gate, { clientMessageId, since: performance.now() })
+    const held: Hold = {
+      gate,
+      clientMessageId,
+      threadId: threadId(),
+      since: performance.now()
+    }
+    holds.add(held)
     useTelemetry()?.trackAgentSendGated({
       gate,
       outcome: 'held',
       reason: null,
       client_message_id: clientMessageId,
       held_ms: null,
-      thread_id: threadId()
+      thread_id: held.threadId
     })
   }
 
-  function end(holdEnd: HoldEnd): void {
-    const held = holds.get(holdEnd.gate)
-    if (!held) return
-    holds.delete(holdEnd.gate)
-    useTelemetry()?.trackAgentSendGated({
-      ...holdEnd,
-      client_message_id: held.clientMessageId,
-      held_ms: Math.round(performance.now() - held.since),
-      thread_id: threadId()
-    })
+  function end(holdEnd: HoldEnd, clientMessageId?: string): void {
+    for (const held of holds) {
+      if (held.gate !== holdEnd.gate) continue
+      if (clientMessageId && held.clientMessageId !== clientMessageId) continue
+      holds.delete(held)
+      useTelemetry()?.trackAgentSendGated({
+        ...holdEnd,
+        client_message_id: held.clientMessageId,
+        held_ms: Math.round(performance.now() - held.since),
+        thread_id: held.threadId
+      })
+    }
   }
 
   function rejectDraft(reason: AgentComposerDropReason): void {

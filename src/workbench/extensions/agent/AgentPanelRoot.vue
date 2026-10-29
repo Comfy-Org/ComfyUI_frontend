@@ -2002,7 +2002,8 @@ async function holdSendForConsent(
             gate: 'consent',
             outcome: 'dropped',
             reason: exit ?? 'not_completed'
-          }
+          },
+      clientMessageId
     )
   }
 }

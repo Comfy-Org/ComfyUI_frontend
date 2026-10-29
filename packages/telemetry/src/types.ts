@@ -770,11 +770,7 @@ export type AgentComposerDropReason =
   | 'no_target'
   | 'empty'
   | 'attachment_uploading'
-/**
- * `not_completed` covers a consent flow that ended with neither an acceptance
- * nor a decline or dismissal of the card: a failed save, an abandoned sign-in,
- * or an account switch while it was open.
- */
+/** `not_completed`: the consent flow ended without accept, decline or dismiss. */
 export type AgentConsentDropReason =
   | 'declined'
   | 'dismissed'
@@ -835,9 +831,8 @@ type AgentSendGateOutcome =
       held_ms: number
     }
 /**
- * A first-send gate outcome before the turn POST, joinable to
- * `app:agent_message_sent` by `client_message_id`. Every `held` is followed by
- * exactly one `released` or `dropped` for the same gate.
+ * A first-send gate outcome, joinable to `app:agent_message_sent` by
+ * `client_message_id`.
  */
 export type AgentSendGatedMetadata = AgentSendGateOutcome & {
   thread_id: string | null

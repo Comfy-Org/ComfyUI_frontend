@@ -104,9 +104,13 @@ export function useAgentConsent() {
         })
       }
 
+      let scopeChanged = false
       const stopScopeWatch = watch(
         [identity, isLoggedIn],
-        () => dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY }),
+        () => {
+          scopeChanged = true
+          dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY })
+        },
         { flush: 'sync' }
       )
 
@@ -250,7 +254,7 @@ export function useAgentConsent() {
             if (shown) {
               clearPendingSignInAccept()
               reportOutcome('dismissed')
-              onExit?.('dismissed')
+              if (!scopeChanged) onExit?.('dismissed')
             } else reportRequestExit('card_closed_before_mount', trigger)
             resolve(false)
           }

@@ -30,4 +30,30 @@ describe('useAgentSendGates', () => {
 
     expect(trackAgentSendGated).not.toHaveBeenCalled()
   })
+
+  it('ends only the named send when two sends hold one gate', () => {
+    let threadId = 'thread-1'
+    const gates = useAgentSendGates(() => threadId)
+
+    gates.hold('consent', 'client-message-1')
+    threadId = 'thread-2'
+    gates.hold('consent', 'client-message-2')
+    trackAgentSendGated.mockClear()
+    gates.end(
+      { gate: 'consent', outcome: 'released', reason: 'accepted' },
+      'client-message-2'
+    )
+    gates.end({ gate: 'consent', outcome: 'dropped', reason: 'panel_closed' })
+
+    expect(
+      trackAgentSendGated.mock.calls.map(([metadata]) => [
+        metadata.client_message_id,
+        metadata.outcome,
+        metadata.thread_id
+      ])
+    ).toEqual([
+      ['client-message-2', 'released', 'thread-2'],
+      ['client-message-1', 'dropped', 'thread-1']
+    ])
+  })
 })
