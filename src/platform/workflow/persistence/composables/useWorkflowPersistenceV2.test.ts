@@ -437,10 +437,13 @@ describe('useWorkflowPersistenceV2', () => {
       expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
       expect(openWorkflowMock).not.toHaveBeenCalled()
 
+      expect(workflowStore.tabsRestored).toBe(false)
+
       gate.resolve()
       await pending
 
       expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
+      expect(workflowStore.tabsRestored).toBe(true)
     })
 
     it('does not open the previous account tabs after a switch during metadata loading', async () => {
@@ -491,6 +494,7 @@ describe('useWorkflowPersistenceV2', () => {
 
       expect(loadBlankWorkflowMock).toHaveBeenCalled()
       expect(openWorkflowMock).not.toHaveBeenCalled()
+      expect(workflowStore.tabsRestored).toBe(true)
     })
 
     it('activates the correct workflow at storedActiveIndex', async () => {
