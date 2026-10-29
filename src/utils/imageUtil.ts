@@ -33,21 +33,19 @@ export function getGridThumbnailUrl(url: string): string {
     : `${parsed.pathname}${parsed.search}`
 }
 
-function isPlainRelativePath(filepath: string): boolean {
-  return filepath
-    .split(/[\\/]/)
-    .every(
-      (segment) =>
-        segment !== '' &&
-        segment !== '.' &&
-        segment !== '..' &&
-        !segment.includes(':')
-    )
+function isSplittableRelativePath(filepath: string): boolean {
+  const segments = filepath.split(/[\\/]/)
+  return (
+    segments[0] !== '' &&
+    !segments[0].includes(':') &&
+    segments.at(-1) !== '' &&
+    !segments.includes('..')
+  )
 }
 
 /**
  * Parses an image widget value like "subfolder/filename [type]" into its parts.
- * Values with a non-plain path segment are kept whole as the filename.
+ * Absolute, drive, parent-relative and trailing-separator paths stay whole in `filename`.
  */
 export function parseImageWidgetValue(raw: string): {
   filename: string
@@ -55,7 +53,7 @@ export function parseImageWidgetValue(raw: string): {
   type: string
 } {
   const { filepath, rootFolder: type } = parseAnnotatedPath(raw)
-  if (!isPlainRelativePath(filepath))
+  if (!isSplittableRelativePath(filepath))
     return { filename: filepath, subfolder: '', type }
   return { ...parseFilePath(filepath), type }
 }

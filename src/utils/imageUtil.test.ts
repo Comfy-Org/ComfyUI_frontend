@@ -97,6 +97,18 @@ describe('parseImageWidgetValue', () => {
       type: 'input'
     },
     {
+      raw: 'pasted/12:30.png',
+      filename: '12:30.png',
+      subfolder: 'pasted',
+      type: 'input'
+    },
+    {
+      raw: 'scenes//sky.png [output]',
+      filename: 'sky.png',
+      subfolder: 'scenes',
+      type: 'output'
+    },
+    {
       raw: '/sky.png [output]',
       filename: '/sky.png',
       subfolder: '',
@@ -121,7 +133,7 @@ describe('parseImageWidgetValue', () => {
       type: 'output'
     }
   ])(
-    'splits $raw only when every segment is a plain name',
+    'splits $raw into subfolder "$subfolder" and filename "$filename"',
     ({ raw, ...expected }) => {
       expect(parseImageWidgetValue(raw)).toEqual(expected)
     }
