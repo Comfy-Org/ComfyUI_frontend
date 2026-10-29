@@ -264,10 +264,6 @@ describe('dev server agent routes', () => {
   const agentProxy = { target: 'http://127.0.0.1:8095', ws: true }
   const backend = { target: 'https://cloud.example.com' }
 
-  // Vite walks the proxy table in insertion order and takes the first context
-  // the path starts with, so a route's position is the whole of its meaning.
-  // Asserting the table's shape alone would pass for an '/api/agent/events'
-  // entry that no request can ever reach.
   function resolve(
     routes: Record<string, ProxyOptions>,
     url: string
@@ -277,11 +273,6 @@ describe('dev server agent routes', () => {
     )?.[1]
   }
 
-  // The upgrade handler does not follow the HTTP rule. A matching context that
-  // cannot carry a socket -- no `ws`, and no ws:/wss: target -- is skipped and the
-  // walk continues, so a socket can land on a later entry than HTTP would pick.
-  // Modelling both with one resolver agreed with real routing only because every
-  // fixture here sets `ws: true`.
   function resolveSocket(
     routes: Record<string, ProxyOptions>,
     url: string
@@ -311,9 +302,6 @@ describe('dev server agent routes', () => {
       backend
     )
 
-    // HTTP stops at '/api/agent', which matches first. The upgrade handler skips it
-    // for having no `ws` and reaches the backend entry, so the socket survives an
-    // agentProxy that loses `ws` even though the HTTP route does not change.
     expect(resolve(routes, '/api/agent/events')).toMatchObject({
       target: 'http://127.0.0.1:8095'
     })
@@ -328,9 +316,6 @@ describe('dev server agent routes', () => {
 
     expect(resolve(routes, '/api/workflows?limit=20')).toBe(agentProxy)
     expect(resolve(routes, '/api/agent/threads/new/messages')).toBe(agentProxy)
-    // The backend events entry is behind '/api/agent', so a local agent that can
-    // carry a socket serves it as well; the backend entry exists for the
-    // no-local-agent case above only.
     expect(resolveSocket(routes, '/api/agent/events')).toBe(agentProxy)
   })
 

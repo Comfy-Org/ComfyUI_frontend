@@ -1634,10 +1634,6 @@ const emptyThreadPage = {
   pagination: { offset: 0, limit: 1, total: 0, has_more: false }
 }
 
-// Every client method reaches the network through the one `requestResult`
-// helper, which is the only caller of `withAgentAuth`. Reading back the header
-// the mock just set, once per verb, would only restate the mock; what is worth
-// pinning is the contract across that single seam.
 describe('user auth on agent requests', () => {
   beforeEach(() => {
     vi.mocked(withAgentAuth).mockImplementation(async (init) => {
@@ -1668,9 +1664,6 @@ describe('user auth on agent requests', () => {
 
     await makeClient().getMessages('t1')
 
-    // Identity, not equality: a client that copied headers out of the
-    // authorized init and back into a fresh object could silently drop the
-    // credential a future `withAgentAuth` adds.
     expect(lastCall().init).toBe(
       await vi.mocked(withAgentAuth).mock.results[0].value
     )
@@ -1682,8 +1675,6 @@ describe('user auth on agent requests', () => {
   it('refreshes the credential with the cheapest authorized request', async () => {
     respond(jsonResponse(200, emptyThreadPage))
 
-    // The call exists only to drive a credential refresh, so the route it
-    // spends and the fact that it is authorized at all are its whole contract.
     await makeClient().refreshCredential()
 
     const { route, init } = lastCall()
