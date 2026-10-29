@@ -40,7 +40,7 @@ describe('AgentConsentCard', () => {
     await user.click(
       screen.getByRole('button', { name: 'Start using Comfy Agent' })
     )
-    await user.click(screen.getByRole('button', { name: 'Skip for now' }))
+    await user.click(screen.getByRole('button', { name: 'Skip' }))
 
     expect(emitted().accept).toHaveLength(1)
     expect(emitted().reject).toHaveLength(1)
@@ -60,7 +60,7 @@ describe('AgentConsentCard', () => {
     ).not.toBeInTheDocument()
 
     await user.click(accept)
-    await user.click(screen.getByRole('button', { name: 'Skip for now' }))
+    await user.click(screen.getByRole('button', { name: 'Skip' }))
 
     expect(emitted().accept).toHaveLength(1)
     expect(emitted().reject).toHaveLength(1)
@@ -76,7 +76,7 @@ describe('AgentConsentCard', () => {
       screen.getByRole('button', { name: 'Start using Comfy Agent' })
     ).toHaveAttribute('aria-busy', 'true')
     expect(
-      screen.queryByRole('button', { name: 'Skip for now' })
+      screen.queryByRole('button', { name: 'Skip' })
     ).not.toBeInTheDocument()
   })
 
@@ -89,7 +89,7 @@ describe('AgentConsentCard', () => {
     expect(
       screen.getByRole('button', { name: 'Start using Comfy Agent' })
     ).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Skip for now' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Skip' })).toBeEnabled()
   })
 
   it('provides a native documentation link that opens safely in a new tab', () => {
@@ -108,7 +108,7 @@ describe('AgentConsentCard', () => {
 
     expect(
       screen.getAllByRole('button').map((button) => button.textContent)
-    ).toEqual(['Skip for now', 'Start using Comfy Agent'])
+    ).toEqual(['Skip', 'Start using Comfy Agent'])
   })
 
   it('shows a placeholder when no video is supplied', () => {

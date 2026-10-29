@@ -172,7 +172,7 @@ describe('useAgentConsent', () => {
       key: 'Comfy.AgentConsent.IntroductionResponded.signed-out'
     },
     {
-      action: 'Skip for now',
+      action: 'Skip',
       signedOut: false,
       key: 'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a'
     }
