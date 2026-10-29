@@ -9,7 +9,8 @@
           "src/platform/account/components/WorkspaceSwitcherPopover.vue",
           "src/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue",
           "src/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue",
-          "src/platform/account/composables/useWorkspaceDialogs.ts"
+          "src/platform/account/composables/useWorkspaceDialogs.ts",
+          "src/platform/account/composables/useWorkspaceMembersVisibility.ts"
         ]
       },
       {
@@ -91,7 +92,9 @@
           "src/platform/account/composables/useMembersPanel.ts",
           "src/platform/account/composables/useWorkspaceDialogs.ts",
           "src/platform/account/composables/useWorkspaceMenuItems.test.ts",
-          "src/platform/account/composables/useWorkspaceMenuItems.ts"
+          "src/platform/account/composables/useWorkspaceMenuItems.ts",
+          "src/platform/account/composables/useWorkspaceMembersVisibility.test.ts",
+          "src/platform/account/composables/useWorkspaceMembersVisibility.ts"
         ]
       },
       {
