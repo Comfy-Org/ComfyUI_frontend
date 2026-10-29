@@ -240,6 +240,15 @@ function compareLoaderPaths(a: string, b: string): number {
 /**
  * Validates asset response data using Zod schema
  */
+function isDeploymentDownloadableName(name: string): boolean {
+  return (
+    !name.startsWith('.') &&
+    !/[/\\\0]/.test(name) &&
+    !name.includes('..') &&
+    name.toLowerCase().endsWith('.safetensors')
+  )
+}
+
 function validateAssetResponse(data: unknown): AssetResponse {
   const result = assetResponseSchema.safeParse(data)
   if (result.success) return result.data
@@ -770,7 +779,8 @@ function createAssetService() {
 
   /**
    * Lists the loader names of every private model in one folder of the
-   * workspace's library, including the ones teammates added.
+   * workspace's library, including the ones teammates added, that a
+   * deployment can download: bare `.safetensors` file names.
    */
   async function getWorkspaceLibraryModels(folder: string): Promise<string[]> {
     const assets = await walkAssetPages(
@@ -790,7 +800,11 @@ function createAssetService() {
     )
     return assets
       .map((asset) => asset.loader_path ?? getAssetFilename(asset))
-      .filter((name) => assetFilenameSchema.safeParse(name).success)
+      .filter(
+        (name) =>
+          assetFilenameSchema.safeParse(name).success &&
+          isDeploymentDownloadableName(name)
+      )
   }
 
   /**

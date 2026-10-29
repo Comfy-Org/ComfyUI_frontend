@@ -930,6 +930,53 @@ describe(assetService.getWorkspaceLibraryModels, () => {
     ).resolves.toEqual(['kept.safetensors'])
   })
 
+  it('names a model by its loader path when its file name differs', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([
+        {
+          ...libraryRow(
+            '3f0b6c1e-0000-4000-8000-000000000005',
+            'My Style (final).safetensors'
+          ),
+          loader_path: 'my_style_final.safetensors'
+        }
+      ])
+    )
+
+    await expect(
+      assetService.getWorkspaceLibraryModels('loras')
+    ).resolves.toEqual(['my_style_final.safetensors'])
+  })
+
+  it('offers only the names a deployment can download: a bare .safetensors file name', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([
+        libraryRow('3f0b6c1e-0000-4000-8000-000000000006', 'my_style.ckpt'),
+        libraryRow('3f0b6c1e-0000-4000-8000-000000000007', 'my_style.pt'),
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-000000000008',
+          'nested/my_style.safetensors'
+        ),
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-000000000009',
+          'flux..v2.safetensors'
+        ),
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-00000000000a',
+          '.hidden.safetensors'
+        ),
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-00000000000b',
+          'Upper_Case.SAFETENSORS'
+        )
+      ])
+    )
+
+    await expect(
+      assetService.getWorkspaceLibraryModels('loras')
+    ).resolves.toEqual(['Upper_Case.SAFETENSORS'])
+  })
+
   it('fails when the listing fails, so the dropdown can report it', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       buildResponse(
