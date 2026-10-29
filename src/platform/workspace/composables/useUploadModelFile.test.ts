@@ -160,9 +160,11 @@ describe('useUploadModelFile', () => {
     upload.choose(lora)
     upload.modelType.value = 'checkpoints'
 
-    void upload.upload()
+    const result = upload.upload()
 
     expect(server.options().tags).toEqual(['models', 'checkpoints'])
+    server.finish({ ok: true, taskId: TASK_ID })
+    await expect(result).resolves.toMatchObject({ modelType: 'checkpoints' })
   })
 
   it('stops the transfer on cancel and says so, without reporting an error', async () => {
@@ -204,8 +206,10 @@ describe('useUploadModelFile', () => {
     )
 
     const retry = pendingUpload()
-    void upload.upload()
+    const retried = upload.upload()
     expect(retry.options().tags).toEqual(['models', 'loras'])
+    retry.finish({ ok: true, taskId: TASK_ID })
+    await expect(retried).resolves.toMatchObject({ taskId: TASK_ID })
   })
 
   it("shows the server's size limit when the file is too large", async () => {
@@ -456,6 +460,38 @@ describe('useUploadModelFile', () => {
     expect(upload.state.value).toEqual({ status: 'saving', file: lora })
   })
 
+  it('stops the earlier transfer when another file is chosen', async () => {
+    const otherFile = new File(['01234'], 'teammate_style.safetensors')
+    const { upload } = setup()
+    const server = pendingUpload()
+    upload.choose(lora)
+
+    const result = upload.upload()
+    upload.choose(otherFile)
+    server.options().onProgress(4)
+    server.finish({ ok: true, taskId: TASK_ID })
+
+    await expect(result).resolves.toBeNull()
+    expect(server.options().signal.aborted).toBe(true)
+    expect(upload.state.value).toEqual({ status: 'chosen', file: otherFile })
+  })
+
+  it('stops following the earlier library task when another file is chosen', async () => {
+    const otherFile = new File(['01234'], 'teammate_style.safetensors')
+    const { upload } = setup()
+    const server = pendingUpload()
+    upload.choose(lora)
+    const result = upload.upload()
+    server.finish({ ok: true, taskId: TASK_ID })
+    await result
+
+    upload.choose(otherFile)
+    taskUpdate('completed')
+    await nextTick()
+
+    expect(upload.state.value).toEqual({ status: 'chosen', file: otherFile })
+  })
+
   it('ignores an upload that answers after the person went back', async () => {
     const { upload } = setup()
     const server = pendingUpload()
@@ -471,15 +507,17 @@ describe('useUploadModelFile', () => {
     expect(upload.state.value).toEqual({ status: 'idle' })
   })
 
-  it('stops the transfer when the dialog closes', () => {
+  it('stops the transfer when the dialog closes', async () => {
     const { upload, app } = setup()
     const server = pendingUpload()
     upload.choose(lora)
 
-    void upload.upload()
+    const result = upload.upload()
     app.unmount()
     mountedApps.splice(0)
 
     expect(server.options().signal.aborted).toBe(true)
+    server.finish({ ok: false, reason: 'cancelled' })
+    await expect(result).resolves.toBeNull()
   })
 })

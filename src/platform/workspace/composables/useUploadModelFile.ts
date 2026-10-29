@@ -17,7 +17,6 @@ const DEFAULT_MODEL_TYPE = 'loras'
 
 type UploadStopped = Extract<ModelFileUploadResult, { ok: false }>
 
-/** The words for each way an upload stops; any other failure shows the server's message or the generic one. */
 const FAILURE_COPY: Partial<Record<UploadStopped['reason'], string>> = {
   cancelled: 'assetBrowser.fileUpload.cancelled',
   unsupportedFile: 'assetBrowser.fileUpload.notSafetensors',
@@ -69,6 +68,7 @@ export function useUploadModelFile() {
   onScopeDispose(stop)
 
   function choose(file: File) {
+    stop()
     if (!file.name.toLowerCase().endsWith(MODEL_FILE_EXTENSION)) {
       state.value = {
         status: 'idle',
