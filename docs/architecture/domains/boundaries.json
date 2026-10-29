@@ -1241,26 +1241,11 @@
       },
       {
         "name": "extension-manager/domain",
-        "patterns": [
-          "src/utils/mapperUtil.ts",
-          "src/utils/packUtils.test.ts",
-          "src/utils/packUtils.ts"
-        ]
-      },
-      {
-        "name": "extension-manager/application",
-        "patterns": [
-          "src/platform/customNodes/manager/utils/packUpdateStatus.test.ts",
-          "src/platform/customNodes/manager/utils/packUpdateStatus.ts"
-        ]
+        "patterns": ["src/platform/customNodes/manager/utils/**"]
       },
       {
         "name": "extension-manager/infrastructure",
-        "patterns": [
-          "src/composables/useServerLogs.test.ts",
-          "src/composables/useServerLogs.ts",
-          "src/platform/customNodes/manager/services/comfyManagerService.ts"
-        ]
+        "patterns": ["src/platform/customNodes/manager/services/**"]
       },
       {
         "name": "extension-manager/presentation",
@@ -3649,10 +3634,7 @@
       },
       {
         "name": "extension-manager/domain/outer-1",
-        "patterns": [
-          "src/platform/customNodes/manager/types/**",
-          "src/platform/customNodes/manager/utils/**"
-        ]
+        "patterns": ["src/platform/customNodes/manager/types/**"]
       },
       {
         "name": "extension-manager/presentation/outer-1",
@@ -4380,7 +4362,6 @@
           "error-reporting/application",
           "error-reporting/infrastructure",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "keybindings/domain",
           "telemetry/application",
@@ -4404,7 +4385,6 @@
           "error-reporting/application",
           "error-reporting/infrastructure",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "keybindings/domain",
           "telemetry/application",
@@ -4428,7 +4408,6 @@
           "error-reporting/domain",
           "error-reporting/application",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/presentation",
           "keybindings/domain",
           "keybindings/presentation",
@@ -4459,7 +4438,6 @@
           "error-reporting/application",
           "error-reporting/infrastructure",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "extension-manager/presentation",
           "extension-manager/integration",
@@ -5353,39 +5331,6 @@
         ]
       },
       {
-        "from": "extension-manager/application",
-        "allow": [
-          "keybindings/application/public",
-          "app-host/domain",
-          "app-host/application",
-          "app-host/infrastructure",
-          "comfy-registry/domain",
-          "comfy-registry/application",
-          "comfy-registry/infrastructure",
-          "design-system/domain",
-          "design-system/application",
-          "design-system/infrastructure",
-          "dialog-host/domain",
-          "dialog-host/application",
-          "extension-manager/domain",
-          "extension-manager/application",
-          "extension-manager/infrastructure",
-          "extension-runtime/domain",
-          "extension-runtime/application",
-          "extension-runtime/infrastructure",
-          "keybindings/domain",
-          "system-info/domain",
-          "system-info/application",
-          "app-host/domain/outer-1",
-          "design-system/domain/outer-1",
-          "extension-manager/domain/outer-1",
-          "extension-runtime/infrastructure/outer-1",
-          "keybindings/application/outer-1",
-          "extension-manager/application/outer-2",
-          "unclassified"
-        ]
-      },
-      {
         "from": "extension-manager/infrastructure",
         "allow": [
           "keybindings/application/public",
@@ -5401,7 +5346,6 @@
           "dialog-host/domain",
           "dialog-host/application",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "extension-runtime/domain",
           "extension-runtime/application",
@@ -5433,7 +5377,6 @@
           "dialog-host/domain",
           "dialog-host/application",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/presentation",
           "extension-runtime/domain",
           "extension-runtime/application",
@@ -5477,7 +5420,6 @@
           "dialog-host/application",
           "dialog-host/integration",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "extension-manager/presentation",
           "extension-manager/integration",
@@ -5526,7 +5468,6 @@
           "error-reporting/application",
           "error-reporting/infrastructure",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "extension-runtime/domain",
           "extension-runtime/application",
@@ -5550,7 +5491,6 @@
           "error-reporting/application",
           "error-reporting/infrastructure",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "extension-runtime/domain",
           "extension-runtime/application",
@@ -5573,7 +5513,6 @@
           "error-reporting/domain",
           "error-reporting/application",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/presentation",
           "extension-runtime/domain",
           "extension-runtime/application",
@@ -5600,7 +5539,6 @@
           "error-reporting/application",
           "error-reporting/infrastructure",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "extension-manager/presentation",
           "extension-manager/integration",
@@ -5935,7 +5873,6 @@
         "allow": [
           "keybindings/application/public",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "help-center/application",
           "keybindings/domain",
@@ -5950,7 +5887,6 @@
         "allow": [
           "keybindings/application/public",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/presentation",
           "help-center/application",
           "help-center/presentation",
@@ -7146,7 +7082,6 @@
         "allow": [
           "keybindings/application/public",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "keybindings/domain",
           "subgraphs/domain",
@@ -7163,7 +7098,6 @@
         "allow": [
           "keybindings/application/public",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/presentation",
           "keybindings/domain",
           "keybindings/presentation",
@@ -7184,7 +7118,6 @@
           "keybindings/application/public",
           "keybindings/integration/public",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "extension-manager/presentation",
           "extension-manager/integration",
@@ -7474,7 +7407,6 @@
         "allow": [
           "keybindings/application/public",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "keybindings/domain",
           "telemetry/application",
@@ -7494,7 +7426,6 @@
         "allow": [
           "keybindings/application/public",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "keybindings/domain",
           "telemetry/application",
@@ -7514,7 +7445,6 @@
         "allow": [
           "keybindings/application/public",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/presentation",
           "keybindings/domain",
           "keybindings/presentation",
@@ -7537,7 +7467,6 @@
           "keybindings/application/public",
           "keybindings/integration/public",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "extension-manager/presentation",
           "extension-manager/integration",
@@ -7594,7 +7523,6 @@
         "allow": [
           "keybindings/application/public",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "keybindings/domain",
           "workflow-errors/domain",
@@ -7611,7 +7539,6 @@
         "allow": [
           "keybindings/application/public",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/presentation",
           "keybindings/domain",
           "keybindings/presentation",
@@ -7633,7 +7560,6 @@
           "keybindings/application/public",
           "keybindings/integration/public",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "extension-manager/presentation",
           "extension-manager/integration",
@@ -8022,7 +7948,6 @@
           "error-reporting/domain",
           "error-reporting/application",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/presentation",
           "keybindings/domain",
           "keybindings/presentation",
@@ -8367,7 +8292,6 @@
           "dialog-host/domain",
           "dialog-host/application",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/presentation",
           "extension-runtime/domain",
           "extension-runtime/application",
@@ -8398,7 +8322,6 @@
           "error-reporting/application",
           "error-reporting/infrastructure",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "extension-runtime/domain",
           "extension-runtime/application",
@@ -8421,7 +8344,6 @@
           "error-reporting/domain",
           "error-reporting/application",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/presentation",
           "extension-runtime/domain",
           "extension-runtime/application",
@@ -8959,7 +8881,6 @@
         "allow": [
           "keybindings/application/public",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "keybindings/domain",
           "workflow-errors/domain",
@@ -8976,7 +8897,6 @@
         "allow": [
           "keybindings/application/public",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/presentation",
           "keybindings/domain",
           "keybindings/presentation",
@@ -9122,7 +9042,6 @@
           "dialog-host/domain",
           "dialog-host/application",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "extension-runtime/domain",
           "extension-runtime/application",
@@ -9187,7 +9106,6 @@
         "allow": [
           "keybindings/application/public",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/presentation",
           "keybindings/domain",
           "keybindings/presentation",
@@ -9336,7 +9254,6 @@
           "execution/presentation",
           "execution/integration",
           "extension-manager/domain",
-          "extension-manager/application",
           "extension-manager/infrastructure",
           "extension-manager/presentation",
           "extension-manager/integration",

@@ -4,14 +4,6 @@
   "description": "Custom-node pack discovery, compatibility checks, installation queues, and manager dialogs. Registry access, workflow state, and host dialog services remain external dependencies.",
   "modules": [
     {
-      "path": "src/composables/useServerLogs.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/composables/useServerLogs.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/customNodes/manager/**",
       "role": "application"
     },
@@ -52,7 +44,7 @@
       "role": "integration"
     },
     {
-      "path": "src/platform/customNodes/manager/services/comfyManagerService.ts",
+      "path": "src/platform/customNodes/manager/services/**",
       "role": "infrastructure"
     },
     {
@@ -69,26 +61,6 @@
     },
     {
       "path": "src/platform/customNodes/manager/utils/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/customNodes/manager/utils/packUpdateStatus.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/customNodes/manager/utils/packUpdateStatus.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/utils/mapperUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/packUtils.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/packUtils.ts",
       "role": "domain"
     }
   ],
@@ -132,8 +104,8 @@
       "name": "Registry requests are cached, pack ids normalised, and install logs streamed",
       "checks": [
         "src/composables/useCachedRequest.test.ts",
-        "src/utils/packUtils.test.ts",
-        "src/composables/useServerLogs.test.ts"
+        "src/platform/customNodes/manager/utils/packUtils.test.ts",
+        "src/platform/customNodes/manager/services/useServerLogs.test.ts"
       ]
     }
   ],

@@ -1,6 +1,6 @@
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
-import { normalizePackId } from '@/utils/packUtils'
+import { normalizePackId } from '@/platform/customNodes/manager/utils/packUtils'
 
 export function extractCustomNodeName(
   pythonModule: string | undefined

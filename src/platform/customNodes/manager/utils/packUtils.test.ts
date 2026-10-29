@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { normalizePackId, normalizePackKeys } from '@/utils/packUtils'
+import {
+  normalizePackId,
+  normalizePackKeys
+} from '@/platform/customNodes/manager/utils/packUtils'
 
 describe('packUtils', () => {
   describe('normalizePackId', () => {
