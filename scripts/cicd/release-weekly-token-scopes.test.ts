@@ -3,14 +3,6 @@
  * (`automation/comfyui-frontend-bump`). When that PR already exists, the
  * "Create PR to ComfyUI" step refreshes its title and body.
  *
- * It used to do that with `gh pr edit`, which resolves assignee/reviewer
- * `login` fields over GraphQL and so needs `read:org`. PR_GH_TOKEN does not
- * carry `read:org` (see backport-token-scopes.test.ts), so the refresh failed
- * after the branch had already been force-pushed: the PR kept its old title
- * and body while its diff pinned a different version. A PR titled "Bump to
- * 1.58.1" merged pinning 1.57.6 this way.
- *
- * The REST `PATCH /repos/{owner}/{repo}/pulls/{n}` endpoint needs only `repo`.
  */
 import { readFileSync } from 'node:fs'
 
