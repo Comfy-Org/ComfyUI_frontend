@@ -12,12 +12,12 @@ import {
   presentForResponse
 } from '@/platform/auth/sso/ssoRequired'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   UnifiedAuthRetryFailureReason,
   UnifiedAuthRetryMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { fetchWithRetry } from '@/utils/fetchWithRetry'
 import type { RetryPolicy } from '@/utils/retryPolicy'
 

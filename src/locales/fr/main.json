@@ -5858,13 +5858,11 @@
         "onHold": "Aucun moyen de paiement par défaut. Définissez-en un pour reprendre le rechargement automatique.",
         "paused": "Limite mensuelle atteinte. Reprend le {date}.",
         "pausedNoDate": "Limite mensuelle atteinte.",
-        "rule": "Ajoute {amount} ({credits} crédits) lorsque le solde est inférieur à {threshold} crédits.",
         "status": {
           "failed": "Échec",
           "off": "Désactivé",
           "on": "Activé",
           "onHold": "En attente",
-          "paused": "En pause",
           "turnedOff": "Désactivé"
         },
         "title": "Rechargement automatique",
@@ -5927,7 +5925,6 @@
         },
         "scheduledChange": "Passage à {plan} le {date}.",
         "stayConfirm": {
-          "body": "Votre forfait ne passera pas à {plan} le {date}. Vous pouvez à nouveau planifier un changement à tout moment.",
           "title": "Annuler votre changement vers {plan} ?"
         },
         "unknown": {

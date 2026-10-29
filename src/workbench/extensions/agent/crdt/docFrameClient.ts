@@ -2,7 +2,7 @@ import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { DocResetData } from '@comfyorg/ingest-types'
 import { zDocSubscribedData, zDocUpdateData } from '@comfyorg/ingest-types/zod'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { SERVER_DOC_FRAME_TYPES } from './docFrameCodes'
 

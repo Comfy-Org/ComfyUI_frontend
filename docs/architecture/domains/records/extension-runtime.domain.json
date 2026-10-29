@@ -177,7 +177,12 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["webcam-capture"],
+  "allowedDependencies": [
+    "error-reporting",
+    "keybindings",
+    "telemetry",
+    "webcam-capture"
+  ],
   "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {
@@ -241,7 +246,7 @@
     "docs/adr/EXTENSIONS-PUBLIC-API-0005-bundle-vue-dependencies-in-extensions.md"
   ],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+    "Inventory preserves existing exports and runtime behavior without granting public entry points."
   ],
   "deepImports": "inventory"
 }

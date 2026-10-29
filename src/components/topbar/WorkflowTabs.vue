@@ -56,7 +56,7 @@
       :aria-label="$t('sideToolbar.newBlankWorkflow')"
       @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
     >
-      <i class="pi pi-plus" />
+      <i class="icon-[lucide--plus] size-6" />
     </Button>
     <TopbarActions />
     <div
@@ -83,7 +83,7 @@ import { isDesktop } from '@/platform/distribution/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'

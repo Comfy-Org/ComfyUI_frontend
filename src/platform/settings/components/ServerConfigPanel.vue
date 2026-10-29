@@ -30,7 +30,7 @@
           :aria-label="$t('g.copyToClipboard')"
           @click="copyCommandLineArgs"
         >
-          <i class="pi pi-clipboard" />
+          <i class="icon-[lucide--clipboard]" />
         </Button>
       </div>
     </Message>

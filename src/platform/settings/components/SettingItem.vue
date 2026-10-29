@@ -6,11 +6,9 @@
     @update:form-value="updateSettingValue"
   >
     <template #name-prefix>
-      <Badge
-        v-if="setting.id === 'Comfy.Locale'"
-        severity="primary"
-        class="pi pi-language"
-      />
+      <Badge v-if="setting.id === 'Comfy.Locale'" severity="primary">
+        <i class="icon-[lucide--languages]" />
+      </Badge>
       <Tooltip v-if="setting.experimental">
         <TooltipTrigger as-child>
           <Badge severity="primary">

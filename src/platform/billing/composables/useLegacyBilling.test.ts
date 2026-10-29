@@ -22,6 +22,7 @@ const statusWith = (
 ): BillingStatusResponse =>
   Object.assign(
     {
+      ended_at: null,
       is_active: true,
       has_funds: false,
       max_seats: 0,

@@ -1,5 +1,6 @@
-import { CURVE_INTERPOLATIONS } from './types'
-import type { CurveData, CurveInterpolation, CurvePoint } from './types'
+import { CURVE_INTERPOLATIONS } from '@comfyorg/graph-model/curve'
+import type { CurveData, CurveInterpolation } from '@comfyorg/graph-model/curve'
+import type { PointTuple as CurvePoint } from '@comfyorg/shared-frontend-utils/geometry'
 
 export function isCurveData(value: unknown): value is CurveData {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
