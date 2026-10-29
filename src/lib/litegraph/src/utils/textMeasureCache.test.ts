@@ -62,8 +62,9 @@ describe('textMeasureCache', () => {
     expect(ctx.measureText).toHaveBeenCalledTimes(2)
   })
 
-  it('uses updated font metrics after fonts finish loading without a draw', async () => {
-    const fonts = new EventTarget()
+  it('uses current font metrics throughout loading without a draw', async () => {
+    const fontState: { status: FontFaceSet['status'] } = { status: 'loaded' }
+    const fonts = Object.assign(new EventTarget(), fontState)
     vi.stubGlobal(
       'document',
       fromPartial<Document>({
@@ -75,12 +76,20 @@ describe('textMeasureCache', () => {
     const ctx = createMockCtx()
 
     expect(cachedMeasureText(ctx, 'hello')).toBe(35)
+    fonts.status = 'loading'
+    fonts.dispatchEvent(new Event('loading'))
+    expect(cachedMeasureText(ctx, 'hello')).toBe(35)
+    expect(cachedMeasureText(ctx, 'ready')).toBe(35)
     vi.mocked(ctx.measureText).mockReturnValue(
       fromPartial<TextMetrics>({ width: 51 })
     )
-    fonts.dispatchEvent(new Event('loadingdone'))
 
     expect(cachedMeasureText(ctx, 'hello')).toBe(51)
+    fonts.status = 'loaded'
+    expect([
+      cachedMeasureText(ctx, 'hello'),
+      cachedMeasureText(ctx, 'ready')
+    ]).toEqual([51, 51])
   })
 
   it('measures requested fonts without changing subsequent drawing', () => {
