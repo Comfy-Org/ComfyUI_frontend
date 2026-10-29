@@ -1,7 +1,7 @@
 import { expect, it, onTestFinished, vi } from 'vitest'
 
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useDialogService } from '@/services/dialogService'
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
@@ -10,7 +10,7 @@ vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/services/dialogService'))
 vi.mock(
   import('@/platform/billing/subscription/components/SubscriptionRequiredDialogContent.vue'),
