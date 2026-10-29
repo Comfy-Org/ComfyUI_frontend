@@ -665,7 +665,7 @@ describe('a disabled extension', () => {
     expect(useExtensionStore().isExtensionInstalled('off')).toBe(true)
     for (const spy of Object.values(spies)) expect(spy).not.toHaveBeenCalled()
     expect(off.getCustomWidgets).not.toHaveBeenCalled()
-    expect(vi.mocked(useCurrentUser)).not.toHaveBeenCalled()
+    expect(useCurrentUser).not.toHaveBeenCalled()
   })
 
   it('still registers everything for an enabled extension', async () => {
