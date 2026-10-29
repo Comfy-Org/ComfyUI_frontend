@@ -1009,16 +1009,72 @@ describe('BillingTab', () => {
       ).toEqual(['inverted', 'inverted'])
     })
 
-    it('keeps Add credits grey at 0 while the payment is processing', async () => {
+    function addCreditsVariants() {
+      return screen
+        .getAllByRole('button', { name: 'Add credits' })
+        .map((button) => button.getAttribute('data-variant'))
+    }
+
+    it('turns Add credits white in the out-of-credits banner and the Credits card when auto top-up is off', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      arrange({
+        balance: zeroBalance,
+        subscription: { ...activeSubscription, hasFunds: false }
+      })
+
+      await screen.findByTestId('billing-auto-top-up-status')
+      expect(
+        within(screen.getByTestId('billing-local-credit-banner')).getByRole(
+          'button',
+          { name: 'Add credits' }
+        )
+      ).toHaveAttribute('data-variant', 'inverted')
+      expect(addCreditsVariants()).toEqual(['inverted', 'inverted'])
+    })
+
+    it('turns Add credits white at 0 while a top-up payment is processing and auto top-up is off', async () => {
       servedCheckouts(checkout('payment_processing'))
       arrange({ balance: zeroBalance })
 
       await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-auto-top-up-status')
       expect(
         within(screen.getByTestId('billing-credits-card')).getByRole('button', {
           name: 'Add credits'
         })
-      ).toHaveAttribute('data-variant', 'secondary')
+      ).toHaveAttribute('data-variant', 'inverted')
+    })
+
+    it('keeps Add credits grey at 0 when the served auto top-up status will refill', async () => {
+      const served = await billingApi.getBillingAutoReload()
+      vi.mocked(billingApi.getBillingAutoReload).mockResolvedValue({
+        ...served,
+        configured: true,
+        enabled: true,
+        status: 'on'
+      })
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      arrange({
+        balance: zeroBalance,
+        subscription: { ...activeSubscription, hasFunds: false }
+      })
+
+      await screen.findByTestId('billing-auto-top-up-status')
+      expect(addCreditsVariants()).toEqual(['secondary', 'secondary'])
+    })
+
+    it('keeps Subscribe the one white button with no plan at 0', () => {
+      arrange({
+        balance: zeroBalance,
+        subscription: null,
+        subscriptionStatus: null
+      })
+
+      expect(screen.getByRole('button', { name: 'Subscribe' })).toHaveAttribute(
+        'data-variant',
+        'inverted'
+      )
+      expect(addCreditsVariants()).toEqual(['secondary'])
     })
 
     it('offers no Add credits on a failed top-up when the server withholds can_top_up', async () => {
