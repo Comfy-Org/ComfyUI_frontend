@@ -314,32 +314,6 @@ function documentAcceptsLiveIndex(
   return doc.valueCount === liveNames.length && namesMatch
 }
 
-/**
- * The previous value is deliberately NOT put on the wire.
- *
- * `set_widget.old` is informational — the applier's own contract calls it
- * "previous value at mint time (informational; not used for convergence)" —
- * and nothing reads it: no consumer exists in this repo or in `cloud` outside
- * test fixtures. But the applier's untrusted-payload guard charges one
- * cost-budget unit per character of EVERY string in the envelope, so sending
- * it charged the widget's text twice against `MAX_OP_COST` (262144) and
- * halved the usable ceiling to about 128 KiB.
- *
- * The cost of that was not a smaller ceiling, it was a permanent lock-out:
- * once a text widget held ~128 KiB, `len(value) + len(old)` exceeded the
- * budget on its own, so every subsequent edit to it — down to a single
- * character — was refused for the life of the workflow. The refusal is routed
- * to `malformed_op`, which is why it reached the user as an unactionable
- * generic notice rather than anything naming a size.
- *
- * Do not restore this field, and do not send a truncated variant, without a
- * reader that needs it: the charge the budget makes is honest (the host does
- * canonicalize and hash the whole envelope), so the fix belongs here at the
- * producer and not in the guard. The charge is in `comfy-multi-player`
- * `src/limits.ts` (`opBoundsRefusal`, one unit per string character, run over
- * the whole envelope by `applier.ts` `canonicalJson`), and the field's
- * informational contract is in its `src/types.ts`.
- */
 function routedWidgetOperation(
   graph: LGraph,
   rootGraphId: string,

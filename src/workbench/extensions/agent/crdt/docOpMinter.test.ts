@@ -2538,16 +2538,6 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
-  // A large text widget used to lock ITSELF out. The mint carried the previous
-  // value as `old` beside `value`, and the applier charges one cost-budget unit
-  // per character of every string in the envelope, so a widget holding ~128 KiB
-  // spent the whole 262144-unit budget on two copies of its own text: every
-  // later edit to it, down to one character, was refused `malformed_op` for the
-  // life of the workflow. The second expectation is what makes this a
-  // regression test and not a restatement of the minter — it asserts the real
-  // applier's verdict. The third keeps the fix honest: it fails if `old` stops
-  // being the thing that breaks the budget, so a later reader can tell a
-  // genuine upstream change from a silent re-regression.
   it('keeps a large widget edit inside the cost budget by leaving the previous value off the wire', async () => {
     const held = 'c'.repeat(140_000)
     const node = new TestPrompt()
@@ -2562,8 +2552,6 @@ describe('attachDocOpMinter', () => {
     node.widgets![0].value = `${held}x`
     await afterFlush()
 
-    // Asserted by key rather than by `toEqual`: a failure here would otherwise
-    // print two 140,000-character strings.
     expect(minted).toHaveLength(1)
     const mintedKeys = Object.keys(minted[0])
     expect(mintedKeys).toHaveLength(4)
