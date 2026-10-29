@@ -91,7 +91,7 @@
   "publicEntryPoints": [
     "src/platform/workflowErrors/panel/LocateNodeButton.vue"
   ],
-  "allowedDependencies": ["keybindings"],
+  "allowedDependencies": ["extension-manager", "keybindings"],
   "allowedConsumers": ["missing-media", "missing-models", "node-replacement"],
   "characterizationScenarios": [
     {

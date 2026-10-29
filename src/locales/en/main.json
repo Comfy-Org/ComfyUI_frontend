@@ -6215,6 +6215,12 @@
       "contactForm": "contact form",
       "tryAgain": "Try again"
     },
+    "paused": {
+      "title": "The agent is paused",
+      "titleNoFunds": "The agent paused — out of credits",
+      "recheck": "It will try again on its own in about {seconds} second. | It will try again on its own in about {seconds} seconds.",
+      "resume": "Resume"
+    },
     "paywall": {
       "title": "Out of credits",
       "body": {

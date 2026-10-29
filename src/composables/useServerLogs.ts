@@ -3,7 +3,7 @@ import { onUnmounted, ref } from 'vue'
 
 import type { LogsWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
-import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
+import type { components } from '@/platform/customNodes/manager/types/generatedManagerTypes'
 
 const LOGS_MESSAGE_TYPE = 'logs'
 const MANAGER_WS_TASK_DONE_NAME = 'cm-task-completed'
