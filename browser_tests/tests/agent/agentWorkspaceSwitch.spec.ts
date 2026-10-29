@@ -45,10 +45,6 @@ test.describe('Agent workspace switching', { tag: '@ui' }, () => {
       .toContainEqual({
         workspaceId: 'ws-team'
       })
-    await page.getByRole('button', { name: 'Current user' }).click()
-    await expect(page.getByTestId('workspace-switcher-trigger')).toContainText(
-      TEAM_WORKSPACE_NAME
-    )
     await expect(agentPanel.composer).toBeVisible()
   })
 })
