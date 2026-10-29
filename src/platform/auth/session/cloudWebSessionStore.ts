@@ -298,8 +298,9 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   /** Decides the flag for this page load; true when the session is on. */
   function start(): boolean {
     if (decided) return identity !== null
+    const enabled = useFeatureFlags().flags.unifiedWebSessionEnabled
     decided = true
-    if (!useFeatureFlags().flags.unifiedWebSessionEnabled) return false
+    if (!enabled) return false
     const session = createCloudIdentity((change) => {
       resetForAccountChange(change)
       if (change.reason === 'signed_out' && !signingOut) {

@@ -33,6 +33,12 @@ import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 
 import BillingTab from '@/platform/account/components/dialogs/settings/BillingTab.vue'
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/billing/composables/usePausedBanner'), {
   spy: true
@@ -124,6 +130,7 @@ function arrange(scenario: Scenario = {}) {
       ),
       subscriptionState: computed(() => scenario.subscriptionState ?? null),
       billingStatus: computed(() => scenario.billingStatus ?? 'paid'),
+      canAccessSubscriptionFeatures: computed(() => true),
       manageSubscription,
       isTeamPlan: computed(() => false),
       plans: computed(() => [
@@ -284,6 +291,20 @@ describe('BillingTab', () => {
   })
 
   describe('parked payment banner', () => {
+    it.for([
+      { name: 'an owner', canManageBilling: true, shown: true },
+      { name: 'a member', canManageBilling: false, shown: false }
+    ])(
+      'shows $name the parked banner: $shown',
+      ({ canManageBilling, shown }) => {
+        arrange({ hasParkedBillingOperation: true, canManageBilling })
+
+        expect(screen.queryByTestId('billing-parked-banner') !== null).toBe(
+          shown
+        )
+      }
+    )
+
     it('shows Contact support when a payment is parked', () => {
       arrange({ hasParkedBillingOperation: true })
 
@@ -379,7 +400,7 @@ describe('BillingTab', () => {
     expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
       'Activating your Pro plan…'
     )
-    expect(screen.getByRole('button', { name: 'Manage' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Manage' })).toBeInTheDocument()
   })
 
   it('lays out the plan and the owner handoff as headed 12px cards', () => {
@@ -402,7 +423,7 @@ describe('BillingTab', () => {
       'px-5',
       'py-4'
     )
-    expect(within(plan).getByRole('button', { name: 'Manage' })).toHaveClass(
+    expect(within(plan).getByRole('link', { name: 'Manage' })).toHaveClass(
       'h-8'
     )
     const handoff = screen.getByTestId('billing-handoff')
@@ -437,7 +458,7 @@ describe('BillingTab', () => {
     expect(link).toHaveAttribute('rel', 'noopener')
     expect(link).toHaveClass('no-underline')
     expect(
-      screen.queryByRole('button', { name: 'Manage' })
+      screen.queryByRole('link', { name: 'Manage' })
     ).not.toBeInTheDocument()
   })
 
@@ -502,43 +523,58 @@ describe('BillingTab', () => {
     )
   })
 
-  it('opens plan management on Cloud instead of a platform plans page', async () => {
-    arrange()
+  it.for([
+    { name: 'Manage', scenario: {} },
+    {
+      name: 'Subscribe',
+      scenario: { subscription: null, subscriptionStatus: null }
+    },
+    {
+      name: 'Choose a plan',
+      scenario: {
+        subscription: {
+          ...activeSubscription,
+          isActive: false,
+          endDate: '2026-09-01T00:00:00Z'
+        },
+        subscriptionStatus: 'ended'
+      }
+    }
+  ] satisfies { name: string; scenario: Scenario }[])(
+    'opens $name on the billing site Plans page in a new tab',
+    async ({ name, scenario }) => {
+      arrange(scenario)
 
-    expect(
-      screen.queryByRole('link', { name: 'Manage' })
-    ).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Manage' }))
-
-    expect(
-      useSubscriptionPaywall().showSubscriptionDialog
-    ).toHaveBeenCalledWith({ reason: 'settings_billing_panel' })
-    expect(screen.getByRole('link', { name: 'Open billing' })).toHaveAttribute(
-      'href',
-      expect.stringMatching(
-        /^https:\/\/platform\.test\/profile\/billing\?workspace=ws_1&correlation_id=.+$/
+      const link = screen.getByRole('link', { name })
+      expect(link).toHaveAttribute(
+        'href',
+        expect.stringMatching(
+          /^https:\/\/platform\.test\/profile\/billing\/plans\?workspace=ws_1&correlation_id=.+$/
+        )
       )
-    )
-  })
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link).toContainHTML('icon-[lucide--arrow-up-right]')
+      link.addEventListener('click', (event) => event.preventDefault())
 
-  it('opens Subscribe on Cloud for a workspace with no plan', async () => {
-    arrange({ subscription: null, subscriptionStatus: null })
+      await userEvent.click(link)
 
-    expect(
-      screen.queryByRole('link', { name: 'Subscribe' })
-    ).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Subscribe' }))
-
-    expect(
-      useSubscriptionPaywall().showSubscriptionDialog
-    ).toHaveBeenCalledWith({ reason: 'settings_billing_panel' })
-  })
+      expect(vi.mocked(useTelemetry)()?.trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'platform_handoff',
+          target: 'plans'
+        })
+      )
+      expect(
+        useSubscriptionPaywall().showSubscriptionDialog
+      ).not.toHaveBeenCalled()
+    }
+  )
 
   it('hides the plan action when the server does not grant it', () => {
     arrange({ canOpenPlans: false })
 
     expect(
-      screen.queryByRole('button', { name: 'Manage' })
+      screen.queryByRole('link', { name: 'Manage' })
     ).not.toBeInTheDocument()
   })
 
@@ -884,6 +920,74 @@ describe('BillingTab', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument()
     })
 
+    it('offers Manage on the billing site after Resume plan', () => {
+      arrange(ending)
+
+      const row = screen.getByTestId('billing-plan-row')
+      const resume = within(row).getByRole('button', { name: 'Resume plan' })
+      const manage = within(row).getByRole('link', { name: 'Manage' })
+      expect(manage).toHaveAttribute(
+        'href',
+        expect.stringContaining(
+          'https://platform.test/profile/billing/plans?workspace=ws_1'
+        )
+      )
+      expect(
+        resume.compareDocumentPosition(manage) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+    })
+
+    it('offers no plan button to a member of an ending plan', () => {
+      arrange({
+        ...ending,
+        canReactivate: false,
+        canOpenPlans: false,
+        canManageSubscription: false,
+        canManageBilling: false
+      })
+
+      expect(
+        within(screen.getByTestId('billing-plan-row')).queryAllByRole('link')
+      ).toEqual([])
+      expect(
+        within(screen.getByTestId('billing-plan-row')).queryAllByRole('button')
+      ).toEqual([])
+    })
+
+    describe('plan lifecycle banner on Cloud', () => {
+      beforeEach(() => {
+        distribution.isCloud = true
+      })
+      afterEach(() => {
+        distribution.isCloud = false
+      })
+
+      function arrangeOnCloud(scenario: Scenario) {
+        vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+        arrange(scenario)
+      }
+
+      it('shows Plan ending with the plan row keeping the actions', () => {
+        arrangeOnCloud(ending)
+
+        const banner = screen.getByRole('status')
+        expect(banner).toHaveTextContent(
+          'Your Pro plan ends on October 28, 2026'
+        )
+        expect(within(banner).queryAllByRole('button')).toEqual([])
+        expect(
+          screen.getByRole('button', { name: 'Resume plan' })
+        ).toBeInTheDocument()
+      })
+
+      it('shows no lifecycle banner on an active plan', () => {
+        arrangeOnCloud({})
+
+        expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      })
+    })
+
     it('hides Resume when the server withholds can_reactivate', () => {
       arrange({ ...ending, canReactivate: false })
 
@@ -1116,7 +1220,7 @@ describe('BillingTab', () => {
         subscriptionStatus: null
       })
 
-      expect(screen.getByRole('button', { name: 'Subscribe' })).toHaveAttribute(
+      expect(screen.getByRole('link', { name: 'Subscribe' })).toHaveAttribute(
         'data-variant',
         'inverted'
       )

@@ -39,7 +39,12 @@ async function bootOnce(): Promise<void> {
 /** Starts the web session once Firebase has restored, so it sees the remembered login. */
 export function bootCloudIdentity(): Promise<void> {
   const webSession = useCloudWebSessionStore()
-  const boot = boots.get(webSession) ?? bootOnce()
+  const boot =
+    boots.get(webSession) ??
+    bootOnce().catch((error: unknown) => {
+      boots.delete(webSession)
+      throw error
+    })
   boots.set(webSession, boot)
   return boot
 }
