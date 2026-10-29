@@ -8,8 +8,6 @@ import type {
 import { createLocalWebAuthBridge } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createStorageTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { t } from '@/i18n'
 
 /**
  * Hosts whose origin Cloud allows to read `/oauth/token` responses. `[::1]` is
@@ -31,18 +29,13 @@ function reportSignInFailure(failure: FailedSignIn): void {
   })
 }
 
-function showSignInFailure(failure: FailedSignIn): void {
-  reportSignInFailure(failure)
-  if (failure.reason === 'popup-blocked') {
-    useToast().error(t('auth.desktopHost.popupBlocked'))
-  }
-}
-
 function withOriginLock<T>(task: () => Promise<T>): Promise<T> {
   return navigator.locks.request(REFRESH_LOCK_NAME, task)
 }
 
-function browserEnvironment(): LocalWebAuthEnvironment {
+function browserEnvironment(
+  onPopupBlocked: () => void
+): LocalWebAuthEnvironment {
   return {
     issuer: getComfyCloudBaseUrl(),
     pageUrl: () => window.location.href,
@@ -71,7 +64,10 @@ function browserEnvironment(): LocalWebAuthEnvironment {
       window.addEventListener('message', onMessage)
       return () => window.removeEventListener('message', onMessage)
     },
-    reportSignInFailure: showSignInFailure
+    reportSignInFailure(failure) {
+      reportSignInFailure(failure)
+      if (failure.reason === 'popup-blocked') onPopupBlocked()
+    }
   }
 }
 
@@ -86,7 +82,8 @@ export type LocalWebSessionStart = 'off' | 'started' | 'sign-in-failed'
  * the person declining consent, so the page should say so once it mounts.
  */
 export async function startLocalWebSession(
-  env: LocalWebAuthEnvironment = browserEnvironment()
+  { onPopupBlocked }: { onPopupBlocked: () => void },
+  env: LocalWebAuthEnvironment = browserEnvironment(onPopupBlocked)
 ): Promise<LocalWebSessionStart> {
   if (!useFeatureFlags().flags.localWebSsoEnabled) return 'off'
   if (!LOOPBACK_HOSTNAMES.has(new URL(env.pageUrl()).hostname)) return 'off'

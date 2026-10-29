@@ -100,7 +100,6 @@ export function createLocalWebAuthBridge(
 ): LocalWebAuthBridge {
   const listeners = new Set<(state: DesktopHostAuthState) => void>()
   let refreshing: Promise<OAuthTokens | undefined> | undefined
-  let signOuts = 0
 
   const tokenOptions = () => ({
     issuer: env.issuer,
@@ -195,7 +194,6 @@ export function createLocalWebAuthBridge(
   }
 
   function signOutLocally(): DesktopHostAuthState {
-    signOuts += 1
     env.tokens.clear()
     pinTab(undefined)
     emit()
@@ -305,40 +303,51 @@ export function createLocalWebAuthBridge(
     return { kind: 'signed_in' }
   }
 
-  async function requestSignIn(
-    signOutsAtStart = signOuts
-  ): Promise<DesktopHostAuthState> {
-    if (signOuts !== signOutsAtStart) return currentState()
+  function isSignedInAs(userId: string): boolean {
+    const state = currentState()
+    return state.status === 'signed_in' && state.userId === userId
+  }
+
+  async function preparedAuthorizeUrl(
+    stillWanted: () => boolean
+  ): Promise<string | undefined> {
+    if (!stillWanted()) return undefined
     const pkce = await createPkceRequest().catch(() => undefined)
+    if (!pkce || !stillWanted()) return undefined
     const pageOrigin = new URL(env.pageUrl()).origin
-    const state = pkce && `${pkce.state}~${encodeURIComponent(pageOrigin)}`
+    const state = `${pkce.state}~${encodeURIComponent(pageOrigin)}`
     if (
-      signOuts !== signOutsAtStart ||
-      !pkce ||
-      !state ||
       !savePendingSignIn(env.sessionStorage, { verifier: pkce.verifier, state })
-    ) {
-      return currentState()
-    }
-    const popup = env.openPopup(
-      authorizeUrl({
-        issuer: env.issuer,
-        clientId: LOCAL_WEB_CLIENT_ID,
-        redirectUri: callbackUri,
-        challenge: pkce.challenge,
-        state
-      })
     )
+      return undefined
+    return authorizeUrl({
+      issuer: env.issuer,
+      clientId: LOCAL_WEB_CLIENT_ID,
+      redirectUri: callbackUri,
+      challenge: pkce.challenge,
+      state
+    })
+  }
+
+  async function finishPopupSignIn(search: string): Promise<void> {
+    const outcome = await finishSignIn(new URLSearchParams(search), callbackUri)
+    if (outcome.kind === 'failed' && outcome.reason !== 'denied') {
+      env.reportSignInFailure(outcome)
+    }
+  }
+
+  async function requestSignIn(
+    stillWanted: () => boolean = () => true
+  ): Promise<DesktopHostAuthState> {
+    const url = await preparedAuthorizeUrl(stillWanted)
+    if (!url) return currentState()
+    const popup = env.openPopup(url)
     if (!popup) {
       env.reportSignInFailure({ kind: 'failed', reason: 'popup-blocked' })
       return currentState()
     }
     const search = await callbackFrom(popup)
-    if (search === undefined) return currentState()
-    const outcome = await finishSignIn(new URLSearchParams(search), callbackUri)
-    if (outcome.kind === 'failed' && outcome.reason !== 'denied') {
-      env.reportSignInFailure(outcome)
-    }
+    if (search !== undefined) await finishPopupSignIn(search)
     return currentState()
   }
 
@@ -360,9 +369,8 @@ export function createLocalWebAuthBridge(
     requestSignIn: () => requestSignIn(),
 
     async switchWorkspace(workspaceId) {
-      const signOutsAtStart = signOuts
       const current = currentState()
-      if (current.status !== 'signed_in') return requestSignIn(signOutsAtStart)
+      if (current.status !== 'signed_in') return requestSignIn()
       if (current.workspaceId === workspaceId) return current
       const outcome = await env.withRefreshLock(async () => {
         const kept = await keptWorkspaceTokens(workspaceId, current.userId)
@@ -372,7 +380,8 @@ export function createLocalWebAuthBridge(
         return adopted === 'storage-unavailable' ? 'unavailable' : 'missing'
       })
       if (outcome === 'unavailable') return currentState()
-      if (outcome === 'missing') return requestSignIn(signOutsAtStart)
+      if (outcome === 'missing')
+        return requestSignIn(() => isSignedInAs(current.userId))
       emit()
       return currentState()
     },
