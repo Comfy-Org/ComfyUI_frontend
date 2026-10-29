@@ -1,6 +1,7 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { reportError } from '@/platform/telemetry/reportError'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -16,6 +17,8 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
@@ -135,6 +138,22 @@ describe('CurrentUserPopoverLegacy', () => {
     renderComponent()
 
     expect(useBillingContext().fetchBalance).toHaveBeenCalled()
+  })
+
+  it('reports a failed balance read once instead of leaving it unhandled', async () => {
+    const failure = new Error('Balance temporarily unavailable')
+    vi.mocked(useBillingContext().fetchBalance).mockRejectedValueOnce(failure)
+
+    renderComponent()
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'billing',
+        errorType: 'error_refreshing_balance',
+        level: 'warning'
+      })
+    )
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   describe('subscription tier badge', () => {

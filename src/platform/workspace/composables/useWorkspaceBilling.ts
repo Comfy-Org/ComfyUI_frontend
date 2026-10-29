@@ -352,12 +352,13 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     return true
   }
 
-  function isStaleStatusRead(
+  function isStaleBillingRead(
+    billingResource: keyof typeof latestBillingReadIds,
     requestId: number,
     workspaceId: string | undefined
   ): boolean {
     return (
-      requestId !== latestBillingReadIds.status ||
+      requestId !== latestBillingReadIds[billingResource] ||
       workspaceId !== workspaceStore.activeWorkspace?.id
     )
   }
@@ -378,7 +379,10 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       const status = rail
         ? await readOnRail(rail.readStatus, 'getBillingStatus')
         : await workspaceApi.getBillingStatus()
-      if (status === undefined || isStaleStatusRead(requestId, workspaceId))
+      if (
+        status === undefined ||
+        isStaleBillingRead('status', requestId, workspaceId)
+      )
         return
 
       seatCapacity.value = seatCapacityFrom(status)
@@ -400,6 +404,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
 
   async function fetchBalance(): Promise<void> {
     const requestId = ++latestBillingReadIds.balance
+    const workspaceId = workspaceStore.activeWorkspace?.id
     const rail: BillingReadRail | null = useBillingReadRail()
     isLoading.value = true
     error.value = null
@@ -407,14 +412,16 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       const balance = rail
         ? await readOnRail(rail.readBalance, 'getBillingBalance')
         : await workspaceApi.getBillingBalance()
-      if (balance !== undefined && requestId === latestBillingReadIds.balance) {
+      if (
+        balance !== undefined &&
+        !isStaleBillingRead('balance', requestId, workspaceId)
+      ) {
         balanceData.value = balance
       }
     } catch (err) {
-      if (requestId === latestBillingReadIds.balance) {
-        error.value =
-          err instanceof Error ? err.message : 'Failed to fetch balance'
-      }
+      if (isStaleBillingRead('balance', requestId, workspaceId)) return
+      error.value =
+        err instanceof Error ? err.message : 'Failed to fetch balance'
       throw err
     } finally {
       if (requestId === latestBillingReadIds.balance) isLoading.value = false

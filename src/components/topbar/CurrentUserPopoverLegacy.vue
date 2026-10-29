@@ -171,6 +171,7 @@ import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { refreshBalanceInBackground } from '@/platform/workspace/refreshBalanceInBackground'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
@@ -280,6 +281,6 @@ const handleLogout = async () => {
 }
 
 onMounted(() => {
-  void fetchBalance()
+  void refreshBalanceInBackground(fetchBalance)
 })
 </script>
