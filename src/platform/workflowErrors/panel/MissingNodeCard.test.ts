@@ -2,14 +2,14 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
+import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
-import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import type { WorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
+import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
 
 import MissingNodeCard from './MissingNodeCard.vue'
 
@@ -20,41 +20,34 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-const mockMissingCoreNodes = vi.hoisted(() => ({
-  value: {} as Record<string, { type: string }[]>
-}))
-
-vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/nodePack/useMissingNodes'),
-
-  () => ({
-    useMissingNodes: () => ({
-      missingCoreNodes: mockMissingCoreNodes,
-      missingNodePacks: { value: [] },
-      isLoading: { value: false },
-      error: { value: null },
-      hasMissingNodes: { value: false }
-    })
-  })
-)
-
-const mockApplyChanges = vi.hoisted(() => vi.fn())
-const mockIsRestarting = vi.hoisted(() => ({ value: false }))
-vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useApplyChanges'),
-
-  () => ({
-    useApplyChanges: () => ({
-      get isRestarting() {
-        return mockIsRestarting.value
-      },
-      applyChanges: mockApplyChanges
-    })
-  })
-)
-
-const mockShouldShowManagerButtons = vi.hoisted(() => ({ value: false }))
-vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
+const mockMissingCoreNodes = ref<Record<string, { type: string }[]>>({})
+const mockApplyChanges = vi.fn()
+const mockIsRestarting = ref(false)
+const mockShouldShowManagerButtons = ref(false)
+const mockIsPackInstalled = vi.fn(() => false)
+const manager: WorkflowErrorManager = {
+  useMissingNodes: () => ({
+    missingCoreNodes: computed(() => mockMissingCoreNodes.value),
+    missingNodePacks: computed(() => []),
+    isLoading: computed(() => false)
+  }),
+  useManagerState: () => ({
+    shouldShowManagerButtons: computed(
+      () => mockShouldShowManagerButtons.value
+    ),
+    shouldShowInstallButton: computed(() => false)
+  }),
+  useApplyChanges: () => ({
+    isRestarting: computed(() => mockIsRestarting.value),
+    applyChanges: mockApplyChanges
+  }),
+  usePackInstall: () => ({
+    isInstalling: computed(() => false),
+    installAllPacks: vi.fn()
+  }),
+  isPackInstalled: mockIsPackInstalled,
+  openManager: vi.fn()
+}
 
 vi.mock<unknown>(import('./MissingPackGroupRow.vue'), () => ({
   default: {
@@ -121,6 +114,7 @@ function renderCard(
     },
     global: {
       plugins: [i18n],
+      provide: { [WorkflowErrorManagerKey]: manager },
       stubs: { MissingNodeDeploymentOffer: true }
     }
   })
@@ -129,15 +123,12 @@ function renderCard(
 
 describe('MissingNodeCard', () => {
   beforeEach(async () => {
-    useManagerState().shouldShowManagerButtons = computed(
-      () => mockShouldShowManagerButtons.value
-    )
     vi.spyOn(api, 'getSystemStats').mockResolvedValue(
       fromPartial({ system: {}, devices: [] })
     )
     useSystemStatsStore()
     await useSystemStatsStore().refetchSystemStats()
-    vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
+    mockIsPackInstalled.mockReturnValue(false)
     mockIsCloud.value = false
     mockShouldShowManagerButtons.value = false
     mockIsRestarting.value = false
@@ -197,21 +188,21 @@ describe('MissingNodeCard', () => {
 
     it('hides Apply Changes when manager enabled but no packs pending', () => {
       mockShouldShowManagerButtons.value = true
-      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
+      mockIsPackInstalled.mockReturnValue(false)
       renderCard()
       expect(screen.queryByText('Apply Changes')).not.toBeInTheDocument()
     })
 
     it('shows Apply Changes when at least one pack is pending restart', () => {
       mockShouldShowManagerButtons.value = true
-      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
+      mockIsPackInstalled.mockReturnValue(true)
       renderCard()
       expect(screen.getByText('Apply Changes')).toBeInTheDocument()
     })
 
     it('displays spinner during restart', () => {
       mockShouldShowManagerButtons.value = true
-      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
+      mockIsPackInstalled.mockReturnValue(true)
       mockIsRestarting.value = true
       renderCard()
       expect(screen.getByTestId('dot-spinner')).toBeInTheDocument()
@@ -219,7 +210,7 @@ describe('MissingNodeCard', () => {
 
     it('disables button during restart', () => {
       mockShouldShowManagerButtons.value = true
-      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
+      mockIsPackInstalled.mockReturnValue(true)
       mockIsRestarting.value = true
       renderCard()
       expect(
@@ -229,7 +220,7 @@ describe('MissingNodeCard', () => {
 
     it('calls applyChanges when Apply Changes button is clicked', async () => {
       mockShouldShowManagerButtons.value = true
-      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
+      mockIsPackInstalled.mockReturnValue(true)
       const { user } = renderCard()
       await user.click(screen.getByRole('button', { name: /apply changes/i }))
       expect(mockApplyChanges).toHaveBeenCalledOnce()
@@ -247,7 +238,8 @@ describe('MissingNodeCard', () => {
           onLocateNode
         },
         global: {
-          plugins: [i18n]
+          plugins: [i18n],
+          provide: { [WorkflowErrorManagerKey]: manager }
         }
       })
       await user.click(screen.getAllByTestId('locate-node')[0])
@@ -264,7 +256,8 @@ describe('MissingNodeCard', () => {
           onOpenManagerInfo
         },
         global: {
-          plugins: [i18n]
+          plugins: [i18n],
+          provide: { [WorkflowErrorManagerKey]: manager }
         }
       })
       await user.click(screen.getAllByTestId('open-manager-info')[0])

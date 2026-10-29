@@ -30,12 +30,15 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/distribution/types'), { spy: true })
 
-vi.mock<unknown>(import('@/components/error/useErrorOverlayState'), () => ({
-  useErrorOverlayState: () => ({
-    overlayMessage: overlayMock.overlayMessage,
-    overlayTitle: overlayMock.overlayTitle
+vi.mock<unknown>(
+  import('@/platform/workflowErrors/overlay/useErrorOverlayState'),
+  () => ({
+    useErrorOverlayState: () => ({
+      overlayMessage: overlayMock.overlayMessage,
+      overlayTitle: overlayMock.overlayTitle
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,

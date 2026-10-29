@@ -55,7 +55,7 @@
             size="unset"
             class="min-h-8 rounded-lg px-3 py-2 text-xs font-normal"
             data-testid="error-overlay-see-errors"
-            @click="viewErrorsInGraph"
+            @click="emit('viewErrors')"
           >
             {{
               appMode
@@ -86,15 +86,15 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
-import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
+import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import ErrorOverlayDeploymentOffer from '@/platform/workspace/components/ErrorOverlayDeploymentOffer.vue'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
+const emit = defineEmits<{ viewErrors: [] }>()
+
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
-const { viewErrorsInGraph } = useViewErrorsInGraph()
 
 const { hasError, hasMissingNodes, isVisible, overlayMessage, overlayTitle } =
   useErrorOverlayState()

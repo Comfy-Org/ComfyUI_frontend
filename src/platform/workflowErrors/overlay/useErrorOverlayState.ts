@@ -4,12 +4,12 @@ import { storeToRefs } from 'pinia'
 
 import { isIssuesTabEnabled } from '@/platform/settings/missingWarningVisibility'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
+import { useErrorGroups } from '@/platform/workflowErrors/panel/useErrorGroups'
 import type {
   MissingPackGroup,
   SwapNodeGroup
-} from '@/components/rightSidePanel/errors/useErrorGroups'
-import type { ErrorGroup } from '@/components/rightSidePanel/errors/types'
+} from '@/platform/workflowErrors/panel/useErrorGroups'
+import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 
