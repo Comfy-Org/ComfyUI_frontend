@@ -5816,7 +5816,6 @@
           "off": "Desativada",
           "on": "Ativada",
           "onHold": "Em espera",
-          "paused": "Pausada",
           "turnedOff": "Desativada"
         },
         "title": "Recarga automática",
@@ -5880,7 +5879,6 @@
         },
         "scheduledChange": "Mudará para {plan} em {date}.",
         "stayConfirm": {
-          "body": "Seu plano não mudará para {plan} em {date}. Você pode agendar uma mudança novamente a qualquer momento.",
           "title": "Cancelar sua alteração para o plano {plan}?"
         },
         "unknown": {
