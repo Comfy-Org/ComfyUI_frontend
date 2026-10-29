@@ -7,13 +7,13 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   createMockChangeTracker,
@@ -26,7 +26,7 @@ const distribution = vi.hoisted(() => ({ isCloud: false }))
 
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 function nodeDef(name: string): ComfyNodeDef {
   return {
@@ -123,17 +123,35 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
-  it('does nothing when the server reconnects with the node types the page already has', async () => {
-    const refresh = registerRefreshCommand()
-    pageKnows('KSampler', 'CLIPTextEncode')
-    showCanvas(node('KSampler'))
-    serverHas('KSampler', 'CLIPTextEncode')
+  it.for([
+    {
+      registry: 'Vue store',
+      types: ['KSampler', 'CLIPTextEncode'],
+      registerKnownTypes: pageKnows
+    },
+    {
+      registry: 'LiteGraph only',
+      types: ['FrontendOnlyNode'],
+      registerKnownTypes: (...types: string[]) => {
+        for (const type of types) {
+          LiteGraph.registerNodeType(type, class extends LGraphNode {})
+        }
+      }
+    }
+  ])(
+    'does nothing for types already in $registry',
+    async ({ types, registerKnownTypes }) => {
+      const refresh = registerRefreshCommand()
+      registerKnownTypes(...types)
+      showCanvas(...types.map((type) => node(type)))
+      serverHas(...types)
 
-    await useReconnectNodeDefinitionRefresh()()
+      await useReconnectNodeDefinitionRefresh()()
 
-    expect(refresh).not.toHaveBeenCalled()
-    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
-  })
+      expect(refresh).not.toHaveBeenCalled()
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    }
+  )
 
   it('rebuilds a missing node inside a subgraph', async () => {
     const refresh = registerRefreshCommand(
@@ -165,16 +183,6 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     await useReconnectNodeDefinitionRefresh()()
 
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
-  })
-
-  it('counts a type LiteGraph registered outside the node definition store as known', async () => {
-    const refresh = registerRefreshCommand()
-    LiteGraph.registerNodeType('FrontendOnlyNode', class extends LGraphNode {})
-    serverHas('FrontendOnlyNode')
-
-    await useReconnectNodeDefinitionRefresh()()
-
-    expect(refresh).not.toHaveBeenCalled()
   })
 
   it('keeps the open workflow when the refresh resolves without registering the new type', async () => {
@@ -251,7 +259,9 @@ describe('useReconnectNodeDefinitionRefresh', () => {
   })
 
   it('checks once more when ComfyUI reconnects again during a check', async () => {
-    const refresh = registerRefreshCommand()
+    const refresh = registerRefreshCommand(
+      vi.fn(async () => pageKnows('NewPackNode'))
+    )
     let resolveFirst!: (response: Response) => void
     const fetchDefs = vi
       .spyOn(api, 'fetchNodeDefs')
@@ -299,27 +309,72 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
   })
 
-  it('keeps the saved baseline and modified flag across the rebuild', async () => {
+  it('rebuilds with the saved baseline kept', async () => {
     registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
     showCanvas(node('NewPackNode', { missing: true }))
     serverHas('NewPackNode')
-    const workflow = useWorkflowStore().activeWorkflow!
-    const baseline = workflow.changeTracker.initialState
-    workflow.isModified = true
-    vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
-      async (opened) => {
-        opened.changeTracker!.initialState = structuredClone(
-          opened.changeTracker!.activeState
-        )
-        opened.isModified = false
-        return true
-      }
-    )
 
     await useReconnectNodeDefinitionRefresh()()
 
-    expect(workflow.changeTracker.initialState).toBe(baseline)
-    expect(workflow.isModified).toBe(true)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      useWorkflowStore().activeWorkflow,
+      expect.objectContaining({ force: true, keepSavedBaseline: true })
+    )
+  })
+
+  it('waits for an undo or redo to finish before rebuilding', async () => {
+    registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
+    showCanvas(node('NewPackNode', { missing: true }))
+    serverHas('NewPackNode')
+    const tracker = useWorkflowStore().activeWorkflow!.changeTracker
+    tracker._restoringState = true
+
+    const done = useReconnectNodeDefinitionRefresh()()
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+
+    tracker._restoringState = false
+    await vi.advanceTimersByTimeAsync(200)
+    await done
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+  })
+
+  it('retries the rebuild when an edit starts while it waits behind another load', async () => {
+    registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
+    showCanvas(node('NewPackNode', { missing: true }))
+    serverHas('NewPackNode')
+    const tracker = useWorkflowStore().activeWorkflow!.changeTracker
+    const openWorkflow = vi.mocked(useWorkflowService().openWorkflow)
+    openWorkflow.mockImplementationOnce(async (_workflow, options) => {
+      tracker.changeCount = 1
+      return options?.isCurrent?.() ?? true
+    })
+
+    const done = useReconnectNodeDefinitionRefresh()()
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(openWorkflow).toHaveBeenCalledOnce()
+
+    tracker.changeCount = 0
+    await vi.advanceTimersByTimeAsync(200)
+    await done
+    expect(openWorkflow).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not retry a rebuild whose load failed', async () => {
+    registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
+    showCanvas(node('NewPackNode', { missing: true }))
+    serverHas('NewPackNode')
+    const openWorkflow = vi.mocked(useWorkflowService().openWorkflow)
+    openWorkflow.mockImplementation(async (_workflow, options) => {
+      options?.isCurrent?.()
+      return false
+    })
+
+    const done = useReconnectNodeDefinitionRefresh()()
+    await vi.advanceTimersByTimeAsync(1_000)
+    await done
+
+    expect(openWorkflow).toHaveBeenCalledOnce()
   })
 
   it('waits for an edit in progress to finish before rebuilding', async () => {

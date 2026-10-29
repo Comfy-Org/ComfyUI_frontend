@@ -2,19 +2,19 @@ import { delay } from 'es-toolkit'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
-const CHANGE_SETTLE_POLL_MS = 100
-const CHANGE_SETTLE_TIMEOUT_MS = 30_000
+const IDLE_POLL_MS = 100
+const IDLE_TIMEOUT_MS = 30_000
 
 async function fetchServerNodeTypes(): Promise<string[] | undefined> {
   try {
@@ -43,26 +43,31 @@ function canvasHasRebuildablePlaceholder(): boolean {
   return found
 }
 
-async function changesSettled(workflow: LoadedComfyWorkflow): Promise<boolean> {
-  const deadline = Date.now() + CHANGE_SETTLE_TIMEOUT_MS
-  while (workflow.changeTracker.changeCount > 0) {
-    if (Date.now() >= deadline) return false
-    await delay(CHANGE_SETTLE_POLL_MS)
-  }
-  return true
+function isIdle(workflow: LoadedComfyWorkflow): boolean {
+  const tracker = workflow.changeTracker
+  return tracker.changeCount === 0 && !tracker._restoringState
 }
 
-async function rebuildWorkflow(workflow: LoadedComfyWorkflow): Promise<void> {
+async function rebuildWhenIdle(workflow: LoadedComfyWorkflow): Promise<void> {
   const workflowStore = useWorkflowStore()
-  const baseline = workflow.changeTracker.initialState
-  const wasModified = workflow.isModified
-  const reloaded = await useWorkflowService().openWorkflow(workflow, {
-    force: true,
-    isCurrent: () => workflowStore.activeWorkflow === workflow
-  })
-  if (!reloaded) return
-  workflow.changeTracker.initialState = baseline
-  workflow.isModified = wasModified
+  const isActive = () => workflowStore.activeWorkflow === workflow
+  const deadline = Date.now() + IDLE_TIMEOUT_MS
+  while (isActive() && canvasHasRebuildablePlaceholder()) {
+    if (isIdle(workflow)) {
+      const attempt = { deferred: false }
+      const rebuilt = await useWorkflowService().openWorkflow(workflow, {
+        force: true,
+        isCurrent: () => {
+          attempt.deferred = !(isActive() && isIdle(workflow))
+          return !attempt.deferred
+        },
+        keepSavedBaseline: true
+      })
+      if (rebuilt || !attempt.deferred) return
+    }
+    if (Date.now() >= deadline) return
+    await delay(IDLE_POLL_MS)
+  }
 }
 
 /**
@@ -86,10 +91,7 @@ export function useReconnectNodeDefinitionRefresh() {
       })
     }
     const workflow = useWorkflowStore().activeWorkflow
-    if (!workflow || !canvasHasRebuildablePlaceholder()) return
-    if (!(await changesSettled(workflow))) return
-    if (useWorkflowStore().activeWorkflow !== workflow) return
-    await rebuildWorkflow(workflow)
+    if (workflow) await rebuildWhenIdle(workflow)
   }
 
   async function refreshUntilSettled(): Promise<void> {

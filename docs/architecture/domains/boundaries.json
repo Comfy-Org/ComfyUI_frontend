@@ -2277,8 +2277,6 @@
           "src/composables/useNodeHelpContent.ts",
           "src/composables/usePerTabState.test.ts",
           "src/composables/usePerTabState.ts",
-          "src/composables/useReconnectNodeDefinitionRefresh.test.ts",
-          "src/composables/useReconnectNodeDefinitionRefresh.ts",
           "src/services/nodeOrganizationService.test.ts",
           "src/services/nodeOrganizationService.ts",
           "src/services/nodeSearchService.test.ts",

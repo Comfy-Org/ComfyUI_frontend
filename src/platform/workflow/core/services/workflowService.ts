@@ -27,6 +27,7 @@ import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useApp } from '@/scripts/appInstance'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { nodeTypesMayStillArrive } from '@/platform/lateCustomNodes/lateNodeTypes'
@@ -148,6 +149,19 @@ function resetAndRestoreTracker(
   tracker.reset(ensureWorkflowId(workflowData, activeStateFallbackId(workflow)))
   tracker.restore()
   return true
+}
+
+function restoreSavedBaseline(
+  workflow: ComfyWorkflow,
+  savedBaseline: ComfyWorkflowJSON
+): void {
+  const tracker = workflow.changeTracker
+  if (!tracker) return
+  tracker.initialState = savedBaseline
+  workflow.isModified = !ChangeTracker.graphEqual(
+    savedBaseline,
+    tracker.activeState
+  )
 }
 
 /** @internal Test-only: clears the module-level load queue between tests. */
@@ -418,7 +432,8 @@ export const useWorkflowService = () => {
     if (workflow) {
       await openWorkflow(workflow, {
         force: true,
-        isCurrent: () => workflowStore.activeWorkflow === workflow
+        isCurrent: () => workflowStore.activeWorkflow === workflow,
+        keepSavedBaseline: true
       })
     }
   }
@@ -480,6 +495,7 @@ export const useWorkflowService = () => {
       navigationIntentId?: number
       isCurrent?: () => boolean
       initiator?: 'user'
+      keepSavedBaseline?: boolean
     } = {}
   ): Promise<boolean> => {
     if (options.isCurrent?.() === false) return Promise.resolve(false)
@@ -514,18 +530,25 @@ export const useWorkflowService = () => {
         }
 
         workflow.changeTracker?.prepareForSave()
-        const loaded = await useApp().loadGraphData(
-          toRaw(workflow.activeState) as ComfyWorkflowJSON,
-          /* clean=*/ true,
-          /* restore_view=*/ true,
-          workflow,
-          {
-            checkForRerouteMigration: false,
-            deferWarnings: true,
-            skipAssetScans: !loadFromRemote && !options.force,
-            workflowNavigationId: navigationIntentId
-          }
-        )
+        const savedBaseline = options.keepSavedBaseline
+          ? workflow.changeTracker?.initialState
+          : undefined
+        const loaded = await useApp()
+          .loadGraphData(
+            toRaw(workflow.activeState) as ComfyWorkflowJSON,
+            /* clean=*/ true,
+            /* restore_view=*/ true,
+            workflow,
+            {
+              checkForRerouteMigration: false,
+              deferWarnings: true,
+              skipAssetScans: !loadFromRemote && !options.force,
+              workflowNavigationId: navigationIntentId
+            }
+          )
+          .finally(() => {
+            if (savedBaseline) restoreSavedBaseline(workflow, savedBaseline)
+          })
         if (loaded === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           await restoreRetainedWorkflow(workflow)

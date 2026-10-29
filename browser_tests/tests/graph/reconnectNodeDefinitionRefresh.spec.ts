@@ -6,7 +6,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 const proofNodeId = toNodeId(1)
