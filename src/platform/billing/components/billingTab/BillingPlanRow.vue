@@ -31,12 +31,17 @@
       </Button>
       <Button
         v-else-if="action"
+        as="a"
+        :href="plansHref"
+        target="_blank"
+        rel="noopener"
         :variant="action === 'manage' ? 'secondary' : 'inverted'"
         size="md"
-        class="shrink-0"
-        @click="emit('openPlan')"
+        class="shrink-0 no-underline"
+        @click="trackPlans"
       >
         {{ $t(`workspacePanel.billingTab.plan.actions.${action}`) }}
+        <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
       </Button>
     </div>
   </section>
@@ -52,6 +57,7 @@ import {
   CONTACT_SALES_URL,
   formatPlanDate
 } from '@/platform/billing/components/billingTab/planRow'
+import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 import type {
   PlanRowAction,
   PlanRowState
@@ -69,9 +75,10 @@ const {
   salesVariant?: 'inverted' | 'secondary'
 }>()
 
-const emit = defineEmits<{
-  openPlan: []
-}>()
+const { href: plansHref, track: trackPlans } = usePlatformHandoff(
+  '/profile/billing/plans',
+  { target: 'plans' }
+)
 
 const { t, locale } = useI18n()
 
