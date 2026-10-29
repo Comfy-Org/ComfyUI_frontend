@@ -38,11 +38,72 @@ describe('useOnboarding', () => {
   beforeEach(() => {
     window.localStorage.clear()
     vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
-    vi.spyOn(api, 'getSetting').mockResolvedValue([])
+    storedScopes([])
+  })
+
+  function storedScopes(scopes: unknown, status = 200) {
+    vi.spyOn(api, 'fetchApi').mockImplementation(
+      async () => new Response(JSON.stringify(scopes), { status })
+    )
+  }
+
+  it('does not overwrite the stored list when reading it fails', async () => {
+    storedScopes({ error: 'unavailable' }, 503)
+
+    useOnboarding(STEPS, KEY).finish()
+
+    await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
+    await nextTick()
+    expect(api.storeSetting).not.toHaveBeenCalled()
+
+    storedScopes(['other.onboarded'])
+    useOnboarding(STEPS, KEY)
+
+    await vi.waitFor(() =>
+      expect(api.storeSetting).toHaveBeenCalledWith(
+        AGENT_ONBOARDED_SCOPES_SETTING_ID,
+        ['other.onboarded', KEY]
+      )
+    )
+  })
+
+  it('treats a setting that was never stored as an empty list', async () => {
+    storedScopes(null, 404)
+
+    useOnboarding(STEPS, KEY).finish()
+
+    await vi.waitFor(() =>
+      expect(api.storeSetting).toHaveBeenCalledWith(
+        AGENT_ONBOARDED_SCOPES_SETTING_ID,
+        [KEY]
+      )
+    )
+  })
+
+  it('clears a stored scope on restart even when this tab never loaded it', async () => {
+    storedScopes(['other.onboarded', KEY])
+
+    useOnboarding(STEPS, KEY).restart()
+
+    await vi.waitFor(() =>
+      expect(api.storeSetting).toHaveBeenCalledWith(
+        AGENT_ONBOARDED_SCOPES_SETTING_ID,
+        ['other.onboarded']
+      )
+    )
+  })
+
+  it('ignores a settings value that is not a list', () => {
+    Object.assign(useSettingStore().settingValues, {
+      [AGENT_ONBOARDED_SCOPES_SETTING_ID]: true
+    })
+
+    expect(hasSeenCoach(KEY)).toBe(false)
+    expect(useOnboarding(STEPS, KEY).active.value).toBe(true)
   })
 
   it('keeps a scope another tab finished when this tab finishes its own', async () => {
-    vi.mocked(api.getSetting).mockResolvedValue(['other.onboarded'])
+    storedScopes(['other.onboarded'])
 
     useOnboarding(STEPS, KEY).finish()
 
@@ -58,7 +119,7 @@ describe('useOnboarding', () => {
   })
 
   it('clears only its own scope when restarting a tour', async () => {
-    vi.mocked(api.getSetting).mockResolvedValue(['other.onboarded', KEY])
+    storedScopes(['other.onboarded', KEY])
     useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID] = [KEY]
 
     useOnboarding(STEPS, KEY).restart()

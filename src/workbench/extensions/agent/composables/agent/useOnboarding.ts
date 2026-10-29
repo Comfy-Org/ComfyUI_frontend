@@ -65,9 +65,14 @@ export function reportMissingCoachTarget(target: string, step: number): void {
   })
 }
 
+function scopeList(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((scope): scope is string => typeof scope === 'string')
+}
+
 function onboardedScopes(): readonly string[] {
-  return (
-    useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID] ?? []
+  return scopeList(
+    useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID]
   )
 }
 
@@ -93,19 +98,32 @@ function withScopeChanges(
   return [...kept, ...added]
 }
 
-async function storedOnboardedScopes(): Promise<string[]> {
-  const stored: unknown = await api.getSetting(
-    AGENT_ONBOARDED_SCOPES_SETTING_ID
+type StoredScopesRead =
+  | { ok: true; scopes: string[] }
+  | { ok: false; status: number }
+
+async function readStoredOnboardedScopes(): Promise<StoredScopesRead> {
+  const response = await api.fetchApi(
+    `/settings/${encodeURIComponent(AGENT_ONBOARDED_SCOPES_SETTING_ID)}`
   )
-  if (!Array.isArray(stored)) return []
-  return stored.filter((scope): scope is string => typeof scope === 'string')
+  if (response.status === 404) return { ok: true, scopes: [] }
+  if (!response.ok) return { ok: false, status: response.status }
+  return { ok: true, scopes: scopeList(await response.json()) }
 }
 
 async function writeOnboardedScopes(): Promise<void> {
   if (pendingScopeChanges.size === 0) return
   const changes = new Map(pendingScopeChanges)
   try {
-    const merged = withScopeChanges(await storedOnboardedScopes(), changes)
+    const stored = await readStoredOnboardedScopes()
+    if (!stored.ok) {
+      reportError(
+        `Failed to read onboarded scopes (${stored.status})`,
+        ONBOARDING_WRITE_FAILURE
+      )
+      return
+    }
+    const merged = withScopeChanges(stored.scopes, changes)
     const response = await api.storeSetting(
       AGENT_ONBOARDED_SCOPES_SETTING_ID,
       merged
@@ -130,7 +148,8 @@ async function writeOnboardedScopes(): Promise<void> {
 
 function persistSeenToSettings(scopedKey: string, seen: boolean): void {
   if (
-    settingsRecordSeen(scopedKey) === seen &&
+    seen &&
+    settingsRecordSeen(scopedKey) &&
     !pendingScopeChanges.has(scopedKey)
   )
     return
