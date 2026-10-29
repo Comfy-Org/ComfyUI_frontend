@@ -42,9 +42,7 @@ export function useUploadModelFile() {
   const { flags } = useFeatureFlags()
   const downloads = useAssetDownloadStore()
   const uploadFolders = computed(() => flags.modelUploadFolders)
-  const isAvailable = computed(
-    () => flags.runtimeLibraryModelsEnabled && uploadFolders.value.length > 0
-  )
+  const isAvailable = computed(() => uploadFolders.value.length > 0)
 
   function defaultModelType() {
     return uploadFolders.value.includes(DEFAULT_MODEL_TYPE)

@@ -95,7 +95,6 @@ describe('useUploadModelFile', () => {
   beforeEach(() => {
     vi.mocked(reportError).mockImplementation(() => undefined)
     const flags = vi.mocked(useFeatureFlags().flags)
-    flags.runtimeLibraryModelsEnabled = true
     flags.modelUploadFolders = ['checkpoints', 'loras']
   })
 
@@ -302,16 +301,13 @@ describe('useUploadModelFile', () => {
     expect(upload.modelType.value).toBe('loras')
   })
 
-  it('is offered only while the flag is on and the server lists folders', () => {
+  it('is offered exactly while the server lists upload folders', () => {
     const flags = vi.mocked(useFeatureFlags().flags)
+    flags.runtimeLibraryModelsEnabled = false
     const { upload } = setup()
     expect(upload.isAvailable.value).toBe(true)
 
     flags.modelUploadFolders = []
-    expect(upload.isAvailable.value).toBe(false)
-
-    flags.modelUploadFolders = ['loras']
-    flags.runtimeLibraryModelsEnabled = false
     expect(upload.isAvailable.value).toBe(false)
   })
 
