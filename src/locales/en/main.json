@@ -4188,25 +4188,26 @@
       "resetUpload": "Reset upload",
       "simulateOutOfMemory": "Simulate out of memory"
     },
-    "cloudMenu": {
-      "buttonTooltip": "Run on Comfy Cloud",
-      "runThisWorkflow": "Run this workflow on Comfy Cloud",
-      "nodePacksMissing": "{count} node pack missing | {count} node packs missing",
+    "cloudButton": {
+      "tooltip": "Run on Comfy Cloud",
+      "uploading": "Uploading {models} · {percent}%",
+      "models": "{count} model | {count} models"
+    },
+    "runDialog": {
+      "title": "Run on Comfy Cloud",
+      "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
+      "checking": "Checking whether Comfy Cloud has every node and model this workflow uses…",
+      "signedOut": "Sign in to check whether Comfy Cloud can run this workflow.",
       "nodePacks": "{count} node pack | {count} node packs",
       "models": "{count} model | {count} models",
-      "nodePacksAndModelsMissing": "{nodePacks} and {models} missing",
-      "uploading": "Uploading {models} · {percent}%",
-      "convert": "Convert",
-      "upload": "Upload",
+      "missingNodePacks": "Comfy Cloud is missing {nodePacks}: {names}.",
+      "missingNodePacksAndModels": "Comfy Cloud is missing {nodePacks}: {nodePackNames}, and {models}: {modelNames}.",
+      "startAgentBody": "{missing} We'll start your local agent to get this workflow running on Comfy Cloud. You'll approve any local file uploads along the way.",
+      "agentNotFound": "ComfyUI couldn't find your local agent. Copy a prompt for Claude Code or Codex, or set this workflow up on Platform.",
+      "openOnCloud": "Open on Comfy Cloud",
+      "startAgent": "Start agent",
       "signIn": "Sign in",
-      "deployLocalSetup": "Deploy your local setup to Comfy Cloud"
-    },
-    "convertDialog": {
-      "title": "Run on Comfy Cloud",
-      "bodyAgentFound": "We'll start your local agent to get this workflow running on Comfy Cloud. You'll approve any local file uploads along the way.",
-      "bodyAgentNotFound": "ComfyUI couldn't find your local agent. Copy a prompt for Claude Code or Codex, or set this workflow up on Platform.",
       "copyPrompt": "Copy prompt",
-      "letsGo": "Let's go",
       "openInPlatform": "Open in Platform",
       "agentEnsues": "Agent ensues"
     },
@@ -4216,7 +4217,7 @@
       "total": "{size} in total. They go to your models on Comfy Cloud.",
       "upload": "Upload",
       "uploadingTitle": "Uploading {count} model | Uploading {count} models",
-      "uploadingBody": "Hide this and keep working. The upload carries on, and the engine button shows how far it has got.",
+      "uploadingBody": "Hide this and keep working. The upload carries on, and the Comfy Cloud button shows how far it has got.",
       "uploaded": "Uploaded",
       "progress": "{done} of {total}",
       "percent": "{percent}%",

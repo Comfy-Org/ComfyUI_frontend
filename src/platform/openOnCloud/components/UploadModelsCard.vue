@@ -75,7 +75,7 @@
       </p>
       <footer class="flex items-center justify-end gap-2.5 pt-3">
         <template v-if="isUploading">
-          <Button variant="secondary" size="lg" @click="uploadStore.cancel()">
+          <Button variant="secondary" size="lg" @click="cancelUpload">
             {{ $t('openOnCloud.uploadDialog.cancelUpload') }}
           </Button>
           <Button variant="inverted" size="lg" @click="emit('done')">
@@ -103,7 +103,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -136,19 +136,12 @@ const uploadStore = useModelUploadStore()
 const { state: upload } = storeToRefs(uploadStore)
 
 const isUploading = computed(() => upload.value.phase === 'uploading')
-const shownModels = computed(() =>
-  upload.value.phase === 'uploading' ? upload.value.models : models
-)
 const uploadedBytes = computed(() =>
   upload.value.phase === 'uploading' ? upload.value.uploadedBytes : 0
 )
-const files = computed(() =>
-  uploadFiles(shownModels.value, uploadedBytes.value)
-)
-const totalSize = computed(() => totalBytes(shownModels.value))
-const percent = computed(() =>
-  uploadPercent(shownModels.value, uploadedBytes.value)
-)
+const files = computed(() => uploadFiles(models, uploadedBytes.value))
+const totalSize = computed(() => totalBytes(models))
+const percent = computed(() => uploadPercent(models, uploadedBytes.value))
 
 function isDone(file: ModelUploadFile): boolean {
   return file.uploadedBytes >= file.model.bytes
@@ -170,7 +163,8 @@ function fileStatus(file: ModelUploadFile): string {
   return progressLabel(file.uploadedBytes, file.model.bytes)
 }
 
-watch(isUploading, (uploading, wasUploading) => {
-  if (wasUploading && !uploading) emit('done')
-})
+function cancelUpload() {
+  uploadStore.cancel()
+  emit('dismiss')
+}
 </script>

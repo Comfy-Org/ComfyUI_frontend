@@ -4,13 +4,13 @@
       v-if="localAgent.isConverting"
       role="dialog"
       aria-modal="true"
-      :aria-label="$t('openOnCloud.convertDialog.agentEnsues')"
+      :aria-label="$t('openOnCloud.runDialog.agentEnsues')"
       class="fixed inset-0 z-overlay grid place-items-center bg-black/70"
       data-testid="agent-ensues"
       @click="localAgent.stop()"
     >
       <span class="text-5xl font-semibold tracking-tight text-white">
-        {{ $t('openOnCloud.convertDialog.agentEnsues') }}
+        {{ $t('openOnCloud.runDialog.agentEnsues') }}
       </span>
     </div>
   </Teleport>

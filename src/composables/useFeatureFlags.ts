@@ -215,7 +215,7 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
         remoteConfig.value.open_on_cloud_enabled,
-        false
+        import.meta.env.DEV
       )
     },
     get comfyHubUploadEnabled() {
