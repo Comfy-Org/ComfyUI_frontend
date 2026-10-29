@@ -152,42 +152,50 @@ describe('modelFileUploadApi.uploadModelFile', () => {
     ])
   })
 
-  it('says the file type is refused when the server refuses it', async () => {
-    serverAnswers(
-      json(400, { code: 'UNSUPPORTED_FILE_TYPE', message: 'not safetensors' })
-    )
+  it.for([
+    {
+      refusal: 'the file type',
+      status: 400,
+      body: { code: 'UNSUPPORTED_FILE_TYPE', message: 'not safetensors' },
+      expected: { ok: false, reason: 'unsupportedFile' }
+    },
+    {
+      refusal: 'the file size, with its limit message',
+      status: 400,
+      body: { code: 'FILE_TOO_LARGE', message: 'Files can be up to 2 GB.' },
+      expected: {
+        ok: false,
+        reason: 'tooLarge',
+        message: 'Files can be up to 2 GB.'
+      }
+    },
+    {
+      refusal: 'the model folder',
+      status: 400,
+      body: { code: 'UNSUPPORTED_MODEL_TYPE', message: 'not stored' },
+      expected: { ok: false, reason: 'unsupportedType' }
+    },
+    {
+      refusal: 'a plan without private models',
+      status: 403,
+      body: { code: 'PRIVATE_MODELS_DISABLED', message: 'from the server' },
+      expected: { ok: false, reason: 'privateModelsDisabled' }
+    },
+    {
+      refusal: 'a plan it could not read',
+      status: 503,
+      body: { code: 'PRIVATE_MODELS_UNAVAILABLE', message: 'from the server' },
+      expected: { ok: false, reason: 'planUnavailable' }
+    }
+  ])(
+    'sends no bytes when the start call refuses $refusal',
+    async ({ status, body, expected }) => {
+      serverAnswers(json(status, body))
 
-    await expect(upload().result).resolves.toEqual({
-      ok: false,
-      reason: 'unsupportedFile'
-    })
-    expect(StorageRequest.sent).toHaveLength(0)
-  })
-
-  it("passes on the server's size limit message", async () => {
-    serverAnswers(
-      json(400, { code: 'FILE_TOO_LARGE', message: 'Files can be up to 2 GB.' })
-    )
-
-    await expect(upload().result).resolves.toEqual({
-      ok: false,
-      reason: 'tooLarge',
-      message: 'Files can be up to 2 GB.'
-    })
-    expect(StorageRequest.sent).toHaveLength(0)
-  })
-
-  it('says the model type is refused when the server cannot store that folder', async () => {
-    serverAnswers(
-      json(400, { code: 'UNSUPPORTED_MODEL_TYPE', message: 'not stored' })
-    )
-
-    await expect(upload().result).resolves.toEqual({
-      ok: false,
-      reason: 'unsupportedType'
-    })
-    expect(StorageRequest.sent).toHaveLength(0)
-  })
+      await expect(upload().result).resolves.toEqual(expected)
+      expect(StorageRequest.sent).toHaveLength(0)
+    }
+  )
 
   it('says the model type is refused when the finish call refuses it', async () => {
     serverAnswers(
@@ -203,19 +211,6 @@ describe('modelFileUploadApi.uploadModelFile', () => {
       reason: 'unsupportedType'
     })
   })
-
-  it.for([
-    [403, 'PRIVATE_MODELS_DISABLED', 'privateModelsDisabled'],
-    [503, 'PRIVATE_MODELS_UNAVAILABLE', 'planUnavailable']
-  ] as const)(
-    'stops before any bytes when start answers %s %s',
-    async ([status, code, reason]) => {
-      serverAnswers(json(status, { code, message: 'from the server' }))
-
-      await expect(upload().result).resolves.toEqual({ ok: false, reason })
-      expect(StorageRequest.sent).toHaveLength(0)
-    }
-  )
 
   it.for([
     [403, 'PRIVATE_MODELS_DISABLED', 'privateModelsDisabled'],

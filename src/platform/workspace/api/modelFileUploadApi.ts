@@ -12,8 +12,7 @@ import {
 import { api } from '@/scripts/api'
 
 const UPLOADS_ENDPOINT = '/assets/uploads'
-/** Storage refuses a second write to the signed object (`x-goog-if-generation-match: 0`). */
-const STORAGE_ALREADY_WRITTEN = 412
+const STORAGE_PRECONDITION_FAILED = 412
 
 type ModelFileUploadFailure =
   | 'unsupportedFile'
@@ -91,7 +90,7 @@ function readStorageAnswer(
   status: number
 ): ModelFileUploadStopped | 'alreadyWritten' | undefined {
   if (status >= 200 && status < 300) return undefined
-  if (status === STORAGE_ALREADY_WRITTEN) return 'alreadyWritten'
+  if (status === STORAGE_PRECONDITION_FAILED) return 'alreadyWritten'
   return { ok: false, reason: 'failed', cause: `storage ${status}` }
 }
 
@@ -104,11 +103,6 @@ async function postJson(route: string, body: unknown, signal: AbortSignal) {
   })
 }
 
-/**
- * Asks for a signed upload URL and puts the bytes straight to storage. Answers
- * the upload id, why it stopped, or `alreadyWritten` when storage already holds
- * an object at that URL and the upload has to start again.
- */
 async function stageFile(
   file: File,
   options: ModelFileUploadOptions
@@ -130,12 +124,6 @@ async function stageFile(
   return (await putFile(start.data, file, options)) ?? start.data.upload_id
 }
 
-/**
- * Sends a model file from the computer into the workspace library: asks for a
- * signed upload URL, puts the bytes straight to storage, then asks the server
- * to store it. A signed URL storage already wrote to is never written again:
- * the upload starts once more from a new URL. Never throws.
- */
 async function uploadModelFile(
   file: File,
   options: ModelFileUploadOptions
@@ -169,4 +157,5 @@ async function uploadModelFile(
   }
 }
 
+/** Sends a model file from the computer into the workspace library; never throws. */
 export const modelFileUploadApi = { uploadModelFile }
