@@ -272,35 +272,28 @@ onBeforeUnmount(() => agentIdentity.stop())
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
 const teamWorkspaceStore = useTeamWorkspaceStore()
-// The socket credential is workspace-scoped off-cloud (agentAuth.ts mints a
-// workspace bearer and puts it in the socket URL), and an off-cloud workspace
-// switch does not reload the page the way the cloud path does, so the workspace
-// belongs in this key or the socket keeps the previous workspace's bearer.
 const agentSocketIdentity = computed(() => [
   authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
-  teamWorkspaceStore.activeWorkspaceId ?? null
+  teamWorkspaceStore.activeWorkspaceId ?? null,
+  desktopHostUser.value?.workspaceId ?? null
 ])
 watch(
   agentSocketIdentity,
-  ([account, workspace], [wasAccount, wasWorkspace]) => {
-    if (account === wasAccount && workspace === wasWorkspace) return
-    // A workspace change arrives as A -> null -> B on three paths: the desktop host
-    // follow, the lazy first read of the workspace store off-cloud, and sign-out
-    // clearing the workspace separately from the account. Handshaking on the null leg
-    // would mint against a workspace that is not settled yet -- off-cloud the token can
-    // be undefined there, so the socket fails auth and backs off -- and it would discard
-    // an identity lookup still in flight. Waiting for the workspace costs nothing: the
-    // credential in use is still the previous workspace's, and B reconnects on arrival.
-    // An account change is never skipped, so sign-out still drops the socket. Nor is
-    // a null skipped while Desktop pins a workspace: followDesktopHostWorkspace clears
-    // the id before refreshing and leaves it null when the refresh fails or the
-    // workspace is not listed, and that null never resolves. Holding the socket through
-    // it would keep serving the previous workspace after the host moved to another.
+  (
+    [account, workspace, hostWorkspace],
+    [wasAccount, wasWorkspace, wasHostWorkspace]
+  ) => {
+    if (
+      account === wasAccount &&
+      workspace === wasWorkspace &&
+      hostWorkspace === wasHostWorkspace
+    )
+      return
     if (
       workspace === null &&
       account === wasAccount &&
       account !== null &&
-      desktopHostUser.value?.workspaceId == null
+      hostWorkspace === null
     )
       return
     events.reconnect()

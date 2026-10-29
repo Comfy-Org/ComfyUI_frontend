@@ -154,8 +154,6 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
     getServerFeature,
     socket: { readyState: 1, send: socketSend },
-    // authStore resets the socket when the signed-in identity changes, which a
-    // desktop-host session in these tests does.
     resetSocket: vi.fn(async () => {}),
     dispatchCustomEvent: vi.fn(),
     addEventListener: ws.add,
@@ -16033,10 +16031,6 @@ describe('AgentPanelRoot agent socket', () => {
     }
   )
 
-  // The socket credential is workspace-scoped off-cloud, and an off-cloud
-  // workspace switch does not reload the page, so nothing else re-handshakes
-  // the socket. Without the workspace in the key it keeps the previous
-  // workspace's bearer for the life of the connection (FE-3592).
   it('reconnects the socket and looks the identity up again on a workspace switch', async () => {
     const reset = vi.fn()
     vi.mocked(resolveAgentIdentity).mockReturnValue({
@@ -16060,10 +16054,6 @@ describe('AgentPanelRoot agent socket', () => {
     expect(reset).toHaveBeenCalledOnce()
   })
 
-  // Three paths clear the workspace before setting the next one: the desktop host
-  // follow, the lazy first read of the store off-cloud, and sign-out. Handshaking on
-  // the null leg mints against a workspace that is not settled, so the socket fails
-  // auth and backs off, and it discards an identity lookup still in flight.
   it('handshakes once for a workspace switch that passes through null', async () => {
     const reset = vi.fn()
     vi.mocked(resolveAgentIdentity).mockReturnValue({
@@ -16092,10 +16082,6 @@ describe('AgentPanelRoot agent socket', () => {
     expect(reset).toHaveBeenCalledOnce()
   })
 
-  // followDesktopHostWorkspace clears the id before refreshing and leaves it null if
-  // the refresh fails or the host workspace is not listed. That null never resolves,
-  // so skipping it would leave the socket serving the previous workspace while Desktop
-  // has already moved to another one.
   it('drops the socket when the workspace goes null while Desktop pins another', async () => {
     const reset = vi.fn()
     vi.mocked(resolveAgentIdentity).mockReturnValue({
@@ -16137,8 +16123,51 @@ describe('AgentPanelRoot agent socket', () => {
     }
   })
 
-  // Sign-out clears the account and the workspace separately, and the socket has to
-  // drop regardless of which half the watcher sees first.
+  it('reconnects when only the Desktop host workspace moves', async () => {
+    const reset = vi.fn()
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({
+        status: 'resolved',
+        userId: 'account-a'
+      }),
+      reset,
+      stop: () => {}
+    })
+    const hostOn = (workspaceId: string) =>
+      fromPartial<DesktopHostAuthState>({
+        status: 'signed_in',
+        userId: 'account-a',
+        workspaceId
+      })
+    let notifyHostChanged: (state: DesktopHostAuthState) => void = () => {}
+    await startDesktopHostSession({
+      getState: async () => hostOn('ws-a'),
+      getWorkspaceToken: async () => 'host-token',
+      requestSignIn: async () => hostOn('ws-a'),
+      signOut: async () => ({ status: 'signed_out' }),
+      switchWorkspace: async (workspaceId) => hostOn(workspaceId),
+      onChanged: (listener) => {
+        notifyHostChanged = listener
+        return () => {}
+      }
+    })
+    try {
+      signInAs({ firebase: 'account-a', apiKeyUser: null })
+      const workspaces = useTeamWorkspaceStore()
+      Object.assign(workspaces, { activeWorkspaceId: null })
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      agentSocket.reconnect.mockClear()
+
+      notifyHostChanged(hostOn('ws-b'))
+      await nextTick()
+
+      expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+      expect(reset).toHaveBeenCalledOnce()
+    } finally {
+      stopDesktopHostSession()
+    }
+  })
+
   it('still drops the socket when a sign-out clears the workspace too', async () => {
     signInAs({ firebase: 'account-a', apiKeyUser: null })
     const workspaces = useTeamWorkspaceStore()
