@@ -1,7 +1,9 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
+
+const FIVE_MINUTES_MS = 5 * 60_000
 
 function fail() {
   return Promise.reject(new Error('Balance temporarily unavailable'))
@@ -12,8 +14,11 @@ function succeed() {
 }
 
 describe('refreshBalanceInBackground', () => {
-  beforeEach(async () => {
-    await refreshBalanceInBackground(succeed)
+  let testStart = Date.now()
+
+  beforeEach(() => {
+    testStart += 2 * FIVE_MINUTES_MS
+    vi.setSystemTime(testStart)
   })
 
   it('reports nothing when the read succeeds', async () => {
@@ -34,14 +39,16 @@ describe('refreshBalanceInBackground', () => {
     })
   })
 
-  it('reports a run of failures once, and again after a success', async () => {
+  it('reports at most one failure every five minutes, whatever succeeds in between', async () => {
     await Promise.all([
       refreshBalanceInBackground(fail),
       refreshBalanceInBackground(fail)
     ])
+    await refreshBalanceInBackground(succeed)
+    await refreshBalanceInBackground(fail)
     expect(reportError).toHaveBeenCalledOnce()
 
-    await refreshBalanceInBackground(succeed)
+    vi.setSystemTime(Date.now() + FIVE_MINUTES_MS)
     await refreshBalanceInBackground(fail)
 
     expect(reportError).toHaveBeenCalledTimes(2)

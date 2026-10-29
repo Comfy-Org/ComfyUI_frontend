@@ -1,18 +1,18 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-let failureReported = false
+const REPORT_INTERVAL_MS = 5 * 60_000
+let lastReportedAt = Number.NEGATIVE_INFINITY
 
-/** Reads the balance for a caller that does not await it; reports a run of failures once and never rejects. */
+/** Reads the balance for a caller that does not await it; reports a failure at most every 5 minutes and never rejects. */
 export function refreshBalanceInBackground(
   fetchBalance: () => Promise<unknown>
 ): Promise<void> {
   return fetchBalance().then(
-    () => {
-      failureReported = false
-    },
+    () => undefined,
     (error: unknown) => {
-      if (failureReported) return
-      failureReported = true
+      const now = Date.now()
+      if (now - lastReportedAt < REPORT_INTERVAL_MS) return
+      lastReportedAt = now
       reportError(error, {
         surface: 'billing',
         errorType: 'error_refreshing_balance',
