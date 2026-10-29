@@ -31,8 +31,8 @@ import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
-import type { CurveData } from '@/components/curve/types'
-import type { useExtensionService } from '@/services/extensionService'
+import type { CurveData } from '@comfyorg/graph-model/curve'
+import type { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
@@ -43,11 +43,11 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import * as keybindingServiceModule from '@/platform/keybindings/keybindingService'
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -72,7 +72,7 @@ import { createNode } from '@/utils/createNode'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -94,8 +94,8 @@ import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import { setTelemetryRegistry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
 
@@ -103,11 +103,11 @@ import { PromptExecutionError, api } from '@/scripts/api'
 import { useApp } from '@/scripts/appRegistry'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createTestRootGraph,
   createTestSubgraph,
@@ -116,7 +116,7 @@ import {
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { zeroUuid } from '@/utils/uuid'
 import type { importA1111 } from './pnginfo'
@@ -175,7 +175,7 @@ vi.mock(import('@/scripts/metadata/parser'), () => ({
 
 vi.mock(import('@/utils/eventUtils'), { spy: true })
 
-vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
 vi.mock(import('./pnginfo'), () => ({
   importA1111: mockImportA1111
@@ -191,7 +191,7 @@ vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   })
 }))
 
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
   useExtensionService: vi.fn(() =>
     fromPartial<ReturnType<typeof useExtensionService>>(mockExtensionService)
   )

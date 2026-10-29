@@ -110,7 +110,7 @@ import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButton
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
 import { LIGHT_TYPE_LABEL_KEYS } from '@comfyorg/viewport3d/lightInfo/types'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 

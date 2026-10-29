@@ -10,7 +10,7 @@
       :aria-label="t('g.close')"
       @click="onDismiss"
     >
-      <i class="pi pi-times" />
+      <i class="icon-[lucide--x]" />
     </Button>
 
     <div
@@ -47,7 +47,7 @@
             :key="n"
             class="flex items-center gap-2 py-2"
           >
-            <i class="pi pi-check text-xs" />
+            <i class="icon-[lucide--check] size-3" />
             <span class="text-sm">
               {{ t(`cloudNotification.feature${n}Title`) }}
             </span>
@@ -82,7 +82,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { t } = useI18n()

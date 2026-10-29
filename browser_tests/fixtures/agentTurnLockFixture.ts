@@ -31,6 +31,23 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const zAnswerRequest = z.object({ selected: z.array(z.string()) })
+const zWireInteger = z.coerce.number().int().safe()
+
+function pendingAskForWire(
+  ask: z.infer<typeof zAgentPendingAsk>
+): AgentPendingAsk {
+  if (ask.kind !== 'run_approval') return ask
+  return {
+    ...ask,
+    context: {
+      ...ask.context,
+      doc_seq:
+        ask.context.doc_seq === undefined
+          ? undefined
+          : zWireInteger.parse(ask.context.doc_seq)
+    }
+  }
+}
 
 const THREAD_ID = 'b9d0a2a1-0f2c-4f1a-9a5e-6b0f4f2c1d77'
 const TURN_ID = '2dd4f367-3399-4cb4-8127-547f531c289a'
@@ -180,7 +197,7 @@ class TurnLockServer {
   private rejected = 0
   private posts = 0
   private readonly answered: string[][] = []
-  private pendingAsk: AgentPendingAsk | undefined
+  private pendingAsk: z.infer<typeof zAgentPendingAsk> | undefined
   private heldTranscript:
     | {
         threadId?: string
@@ -371,7 +388,10 @@ class TurnLockServer {
       role: 'assistant',
       status: 'streaming',
       workflow_id: WORKFLOW_ID,
-      pending_ask: this.pendingAsk
+      pending_ask:
+        this.pendingAsk === undefined
+          ? undefined
+          : pendingAskForWire(this.pendingAsk)
     })
     return rows
   }

@@ -4,7 +4,7 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { t } from '@/i18n'
 import type { Distribution } from '@/platform/distribution/types'
 import { DISTRIBUTION } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   buildAgentHandoffDocument,
   handoffFileName

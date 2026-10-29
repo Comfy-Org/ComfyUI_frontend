@@ -9,7 +9,7 @@ import {
   LGraphNode,
   isComboWidget
 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
