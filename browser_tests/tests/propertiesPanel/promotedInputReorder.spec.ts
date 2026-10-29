@@ -14,6 +14,8 @@ test.describe(
   () => {
     let panel: PropertiesPanelHelper
 
+    test.use({ viewport: { width: 1280, height: 1080 } })
+
     test.beforeEach(async ({ comfyPage }) => {
       panel = new PropertiesPanelHelper(comfyPage.page)
 
@@ -40,6 +42,7 @@ test.describe(
         .poll(() => comfyPage.subgraph.getPromotedWidgetOrder(SUBGRAPH_NODE_ID))
         .toEqual(PROMOTED_WIDGETS)
 
+      await expect(panel.sectionWidgetRows.nth(2)).toBeInViewport({ ratio: 1 })
       await panel.dragSectionWidgetRow(0, 2)
 
       await expect
