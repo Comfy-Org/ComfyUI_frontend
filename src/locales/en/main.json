@@ -4165,10 +4165,28 @@
     "reason": {
       "starting": "{deployment} is starting. Pick it once it's ready.",
       "startElsewhere": "{deployment} isn't running. Start it on the Developer Platform, then pick it.",
-      "notReady": "{deployment} isn't ready. Pick it once it's ready."
+      "notReady": "{deployment} isn't ready. Pick it once it's ready.",
+      "stopped": "{deployment} is stopped. Start it to run jobs on it.",
+      "failed": "{deployment} failed. Start it again to run jobs on it."
     },
     "missingNodesAfterReason": "It cannot run this workflow. It is missing {nodes}.",
-    "notCheckedAfterReason": "Could not check whether it can run this workflow."
+    "notCheckedAfterReason": "Could not check whether it can run this workflow.",
+    "start": "Start",
+    "retry": "Retry",
+    "startLabel": "Start {deployment}",
+    "startOnPlatformLabel": "Start {deployment} on the Developer Platform",
+    "retryLabel": "Retry starting {deployment}",
+    "startFailed": "{deployment} didn't start.",
+    "startFix": {
+      "noCredits": "Add credits, then retry.",
+      "tooManyRunning": "Stop another deployment, then retry.",
+      "unavailable": "Start it on the Developer Platform for now.",
+      "failed": "Retry, or check it on the Developer Platform."
+    },
+    "pickStopped": "{deployment} is stopped, so jobs won't run. Start it, or pick a ready deployment.",
+    "pickFailed": "{deployment} failed, so jobs won't run. Start it again, or pick a ready deployment.",
+    "stoppedStartTooltip": "Running on {deployment}. It's stopped, so jobs won't run. Open this menu to start it.",
+    "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again."
   },
   "selectionToolbox": {
     "executeButton": {
