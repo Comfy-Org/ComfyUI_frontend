@@ -36,11 +36,11 @@ import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
-import type { AppMode } from '@/utils/appMode'
-import { isAppModeValue } from '@/utils/appMode'
-import { zeroUuid } from '@/utils/uuid'
+import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
+import { isAppModeValue } from '@comfyorg/graph-model/appMode'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
@@ -167,6 +167,25 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   const jobIdToSessionWorkflowPath = shallowRef<Map<JobId, string>>(new Map())
   const jobIdToWorkflowInstanceId = new Map<JobId, string>()
+
+  /**
+   * The `workflow_id` the server stamped on this job's first stamped frame
+   * (ComfyUI#16763), remembered so the callers that hold no frame can still
+   * place the job: `adoptActiveWorkflowJob` on a tab switch, the `executed`
+   * frames `useReconnectQueueRefresh` rebuilds by hand on reconnect, and
+   * `progress_text`, which core packs as a binary frame `send_sync` cannot
+   * stamp (ComfyUI#16887).
+   *
+   * Deliberately **not** `jobIdToWorkflowId`: that map is reactive, exported,
+   * and backs `runErrorKeyForJob`, so filing a foreign job's stamp there would
+   * attribute that job's errors to a local tab whenever the two share a graph
+   * id — exactly the copy-paste case the resolution order exists to handle.
+   * This map is populated for foreign jobs on purpose, and those never reach
+   * `ensureSessionWorkflowPath`'s eviction, so it carries its own bound.
+   */
+  const jobIdToStampedWorkflowId = new Map<JobId, string>()
+  // ~0.27 MB at capacity (32 char GUID key + 36 char UUID value)
+  const MAX_STAMPED_WORKFLOW_ID_ENTRIES = 4000
 
   const initializingJobIds = ref<Set<JobId>>(new Set())
 
@@ -475,14 +494,11 @@ export const useExecutionStore = defineStore('execution', () => {
     pendingWorkflowStatusByJobId.clear()
     pendingExecutionErrorsByJobId.clear()
     jobIdToWorkflow.clear()
+    jobIdToStampedWorkflowId.clear()
 
     cancelPendingProgressUpdates()
   }
 
-  /**
-   * Whether frames for this job may paint the active workflow's canvas.
-   * Jobs whose owner is unknown are admitted unless another job is active.
-   */
   /**
    * The all-zero sentinel is `LGraph._id`'s default, which the codebase reads
    * as "no id yet" and replaces on configure and on clear. Comparing it as a
@@ -495,51 +511,132 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   /**
-   * Resolution order, strongest first. `instanceId` is the only identifier
-   * unique per open tab. The session path is next, since a path identifies one
-   * open workflow. The frame's own `workflow_id` is weakest, because every copy
-   * of a graph shares it, so it can only place a job no per-tab mapping knows
-   * about: one queued before a page reload, or by another client.
+   * First stamp wins. Core merges `workflow_metadata` into a frame at
+   * `send_sync` enqueue time rather than at publication, so a frame queued for
+   * this job cannot be relabelled by whatever the next prompt sets — meaning
+   * the first stamp seen is this job's, and a later one disagreeing would be a
+   * frame belonging to a different job.
+   */
+  function rememberStampedWorkflowId(
+    jobId: JobId,
+    workflowId: string | undefined
+  ): void {
+    const stamped = workflowIdOrUndefined(workflowId)
+    if (!stamped || jobIdToStampedWorkflowId.has(jobId)) return
+    jobIdToStampedWorkflowId.set(jobId, stamped)
+    while (jobIdToStampedWorkflowId.size > MAX_STAMPED_WORKFLOW_ID_ENTRIES) {
+      const oldest = jobIdToStampedWorkflowId.keys().next().value
+      if (oldest === undefined) break
+      jobIdToStampedWorkflowId.delete(oldest)
+    }
+  }
+
+  /** Which leg of the resolution order decided. Only `active-job` is a guess. */
+  type OwnershipLeg = 'instance' | 'path' | 'workflow-id' | 'active-job'
+
+  interface WorkflowOwnership {
+    owned: boolean
+    leg: OwnershipLeg
+  }
+
+  /**
+   * `instanceId` is the only identifier unique per open tab, so it is the
+   * strongest leg. `undefined` means this leg cannot decide.
+   */
+  function ownershipByInstance(
+    jobId: JobId,
+    activeWorkflow: ComfyWorkflow
+  ): WorkflowOwnership | undefined {
+    const ownerInstanceId = jobIdToWorkflowInstanceId.get(jobId)
+    if (!ownerInstanceId || !activeWorkflow.instanceId) return
+    return {
+      owned: ownerInstanceId === activeWorkflow.instanceId,
+      leg: 'instance'
+    }
+  }
+
+  /** A path identifies one open workflow, so it is next after the instance. */
+  function ownershipByPath(
+    jobId: JobId,
+    activeWorkflow: ComfyWorkflow
+  ): WorkflowOwnership | undefined {
+    const ownerPath = jobIdToSessionWorkflowPath.value.get(jobId)
+    if (!ownerPath || !activeWorkflow.path) return
+    return { owned: ownerPath === activeWorkflow.path, leg: 'path' }
+  }
+
+  /**
+   * Weakest leg: every copy of a graph shares its workflow id, so this can only
+   * place a job no per-tab mapping knows about — one queued before a page
+   * reload, or by another client. Reads the frame's own stamp where the caller
+   * has a frame, and otherwise the stamp remembered from an earlier frame of the
+   * same job.
+   */
+  function ownershipByWorkflowId(
+    jobId: JobId,
+    activeWorkflow: ComfyWorkflow,
+    workflowId: string | undefined
+  ): WorkflowOwnership | undefined {
+    // Read as ComfyWorkflow, where both states are nullable. LoadedComfyWorkflow
+    // declares them present and the running store does not always honour that,
+    // so a missing state must not throw.
+    const activeGraphId = workflowIdOrUndefined(
+      activeWorkflow.activeState?.id ?? activeWorkflow.initialState?.id
+    )
+    const frameWorkflowId =
+      workflowIdOrUndefined(workflowId) ?? jobIdToStampedWorkflowId.get(jobId)
+    if (!frameWorkflowId || !activeGraphId) return
+    return { owned: frameWorkflowId === activeGraphId, leg: 'workflow-id' }
+  }
+
+  /**
+   * Resolution order, strongest first, kept as an explicit chain of single-leg
+   * predicates so the order is readable at one glance and each leg stays small.
    *
-   * @param workflowId The id the server stamped on the frame, where it sends
-   * one. Absent on a backend without ComfyUI#16763, and on frames with no
-   * `prompt_id`.
+   * Returns which leg decided, because a rejection by a real identifier is a
+   * definite answer and only the `active-job` fallback is a guess worth
+   * reporting.
+   *
+   * @param workflowId The id the server stamped on the frame, where the caller
+   * has a frame in hand. Absent on a backend without ComfyUI#16763, on frames
+   * with no `prompt_id`, and for the callers holding no frame at all.
+   */
+  function resolveWorkflowOwnership(
+    jobId: JobId,
+    workflowId?: string
+  ): WorkflowOwnership {
+    const ownedByActiveJob = (): WorkflowOwnership => ({
+      owned: !activeJobId.value || jobId === activeJobId.value,
+      leg: 'active-job'
+    })
+
+    const activeWorkflow = workflowStore.activeWorkflow
+    if (!activeWorkflow) return ownedByActiveJob()
+
+    return (
+      ownershipByInstance(jobId, activeWorkflow) ??
+      ownershipByPath(jobId, activeWorkflow) ??
+      ownershipByWorkflowId(jobId, activeWorkflow, workflowId) ??
+      ownedByActiveJob()
+    )
+  }
+
+  /**
+   * Whether frames for this job may paint the active workflow's canvas.
+   * Jobs whose owner is unknown are admitted unless another job is active.
+   *
+   * Recording the stamp here rather than at each frame handler is deliberate:
+   * this is the one chokepoint every stamped frame path already passes through
+   * (`execution_start`, `progress_state`, `executed`, `b_preview_with_metadata`),
+   * so a future frame path cannot acquire the stamp and forget to remember it.
    */
   function belongsToActiveWorkflow(
     jobId: JobId | undefined,
     workflowId?: string
   ): boolean {
     if (!jobId) return true
-
-    const ownedByActiveJob = () =>
-      !activeJobId.value || jobId === activeJobId.value
-
-    const activeWorkflow = workflowStore.activeWorkflow
-    if (!activeWorkflow) return ownedByActiveJob()
-
-    const ownerInstanceId = jobIdToWorkflowInstanceId.get(jobId)
-    if (ownerInstanceId && activeWorkflow.instanceId) {
-      return ownerInstanceId === activeWorkflow.instanceId
-    }
-
-    const ownerPath = jobIdToSessionWorkflowPath.value.get(jobId)
-    if (ownerPath && activeWorkflow.path) {
-      return ownerPath === activeWorkflow.path
-    }
-
-    const frameWorkflowId = workflowIdOrUndefined(workflowId)
-    // Read as ComfyWorkflow, where both states are nullable. LoadedComfyWorkflow
-    // declares them present and the running store does not always honour that,
-    // and this is read from a computed, so a missing state must not throw.
-    const states: ComfyWorkflow = activeWorkflow
-    const activeGraphId = workflowIdOrUndefined(
-      states.activeState?.id ?? states.initialState?.id
-    )
-    if (frameWorkflowId && activeGraphId) {
-      return frameWorkflowId === activeGraphId
-    }
-
-    return ownedByActiveJob()
+    rememberStampedWorkflowId(jobId, workflowId)
+    return resolveWorkflowOwnership(jobId, workflowId).owned
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -559,8 +656,16 @@ export const useExecutionStore = defineStore('execution', () => {
       executionStartedAt: queuedJobs.value[jobId].executionStartedAt
     })
 
-    if (!belongsToActiveWorkflow(jobId, e.detail.workflow_id)) {
-      reportAmbiguousExecutionStartRejection(jobId)
+    rememberStampedWorkflowId(jobId, e.detail.workflow_id)
+    const ownership = resolveWorkflowOwnership(jobId, e.detail.workflow_id)
+    if (!ownership.owned) {
+      // A mismatch on a real identifier is a definite answer, not a diagnostic.
+      // Under Cloud's per-user fan-out every open tab sees every other tab's
+      // job starts, so reporting those raised one warning per foreign job on
+      // ordinary traffic.
+      if (ownership.leg === 'active-job') {
+        reportAmbiguousExecutionStartRejection(jobId)
+      }
       return
     }
     executionIdToLocatorCache.clear()
@@ -1025,6 +1130,7 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStatesByJob.value = progress
     useJobPreviewStore().clearPreview(jobId)
     jobIdToWorkflow.delete(jobId)
+    jobIdToStampedWorkflowId.delete(jobId)
     if (jobId in queuedJobs.value)
       void jobReset.trigger(queuedJobs.value[jobId])
     delete queuedJobs.value[jobId]

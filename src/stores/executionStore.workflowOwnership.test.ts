@@ -1,5 +1,7 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -8,7 +10,8 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { zeroUuid } from '@/utils/uuid'
 
 vi.mock(import('@/composables/useAppMode'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 const apiEvents: EventTarget = api
@@ -56,6 +59,13 @@ describe('executionStore workflow ownership', () => {
     useWorkflowStore().activeWorkflow = workflowA
     store = useExecutionStore()
     store.bindExecutionEvents()
+  })
+
+  // `api` is a module singleton, so without this the listeners bound by each
+  // test accumulate and later tests run every earlier test's handler against a
+  // disposed store. Harmless for a boolean assertion, fatal for a counting one.
+  afterEach(() => {
+    store.unbindExecutionEvents()
   })
 
   /** Queue a job from `wf`, which is what records its owning tab. */
@@ -199,6 +209,161 @@ describe('executionStore workflow ownership', () => {
         store.belongsToActiveWorkflow('job-b', 'shared-graph-id'),
         'the path says B owns it, even though the graph id matches A'
       ).toBe(false)
+    })
+  })
+
+  describe('the stamp remembered from an earlier frame of the same job', () => {
+    /**
+     * A job this tab never queued, reaching the tab through Cloud's per-user
+     * fan-out. `handleExecutionStart` enrols it in `queuedJobs` before the gate
+     * runs, which is what makes it eligible for a reconnect replay.
+     */
+    function foreignJobStarted(jobId: string, workflowId?: string) {
+      fire('execution_start', {
+        prompt_id: jobId,
+        workflow_id: workflowId,
+        timestamp: 1
+      })
+      return jobId
+    }
+
+    it('places a job for a caller that holds no frame', () => {
+      foreignJobStarted('job-elsewhere', 'other-graph')
+
+      expect(
+        store.belongsToActiveWorkflow('job-elsewhere'),
+        'the stamp seen on execution_start still decides when no id is passed'
+      ).toBe(false)
+    })
+
+    it('blocks a reconnect replay of a foreign job output', () => {
+      // `useReconnectQueueRefresh.replayOutputs` rebuilds `executed` by hand
+      // with no `workflow_id` field, and replays every job in `queuedJobs` —
+      // which includes the foreign jobs `handleExecutionStart` enrolled. This is
+      // the call `app.ts` then makes, with `detail.workflow_id` undefined.
+      foreignJobStarted('job-elsewhere', 'other-graph')
+
+      expect(store.belongsToActiveWorkflow('job-elsewhere', undefined)).toBe(
+        false
+      )
+    })
+
+    it('is not consulted for a job this tab owns', () => {
+      queueJobFrom('job-a', workflowA)
+      foreignJobStarted('job-a', 'shared-graph-id')
+
+      expect(store.belongsToActiveWorkflow('job-a')).toBe(true)
+    })
+
+    it('keeps the first stamp when a later frame disagrees', () => {
+      // Core merges workflow_metadata at send_sync enqueue time, so a frame
+      // carrying a different id belongs to a different job, not a relabelling.
+      foreignJobStarted('job-elsewhere', 'other-graph')
+
+      // The call app.ts makes for an `executed` frame, carrying a second,
+      // disagreeing stamp for the same job.
+      store.belongsToActiveWorkflow('job-elsewhere', 'shared-graph-id')
+
+      expect(
+        store.belongsToActiveWorkflow('job-elsewhere'),
+        'the later stamp must not relabel the job onto the visible tab'
+      ).toBe(false)
+    })
+
+    it('loses to the tab instance, which is still the strongest leg', () => {
+      queueJobFrom('job-a', workflowA)
+      // A foreign stamp naming B's graph arrives for a job A owns by instance.
+      store.belongsToActiveWorkflow('job-a', 'other-graph')
+
+      useWorkflowStore().activeWorkflow = workflowB
+      expect(
+        store.belongsToActiveWorkflow('job-a'),
+        'the instance says A, so the remembered stamp must not outrank it'
+      ).toBe(false)
+      useWorkflowStore().activeWorkflow = workflowA
+      expect(store.belongsToActiveWorkflow('job-a')).toBe(true)
+    })
+
+    it('loses to the session path', () => {
+      store.ensureSessionWorkflowPath('job-b', workflowB.path)
+      store.belongsToActiveWorkflow('job-b', 'shared-graph-id')
+
+      expect(
+        store.belongsToActiveWorkflow('job-b'),
+        'the path says B owns it, even though the remembered stamp matches A'
+      ).toBe(false)
+    })
+
+    it('stops a tab switch from adopting a foreign job', async () => {
+      // adoptActiveWorkflowJob passes no id at all, so before the stamp was
+      // remembered a foreign job fell through to the active-job fallback.
+      foreignJobStarted('job-elsewhere', 'other-graph')
+      expect(store.queuedJobs['job-elsewhere']).toBeDefined()
+
+      useWorkflowStore().activeWorkflow = workflowB
+      await nextTick()
+
+      expect(store.activeJobId).toBeNull()
+    })
+
+    it('is forgotten with the job', () => {
+      foreignJobStarted('job-elsewhere', 'other-graph')
+
+      store.forgetFinishedJobs(['job-elsewhere'])
+
+      expect(
+        store.belongsToActiveWorkflow('job-elsewhere'),
+        'nothing is left to place the job, so the fallback admits it again'
+      ).toBe(true)
+    })
+  })
+
+  describe('reporting a rejected execution_start', () => {
+    function rejectionWarnings() {
+      return vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, options]) =>
+            options.errorType === 'warning_rejecting_unowned_execution_start'
+        )
+    }
+
+    it('does not report a rejection decided by the frame workflow id', () => {
+      // Under Cloud's per-user fan-out every tab sees every other tab's job
+      // starts, so reporting these was one warning per foreign job on ordinary
+      // traffic. A mismatched id is a definite answer, not an ambiguous one.
+      fire('execution_start', {
+        prompt_id: 'job-elsewhere',
+        workflow_id: 'other-graph',
+        timestamp: 1
+      })
+
+      expect(store.activeJobId, 'the frame was still rejected').toBeNull()
+      expect(rejectionWarnings()).toHaveLength(0)
+    })
+
+    it('does not report a rejection decided by the session path', () => {
+      store.ensureSessionWorkflowPath('job-b', workflowB.path)
+
+      fire('execution_start', { prompt_id: 'job-b', timestamp: 1 })
+
+      expect(store.activeJobId).toBeNull()
+      expect(rejectionWarnings()).toHaveLength(0)
+    })
+
+    it('still reports a rejection that is only a guess', () => {
+      // No instance, no path, no stamp: the active-job fallback is the one leg
+      // that guesses, so this is the rejection worth knowing about.
+      queueJobFrom('job-a', workflowA)
+      fire('execution_start', { prompt_id: 'job-a', timestamp: 1 })
+      expect(store.activeJobId).toBe('job-a')
+
+      fire('execution_start', {
+        prompt_id: 'job-from-a-previous-page',
+        timestamp: 2
+      })
+
+      expect(rejectionWarnings()).toHaveLength(1)
     })
   })
 })

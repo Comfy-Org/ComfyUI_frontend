@@ -27,8 +27,9 @@ export function useProgressTextPreviews() {
     if (!text || !nodeId) return
 
     // No workflow id to pass: core packs progress_text as a binary frame that
-    // send_sync cannot stamp, so this resolves through the job maps alone.
-    // Tracked as Comfy-Org/ComfyUI#16887.
+    // send_sync cannot stamp (Comfy-Org/ComfyUI#16887). It still resolves by
+    // workflow id, through the stamp the store remembered from an earlier
+    // stamped frame of the same job.
     if (!executionStore.belongsToActiveWorkflow(prompt_id)) return
 
     const executionId = String(nodeId)

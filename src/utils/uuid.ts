@@ -1,9 +1,8 @@
 // Using a template string for this is resulting in complex type workarounds. No current benefit beyond dev reading.
 import type { UUID } from '@comfyorg/graph-model/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 export type { UUID } from '@comfyorg/graph-model/uuid'
-
-/** Special-case zero-UUID, consisting entirely of zeros. Used as a default value. */
-export const zeroUuid = '00000000-0000-0000-0000-000000000000'
+export { zeroUuid } from '@comfyorg/graph-model/uuid'
 
 /** Pre-allocated storage for uuid random values. */
 const randomStorage = new Uint32Array(31)

@@ -83,8 +83,11 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { zeroUuid } from '@/utils/uuid'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { retryingSend } from '@/utils/fetchWithRetry'
+import { NO_RETRY_POLICY } from '@/utils/retryPolicy'
+import type { RetryPolicy } from '@/utils/retryPolicy'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import {
   fetchHistory,
   fetchJobAssets,

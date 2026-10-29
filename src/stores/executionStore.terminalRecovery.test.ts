@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -7,7 +7,8 @@ import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 
 vi.mock(import('@/composables/useAppMode'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 const apiEvents: EventTarget = api
@@ -46,6 +47,12 @@ describe('executionStore terminal-frame recovery', () => {
     useWorkflowStore().activeWorkflow = workflowA
     store = useExecutionStore()
     store.bindExecutionEvents()
+  })
+
+  // `api` is a module singleton, so without this each test's listeners
+  // accumulate and later tests re-run earlier handlers against disposed stores.
+  afterEach(() => {
+    store.unbindExecutionEvents()
   })
 
   /**
