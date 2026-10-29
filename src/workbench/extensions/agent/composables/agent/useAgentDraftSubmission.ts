@@ -1,7 +1,7 @@
 import { watch } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
-import type { AgentInputMethod } from '@/platform/telemetry/types'
+import type { AgentInputMethod } from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
@@ -78,6 +78,7 @@ export function useAgentDraftSubmission(
       snapshot.attachments
     )
     if (options.target() === snapshot.target) selection.replace(snapshot.nodes)
+    composer.markRejectedDraft()
   }
 
   watch(() => composer.submission, recoverFailedSubmission, {

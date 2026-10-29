@@ -2,7 +2,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IColorWidgetOptions,
   INumericWidget
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isIntInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'

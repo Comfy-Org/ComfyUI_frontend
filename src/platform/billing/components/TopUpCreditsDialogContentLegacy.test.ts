@@ -11,8 +11,8 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useTelemetry } from '@/platform/telemetry'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -24,13 +24,20 @@ const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: true,
+  isDesktop: false
+}))
+
 vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 
 vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
   creditsToUsd: (credits: number) => credits,
@@ -45,7 +52,8 @@ const i18n = createI18n({
       g: { close: 'Close', increment: 'Increment', decrement: 'Decrement' },
       credits: {
         topUp: {
-          purchaseDisclosure: enMessages.credits.topUp.purchaseDisclosure,
+          planRequiredResubscribe:
+            enMessages.credits.topUp.planRequiredResubscribe,
           addMoreCredits: 'Add more credits',
           addMoreCreditsToRun: 'Add more credits to run',
           selectAmount: 'Select amount',
@@ -99,15 +107,20 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     vi.spyOn(window, 'open').mockImplementation(() => window)
   })
 
-  it('shows the purchase disclosure before navigating to settings when subscription features are unavailable', async () => {
-    useBillingContext().canAccessSubscriptionFeatures = computed(() => false)
+  it('shows the plan-required line under the presets before navigating to settings when subscription features are unavailable', async () => {
+    const billing = useBillingContext()
+    billing.canAccessSubscriptionFeatures = computed(() => false)
+    billing.isInitialized.value = true
+    billing.subscriptionState = computed(() => 'ended')
     renderDialog({ source: 'deep_link' })
 
+    const line = screen.getByTestId('top-up-plan-credit-line')
+    expect(line).toHaveTextContent(
+      "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud."
+    )
     expect(
-      screen.getByText(
-        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
-      )
-    ).toBeVisible()
+      screen.getByRole('button', { name: '$100' }).compareDocumentPosition(line)
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
     expect(
       screen.getByRole('button', { name: 'Continue to payment' })
     ).toBeEnabled()

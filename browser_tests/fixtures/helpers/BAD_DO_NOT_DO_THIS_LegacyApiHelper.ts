@@ -1,7 +1,8 @@
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Page } from '@playwright/test'
 
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
   constructor(private readonly page: Page) {}
@@ -238,10 +239,7 @@ export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
     )
   }
 
-  setImageCropWidgetValue(
-    nodeId: NodeId,
-    bounds: { x: number; y: number; width: number; height: number }
-  ) {
+  setImageCropWidgetValue(nodeId: NodeId, bounds: Bounds) {
     return this.page.evaluate(
       ({ nodeId, bounds }) => {
         const node = window.app!.graph.getNodeById(nodeId)

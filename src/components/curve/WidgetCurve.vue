@@ -42,21 +42,22 @@ import {
 } from '@/composables/useUpstreamValue'
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
 
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
 
 import CurveEditor from './CurveEditor.vue'
 import { isCurveData } from './curveUtils'
-import { CURVE_INTERPOLATIONS } from './types'
-import type { CurveData, CurveInterpolation, CurvePoint } from './types'
+import { CURVE_INTERPOLATIONS } from '@comfyorg/graph-model/curve'
+import type { CurveData, CurveInterpolation } from '@comfyorg/graph-model/curve'
+import type { PointTuple as CurvePoint } from '@comfyorg/shared-frontend-utils/geometry'
 
 const { widget, nodeId } = defineProps<{
   widget: SimplifiedWidget

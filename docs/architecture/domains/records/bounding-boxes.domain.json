@@ -50,15 +50,10 @@
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/types/boundingBoxes.ts",
-      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [
-    "color-conversion",
     "design-system",
     "dialog-host",
     "graph-model",

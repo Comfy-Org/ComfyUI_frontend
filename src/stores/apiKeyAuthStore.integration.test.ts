@@ -22,7 +22,7 @@ vi.mock(
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/services/dialogService'))
 

@@ -1,11 +1,9 @@
 import { delay } from 'es-toolkit'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { reportError } from '@/platform/telemetry/reportError'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import type { PlanCommandOutcome } from '@/platform/billing/components/billingTab/planLifecycle'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
@@ -28,7 +26,7 @@ async function readRevertOperation(
   opId: string
 ): Promise<RevertSettlement | null> {
   try {
-    const operation = await workspaceApi.getBillingOpStatus(opId)
+    const operation = await billingApi.getBillingOpStatus(opId)
     if (operation.status === 'succeeded') return { settled: true }
     if (operation.status === 'pending') return null
     return {
@@ -52,7 +50,7 @@ async function waitForRevertOperation(opId: string): Promise<RevertSettlement> {
 }
 
 async function requestRevert(): Promise<RevertSettlement> {
-  const response = await workspaceApi.revertScheduledChange()
+  const response = await billingApi.revertScheduledChange()
   return response.status === 'pending'
     ? waitForRevertOperation(response.billing_op_id)
     : { settled: true }

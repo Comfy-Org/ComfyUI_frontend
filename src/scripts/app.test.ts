@@ -31,7 +31,7 @@ import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
-import type { CurveData } from '@/components/curve/types'
+import type { CurveData } from '@comfyorg/graph-model/curve'
 import type { useExtensionService } from '@/services/extensionService'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
@@ -43,11 +43,11 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import * as keybindingServiceModule from '@/platform/keybindings/keybindingService'
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -72,7 +72,7 @@ import { createNode } from '@/utils/createNode'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -94,8 +94,8 @@ import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import { setTelemetryRegistry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
 
@@ -103,10 +103,11 @@ import { PromptExecutionError, api } from '@/scripts/api'
 import { useApp } from '@/scripts/appRegistry'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExtensionStore } from '@/stores/extensionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createTestRootGraph,
   createTestSubgraph,
@@ -115,7 +116,7 @@ import {
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { zeroUuid } from '@/utils/uuid'
 import type { importA1111 } from './pnginfo'
@@ -174,7 +175,7 @@ vi.mock(import('@/scripts/metadata/parser'), () => ({
 
 vi.mock(import('@/utils/eventUtils'), { spy: true })
 
-vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
 vi.mock(import('./pnginfo'), () => ({
   importA1111: mockImportA1111
@@ -1773,6 +1774,32 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('redraws and refreshes the queue UI once after submitting a batch', async () => {
+      prepareEmptyPromptQueue()
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockResolvedValueOnce({ prompt_id: 'job-1' })
+        .mockResolvedValueOnce({ prompt_id: 'job-2' })
+      let resolveUpdate!: () => void
+      const updateQueue = vi.spyOn(app.ui.queue, 'update').mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveUpdate = resolve
+          })
+      )
+
+      // The queue UI refresh is fire-and-forget: queuePrompt resolves while the
+      // update is still pending, having already redrawn the canvas once.
+      await app.queuePrompt(0, 2)
+
+      expect(updateQueue).toHaveBeenCalledOnce()
+      expect(queuePrompt).toHaveBeenCalledTimes(2)
+      expect(mockCanvas.draw).toHaveBeenCalledOnce()
+
+      // Settle the detached update so the test leaves no pending promise.
+      resolveUpdate()
+    })
+
     it('attributes a queued job to the mode used when submission started', async () => {
       prepareEmptyPromptQueue()
       const workflow = useWorkflowStore().activeWorkflow
@@ -2070,20 +2097,21 @@ describe('ComfyApp', () => {
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
         prompt_id: 'job-1'
       })
-      vi.spyOn(app.ui.queue, 'update').mockRejectedValue(
-        new Error('Queue UI refresh failed')
-      )
+      const refreshError = new Error('Queue UI refresh failed')
+      vi.spyOn(app.ui.queue, 'update').mockRejectedValue(refreshError)
 
       try {
-        await expect(
-          app.queuePrompt(0, 1, {
-            intent: { trigger_source: 'button' }
-          })
-        ).rejects.toThrow('Queue UI refresh failed')
+        await app.queuePrompt(0, 1, {
+          intent: { trigger_source: 'button' }
+        })
         expect(useExecutionStore().queuedJobs['job-1']).toMatchObject({
           workflowExecutionIntent: {
             trigger_source: 'button'
           }
+        })
+        expect(reportError).toHaveBeenCalledWith(refreshError, {
+          surface: 'graph',
+          errorType: 'queue_ui_update_failure'
         })
       } finally {
         setTelemetryRegistry(null)
@@ -3708,7 +3736,7 @@ describe('ComfyApp', () => {
   describe('refreshComboInNodes', () => {
     it('shows success toast and removes the pending toast after node defs reload', async () => {
       app.vueAppReady = true
-      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
+      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(true)
 
       await app.refreshComboInNodes()
 
@@ -3726,6 +3754,17 @@ describe('ComfyApp', () => {
       vi.spyOn(app, 'reloadNodeDefs').mockRejectedValue(error)
 
       await expect(app.refreshComboInNodes()).rejects.toThrow(error)
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'error' })
+      ])
+    })
+
+    it('shows the failure toast, not the success one, when the reload refuses the definitions', async () => {
+      app.vueAppReady = true
+      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(false)
+
+      await app.refreshComboInNodes()
 
       expect(useToast().toasts).toEqual([
         expect.objectContaining({ kind: 'error' })
@@ -3807,6 +3846,140 @@ describe('ComfyApp', () => {
         defs
       )
     })
+
+    it('fetches the definitions, or the status of an HTTP error answer that getNodeDefs reads as none', async () => {
+      const refusal = () =>
+        Response.json(
+          { code: 'unauthorized', message: 'invalid auth token' },
+          { status: 401 }
+        )
+      vi.spyOn(api, 'fetchApi')
+        .mockResolvedValueOnce(Response.json({ Server: { name: 'Server' } }))
+        .mockResolvedValueOnce(refusal())
+        .mockResolvedValueOnce(refusal())
+
+      await expect(app.fetchNodeDefs()).resolves.toEqual({
+        ok: true,
+        defs: { Server: expect.objectContaining({ name: 'Server' }) }
+      })
+      await expect(app.fetchNodeDefs()).resolves.toEqual({
+        ok: false,
+        status: 401
+      })
+      await expect(app.getNodeDefs()).resolves.toEqual({})
+    })
+
+    it('registers the definitions it is given without fetching them', async () => {
+      const defs: Record<string, ComfyNodeDef> = {
+        Custom: fromPartial<ComfyNodeDef>({ name: 'Custom' })
+      }
+      Reflect.set(app, 'rootGraphInternal', createTestRootGraph())
+      const getNodeDefs = vi.spyOn(app, 'getNodeDefs')
+      const registerNodeDef = vi
+        .spyOn(app, 'registerNodeDef')
+        .mockResolvedValue(undefined)
+
+      await app.reloadNodeDefs(defs)
+
+      expect(getNodeDefs).not.toHaveBeenCalled()
+      expect(registerNodeDef).toHaveBeenCalledWith('Custom', defs.Custom)
+    })
+
+    it('gives the next fetched definitions to addCustomNodeDefs once when late extensions are owed them, and registers what they add', async () => {
+      const custom = fromPartial<ComfyNodeDef>({ name: 'Custom' })
+      Reflect.set(app, 'rootGraphInternal', createTestRootGraph())
+      vi.spyOn(api, 'fetchApi').mockImplementation(async () =>
+        Response.json({ Server: { name: 'Server' } })
+      )
+      const registerNodeDef = vi
+        .spyOn(app, 'registerNodeDef')
+        .mockResolvedValue(undefined)
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (method: string, defs: Record<string, ComfyNodeDef>) => {
+          if (method === 'addCustomNodeDefs') defs.Custom = custom
+        }
+      )
+      useExtensionStore().oweNodeDefHooks()
+
+      await app.reloadNodeDefs()
+      await app.reloadNodeDefs()
+
+      expect(registerNodeDef).toHaveBeenCalledWith('Custom', custom)
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.filter(
+          ([method]) => method === 'addCustomNodeDefs'
+        )
+      ).toHaveLength(1)
+    })
+
+    it('keeps the definitions owed to addCustomNodeDefs through a refused refresh and gives them the next successful ones', async () => {
+      Reflect.set(app, 'rootGraphInternal', createTestRootGraph())
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
+      vi.spyOn(api, 'fetchApi')
+        .mockResolvedValueOnce(
+          Response.json({ code: 'unavailable' }, { status: 502 })
+        )
+        .mockResolvedValueOnce(Response.json({ Server: { name: 'Server' } }))
+      useExtensionStore().oweNodeDefHooks()
+
+      await app.reloadNodeDefs()
+      await app.reloadNodeDefs()
+
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.filter(
+          ([method]) => method === 'addCustomNodeDefs'
+        )
+      ).toEqual([
+        [
+          'addCustomNodeDefs',
+          { Server: expect.objectContaining({ name: 'Server' }) }
+        ]
+      ])
+      expect(useExtensionStore().takeOwedNodeDefHooks()).toBe(false)
+    })
+
+    it('refuses each refused refresh while definitions are owed, reports it, keeps them owed, and registers nothing', async () => {
+      Reflect.set(app, 'rootGraphInternal', createTestRootGraph())
+      const registerNodeDef = vi
+        .spyOn(app, 'registerNodeDef')
+        .mockResolvedValue(undefined)
+      vi.spyOn(api, 'fetchApi')
+        .mockResolvedValueOnce(
+          Response.json({ code: 'unavailable' }, { status: 502 })
+        )
+        .mockResolvedValueOnce(
+          Response.json({ code: 'unauthorized' }, { status: 401 })
+        )
+        .mockResolvedValueOnce(Response.json({ Server: { name: 'Server' } }))
+      useExtensionStore().oweNodeDefHooks()
+
+      await expect(app.reloadNodeDefs()).resolves.toBe(false)
+      await expect(app.reloadNodeDefs()).resolves.toBe(false)
+      expect(registerNodeDef).not.toHaveBeenCalled()
+      expect(
+        vi
+          .mocked(reportError)
+          .mock.calls.map(([error, options]) => [
+            String(error),
+            options.errorType
+          ])
+      ).toEqual([
+        ['Error: GET /object_info answered 502', 'late_extension_failed'],
+        ['Error: GET /object_info answered 401', 'late_extension_failed']
+      ])
+      await expect(app.reloadNodeDefs()).resolves.toBe(true)
+
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.filter(
+          ([method]) => method === 'addCustomNodeDefs'
+        )
+      ).toEqual([
+        [
+          'addCustomNodeDefs',
+          { Server: expect.objectContaining({ name: 'Server' }) }
+        ]
+      ])
+    })
   })
 
   describe('refreshMissingModels', () => {
@@ -3820,7 +3993,7 @@ describe('ComfyApp', () => {
         confirmedCandidates: []
       }
       Reflect.set(app, 'rootGraphInternal', graph)
-      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
+      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(true)
       mockRefreshMissingModelPipeline.mockResolvedValue(result)
 
       await expect(app.refreshMissingModels({ silent: false })).resolves.toBe(
@@ -3844,7 +4017,7 @@ describe('ComfyApp', () => {
         serialize: vi.fn(() => createWorkflowGraphData())
       }
       Reflect.set(app, 'rootGraphInternal', graph)
-      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
+      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(true)
       mockRefreshMissingModelPipeline.mockResolvedValue({
         missingModels: [],
         confirmedCandidates: []

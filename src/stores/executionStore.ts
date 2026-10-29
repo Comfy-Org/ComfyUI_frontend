@@ -5,19 +5,19 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
 import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   WorkflowExecutionContext,
   WorkflowExecutionFailureReason,
   WorkflowExecutionIntent
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyApiWorkflow,
   WorkflowId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import type {
   ExecutedWsMessage,
   ExecutionCachedWsMessage,
@@ -36,10 +36,10 @@ import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
-import type { AppMode } from '@/utils/appMode'
-import { isAppModeValue } from '@/utils/appMode'
+import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
+import { isAppModeValue } from '@comfyorg/graph-model/appMode'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
@@ -1031,11 +1031,18 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.submissionAcceptedAt = submissionAcceptedAt
     queuedJob.workflowContext = workflowContext
     queuedJob.workflowExecutionIntent = workflowExecutionIntent
-    queuedJob.workflow = workflow
-    jobIdToWorkflow.set(id, workflow)
     queuedJob.shareId = workflow.shareId
     queuedJob.viewMode = mode
     queuedJob.isAppMode = isAppModeValue(mode)
+    registerJobOwner(id, workflow)
+  }
+
+  /** Routes a job's frames and outputs to `workflow`, including jobs queued elsewhere. */
+  function registerJobOwner(id: JobId, workflow: ComfyWorkflow) {
+    queuedJobs.value[id] ??= { nodes: {} }
+    const queuedJob = queuedJobs.value[id]
+    queuedJob.workflow = workflow
+    jobIdToWorkflow.set(id, workflow)
     const wid = workflow.activeState?.id ?? workflow.initialState?.id
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)
@@ -1213,6 +1220,7 @@ export const useExecutionStore = defineStore('execution', () => {
     unbindExecutionEvents,
     onJobReset: jobReset.on,
     storeJob,
+    registerJobOwner,
     registerJobWorkflowIdMapping,
     uniqueExecutingNodeIdStrings,
     // Raw executing progress data for backward compatibility in ComfyApp.

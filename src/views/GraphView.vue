@@ -55,7 +55,7 @@ import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
-import ToastDock from '@/components/ui/toast/ToastDock.vue'
+import ToastDock from '@comfyorg/design-system/toast/ToastDock'
 import AppToaster from '@/components/common/AppToaster.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
@@ -86,8 +86,9 @@ import { isCloud, isDesktop } from '@/platform/distribution/types'
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
 import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
 import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/getPageVisibilityMetadata'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
@@ -100,7 +101,7 @@ import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useAppMode } from '@/composables/useAppMode'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -129,6 +130,7 @@ useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
 useDesktopCloudNotification()
+if (isCloud) useDeploymentCompatibility()
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()

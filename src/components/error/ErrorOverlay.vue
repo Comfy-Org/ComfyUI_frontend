@@ -20,7 +20,7 @@
             aria-hidden="true"
             :class="
               cn(
-                'mt-0.5 size-4 shrink-0',
+                'mt-0.5',
                 hasError
                   ? 'icon-[lucide--circle-x] text-destructive'
                   : 'icon-[lucide--triangle-alert] text-warning'
@@ -47,6 +47,8 @@
           </p>
         </div>
 
+        <ErrorOverlayDeploymentOffer v-if="hasMissingNodes" />
+
         <div class="flex w-full items-center justify-end pt-2">
           <Button
             variant="secondary"
@@ -71,7 +73,7 @@
           :aria-label="t('g.close')"
           @click="dismiss"
         >
-          <i class="icon-[lucide--x] block size-4 leading-none" />
+          <i class="icon-[lucide--x] block leading-none" />
         </Button>
       </div>
     </div>
@@ -82,10 +84,11 @@
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
+import ErrorOverlayDeploymentOffer from '@/platform/workspace/components/ErrorOverlayDeploymentOffer.vue'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
@@ -93,7 +96,7 @@ const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const { viewErrorsInGraph } = useViewErrorsInGraph()
 
-const { hasError, isVisible, overlayMessage, overlayTitle } =
+const { hasError, hasMissingNodes, isVisible, overlayMessage, overlayTitle } =
   useErrorOverlayState()
 
 function dismiss() {

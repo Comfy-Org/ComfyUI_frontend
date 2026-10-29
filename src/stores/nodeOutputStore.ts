@@ -18,9 +18,12 @@ import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { clone } from '@/scripts/utils'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
-import type { NodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { parseFilePath } from '@/utils/formatUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
@@ -52,6 +55,10 @@ const createOutputs = (
     })
   }
 }
+
+const isResultItem = (
+  image: ResultItem | null | undefined
+): image is ResultItem => image != null
 
 interface SetOutputOptions {
   merge?: boolean
@@ -139,7 +146,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const rand = useApp().getRandParam()
     const previewParam = getPreviewParam(node, outputs)
 
-    return outputs.images.map((image) => {
+    return outputs.images.filter(isResultItem).map((image) => {
       const filename = image.filename ?? ''
       const { filepath, rootFolder } = parseAnnotatedPath(filename, image.type)
       const params = new URLSearchParams({

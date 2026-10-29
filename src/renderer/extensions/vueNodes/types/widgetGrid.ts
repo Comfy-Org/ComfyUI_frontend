@@ -1,8 +1,8 @@
 import type { Component } from 'vue'
 
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 export interface WidgetSlotMetadata {
   index: number

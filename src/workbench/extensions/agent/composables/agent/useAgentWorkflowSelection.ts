@@ -3,7 +3,7 @@ import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { AgentWorkflowBindSource } from '@/platform/telemetry/types'
+import type { AgentWorkflowBindSource } from '@comfyorg/telemetry/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -326,6 +326,10 @@ export function useAgentWorkflowSelection({
     }
   }
 
+  function adoptTarget(workflow: ComfyWorkflow, workflowId: string): void {
+    commitWorkflowTarget(workflow, workflowId, 'restored')
+  }
+
   function cancelSelection(): void {
     ++composerContextGeneration
     ++targetSelectionGeneration
@@ -340,6 +344,7 @@ export function useAgentWorkflowSelection({
     selectTarget: onSelectWorkflowTarget,
     selectReference: onSelectWorkflowReference,
     restoreTarget: onWorkflowRestored,
+    adoptTarget,
     requestReferences: onRequestWorkflowReferences,
     cancelSelection
   }

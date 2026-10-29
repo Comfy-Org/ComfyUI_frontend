@@ -1,14 +1,21 @@
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { CORE_KEYBINDINGS } from './defaults'
 import { consultEscapeOverride } from './escapeOverride'
-import { KeyComboImpl } from './keyCombo'
-import { KeybindingImpl } from './keybinding'
-import { useKeybindingStore } from './keybindingStore'
+import { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+
+function isExcludedFromDistribution(keybinding: { commandId: string }) {
+  return (
+    isCloud &&
+    keybinding.commandId === 'Workspace.ToggleBottomPanelTab.logs-terminal'
+  )
+}
 
 export function useKeybindingService() {
   const keybindingStore = useKeybindingStore()
@@ -136,12 +143,7 @@ export function useKeybindingService() {
 
   function registerCoreKeybindings() {
     for (const keybinding of CORE_KEYBINDINGS) {
-      if (
-        isCloud &&
-        keybinding.commandId === 'Workspace.ToggleBottomPanelTab.logs-terminal'
-      ) {
-        continue
-      }
+      if (isExcludedFromDistribution(keybinding)) continue
       keybindingStore.addDefaultKeybinding(new KeybindingImpl(keybinding))
     }
   }
@@ -149,19 +151,12 @@ export function useKeybindingService() {
   function registerUserKeybindings() {
     const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
     for (const keybinding of unsetBindings) {
-      if (!commandStore.isRegistered(keybinding.commandId)) {
-        continue
-      }
-      keybindingStore.unsetKeybinding(new KeybindingImpl(keybinding))
+      if (isExcludedFromDistribution(keybinding)) continue
+      keybindingStore.addUserUnsetKeybinding(new KeybindingImpl(keybinding))
     }
     const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
     for (const keybinding of newBindings) {
-      if (
-        isCloud &&
-        keybinding.commandId === 'Workspace.ToggleBottomPanelTab.logs-terminal'
-      ) {
-        continue
-      }
+      if (isExcludedFromDistribution(keybinding)) continue
       keybindingStore.addUserKeybinding(new KeybindingImpl(keybinding))
     }
   }

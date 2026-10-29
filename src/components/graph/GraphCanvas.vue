@@ -30,10 +30,7 @@
       @ready="onLinkOverlayReady"
       @dispose="onLinkOverlayDispose"
     />
-    <SelectionRectangle
-      v-if="comfyAppReady"
-      :panel-el="canvasPanelBoundsRef ?? undefined"
-    />
+    <SelectionRectangle v-if="comfyAppReady" />
     <NodeTooltip v-if="tooltipEnabled" />
     <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
     <NodeDragPreview />
@@ -89,10 +86,6 @@
       />
     </template>
     <template #graph-canvas-panel>
-      <div
-        ref="canvasPanelBoundsRef"
-        class="pointer-events-none absolute inset-0"
-      />
       <MiniMap
         v-if="
           comfyAppReady &&
@@ -160,7 +153,7 @@ import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useNodeEmphasis } from '@/systems/nodeEmphasisSystem'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -208,7 +201,7 @@ import {
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -232,7 +225,6 @@ const vueNodeDropTarget = computed(() => {
   const element: unknown = transformPaneRef.value?.$el
   return element instanceof HTMLElement ? element : null
 })
-const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)
@@ -543,6 +535,7 @@ useEventListener(
 )
 
 let disposed = false
+const lateExtensionWork = new AbortController()
 const startupOwner = Symbol()
 
 function finishStartup(outcome: 'completed' | 'failed') {
@@ -603,7 +596,9 @@ onMounted(async () => {
       )
     }
 
-    await bootstrapTracer.settle('bootstrap/extensions-load', loadExtensions)
+    await bootstrapTracer.settle('bootstrap/extensions-load', () =>
+      loadExtensions(lateExtensionWork.signal)
+    )
 
     const canvas = canvasRef.value
     if (!canvas) throw new TypeError('GraphCanvas mounted without a canvas')
@@ -676,6 +671,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   disposed = true
+  lateExtensionWork.abort()
   void nextTick(() => {
     if (activeStartup !== startupOwner) return
     activeStartup = undefined

@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Locator } from '@playwright/test'
 
 import type {
@@ -5,9 +6,9 @@ import type {
   LGraph,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position, Size } from '@e2e/fixtures/types'
@@ -251,7 +252,7 @@ export class NodeOperationsHelper {
    */
   async growNodeByDrag(
     title: string,
-    delta: { x: number; y: number }
+    delta: Point2D
   ): Promise<{ nodeRef: NodeReference; node: VueNodeFixture; size: Size }> {
     const nodeRefs = await this.getNodeRefsByTitle(title)
     if (nodeRefs.length === 0) {

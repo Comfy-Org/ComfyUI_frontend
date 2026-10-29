@@ -3,7 +3,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { uploadTempFile } from '@/services/uploadTempFile'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 class Load3dUtils {
   static async uploadTempImage(

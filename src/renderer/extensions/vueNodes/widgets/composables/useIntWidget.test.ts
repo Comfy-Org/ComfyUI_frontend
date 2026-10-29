@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
+import type { INumericWidget } from '@comfyorg/graph-model/widgets'
 import {
   _for_testing,
   useIntWidget

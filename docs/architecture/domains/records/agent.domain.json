@@ -796,8 +796,10 @@
   "allowedDependencies": [
     "authentication",
     "design-system",
+    "dialog-host",
     "error-reporting",
     "extension-runtime",
+    "keybindings",
     "workbench-shell",
     "workflow-management"
   ],

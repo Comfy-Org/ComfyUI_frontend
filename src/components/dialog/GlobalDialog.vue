@@ -16,6 +16,11 @@
           "
           :surface="item.dialogComponentProps.headless ? 'none' : 'card'"
           :maximized="!!item.dialogComponentProps.maximized"
+          :class="
+            item.dialogComponentProps.centerOnViewport &&
+            !item.dialogComponentProps.maximized &&
+            '[--workspace-inset-right:0px]'
+          "
           :data-dialog-key="item.key"
           @escape-key-down="
             (e) =>
@@ -100,15 +105,15 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Dialog from '@/components/ui/dialog/Dialog.vue'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
-import DialogContent from '@/components/ui/dialog/DialogContent.vue'
-import DialogFooter from '@/components/ui/dialog/DialogFooter.vue'
-import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
-import DialogMaximize from '@/components/ui/dialog/DialogMaximize.vue'
-import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogFooter from '@comfyorg/design-system/dialog/DialogFooter'
+import DialogHeader from '@comfyorg/design-system/dialog/DialogHeader'
+import DialogMaximize from '@comfyorg/design-system/dialog/DialogMaximize'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'

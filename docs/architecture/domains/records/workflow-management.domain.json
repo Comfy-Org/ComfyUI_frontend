@@ -44,14 +44,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/composables/useNewMenuItemIndicator.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useNewMenuItemIndicator.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useWorkflowActionsMenu.test.ts",
       "role": "application"
     },
@@ -145,8 +137,8 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": ["agent"],
+  "allowedDependencies": ["error-reporting", "keybindings", "telemetry"],
+  "allowedConsumers": ["agent", "execution"],
   "characterizationScenarios": [
     {
       "name": "Workflow store opens, renames, closes, and tracks modified workflows",
@@ -200,10 +192,9 @@
       "checks": ["src/stores/workflowTabActivityStore.test.ts"]
     },
     {
-      "name": "Workflow actions menu and new-item indicators reflect workflow and settings state; entity sync reconciles user files",
+      "name": "Workflow actions menu reflects workflow and settings state; entity sync reconciles user files",
       "checks": [
         "src/composables/useWorkflowActionsMenu.test.ts",
-        "src/composables/useNewMenuItemIndicator.test.ts",
         "src/platform/workflow/management/stores/workflowStore.test.ts"
       ]
     },

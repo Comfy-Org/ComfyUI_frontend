@@ -25,7 +25,7 @@
     v-if="error"
     class="m-8 flex size-full flex-col items-center justify-center"
   >
-    <i class="pi pi-image mb-2 text-5xl" />
+    <i class="mb-2 icon-[lucide--image] size-12" />
     <span>{{ $t('g.imageFailedToLoad') }}</span>
   </div>
 </template>
