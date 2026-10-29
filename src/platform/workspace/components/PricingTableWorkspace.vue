@@ -215,6 +215,7 @@
                   : 'border-transparent bg-secondary-background hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
               )
             "
+            :data-dd-action-name="planCtaActionName(tier.key)"
             @click="() => handleSubscribe(tier.key)"
           >
             {{ getButtonLabel(tier) }}
@@ -271,6 +272,7 @@
 </template>
 
 <script setup lang="ts">
+import { planCtaActionName } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import Popover from '@/components/common/ImperativePopover.vue'
 import { computed, onMounted, ref } from 'vue'

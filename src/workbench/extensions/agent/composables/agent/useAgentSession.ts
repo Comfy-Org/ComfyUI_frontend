@@ -335,14 +335,26 @@ function isRetryableAnswerFailure(error: unknown): boolean {
   return error instanceof TypeError || error instanceof DOMException
 }
 
-function isSupersededAnswer(
+type CommittedAnswerSource = Parameters<typeof toAskResolution>[0]
+
+function namesCommittedAnswer({
+  selected,
+  other_text
+}: CommittedAnswerSource): boolean {
+  return Array.isArray(selected) || Boolean(other_text)
+}
+
+function diffAnswers(
   submitted: AgentAnswerRequest,
-  committed: Extract<AskUserResolution, { status: 'answered' }>
-): boolean {
-  return (
-    xor(submitted.selected, committed.selected).length > 0 ||
-    (submitted.other_text || undefined) !== committed.otherText
-  )
+  committed: Extract<AskUserResolution, { status: 'answered' }>,
+  selectionKnown: boolean
+) {
+  return {
+    selection_changed:
+      selectionKnown && xor(submitted.selected, committed.selected).length > 0,
+    other_text_changed:
+      (submitted.other_text || undefined) !== committed.otherText
+  }
 }
 
 let sessionGeneration = 0
@@ -1483,8 +1495,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       const receipt = await sendAnswer(currentThreadId, askId, answer)
       const committed = toAskResolution(receipt)
-      if (receipt.selected !== undefined)
-        reportSupersededAnswer(askId, committed)
+      reportSupersededAnswer(askId, receipt)
       conversationStore.commitAsk(askId, currentThreadId, committed)
       return true
     } catch (error) {
@@ -1500,11 +1511,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadId: string
   ): void {
     if (error instanceof AgentApiError && error.status === 409) {
-      const committed = toAskResolution(
-        zAgentAskConflict.safeParse(error.body).data ?? {}
-      )
-      reportSupersededAnswer(askId, committed)
-      conversationStore.retireAsk(askId, committed, threadId)
+      const conflict = zAgentAskConflict.safeParse(error.body).data ?? {}
+      reportSupersededAnswer(askId, conflict)
+      conversationStore.retireAsk(askId, toAskResolution(conflict), threadId)
       return
     }
     const failure = classifyAnswerFailure(error)
@@ -1535,18 +1544,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function reportSupersededAnswer(
     askId: string,
-    committed: AskUserResolution
+    source: CommittedAnswerSource
   ): void {
+    if (!namesCommittedAnswer(source)) return
+    const committed = toAskResolution(source)
     if (committed.status !== 'answered') return
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
-    if (submitted === undefined || !isSupersededAnswer(submitted, committed))
-      return
-    reportError(
-      new Error(
-        `agent ask resolved as ${committed.selected.join(',')}, not ${submitted.selected.join(',')}`
-      ),
-      { surface: 'agent', errorType: 'agent_ask_answer_superseded' }
-    )
+    if (submitted === undefined) return
+    const selectionKnown = Array.isArray(source.selected)
+    const changes = diffAnswers(submitted, committed, selectionKnown)
+    if (!changes.selection_changed && !changes.other_text_changed) return
+    reportError(new Error('agent ask resolved with a different answer'), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_superseded',
+      tags: {
+        ...changes,
+        selection_known: selectionKnown,
+        committed_selected_count: selectionKnown
+          ? committed.selected.length
+          : undefined,
+        submitted_selected_count: submitted.selected.length
+      }
+    })
     pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
   }
 
@@ -1757,7 +1776,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     observeLiveDelivery(event)
     if (event.type === 'agent_ask_resolved') {
       const resolution = toAskResolution(event.data)
-      reportSupersededAnswer(event.data.ask_id, resolution)
+      reportSupersededAnswer(event.data.ask_id, event.data)
       conversationStore.retireAsk(
         event.data.ask_id,
         resolution,
