@@ -708,11 +708,9 @@ describe('useAgentConsent', () => {
     fetchWithUnifiedRemint.mockClear()
 
     ;(dialog.contentProps.onAccept as () => void)()
-    await vi.waitFor(() =>
-      expect(dialog.contentProps.error).toBe(
-        i18n.global.t('agent.consent.saveError')
-      )
-    )
+    await vi.waitFor(() => {
+      expect(dialog.contentProps.error).toBe('save')
+    })
 
     expect(fetchWithUnifiedRemint).not.toHaveBeenCalledWith(
       expect.anything(),
