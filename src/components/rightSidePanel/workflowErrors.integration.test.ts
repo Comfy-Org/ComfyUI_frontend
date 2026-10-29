@@ -1,10 +1,11 @@
-import { getActivePinia } from 'pinia'
+import { getActivePinia, storeToRefs } from 'pinia'
 import type { Pinia } from 'pinia'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
+import { defineComponent, provide } from 'vue'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -27,8 +28,11 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { useFocusNode } from '@/composables/canvas/useFocusNode'
+import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
+import { createWorkflowErrorManager } from '@/platform/customNodes/manager/composables/workflowErrorManager'
 
-import ErrorGroupList from './ErrorGroupList.vue'
+import ErrorGroupList from '@/platform/workflowErrors/panel/ErrorGroupList.vue'
 
 vi.mock<unknown>(import('@/scripts/app'), () => {
   const rootGraph = {
@@ -143,7 +147,18 @@ function renderList(pinia: Pinia) {
     history: createMemoryHistory(),
     routes: [{ path: '/', component: { template: '<div />' } }]
   })
-  render(ErrorGroupList, {
+  const Host = defineComponent({
+    components: { ErrorGroupList },
+    setup() {
+      provide(WorkflowErrorManagerKey, createWorkflowErrorManager())
+      const { selectedItems } = storeToRefs(useCanvasStore(pinia))
+      const { focusNode } = useFocusNode()
+      return { selectedItems, focusNode }
+    },
+    template:
+      '<ErrorGroupList :selected-items="selectedItems" @locate-node="focusNode" />'
+  })
+  render(Host, {
     global: {
       plugins: [testI18n, pinia, router],
       stubs: {

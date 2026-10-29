@@ -13,13 +13,16 @@ const mocks = vi.hoisted(() => ({
   viewErrorsInGraph: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/components/error/useErrorOverlayState'), () => ({
-  useErrorOverlayState: () => ({
-    hasError: mocks.hasError(),
-    overlayMessage: mocks.overlayMessage,
-    overlayTitle: mocks.overlayTitle
+vi.mock<unknown>(
+  import('@/platform/workflowErrors/overlay/useErrorOverlayState'),
+  () => ({
+    useErrorOverlayState: () => ({
+      hasError: mocks.hasError(),
+      overlayMessage: mocks.overlayMessage,
+      overlayTitle: mocks.overlayTitle
+    })
   })
-}))
+)
 
 vi.mock(import('@/composables/useViewErrorsInGraph'), () => ({
   useViewErrorsInGraph: () => ({

@@ -3291,8 +3291,8 @@
       {
         "name": "workflow-errors/domain",
         "patterns": [
-          "src/components/rightSidePanel/errors/executionItemList.ts",
-          "src/components/rightSidePanel/errors/types.ts",
+          "src/platform/workflowErrors/panel/executionItemList.ts",
+          "src/platform/workflowErrors/panel/types.ts",
           "src/utils/errorReportUtil.test.ts",
           "src/utils/errorReportUtil.ts"
         ]
@@ -3300,24 +3300,31 @@
       {
         "name": "workflow-errors/application",
         "patterns": [
-          "src/components/rightSidePanel/errors/__tests__/**",
-          "src/components/rightSidePanel/errors/selectionEmphasis.ts",
-          "src/components/rightSidePanel/errors/swapNodeGroups.test.ts",
-          "src/components/rightSidePanel/errors/useErrorActions.test.ts",
-          "src/components/rightSidePanel/errors/useErrorActions.ts",
-          "src/components/rightSidePanel/errors/useErrorClassification.ts",
-          "src/components/rightSidePanel/errors/useErrorGroups.test.ts",
-          "src/components/rightSidePanel/errors/useErrorGroups.ts",
-          "src/components/rightSidePanel/errors/useErrorReport.test.ts",
-          "src/components/rightSidePanel/errors/useErrorReport.ts",
-          "src/components/rightSidePanel/errors/useHasBlockingError.ts"
+          "src/platform/workflowErrors/workflowErrorManager.ts",
+          "src/platform/workflowErrors/panel/__tests__/**",
+          "src/platform/workflowErrors/panel/selectionEmphasis.ts",
+          "src/platform/workflowErrors/panel/swapNodeGroups.test.ts",
+          "src/platform/workflowErrors/panel/useErrorActions.test.ts",
+          "src/platform/workflowErrors/panel/useErrorActions.ts",
+          "src/platform/workflowErrors/panel/useErrorClassification.ts",
+          "src/platform/workflowErrors/panel/useErrorGroups.test.ts",
+          "src/platform/workflowErrors/panel/useErrorGroups.ts",
+          "src/platform/workflowErrors/panel/useErrorReport.test.ts",
+          "src/platform/workflowErrors/panel/useErrorReport.ts",
+          "src/platform/workflowErrors/panel/useHasBlockingError.ts"
         ]
       },
       {
         "name": "workflow-errors/presentation",
         "patterns": [
-          "src/components/error/ErrorOverlay.test.ts",
-          "src/components/error/ErrorOverlay.vue"
+          "src/platform/workflowErrors/overlay/ErrorOverlay.test.ts",
+          "src/platform/workflowErrors/overlay/ErrorOverlay.vue"
+        ]
+      },
+      {
+        "name": "workflow-errors/integration",
+        "patterns": [
+          "src/components/rightSidePanel/workflowErrors.integration.test.ts"
         ]
       },
       {
@@ -3751,6 +3758,10 @@
         "patterns": ["src/platform/onboarding/**"]
       },
       {
+        "name": "properties-panel/presentation/outer-1",
+        "patterns": ["src/components/rightSidePanel/**"]
+      },
+      {
         "name": "remote-config/application/outer-1",
         "patterns": ["src/platform/remoteConfig/**"]
       },
@@ -3840,11 +3851,11 @@
       },
       {
         "name": "workflow-errors/application/outer-1",
-        "patterns": ["src/components/error/**"]
+        "patterns": ["src/platform/workflowErrors/overlay/**"]
       },
       {
         "name": "workflow-errors/presentation/outer-1",
-        "patterns": ["src/components/rightSidePanel/errors/**"]
+        "patterns": ["src/platform/workflowErrors/panel/**"]
       },
       {
         "name": "workflow-management/presentation/outer-1",
@@ -3901,10 +3912,6 @@
       {
         "name": "image-compositor/domain/outer-2",
         "patterns": ["src/renderer/extensions/layerEditor/**"]
-      },
-      {
-        "name": "properties-panel/presentation/outer-2",
-        "patterns": ["src/components/rightSidePanel/**"]
       },
       {
         "name": "release-notes/presentation/outer-2",
@@ -4123,6 +4130,7 @@
         "from": "agent/domain",
         "allow": [
           "agent/domain",
+          "app-host/domain",
           "authentication/domain",
           "design-system/domain",
           "dialog-host/domain",
@@ -4131,6 +4139,7 @@
           "keybindings/domain",
           "workbench-shell/domain",
           "workflow-management/domain",
+          "app-host/domain/outer-1",
           "design-system/domain/outer-1",
           "unclassified"
         ]
@@ -4142,6 +4151,9 @@
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -4163,6 +4175,7 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "app-host/domain/outer-1",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "extension-runtime/infrastructure/outer-1",
@@ -4177,6 +4190,9 @@
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -4198,6 +4214,7 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "app-host/domain/outer-1",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "extension-runtime/infrastructure/outer-1",
@@ -4212,6 +4229,9 @@
           "agent/domain",
           "agent/application",
           "agent/presentation",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/presentation",
           "authentication/domain",
           "authentication/application",
           "authentication/presentation",
@@ -4233,6 +4253,8 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
+          "app-host/domain/outer-1",
+          "app-host/presentation/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "dialog-host/presentation/outer-1",
@@ -4253,6 +4275,11 @@
           "agent/infrastructure",
           "agent/presentation",
           "agent/integration",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "app-host/presentation",
+          "app-host/integration",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -4287,6 +4314,8 @@
           "workflow-management/presentation",
           "workflow-management/integration",
           "agent/integration/outer-1",
+          "app-host/domain/outer-1",
+          "app-host/presentation/outer-1",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
@@ -6800,8 +6829,8 @@
           "app-host/presentation/outer-1",
           "canvas-renderer/application/outer-1",
           "keybindings/application/outer-1",
+          "properties-panel/presentation/outer-1",
           "telemetry/domain/outer-1",
-          "properties-panel/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -6837,11 +6866,11 @@
           "canvas-renderer/infrastructure/outer-1",
           "canvas-renderer/integration/outer-1",
           "keybindings/application/outer-1",
+          "properties-panel/presentation/outer-1",
           "selection-toolbox/integration/outer-1",
           "telemetry/domain/outer-1",
           "telemetry/integration/outer-1",
           "test-support/integration/outer-1",
-          "properties-panel/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -7518,6 +7547,30 @@
         ]
       },
       {
+        "from": "workflow-errors/integration",
+        "allow": [
+          "keybindings/application/public",
+          "keybindings/integration/public",
+          "extension-manager/domain",
+          "extension-manager/application",
+          "extension-manager/infrastructure",
+          "extension-manager/presentation",
+          "keybindings/domain",
+          "keybindings/presentation",
+          "keybindings/integration",
+          "workflow-errors/domain",
+          "workflow-errors/application",
+          "workflow-errors/presentation",
+          "workflow-errors/integration",
+          "extension-manager/domain/outer-1",
+          "keybindings/application/outer-1",
+          "workflow-errors/application/outer-1",
+          "workflow-errors/presentation/outer-1",
+          "extension-manager/application/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "workflow-format/domain",
         "allow": [
           "workflow-format/domain",
@@ -7800,6 +7853,11 @@
           "agent/infrastructure",
           "agent/presentation",
           "agent/integration",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "app-host/presentation",
+          "app-host/integration",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -7834,6 +7892,8 @@
           "workflow-management/presentation",
           "workflow-management/integration",
           "agent/integration/outer-1",
+          "app-host/domain/outer-1",
+          "app-host/presentation/outer-1",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
@@ -8535,6 +8595,14 @@
         ]
       },
       {
+        "from": "properties-panel/presentation/outer-1",
+        "allow": [
+          "properties-panel/application",
+          "properties-panel/presentation/outer-1",
+          "unclassified"
+        ]
+      },
+      {
         "from": "remote-config/application/outer-1",
         "allow": [
           "remote-config/domain",
@@ -8580,11 +8648,11 @@
           "canvas-renderer/infrastructure/outer-1",
           "canvas-renderer/integration/outer-1",
           "keybindings/application/outer-1",
+          "properties-panel/presentation/outer-1",
           "selection-toolbox/integration/outer-1",
           "telemetry/domain/outer-1",
           "telemetry/integration/outer-1",
           "test-support/integration/outer-1",
-          "properties-panel/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -8979,14 +9047,6 @@
         ]
       },
       {
-        "from": "properties-panel/presentation/outer-2",
-        "allow": [
-          "properties-panel/application",
-          "properties-panel/presentation/outer-2",
-          "unclassified"
-        ]
-      },
-      {
         "from": "release-notes/presentation/outer-2",
         "allow": [
           "keybindings/application/public",
@@ -9334,6 +9394,7 @@
           "workflow-errors/domain",
           "workflow-errors/application",
           "workflow-errors/presentation",
+          "workflow-errors/integration",
           "workflow-format/domain",
           "workflow-format/application",
           "workflow-format/infrastructure",
@@ -9406,6 +9467,7 @@
           "node-replacement/application/outer-1",
           "node-widgets/presentation/outer-1",
           "onboarding-tours/presentation/outer-1",
+          "properties-panel/presentation/outer-1",
           "remote-config/application/outer-1",
           "secrets/domain/outer-1",
           "selection-toolbox/integration/outer-1",
@@ -9441,7 +9503,6 @@
           "extension-manager/application/outer-2",
           "first-run-tour/presentation/outer-2",
           "graph-layout/domain/outer-2",
-          "properties-panel/presentation/outer-2",
           "release-notes/presentation/outer-2",
           "workbench-shell/presentation/outer-2",
           "workflow-persistence/application/outer-2",

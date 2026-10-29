@@ -2,13 +2,13 @@ import { computed, reactive, ref, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { isCloud } from '@/platform/distribution/types'
 import { useBootDeploymentLabel } from '@/platform/workspace/composables/useDeploymentLabels'
@@ -260,12 +260,14 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
     .filter((group) => group.type !== 'execution' || group.cards.length > 0)
 }
 
-export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
+export function useErrorGroups(
+  searchQuery: MaybeRefOrGetter<string>,
+  selectedItems: MaybeRefOrGetter<readonly Positionable[]> = []
+) {
   const executionErrorStore = useExecutionErrorStore()
   const missingNodesStore = useMissingNodesErrorStore()
   const missingModelStore = useMissingModelStore()
   const missingMediaStore = useMissingMediaStore()
-  const canvasStore = useCanvasStore()
   const { inferPackFromNodeName } = useComfyRegistryStore()
   const collapseState = reactive<Record<string, boolean>>({})
 
@@ -274,7 +276,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   const selectedNodeInfo = computed(() => {
     const rootGraph = app.rootGraphOrUndefined
-    const items = canvasStore.selectedItems
+    const items = toValue(selectedItems)
     const nodeIds = new Set<string>()
     const containerExecutionIds = new Set<NodeExecutionId>()
 
@@ -301,7 +303,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   const selectedNodeTitle = computed(() => {
     if (selectedNodeCount.value !== 1) return null
-    const node = canvasStore.selectedItems.find(isLGraphNode)
+    const node = toValue(selectedItems).find(isLGraphNode)
     if (!node) return null
     return (
       resolveNodeDisplayName(node, {

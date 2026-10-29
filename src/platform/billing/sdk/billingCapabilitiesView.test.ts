@@ -47,6 +47,16 @@ const SNAPSHOT: CapabilitiesSnapshot = {
 }
 
 describe('projectBillingCapabilities', () => {
+  it.for([true, false])(
+    'preserves auto top-up enabled %s as served',
+    (served) => {
+      expect(
+        projectBillingCapabilities({ ...SNAPSHOT, autoTopUpEnabled: served })
+          .auto_top_up_enabled
+      ).toBe(served)
+    }
+  )
+
   it('reads the snapshot back as the response the composable holds', () => {
     expect(projectBillingCapabilities(SNAPSHOT)).toStrictEqual({
       capabilities: SNAPSHOT.capabilities,

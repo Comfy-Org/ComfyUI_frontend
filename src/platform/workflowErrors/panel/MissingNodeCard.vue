@@ -97,16 +97,12 @@ import { useI18n } from 'vue-i18n'
 import { compare, valid } from 'semver'
 import Button from '@comfyorg/design-system/button/Button'
 import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
-import { useApplyChanges } from '@/platform/customNodes/manager/composables/useApplyChanges'
-import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import { isCloud } from '@/platform/distribution/types'
-import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
-import { useMissingNodes } from '@/platform/customNodes/manager/composables/nodePack/useMissingNodes'
+import { useWorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
-import MissingPackGroupRow from '@/components/rightSidePanel/errors/MissingPackGroupRow.vue'
-import { someNodeTypeInSelection } from '@/components/rightSidePanel/errors/selectionEmphasis'
+import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
+import MissingPackGroupRow from '@/platform/workflowErrors/panel/MissingPackGroupRow.vue'
+import { someNodeTypeInSelection } from '@/platform/workflowErrors/panel/selectionEmphasis'
 import MissingNodeDeploymentOffer from '@/platform/workspace/components/MissingNodeDeploymentOffer.vue'
 
 const { showInfoButton, missingPackGroups } = defineProps<{
@@ -123,7 +119,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const { missingCoreNodes } = useMissingNodes()
+const manager = useWorkflowErrorManager()
+const { missingCoreNodes } = manager.useMissingNodes()
 const systemStatsStore = useSystemStatsStore()
 
 const hasMissingCoreNodes = computed(
@@ -146,14 +143,13 @@ const sortedMissingCoreNodes = computed(() =>
   })
 )
 
-function getUniqueNodeNames(nodes: LGraphNode[]): string[] {
+function getUniqueNodeNames(nodes: { type: string }[]): string[] {
   const types = new Set(nodes.map((node) => node.type).filter(Boolean))
   return [...types].sort()
 }
 
-const comfyManagerStore = useComfyManagerStore()
-const { isRestarting, applyChanges } = useApplyChanges()
-const { shouldShowManagerButtons } = useManagerState()
+const { isRestarting, applyChanges } = manager.useApplyChanges()
+const { shouldShowManagerButtons } = manager.useManagerState()
 
 /**
  * Show the --enable-manager hint when:
@@ -169,7 +165,7 @@ const showManagerHint = computed(() => !isCloud && !showInfoButton)
  */
 const hasInstalledPacksPendingRestart = computed(() =>
   missingPackGroups.some(
-    (g) => g.packId !== null && comfyManagerStore.isPackInstalled(g.packId)
+    (g) => g.packId !== null && manager.isPackInstalled(g.packId)
   )
 )
 </script>

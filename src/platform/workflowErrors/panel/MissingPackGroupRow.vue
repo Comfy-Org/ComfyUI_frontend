@@ -138,7 +138,7 @@
           class="shrink-0 focus-visible:ring-inset"
           @click="
             openManager({
-              initialTab: ManagerTab.All,
+              initialTab: 'all',
               initialPackId: group.packId!
             })
           "
@@ -246,17 +246,12 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { selectionEmphasisClass } from './selectionEmphasis'
 import Button from '@comfyorg/design-system/button/Button'
 import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
-import LocateNodeButton from '@/components/rightSidePanel/errors/LocateNodeButton.vue'
+import LocateNodeButton from '@/platform/workflowErrors/panel/LocateNodeButton.vue'
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { useMissingNodes } from '@/platform/customNodes/manager/composables/nodePack/useMissingNodes'
-import { usePackInstall } from '@/platform/customNodes/manager/composables/nodePack/usePackInstall'
-import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
-import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
-import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
-import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
+import { useWorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
-import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
+import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
 
 const { group, showInfoButton, highlighted } = defineProps<{
   group: MissingPackGroup
@@ -276,10 +271,10 @@ const expandedOverride = ref<boolean | null>(null)
 const packTextButtonClass =
   'm-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word outline-none focus:outline-none rounded-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset focus-visible:outline-none'
 
-const { missingNodePacks, isLoading } = useMissingNodes()
-const comfyManagerStore = useComfyManagerStore()
-const { shouldShowManagerButtons } = useManagerState()
-const { openManager } = useManagerDialog()
+const manager = useWorkflowErrorManager()
+const { missingNodePacks, isLoading } = manager.useMissingNodes()
+const { shouldShowManagerButtons } = manager.useManagerState()
+const { openManager } = manager
 const deploymentPick = useDeploymentPickStore()
 
 const nodePack = computed(() => {
@@ -287,7 +282,7 @@ const nodePack = computed(() => {
   return missingNodePacks.value.find((p) => p.id === group.packId) ?? null
 })
 
-const { isInstalling, installAllPacks } = usePackInstall(() =>
+const { isInstalling, installAllPacks } = manager.usePackInstall(() =>
   nodePack.value ? [nodePack.value] : []
 )
 
@@ -303,7 +298,7 @@ const packDisplayName = computed(() => {
 })
 
 const isPackInstalled = computed(
-  () => group.packId !== null && comfyManagerStore.isPackInstalled(group.packId)
+  () => group.packId !== null && manager.isPackInstalled(group.packId)
 )
 
 const showInstallAction = computed(
