@@ -1229,6 +1229,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function reset(): void {
+      unreconciledSnapshotTurns.clear()
       disposeActiveAndSettledTransports()
       messages.value = []
       userTexts.value = new Map()
@@ -1250,7 +1251,6 @@ export const useAgentConversationStore = defineStore(
       reportedPaywallImpressions.clear()
       undeliverableAskReporter.reset()
       departedTurns.clear()
-      unreconciledSnapshotTurns.clear()
       clearActive()
     }
 
