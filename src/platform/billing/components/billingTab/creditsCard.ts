@@ -8,6 +8,7 @@ export interface CreditsCardFacts {
   billingStatus: BillingStatus | null
   planPoolCredits: number | null
   renewalDate: string | null
+  endDate: string | null
 }
 
 export type CreditsCardState =
@@ -20,9 +21,22 @@ export type CreditsCardState =
       planPoolCredits: number | null
       topUpCents: number
       topUpInUse: boolean
-      renewalDate: string | null
-      refillAwaitsPayment: boolean
+      showUsage: boolean
+      planDate:
+        | { kind: 'refills' | 'availableUntil'; date: string | null }
+        | { kind: 'afterPayment' }
     }
+
+export type PlanCreditsState = Extract<CreditsCardState, { kind: 'plan' }>
+
+const PLAN_USAGE_SHOWN: Record<BillingStatus, boolean> = {
+  awaiting_payment_method: true,
+  pending_payment: true,
+  paid: true,
+  payment_failed: true,
+  paused: false,
+  inactive: true
+}
 
 /** Maps the served balance and plan state onto the Credits card. */
 export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
@@ -46,8 +60,10 @@ export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
     planPoolCredits: facts.planPoolCredits,
     topUpCents,
     topUpInUse: planCents === 0 && topUpCents > 0,
-    renewalDate: facts.renewalDate,
-    refillAwaitsPayment: facts.planKind === 'paused'
+    showUsage: facts.billingStatus
+      ? PLAN_USAGE_SHOWN[facts.billingStatus]
+      : true,
+    planDate: planDateFor(facts)
   }
 }
 
@@ -70,4 +86,15 @@ export function addCreditsEmphasis(
     !facts.planActionIsPrimary
     ? 'inverted'
     : 'secondary'
+}
+
+function planDateFor(facts: CreditsCardFacts): PlanCreditsState['planDate'] {
+  switch (facts.planKind) {
+    case 'paused':
+      return { kind: 'afterPayment' }
+    case 'ending':
+      return { kind: 'availableUntil', date: facts.endDate }
+    default:
+      return { kind: 'refills', date: facts.renewalDate }
+  }
 }

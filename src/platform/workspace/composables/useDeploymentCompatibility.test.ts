@@ -501,10 +501,10 @@ describe('useDeploymentCompatibility', () => {
       moved: { ...deployment('dep-building'), release_id: 'r-new' }
     },
     {
-      change: 'finishes building',
-      moved: { ...deployment('dep-building'), status: 'running' }
+      change: 'stops',
+      moved: { ...deployment('dep-building'), status: 'stopped' }
     }
-  ])(
+  ] satisfies { change: string; moved: WorkspaceDeployment }[])(
     'asks again and shows the new answer when a deployment $change',
     async ({ moved }) => {
       const { markFor } = setup()

@@ -1,17 +1,17 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { ErrorGroup } from '@/components/rightSidePanel/errors/types'
+import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
 import type {
   MissingPackGroup,
   SwapNodeGroup
-} from '@/components/rightSidePanel/errors/useErrorGroups'
+} from '@/platform/workflowErrors/panel/useErrorGroups'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 import '@/scripts/changeTracker'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
@@ -28,7 +28,7 @@ const mockErrorGroups = vi.hoisted(() => ({
 const mockAllErrorGroups = mockErrorGroups.allErrorGroups
 
 vi.mock<unknown>(
-  import('@/components/rightSidePanel/errors/useErrorGroups'),
+  import('@/platform/workflowErrors/panel/useErrorGroups'),
   () => ({
     useErrorGroups: () => mockErrorGroups
   })
@@ -103,9 +103,6 @@ describe('ErrorOverlay', () => {
     mockErrorGroups.missingModelGroups.value = []
     mockErrorGroups.missingMediaGroups.value = []
     mockErrorGroups.swapNodeGroups.value = []
-    useCanvasStore().linearMode = false
-    useCanvasStore().canvas = null
-    useCanvasStore().currentGraph = null
   })
 
   it.for([
@@ -167,7 +164,7 @@ describe('ErrorOverlay', () => {
         ]
       }
     ]
-    renderOverlay()
+    const { emitted } = renderOverlay()
 
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.recordNodeErrors({
@@ -185,6 +182,8 @@ describe('ErrorOverlay', () => {
       'Close'
     )
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'View details' }))
+    expect(emitted('viewErrors')).toEqual([[]])
   })
 
   it('keeps the app mode button label', async () => {

@@ -1,6 +1,10 @@
 <template>
   <div class="flex h-full min-w-0 flex-col">
-    <ErrorGroupList class="min-h-0 flex-1" />
+    <ErrorGroupList
+      :selected-items
+      class="min-h-0 flex-1"
+      @locate-node="(nodeId, nodeMap) => emit('locateNode', nodeId, nodeMap)"
+    />
 
     <ErrorPanelSurveyCta v-if="ErrorPanelSurveyCta" />
 
@@ -39,12 +43,22 @@
 <script setup lang="ts">
 import { defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import ErrorGroupList from './ErrorGroupList.vue'
 import { useErrorActions } from './useErrorActions'
+
+const { selectedItems = [] } = defineProps<{
+  selectedItems?: readonly Positionable[]
+}>()
+
+const emit = defineEmits<{
+  locateNode: [nodeId: string, executionIdMap?: Map<string, LGraphNode>]
+}>()
 
 const ErrorPanelSurveyCta =
   isNightly && !isCloud && !isDesktop
