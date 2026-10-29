@@ -2,8 +2,12 @@ import type { AxiosAdapter, AxiosResponse } from 'axios'
 import axios, { AxiosError } from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 
+import { useTelemetry } from '@comfyorg/telemetry'
+
 import { attachRetryableStatusRetry } from '@/utils/axiosRetryableStatus'
 import { DEFAULT_RETRY_POLICY } from '@/utils/retryPolicy'
+
+vi.mock(import('@comfyorg/telemetry'))
 
 interface ScriptedAnswer {
   readonly status: number
@@ -272,5 +276,135 @@ describe('attachRetryableStatusRetry', () => {
         5_000, 3_750
       ])
     })
+  })
+})
+
+describe('attachRetryableStatusRetry status retry telemetry', () => {
+  const tracked = () => vi.mocked(useTelemetry()!.trackFetchStatusRetry)
+
+  it('records a request that recovered after a retry', async () => {
+    const { client } = makeClient([{ status: 503 }, { status: 200 }])
+
+    await client.get('/api/billing/balance', {
+      baseURL: 'https://cloud.comfy.org'
+    })
+
+    expect(tracked()).toHaveBeenCalledExactlyOnceWith({
+      transport: 'axios',
+      method: 'GET',
+      host: 'cloud.comfy.org',
+      route: '/billing/:resource',
+      attempts: 2,
+      final_status: 200,
+      outcome: 'recovered'
+    })
+  })
+
+  it.for<[string, ScriptedAnswer[], Record<string, unknown>]>([
+    [
+      'spent its attempts',
+      [{ status: 503 }],
+      { attempts: 3, final_status: 503, outcome: 'exhausted' }
+    ],
+    [
+      'got a non-retryable error after a retry',
+      [{ status: 503 }, { status: 404 }],
+      { attempts: 2, final_status: 404, outcome: 'failed' }
+    ]
+  ])('records a request that %s', async ([_name, answers, expected]) => {
+    const { client } = makeClient(answers)
+
+    await expect(client.get('https://api/x')).rejects.toBeDefined()
+
+    expect(tracked()).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining(expected)
+    )
+  })
+
+  it('records a request whose wait would overrun its timeout', async () => {
+    vi.useFakeTimers()
+    const adapter = scriptedAdapter([{ status: 503 }, { status: 200 }])
+    const client = axios.create({ adapter })
+    attachRetryableStatusRetry(client, {
+      random: () => 1,
+      sleep: async () => {
+        vi.setSystemTime(Date.now() + 5_000)
+      }
+    })
+
+    await expect(
+      client.get('https://api/x', { timeout: 1_000 })
+    ).rejects.toBeDefined()
+
+    expect(tracked()).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        attempts: 1,
+        final_status: 503,
+        outcome: 'timeout_budget'
+      })
+    )
+  })
+
+  it('records a retry that hit the request timeout', async () => {
+    const adapter = vi
+      .fn<AxiosAdapter>()
+      .mockImplementationOnce(async (config) => {
+        throw new AxiosError(
+          'Request failed with status code 503',
+          AxiosError.ERR_BAD_RESPONSE,
+          config,
+          null,
+          { data: {}, status: 503, statusText: '503', headers: {}, config }
+        )
+      })
+      .mockImplementationOnce(async (config) => {
+        throw new AxiosError('timeout', AxiosError.ECONNABORTED, config)
+      })
+    const client = axios.create({ adapter })
+    attachRetryableStatusRetry(client, {
+      sleep: async () => {},
+      random: () => 1
+    })
+
+    await expect(
+      client.get('https://api/x', { timeout: 60_000 })
+    ).rejects.toMatchObject({ code: AxiosError.ECONNABORTED })
+
+    expect(tracked()).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        attempts: 2,
+        final_status: 503,
+        outcome: 'timeout_budget'
+      })
+    )
+  })
+
+  it('still returns the response when recording throws', async () => {
+    tracked().mockImplementation(() => {
+      throw new Error('telemetry down')
+    })
+    const { client } = makeClient([{ status: 503 }, { status: 200 }])
+
+    await expect(client.get('https://api/x')).resolves.toMatchObject({
+      status: 200
+    })
+  })
+
+  it('records nothing for a request that never saw a retryable status', async () => {
+    const { client } = makeClient([{ status: 404 }])
+
+    await expect(client.get('https://api/x')).rejects.toBeDefined()
+
+    expect(tracked()).not.toHaveBeenCalled()
+  })
+
+  it('records nothing for a read that opted out of the status retry', async () => {
+    const { client } = makeClient([{ status: 503 }])
+
+    await expect(
+      client.get('https://api/x', { __skipStatusRetry: true })
+    ).rejects.toBeDefined()
+
+    expect(tracked()).not.toHaveBeenCalled()
   })
 })

@@ -1431,6 +1431,35 @@ export interface FetchTimeoutMetadata {
 }
 
 /**
+ * How a request that got a retryable status (429/502/503/504) ended.
+ * `recovered`: a retry got a success. `exhausted`: every attempt got a
+ * retryable status. `retry_after_too_long`: an answer's `Retry-After` was past
+ * the retry cap, so it stopped there. `timeout_budget`: the request's own
+ * timeout ran out during or before a retry. `failed`: a retry got a
+ * non-retryable error status or no response at all.
+ */
+export type FetchStatusRetryOutcome =
+  | 'recovered'
+  | 'exhausted'
+  | 'retry_after_too_long'
+  | 'timeout_budget'
+  | 'failed'
+
+/** One request that hit a retryable status in the shared status retry. */
+export interface FetchStatusRetryMetadata {
+  transport: 'fetch' | 'axios'
+  method: string
+  host: string
+  /** Route group only, as in `app:fetch_timeout`, e.g. `/billing/:resource`. */
+  route: string
+  /** Requests sent, including the first. */
+  attempts: number
+  /** The last status the request got, if any. */
+  final_status?: number
+  outcome: FetchStatusRetryOutcome
+}
+
+/**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
  */
@@ -1617,6 +1646,7 @@ export interface TelemetryProvider {
 
   // Network error events
   trackFetchTimeout?(metadata: FetchTimeoutMetadata): void
+  trackFetchStatusRetry?(metadata: FetchStatusRetryMetadata): void
 }
 
 /**
@@ -1799,6 +1829,7 @@ export const TelemetryEvents = {
 
   // Network
   FETCH_TIMEOUT: 'app:fetch_timeout',
+  FETCH_STATUS_RETRY: 'app:fetch_status_retry',
 
   WORKSPACE_SCOPE_MISMATCH: 'workspace_scope_mismatch'
 } as const
@@ -1905,4 +1936,5 @@ export type TelemetryEventProperties =
   | AgentPaywallCtaMetadata
   | AgentCreditTransitionNoticeMetadata
   | FetchTimeoutMetadata
+  | FetchStatusRetryMetadata
   | WorkspaceScopeMismatchMetadata

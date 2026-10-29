@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RetryPolicy } from '@/utils/retryPolicy'
 import {
   DEFAULT_RETRY_POLICY,
+  NO_RETRY_POLICY,
+  nextRetry,
   parseRetryAfterMs,
-  retryDelayMs,
   sleep
 } from '@/utils/retryPolicy'
 
@@ -33,11 +34,10 @@ describe('parseRetryAfterMs', () => {
   })
 })
 
-describe('retryDelayMs', () => {
-  const decide = (
-    overrides: Partial<Parameters<typeof retryDelayMs>[0]> = {}
-  ) =>
-    retryDelayMs({
+describe('nextRetry delay', () => {
+  /** The scheduled delay, or `undefined` when it stops. */
+  const decide = (overrides: Partial<Parameters<typeof nextRetry>[0]> = {}) => {
+    const decision = nextRetry({
       method: 'GET',
       status: 503,
       readRetryAfter: () => null,
@@ -46,6 +46,8 @@ describe('retryDelayMs', () => {
       now: () => NOW,
       ...overrides
     })
+    return decision.retry ? decision.delayMs : undefined
+  }
 
   it.for([429, 502, 503, 504])('retries status %i', (status) => {
     expect(decide({ status })).toBeDefined()
@@ -181,5 +183,36 @@ describe('sleep', () => {
     controller.abort('stop')
 
     await expect(sleep(1_000, controller.signal)).rejects.toBe('stop')
+  })
+})
+
+describe('nextRetry', () => {
+  const decide = (overrides: Partial<Parameters<typeof nextRetry>[0]> = {}) =>
+    nextRetry({
+      method: 'GET',
+      status: 503,
+      readRetryAfter: () => null,
+      attempt: 1,
+      random: () => 1,
+      now: () => NOW,
+      ...overrides
+    })
+
+  it.for<[string, Partial<Parameters<typeof nextRetry>[0]>, string]>([
+    ['a non-retryable status', { status: 500 }, 'not_retryable'],
+    ['a write', { method: 'POST' }, 'not_retryable'],
+    ['the last attempt', { attempt: 3 }, 'attempts_spent'],
+    ['a no-retry policy', { policy: NO_RETRY_POLICY }, 'attempts_spent'],
+    [
+      'a Retry-After past the cap',
+      { readRetryAfter: () => '30' },
+      'retry_after_too_long'
+    ]
+  ])('stops on %s and says why', ([_name, overrides, reason]) => {
+    expect(decide(overrides)).toEqual({ retry: false, reason })
+  })
+
+  it('schedules the next attempt after the backoff delay', () => {
+    expect(decide()).toEqual({ retry: true, delayMs: 500 })
   })
 })

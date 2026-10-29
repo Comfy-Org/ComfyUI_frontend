@@ -7,7 +7,9 @@ import type {
 import axios from 'axios'
 
 import type { RetryPolicy } from '@/utils/retryPolicy'
-import { retryDelayMs, sleep as sleepFor } from '@/utils/retryPolicy'
+import { nextRetry, sleep as sleepFor } from '@/utils/retryPolicy'
+import type { StatusRetryEnd } from '@/utils/statusRetryTelemetry'
+import { endForStop, trackStatusRetry } from '@/utils/statusRetryTelemetry'
 
 export interface AxiosRetryableStatusOptions {
   readonly policy?: RetryPolicy
@@ -41,11 +43,8 @@ function cancellationSignal(
     : controller.signal
 }
 
-function fitsBudget(
-  delay: number | undefined,
-  remaining: number | undefined
-): delay is number {
-  return delay !== undefined && (remaining === undefined || delay < remaining)
+function fitsBudget(delay: number, remaining: number | undefined): boolean {
+  return remaining === undefined || delay < remaining
 }
 
 async function runAttempt(
@@ -65,26 +64,84 @@ async function runAttempt(
   }
 }
 
+/** How a request that got no response ended. */
+function noResponseEnd(error: unknown): StatusRetryEnd {
+  if (axios.isCancel(error)) return 'cancelled'
+  if (
+    axios.isAxiosError(error) &&
+    (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT')
+  ) {
+    return 'timeout'
+  }
+  return 'network'
+}
+
+interface StatusRetryTracker {
+  scheduled(status: number): void
+  settle(end: StatusRetryEnd, attempts: number, status?: number): void
+}
+
+function statusRetryTracker(
+  config: InternalAxiosRequestConfig
+): StatusRetryTracker {
+  let lastRetryStatus: number | undefined
+  return {
+    scheduled(status) {
+      lastRetryStatus = status
+    },
+    settle(end, attempts, status) {
+      trackStatusRetry({
+        transport: 'axios',
+        method: config.method ?? 'GET',
+        url: () => axios.getUri(config),
+        end,
+        attempts,
+        finalStatus: status ?? lastRetryStatus,
+        retryScheduled: lastRetryStatus !== undefined
+      })
+    }
+  }
+}
+
+/** The wait before the next attempt; rethrows `error` when there is none. */
+function delayAfterFailure(
+  error: unknown,
+  config: InternalAxiosRequestConfig,
+  attempt: number,
+  remaining: number | undefined,
+  tracker: StatusRetryTracker,
+  { policy, random }: AxiosRetryableStatusOptions
+): number {
+  const failed = axios.isAxiosError(error) ? error.response : undefined
+  if (!failed) {
+    tracker.settle(noResponseEnd(error), attempt)
+    throw error
+  }
+  const decision = nextRetry({
+    method: config.method ?? 'GET',
+    status: failed.status,
+    readRetryAfter: () => retryAfterHeader(failed),
+    attempt,
+    policy,
+    random
+  })
+  if (!decision.retry) {
+    tracker.settle(endForStop(decision.reason), attempt, failed.status)
+    throw error
+  }
+  tracker.scheduled(failed.status)
+  if (!fitsBudget(decision.delayMs, remaining)) {
+    tracker.settle('timeout', attempt)
+    throw error
+  }
+  return decision.delayMs
+}
+
 function retryingAdapter(
   adapter: AxiosAdapter,
-  { policy, sleep = sleepFor, random }: AxiosRetryableStatusOptions
+  options: AxiosRetryableStatusOptions
 ): AxiosAdapter {
-  function waitBeforeRetry(
-    error: unknown,
-    config: InternalAxiosRequestConfig,
-    attempt: number
-  ): number | undefined {
-    const response = axios.isAxiosError(error) ? error.response : undefined
-    if (!response) return undefined
-    return retryDelayMs({
-      method: config.method ?? 'GET',
-      status: response.status,
-      readRetryAfter: () => retryAfterHeader(response),
-      attempt,
-      policy,
-      random
-    })
-  }
+  const { sleep = sleepFor } = options
 
   async function pause(delay: number, config: InternalAxiosRequestConfig) {
     const signal = cancellationSignal(config)
@@ -99,17 +156,29 @@ function retryingAdapter(
   return async (config) => {
     if (config.__skipStatusRetry) return adapter(config)
     const remainingMs = timeBudget(config.timeout)
+    const tracker = statusRetryTracker(config)
     let lastError: unknown
 
     for (let attempt = 1; ; attempt++) {
       const remaining = remainingMs()
-      if (remaining !== undefined && remaining <= 0) throw lastError
+      if (remaining !== undefined && remaining <= 0) {
+        tracker.settle('timeout', attempt - 1)
+        throw lastError
+      }
       try {
-        return await runAttempt(adapter, config, remaining)
+        const response = await runAttempt(adapter, config, remaining)
+        tracker.settle('answered', attempt, response.status)
+        return response
       } catch (error) {
         lastError = error
-        const delay = waitBeforeRetry(error, config, attempt)
-        if (!fitsBudget(delay, remainingMs())) throw error
+        const delay = delayAfterFailure(
+          error,
+          config,
+          attempt,
+          remainingMs(),
+          tracker,
+          options
+        )
         await pause(delay, config)
       }
     }
