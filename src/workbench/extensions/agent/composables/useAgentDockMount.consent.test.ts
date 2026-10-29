@@ -59,9 +59,21 @@ describe('useAgentDockMount consent handoff', () => {
   })
 
   it('refreshes billing from the persistent host after a confirmed Agree', async () => {
+    let finishSave = (_value: GlobalSetting): void => {}
+    accountApi.set.mockImplementationOnce(
+      () =>
+        new Promise<GlobalSetting>((resolve) => {
+          finishSave = resolve
+        })
+    )
     useAgentDockMount()
 
-    await expect(useAgentConsentStore().accept()).resolves.toBe(true)
+    const accepting = useAgentConsentStore().accept()
+    await vi.waitFor(() => expect(accountApi.set).toHaveBeenCalledOnce())
+    expect(fetchStatus).not.toHaveBeenCalled()
+
+    finishSave(stored)
+    await expect(accepting).resolves.toBe(true)
 
     expect(fetchStatus).toHaveBeenCalledOnce()
   })
