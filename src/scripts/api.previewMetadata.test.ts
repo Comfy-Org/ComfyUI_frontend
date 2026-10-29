@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ComfyApi } from '@/scripts/api'
 
-/** Minimal socket double; the decoder only needs the `message` handler. */
 class FakeWebSocket {
   static readonly OPEN = 1
   static instances: FakeWebSocket[] = []
@@ -28,7 +27,6 @@ class FakeWebSocket {
   }
 }
 
-/** Encode the type-4 preview frame: tag, metadata length, JSON, image bytes. */
 function previewFrame(
   metadata: Record<string, unknown>,
   imageBytes: number[]
@@ -59,12 +57,14 @@ describe('ComfyApi type-4 preview metadata', () => {
   })
 
   function dispatchedPreview(metadata: Record<string, unknown>) {
-    const detail = vi.fn()
+    const details: NonNullable<
+      Parameters<typeof api.dispatchCustomEvent<'b_preview_with_metadata'>>[1]
+    >[] = []
     api.addEventListener('b_preview_with_metadata', (event) => {
-      detail(event.detail)
+      details.push(event.detail)
     })
     FakeWebSocket.instances[0].receiveBinary(previewFrame(metadata, [1, 2, 3]))
-    return detail.mock.calls[0]?.[0]
+    return details[0]
   }
 
   const baseMetadata = {

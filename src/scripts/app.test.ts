@@ -3643,20 +3643,22 @@ describe('ComfyApp', () => {
       )
       workflowA.changeTracker.activeState = workflowGraphData(workflowAId)
       useWorkflowStore().activeWorkflow = workflowA
-      // No storeJob for any of these ids: with no instance or session-path
-      // mapping and no active job, the fallback would admit every frame, so
-      // the stamp forwarded from the wire is the only thing that can reject
-      // the foreign ones.
 
       vi.spyOn(URL, 'createObjectURL').mockImplementation(
         (blob) => `blob:${blob instanceof Blob ? blob.size : 0}`
       )
-      const addEventListener = vi.spyOn(api, 'addEventListener')
+      const addEventListener = vi
+        .spyOn(api, 'addEventListener')
+        .mockImplementation(() => {})
+      vi.spyOn(api, 'init').mockResolvedValue()
       Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
-      function handlerFor(event: string) {
-        return addEventListener.mock.calls.find(
+      function handlerFor(event: Parameters<typeof api.addEventListener>[0]) {
+        const handler = addEventListener.mock.calls.find(
           ([name]) => name === event
-        )?.[1] as EventListener | undefined
+        )?.[1]
+        if (typeof handler !== 'function')
+          throw new Error('Expected registered function handler')
+        return handler
       }
       function executedEvent(jobId: string, workflowId: string) {
         return new CustomEvent('executed', {
@@ -3687,14 +3689,12 @@ describe('ComfyApp', () => {
         })
       }
 
-      // A fresh job id per ingress, so a stamp remembered on one path cannot
-      // stand in for missing wiring on another.
-      handlerFor('executed')?.(executedEvent('job-own-output', workflowAId))
-      handlerFor('b_preview_with_metadata')?.(
+      handlerFor('executed')(executedEvent('job-own-output', workflowAId))
+      handlerFor('b_preview_with_metadata')(
         previewEvent('job-own-preview', 'a', workflowAId)
       )
-      handlerFor('executed')?.(executedEvent('job-foreign-output', workflowBId))
-      handlerFor('b_preview_with_metadata')?.(
+      handlerFor('executed')(executedEvent('job-foreign-output', workflowBId))
+      handlerFor('b_preview_with_metadata')(
         previewEvent('job-foreign-preview', 'bb', workflowBId)
       )
 

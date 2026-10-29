@@ -1,18 +1,16 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
 
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { api } from '@/scripts/api'
 
-const promptResponse = () =>
-  ({
-    status: 200,
-    json: () => Promise.resolve({ prompt_id: 'job-1', node_errors: {} })
-  }) as unknown as Response
+function promptResponse() {
+  return Response.json({ prompt_id: 'job-1', node_errors: {} })
+}
 
 function workflowWithId(id: string | undefined): ComfyWorkflowJSON {
-  return fromPartial<ComfyWorkflowJSON>({
+  return {
     id,
     revision: 0,
     last_node_id: 0,
@@ -22,11 +20,11 @@ function workflowWithId(id: string | undefined): ComfyWorkflowJSON {
     groups: [],
     extra: {},
     version: 0.4
-  })
+  }
 }
 
 describe('api queuePrompt workflow_metadata', () => {
-  let fetchApiSpy: ReturnType<typeof vi.spyOn>
+  let fetchApiSpy: MockInstance<typeof api.fetchApi>
 
   beforeEach(() => {
     fetchApiSpy = vi.spyOn(api, 'fetchApi').mockResolvedValue(promptResponse())
@@ -37,8 +35,10 @@ describe('api queuePrompt workflow_metadata', () => {
       output: {},
       workflow: workflowWithId(id)
     })
-    const [, init] = fetchApiSpy.mock.calls[0] as [string, RequestInit]
-    return JSON.parse(init.body as string)
+    const [, init] = fetchApiSpy.mock.calls[0]
+    if (typeof init?.body !== 'string')
+      throw new Error('Expected JSON request body')
+    return JSON.parse(init.body)
   }
 
   it.for([

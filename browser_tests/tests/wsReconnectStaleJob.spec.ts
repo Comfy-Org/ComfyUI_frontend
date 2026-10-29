@@ -108,11 +108,6 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
     const exec = new ExecutionHelper(comfyPage, ws)
     const topbar = comfyPage.menu.topbar
 
-    // Two workflows, each with an unreadable job. The orphaned one is the
-    // completion barrier: its badge can only clear from inside the same
-    // `forgetFinishedJobs` batch that forgets the shared workflow's stale
-    // job, so observing it gone is what proves cleanup ran. Counting detail
-    // requests cannot — the counter moves before the response is fulfilled.
     const { orphanedIndicator, sharedIndicator, staleJobIds, runningJobId } =
       await test.step('Strand one job per workflow behind a live sibling', async () => {
         await comfyPage.workflow.waitForActiveWorkflow()
@@ -121,7 +116,7 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
         const orphanedJobId = await exec.run()
         exec.executionStart(orphanedJobId)
 
-        await comfyPage.workflow.loadWorkflow('default')
+        await comfyPage.workflow.loadWorkflow('nodes/single_save_image_node')
         await comfyPage.workflow.waitForWorkflowIdle()
 
         const sharedStaleJobId = await exec.run()
@@ -131,7 +126,7 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
 
         await comfyPage.workflow.newBlankWorkflow()
         await comfyPage.workflow.waitForWorkflowIdle()
-        await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
+        await expect(topbar.tabs).toHaveCount(3)
 
         const orphanedIndicator = topbar
           .getTab(0)
@@ -172,12 +167,6 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
         )
       )
 
-      // MAX_UNREADABLE_REFRESHES is 3, so three refresh passes reach the
-      // give-up boundary that calls forgetFinishedJobs. Each pass reads a
-      // stale job twice (the initial read and the retry), and a reconnect
-      // arriving mid-pass is absorbed into the in-flight refresh — so gate
-      // each reconnect on the previous pass having issued both of its reads,
-      // or two reconnects collapse into one pass and the boundary is missed.
       let socket = ws
       for (let pass = 1; pass <= 3; pass++) {
         const nextSocketPromise = nextWebSocket()
@@ -187,9 +176,9 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
           remainingJobScenario,
           runningJobId
         )
-        for (const reads of staleJobReads) {
-          await expect.poll(reads).toBeGreaterThanOrEqual(2 * pass)
-        }
+        await expect
+          .poll(() => staleJobReads.map((reads) => reads() >= 2 * pass))
+          .toEqual([true, true])
         socket = await nextSocketPromise
       }
 
