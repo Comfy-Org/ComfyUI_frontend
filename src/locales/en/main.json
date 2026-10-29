@@ -3685,6 +3685,11 @@
           "body": "Your plan will renew on {date}. You can cancel again anytime.",
           "title": "Resume your {plan} plan?"
         },
+        "salesManaged": {
+          "line": "Billed by contract.",
+          "renews": "Billed by contract. Renews {date}.",
+          "title": "Enterprise"
+        },
         "scheduledChange": "Changes to {plan} on {date}.",
         "stayConfirm": {
           "bodyNoAmount": "You'll stay on {current}. You can schedule a change again anytime.",
@@ -3760,7 +3765,7 @@
           "title": "Payment received"
         },
         "verifyPayment": {
-          "action": "Verify your payment",
+          "action": "Complete verification",
           "body": "Your bank requires additional verification to complete this payment.",
           "title": "Verify your payment"
         }
