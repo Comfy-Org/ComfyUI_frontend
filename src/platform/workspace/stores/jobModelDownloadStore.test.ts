@@ -1,4 +1,3 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
@@ -157,11 +156,14 @@ describe('useJobModelDownloadStore', () => {
   it('ignores a malformed event and reports the first one', () => {
     const store = useJobModelDownloadStore()
 
-    const malformed = fromPartial<ModelDownloadWsMessage>({
-      prompt_id: 'job-1'
-    })
-    api.dispatchCustomEvent('model_download', malformed)
-    api.dispatchCustomEvent('model_download', malformed)
+    const malformed: unknown = { prompt_id: 'job-1' }
+    const apiEvents: EventTarget = api
+    apiEvents.dispatchEvent(
+      new CustomEvent('model_download', { detail: malformed })
+    )
+    apiEvents.dispatchEvent(
+      new CustomEvent('model_download', { detail: malformed })
+    )
 
     expect(store.downloadFor('job-1')).toBeUndefined()
     expect(reportError).toHaveBeenCalledOnce()

@@ -398,19 +398,24 @@ describe('useQueueStore', () => {
 
     it('drops the model download of a job the queue no longer lists', async () => {
       const downloads = useJobModelDownloadStore()
-      for (const prompt_id of ['run-1', 'gone']) {
-        api.dispatchCustomEvent('model_download', {
-          status: 'downloading',
-          name: 'my_style_v2.safetensors',
-          dir: 'loras',
-          index: 1,
-          count: 1,
-          bytes_downloaded: 1,
-          bytes_total: 2,
-          progress: 0.5,
-          prompt_id
-        })
-      }
+      const download = {
+        status: 'downloading',
+        name: 'my_style_v2.safetensors',
+        dir: 'loras',
+        index: 1,
+        count: 1,
+        bytes_downloaded: 1,
+        bytes_total: 2,
+        progress: 0.5
+      } as const
+      api.dispatchCustomEvent('model_download', {
+        ...download,
+        prompt_id: 'run-1'
+      })
+      api.dispatchCustomEvent('model_download', {
+        ...download,
+        prompt_id: 'gone'
+      })
       vi.mocked(api.getQueue).mockResolvedValue({
         Running: [createRunningJob(1, 'run-1')],
         Pending: []
