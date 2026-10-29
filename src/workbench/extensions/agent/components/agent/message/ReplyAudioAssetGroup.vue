@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ReplyAudioAsset } from '@/workbench/extensions/agent/utils/replyAssets'
@@ -36,7 +36,8 @@ const { t } = useI18n()
       @click="$emit('toggle')"
     >
       {{ expanded ? t('agent.showLess') : t('agent.showMore') }}
-      <span
+      <i
+        aria-hidden="true"
         :class="
           cn('icon-[lucide--chevron-down] size-3', expanded && 'rotate-180')
         "

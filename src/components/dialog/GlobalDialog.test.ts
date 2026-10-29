@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import BuilderSaveDialogContent from '@/components/builder/BuilderSaveDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import CancellationStepLayout from '@/platform/billing/subscription/components/CancellationStepLayout.vue'
 import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
 import SubscriptionRequiredDialogContentUnified from '@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue'
@@ -144,6 +144,37 @@ describe('GlobalDialog', () => {
 
     await screen.findByRole('dialog')
     expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument()
+  })
+
+  it('centers a dialog on the viewport when asked', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'reka-viewport-center',
+      title: 'Viewport',
+      component: Body,
+      dialogComponentProps: { centerOnViewport: true }
+    })
+
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog.className).toContain('[--workspace-inset-right:0px]')
+    expect(dialog.className).not.toContain('-translate-x-1/2')
+  })
+
+  it('keeps default dialogs offset by the workspace inset', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'reka-workspace-center',
+      title: 'Workspace',
+      component: Body
+    })
+
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog.className).toContain('--workspace-inset-right')
+    expect(dialog.className).not.toContain('[--workspace-inset-right:0px]')
   })
 
   it('omits the title when headless is true', async () => {

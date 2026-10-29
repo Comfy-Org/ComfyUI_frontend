@@ -8,7 +8,7 @@
       <div class="flex min-w-0 flex-1 flex-col gap-1">
         <div class="flex items-center gap-2">
           <i
-            class="icon-[lucide--circle-alert] size-4 shrink-0 text-muted-foreground"
+            class="icon-[lucide--circle-alert] text-muted-foreground"
             aria-hidden="true"
           />
           <span class="text-sm text-foreground">{{ copy.title }}</span>
@@ -37,7 +37,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatUsdFromCents } from '@/base/credits/comfyCredits'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { TopupCheckoutBanner } from '@/platform/billing/components/billingTab/topupCheckoutBanner'
 
 const { banner, canTopUp, addCreditsVariant } = defineProps<{

@@ -10,18 +10,18 @@ import {
 } from '@comfyorg/mask-editor/brushUtils'
 import { StrokeProcessor } from '@comfyorg/mask-editor/StrokeProcessor'
 import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
-import { hexToRgb } from '@/utils/colorUtil'
-import type { Point } from '@comfyorg/mask-editor/types'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { hexToRgb } from '@comfyorg/shared-frontend-utils/colorUtil'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { NodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
-import { getErrorMessage } from '@/utils/errorUtil'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 type PainterTool = 'brush' | 'eraser'
 
@@ -165,9 +165,16 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
       return
     }
 
-    isImageInputConnected.value = node.isInputConnected(0)
+    const imageInputSlot = node.findInputSlot('image')
+    if (imageInputSlot < 0) {
+      inputImageUrl.value = null
+      isImageInputConnected.value = false
+      return
+    }
 
-    const inputNode = node.getInputNode(0)
+    isImageInputConnected.value = node.isInputConnected(imageInputSlot)
+
+    const inputNode = node.getInputNode(imageInputSlot)
     if (!inputNode) {
       inputImageUrl.value = null
       return

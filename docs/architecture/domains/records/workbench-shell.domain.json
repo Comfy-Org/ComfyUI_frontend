@@ -44,10 +44,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/sidebar/tabs/SidebarTopArea.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/topbar/ActionBarButtons.vue",
       "role": "presentation"
     },
@@ -104,14 +100,6 @@
       "role": "application"
     },
     {
-      "path": "src/stores/commandStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/commandStore.ts",
-      "role": "application"
-    },
-    {
       "path": "src/stores/menuItemStore.test.ts",
       "role": "application"
     },
@@ -165,7 +153,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["extension-manager", "keybindings", "telemetry"],
   "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {
@@ -187,13 +175,6 @@
     {
       "name": "Topbar badges render extension-contributed badges",
       "checks": ["src/components/topbar/TopbarBadge.test.ts"]
-    },
-    {
-      "name": "Commands register, execute with error handling, and expose keybinding labels",
-      "checks": [
-        "src/stores/commandStore.test.ts",
-        "browser_tests/tests/commands.spec.ts"
-      ]
     },
     {
       "name": "Menu items, sidebar tabs, and bottom panel tabs register, order, and toggle",
@@ -227,7 +208,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+    "Inventory preserves existing exports and runtime behavior without granting public entry points."
   ],
   "deepImports": "inventory"
 }

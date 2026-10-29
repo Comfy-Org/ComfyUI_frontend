@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { fromAny } from '@total-typescript/shoehorn'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import type {
   LoadedComfyWorkflow,
@@ -30,17 +30,17 @@ import {
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { nodeTypesMayStillArrive } from '@/platform/lateCustomNodes/lateNodeTypes'
-import { showPlaceholdersAsWaiting } from '@/platform/lateCustomNodes/waitingNodes'
+import { nodeTypesMayStillArrive } from '@/platform/customNodes/lateLoading/lateNodeTypes'
+import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/waitingNodes'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
-import type { AppMode } from '@/utils/appMode'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
 import { zeroUuid } from '@/utils/uuid'
 import { t } from '@/i18n'
@@ -104,8 +104,8 @@ vi.mock(import('@/base/assert'), () => ({
   assert: mockAssert
 }))
 
-vi.mock(import('@/platform/lateCustomNodes/lateNodeTypes'))
-vi.mock(import('@/platform/lateCustomNodes/waitingNodes'))
+vi.mock(import('@/platform/customNodes/lateLoading/lateNodeTypes'))
+vi.mock(import('@/platform/customNodes/lateLoading/waitingNodes'))
 
 const storeThumbnailMock = vi.hoisted(() => vi.fn())
 
@@ -124,11 +124,11 @@ vi.mock<unknown>(
 
 const reportErrorMock = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 function createWorkflow(
   warnings: PendingWarnings | null = null,

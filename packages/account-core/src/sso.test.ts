@@ -328,6 +328,7 @@ describe('readSsoError', () => {
     'SSO_ORG_DISABLED',
     'SSO_ORG_MISMATCH',
     'SSO_ORG_NOT_ATTACHED',
+    'SSO_SEAT_LIMIT_REACHED',
     'SSO_SIGN_IN_FAILED',
     'SSO_UNAVAILABLE',
     'SSO_USER_SUSPENDED'

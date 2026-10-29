@@ -24,6 +24,7 @@ import {
 } from '@/platform/auth/localWeb/pendingSignIn'
 
 const REFRESH_MARGIN_MS = 60_000
+const TAB_WORKSPACE_KEY = 'Comfy.LocalWebSignIn.TabWorkspace'
 const CALLBACK_PARAMS = [
   'code',
   'state',
@@ -85,8 +86,45 @@ export function createLocalWebAuthBridge(
     now: env.now
   })
 
+  function tabWorkspaceId(): string | undefined {
+    try {
+      return env.sessionStorage.getItem(TAB_WORKSPACE_KEY) ?? undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  function pinTab(workspaceId: string | undefined): boolean {
+    try {
+      if (workspaceId)
+        env.sessionStorage.setItem(TAB_WORKSPACE_KEY, workspaceId)
+      else env.sessionStorage.removeItem(TAB_WORKSPACE_KEY)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  function workspaceOf(tokens: OAuthTokens | undefined): string | undefined {
+    return tokens && readAccessTokenIdentity(tokens.accessToken)?.workspaceId
+  }
+
+  function activeTokens(): OAuthTokens | undefined {
+    const pinned = tabWorkspaceId()
+    if (pinned) return env.tokens.readWorkspace(pinned)
+    const shared = env.tokens.read()
+    const sharedWorkspace = workspaceOf(shared)
+    if (shared && sharedWorkspace) {
+      if (!env.tokens.readWorkspace(sharedWorkspace)) {
+        env.tokens.writeWorkspace(sharedWorkspace, shared)
+      }
+      pinTab(sharedWorkspace)
+    }
+    return shared
+  }
+
   function currentState(): DesktopHostAuthState {
-    const tokens = env.tokens.read()
+    const tokens = activeTokens()
     const identity = tokens && readAccessTokenIdentity(tokens.accessToken)
     return identity
       ? { status: 'signed_in', ...identity }
@@ -98,15 +136,44 @@ export function createLocalWebAuthBridge(
     listeners.forEach((listener) => listener(state))
   }
 
+  function isDefaultForNewTabs(workspaceId: string | undefined): boolean {
+    const sharedWorkspace = workspaceOf(env.tokens.read())
+    return !sharedWorkspace || sharedWorkspace === workspaceId
+  }
+
+  function keepForTab(workspaceId: string, tokens: OAuthTokens): boolean {
+    return env.tokens.writeWorkspace(workspaceId, tokens) && pinTab(workspaceId)
+  }
+
   function adopt(
-    tokens: OAuthTokens
+    tokens: OAuthTokens,
+    { forNewTabs }: { forNewTabs: boolean }
   ): 'adopted' | 'invalid-token' | 'storage-unavailable' {
-    if (!readAccessTokenIdentity(tokens.accessToken)) return 'invalid-token'
-    return env.tokens.write(tokens) ? 'adopted' : 'storage-unavailable'
+    const identity = readAccessTokenIdentity(tokens.accessToken)
+    if (!identity) return 'invalid-token'
+    const { workspaceId } = identity
+    const writesShared = forNewTabs || isDefaultForNewTabs(workspaceId)
+    if (!workspaceId && !writesShared) return 'storage-unavailable'
+    const previousPin = tabWorkspaceId()
+    if (workspaceId && !keepForTab(workspaceId, tokens))
+      return 'storage-unavailable'
+    if (writesShared && !env.tokens.write(tokens)) {
+      pinTab(previousPin)
+      return 'storage-unavailable'
+    }
+    return 'adopted'
+  }
+
+  function forgetOtherAccount(tokens: OAuthTokens): void {
+    const incoming = readAccessTokenIdentity(tokens.accessToken)?.userId
+    const kept = activeTokens() ?? env.tokens.read()
+    const previous = kept && readAccessTokenIdentity(kept.accessToken)?.userId
+    if (previous && incoming && previous !== incoming) env.tokens.clear()
   }
 
   function signOutLocally(): DesktopHostAuthState {
     env.tokens.clear()
+    pinTab(undefined)
     emit()
     return currentState()
   }
@@ -116,19 +183,39 @@ export function createLocalWebAuthBridge(
   }
 
   async function refreshStoredTokens(): Promise<OAuthTokens | undefined> {
-    const stale = env.tokens.read()
+    const stale = activeTokens()
     if (!stale) return undefined
     if (isFresh(stale)) return stale
     const result = await refreshAccessToken(stale.refreshToken, tokenOptions())
-    if (env.tokens.read()?.refreshToken !== stale.refreshToken) return undefined
-    if (result.ok && adopt(result.tokens) === 'adopted') return result.tokens
+    if (activeTokens()?.refreshToken !== stale.refreshToken) return undefined
+    if (result.ok && adopt(result.tokens, { forNewTabs: false }) === 'adopted')
+      return result.tokens
     if (!result.ok && result.reason === 'unavailable') return undefined
     signOutLocally()
     return undefined
   }
 
+  async function keptWorkspaceTokens(
+    workspaceId: string,
+    userId: string
+  ): Promise<
+    | { kind: 'kept'; tokens: OAuthTokens }
+    | { kind: 'missing' }
+    | { kind: 'unavailable' }
+  > {
+    const kept = env.tokens.readWorkspace(workspaceId)
+    if (!kept || readAccessTokenIdentity(kept.accessToken)?.userId !== userId)
+      return { kind: 'missing' }
+    if (isFresh(kept)) return { kind: 'kept', tokens: kept }
+    const result = await refreshAccessToken(kept.refreshToken, tokenOptions())
+    if (result.ok) return { kind: 'kept', tokens: result.tokens }
+    return result.reason === 'unavailable'
+      ? { kind: 'unavailable' }
+      : { kind: 'missing' }
+  }
+
   async function freshTokens(): Promise<OAuthTokens | undefined> {
-    const tokens = env.tokens.read()
+    const tokens = activeTokens()
     if (!tokens) return undefined
     if (isFresh(tokens)) return tokens
     refreshing ??= env.withRefreshLock(refreshStoredTokens).finally(() => {
@@ -138,6 +225,38 @@ export function createLocalWebAuthBridge(
   }
 
   env.tokens.subscribe(emit)
+
+  function isSignedInAs(userId: string): boolean {
+    const state = currentState()
+    return state.status === 'signed_in' && state.userId === userId
+  }
+
+  async function requestSignIn(
+    stillWanted: () => boolean = () => true
+  ): Promise<DesktopHostAuthState> {
+    if (!stillWanted()) return currentState()
+    const pkce = await createPkceRequest().catch(() => undefined)
+    if (
+      !stillWanted() ||
+      !pkce ||
+      !savePendingSignIn(env.sessionStorage, {
+        verifier: pkce.verifier,
+        state: pkce.state
+      })
+    ) {
+      return currentState()
+    }
+    env.navigate(
+      authorizeUrl({
+        issuer: env.issuer,
+        clientId: LOCAL_WEB_CLIENT_ID,
+        redirectUri: localRedirectUri(new URL(env.pageUrl()).origin),
+        challenge: pkce.challenge,
+        state: pkce.state
+      })
+    )
+    return new Promise<DesktopHostAuthState>(() => {})
+  }
 
   return {
     getState: async () => currentState(),
@@ -154,27 +273,24 @@ export function createLocalWebAuthBridge(
       return identity?.workspaceId === workspaceId ? tokens.accessToken : null
     },
 
-    async requestSignIn() {
-      const pkce = await createPkceRequest().catch(() => undefined)
-      if (
-        !pkce ||
-        !savePendingSignIn(env.sessionStorage, {
-          verifier: pkce.verifier,
-          state: pkce.state
-        })
-      ) {
-        return currentState()
-      }
-      env.navigate(
-        authorizeUrl({
-          issuer: env.issuer,
-          clientId: LOCAL_WEB_CLIENT_ID,
-          redirectUri: localRedirectUri(new URL(env.pageUrl()).origin),
-          challenge: pkce.challenge,
-          state: pkce.state
-        })
-      )
-      return new Promise<DesktopHostAuthState>(() => {})
+    requestSignIn: () => requestSignIn(),
+
+    async switchWorkspace(workspaceId) {
+      const current = currentState()
+      if (current.status !== 'signed_in') return requestSignIn()
+      if (current.workspaceId === workspaceId) return current
+      const outcome = await env.withRefreshLock(async () => {
+        const kept = await keptWorkspaceTokens(workspaceId, current.userId)
+        if (kept.kind !== 'kept') return kept.kind
+        const adopted = adopt(kept.tokens, { forNewTabs: false })
+        if (adopted === 'adopted') return 'switched'
+        return adopted === 'storage-unavailable' ? 'unavailable' : 'missing'
+      })
+      if (outcome === 'unavailable') return currentState()
+      if (outcome === 'missing')
+        return requestSignIn(() => isSignedInAs(current.userId))
+      emit()
+      return currentState()
     },
 
     signOut: () => env.withRefreshLock(async () => signOutLocally()),
@@ -211,7 +327,8 @@ export function createLocalWebAuthBridge(
       if (!result.ok) {
         return { kind: 'failed', reason: result.reason, error: result.error }
       }
-      const adopted = adopt(result.tokens)
+      forgetOtherAccount(result.tokens)
+      const adopted = adopt(result.tokens, { forNewTabs: true })
       if (adopted !== 'adopted') return { kind: 'failed', reason: adopted }
       emit()
       return { kind: 'signed_in' }

@@ -23,15 +23,13 @@ import { SCHEMA_VERSION, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
 import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-1'
 

@@ -19,12 +19,7 @@
         @click="toggleGizmos"
       >
         <i
-          :class="
-            cn(
-              'size-4',
-              gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'
-            )
-          "
+          :class="gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'"
         />
         <span v-if="!compact">{{ gizmosLabel }}</span>
       </Button>
@@ -49,7 +44,7 @@
         "
         @click="selectTransformGizmo(option.value)"
       >
-        <i :class="cn('size-4', option.icon)" />
+        <i :class="option.icon" />
         <span v-if="!compact">{{ $t(option.labelKey) }}</span>
       </Button>
     </template>
@@ -64,7 +59,7 @@
         :aria-label="lookThroughLabel"
         @click="toggleLookThrough"
       >
-        <i class="icon-[lucide--video] size-4" />
+        <i class="icon-[lucide--video]" />
       </Button>
     </template>
   </ViewportWidgetShell>
@@ -84,14 +79,14 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import ViewportWidgetShell from '@/extensions/core/load3d/components/ViewportWidgetShell.vue'
+import ViewportWidgetShell from '@comfyorg/design-system/common/ViewportWidgetShell'
 import { actionClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCameraInfo } from '@/extensions/core/load3d/composables/useCameraInfo'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import type { TransformGizmoMode } from '@comfyorg/viewport3d/cameraInfo/CameraInfoViewport'
 import type { ComponentWidget } from '@/types/domWidget'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 

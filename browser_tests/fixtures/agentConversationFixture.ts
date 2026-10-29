@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { ApplyOutcome, WorkflowJSON } from '@comfyorg/comfy-multi-player'
@@ -6,10 +7,11 @@ import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   AgentCancelAccepted,
   AgentMessages,
@@ -147,7 +149,14 @@ const zProjectedNode = z
     type: z.string(),
     title: z.string().optional(),
     inputs: z
-      .array(z.object({ widget: z.unknown().optional() }).passthrough())
+      .array(
+        z
+          .object({
+            name: z.string().optional(),
+            widget: z.unknown().optional()
+          })
+          .passthrough()
+      )
       .optional()
   })
   .passthrough()
@@ -572,8 +581,6 @@ export class AgentConversationHarness {
       )
       .toBe(text)
 
-    // A finished turn folds its tool calls into one closed summary; the
-    // thinking rows it lists between them are not part of the recording.
     const rows = expected.groups.flat()
     await expect(this.summaries).toHaveCount(
       before.summaries + (rows.length > 0 ? 1 : 0)
@@ -590,7 +597,7 @@ export class AgentConversationHarness {
     for (const [at, row] of rows.entries()) {
       const item = items.nth(at)
       await expect(item.getByText(row.label, { exact: true })).toBeVisible()
-      const glyph = item.locator('span').first()
+      const glyph = item.locator('[class*="icon-["]')
       if (row.failed) await expect(glyph).toHaveClass(FAILED_GLYPH)
       else await expect(glyph).not.toHaveClass(FAILED_GLYPH)
       if (row.count > 1) await expect(item).toContainText(`×${row.count}`)
@@ -687,17 +694,36 @@ export class AgentConversationHarness {
       else await expect(field).toHaveValue(value)
     }
 
-    const links = projected.links
-      .map((raw): RecordedLink => {
-        const [, fromNode, fromSlot, toNode, toSlot] = zProjectedLink.parse(raw)
-        return {
-          fromNode: String(fromNode),
-          fromSlot,
-          toNode: String(toNode),
-          toSlot
-        }
-      })
-      .sort(byLinkKey)
+    const projectedLinks = projected.links.map((raw): RecordedLink => {
+      const [, fromNode, fromSlot, toNode, toSlot] = zProjectedLink.parse(raw)
+      return {
+        fromNode: String(fromNode),
+        fromSlot,
+        toNode: String(toNode),
+        toSlot
+      }
+    })
+    const links = await this.page.evaluate(
+      ({ projectedLinks, targetInputNames }) =>
+        projectedLinks.map((link) => {
+          const inputName = targetInputNames[link.toNode]?.[link.toSlot]
+          if (!inputName) return link
+          const node = window.app?.graph.getNodeById(link.toNode as NodeId)
+          const resolvedSlot =
+            node?.inputs.findIndex((input) => input.name === inputName) ?? -1
+          return resolvedSlot >= 0 ? { ...link, toSlot: resolvedSlot } : link
+        }),
+      {
+        projectedLinks,
+        targetInputNames: Object.fromEntries(
+          nodes.map((node) => [
+            String(node.id),
+            node.inputs?.map((input) => input.name) ?? []
+          ])
+        )
+      }
+    )
+    links.sort(byLinkKey)
     await expect.poll(() => this.renderedLinks()).toEqual(links)
     // A widget-backed input renders no slot row on an uncollapsed node
     // (NodeSlots.vue); the wire above already covers that end.
@@ -705,8 +731,13 @@ export class AgentConversationHarness {
       await expect(
         this.vueNodes.getOutputSlotRow(link.fromNode, link.fromSlot)
       ).toHaveClass(/lg-slot--connected/)
-      const target = nodes.find((node) => String(node.id) === link.toNode)
-      if (target?.inputs?.[link.toSlot]?.widget == null)
+      const targetHasWidget = await this.page.evaluate(
+        ({ nodeId, slot }) =>
+          window.app?.graph.getNodeById(nodeId as NodeId)?.inputs[slot]
+            ?.widget != null,
+        { nodeId: link.toNode, slot: link.toSlot }
+      )
+      if (!targetHasWidget)
         await expect(
           this.vueNodes.getInputSlotRow(link.toNode, link.toSlot)
         ).toHaveClass(/lg-slot--connected/)
@@ -1001,10 +1032,7 @@ export class AgentConversationHarness {
   // search box, double-clicked open, typed into, Enter — not a direct
   // LiteGraph.createNode call. The non-Agent baseline
   // (workflowTabSwitchKeepsAddedNodes.spec.ts) covers this path too.
-  async addNoteThroughSearchBox(position: {
-    x: number
-    y: number
-  }): Promise<string> {
+  async addNoteThroughSearchBox(position: Point2D): Promise<string> {
     const before = new Set(await this.graphNodeIds())
     await this.page.mouse.dblclick(position.x, position.y, { delay: 5 })
     const dialog = this.page.getByRole('search')

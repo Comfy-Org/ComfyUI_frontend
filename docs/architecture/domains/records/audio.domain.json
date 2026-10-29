@@ -32,10 +32,6 @@
       "role": "integration"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/components/AudioPreview.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.test.ts",
       "role": "presentation"
     },

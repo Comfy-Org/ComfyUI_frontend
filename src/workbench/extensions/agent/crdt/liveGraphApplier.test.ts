@@ -33,11 +33,11 @@ import type {
   ISerialisedNode,
   LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import { toLinkId } from '@/types/linkId'
-import { toRootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { followedDoc } from './__fixtures__/followedDoc'
@@ -49,8 +49,6 @@ import type {
   RemoteApplyContext
 } from './liveGraphApplier'
 import { changesForRejectedOps } from './rejectedOpChanges'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestSource extends LGraphNode {
   constructor() {

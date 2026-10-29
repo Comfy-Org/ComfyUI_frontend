@@ -63,7 +63,7 @@
           :aria-label="$t('lightInfo.addLight')"
           @click="addLight('directional')"
         >
-          <i class="icon-[lucide--plus] size-4" />
+          <i class="icon-[lucide--plus]" />
         </Button>
         <Button
           v-if="selectedLight"
@@ -73,7 +73,7 @@
           :aria-label="$t('lightInfo.removeLight')"
           @click="removeSelectedLight"
         >
-          <i class="icon-[lucide--trash-2] size-4" />
+          <i class="icon-[lucide--trash-2]" />
         </Button>
         <WidgetHistoryButtons
           class="ml-auto"
@@ -105,12 +105,12 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { chipClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
 import { LIGHT_TYPE_LABEL_KEYS } from '@comfyorg/viewport3d/lightInfo/types'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 

@@ -15,7 +15,7 @@
       :aria-label="$t('g.close')"
       @click="onClose"
     >
-      <i class="pi pi-times text-xl" />
+      <i class="icon-[lucide--x] size-5" />
     </Button>
 
     <!-- The confirm and success steps title themselves. -->
@@ -57,10 +57,14 @@
 
     <template v-if="checkoutStep === 'preview'">
       <SubscriptionTransitionPreviewWorkspace
-        v-if="previewVariant === 'team-change' && previewData"
+        v-if="
+          (previewVariant === 'team-change' ||
+            previewVariant === 'personal-change') &&
+          previewData
+        "
         :preview-data="previewData"
-        :team-plan="selectedTeamStop!"
-        :is-loading="isLoadingPreview || isSubscribing || isPolling"
+        :team-plan="isTeamPreview ? selectedTeamStop : null"
+        :is-loading="isPreviewLoading"
         :action-url="activeCheckoutActionUrl"
         :force-reactivation="reactivationRequired"
         :authentication-state
@@ -68,48 +72,29 @@
         :canceling-payment="isCancelingPayment"
         :cancel-payment-error
         @cancel-payment="cancelPayment"
-        @confirm="handleTeamSubscribe"
+        @confirm="
+          isTeamPreview
+            ? handleTeamSubscribe($event)
+            : handleConfirmTransition($event)
+        "
         @back="handleBackToPricing"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
-        v-else-if="previewVariant === 'team-new'"
+        v-else-if="
+          previewVariant === 'team-new' || previewVariant === 'personal-new'
+        "
         :preview-data="previewData"
-        :team-plan="selectedTeamStop!"
+        :team-plan="isTeamPreview ? selectedTeamStop : null"
+        :tier-key="isTeamPreview ? undefined : (selectedTierKey ?? undefined)"
         :billing-cycle="selectedBillingCycle"
-        :is-loading="isLoadingPreview || isSubscribing || isPolling"
+        :is-loading="isPreviewLoading"
         :action-url="activeCheckoutActionUrl"
         :authentication-state
         :parked-checkout-recovery
-        @add-credit-card="handleTeamSubscribe"
-        @back="handleBackToPricing"
-      />
-
-      <SubscriptionAddPaymentPreviewWorkspace
-        v-else-if="previewVariant === 'personal-new'"
-        :preview-data="previewData"
-        :tier-key="selectedTierKey!"
-        :billing-cycle="selectedBillingCycle"
-        :is-loading="isSubscribing || isPolling"
-        :action-url="activeCheckoutActionUrl"
-        :authentication-state
-        :parked-checkout-recovery
-        @add-credit-card="handleAddCreditCard"
-        @back="handleBackToPricing"
-      />
-
-      <SubscriptionTransitionPreviewWorkspace
-        v-else-if="previewVariant === 'personal-change' && previewData"
-        :preview-data="previewData"
-        :is-loading="isSubscribing || isPolling"
-        :action-url="activeCheckoutActionUrl"
-        :force-reactivation="reactivationRequired"
-        :authentication-state
-        :payment-cancelable
-        :canceling-payment="isCancelingPayment"
-        :cancel-payment-error
-        @cancel-payment="cancelPayment"
-        @confirm="handleConfirmTransition"
+        @add-credit-card="
+          isTeamPreview ? handleTeamSubscribe() : handleAddCreditCard()
+        "
         @back="handleBackToPricing"
       />
     </template>
@@ -129,12 +114,12 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { isCloud } from '@/platform/distribution/types'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'
@@ -197,6 +182,18 @@ const {
 } = useSubscriptionCheckout(emit, paymentIntentSource, {
   rendersPastDueNotice: () => isCloud && paymentRecoveryLock.value === 'owner'
 })
+
+const isTeamPreview = computed(
+  () =>
+    previewVariant.value === 'team-new' ||
+    previewVariant.value === 'team-change'
+)
+const isPreviewLoading = computed(
+  () =>
+    isSubscribing.value ||
+    isPolling.value ||
+    (isTeamPreview.value && isLoadingPreview.value)
+)
 
 onMounted(() => {
   if (!initialCheckout) return

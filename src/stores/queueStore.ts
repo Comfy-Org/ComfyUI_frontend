@@ -16,11 +16,11 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 import type { ComfyApp } from '@/types/comfy'
-import { useExtensionServiceAccess } from '@/services/extensionServiceAccess'
+import { useExtensionServiceAccess } from '@/platform/extensions/services/extensionServiceAccess'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
+import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 enum TaskItemDisplayStatus {

@@ -25,7 +25,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["extension-manager", "keybindings"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
