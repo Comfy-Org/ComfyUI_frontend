@@ -25,7 +25,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const THREAD_KEY = StorageKeys.agentThread(
-  unsafeStorageScope('test-user-e2e:ws-personal')
+  unsafeStorageScope('cloud:test-user-e2e:ws-personal')
 )
 
 /** PM-1643 / PM-717 item 3: persisted attachment presentation after reload. */

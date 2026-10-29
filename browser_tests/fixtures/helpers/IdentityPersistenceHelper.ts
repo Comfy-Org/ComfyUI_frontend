@@ -120,7 +120,7 @@ export class IdentityPersistenceHelper {
   ): Array<[string, string]> {
     return sentinels.flatMap((sentinel) => {
       const scope = unsafeStorageScope(
-        `${sentinel.userId}:${sentinel.workspaceId}`
+        `cloud:${encodeURIComponent(sentinel.userId)}:${encodeURIComponent(sentinel.workspaceId)}`
       )
       const onboardingKey = scopedOnboardingKey(
         sentinel.userId,

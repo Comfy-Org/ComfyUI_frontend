@@ -9,6 +9,7 @@ import type { AgentTurnTab } from '@/stores/workflowTabActivityStore'
 
 import type {
   AgentMessages,
+  RenderedAskKind,
   TurnId
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -25,6 +26,7 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   askIdOf,
+  askKindOf,
   createAssistantMessage,
   isOpenAskPart,
   isPendingAskPart,
@@ -258,6 +260,11 @@ function finishWithPersistedParts(
 }
 
 const MAX_DEPARTED_TURNS = 32
+
+interface SubmittedAskAnswer {
+  answer: AgentAnswerRequest
+  kind: RenderedAskKind | 'unknown'
+}
 
 export const useAgentConversationStore = defineStore(
   'agentConversation',
@@ -542,15 +549,19 @@ export const useAgentConversationStore = defineStore(
       return retired
     }
 
-    const submittedAskAnswers = new Map<string, AgentAnswerRequest>()
+    const submittedAskAnswers = new Map<string, SubmittedAskAnswer>()
 
     function recordAskAnswer(askId: string, answer: AgentAnswerRequest): void {
-      submittedAskAnswers.set(askId, answer)
+      const kind =
+        messages.value
+          .map((message) => askKindOf(message.parts, askId))
+          .find((found) => found !== undefined) ?? 'unknown'
+      submittedAskAnswers.set(askId, { answer, kind })
     }
 
     function takeSubmittedAskAnswer(
       askId: string
-    ): AgentAnswerRequest | undefined {
+    ): SubmittedAskAnswer | undefined {
       const answer = submittedAskAnswers.get(askId)
       submittedAskAnswers.delete(askId)
       return answer
@@ -1150,10 +1161,6 @@ export const useAgentConversationStore = defineStore(
 
     function reset(): void {
       disposeActiveAndSettledTransports()
-      for (const askId of askResolutionWatchdogs.keys())
-        clearAskResolutionWatchdog(askId)
-      submittedAskAnswers.clear()
-      answeringAskIds.value = new Set()
       messages.value = []
       userTexts.value = new Map()
       userTags.value = new Map()
@@ -1180,6 +1187,10 @@ export const useAgentConversationStore = defineStore(
     function resetForStorageOwnerTransition(): void {
       retiredAsks.clear()
       dropBackgroundTurns()
+      for (const askId of askResolutionWatchdogs.keys())
+        clearAskResolutionWatchdog(askId)
+      submittedAskAnswers.clear()
+      answeringAskIds.value = new Set()
       reset()
     }
 

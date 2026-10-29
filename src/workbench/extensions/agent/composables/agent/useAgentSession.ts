@@ -1812,9 +1812,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         answer,
         isCurrentAnswer
       )
-      if (!receipt || !isCurrentAnswer()) return false
-      const committed = toAskResolution(receipt)
+      if (!receipt) return false
       reportSupersededAnswer(askId, receipt)
+      if (!isCurrentAnswer()) return false
+      const committed = toAskResolution(receipt)
       conversationStore.commitAsk(askId, currentThreadId, committed)
       return true
     } catch (error) {
@@ -1872,7 +1873,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
     if (submitted === undefined) return
     const selectionKnown = Array.isArray(source.selected)
-    const changes = diffAnswers(submitted, committed, selectionKnown)
+    const changes = diffAnswers(submitted.answer, committed, selectionKnown)
     if (!changes.selection_changed && !changes.other_text_changed) return
     reportError(new Error('agent ask resolved with a different answer'), {
       surface: 'agent',
@@ -1883,7 +1884,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         committed_selected_count: selectionKnown
           ? committed.selected.length
           : undefined,
-        submitted_selected_count: submitted.selected.length
+        submitted_selected_count: submitted.answer.selected.length,
+        ask_kind: submitted.kind
       }
     })
     pushError(i18n.global.t('agent.runApproval.answerSuperseded'))

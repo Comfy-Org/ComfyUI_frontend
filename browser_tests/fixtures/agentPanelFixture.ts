@@ -235,7 +235,7 @@ export const restoredTargetlessAgentThreadTest =
         ({ key, threadId }) => localStorage.setItem(key, threadId),
         {
           key: StorageKeys.agentThread(
-            unsafeStorageScope('test-user-e2e:ws-personal')
+            unsafeStorageScope('cloud:test-user-e2e:ws-personal')
           ),
           threadId: AGENT_COMPOSER_THREAD_ID
         }

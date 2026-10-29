@@ -15,7 +15,7 @@ import {
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const E2E_SCOPE = unsafeStorageScope('test-user-e2e:ws-personal')
+const E2E_SCOPE = unsafeStorageScope('cloud:test-user-e2e:ws-personal')
 const THREAD_ID = 'thread-title-sync-e2e'
 const TURN_ID = 'c6c9b9b0-2f31-4a63-9b00-000000000001'
 const SEEDED_AT = new Date(0).toISOString()

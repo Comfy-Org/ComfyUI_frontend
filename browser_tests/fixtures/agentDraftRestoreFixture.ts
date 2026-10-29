@@ -26,7 +26,7 @@ export async function seedAgentDraftLineage(
       data: JSON.stringify(app.rootGraph.serialize())
     }
   })
-  const scope = unsafeStorageScope('test-user-e2e:ws-personal')
+  const scope = unsafeStorageScope('cloud:test-user-e2e:ws-personal')
   const draftKey = hashPath(draft.path)
   const now = Date.now()
   const index: DraftIndexV2 = {

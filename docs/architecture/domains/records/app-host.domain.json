@@ -128,6 +128,7 @@
   "allowedDependencies": [
     "account",
     "error-reporting",
+    "extension-manager",
     "keybindings",
     "telemetry",
     "workflow-persistence"
@@ -135,6 +136,7 @@
   "allowedConsumers": [
     "agent",
     "error-reporting",
+    "extension-manager",
     "selection-toolbox",
     "workflow-persistence"
   ],

@@ -37,7 +37,7 @@ test.describe(
         {
           key: StorageKeys.agentThread(
             unsafeStorageScope(
-              `test-user-e2e:ws-${agentHistoryBackFailure.workspaceId}`
+              `cloud:test-user-e2e:ws-${agentHistoryBackFailure.workspaceId}`
             )
           ),
           threadId: agentHistoryBackFailure.threadId

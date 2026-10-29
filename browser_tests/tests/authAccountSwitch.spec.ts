@@ -458,10 +458,10 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
         }),
         {
           accountAKey: StorageKeys.agentWorkflowTabBindings(
-            unsafeStorageScope(`${ACCOUNT_A.uid}:${TEAM_WORKSPACE.id}`)
+            unsafeStorageScope(`cloud:${ACCOUNT_A.uid}:${TEAM_WORKSPACE.id}`)
           ),
           accountBKey: StorageKeys.agentWorkflowTabBindings(
-            unsafeStorageScope(`${ACCOUNT_B.uid}:${TEAM_WORKSPACE.id}`)
+            unsafeStorageScope(`cloud:${ACCOUNT_B.uid}:${TEAM_WORKSPACE.id}`)
           )
         }
       )
@@ -581,10 +581,10 @@ test.describe('Cloud cross-tab sign-out', { tag: '@cloud' }, () => {
     await expectSignedOut(page, 'logout must complete before cleanup is read')
 
     const accountAScope = unsafeStorageScope(
-      `${ACCOUNT_A.uid}:${TEAM_WORKSPACE.id}`
+      `cloud:${ACCOUNT_A.uid}:${TEAM_WORKSPACE.id}`
     )
     const accountBScope = unsafeStorageScope(
-      `${ACCOUNT_B.uid}:${TEAM_WORKSPACE.id}`
+      `cloud:${ACCOUNT_B.uid}:${TEAM_WORKSPACE.id}`
     )
     const storage = await page.evaluate(
       ({ accountAKeys, accountBKeys }) => ({

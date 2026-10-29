@@ -25,7 +25,7 @@ test.describe(
       initialFeatureFlags: { enable_telemetry: true },
       initialLocalStorage: {
         [StorageKeys.agentWorkflowTabBindings(
-          unsafeStorageScope('test-user-e2e:ws-personal')
+          unsafeStorageScope('cloud:test-user-e2e:ws-personal')
         )]: 'null'
       }
     })

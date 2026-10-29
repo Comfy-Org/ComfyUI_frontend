@@ -81,7 +81,7 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type { ComfyApp } from '@/scripts/app'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { createDisposablePinia } from '@/testing/pinia'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -158,7 +158,7 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   })
 }))
 
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
   useExtensionService: () =>
     fromPartial<ReturnType<typeof useExtensionService>>({
       registerExtension: (extension: ComfyExtension) => {

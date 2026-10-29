@@ -75,7 +75,7 @@ test.describe(
       )
       await page.addInitScript(({ key, id }) => localStorage.setItem(key, id), {
         key: StorageKeys.agentThread(
-          unsafeStorageScope('test-user-e2e:ws-personal')
+          unsafeStorageScope('cloud:test-user-e2e:ws-personal')
         ),
         id: threadId
       })

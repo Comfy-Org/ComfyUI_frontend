@@ -29,7 +29,7 @@ import { registerExtensionDialogService } from '@/services/dialogService'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
-import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 import { useStorageScopeLifecycle } from '@/platform/workflow/persistence/composables/useStorageScopeLifecycle'
 
 registerExtensionDialogService(createExtensionDialogService())
