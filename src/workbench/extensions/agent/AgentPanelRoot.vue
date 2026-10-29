@@ -184,7 +184,9 @@ const {
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
 const history = useAgentChatHistoryStore()
-const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
+const { accepted: consentAccepted, identity: consentIdentity } = storeToRefs(
+  useAgentConsentStore()
+)
 watch(
   subscription,
   (currentSubscription) => {
@@ -641,10 +643,11 @@ function releaseCoachCompletionWaiters(proceed = true): void {
   coachCompletionWaiters.clear()
 }
 watch(
-  [consentAccepted, onboardingKey, coachDeferredBy],
-  ([accepted, key, reason]) => {
+  [consentAccepted, onboardingKey, coachDeferredBy, consentIdentity],
+  ([accepted, key, reason, identity], previous) => {
     if (accepted && key && !hasSeenCoach(key)) trackCoachDeferral(key, reason)
-    if (reason !== null) releaseCoachCompletionWaiters()
+    if (!accepted || reason !== null || identity !== previous[3])
+      releaseCoachCompletionWaiters()
   },
   { immediate: true }
 )
@@ -1693,10 +1696,12 @@ async function consentAllowsSubmission(
 ): Promise<boolean> {
   let hasConsent = false
   let coachReleased = false
+  let acceptedIdentity: string | null = null
   consentHeldSubmissionId = submissionId
   try {
     await withConsent('first_message', () => {
       hasConsent = true
+      acceptedIdentity = consentIdentity.value
     })
     if (hasConsent) coachReleased = await waitForCoachCompletion()
   } finally {
@@ -1707,7 +1712,8 @@ async function consentAllowsSubmission(
     composerStore.submission?.id === submissionId &&
     hasConsent &&
     coachReleased &&
-    consentAccepted.value
+    consentAccepted.value &&
+    consentIdentity.value === acceptedIdentity
   )
 }
 
