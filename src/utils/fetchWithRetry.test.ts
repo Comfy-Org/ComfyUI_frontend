@@ -1,4 +1,3 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -469,13 +468,12 @@ describe('fetchWithRetry status retry telemetry', () => {
   })
 
   it('still retries when discarding the retryable body fails', async () => {
-    const broken = fromPartial<Response>({
-      status: 503,
-      headers: new Headers(),
-      body: fromPartial<ReadableStream>({
-        cancel: vi.fn().mockRejectedValue(new Error('stream errored'))
-      })
-    })
+    const broken = new Response(
+      new ReadableStream({
+        cancel: () => Promise.reject(new Error('stream errored'))
+      }),
+      { status: 503 }
+    )
     const fetchImpl = scriptedFetch(broken, respond(200))
 
     const result = await fetchWithRetry(
