@@ -124,10 +124,6 @@
       "role": "application"
     },
     {
-      "path": "src/renderer/core/canvas/canvasViewport.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/renderer/core/canvas/interaction/**",
       "role": "application"
     },

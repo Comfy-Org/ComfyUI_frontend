@@ -15,9 +15,9 @@ import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composab
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useLinkStore } from '@/stores/linkStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetRenderState } from '@/stores/widgetValueStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
+import type { WidgetRenderState } from '@comfyorg/graph-state/widgetValueStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId

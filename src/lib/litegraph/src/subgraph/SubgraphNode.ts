@@ -47,14 +47,14 @@ import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
 import { resolveConcretePromotedWidget } from '@/lib/litegraph/src/subgraph/promotion/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget'
-import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
+import { parsePreviewExposures } from '@comfyorg/graph-state/previewExposureSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/lib/litegraph/src/subgraph/promotion/proxyWidgetQuarantineSchema'
 import {
   getPreviewExposureHostLocator,
   tryGetPreviewExposureHostLocator,
   usePreviewExposureStore
-} from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+} from '@comfyorg/graph-state/previewExposureStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'

@@ -1,7 +1,7 @@
 import axios, { AxiosHeaders } from 'axios'
 import type { AxiosResponse } from 'axios'
 import { cloneDeep } from 'es-toolkit'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { api } from '@/scripts/api'
 
 import {
@@ -18,7 +18,7 @@ import { i18n } from '@/i18n'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import { multiClone } from '@/lib/litegraph/src/subgraph/subgraphUtils'

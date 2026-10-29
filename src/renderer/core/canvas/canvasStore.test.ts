@@ -15,7 +15,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { selectableKeyOf } from '@/lib/litegraph/src/canvas/selectionAdapter'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSelectionStore } from '@/core/selection/selectionStore'
+import { useSelectionStore } from '@comfyorg/graph-state/selection/selectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import {
   createMockCanvasRenderingContext2D,

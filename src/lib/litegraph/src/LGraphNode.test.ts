@@ -9,7 +9,7 @@ import type {
   PointTuple as Point,
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {

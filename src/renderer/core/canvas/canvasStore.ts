@@ -16,9 +16,9 @@ import type {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { resolveSelectable } from '@/lib/litegraph/src/canvas/selectionAdapter'
-import { useSelectionStore } from '@/core/selection/selectionStore'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { useSelectionStore } from '@comfyorg/graph-state/selection/selectionStore'
+import { useLayoutMutations } from '@comfyorg/graph-state/layout/layoutMutations'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { isLGraphNode } from '@/utils/litegraphUtil'

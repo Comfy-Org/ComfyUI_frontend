@@ -9,7 +9,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 

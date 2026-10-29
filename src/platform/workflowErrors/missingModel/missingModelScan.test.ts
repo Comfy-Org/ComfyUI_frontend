@@ -20,7 +20,7 @@ import {
 import type { ReleaseModelOptions } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 type TestNode = Omit<LGraphNode, 'constructor'> & {

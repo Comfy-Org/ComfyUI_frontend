@@ -9,7 +9,7 @@ import {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 
-vi.mock(import('@/renderer/core/layout/store/layoutStore'))
+vi.mock(import('@comfyorg/graph-state/layout/layoutStore'))
 
 function createCanvas(graph: LGraph): LGraphCanvas {
   const el = document.createElement('canvas')

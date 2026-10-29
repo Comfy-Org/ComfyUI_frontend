@@ -25,9 +25,9 @@ import {
   createTestWidgetNode
 } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import type { reportError } from '@comfyorg/telemetry/reportError'
-import { useLinkStore } from '@/stores/linkStore'
-import { useRerouteStore } from '@/stores/rerouteStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
+import { useRerouteStore } from '@comfyorg/graph-state/rerouteStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'

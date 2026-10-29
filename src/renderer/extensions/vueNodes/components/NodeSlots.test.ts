@@ -13,16 +13,16 @@ import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { NodeId as VueNodeId } from '@/renderer/core/layout/types'
+import type { NodeId as VueNodeId } from '@comfyorg/graph-state/layout/types'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useNodeDataStore } from '@comfyorg/graph-state/nodeDataStore'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import {

@@ -85,7 +85,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
+vi.mock<unknown>(import('@comfyorg/graph-state/layout/layoutStore'), () => ({
   layoutStore: {
     reportContentSize: testState.reportContentSize,
     contentSizeOf: (rootGraphId: UUID, nodeId: NodeId) =>

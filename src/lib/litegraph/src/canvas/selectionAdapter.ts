@@ -1,4 +1,4 @@
-import type { ClickSelectionIntent } from '@/core/selection/selectionIntent'
+import type { ClickSelectionIntent } from '@comfyorg/graph-state/selection/selectionIntent'
 import type {
   LGraph,
   LGraphCanvas,
@@ -8,11 +8,11 @@ import type {
 import type {
   SelectableKey,
   SelectionCommand
-} from '@/core/selection/selectionState'
+} from '@comfyorg/graph-state/selection/selectionState'
 import {
   parseSelectableKey,
   toSelectableKey
-} from '@/core/selection/selectionState'
+} from '@comfyorg/graph-state/selection/selectionState'
 
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
@@ -21,7 +21,7 @@ import { Reroute } from '@/lib/litegraph/src/Reroute'
 import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import { isSubgraph } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
 
-import { useSelectionStore } from '@/core/selection/selectionStore'
+import { useSelectionStore } from '@comfyorg/graph-state/selection/selectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'

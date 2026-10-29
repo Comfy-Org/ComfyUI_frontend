@@ -7,7 +7,7 @@ import {
   getDirectSubgraphIds
 } from '@/lib/litegraph/src/litegraph'
 import type { UUID } from '@/lib/litegraph/src/litegraph'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 
 import { reorderSubgraphInputs } from './subgraphUtils'
 import {

@@ -11,7 +11,7 @@ import {
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { usePreviewExposureStore } from '@comfyorg/graph-state/previewExposureStore'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'

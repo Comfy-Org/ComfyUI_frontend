@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { slotId } from '@comfyorg/graph-model/slotId'
 import type { UUID } from '@comfyorg/graph-model/uuid'

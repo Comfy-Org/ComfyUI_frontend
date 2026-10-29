@@ -5,9 +5,9 @@ import type {
   SerialisedLLinkArray
 } from '@comfyorg/graph-model/entityRegistry'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import type { EndpointUpdate } from '@/stores/linkStore'
+import type { EndpointUpdate } from '@comfyorg/graph-state/linkStore'
 import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'

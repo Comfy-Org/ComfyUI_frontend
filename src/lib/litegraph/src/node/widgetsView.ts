@@ -3,7 +3,7 @@ import { shallowReactive } from 'vue'
 
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 
 import type { RefusedWidget } from '@comfyorg/graph-model/widgetId'
 import {

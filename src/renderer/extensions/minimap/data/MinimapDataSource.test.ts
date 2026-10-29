@@ -8,7 +8,7 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import {
   toOwningGraphId,
   toRootGraphId

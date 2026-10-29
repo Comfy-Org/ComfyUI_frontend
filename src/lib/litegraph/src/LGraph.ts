@@ -4,7 +4,7 @@ import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
 import { adoptPromotedWidgetValue } from '@/lib/litegraph/src/subgraph/promotion/adoptPromotedWidgetValue'
-import { toSelectableKey } from '@/core/selection/selectionState'
+import { toSelectableKey } from '@comfyorg/graph-state/selection/selectionState'
 import {
   getAgreedLinkPresentation,
   transferLinkPresentation
@@ -30,18 +30,18 @@ import {
   detachRerouteLayout,
   materializeRerouteLayout
 } from '@/lib/litegraph/src/layout/graphLayoutAttachment'
-import { useSelectionStore } from '@/core/selection/selectionStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useSelectionStore } from '@comfyorg/graph-state/selection/selectionStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { nodesInRenderOrder } from '@/lib/litegraph/src/canvas/arrangeForLegacyRender'
 import { changeCanvasSelection } from '@/lib/litegraph/src/canvas/selectionAdapter'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
 import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
-import { useLinkStore } from '@/stores/linkStore'
-import type { EndpointUpdate } from '@/stores/linkStore'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useRerouteStore } from '@/stores/rerouteStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
+import type { EndpointUpdate } from '@comfyorg/graph-state/linkStore'
+import { useNodeDataStore } from '@comfyorg/graph-state/nodeDataStore'
+import { usePreviewExposureStore } from '@comfyorg/graph-state/previewExposureStore'
+import { useRerouteStore } from '@comfyorg/graph-state/rerouteStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
 import { isFloatingTopology } from '@comfyorg/graph-model/linkTopology'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
@@ -51,7 +51,6 @@ import {
   collectReservedLinkIds,
   collectReservedNodeIds,
   collectReservedRerouteIds,
-  createLGraphState,
   linkIdReservations,
   mintGroupId,
   mintLinkId,
@@ -62,28 +61,32 @@ import {
   observeNodeId,
   observeRerouteId,
   rerouteIdReservations
-} from './idAllocation'
+} from '@/lib/litegraph/src/idAllocation'
+import { createLGraphState } from '@comfyorg/graph-state/lgraphState'
 import type {
-  LGraphState,
   NodeIdMintMode,
   ReservedIdIndex
-} from './idAllocation'
+} from '@/lib/litegraph/src/idAllocation'
+import type { LGraphState } from '@comfyorg/graph-state/lgraphState'
 import { isRootGraphDocBound } from './docBoundGraphs'
 import {
-  collectingSeveredLinks,
   emitGraphIntent,
   withGraphIntentSource
-} from './graphIntents'
+} from '@comfyorg/graph-state/graphIntents'
+import {
+  collectingSeveredLinks,
+  emitLinkDisconnect
+} from './graphIntentEmitters'
 import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
 import {
   captureWidgetRestorationSlots,
   normalizeWidgetsView
 } from './node/widgetsView'
-import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
-import { useEntityIdStore } from '@/stores/entityIdStore'
-import { useExecutionOrderStore } from '@/stores/executionOrderStore'
-import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
-import { rekeyGraphId } from '@/stores/rekeyGraphId'
+import { clearNodeOwnedStoreState } from '@comfyorg/graph-state/clearNodeOwnedStoreState'
+import { useEntityIdStore } from '@comfyorg/graph-state/entityIdStore'
+import { useExecutionOrderStore } from '@comfyorg/graph-state/executionOrderStore'
+import { useGraphMetadataStore } from '@comfyorg/graph-state/graphMetadataStore'
+import { rekeyGraphId } from '@comfyorg/graph-state/rekeyGraphId'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
 import {
   UNASSIGNED_NODE_ID,
@@ -258,7 +261,7 @@ function copyUnhandledCanonicalFields(
  */
 export type SubgraphId = UUID
 
-export type { LGraphState } from './idAllocation'
+export type { LGraphState } from '@comfyorg/graph-state/lgraphState'
 
 type ParamsArray<T, K extends MethodNames<T>> = Parameters<
   Extract<T[K], (...args: never[]) => unknown>
@@ -1967,7 +1970,7 @@ export class LGraph
     unregisterLinkTopology(link)
     layoutStore.deleteLinkLayout(linkId)
     this.getNodeById(link.target_id)?.updateComputedDisabled()
-    emitGraphIntent({ type: 'disconnect', graph: this, link })
+    emitLinkDisconnect(this, link)
     return true
   }
 

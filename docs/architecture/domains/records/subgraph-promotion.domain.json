@@ -74,10 +74,6 @@
     {
       "path": "src/stores/previewExposureStore.test.ts",
       "role": "application"
-    },
-    {
-      "path": "src/stores/previewExposureStore.ts",
-      "role": "application"
     }
   ],
   "publicEntryPoints": [],
@@ -99,7 +95,7 @@
         "src/core/graph/subgraph/migration/proxyWidgetMigration.test.ts",
         "src/lib/litegraph/src/subgraph/promotion/promotionSchema.test.ts",
         "src/lib/litegraph/src/subgraph/promotion/proxyWidgetQuarantineSchema.test.ts",
-        "src/core/schemas/previewExposureSchema.test.ts"
+        "packages/graph-state/src/previewExposureSchema.test.ts"
       ]
     },
     {

@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@comfyorg/graph-model/uuid'
 
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 import type { NodeLayout } from '@comfyorg/graph-model/layout'
 
 import {

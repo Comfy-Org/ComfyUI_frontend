@@ -23,9 +23,12 @@ import {
 } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app, sanitizeNodeName } from '@/scripts/app'
-import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
-import type { EndpointPatch, EndpointUpdate } from '@/stores/linkStore'
-import { useLinkStore } from '@/stores/linkStore'
+import { clearNodeOwnedStoreState } from '@comfyorg/graph-state/clearNodeOwnedStoreState'
+import type {
+  EndpointPatch,
+  EndpointUpdate
+} from '@comfyorg/graph-state/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'

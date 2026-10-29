@@ -7,12 +7,12 @@ import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import {
   AGENT_RESERVED_BIT,
   CRDT_DISJOINT_FLOOR,
-  createLGraphState,
   mintGroupId,
   mintLinkId,
   mintNodeId,
   mintRerouteId
-} from '@/lib/litegraph/src/idAllocation'
+} from './idAllocation'
+import { createLGraphState } from '@comfyorg/graph-state/lgraphState'
 
 /**
  * The id-collision root cause at the unit level: `idAllocation.ts`'s node-id

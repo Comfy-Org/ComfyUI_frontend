@@ -9,8 +9,8 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { containsRect } from '@/lib/litegraph/src/measure'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 import type { GroupId } from '@comfyorg/graph-model/groupId'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
 import * as colorUtil from '@comfyorg/shared-frontend-utils/colorUtil'

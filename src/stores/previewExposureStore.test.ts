@@ -8,7 +8,7 @@ import type { UUID } from '@comfyorg/graph-model/uuid'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
-} from './previewExposureStore'
+} from '@comfyorg/graph-state/previewExposureStore'
 
 describe(getPreviewExposureHostLocator, () => {
   it('encodes a delimiter-bearing host ID', () => {

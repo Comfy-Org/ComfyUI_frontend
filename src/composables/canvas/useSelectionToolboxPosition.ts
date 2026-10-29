@@ -12,8 +12,8 @@ import type {
 import { getSelectedLinksAnchor } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import { useLinkSelectionStore } from '@comfyorg/graph-state/linkSelectionStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
 

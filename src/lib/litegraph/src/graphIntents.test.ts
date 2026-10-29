@@ -5,15 +5,21 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 
-import type { LGraph } from './LGraph'
-import type { LLink } from './LLink'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import {
-  collectingSeveredLinks,
   emitGraphIntent,
   onGraphIntent,
   withGraphIntentSource
-} from './graphIntents'
-import type { GraphIntent, GraphIntentEvent } from './graphIntents'
+} from '@comfyorg/graph-state/graphIntents'
+import {
+  collectingSeveredLinks,
+  emitLinkDisconnect
+} from './graphIntentEmitters'
+import type {
+  GraphIntent,
+  GraphIntentEvent
+} from '@comfyorg/graph-state/graphIntents'
 
 const CLEAR: GraphIntent = { type: 'clear', graphId: 'g', nodeIds: [] }
 
@@ -89,7 +95,7 @@ describe('emitGraphIntent', () => {
     })
   })
 
-  it('folds disconnects raised inside collectingSeveredLinks into the sink instead of announcing them', () => {
+  it('folds link disconnects raised inside collectingSeveredLinks into the sink instead of announcing them', () => {
     const { events, detach } = listen()
     track(detach)
     const graph = fromPartial<LGraph>({})
@@ -97,10 +103,10 @@ describe('emitGraphIntent', () => {
     const severed: LinkId[] = []
 
     collectingSeveredLinks(severed, () => {
-      emitGraphIntent({ type: 'disconnect', graph, link: link(1) })
+      emitLinkDisconnect(graph, link(1))
       emitGraphIntent({ type: 'connect', graph, link: link(2) })
     })
-    emitGraphIntent({ type: 'disconnect', graph, link: link(3) })
+    emitLinkDisconnect(graph, link(3))
 
     expect(severed).toEqual([toLinkId(1)])
     expect(

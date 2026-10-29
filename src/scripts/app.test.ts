@@ -34,8 +34,8 @@ import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpe
 import type { CurveData } from '@comfyorg/graph-model/curve'
 import type { useExtensionService } from '@/services/extensionService'
 import { t } from '@/i18n'
-import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
-import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
+import { onGraphIntent } from '@comfyorg/graph-state/graphIntents'
+import type { GraphIntentEvent } from '@comfyorg/graph-state/graphIntents'
 import {
   LGraph,
   LGraphCanvas,
@@ -113,7 +113,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { reportError } from '@comfyorg/telemetry/reportError'

@@ -5,7 +5,7 @@ import {
   applyViewport,
   measureViewport,
   measureViewportFromElement
-} from '@/renderer/core/canvas/canvasViewport'
+} from '@comfyorg/graph-state/layout/canvasViewport'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvasElement,

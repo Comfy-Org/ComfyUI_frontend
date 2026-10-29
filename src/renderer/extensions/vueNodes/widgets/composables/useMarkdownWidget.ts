@@ -8,7 +8,7 @@ import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widg
 import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 function addMarkdownWidget(

@@ -6,7 +6,7 @@ import type {
 } from '@comfyorg/graph-model/entityRegistry'
 import { remove } from 'es-toolkit'
 import { transferLinkPresentation } from '@/lib/litegraph/src/transferLinkPresentation'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'

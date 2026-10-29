@@ -31,8 +31,8 @@ import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
-} from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+} from '@comfyorg/graph-state/previewExposureStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'

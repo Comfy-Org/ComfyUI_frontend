@@ -22,7 +22,7 @@ import type { Dictionary } from '@comfyorg/graph-model/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { Settings } from '@/platform/settings/types'
 
 vi.mock(import('@/scripts/api'), () => ({

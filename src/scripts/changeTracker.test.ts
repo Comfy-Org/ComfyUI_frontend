@@ -30,7 +30,7 @@ import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
+import { isBoundsObject } from '@comfyorg/graph-state/layout/geometry'
 import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'

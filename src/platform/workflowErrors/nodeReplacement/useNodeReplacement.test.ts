@@ -13,9 +13,9 @@ import {
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
-import { useLinkStore } from '@/stores/linkStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
+import { usePreviewExposureStore } from '@comfyorg/graph-state/previewExposureStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import {
   toOwningGraphId,
   toRootGraphId

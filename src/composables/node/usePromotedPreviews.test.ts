@@ -9,7 +9,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
-} from '@/stores/previewExposureStore'
+} from '@comfyorg/graph-state/previewExposureStore'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 

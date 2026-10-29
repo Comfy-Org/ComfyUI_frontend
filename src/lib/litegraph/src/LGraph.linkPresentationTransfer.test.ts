@@ -1,6 +1,6 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
 

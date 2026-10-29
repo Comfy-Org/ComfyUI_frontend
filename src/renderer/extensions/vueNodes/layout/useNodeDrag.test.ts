@@ -5,10 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { AutoPanController } from '@/lib/litegraph/src/canvas/useAutoPan'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 import type { NodeLayout } from '@comfyorg/graph-model/layout'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@comfyorg/graph-model/uuid'
@@ -50,13 +50,13 @@ vi.mock(import('@/lib/litegraph/src/canvas/useAutoPan'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('@/renderer/core/layout/operations/layoutMutations'),
+  import('@comfyorg/graph-state/layout/layoutMutations'),
   () => ({
     useLayoutMutations: () => testState.mutationFns
   })
 )
 
-vi.mock(import('@/renderer/core/layout/store/layoutStore'))
+vi.mock(import('@comfyorg/graph-state/layout/layoutStore'))
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/composables/useNodeSnap'),

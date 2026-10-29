@@ -10,8 +10,8 @@ import {
 } from '@/lib/litegraph/src/canvas/linkRevealState'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { app } from '@/scripts/app'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import {
   toOwningGraphId,
   toRootGraphId

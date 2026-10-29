@@ -1,4 +1,4 @@
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { PromotedWidgetSource } from '@comfyorg/graph-state/promotedWidgetTypes'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 export interface SubgraphPseudoWidget {

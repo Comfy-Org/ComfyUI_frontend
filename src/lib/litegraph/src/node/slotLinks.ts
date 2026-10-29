@@ -3,8 +3,8 @@ import type {
   LGraphNode,
   LLink
 } from '@comfyorg/graph-model/entityRegistry'
-import { useLinkStore } from '@/stores/linkStore'
-import type { EndpointUpdateError } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
+import type { EndpointUpdateError } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'

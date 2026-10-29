@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 
-import { parseNodePropertyArray } from '@/core/schemas/parseNodePropertyArray'
+import { parseNodePropertyArray } from '@comfyorg/graph-state/parseNodePropertyArray'
 
 export const serializedProxyWidgetTupleSchema = z.union([
   z.tuple([z.string(), z.string(), z.string()]),

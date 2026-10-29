@@ -7,7 +7,7 @@ import type {
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import { nextUniqueName } from '@comfyorg/graph-state/strings'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 
 import { SubgraphInput } from './SubgraphInput'

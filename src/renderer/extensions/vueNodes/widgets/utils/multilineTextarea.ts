@@ -7,7 +7,7 @@ import { useApp } from '@/scripts/appInstance'
 import { DOMWidgetImpl, isDOMWidget } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/lib/litegraph/src/types/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50

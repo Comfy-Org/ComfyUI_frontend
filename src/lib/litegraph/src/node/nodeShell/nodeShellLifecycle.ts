@@ -9,8 +9,8 @@ import { refuseAmbiguousNodeWidgets } from '@/lib/litegraph/src/node/widgetsView
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { usePreviewExposureStore } from '@comfyorg/graph-state/previewExposureStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { RefusedWidget } from '@comfyorg/graph-model/widgetId'
 
 import { registerNodeState, unregisterNodeState } from './nodeShellState'

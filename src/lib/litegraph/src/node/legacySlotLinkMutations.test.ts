@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 
 function connectedPair() {
   const graph = new LGraph()

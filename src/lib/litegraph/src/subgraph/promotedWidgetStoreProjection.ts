@@ -1,6 +1,6 @@
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 export function createPromotedWidgetStoreProjection(

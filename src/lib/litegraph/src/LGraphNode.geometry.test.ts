@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraph, LGraphNode, LiteGraph } from './litegraph'
 import { resizeNodeLayout } from '@/lib/litegraph/src/layout/graphLayoutAttachment'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 describe('layout geometry projection', () => {

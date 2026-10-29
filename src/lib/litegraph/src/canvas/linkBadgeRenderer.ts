@@ -2,7 +2,7 @@ import type { LGraph, LLink } from '@comfyorg/graph-model/entityRegistry'
 
 import type { HiddenLinkBadge } from './linkBadges'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
 import {
   layoutHiddenLinkBadges,
   queryLinkBadgeAtPoint,

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { isWidgetVisibleOnSurface } from '@comfyorg/graph-model/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@comfyorg/graph-model/widgetVisibility'
 

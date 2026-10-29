@@ -1,5 +1,5 @@
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
+import { withGraphIntentSource } from '@comfyorg/graph-state/graphIntents'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 

@@ -8,9 +8,9 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useNodeDataStore } from '@comfyorg/graph-state/nodeDataStore'
+import { usePreviewExposureStore } from '@comfyorg/graph-state/previewExposureStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 
 describe('node shell registration', () => {
   it('remints a colliding node id and warns with both ids', () => {

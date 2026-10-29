@@ -38,6 +38,9 @@ const config: KnipConfig = {
     'packages/graph-model': {
       project: ['src/**/*.ts']
     },
+    'packages/graph-state': {
+      project: ['src/**/*.ts']
+    },
     'packages/keybindings': {
       project: ['src/**/*.ts']
     },

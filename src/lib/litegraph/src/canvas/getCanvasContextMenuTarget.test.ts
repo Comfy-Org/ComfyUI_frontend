@@ -14,7 +14,7 @@ import {
   LinkMarkerShape,
   LinkRenderType
 } from '@comfyorg/graph-model/globalEnums'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
@@ -29,7 +29,7 @@ const { mockQueryRerouteAtPoint } = vi.hoisted(() => ({
 }))
 
 vi.mock<unknown>(
-  import('@/renderer/core/layout/store/layoutStore'), // oxlint-disable-line comfy/no-restricted-paths
+  import('@comfyorg/graph-state/layout/layoutStore'), // oxlint-disable-line comfy/no-restricted-paths
 
   () => ({
     layoutStore: {

@@ -39,9 +39,12 @@ import {
   setNodePosition,
   setNodeSize
 } from '@/lib/litegraph/src/layout/graphLayoutAttachment'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
-import { toSelectableKey } from '@/core/selection/selectionState'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import {
+  isSelectedIn,
+  setSelectedIn
+} from '@comfyorg/graph-state/selection/selectionStore'
+import { toSelectableKey } from '@comfyorg/graph-state/selection/selectionState'
 import type {
   NodeExecutionOutput,
   ResultItem
@@ -51,12 +54,15 @@ import type {
   DOMWidget,
   DOMWidgetOptions
 } from '@/lib/litegraph/src/types/domWidget'
-import { useExecutionOrderStore } from '@/stores/executionOrderStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useExecutionOrderStore } from '@comfyorg/graph-state/executionOrderStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
-import { linkIdReservations, mintLinkId } from './idAllocation'
+import {
+  linkIdReservations,
+  mintLinkId
+} from '@/lib/litegraph/src/idAllocation'
 import {
   UNASSIGNED_NODE_ID,
   toNodeId,
@@ -127,7 +133,7 @@ import { anchorRerouteChain } from './Reroute'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
-import { emitNodeFieldWrite } from './graphIntents'
+import { emitNodeFieldWrite } from './graphIntentEmitters'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'

@@ -19,9 +19,9 @@ import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { nodesInRenderOrder } from '@/lib/litegraph/src/canvas/arrangeForLegacyRender'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import type { SlotLayout } from '@comfyorg/graph-model/layout'
-import { pointInBounds } from '@/renderer/core/layout/utils/layoutMath'
+import { pointInBounds } from '@comfyorg/graph-state/layout/layoutMath'
 
 export interface SlotPositionContext {
   /** Node's X position in graph coordinates */

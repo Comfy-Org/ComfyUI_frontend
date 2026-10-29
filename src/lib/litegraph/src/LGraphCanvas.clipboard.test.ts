@@ -34,10 +34,10 @@ import type {
   ExportedSubgraph,
   ISerialisedNode
 } from '@comfyorg/graph-model/serialisation'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { useRerouteStore } from '@/stores/rerouteStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { usePreviewExposureStore } from '@comfyorg/graph-state/previewExposureStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
+import { useRerouteStore } from '@comfyorg/graph-state/rerouteStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'

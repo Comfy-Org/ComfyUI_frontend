@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SelectableKey } from '@/core/selection/selectionState'
+import type { SelectableKey } from '@comfyorg/graph-state/selection/selectionState'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -9,11 +9,11 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { selectableKeyOf } from '@/lib/litegraph/src/canvas/selectionAdapter'
-import { useSelectionStore } from '@/core/selection/selectionStore'
+import { useSelectionStore } from '@comfyorg/graph-state/selection/selectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
-vi.mock(import('@/renderer/core/layout/store/layoutStore'))
+vi.mock(import('@comfyorg/graph-state/layout/layoutStore'))
 
 interface Announcement {
   oldGraph: LGraph | Subgraph | null | undefined

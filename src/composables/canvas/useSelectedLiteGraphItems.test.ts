@@ -10,7 +10,7 @@ import {
   Reroute
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeId } from '@/renderer/core/layout/types'
+import type { NodeId } from '@comfyorg/graph-state/layout/types'
 import { app } from '@/scripts/app'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'

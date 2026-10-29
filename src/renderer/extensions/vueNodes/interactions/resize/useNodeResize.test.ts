@@ -47,7 +47,7 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
+vi.mock<unknown>(import('@comfyorg/graph-state/layout/layoutStore'), () => ({
   layoutStore: {
     isResizingVueNodes: { value: false },
     getNodeLayout: vi.fn(() => ({

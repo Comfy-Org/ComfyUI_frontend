@@ -23,7 +23,7 @@ import {
   getExecutionIdByNode,
   isCandidateScopeActive
 } from '@/lib/litegraph/src/utils/graphTraversalUtil'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'

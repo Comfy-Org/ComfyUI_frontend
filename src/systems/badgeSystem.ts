@@ -11,10 +11,10 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { registerBadgeRowsProvider } from '@/lib/litegraph/src/nodeBadgeDraw'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { CORE_PART_ORDER } from '@/lib/litegraph/src/types/badgeData'
 import type {

@@ -25,7 +25,7 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 
-import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import { emitGraphIntent } from '@comfyorg/graph-state/graphIntents'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'

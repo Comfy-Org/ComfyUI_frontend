@@ -11,7 +11,7 @@ import type {
 } from '@comfyorg/shared-frontend-utils/geometry'
 import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { setLinkPolyline } from '@/lib/litegraph/src/canvas/linkPolylines'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 

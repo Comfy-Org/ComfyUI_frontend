@@ -9,7 +9,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
-import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
+import { useLinkSelectionStore } from '@comfyorg/graph-state/linkSelectionStore'
 
 import { useLitegraphSettings } from './useLitegraphSettings'
 

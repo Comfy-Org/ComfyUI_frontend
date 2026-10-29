@@ -21,7 +21,7 @@ import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { UUID } from '@comfyorg/graph-model/uuid'
-import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { PromotedWidgetExecutionSource } from '@comfyorg/graph-state/promotedWidgetTypes'
 
 import { isSubgraphIoNode } from '@/lib/litegraph/src/utils/graphTypeGuards'
 

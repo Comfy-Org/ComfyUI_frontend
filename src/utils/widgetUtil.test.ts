@@ -7,7 +7,7 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import { getWidgetDefaultValue, renameWidget } from '@/utils/widgetUtil'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 
 describe('getWidgetDefaultValue', () => {
   it('returns undefined for undefined spec', () => {

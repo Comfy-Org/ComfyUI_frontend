@@ -6,7 +6,7 @@ import type {
 import type {
   PromotedWidgetExecutionSource,
   ResolvedPromotedWidget
-} from '@/core/graph/subgraph/promotedWidgetTypes'
+} from '@comfyorg/graph-state/promotedWidgetTypes'
 import { resolveSubgraphInputTarget } from '@/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget'
 
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'

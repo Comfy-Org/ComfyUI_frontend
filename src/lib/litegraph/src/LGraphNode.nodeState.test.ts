@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useNodeDataStore } from '@comfyorg/graph-state/nodeDataStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { NodeState } from '@comfyorg/graph-model/nodeState'

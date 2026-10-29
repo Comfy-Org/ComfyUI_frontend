@@ -63,7 +63,7 @@ import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorat
 // The composition root injects the renderer-owned layout port; follower core
 // stays independent of renderer and LiteGraph runtime values.
 // oxlint-disable-next-line comfy/no-restricted-paths
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'

@@ -11,7 +11,7 @@ import {
   enableSubgraphNodeCreation,
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 
 import { setNodePosition } from '@/lib/litegraph/src/layout/graphLayoutAttachment'
 

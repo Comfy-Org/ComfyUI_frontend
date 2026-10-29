@@ -2,7 +2,7 @@ import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 
 /**
  * Copies a promoted host widget's value onto the interior widget it forwards to.

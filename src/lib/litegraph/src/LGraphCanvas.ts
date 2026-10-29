@@ -22,9 +22,9 @@ import {
   getSlotLayoutAtPoint,
   getSlotPosition
 } from '@/lib/litegraph/src/canvas/slotCalculations'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { useLayoutMutations } from '@comfyorg/graph-state/layout/layoutMutations'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   applyCanvasSelection,
@@ -43,16 +43,16 @@ import {
   applyMarqueeSelection,
   resolveClickSelection,
   resolveMarqueeSelection
-} from '@/core/selection/selectionIntent'
-import { useSelectionStore } from '@/core/selection/selectionStore'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+} from '@comfyorg/graph-state/selection/selectionIntent'
+import { useSelectionStore } from '@comfyorg/graph-state/selection/selectionStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
 import {
   applyLogicalCanvasStyle,
   applyViewport,
   measureViewport,
   readBrowserDpr
-} from '@/renderer/core/canvas/canvasViewport'
-import { useLinkStore } from '@/stores/linkStore'
+} from '@comfyorg/graph-state/layout/canvasViewport'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'

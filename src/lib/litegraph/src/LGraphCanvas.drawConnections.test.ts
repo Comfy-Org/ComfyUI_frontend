@@ -14,7 +14,7 @@ import {
 } from '@/lib/litegraph/src/canvas/linkBadges'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import {
   clearRootLinkReveals,
   isLinkRevealed,
@@ -24,8 +24,8 @@ import {
   clearRootLinkHideTransitions,
   startLinkHideTransitions
 } from '@/lib/litegraph/src/canvas/linkHideTransition'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
@@ -34,7 +34,7 @@ import {
   createTestCanvas
 } from '@/utils/__tests__/canvasTestUtils'
 
-vi.mock(import('@/renderer/core/layout/store/layoutStore'))
+vi.mock(import('@comfyorg/graph-state/layout/layoutStore'))
 
 function createMockCtx(): CanvasRenderingContext2D {
   return createMockCanvasRenderingContext2D({

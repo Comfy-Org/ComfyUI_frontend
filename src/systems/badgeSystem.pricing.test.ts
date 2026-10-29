@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import {
   toOwningGraphId,
   toRootGraphId

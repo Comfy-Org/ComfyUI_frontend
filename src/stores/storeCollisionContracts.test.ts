@@ -15,10 +15,10 @@ import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 import type { UUID } from '@comfyorg/graph-model/uuid'
 
-import { useLinkStore } from './linkStore'
-import { useNodeDataStore } from './nodeDataStore'
-import { useRerouteStore } from './rerouteStore'
-import { useWidgetValueStore } from './widgetValueStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
+import { useNodeDataStore } from '@comfyorg/graph-state/nodeDataStore'
+import { useRerouteStore } from '@comfyorg/graph-state/rerouteStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 
 /**
  * Pins the store collision contract recorded in docs/exceptions-log.md

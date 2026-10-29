@@ -13,7 +13,7 @@ import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useNodeDataStore } from '@comfyorg/graph-state/nodeDataStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 

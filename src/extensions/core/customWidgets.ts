@@ -9,7 +9,7 @@ import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'

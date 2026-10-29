@@ -1,7 +1,7 @@
 import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import log from 'loglevel'
 
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { compareNodeIds } from '@comfyorg/graph-model/nodeId'
 
 const logger = log.getLogger('arrangeForLegacyRender')

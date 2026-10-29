@@ -1,7 +1,7 @@
 import { computed, onScopeDispose, shallowReactive, watch } from 'vue'
 
-import { toSelectableKey } from '@/core/selection/selectionState'
-import { isSelectedIn } from '@/core/selection/selectionStore'
+import { toSelectableKey } from '@comfyorg/graph-state/selection/selectionState'
+import { isSelectedIn } from '@comfyorg/graph-state/selection/selectionStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { registerNodeEmphasisQuery } from '@/lib/litegraph/src/nodeEmphasis'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

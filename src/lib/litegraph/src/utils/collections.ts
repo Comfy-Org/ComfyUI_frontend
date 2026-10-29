@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
-import { parseSlotTypes } from '@/lib/litegraph/src/strings'
+import { parseSlotTypes } from '@comfyorg/graph-state/strings'
 
 import type { ISlotType, Positionable } from '@comfyorg/graph-model/interfaces'
 

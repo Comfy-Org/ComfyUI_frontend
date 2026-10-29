@@ -8,7 +8,7 @@ import {
   renderMinimapToCanvas
 } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 import {
   createMockLGraph,

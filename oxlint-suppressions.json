@@ -194,11 +194,6 @@
       "count": 7
     }
   },
-  "src/core/selection/selectionStore.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/extensions/core/load3d/Load3dUtils.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
@@ -280,9 +275,6 @@
     },
     "comfy/no-positional-boolean-params": {
       "count": 7
-    },
-    "comfy/no-reexports": {
-      "count": 1
     }
   },
   "src/lib/litegraph/src/LGraphCanvas.ts": {

@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   AGENT_RESERVED_BIT,
-  createLGraphState,
   findNextAvailableId,
   isReservedBitRangeNodeId,
   matchesReservedBitConvention,
@@ -14,7 +13,8 @@ import {
   observeLinkId,
   observeNodeId,
   observeRerouteId
-} from '@/lib/litegraph/src/idAllocation'
+} from './idAllocation'
+import { createLGraphState } from '@comfyorg/graph-state/lgraphState'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

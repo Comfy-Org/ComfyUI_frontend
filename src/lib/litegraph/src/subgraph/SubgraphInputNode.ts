@@ -28,7 +28,7 @@ import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
-import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import { nextUniqueName } from '@comfyorg/graph-state/strings'
 
 import { EmptySubgraphInput } from './EmptySubgraphInput'
 import { SubgraphIONodeBase } from './SubgraphIONodeBase'

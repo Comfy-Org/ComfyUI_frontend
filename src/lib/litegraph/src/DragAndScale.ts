@@ -4,7 +4,7 @@ import type {
   ReadOnlyRect,
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
-import { readBrowserDpr } from '@/renderer/core/canvas/canvasViewport'
+import { readBrowserDpr } from '@comfyorg/graph-state/layout/canvasViewport'
 
 import { EaseFunction } from '@comfyorg/graph-model/globalEnums'
 import { Rectangle } from './infrastructure/Rectangle'

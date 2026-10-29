@@ -20,7 +20,7 @@ import {
 } from '@/core/graph/subgraph/promotedInputWidget'
 import type { PromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import type { WidgetItem } from '@/core/graph/subgraph/promotionUtils'
-import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
+import type { PreviewExposure } from '@comfyorg/graph-state/previewExposureSchema'
 import type {
   INodeInputSlot,
   ISubgraphInput
@@ -34,7 +34,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
-} from '@/stores/previewExposureStore'
+} from '@comfyorg/graph-state/previewExposureStore'
 import { deriveWidgetVisibility } from '@comfyorg/graph-model/widgetVisibility'
 import { cn } from '@comfyorg/tailwind-utils'
 

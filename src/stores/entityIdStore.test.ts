@@ -1,11 +1,12 @@
 import { computed } from 'vue'
 import { describe } from 'vitest'
 
-import { createLGraphState, mintNodeId } from '@/lib/litegraph/src/idAllocation'
+import { mintNodeId } from '@/lib/litegraph/src/idAllocation'
+import { createLGraphState } from '@comfyorg/graph-state/lgraphState'
 import { test } from '@/testing/pinia'
 import type { UUID } from '@comfyorg/graph-model/uuid'
 
-import { useEntityIdStore } from './entityIdStore'
+import { useEntityIdStore } from '@comfyorg/graph-state/entityIdStore'
 
 describe(useEntityIdStore, { tags: ['concurrent-safe'] }, () => {
   const first = '00000000-0000-4000-8000-000000000001' as UUID

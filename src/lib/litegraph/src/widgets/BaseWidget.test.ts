@@ -13,7 +13,7 @@ import type {
   WidgetEventOptions
 } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { isWidgetHidden } from '@comfyorg/graph-model/widgetVisibility'

@@ -1,5 +1,5 @@
 import type { LGraph, LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 
 import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
 

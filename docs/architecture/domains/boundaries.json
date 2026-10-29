@@ -904,7 +904,6 @@
           "src/composables/canvas/visibleCanvasViewport.test.ts",
           "src/composables/canvas/visibleCanvasViewport.ts",
           "src/renderer/core/canvas/__tests__/canvasViewport.test.ts",
-          "src/renderer/core/canvas/canvasViewport.ts",
           "src/lib/litegraph/src/canvas/pathRenderer.test.ts",
           "src/lib/litegraph/src/canvas/pathRenderer.ts"
         ]
@@ -1470,10 +1469,7 @@
       },
       {
         "name": "graph-commands/application",
-        "patterns": [
-          "src/lib/litegraph/src/graphIntents.test.ts",
-          "src/lib/litegraph/src/graphIntents.ts"
-        ]
+        "patterns": ["src/lib/litegraph/src/graphIntents.test.ts"]
       },
       {
         "name": "graph-commands/infrastructure",
@@ -1491,7 +1487,6 @@
         "name": "graph-layout/domain",
         "patterns": [
           "src/renderer/core/spatial/**",
-          "src/types/spatialIndex.ts",
           "src/utils/positionBounds.test.ts",
           "src/utils/positionBounds.ts"
         ]
@@ -1500,15 +1495,7 @@
         "name": "graph-layout/application",
         "patterns": [
           "src/renderer/core/layout/operations/layoutMutations.test.ts",
-          "src/renderer/core/layout/operations/layoutMutations.ts",
           "src/renderer/core/layout/store/**"
-        ]
-      },
-      {
-        "name": "graph-layout/infrastructure",
-        "patterns": [
-          "src/renderer/core/layout/utils/mappers.test.ts",
-          "src/renderer/core/layout/utils/mappers.ts"
         ]
       },
       {
@@ -1579,7 +1566,6 @@
           "src/lib/litegraph/src/measure.test.ts",
           "src/lib/litegraph/src/measure.ts",
           "src/lib/litegraph/src/serialization.test.ts",
-          "src/lib/litegraph/src/strings.ts",
           "src/types/linkId.test.ts",
           "src/types/linkTopology.ts",
           "src/types/nodeId.test.ts",
@@ -1601,19 +1587,9 @@
           "src/lib/litegraph/src/node/slotLinks.test.ts",
           "src/lib/litegraph/src/node/slotLinks.ts",
           "src/lib/litegraph/src/remintLinkRemap.ts",
-          "src/stores/clearNodeOwnedStoreState.ts",
           "src/stores/entityIdStore.test.ts",
-          "src/stores/entityIdStore.ts",
-          "src/stores/executionOrderStore.ts",
-          "src/stores/graphMetadataStore.test.ts",
-          "src/stores/graphMetadataStore.ts",
           "src/stores/linkStore.test.ts",
-          "src/stores/linkStore.ts",
           "src/stores/nodeDataStore.test.ts",
-          "src/stores/nodeDataStore.ts",
-          "src/stores/rekeyGraphId.ts",
-          "src/stores/rerouteStore.test.ts",
-          "src/stores/rerouteStore.ts",
           "src/stores/storeCollisionContracts.test.ts"
         ]
       },
@@ -1633,20 +1609,6 @@
         "patterns": [
           "src/extensions/core/rerouteNode.ts",
           "src/lib/litegraph/test/**"
-        ]
-      },
-      {
-        "name": "graph-selection/domain",
-        "patterns": [
-          "src/core/selection/selectionState.test.ts",
-          "src/core/selection/selectionState.ts"
-        ]
-      },
-      {
-        "name": "graph-selection/application",
-        "patterns": [
-          "src/core/selection/selectionStore.test.ts",
-          "src/core/selection/selectionStore.ts"
         ]
       },
       {
@@ -1970,9 +1932,7 @@
         "patterns": [
           "src/lib/litegraph/src/transferLinkPresentation.ts",
           "src/lib/litegraph/src/canvas/linkVisibility.test.ts",
-          "src/lib/litegraph/src/canvas/linkVisibility.ts",
-          "src/stores/linkPresentationStore.test.ts",
-          "src/stores/linkPresentationStore.ts"
+          "src/lib/litegraph/src/canvas/linkVisibility.ts"
         ]
       },
       {
@@ -2402,8 +2362,6 @@
           "src/lib/litegraph/src/utils/mathParser.ts",
           "src/lib/litegraph/src/utils/namedValuesShadowDiff.test.ts",
           "src/lib/litegraph/src/utils/namedValuesShadowDiff.ts",
-          "src/lib/litegraph/src/utils/restoredWidgetValue.test.ts",
-          "src/lib/litegraph/src/utils/restoredWidgetValue.ts",
           "src/lib/litegraph/src/widgetConnectionSuppression.test.ts",
           "src/lib/litegraph/src/widgetValueNullContract.test.ts",
           "src/types/widgetId.test.ts",
@@ -2435,8 +2393,6 @@
           "src/lib/litegraph/src/utils/widget.test.ts",
           "src/lib/litegraph/src/utils/widget.ts",
           "src/stores/widgetValueStore.graphReactivity.test.ts",
-          "src/stores/widgetValueStore.test.ts",
-          "src/stores/widgetValueStore.ts",
           "src/utils/widgetUtil.test.ts",
           "src/utils/widgetUtil.ts"
         ]
@@ -2801,8 +2757,7 @@
           "src/lib/litegraph/src/subgraph/promotedWidgetStoreProjection.ts",
           "src/services/subgraphPseudoWidgetCache.test.ts",
           "src/services/subgraphPseudoWidgetCache.ts",
-          "src/stores/previewExposureStore.test.ts",
-          "src/stores/previewExposureStore.ts"
+          "src/stores/previewExposureStore.test.ts"
         ]
       },
       {
@@ -2820,8 +2775,6 @@
           "src/lib/litegraph/src/constants.ts",
           "src/lib/litegraph/src/infrastructure/SubgraphEventMap.ts",
           "src/lib/litegraph/src/infrastructure/SubgraphInputEventMap.ts",
-          "src/schemas/subgraphIdSchema.test.ts",
-          "src/schemas/subgraphIdSchema.ts",
           "src/utils/blueprintUtils.ts"
         ]
       },
@@ -5475,18 +5428,6 @@
         "allow": [
           "graph-layout/domain",
           "graph-layout/application",
-          "graph-layout/infrastructure",
-          "graph-layout/application/outer-1",
-          "graph-layout/domain/outer-2",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "graph-layout/infrastructure",
-        "allow": [
-          "graph-layout/domain",
-          "graph-layout/application",
-          "graph-layout/infrastructure",
           "graph-layout/application/outer-1",
           "graph-layout/domain/outer-2",
           "unclassified"
@@ -5508,7 +5449,6 @@
         "allow": [
           "graph-layout/domain",
           "graph-layout/application",
-          "graph-layout/infrastructure",
           "graph-layout/presentation",
           "graph-layout/integration",
           "graph-layout/application/outer-1",
@@ -5580,25 +5520,8 @@
         ]
       },
       {
-        "from": "graph-selection/domain",
-        "allow": ["graph-selection/domain", "unclassified"]
-      },
-      {
-        "from": "graph-selection/application",
-        "allow": [
-          "graph-selection/domain",
-          "graph-selection/application",
-          "unclassified"
-        ]
-      },
-      {
         "from": "graph-selection/integration",
-        "allow": [
-          "graph-selection/domain",
-          "graph-selection/application",
-          "graph-selection/integration",
-          "unclassified"
-        ]
+        "allow": ["graph-selection/integration", "unclassified"]
       },
       {
         "from": "graph-traversal/application",
@@ -8007,7 +7930,6 @@
         "allow": [
           "graph-layout/domain",
           "graph-layout/application",
-          "graph-layout/infrastructure",
           "graph-layout/application/outer-1",
           "graph-layout/domain/outer-2",
           "unclassified"
@@ -8018,7 +7940,6 @@
         "allow": [
           "graph-layout/domain",
           "graph-layout/application",
-          "graph-layout/infrastructure",
           "graph-layout/presentation",
           "graph-layout/integration",
           "graph-layout/application/outer-1",
@@ -8831,15 +8752,12 @@
           "graph-compatibility/integration",
           "graph-layout/domain",
           "graph-layout/application",
-          "graph-layout/infrastructure",
           "graph-layout/presentation",
           "graph-layout/integration",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
           "graph-model/integration",
-          "graph-selection/domain",
-          "graph-selection/application",
           "graph-selection/integration",
           "graph-traversal/application",
           "hdr-viewer/application",

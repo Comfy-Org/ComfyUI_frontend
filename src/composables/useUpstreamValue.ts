@@ -1,9 +1,9 @@
 import { computed } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
-import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
+import { isBoundsObject } from '@comfyorg/graph-state/layout/geometry'
 import type { LinkedUpstreamInfo, WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 

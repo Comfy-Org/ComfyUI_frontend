@@ -14,7 +14,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 import type { UUID } from '@comfyorg/graph-model/uuid'
 
-import { useNodeDataStore } from './nodeDataStore'
+import { useNodeDataStore } from '@comfyorg/graph-state/nodeDataStore'
 
 const rootA: UUID = 'root-a'
 function node(id: number, graphId: UUID = rootA): NodeState {
@@ -323,7 +323,7 @@ describe('nodeDataStore registration via LGraph', () => {
   it('does not crash the litegraph module graph on load', async () => {
     vi.resetModules()
     await import('@/lib/litegraph/src/LGraphGroup')
-    await import('@/stores/nodeDataStore')
+    await import('@comfyorg/graph-state/nodeDataStore')
     const { SubgraphNode } =
       await import('@/lib/litegraph/src/subgraph/SubgraphNode')
 

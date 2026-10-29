@@ -25,15 +25,15 @@ import {
   resolveSelectable,
   selectableKeyOf
 } from '@/lib/litegraph/src/canvas/selectionAdapter'
-import { useSelectionStore } from '@/core/selection/selectionStore'
+import { useSelectionStore } from '@comfyorg/graph-state/selection/selectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
+import { useLinkSelectionStore } from '@comfyorg/graph-state/linkSelectionStore'
 import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'
 import { setLinkPolyline } from '@/lib/litegraph/src/canvas/linkPolylines'
 
-vi.mock(import('@/renderer/core/layout/store/layoutStore'))
+vi.mock(import('@comfyorg/graph-state/layout/layoutStore'))
 
 function click(
   canvas: LGraphCanvas,

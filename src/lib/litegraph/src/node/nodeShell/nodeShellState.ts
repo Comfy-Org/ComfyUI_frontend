@@ -6,7 +6,7 @@ import {
   canTransferLayoutAttachment,
   transferLayoutAttachment
 } from '@/lib/litegraph/src/layout/graphLayoutAttachment'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useNodeDataStore } from '@comfyorg/graph-state/nodeDataStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'

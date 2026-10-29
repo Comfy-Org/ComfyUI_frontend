@@ -8,7 +8,7 @@ import type {
 
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'

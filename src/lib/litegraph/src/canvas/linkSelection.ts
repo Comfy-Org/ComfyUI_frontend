@@ -4,14 +4,14 @@ import { getLinkPolyline } from '@/lib/litegraph/src/canvas/linkPolylines'
 import {
   pointInBounds,
   polylineIntersectsBounds
-} from '@/renderer/core/layout/utils/layoutMath'
+} from '@comfyorg/graph-state/layout/layoutMath'
 import type {
   Bounds,
   Point2D as Point,
   ReadOnlyRect
 } from '@comfyorg/shared-frontend-utils/geometry'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
+import { useLinkSelectionStore } from '@comfyorg/graph-state/linkSelectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 

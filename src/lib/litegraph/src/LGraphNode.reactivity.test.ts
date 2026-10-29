@@ -3,7 +3,7 @@ import { computed, effect, nextTick, stop, watch } from 'vue'
 
 import { LGraph, LGraphNode } from './litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 
 describe('_setConcreteSlots', () => {
   test('per-frame calls do not invalidate slot-array subscribers', async () => {

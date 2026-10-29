@@ -7,7 +7,7 @@ import { assert, describe, expect, it } from 'vitest'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
+import { isUuidShapedSubgraphId } from '@comfyorg/graph-state/subgraphIdSchema'
 
 import type { LGraphState } from '@/lib/litegraph/src/LGraph'
 import type {

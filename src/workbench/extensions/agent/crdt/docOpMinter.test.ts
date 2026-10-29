@@ -9,7 +9,7 @@ import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
 import {
   emitGraphIntent,
   withGraphIntentSource
-} from '@/lib/litegraph/src/graphIntents'
+} from '@comfyorg/graph-state/graphIntents'
 import {
   LGraph,
   LGraphEventMode,
@@ -26,7 +26,7 @@ import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

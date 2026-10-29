@@ -10,7 +10,7 @@ import {
   linkedWidgetedInputs,
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { describe, it } from 'vitest'
 
 const GRAPH_ID = 'graph-test'

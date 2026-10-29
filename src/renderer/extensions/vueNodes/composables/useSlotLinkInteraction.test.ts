@@ -6,7 +6,7 @@ import {
   isRerouteVisibleForLinkDrag,
   resolvePointerTarget
 } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'

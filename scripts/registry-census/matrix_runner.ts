@@ -20,7 +20,7 @@ import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geomet
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
-import type { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type * as WidgetValuesForm from '@/workbench/extensions/agent/crdt/widgetValuesForm'
 
 const S = (v: unknown) => JSON.stringify(v)
@@ -463,7 +463,8 @@ export async function runPack(
 
   let wvStore: WidgetValueStore | undefined
   try {
-    const { useWidgetValueStore } = await import('@/stores/widgetValueStore')
+    const { useWidgetValueStore } =
+      await import('@comfyorg/graph-state/widgetValueStore')
     wvStore = useWidgetValueStore()
   } catch {
     wvStore = undefined

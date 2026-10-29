@@ -268,10 +268,6 @@
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/strings.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/lib/litegraph/src/types/**",
       "role": "domain"
     },
@@ -284,27 +280,7 @@
       "role": "integration"
     },
     {
-      "path": "src/stores/clearNodeOwnedStoreState.ts",
-      "role": "application"
-    },
-    {
       "path": "src/stores/entityIdStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/entityIdStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/executionOrderStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/graphMetadataStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/graphMetadataStore.ts",
       "role": "application"
     },
     {
@@ -312,27 +288,7 @@
       "role": "application"
     },
     {
-      "path": "src/stores/linkStore.ts",
-      "role": "application"
-    },
-    {
       "path": "src/stores/nodeDataStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/nodeDataStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/rekeyGraphId.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/rerouteStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/rerouteStore.ts",
       "role": "application"
     },
     {
@@ -416,10 +372,10 @@
       "checks": [
         "src/stores/storeCollisionContracts.test.ts",
         "src/stores/linkStore.test.ts",
-        "src/stores/rerouteStore.test.ts",
+        "packages/graph-state/src/rerouteStore.test.ts",
         "src/stores/nodeDataStore.test.ts",
         "src/stores/entityIdStore.test.ts",
-        "src/stores/graphMetadataStore.test.ts"
+        "packages/graph-state/src/graphMetadataStore.test.ts"
       ]
     },
     {

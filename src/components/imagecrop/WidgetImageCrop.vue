@@ -147,7 +147,7 @@ import {
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
-import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
+import { isBoundsObject } from '@comfyorg/graph-state/layout/geometry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'

@@ -27,7 +27,7 @@ import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 

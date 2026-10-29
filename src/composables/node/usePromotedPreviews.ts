@@ -8,7 +8,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
-} from '@/stores/previewExposureStore'
+} from '@comfyorg/graph-state/previewExposureStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   appendNodeExecutionId,

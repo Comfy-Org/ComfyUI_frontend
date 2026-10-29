@@ -6,7 +6,7 @@ import type { CustomInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { ComfyWidgets } from '@/scripts/widgets'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 const PREVIEW_WIDGET_NAME = 'preview_text'

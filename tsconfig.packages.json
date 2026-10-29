@@ -51,6 +51,9 @@
     },
     {
       "path": "./packages/keybindings/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/graph-state/tsconfig.declarations.json"
     }
   ]
 }

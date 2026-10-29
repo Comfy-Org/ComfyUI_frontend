@@ -38,14 +38,6 @@
     {
       "path": "src/lib/litegraph/src/canvas/linkVisibility.ts",
       "role": "application"
-    },
-    {
-      "path": "src/stores/linkPresentationStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/linkPresentationStore.ts",
-      "role": "application"
     }
   ],
   "publicEntryPoints": [],
@@ -69,7 +61,7 @@
     },
     {
       "name": "Link presentation store keeps hidden and label state per root graph and refuses cross-owner writes",
-      "checks": ["src/stores/linkPresentationStore.test.ts"]
+      "checks": ["packages/graph-state/src/linkPresentationStore.test.ts"]
     }
   ],
   "adrs": [

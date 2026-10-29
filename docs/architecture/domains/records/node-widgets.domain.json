@@ -188,14 +188,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/utils/restoredWidgetValue.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/utils/restoredWidgetValue.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/lib/litegraph/src/utils/widget.test.ts",
       "role": "application"
     },
@@ -225,14 +217,6 @@
     },
     {
       "path": "src/stores/widgetValueStore.graphReactivity.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/widgetValueStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/widgetValueStore.ts",
       "role": "application"
     },
     {
@@ -307,7 +291,7 @@
     {
       "name": "Widget value store keeps scoped widget state reactive across graph edits and announces value intents",
       "checks": [
-        "src/stores/widgetValueStore.test.ts",
+        "packages/graph-state/src/widgetValueStore.test.ts",
         "src/stores/widgetValueStore.graphReactivity.test.ts"
       ]
     },

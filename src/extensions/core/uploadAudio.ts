@@ -24,7 +24,7 @@ import { getNodeByLocatorId } from '@/lib/litegraph/src/utils/graphTraversalUtil
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 function updateUIWidget(

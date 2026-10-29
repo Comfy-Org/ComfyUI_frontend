@@ -1,10 +1,16 @@
 import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { moveRerouteLayout } from '@/lib/litegraph/src/layout/graphLayoutAttachment'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
-import { toSelectableKey } from '@/core/selection/selectionState'
-import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
-import type { RerouteMembership } from '@/stores/rerouteStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import {
+  isSelectedIn,
+  setSelectedIn
+} from '@comfyorg/graph-state/selection/selectionStore'
+import { toSelectableKey } from '@comfyorg/graph-state/selection/selectionState'
+import {
+  EMPTY_MEMBERSHIP,
+  useRerouteStore
+} from '@comfyorg/graph-state/rerouteStore'
+import type { RerouteMembership } from '@comfyorg/graph-state/rerouteStore'
 import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {

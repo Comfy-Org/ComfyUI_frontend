@@ -13,14 +13,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-
-export interface LGraphState {
-  /** Counter, not an id — brand at the point a group is constructed. */
-  lastGroupId: number
-  lastNodeId: number
-  lastLinkId: LinkId
-  lastRerouteId: RerouteId
-}
+import type { LGraphState } from '@comfyorg/graph-state/lgraphState'
 
 export interface ReservedIdIndex {
   has(id: number): boolean
@@ -28,15 +21,6 @@ export interface ReservedIdIndex {
 }
 
 type ReservedIds = ReadonlySet<number> | ReservedIdIndex
-
-export function createLGraphState(): LGraphState {
-  return {
-    lastGroupId: 0,
-    lastNodeId: 0,
-    lastLinkId: toLinkId(0),
-    lastRerouteId: toRerouteId(0)
-  }
-}
 
 export function collectReservedNodeIds(
   rootGraph: Pick<LGraph, 'nodes' | 'subgraphs'>,

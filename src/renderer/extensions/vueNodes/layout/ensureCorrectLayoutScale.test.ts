@@ -9,7 +9,7 @@ import type {
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
 import { attachGroupLayout } from '@/lib/litegraph/src/layout/graphLayoutAttachment'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({

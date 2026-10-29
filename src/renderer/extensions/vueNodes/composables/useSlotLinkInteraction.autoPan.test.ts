@@ -142,7 +142,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/renderer/core/layout/store/layoutStore'))
+vi.mock(import('@comfyorg/graph-state/layout/layoutStore'))
 
 vi.mock<unknown>(import('@/lib/litegraph/src/canvas/slotCalculations'), () => ({
   getGraphSlotLayout: () => ({

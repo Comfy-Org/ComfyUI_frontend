@@ -29,7 +29,7 @@ import type {
   RenderMode
 } from '@/lib/litegraph/src/canvas/pathRenderer'
 import { setLinkPolyline } from '@/lib/litegraph/src/canvas/linkPolylines'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 
 export interface LinkRenderContext {
   // Canvas settings

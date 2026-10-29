@@ -3,14 +3,14 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { useLayoutMutations } from '@comfyorg/graph-state/layout/layoutMutations'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 // Mock the layout mutations module
-vi.mock(import('@/renderer/core/layout/operations/layoutMutations'), () => ({
+vi.mock(import('@comfyorg/graph-state/layout/layoutMutations'), () => ({
   useLayoutMutations: vi.fn()
 }))
 

@@ -32,9 +32,9 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 
-vi.mock(import('@/renderer/core/layout/store/layoutStore'))
+vi.mock(import('@comfyorg/graph-state/layout/layoutStore'))
 
 type Point = [number, number]
 

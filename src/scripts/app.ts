@@ -9,7 +9,7 @@ import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
 import {
   applyViewport,
   measureViewportFromElement
-} from '@/renderer/core/canvas/canvasViewport'
+} from '@comfyorg/graph-state/layout/canvasViewport'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { selectedCanvasNodes } from '@/lib/litegraph/src/canvas/selectionAdapter'
 
@@ -27,7 +27,7 @@ import {
 } from '@/scripts/clipspace'
 import type { Clipspace } from '@/scripts/clipspace'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
-import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
+import { withGraphIntentSource } from '@comfyorg/graph-state/graphIntents'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
   inputAsSerialisable,
@@ -120,7 +120,7 @@ import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type {
   ComfyApp as IComfyApp,

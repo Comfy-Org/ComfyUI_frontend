@@ -4,8 +4,11 @@ import type {
   SubgraphInput,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-import { toSelectableKey } from '@/core/selection/selectionState'
-import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import { toSelectableKey } from '@comfyorg/graph-state/selection/selectionState'
+import {
+  isSelectedIn,
+  setSelectedIn
+} from '@comfyorg/graph-state/selection/selectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { serializeNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'

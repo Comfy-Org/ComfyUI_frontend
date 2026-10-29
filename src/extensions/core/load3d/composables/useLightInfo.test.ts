@@ -15,7 +15,7 @@ import type { LightInfoViewportOptions } from '@comfyorg/viewport3d/lightInfo/Li
 import { createDefaultLight } from '@comfyorg/viewport3d/lightInfo/types'
 import type { LightInfoEntry } from '@comfyorg/viewport3d/lightInfo/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'

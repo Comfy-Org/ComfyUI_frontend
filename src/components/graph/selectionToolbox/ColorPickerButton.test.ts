@@ -14,7 +14,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasEventDetail } from '@comfyorg/graph-model/events'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSelectionStore } from '@/core/selection/selectionStore'
+import { useSelectionStore } from '@comfyorg/graph-state/selection/selectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'

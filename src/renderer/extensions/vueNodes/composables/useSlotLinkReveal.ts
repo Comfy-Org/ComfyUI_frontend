@@ -6,8 +6,8 @@ import {
 } from '@/lib/litegraph/src/canvas/linkRevealState'
 import type { LinkRevealKind } from '@/lib/litegraph/src/canvas/linkRevealState'
 import { app } from '@/scripts/app'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 

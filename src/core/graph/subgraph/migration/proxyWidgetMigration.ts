@@ -1,7 +1,7 @@
 import { isEqual } from 'es-toolkit/compat'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { PromotedWidgetSource } from '@comfyorg/graph-state/promotedWidgetTypes'
 import {
   findHostInputForPromotion,
   getPromotableWidgets,
@@ -18,19 +18,19 @@ import type {
 import { parseProxyWidgetErrorQuarantine } from '@/lib/litegraph/src/subgraph/promotion/proxyWidgetQuarantineSchema'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import { nextUniqueName } from '@comfyorg/graph-state/strings'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
-} from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+} from '@comfyorg/graph-state/previewExposureStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'

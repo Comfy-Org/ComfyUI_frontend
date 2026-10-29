@@ -10,8 +10,8 @@ import { app } from '@/scripts/app'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import {
   toOwningGraphId,
   toRootGraphId

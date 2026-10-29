@@ -20,12 +20,12 @@ import {
   normalizeLegacyProxyWidgetEntry,
   readHostQuarantine
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
-import { useLinkStore } from '@/stores/linkStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
+import { usePreviewExposureStore } from '@comfyorg/graph-state/previewExposureStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 
 vi.mock(import('@/services/litegraphService'))
 

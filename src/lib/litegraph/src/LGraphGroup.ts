@@ -1,9 +1,12 @@
 import type { LGraph, LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { setGroupBoundsLayout } from '@/lib/litegraph/src/layout/graphLayoutAttachment'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
-import { toSelectableKey } from '@/core/selection/selectionState'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import {
+  isSelectedIn,
+  setSelectedIn
+} from '@comfyorg/graph-state/selection/selectionStore'
+import { toSelectableKey } from '@comfyorg/graph-state/selection/selectionState'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import type { GroupId } from '@comfyorg/graph-model/groupId'

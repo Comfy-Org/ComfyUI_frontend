@@ -14,7 +14,7 @@ import {
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createUuidv4 } from '@comfyorg/graph-model/uuid'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import type { NodeLayout } from '@comfyorg/graph-model/layout'
 
@@ -47,7 +47,7 @@ function graph(id: string) {
 vi.mock(import('@vueuse/core'), { spy: true })
 
 vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
-vi.mock(import('@/renderer/core/layout/store/layoutStore'))
+vi.mock(import('@comfyorg/graph-state/layout/layoutStore'))
 
 function placeNode(bounds = { x: 100, y: 200, width: 80, height: 40 }) {
   if (!state.layout) throw new Error('Expected layout state to be initialized')

@@ -5,7 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { UUID } from '@comfyorg/graph-model/uuid'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 
 import { isCurveData } from '@/components/curve/curveUtils'
 import type { CurveData } from '@comfyorg/graph-model/curve'

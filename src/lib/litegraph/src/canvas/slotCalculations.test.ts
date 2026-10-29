@@ -9,8 +9,8 @@ import type {
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import {

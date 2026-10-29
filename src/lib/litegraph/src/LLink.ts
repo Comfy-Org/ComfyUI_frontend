@@ -10,9 +10,9 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { useLinkStore } from '@/stores/linkStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import {
   graphScopeOf,
   toOwningGraphId
@@ -27,7 +27,7 @@ import {
 } from '@comfyorg/graph-model/nodeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
-import type { EndpointPatch } from '@/stores/linkStore'
+import type { EndpointPatch } from '@comfyorg/graph-state/linkStore'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'

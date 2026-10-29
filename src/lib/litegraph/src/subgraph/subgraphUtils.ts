@@ -29,7 +29,7 @@ import {
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
 import { createUuidv4 } from '@comfyorg/graph-model/uuid'
-import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import { nextUniqueName } from '@comfyorg/graph-state/strings'
 import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import type {
   ISerialisedNode,

@@ -80,14 +80,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/schemas/subgraphIdSchema.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/schemas/subgraphIdSchema.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/stores/subgraphNavigationStore.navigateToHash.test.ts",
       "role": "application"
     },
@@ -155,7 +147,7 @@
     {
       "name": "Subgraph ids validate and legacy group nodes migrate with separators and links intact",
       "checks": [
-        "src/schemas/subgraphIdSchema.test.ts",
+        "packages/graph-state/src/subgraphIdSchema.test.ts",
         "src/extensions/core/groupNode.test.ts"
       ]
     }

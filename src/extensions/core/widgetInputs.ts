@@ -21,7 +21,7 @@ import {
 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
 import { ComfyWidgets, isValidWidgetType } from '@/scripts/widgets'

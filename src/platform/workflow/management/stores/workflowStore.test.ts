@@ -46,8 +46,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-// Mock isSubgraph
-vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
+vi.mock<unknown>(import('@/lib/litegraph/src/utils/graphTypeGuards'), () => ({
   isSubgraph: vi.fn(() => false)
 }))
 

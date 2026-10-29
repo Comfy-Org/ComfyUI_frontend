@@ -9,7 +9,7 @@ import {
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))

@@ -15,7 +15,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
-import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
+import { isUuidShapedSubgraphId } from '@comfyorg/graph-state/subgraphIdSchema'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'

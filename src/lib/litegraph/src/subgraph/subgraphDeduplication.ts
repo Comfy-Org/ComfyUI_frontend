@@ -1,4 +1,4 @@
-import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
+import { isUuidShapedSubgraphId } from '@comfyorg/graph-state/subgraphIdSchema'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
 import {
   mintGroupId,
@@ -10,7 +10,7 @@ import {
   observeNodeId,
   observeRerouteId
 } from '@/lib/litegraph/src/idAllocation'
-import type { LGraphState } from '@/lib/litegraph/src/idAllocation'
+import type { LGraphState } from '@comfyorg/graph-state/lgraphState'
 import {
   normalizeConfiguredTopology,
   remapLinkReferences

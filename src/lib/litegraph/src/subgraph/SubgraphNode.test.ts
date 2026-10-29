@@ -25,7 +25,7 @@ import {
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import type { ExportedSubgraphInstance } from '@comfyorg/graph-model/serialisation'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
