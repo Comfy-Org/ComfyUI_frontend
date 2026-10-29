@@ -9,7 +9,7 @@ import {
   zGetBillingPlansResponse,
   zPlanFeatureItem
 } from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import { z } from 'zod'
 
 import type { BillingResult, BillingTransport } from './billingContracts'
 import type { BillingScope, BillingScopeSource } from './billingScope'
@@ -17,7 +17,20 @@ import { createScopedReader } from './scopedReader'
 
 export const PLANS_ROUTE = '/billing/plans'
 
-export type BillingPlansData = z.infer<typeof zGetBillingPlansResponse>
+const CompatiblePlanSchema = z.looseObject({
+  feature_items: z
+    .array(z.unknown())
+    .transform((items) =>
+      items.filter((item) => zPlanFeatureItem.safeParse(item).success)
+    )
+    .optional()
+})
+
+const BillingPlansBodySchema = z
+  .looseObject({ plans: z.array(CompatiblePlanSchema) })
+  .pipe(zGetBillingPlansResponse)
+
+export type BillingPlansData = z.infer<typeof BillingPlansBodySchema>
 
 export type PlansScope = BillingScope
 
@@ -54,25 +67,6 @@ export interface PlansReaderOptions {
   readonly now?: () => number
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function filterUnreadableFeatureItems(plan: unknown): unknown {
-  if (!isRecord(plan) || !Array.isArray(plan.feature_items)) return plan
-  return {
-    ...plan,
-    feature_items: plan.feature_items.filter(
-      (item) => zPlanFeatureItem.safeParse(item).success
-    )
-  }
-}
-
-function filterUnreadablePlanFeatures(body: unknown): unknown {
-  if (!isRecord(body) || !Array.isArray(body.plans)) return body
-  return { ...body, plans: body.plans.map(filterUnreadableFeatureItems) }
-}
-
 export function createPlansReader(options: PlansReaderOptions): PlansReader {
   const { transport, scopeSource, now = Date.now } = options
 
@@ -84,8 +78,7 @@ export function createPlansReader(options: PlansReaderOptions): PlansReader {
     transport,
     scopeSource,
     route: PLANS_ROUTE,
-    parse: (body) =>
-      zGetBillingPlansResponse.safeParse(filterUnreadablePlanFeatures(body)),
+    parse: (body) => BillingPlansBodySchema.safeParse(body),
     timeoutMs: (readOptions) => readOptions?.timeoutMs,
     project: ({ data }, scope) => ({
       status: 'ok',
