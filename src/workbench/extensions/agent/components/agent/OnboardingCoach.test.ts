@@ -478,7 +478,10 @@ describe('OnboardingCoach', () => {
       })
     )
 
-    await waitFor(() => expect(onFinished).toHaveBeenCalledOnce())
+    await waitFor(() => expect(onFinished).toHaveBeenCalled())
+    await nextTick()
+
+    expect(onFinished).toHaveBeenCalledOnce()
   })
 
   it('reports finished once when the user skips', async () => {
