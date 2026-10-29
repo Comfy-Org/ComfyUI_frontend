@@ -81,7 +81,7 @@ import type { RunErrorMessageSource } from '@/platform/workflowErrors/errorCatal
 import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { generateErrorReport } from '@/utils/errorReportUtil'
 import type { ErrorReportData } from '@/utils/errorReportUtil'

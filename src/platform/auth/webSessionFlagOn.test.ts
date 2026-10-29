@@ -656,6 +656,7 @@ function capabilitiesResponse({
   workspaceId
 }: BillingScope): BillingCapabilitiesResponse {
   return {
+    auto_top_up_enabled: false,
     resolved_for: { user_id: userId, workspace_id: workspaceId },
     capabilities: {
       can_subscribe_self_serve: true,
@@ -695,6 +696,7 @@ function billingAnswer(path: string, scope: BillingScope): unknown {
     case '/api/billing/status':
       return {
         billing_rail: 'stripe',
+        ended_at: null,
         has_funds: true,
         is_active: true,
         max_seats: 1,

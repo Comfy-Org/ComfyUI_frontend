@@ -168,7 +168,7 @@ const STATUS = {
   },
   paused_by_budget: {
     ...NEUTRAL,
-    label: 'workspacePanel.billingTab.autoTopUp.status.paused',
+    label: 'workspacePanel.billingTab.autoTopUp.status.limitReached',
     dot: 'bg-warning-background',
     action: MANAGE
   },

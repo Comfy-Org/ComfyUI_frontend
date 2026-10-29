@@ -8,7 +8,6 @@ import { createCloudAssetsFixture } from '@e2e/fixtures/assetApiFixture'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import { NATIVE_LORA_ASSETS } from '@e2e/fixtures/data/nativeLoraAssets'
-import { WEB_SESSION } from '@e2e/fixtures/data/webSession'
 
 class NativeLoraHelper {
   constructor(private readonly comfyPage: ComfyPage) {}
@@ -86,8 +85,7 @@ class NativeLoraHelper {
     await this.comfyPage.page.waitForFunction(nativeLoraDraftReady, {
       path,
       draftKey: hashPath(path),
-      expected,
-      subject: WEB_SESSION.user.id
+      expected
     })
   }
 

@@ -49,6 +49,7 @@
     "app-host",
     "authentication",
     "error-reporting",
+    "keybindings",
     "workspace"
   ],
   "allowedConsumers": ["agent", "app-host", "authentication", "workspace"],

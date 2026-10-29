@@ -1,8 +1,18 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import ReplyVisualAsset from './ReplyVisualAsset.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  escapeParameter: true,
+  messages: { en: enMessages }
+})
 
 describe('ReplyVisualAsset', () => {
   it('plays a video on hover and pauses it on leave', async () => {
@@ -21,7 +31,8 @@ describe('ReplyVisualAsset', () => {
         },
         multi: false,
         modelThumbnailSrc: ''
-      }
+      },
+      global: { plugins: [i18n] }
     })
     const video = screen.getByTestId('reply-video-preview')
 

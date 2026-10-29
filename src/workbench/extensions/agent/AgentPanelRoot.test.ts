@@ -66,7 +66,7 @@ import { app } from '@/scripts/app'
 import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.vue'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -344,6 +344,7 @@ function syncFakeSelection() {
 }
 
 beforeEach(() => {
+  useWorkflowStore().markTabsRestored()
   distribution.isCloud = true
   distribution.isDesktop = false
   agentSocket = createFakeAgentSocket()
