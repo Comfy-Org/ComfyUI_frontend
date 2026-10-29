@@ -191,8 +191,16 @@ describe('useAgentDockMount', () => {
       const { consent, fetchStatus } = mountWithBilling()
       expect(useAgentPanelStore().isOpen).toBe(false)
 
-      consent.acceptances += 1
+      consent.confirmedAcceptances += 1
       await nextTick()
+
+      expect(fetchStatus).toHaveBeenCalledOnce()
+    })
+
+    it('refreshes billing for an acceptance recorded before any host mounted', async () => {
+      useAgentConsentStore().confirmedAcceptances += 1
+
+      const { fetchStatus } = mountWithBilling()
 
       expect(fetchStatus).toHaveBeenCalledOnce()
     })
@@ -210,11 +218,11 @@ describe('useAgentDockMount', () => {
       const { consent, fetchStatus } = mountWithBilling()
       useAgentDockMount()
 
-      consent.acceptances += 1
+      consent.confirmedAcceptances += 1
       await nextTick()
       expect(fetchStatus).toHaveBeenCalledOnce()
 
-      consent.acceptances += 1
+      consent.confirmedAcceptances += 1
       await nextTick()
       expect(fetchStatus).toHaveBeenCalledTimes(2)
     })
@@ -224,7 +232,7 @@ describe('useAgentDockMount', () => {
       const { consent, fetchStatus } = mountWithBilling()
       fetchStatus.mockRejectedValueOnce(failure)
 
-      consent.acceptances += 1
+      consent.confirmedAcceptances += 1
       await vi.waitFor(() =>
         expect(reportError).toHaveBeenCalledWith(failure, {
           surface: 'agent',

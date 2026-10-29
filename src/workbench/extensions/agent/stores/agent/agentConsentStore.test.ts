@@ -125,10 +125,10 @@ describe('agentConsentStore', () => {
     const store = useAgentConsentStore()
 
     await store.load()
-    expect(store.acceptances).toBe(0)
+    expect(store.confirmedAcceptances).toBe(0)
 
     await store.accept()
-    expect(store.acceptances).toBe(1)
+    expect(store.confirmedAcceptances).toBe(1)
   })
 
   it('does not count a write that resolves after the account changes', async () => {
@@ -149,7 +149,7 @@ describe('agentConsentStore', () => {
     finishSave(stored)
     await request
 
-    expect(store.acceptances).toBe(0)
+    expect(store.confirmedAcceptances).toBe(0)
   })
 
   it('sends on the web session in place of a workspace auth header', async () => {

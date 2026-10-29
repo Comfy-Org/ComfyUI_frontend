@@ -33,9 +33,9 @@ export function useAgentDockMount(): AgentDockMount {
 
   const consentStore = useAgentConsentStore()
   watch(
-    () => consentStore.acceptances,
+    () => consentStore.confirmedAcceptances,
     (count) => {
-      if (count <= agentPanelStore.billingRefreshedAcceptances) return
+      if (!count || count <= agentPanelStore.billingRefreshedAcceptances) return
       agentPanelStore.billingRefreshedAcceptances = count
       void fetchStatus().catch((error: unknown) => {
         reportError(error, {
@@ -44,7 +44,7 @@ export function useAgentDockMount(): AgentDockMount {
         })
       })
     },
-    { flush: 'sync' }
+    { immediate: true, flush: 'sync' }
   )
 
   const billingIdentity = useBillingIdentity()
