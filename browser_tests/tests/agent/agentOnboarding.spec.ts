@@ -160,7 +160,6 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       await expect(dialog).toContainText(`${index + 1} of ${steps.length}`)
       await expect(page.getByTestId('agent-coach-spotlight')).toBeVisible()
       await expect(dialog).toBeInViewport({ ratio: 1 })
-      // The last card has nothing left to skip, so Done is its only way out.
       await expect(
         dialog.getByRole('button', { name: enMessages.agent.skip })
       ).toHaveCount(index === steps.length - 1 ? 0 : 1)

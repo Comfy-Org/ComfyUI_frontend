@@ -6219,7 +6219,7 @@
     "coachTitle": "Meet your Comfy Agent",
     "coachBody": "Describe your ideas, ask it to build and run workflows. It sees your canvas and files.",
     "coachWorkflowTitle": "Each chat works on one workflow",
-    "coachWorkflowBody": "The workflow it's editing is named above the message box. Switching tabs brings up that workflow's latest chat.",
+    "coachWorkflowBody": "The workflow it's editing is named above the message box. Switching tabs brings up that workflow's latest chat, if it has one.",
     "coachHistoryTitle": "Pick up where you left off",
     "coachHistoryBody": "Previous chats are saved here. Open one to review it or continue working with the agent.",
     "coachHoldNotice": "Your message will send when you finish or skip the tour.",

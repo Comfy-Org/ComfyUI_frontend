@@ -45,7 +45,6 @@ const rectangles: Record<string, DOMRect> = {
 const tooltipRect = new DOMRect(998, 105, 84, 22)
 const ARROW_SIZE = 12
 
-/** Every card sits fully on screen, to the left of and level with its target. */
 function cardPlacement(card: HTMLElement, target: DOMRect) {
   const left = parseFloat(card.style.left)
   const top = parseFloat(card.style.top)
