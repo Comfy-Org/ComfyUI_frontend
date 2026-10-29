@@ -410,97 +410,109 @@ describe('LiveGraphApplier with the real change tracker', () => {
     expect(tracker.activeState).not.toEqual(beforeFrame)
   })
 
-  it('resizes an existing DynamicGroup remotely as one undo unit without outbound echo', async () => {
-    const graph = new LGraph()
-    const node = LiteGraph.createNode('DynamicGroupTest')
-    assert.exists(node)
-    graph.add(node)
-    const count = node.widgets?.find((widget) => widget.name === 'rows')
-    assert.exists(count)
-    count.value = 2
-    const first = node.widgets?.find(
-      (widget) => widget.name === 'rows.0.strength'
-    )
-    const second = node.widgets?.find(
-      (widget) => widget.name === 'rows.1.strength'
-    )
-    assert.exists(first)
-    assert.exists(second)
-    first.value = 0.5
-    second.value = 0.7
-    expect(node.serialize().widgets_values).toEqual([
-      'head',
-      2,
-      0.5,
-      0.7,
-      'tail'
-    ])
-    const { applier, tracker, beforeFrame } = await trackedCanvas(
-      graph,
-      'subgraph'
-    )
-    const { flags, ...serialized } = node.serialize()
-    const { doc, collector } = followedDoc(
-      { nodes: [{ ...serialized, flags: { ...flags } }], links: [] },
-      CATALOG
-    )
-    collector.take()
-    const enqueue = vi.fn()
-    const minter = attachDocOpMinter({
-      isEnabled: () => true,
-      isDocBound: () => true,
-      getGraph: () => graph,
-      boundRootGraphId: () => toRootGraphId(graph.id),
-      docInputNames: () => [],
-      docWidgetValue: () => undefined,
-      docPromotedWidgets: () => null,
-      mayWritePromotedHost: () => true,
-      docHasSubgraphDefinition: () => true,
-      onWidgetWriteRefused: () => {},
-      enqueue
-    })
-    onTestFinished(() => minter.detach())
-    const resize = op({
-      op: 'set_widget',
-      node_id: 1,
-      widget: 'rows',
-      value: 0
-    })
-    const after = {
-      ...op({
+  it.for([{ open: 'root' }, { open: 'subgraph' }] as const)(
+    'resizes an existing DynamicGroup remotely as one undo unit without outbound echo with $open open',
+    async ({ open }) => {
+      const graph = new LGraph()
+      const node = LiteGraph.createNode('DynamicGroupTest')
+      assert.exists(node)
+      graph.add(node)
+      const count = node.widgets?.find((widget) => widget.name === 'rows')
+      assert.exists(count)
+      count.value = 2
+      const first = node.widgets?.find(
+        (widget) => widget.name === 'rows.0.strength'
+      )
+      const second = node.widgets?.find(
+        (widget) => widget.name === 'rows.1.strength'
+      )
+      assert.exists(first)
+      assert.exists(second)
+      first.value = 0.5
+      second.value = 0.7
+      expect(node.serialize().widgets_values).toEqual([
+        'head',
+        2,
+        0.5,
+        0.7,
+        'tail'
+      ])
+      const { canvas, applier, tracker, beforeFrame } = await trackedCanvas(
+        graph,
+        open
+      )
+      const { flags, ...serialized } = node.serialize()
+      const { doc, collector } = followedDoc(
+        { nodes: [{ ...serialized, flags: { ...flags } }], links: [] },
+        CATALOG
+      )
+      collector.take()
+      const enqueue = vi.fn()
+      const minter = attachDocOpMinter({
+        isEnabled: () => true,
+        isDocBound: () => true,
+        getGraph: () => graph,
+        boundRootGraphId: () => toRootGraphId(graph.id),
+        docInputNames: () => [],
+        docWidgetValue: () => undefined,
+        docPromotedWidgets: () => null,
+        mayWritePromotedHost: () => true,
+        docHasSubgraphDefinition: () => true,
+        onWidgetWriteRefused: () => {},
+        enqueue
+      })
+      onTestFinished(() => minter.detach())
+      const resize = op({
         op: 'set_widget',
         node_id: 1,
-        widget: 'after',
-        value: 'remote tail'
-      }),
-      op_id: 'op-after'.padEnd(32, '0')
-    }
-
-    expect(
-      applyOps(doc, [resize, after], CATALOG).outcomes.map(
-        ({ outcome }) => outcome
-      )
-    ).toEqual(['applied', 'applied'])
-    applier.applyChanges(doc, collector.take(), CONTEXT)
-
-    expect(node.serialize().widgets_values).toEqual(['head', 0, 'remote tail'])
-    expect(tracker.undoQueue).toEqual([beforeFrame])
-    expect(tracker.activeState).toEqual(await workflowJson(graph))
-    const afterWidget = node.widgets?.find((widget) => widget.name === 'after')
-    assert.exists(afterWidget)
-    afterWidget.value = 'human tail'
-    await vi.waitFor(() =>
-      expect(enqueue).toHaveBeenCalledExactlyOnceWith([
-        {
+        widget: 'rows',
+        value: 0
+      })
+      const after = {
+        ...op({
           op: 'set_widget',
-          node_id: '1',
+          node_id: 1,
           widget: 'after',
-          value: 'human tail',
-          old: 'remote tail'
-        }
+          value: 'remote tail'
+        }),
+        op_id: 'op-after'.padEnd(32, '0')
+      }
+
+      expect(
+        applyOps(doc, [resize, after], CATALOG).outcomes.map(
+          ({ outcome }) => outcome
+        )
+      ).toEqual(['applied', 'applied'])
+      canvas.dirty_canvas = false
+      canvas.dirty_bgcanvas = false
+      applier.applyChanges(doc, collector.take(), CONTEXT)
+
+      expect([canvas.dirty_canvas, canvas.dirty_bgcanvas]).toEqual([true, true])
+      expect(node.serialize().widgets_values).toEqual([
+        'head',
+        0,
+        'remote tail'
       ])
-    )
-  })
+      expect(tracker.undoQueue).toEqual([beforeFrame])
+      expect(tracker.activeState).toEqual(await workflowJson(graph))
+      const afterWidget = node.widgets?.find(
+        (widget) => widget.name === 'after'
+      )
+      assert.exists(afterWidget)
+      afterWidget.value = 'human tail'
+      await vi.waitFor(() =>
+        expect(enqueue).toHaveBeenCalledExactlyOnceWith([
+          {
+            op: 'set_widget',
+            node_id: '1',
+            widget: 'after',
+            value: 'human tail',
+            old: 'remote tail'
+          }
+        ])
+      )
+    }
+  )
 
   it('regrows a remotely hidden DynamicGroup row with the value the document kept', () => {
     const { graph, node, doc, collector } = twoRowFollower()
