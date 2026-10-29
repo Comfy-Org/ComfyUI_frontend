@@ -17,6 +17,7 @@ import type { AuthCredential, AuthHeader, AuthScheme } from '@/types/authTypes'
 import {
   agentSocketAuthParams,
   ensureSignedIn,
+  agentSettingsAuthHeader,
   withAgentAuth
 } from './agentAuth'
 
@@ -67,6 +68,54 @@ function signInWithout(token: undefined | Error, apiKey: boolean) {
   if (apiKey) storedApiKey('comfyui-key')
   workspaceToken(token)
 }
+
+describe('agentSettingsAuthHeader', () => {
+  it('carries the workspace bearer off-cloud, not the personal header', async () => {
+    signInPersonal()
+    workspaceToken('workspace-token')
+
+    await expect(agentSettingsAuthHeader()).resolves.toEqual({
+      Authorization: 'Bearer workspace-token'
+    })
+  })
+
+  it('sends a stored API key as itself off-cloud', async () => {
+    storedApiKey('comfyui-key')
+
+    await expect(agentSettingsAuthHeader()).resolves.toEqual({
+      'X-API-KEY': 'comfyui-key'
+    })
+  })
+
+  it('uses the workspace header on cloud', async () => {
+    distribution.isCloud = true
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeader').mockResolvedValue({
+      Authorization: 'Bearer cloud-workspace'
+    })
+
+    await expect(agentSettingsAuthHeader()).resolves.toEqual({
+      Authorization: 'Bearer cloud-workspace'
+    })
+  })
+
+  it.for(missingWorkspaceTokens)(
+    'resolves null rather than rejecting with $label',
+    async ({ token, apiKey }) => {
+      signInWithout(token, apiKey)
+
+      await expect(agentSettingsAuthHeader()).resolves.toBeNull()
+    }
+  )
+
+  it('resolves null when the cloud workspace header cannot be obtained', async () => {
+    distribution.isCloud = true
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeader').mockRejectedValue(
+      new Error('token exchange failed')
+    )
+
+    await expect(agentSettingsAuthHeader()).resolves.toBeNull()
+  })
+})
 
 describe('withAgentAuth', () => {
   it.for<{
