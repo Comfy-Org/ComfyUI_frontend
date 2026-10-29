@@ -10,35 +10,26 @@ interface TestStats {
   finished?: number
 }
 
-interface TestResult {
-  status: string
-  duration?: number
-  error?: {
-    message?: string
-    stack?: string
-  }
-  attachments?: Array<{
-    name: string
-    path?: string
-    contentType: string
-  }>
+interface TestCase {
+  status: 'skipped' | 'expected' | 'unexpected' | 'flaky'
 }
 
-interface TestCase {
+interface Spec {
+  id: string
   title: string
-  ok: boolean
-  outcome: string
-  results: TestResult[]
+  file: string
+  tests: TestCase[]
 }
 
 interface Suite {
   title: string
   file: string
+  specs?: Spec[]
   suites?: Suite[]
-  tests?: TestCase[]
 }
 
 interface FullReportData {
+  config?: { rootDir?: string }
   stats?: TestStats
   suites?: Suite[]
 }
@@ -51,7 +42,6 @@ interface FailedTest {
   name: string
   file: string
   traceUrl?: string
-  error?: string
 }
 
 interface TestCounts {
@@ -63,82 +53,59 @@ interface TestCounts {
   failures?: FailedTest[]
 }
 
-/**
- * Extract failed test details from Playwright report
- */
+function repoRelativePath(file: string, rootDir?: string): string {
+  if (!rootDir) return file
+  const relative = path.relative(process.cwd(), path.resolve(rootDir, file))
+  return relative.startsWith('..') || path.isAbsolute(relative)
+    ? file
+    : relative.split(path.sep).join('/')
+}
+
 function extractFailedTests(
   reportData: FullReportData,
   baseUrl?: string
 ): FailedTest[] {
   const failures: FailedTest[] = []
-
-  function processTest(test: TestCase, file: string, suitePath: string[]) {
-    // Check if test failed or is flaky
-    const hasFailed = test.results.some(
-      (r) => r.status === 'failed' || r.status === 'timedOut'
-    )
-    const isFlaky = test.outcome === 'flaky'
-
-    if (hasFailed || isFlaky) {
-      const fullTestName = [...suitePath, test.title]
-        .filter(Boolean)
-        .join(' › ')
-      const failedResult = test.results.find(
-        (r) => r.status === 'failed' || r.status === 'timedOut'
-      )
-
-      // Find trace attachment
-      let traceUrl: string | undefined
-      if (failedResult?.attachments) {
-        const traceAttachment = failedResult.attachments.find(
-          (a) => a.name === 'trace' && a.contentType === 'application/zip'
-        )
-        if (traceAttachment?.path) {
-          // Convert local path to URL path
-          const tracePath = traceAttachment.path.replace(/\\/g, '/')
-          const traceFile = path.basename(tracePath)
-          if (baseUrl) {
-            // Construct trace viewer URL
-            const traceDataUrl = `${baseUrl}/data/${traceFile}`
-            traceUrl = `${baseUrl}/trace/?trace=${encodeURIComponent(traceDataUrl)}`
-          }
-        }
-      }
-
-      failures.push({
-        name: fullTestName,
-        file: file,
-        traceUrl,
-        error: failedResult?.error?.message
-      })
-    }
-  }
+  const rootDir = reportData.config?.rootDir
 
   function processSuite(suite: Suite, parentPath: string[] = []) {
     const suitePath = suite.title ? [...parentPath, suite.title] : parentPath
 
-    // Process tests in this suite
-    if (suite.tests) {
-      for (const test of suite.tests) {
-        processTest(test, suite.file, suitePath)
-      }
+    for (const spec of suite.specs ?? []) {
+      if (!spec.tests.some((test) => test.status === 'unexpected')) continue
+      const file = repoRelativePath(spec.file || suite.file, rootDir)
+      failures.push({
+        name: [...suitePath, spec.title].filter(Boolean).join(' › '),
+        file,
+        traceUrl: baseUrl ? `${baseUrl}/#?testId=${spec.id}` : undefined
+      })
     }
 
-    // Recursively process nested suites
-    if (suite.suites) {
-      for (const childSuite of suite.suites) {
-        processSuite(childSuite, suitePath)
-      }
+    for (const childSuite of suite.suites ?? []) {
+      processSuite(childSuite, suitePath)
     }
   }
 
-  if (reportData.suites) {
-    for (const suite of reportData.suites) {
-      processSuite(suite)
-    }
+  for (const suite of reportData.suites ?? []) {
+    processSuite(suite)
   }
 
   return failures
+}
+
+function countsFromStats(stats: TestStats): TestCounts {
+  const passed = stats.expected || 0
+  const failed = stats.unexpected || 0
+  const flaky = stats.flaky || 0
+  const skipped = stats.skipped || 0
+  return {
+    passed,
+    failed,
+    flaky,
+    skipped,
+    total: passed + failed + flaky + skipped,
+    failures: []
+  }
 }
 
 /**
@@ -165,23 +132,11 @@ function extractTestCounts(reportDir: string, baseUrl?: string): TestCounts {
         fs.readFileSync(jsonReportFile, 'utf-8')
       )
       if (reportJson.stats) {
-        const stats = reportJson.stats
-        counts.total = stats.expected || 0
-        counts.passed =
-          (stats.expected || 0) -
-          (stats.unexpected || 0) -
-          (stats.flaky || 0) -
-          (stats.skipped || 0)
-        counts.failed = stats.unexpected || 0
-        counts.flaky = stats.flaky || 0
-        counts.skipped = stats.skipped || 0
-
-        // Extract detailed failure information
-        if (counts.failed > 0 || counts.flaky > 0) {
-          counts.failures = extractFailedTests(reportJson, baseUrl)
+        const jsonCounts = countsFromStats(reportJson.stats)
+        if (jsonCounts.failed > 0) {
+          jsonCounts.failures = extractFailedTests(reportJson, baseUrl)
         }
-
-        return counts
+        return jsonCounts
       }
     }
 
@@ -202,19 +157,7 @@ function extractTestCounts(reportDir: string, baseUrl?: string): TestCounts {
           )
           const reportData: ReportData = JSON.parse(decodedData)
 
-          if (reportData.stats) {
-            const stats = reportData.stats
-            counts.total = stats.expected || 0
-            counts.passed =
-              (stats.expected || 0) -
-              (stats.unexpected || 0) -
-              (stats.flaky || 0) -
-              (stats.skipped || 0)
-            counts.failed = stats.unexpected || 0
-            counts.flaky = stats.flaky || 0
-            counts.skipped = stats.skipped || 0
-            return counts
-          }
+          if (reportData.stats) return countsFromStats(reportData.stats)
         } catch {
           // Continue to try other formats
         }
@@ -229,19 +172,7 @@ function extractTestCounts(reportDir: string, baseUrl?: string): TestCounts {
             'return ' + dataMatch[1]
           )() as ReportData
 
-          if (reportData.stats) {
-            const stats = reportData.stats
-            counts.total = stats.expected || 0
-            counts.passed =
-              (stats.expected || 0) -
-              (stats.unexpected || 0) -
-              (stats.flaky || 0) -
-              (stats.skipped || 0)
-            counts.failed = stats.unexpected || 0
-            counts.flaky = stats.flaky || 0
-            counts.skipped = stats.skipped || 0
-            return counts
-          }
+          if (reportData.stats) return countsFromStats(reportData.stats)
         } catch {
           // Continue to try other formats
         }
