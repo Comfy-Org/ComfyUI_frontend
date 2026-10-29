@@ -29,7 +29,7 @@ import { useSavedWorkflowUrlLoader as createLoader } from './useSavedWorkflowUrl
 vi.mock(import('vue-router'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
@@ -491,6 +491,22 @@ describe('private saved workflow navigation', () => {
       'failed'
     )
     expect(useWorkflowStore().openWorkflows).toEqual([])
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('reports a failed open while its link context remains current', async () => {
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(false)
+
+    expect(await useSavedWorkflowUrlLoader().openSavedWorkflowFromUrl()).toBe(
+      'failed'
+    )
+
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        title:
+          'This saved workflow is unavailable. Check that you are signed in to the right workspace and have access.'
+      })
+    )
   })
 
   it('keeps the unsaved canvas active when the record and sidebar file disagree', async () => {

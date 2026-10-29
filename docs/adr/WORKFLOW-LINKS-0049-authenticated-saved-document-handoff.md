@@ -86,7 +86,7 @@ only while its graph state and document selection still belong to the load.
 Detach the selection before clearing, retain the previous tab's dirty draft and
 undo history, and reopen it through normal navigation. While loading, draft
 persistence reads the selected document's frozen state rather than the incoming
-canvas. Revoked requests cannot repaint content from the old context.
+canvas. Revoked requests cannot repaint content from the old context. The workflow service acknowledges the exact activated document before tracker restoration or preview work can reject; cleanup pairs that owner with the graph state captured before activation.
 
 Cross-domain cancellation coverage lives in
 [`src/integrationTests/workflowHandoffPersistence.test.ts`](../../src/integrationTests/workflowHandoffPersistence.test.ts).

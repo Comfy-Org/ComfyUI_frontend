@@ -15,7 +15,7 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@comfyorg/graph-model/workflowSchema'
-import type { Keybinding } from '@/platform/keybindings/types'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import type {
   ExecutionErrorWsMessage,
   NodeExecutionOutput,
@@ -25,7 +25,7 @@ import type { NodeError } from '@/platform/remote/comfyui/types'
 import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import type {
   ComfyWorkflow,
   LoadedComfyWorkflow
@@ -35,7 +35,7 @@ import type { ComfyApi } from '@/scripts/api'
 import type { ComfyUI } from '@/scripts/ui'
 import type { ComfyAppMenu } from '@/scripts/ui/menu/index'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { ComfyCommand } from '@/stores/commandStore'
+import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
 import type {
   NodeExecutionId,
   NodeLocatorId

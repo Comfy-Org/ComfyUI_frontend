@@ -6,7 +6,7 @@ import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 

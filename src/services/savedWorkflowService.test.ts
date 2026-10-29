@@ -5,12 +5,12 @@ import type {
 import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { fetchSavedWorkflow } from './savedWorkflowService'
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const workflowId = 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
 const metadata: GetWorkflowResponse = {

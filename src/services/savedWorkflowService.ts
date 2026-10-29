@@ -5,7 +5,7 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import { isEqual } from 'es-toolkit'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { api } from '@/scripts/api'

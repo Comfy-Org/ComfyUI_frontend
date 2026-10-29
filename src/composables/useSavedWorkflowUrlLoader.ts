@@ -12,7 +12,7 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { fetchSavedWorkflow } from '@/services/savedWorkflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -129,7 +129,7 @@ export function useSavedWorkflowUrlLoader() {
       return 'failed'
     }
     if (!(await workflowService.openWorkflow(workflow, { isCurrent }))) {
-      toast.error(t('workflowService.privateLinkUnavailable'))
+      if (isCurrent()) toast.error(t('workflowService.privateLinkUnavailable'))
       return 'failed'
     }
     return 'loaded'

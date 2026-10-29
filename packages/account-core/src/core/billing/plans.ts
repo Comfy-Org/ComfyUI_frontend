@@ -68,7 +68,6 @@ function filterUnreadableFeatureItems(plan: unknown): unknown {
   }
 }
 
-/** Display metadata cannot make an otherwise valid purchase catalog unreadable. */
 function filterUnreadablePlanFeatures(body: unknown): unknown {
   if (!isRecord(body) || !Array.isArray(body.plans)) return body
   return { ...body, plans: body.plans.map(filterUnreadableFeatureItems) }

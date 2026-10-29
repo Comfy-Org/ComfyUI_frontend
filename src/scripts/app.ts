@@ -1,6 +1,6 @@
 import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
-import { reactive, unref, shallowRef } from 'vue'
+import { reactive, unref, shallowRef, toRaw } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/usePartnerNodesRunGate'
@@ -44,11 +44,11 @@ import { useFreeTierQuota } from '@/platform/billing/subscription/composables/us
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { normalizeExecutionTriggerSource } from '@comfyorg/telemetry/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
 import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
@@ -58,7 +58,7 @@ import type {
   WorkflowExecutionIntent,
   WorkflowOpenSource,
   WorkflowQueueIntent
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
@@ -102,7 +102,7 @@ import { useSubgraphService } from '@/services/subgraphService'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -135,7 +135,7 @@ import type {
 } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
@@ -155,7 +155,7 @@ import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMed
 import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 
-import { getWorkflowMode } from '@/utils/appMode'
+import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
@@ -1223,7 +1223,7 @@ export class ComfyApp implements IComfyApp {
         isCurrent?.() !== false ||
         !graphOwner ||
         graphOwner.state !== this.rootGraph.state ||
-        graphOwner.workflow !== workflowStore.activeWorkflow
+        toRaw(graphOwner.workflow) !== toRaw(workflowStore.activeWorkflow)
       )
         return
       workflowStore.activeWorkflow = null
@@ -1590,7 +1590,13 @@ export class ComfyApp implements IComfyApp {
           workflow,
           this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
           effectiveShareId,
-          isCurrent
+          isCurrent,
+          (activationOwner) => {
+            graphOwner = {
+              state: configuredGraphState,
+              workflow: activationOwner
+            }
+          }
         )
       } catch (error) {
         if (isCurrentGraphLoad()) throw error

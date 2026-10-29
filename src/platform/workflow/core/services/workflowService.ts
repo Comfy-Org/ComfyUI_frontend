@@ -22,7 +22,8 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { reportWorkflowStateAnomaly } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
@@ -40,7 +41,7 @@ import {
   provideWorkflowService,
   useSubgraphNavigationStore
 } from '@/stores/subgraphNavigationStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
@@ -50,7 +51,7 @@ import {
   appendWorkflowJsonExt,
   generateUUID
 } from '@/utils/formatUtil'
-import type { AppMode } from '@/utils/appMode'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type { UUID } from '@/utils/uuid'
 import { ensureNonZeroUuid, zeroUuid } from '@/utils/uuid'
 
@@ -788,26 +789,22 @@ export const useWorkflowService = () => {
     }
   }
 
-  /**
-   * Set the active workflow after the new graph is loaded.
-   *
-   * The call relationship is
-   * useWorkflowService().openWorkflow -> app.loadGraphData -> useWorkflowService().afterLoadNewGraph
-   * app.loadApiJson -> useWorkflowService().afterLoadNewGraph
-   * app.importA1111 -> useWorkflowService().afterLoadNewGraph
-   *
-   * @param value The value to set as the active workflow.
-   * @param workflowData The initial workflow data loaded to the graph editor.
-   */
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
     shareId?: string,
-    isCurrent?: () => boolean
+    isCurrent?: () => boolean,
+    onActivated?: (workflow: LoadedComfyWorkflow) => void
   ) => {
     if (isCurrent?.() === false) return
     const graphState = useApp().rootGraphOrUndefined?.state
-    await activateLoadedWorkflow(value, workflowData, shareId, isCurrent)
+    await activateLoadedWorkflow(
+      value,
+      workflowData,
+      shareId,
+      isCurrent,
+      onActivated
+    )
     if (
       graphState !== useApp().rootGraphOrUndefined?.state ||
       isCurrent?.() === false
@@ -839,7 +836,8 @@ export const useWorkflowService = () => {
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
     shareId?: string,
-    isCurrent?: () => boolean
+    isCurrent?: () => boolean,
+    onActivated?: (workflow: LoadedComfyWorkflow) => void
   ) => {
     const graphState = useApp().rootGraphOrUndefined?.state
     const workflowStore = useWorkspaceStore().workflow
@@ -847,10 +845,12 @@ export const useWorkflowService = () => {
     const wasAppMode = isAppMode.value
     const rootGraphId = adoptRootGraphId(workflowData)
 
-    function openInCurrentContext(workflow: ComfyWorkflow) {
-      return isCurrent
+    async function openInCurrentContext(workflow: ComfyWorkflow) {
+      const loadedWorkflow = await (isCurrent
         ? workflowStore.openWorkflow(workflow, { isCurrent })
-        : workflowStore.openWorkflow(workflow)
+        : workflowStore.openWorkflow(workflow))
+      onActivated?.(loadedWorkflow)
+      return loadedWorkflow
     }
 
     function activateRunErrors(workflow: ComfyWorkflow) {

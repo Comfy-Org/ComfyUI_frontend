@@ -18,6 +18,8 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import * as distributionModule from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import * as modelPipeline from '@/platform/workflowErrors/missingModel/missingModelPipeline'
+import * as mediaPipeline from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 import {
   useWorkflowService,
   resetWorkflowLoadQueueForTests
@@ -44,6 +46,12 @@ import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/workflowErrors/missingModel/missingModelPipeline'), {
+  spy: true
+})
+vi.mock(import('@/platform/workflowErrors/missingMedia/missingMediaPipeline'), {
+  spy: true
+})
 vi.mock(import('@/platform/distribution/types'), { spy: true })
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
@@ -297,6 +305,147 @@ describe('saved workflow handoff persistence', () => {
       expect(useWorkflowStore().activeWorkflow?.path).toBe(retained.path)
       expect(graph.nodes.map((node) => node.title)).toEqual(['Keep my edits'])
       expect(graph.extra.marker).toBe('dirty retained document')
+    }
+  )
+
+  it.for([
+    {
+      boundary: 'activation',
+      cancelAt: (cancel: () => void, incoming: LoadedComfyWorkflow) => {
+        const store = useWorkflowStore()
+        const open = vi.mocked(store.openWorkflow).getMockImplementation()
+        assert.exists(open)
+        vi.spyOn(store, 'openWorkflow').mockImplementation(async (...args) => {
+          const loaded = await open(...args)
+          if (args[0] === incoming) cancel()
+          return loaded
+        })
+      }
+    },
+    {
+      boundary: 'tracker restoration rejection',
+      cancelAt: (cancel: () => void, incoming: LoadedComfyWorkflow) => {
+        vi.mocked(incoming.changeTracker.restore).mockImplementationOnce(() => {
+          cancel()
+          throw new Error('tracker restoration rejected after activation')
+        })
+      }
+    },
+    {
+      boundary: 'afterLoadGraph',
+      cancelAt: (cancel: () => void) => {
+        mockExtensionService.invokeExtensionsAsync.mockImplementation(
+          async (hook) => {
+            if (hook === 'afterLoadGraph') cancel()
+            return []
+          }
+        )
+      }
+    },
+    {
+      boundary: 'model verification',
+      cancelAt: (cancel: () => void) => {
+        vi.mocked(modelPipeline.runMissingModelPipeline).mockImplementationOnce(
+          async () => {
+            cancel()
+            return { missingModels: [], confirmedCandidates: [] }
+          }
+        )
+      }
+    },
+    {
+      boundary: 'media verification',
+      cancelAt: (cancel: () => void) => {
+        vi.mocked(mediaPipeline.runMissingMediaPipeline).mockImplementationOnce(
+          async () => {
+            cancel()
+          }
+        )
+      }
+    }
+  ])(
+    'clears only its own activated canvas after cancellation during $boundary',
+    async ({ cancelAt }) => {
+      const { graph, service, retained, retainedDocument, incoming, saved } =
+        await prepareRetainedHandoff()
+      vi.mocked(modelPipeline.runMissingModelPipeline).mockResolvedValue({
+        missingModels: [],
+        confirmedCandidates: []
+      })
+      vi.mocked(mediaPipeline.runMissingMediaPipeline).mockResolvedValue(
+        undefined
+      )
+      let current = true
+      cancelAt(() => {
+        current = false
+      }, incoming)
+
+      await expect(
+        service.openWorkflow(incoming, {
+          force: true,
+          isCurrent: () => current
+        })
+      ).resolves.toBe(false)
+
+      expect(useWorkflowStore().activeWorkflow).toBeNull()
+      expect(graph.extra.marker).toBeUndefined()
+      expect((await app.graphToPrompt()).output).toEqual({})
+      expect(retained.activeState?.extra?.marker).toBe(
+        'dirty retained document'
+      )
+      expect(retainedDocument.changeTracker.undoQueue).toEqual([saved])
+      expect(retained.isModified).toBe(true)
+      await expect(service.openWorkflow(retained)).resolves.toBe(true)
+      expect(graph.nodes.map((node) => node.title)).toEqual(['Keep my edits'])
+    }
+  )
+
+  it.for([
+    {
+      boundary: 'graph',
+      replace: async (graph: LGraph, _incoming: LoadedComfyWorkflow) => {
+        graph.configure({
+          ...graph.serialize(),
+          extra: { marker: 'newer graph' }
+        })
+      },
+      marker: 'newer graph',
+      path: 'workflows/incoming.json'
+    },
+    {
+      boundary: 'document selection',
+      replace: async (_graph: LGraph, _incoming: LoadedComfyWorkflow) => {
+        const store = useWorkflowStore()
+        const next = store.getWorkflowByPath('workflows/other.json')
+        assert.exists(next)
+        await store.openWorkflow(next)
+      },
+      marker: 'superseded incoming document',
+      path: 'workflows/other.json'
+    }
+  ])(
+    'does not adopt a newer $boundary while activation settles',
+    async ({ replace, marker, path }) => {
+      const { graph, service, incoming } = await prepareRetainedHandoff()
+      let current = true
+      const store = useWorkflowStore()
+      const open = vi.mocked(store.openWorkflow).getMockImplementation()
+      assert.exists(open)
+      vi.spyOn(store, 'openWorkflow').mockImplementation(async (...args) => {
+        const loaded = await open(...args)
+        if (args[0] === incoming) {
+          await replace(graph, incoming)
+          current = false
+        }
+        return loaded
+      })
+
+      await expect(
+        service.openWorkflow(incoming, { isCurrent: () => current })
+      ).resolves.toBe(false)
+
+      expect(graph.extra.marker).toBe(marker)
+      expect(store.activeWorkflow?.path).toBe(path)
     }
   )
 

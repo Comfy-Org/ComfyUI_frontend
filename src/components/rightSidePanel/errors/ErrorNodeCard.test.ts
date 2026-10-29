@@ -4,10 +4,10 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { resolveRunErrorMessage } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
@@ -29,7 +29,7 @@ vi.mock(import('@/utils/errorReportUtil'), () => ({
   generateErrorReport: (data: unknown) => mockGenerateErrorReport(data)
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 describe('ErrorNodeCard.vue', () => {
   let i18n: ReturnType<typeof createI18n>

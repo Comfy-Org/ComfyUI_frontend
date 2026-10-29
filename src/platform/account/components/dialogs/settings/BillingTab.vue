@@ -16,9 +16,16 @@
       @add-credits="addCredits('settings_billing_panel')"
     />
     <BillingParkedBanner
-      :parked="capabilities.hasParkedBillingOperation.value"
+      :parked="
+        capabilities.hasParkedBillingOperation.value &&
+        capabilities.canManageBilling.value
+      "
     />
-    <BillingLocalCreditBanner :suppressed="suppressCreditBanner" />
+    <BillingStatusBanner section="billing" />
+    <BillingLocalCreditBanner
+      :suppressed="suppressCreditBanner"
+      :add-credits-variant="addCreditsVariant"
+    />
     <section class="flex flex-col gap-3" data-testid="billing-plan-section">
       <h2 class="m-0 text-base font-medium text-foreground">
         {{ $t('workspacePanel.billingTab.credits.plan') }}
@@ -53,7 +60,6 @@
         :action="action"
         :sales-variant="salesVariant"
         :can-manage-subscription="capabilities.canManageSubscription.value"
-        @open-plan="openPlan"
       />
     </section>
 
@@ -112,9 +118,8 @@ import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue'
 import BillingLocalCreditBanner from '@/platform/billing/components/billingTab/BillingLocalCreditBanner.vue'
@@ -122,17 +127,19 @@ import BillingPlanCheckoutBanner from '@/platform/billing/components/billingTab/
 import BillingParkedBanner from '@/platform/billing/components/billingTab/BillingParkedBanner.vue'
 import BillingPausedBanner from '@/platform/billing/components/billingTab/BillingPausedBanner.vue'
 import BillingTopupCheckoutBanner from '@/platform/billing/components/billingTab/BillingTopupCheckoutBanner.vue'
-import { addCreditsEmphasis } from '@/platform/billing/components/billingTab/topupCheckoutBanner'
+import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
 import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/billing/components/billingTab/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/billing/components/billingTab/BillingPlanRow.vue'
+import { addCreditsEmphasis } from '@/platform/billing/components/billingTab/creditsCard'
 import {
   deriveBillingTabLoad,
   planRowAction
 } from '@/platform/billing/components/billingTab/planRow'
 import { useBillingCreditsCard } from '@/platform/billing/components/billingTab/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useBillingPlanRow'
+import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
@@ -155,17 +162,8 @@ const suppressCreditBanner = computed(
 const { flags } = useFeatureFlags()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
-const addCreditsVariant = computed(() =>
-  addCreditsEmphasis(
-    creditsCard.value.kind === 'unavailable'
-      ? null
-      : creditsCard.value.availableCents,
-    topupCheckout.banner.value
-  )
-)
 const planCreditNote = useTopUpPlanCreditCopy()
 const { showTopUpCreditsDialog } = useBillingDialogs()
-const { showSubscriptionDialog } = useSubscriptionPaywall()
 const telemetry = useTelemetry()
 
 const HANDOFF = {
@@ -193,6 +191,23 @@ const action = computed(() =>
   })
 )
 
+const { state: autoTopUp } = useBillingAutoTopUpCard()
+const addCreditsVariant = computed(() =>
+  addCreditsEmphasis({
+    availableCents:
+      creditsCard.value.kind === 'unavailable'
+        ? null
+        : creditsCard.value.availableCents,
+    canTopUp: capabilities.canTopUp.value,
+    autoTopUpStatus:
+      autoTopUp.value.kind === 'loaded'
+        ? autoTopUp.value.settings.status
+        : null,
+    planActionIsPrimary:
+      action.value === 'subscribe' || action.value === 'choosePlan'
+  })
+)
+
 const salesVariant = computed(() =>
   billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
 )
@@ -210,10 +225,6 @@ const handoffIcon = computed(() =>
 
 async function retryBalance() {
   await billing.fetchBalance().catch(() => undefined)
-}
-
-function openPlan() {
-  showSubscriptionDialog({ reason: 'settings_billing_panel' })
 }
 
 function addCredits(source: 'credits_panel' | 'settings_billing_panel') {
