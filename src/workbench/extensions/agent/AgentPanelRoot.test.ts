@@ -5832,6 +5832,7 @@ describe('AgentPanelRoot workflow binding', () => {
       (_trigger, onAccept) =>
         new Promise<void>((resolve) => {
           accept = () => {
+            Object.assign(useAgentConsentStore(), { accepted: true })
             onAccept()
             resolve()
           }
