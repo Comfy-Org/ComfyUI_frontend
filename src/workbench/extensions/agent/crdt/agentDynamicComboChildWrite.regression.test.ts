@@ -4,7 +4,10 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { render } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
 import * as Y from 'yjs'
 
 import {
@@ -15,11 +18,25 @@ import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import type {
+  ComfyNodeDef as ComfyNodeDefV1,
+  InputSpec
+} from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { toRootGraphId } from '@/types/graphScopeId'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
+import type { WireOpEnvelope } from '@e2e/fixtures/agentWireFrame'
+
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { AgentCrdtProjection } from './agentCrdtProjection'
+import { attachDocOpMinter } from './docOpMinter'
 import { FollowerDoc } from './followerDoc'
+import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 type LocalWidgetWrite = Extract<GraphIntentEvent, { type: 'set_widget' }>
 
@@ -56,6 +73,19 @@ const modelSpec: InputSpec = [
     ]
   }
 ]
+
+const SEEDANCE_DEF: ComfyNodeDefV1 = {
+  name: CLASS,
+  display_name: 'Test Seedance',
+  category: 'test',
+  python_module: 'nodes',
+  description: '',
+  input: { required: { model: modelSpec } },
+  output: ['VIDEO'],
+  output_name: ['VIDEO'],
+  output_is_list: [false],
+  output_node: false
+}
 
 class TestSeedance extends LGraphNode {
   constructor() {
@@ -108,6 +138,21 @@ function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
     ...rest,
     nodes: nodes.map(({ flags, ...node }) => ({ ...node, flags: { ...flags } }))
   }
+}
+
+// Reads one widget out of a host projection by the order the catalog declares,
+// so a reordering moves the probe and the array apart rather than together.
+function projectedValue(
+  workflow: WorkflowJSON,
+  nodeId: unknown,
+  name: string
+): unknown {
+  const projected = workflow.nodes.find(
+    (candidate) => String(candidate.id) === String(nodeId)
+  )
+  const values = projected?.widgets_values
+  if (!Array.isArray(values)) return undefined
+  return values[['model', ...SELECTED_LAYOUT].indexOf(name)]
 }
 
 let stamp = 1
@@ -173,15 +218,8 @@ function setup() {
     )
     deliver(Y.encodeStateAsUpdate(host, before))
   }
-  const hostPositionalValue = (name: string) => {
-    const projected = project(host, CATALOG).nodes.find(
-      (candidate) => String(candidate.id) === String(node.id)
-    )
-    const order = ['model', ...SELECTED_LAYOUT]
-    const values = projected?.widgets_values
-    if (!Array.isArray(values)) return undefined
-    return values[order.indexOf(name)]
-  }
+  const hostPositionalValue = (name: string) =>
+    projectedValue(project(host, CATALOG), node.id, name)
 
   const localWrites: LocalWidgetWrite[] = []
   const stop = onGraphIntent((event) => {
@@ -196,6 +234,125 @@ function setup() {
   }
   onTestFinished(destroy)
   return { graph, node, widget, hostApplies, hostPositionalValue, localWrites }
+}
+
+function sentWireOps(raw: string): WireOpEnvelope[] {
+  const frame: unknown = JSON.parse(raw)
+  if (typeof frame !== 'object' || frame === null) return []
+  const { type, data } = frame as { type?: unknown; data?: unknown }
+  if (type !== 'doc_ops' || typeof data !== 'object' || data === null) return []
+  const parsed = parseWireOps((data as { ops?: unknown }).ops)
+  return parsed.ok ? parsed.ops : []
+}
+
+// The production composition: the real `attachDocOpMinter` turns the person's
+// canvas edit into wire ops, the real host applies those ops and answers with
+// its own `op_ids`, and that acknowledgement comes back through the follower.
+// `setup()` above hand-builds the person's op instead, so a minter that
+// mistranslated a dynamic-combo child write would leave it green.
+function connectMintedWorkflow() {
+  const graph = new LGraph()
+  const node = withGraphIntentSource('load', () => {
+    const created = LiteGraph.createNode(CLASS)
+    if (!created) throw new Error(`${CLASS} not registered`)
+    graph.add(created)
+    return created
+  })
+  const widget = (name: string) => {
+    const found = node.widgets?.find((candidate) => candidate.name === name)
+    if (!found) throw new Error(`no widget ${name}`)
+    return found
+  }
+  withGraphIntentSource('load', () => {
+    widget('model').value = MODEL
+    widget('model.prompt').value = 'a singer on stage'
+  })
+
+  const host = new HostDoc(
+    WORKFLOW_ID,
+    toWorkflowJson(structuredClone(graph.serialize())),
+    CATALOG
+  )
+  const agentSocket = createFakeAgentSocket()
+  const deliver = (frame: HostFrame) =>
+    agentSocket.receive(frame.type, frame.data)
+
+  let follower!: ReturnType<typeof useAgentCrdtFollower>
+  const view = render(
+    defineComponent({
+      setup() {
+        follower = useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID), {
+          transport: agentSocket.transport,
+          getGraph: () => graph
+        })
+        return () => null
+      }
+    }),
+    { global: { plugins: [getActivePinia()!] } }
+  )
+  onTestFinished(() => view.unmount())
+  host.initialSync().forEach(deliver)
+
+  const minter = attachDocOpMinter({
+    isEnabled: () => true,
+    isDocBound: () => true,
+    enqueue: (operations) => follower.enqueueHumanOperations(operations),
+    getGraph: () => graph,
+    boundRootGraphId: () => toRootGraphId(graph.id),
+    docInputNames: (nodeId) => follower.docInputNames(nodeId),
+    docWidgetValue: (nodeId, widgetName) =>
+      follower.docWidgetValue(nodeId, widgetName),
+    docPromotedWidgets: (nodeId) => follower.docPromotedWidgets(nodeId),
+    mayWritePromotedHost: (nodeId) => follower.mayWritePromotedHost(nodeId),
+    docHasSubgraphDefinition: (definitionId) =>
+      follower.docHasSubgraphDefinition(definitionId),
+    onWidgetWriteRefused: (nodeId, widgetName) =>
+      follower.notifyWidgetWriteRefused(nodeId, widgetName)
+  })
+  onTestFinished(() => minter.detach())
+
+  const agentWrites = (widgetName: string, value: unknown) =>
+    deliver(
+      host.apply([
+        { op: 'set_widget', node_id: node.id, widget: widgetName, value }
+      ])
+    )
+
+  // Runs the person's edits, waits for the minter's own flush, then lets the
+  // real host apply whatever it put on the wire and delivers the answer back.
+  async function personEdits(edit: () => void): Promise<WireOpEnvelope[]> {
+    const before = agentSocket.send.mock.calls.length
+    edit()
+    await vi.waitFor(() =>
+      expect(agentSocket.send.mock.calls.length).toBeGreaterThan(before)
+    )
+    const sent = agentSocket.send.mock.calls
+      .slice(before)
+      .flatMap(([frame]) => sentWireOps(frame))
+    const { result, update } = host.applyWire(sent)
+    deliver(result)
+    if (update) deliver(update)
+    return sent
+  }
+
+  const hostValue = (name: string) =>
+    projectedValue(host.projection(), node.id, name)
+
+  return { node, widget, agentWrites, personEdits, hostValue }
+}
+
+// The minted child writes a batch carries for one widget, in wire order.
+function mintedValuesFor(
+  sent: WireOpEnvelope[],
+  widgetName: string
+): unknown[] {
+  return sent
+    .filter(
+      (op): op is WireOpEnvelope & { widget: string; value: unknown } =>
+        op.op === 'set_widget' &&
+        (op as { widget?: unknown }).widget === widgetName
+    )
+    .map((op) => op.value)
 }
 
 beforeEach(() => {
@@ -293,6 +450,50 @@ describe('an Agent write to a dynamic-combo child (PM-2326)', () => {
     expect(s.widget('model.generate_audio').value).toBe(false)
     expect(s.hostPositionalValue('model.generate_audio')).toBe(false)
     expect(s.localWrites).toEqual([])
+  })
+
+  describe('when the person edit travels through the real minter', () => {
+    beforeEach(() => {
+      useAgentPanelStore().enabled = true
+      useNodeDefStore().addNodeDef(SEEDANCE_DEF)
+    })
+
+    it('mints the sibling edit and leaves the Agent value alone on the wire', async () => {
+      const s = connectMintedWorkflow()
+      s.agentWrites('model.generate_audio', false)
+      await vi.waitFor(() =>
+        expect(s.widget('model.generate_audio').value).toBe(false)
+      )
+
+      const sent = await s.personEdits(() => {
+        s.widget('model.prompt').value = 'typed by the person'
+      })
+
+      expect(mintedValuesFor(sent, 'model.prompt')).toEqual([
+        'typed by the person'
+      ])
+      expect(mintedValuesFor(sent, 'model.generate_audio')).toEqual([])
+      expect(s.hostValue('model.prompt')).toBe('typed by the person')
+      expect(s.hostValue('model.generate_audio')).toBe(false)
+      expect(s.widget('model.generate_audio').value).toBe(false)
+    })
+
+    it('never mints the catalog default back when the rebuild runs first', async () => {
+      const s = connectMintedWorkflow()
+      s.agentWrites('model.generate_audio', false)
+      await vi.waitFor(() =>
+        expect(s.widget('model.generate_audio').value).toBe(false)
+      )
+
+      const sent = await s.personEdits(() => {
+        s.widget('model').value = MODEL
+        s.widget('model.prompt').value = 'typed after the rebuild'
+      })
+
+      expect(mintedValuesFor(sent, 'model.generate_audio')).not.toContain(true)
+      expect(s.hostValue('model.generate_audio')).toBe(false)
+      expect(s.widget('model.generate_audio').value).toBe(false)
+    })
   })
 
   it('serializes the Agent value for the next queued run', () => {
