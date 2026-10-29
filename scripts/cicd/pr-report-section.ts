@@ -1,4 +1,3 @@
-/** One section of the unified PR report comment. */
 export interface PrReportSection {
   /** Emoji shown beside the title, e.g. `⚡`. */
   icon: string

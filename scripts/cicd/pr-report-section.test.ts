@@ -3,16 +3,6 @@ import { describe, expect, it } from 'vitest'
 import { renderPrReportSection } from './pr-report-section'
 
 describe('renderPrReportSection', () => {
-  it('renders the verdict on the heading', () => {
-    expect(
-      renderPrReportSection({
-        icon: '⚡',
-        title: 'Performance',
-        status: '✅ No regressions'
-      })
-    ).toBe('## ⚡ Performance: ✅ No regressions')
-  })
-
   it.for([
     { name: 'omitted', body: undefined },
     { name: 'empty', body: '' },
@@ -50,18 +40,6 @@ describe('renderPrReportSection', () => {
     )
   })
 
-  it('keeps a blank line between the tags and the body so GitHub parses it', () => {
-    const lines = renderPrReportSection({
-      icon: '📦',
-      title: 'Bundle',
-      status: '9.96 MB gzip',
-      body: '**Summary**'
-    }).split('\n')
-
-    expect(lines[lines.indexOf('<summary>Details</summary>') + 1]).toBe('')
-    expect(lines[lines.indexOf('</details>') - 1]).toBe('')
-  })
-
   it('strips body padding so nested sections do not drift apart', () => {
     expect(
       renderPrReportSection({
@@ -70,7 +48,9 @@ describe('renderPrReportSection', () => {
         status: '✅ Passed',
         body: '\n\nNo new findings.\n\n\n'
       })
-    ).toContain('\n\nNo new findings.\n\n</details>')
+    ).toBe(
+      '## 🌾 Fallow: ✅ Passed\n\n<details>\n<summary>Details</summary>\n\nNo new findings.\n\n</details>'
+    )
   })
 
   it('keeps the notice visible between the heading and the collapsed box', () => {
