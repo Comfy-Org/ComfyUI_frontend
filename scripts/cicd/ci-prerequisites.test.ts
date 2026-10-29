@@ -1,5 +1,7 @@
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
@@ -16,6 +18,7 @@ const workflowSchema = z.object({
       steps: z
         .array(
           z.object({
+            id: z.string().optional(),
             run: z.string().optional(),
             uses: z.string().optional(),
             with: z.record(z.string(), z.unknown()).optional()
@@ -48,11 +51,97 @@ it.for([
     expect.objectContaining({
       uses: expect.stringMatching(/^actions\/checkout@/),
       with: expect.objectContaining({
-        'sparse-checkout': '/package.json',
+        'sparse-checkout': expect.stringMatching(/^\/package\.json$/m),
         'sparse-checkout-cone-mode': false
       })
     })
   )
+})
+
+const lockfileWithPlaywright = (catalogVersion: string, rootVersion: string) =>
+  [
+    'catalogs:',
+    '  default:',
+    "    '@playwright/test':",
+    '      specifier: ^1.0.0',
+    `      version: ${catalogVersion}`,
+    'importers:',
+    '  .:',
+    '    devDependencies:',
+    "      '@playwright/test':",
+    '        specifier: ^1.0.0',
+    `        version: ${rootVersion}`,
+    '  apps/website:',
+    '    devDependencies:',
+    "      '@playwright/test':",
+    '        specifier: ^1.0.0',
+    '        version: 9.9.9',
+    'packages:',
+    ''
+  ].join('\n')
+
+function readLockedPlaywrightVersion(lockfile: string) {
+  const step = pipeline.jobs['merge-reports'].steps?.find(
+    (candidate) => candidate.id === 'playwright-version'
+  )
+  if (!step?.run) throw new Error('Missing Playwright version step')
+  const dir = mkdtempSync(join(tmpdir(), 'playwright-version-'))
+  try {
+    writeFileSync(join(dir, 'pnpm-lock.yaml'), lockfile)
+    const output = join(dir, 'output')
+    writeFileSync(output, '')
+    const result = spawnSync(
+      'bash',
+      ['--noprofile', '--norc', '-c', step.run],
+      {
+        cwd: dir,
+        env: { PATH: process.env.PATH, GITHUB_OUTPUT: output },
+        encoding: 'utf8'
+      }
+    )
+    return { status: result.status, output: readFileSync(output, 'utf8') }
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+describe('merge-reports Playwright version', () => {
+  it.for([
+    [
+      'root importer version',
+      lockfileWithPlaywright('1.2.0', '1.3.0'),
+      0,
+      'version=1.3.0\n'
+    ],
+    [
+      'peer suffix stripped',
+      lockfileWithPlaywright('1.2.0', '1.3.0(foo@1.0.0)'),
+      0,
+      'version=1.3.0\n'
+    ],
+    ['missing root entry', 'importers:\n  .:\n    devDependencies: {}\n', 1, '']
+  ] as const)('%s', ([, lockfile, status, output]) => {
+    expect(readLockedPlaywrightVersion(lockfile)).toEqual({ status, output })
+  })
+
+  it('matches the root importer in the repository lockfile', () => {
+    const lockfile = readFileSync('pnpm-lock.yaml', 'utf8')
+    const root = z
+      .object({
+        importers: z.object({
+          '.': z.object({
+            devDependencies: z.object({
+              '@playwright/test': z.object({ version: z.string() })
+            })
+          })
+        })
+      })
+      .parse(parse(lockfile))
+    expect(readLockedPlaywrightVersion(lockfile)).toEqual({
+      status: 0,
+      output: `version=${root.importers['.'].devDependencies['@playwright/test'].version}\n`
+    })
+  })
 })
 
 function verdict(job: string, env: Record<string, string>) {

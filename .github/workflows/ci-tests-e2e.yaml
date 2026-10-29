@@ -409,7 +409,13 @@ jobs:
         id: playwright-version
         run: |
           set -euo pipefail
-          version=$(grep -A2 "^    '@playwright/test':" pnpm-lock.yaml | sed -n -E 's/^      version: //p' | head -n 1)
+          version=$(awk '
+            /^importers:/ { in_importers = 1; next }
+            in_importers && /^[^ ]/ { exit }
+            in_importers && /^  [^ ]/ { in_root = ($0 == "  .:"); next }
+            in_root && /^      .@playwright\/test.:$/ { in_entry = 1; next }
+            in_entry && /^        version: / { sub(/^        version: /, ""); sub(/\(.*/, ""); print; exit }
+          ' pnpm-lock.yaml)
           if [[ -z "$version" ]]; then
             echo "Could not read the @playwright/test version from pnpm-lock.yaml" >&2
             exit 1
