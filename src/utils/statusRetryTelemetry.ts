@@ -44,7 +44,11 @@ export function classifyStatusRetry({
       return retryScheduled ? 'failed' : undefined
     case 'answered':
       if (!retryScheduled) return undefined
-      return finalStatus !== undefined && finalStatus < 400
+      // Only a 2xx is a recovery. A 3xx the caller asked to see, and an opaque
+      // status of 0, say nothing about the backend having recovered.
+      return finalStatus !== undefined &&
+        finalStatus >= 200 &&
+        finalStatus < 300
         ? 'recovered'
         : 'failed'
   }

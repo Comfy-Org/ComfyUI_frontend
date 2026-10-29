@@ -21,6 +21,16 @@ describe('classifyStatusRetry', () => {
       'failed'
     ],
     [
+      'a redirect the caller asked to see after a retry',
+      { end: 'answered', attempts: 2, finalStatus: 302, retryScheduled: true },
+      'failed'
+    ],
+    [
+      'an opaque answer after a retry',
+      { end: 'answered', attempts: 2, finalStatus: 0, retryScheduled: true },
+      'failed'
+    ],
+    [
       'spent attempts',
       {
         end: 'attempts_spent',
