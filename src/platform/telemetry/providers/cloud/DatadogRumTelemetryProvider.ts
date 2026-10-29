@@ -20,6 +20,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type {
   AuthMetadata,
   ExecutionOutcomeMetadata,
+  FetchStatusRetryMetadata,
   FetchTimeoutMetadata,
   ImageLoadFailureMetadata,
   TelemetryProvider,
@@ -54,6 +55,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
 
   trackFetchTimeout(metadata: FetchTimeoutMetadata): void {
     datadogRum.addAction(TelemetryEvents.FETCH_TIMEOUT, metadata)
+  }
+
+  trackFetchStatusRetry(metadata: FetchStatusRetryMetadata): void {
+    datadogRum.addAction(TelemetryEvents.FETCH_STATUS_RETRY, metadata)
   }
 
   trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
