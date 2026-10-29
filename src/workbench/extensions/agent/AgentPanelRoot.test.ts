@@ -6528,6 +6528,26 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(screen.queryByTestId('agent-coach-hold-notice')).toBeNull()
     })
 
+    it('sends once when another tab finishes the tour during the hold', async () => {
+      const key = 'Comfy.AgentPanel.onboarded.account-a.workspace-hold'
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      renderWithSelectedTarget()
+      await sendHeldByCoach('build me a workflow')
+      expect(bodies).toHaveLength(0)
+
+      localStorage.setItem(key, 'true')
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key,
+          newValue: 'true',
+          storageArea: localStorage
+        })
+      )
+
+      await waitFor(() => expect(bodies).toHaveLength(1))
+    })
+
     it('sends once when a coach step never finds its target', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
