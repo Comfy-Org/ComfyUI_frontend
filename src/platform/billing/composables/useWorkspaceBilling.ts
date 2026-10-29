@@ -417,10 +417,10 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         balanceData.value = balance
       }
     } catch (err) {
-      if (requestId === latestBillingReadIds.balance) {
-        error.value =
-          err instanceof Error ? err.message : 'Failed to fetch balance'
-      }
+      // A newer read owns the balance now, so this failure is not one.
+      if (requestId !== latestBillingReadIds.balance) return
+      error.value =
+        err instanceof Error ? err.message : 'Failed to fetch balance'
       throw err
     } finally {
       if (requestId === latestBillingReadIds.balance) isLoading.value = false
