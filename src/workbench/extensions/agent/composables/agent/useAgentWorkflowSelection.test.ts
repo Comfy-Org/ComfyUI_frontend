@@ -704,7 +704,7 @@ describe('historical workflow restoration', () => {
 
     const restored = restoreDraftTab(workflows)
 
-    expect((await restoration).ready).toBe(true)
+    expect(await restoration).toBe(true)
     expect(restored.path).toBe(draftPath)
     expect(getCloudWorkflow).toHaveBeenCalledWith('wf-draft')
     expect(panel.targetUnavailable).toBe(false)
@@ -734,10 +734,7 @@ describe('historical workflow restoration', () => {
 
     restoreDraftTab(workflows)
 
-    expect(await restoration).toEqual({
-      ready: true,
-      committedWorkflowId: 'wf-draft'
-    })
+    expect(await restoration).toBe(true)
     expect(panel.selectedWorkflow?.path).toBe(draftPath)
     expect(panel.targetUnavailable).toBe(false)
     expect(warnRestoreFailed).not.toHaveBeenCalled()
@@ -763,10 +760,7 @@ describe('historical workflow restoration', () => {
 
       await vi.advanceTimersByTimeAsync(1_000)
       expect(settled).toBe(true)
-      expect(await restoration).toEqual({
-        ready: true,
-        committedWorkflowId: null
-      })
+      expect(await restoration).toBe(true)
       expect(panel.targetUnavailable).toBe(true)
       expect(getCloudWorkflow).not.toHaveBeenCalled()
     } finally {
@@ -790,10 +784,7 @@ describe('historical workflow restoration', () => {
 
     workflows.markTabsRestored()
 
-    expect(await restoration).toEqual({
-      ready: true,
-      committedWorkflowId: null
-    })
+    expect(await restoration).toBe(true)
     expect(panel.targetUnavailable).toBe(true)
     expect(getCloudWorkflow).not.toHaveBeenCalled()
   })
