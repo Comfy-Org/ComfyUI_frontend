@@ -454,7 +454,7 @@ describe('OnboardingCoach', () => {
         components: { OnboardingCoach },
         setup: () => ({ steps: STEPS, storageKey, onFinished }),
         template:
-          '<div id="panel" /><OnboardingCoach :steps="steps" :storage-key="storageKey" @finished="onFinished" />'
+          '<div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" /><OnboardingCoach :steps="steps" :storage-key="storageKey" @finished="onFinished" />'
       },
       { global: { plugins: [i18n] } }
     )
@@ -485,6 +485,46 @@ describe('OnboardingCoach', () => {
     await nextTick()
 
     expect(onFinished).toHaveBeenCalledOnce()
+  })
+
+  it('reports finished once when the user clicks Done', async () => {
+    const onFinished = vi.fn()
+    mountWithFinished('coach-done-once', onFinished)
+    for (const name of ['Next', 'Next', 'Next'])
+      await userEvent.click(await screen.findByRole('button', { name }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Done' }))
+    await nextTick()
+    await nextTick()
+
+    expect(onFinished).toHaveBeenCalledOnce()
+  })
+
+  it('reports a later completion in another tab after a replay', async () => {
+    const onFinished = vi.fn()
+    const coach = ref<{ restart: () => void } | null>(null)
+    render(
+      {
+        components: { OnboardingCoach },
+        setup: () => ({ steps: STEPS, coach, onFinished }),
+        template:
+          '<div id="panel" /><OnboardingCoach ref="coach" :steps="steps" storage-key="coach-replay-elsewhere" @finished="onFinished" />'
+      },
+      { global: { plugins: [i18n] } }
+    )
+    await userEvent.click(await screen.findByRole('button', { name: 'Skip' }))
+    coach.value?.restart()
+    await screen.findByRole('dialog', { name: 'Meet the agent' })
+
+    localStorage.setItem('coach-replay-elsewhere', 'true')
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'coach-replay-elsewhere',
+        newValue: 'true',
+        storageArea: localStorage
+      })
+    )
+
+    await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(2))
   })
 
   describe('reporting a step whose target never mounts', () => {
