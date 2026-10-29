@@ -1,17 +1,17 @@
-import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
-import type { LinkId } from '@/types/linkId'
-import type { SharedIntersection } from '@/lib/litegraph/src/interfaces'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { SharedIntersection } from '@comfyorg/graph-model/interfaces'
 import type {
   IWidgetInputSlot,
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import { inputLinkId, outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 type CommonIoSlotProps = SharedIntersection<
   ISerialisableNodeInput,

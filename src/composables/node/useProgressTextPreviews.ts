@@ -7,7 +7,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import type { QueuedJob } from '@/stores/executionStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { parseNodeId } from '@/types/nodeId'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 
 export function useProgressTextPreviews() {
   const executionStore = useExecutionStore()

@@ -4,15 +4,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { AuthUserInfo } from '@/types/authTypes'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useAgentDockMount } from './useAgentDockMount'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 const billingContext = useBillingContext()
 const { loadDockedAgentPanel } = vi.hoisted(() => ({
   loadDockedAgentPanel: vi.fn(() => ({ name: 'DockedAgentPanel' }))

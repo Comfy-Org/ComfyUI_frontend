@@ -12,6 +12,7 @@ import {
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
   zAgentToolCallData as zGeneratedAgentToolCallData,
+  zAgentThinkingEntry,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
   zToolCallSummary,
   zWorkflowListResponse
@@ -26,7 +27,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
-import { isNodeLocatorId } from '@/types/nodeIdentification'
+import { isNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 export { zAgentAdmissionError, zAgentCancelAccepted }
 export type {
@@ -61,7 +62,8 @@ export type AgentTurnAccepted = GeneratedAgentTurnAccepted & {
 export const RENDERED_ASK_KINDS = [
   'run_approval',
   'ask_user',
-  'delete_approval'
+  'delete_approval',
+  'paused'
 ] as const satisfies readonly AgentAskKind[]
 export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
 
@@ -147,10 +149,9 @@ export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
  * One persisted `content.thinking` entry: a model round's thinking text,
  * anchored to that round's first tool call when it made one.
  */
-export const zPersistedThinkingEntry = z.object({
-  text: z.string(),
-  tool_call_id: z.string().nullish()
-})
+export const zPersistedThinkingEntry = zAgentThinkingEntry
+  .pick({ text: true })
+  .extend({ tool_call_id: z.string().nullish() })
 
 /**
  * The message-parse boundary's `content.tool_calls` field is deliberately
@@ -258,7 +259,21 @@ const zAgentToolCallData = zGeneratedAgentToolCallData
     op_ids: zGeneratedAgentToolCallData.shape.op_ids.catch(undefined),
     doc_seq: zGeneratedAgentToolCallData.shape.doc_seq.catch(undefined),
     doc_lineage_seq:
-      zGeneratedAgentToolCallData.shape.doc_lineage_seq.catch(undefined)
+      zGeneratedAgentToolCallData.shape.doc_lineage_seq.catch(undefined),
+    job_id: z
+      .string()
+      .min(1)
+      .max(128)
+      .refine(
+        (value) =>
+          !value.includes('\u0000') &&
+          !value.includes('\n') &&
+          !value.includes('\r') &&
+          !value.includes('\t')
+      )
+      .optional()
+      .catch(undefined),
+    job_workflow_id: z.string().min(1).optional().catch(undefined)
   })
   .passthrough()
 

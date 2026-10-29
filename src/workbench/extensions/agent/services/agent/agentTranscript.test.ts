@@ -466,6 +466,21 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('restores persisted thinking whose tool_call_id is an explicit null', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      thinking: [{ text: 'Final round.', tool_call_id: null }]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'thinking', text: 'Final round.', state: 'done' },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
   it('keeps persisted thinking in order when an earlier entry names a call the transcript lacks', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
@@ -1020,7 +1035,8 @@ describe('normalizeAgentTranscript', () => {
         callId: 'call-2',
         name: 'add_node',
         state: 'done',
-        ok: true
+        ok: true,
+        canvasConfirmed: false
       },
       { type: 'text', text: 'Done', state: 'done' }
     ])

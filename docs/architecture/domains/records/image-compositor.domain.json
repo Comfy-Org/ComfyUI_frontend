@@ -44,6 +44,10 @@
       "role": "application"
     },
     {
+      "path": "src/renderer/extensions/layerEditor/composables/layerEditorDialog.test.ts",
+      "role": "presentation"
+    },
+    {
       "path": "src/renderer/extensions/layerEditor/composables/layerEditorDialog.ts",
       "role": "presentation"
     },
@@ -77,7 +81,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["dialog-host"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

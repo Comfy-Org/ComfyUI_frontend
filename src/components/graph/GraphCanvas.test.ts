@@ -16,7 +16,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { Toast } from '@/components/ui/toast/toastStore'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -34,11 +34,12 @@ import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
+import { loadExtensions } from '@/services/extensionLoader'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import GraphCanvas from './GraphCanvas.vue'
 const distribution = vi.hoisted(() => ({ isCloud: false }))
@@ -219,7 +220,10 @@ function setRootGraph(graph: LGraph | undefined) {
   ;(app as unknown as { rootGraph: LGraph | undefined }).rootGraph = graph
 }
 
-async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
+async function mountGraphCanvas(
+  stubs: Record<string, unknown> = {},
+  errorHandler?: (error: unknown) => void
+) {
   // Handed to the component rather than left to the active-Pinia fallback, so
   // the readiness gates below are set on the instance startup actually reads.
   const pinia = getActivePinia()!
@@ -241,7 +245,8 @@ async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
         pinia,
         createI18n({ legacy: false, locale: 'en', missingWarn: false })
       ],
-      stubs
+      stubs,
+      config: errorHandler ? { errorHandler } : {}
     }
   } as RenderOptions<typeof GraphCanvas>)
 
@@ -271,6 +276,17 @@ describe('GraphCanvas first-run tour wiring', () => {
     expect(
       mocks.runUrlActionLoaders.mock.invocationCallOrder[0]
     ).toBeGreaterThan(mocks.handleStartupOutcome.mock.invocationCallOrder[0])
+  })
+
+  it('settles tab restoration when startup fails before restoring tabs', async () => {
+    const failure = new Error('init failed')
+    mocks.initializeWorkflow.mockRejectedValue(failure)
+    const errors: unknown[] = []
+
+    await mountGraphCanvas({}, (error) => errors.push(error))
+
+    expect(errors).toEqual([failure])
+    expect(useWorkflowStore().tabsRestored).toBe(true)
   })
 
   it('offers the tour over a workflow that arrived from the URL', async () => {
@@ -330,6 +346,18 @@ describe('GraphCanvas legacy settings bridge', () => {
     await useSettingStore().set('Comfy.Locale', 'zh')
 
     expect(app.ui.settings.dispatchChange).not.toHaveBeenCalled()
+  })
+})
+
+describe('GraphCanvas late custom nodes', () => {
+  it('stops turning late custom nodes on once the canvas unmounts', async () => {
+    await mountGraphCanvas()
+    const [signal] = vi.mocked(loadExtensions).mock.calls[0]
+    expect(signal?.aborted).toBe(false)
+
+    cleanup()
+
+    expect(signal?.aborted).toBe(true)
   })
 })
 

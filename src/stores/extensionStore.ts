@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref } from 'vue'
+import { computed, markRaw, ref, shallowRef } from 'vue'
 
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -23,6 +23,11 @@ const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
   'KJNodes.browserstatus'
 ]
 
+type Registration =
+  | { mode: 'immediate' }
+  | { mode: 'holding'; held: readonly ComfyExtension[] }
+  | { mode: 'starting' }
+
 export const useExtensionStore = defineStore('extension', () => {
   // For legacy reasons, the name uniquely identifies an extension
   const extensionByName = ref<Record<string, ComfyExtension>>({})
@@ -39,6 +44,13 @@ export const useExtensionStore = defineStore('extension', () => {
       (name) => !(name in extensionByName.value)
     )
   })
+
+  const isAgentCreatedExtension = (extension: ComfyExtension) =>
+    extension.provenance?.createdBy === 'comfy-agent' ||
+    /^agent\.[^.]+\./.test(extension.name)
+  const agentExtensions = computed(() =>
+    extensions.value.filter(isAgentCreatedExtension)
+  )
 
   const isExtensionInstalled = (name: string) => name in extensionByName.value
 
@@ -69,6 +81,77 @@ export const useExtensionStore = defineStore('extension', () => {
     }
 
     extensionByName.value[extension.name] = markRaw(extension)
+  }
+
+  const registration = shallowRef<Registration>({ mode: 'immediate' })
+  const isHoldingExtensions = computed(
+    () => registration.value.mode === 'holding'
+  )
+  const areLateExtensionsPending = computed(
+    () => registration.value.mode !== 'immediate'
+  )
+
+  /** From now on the extension service holds new extensions instead of registering them. */
+  function holdNewExtensions() {
+    if (registration.value.mode === 'immediate')
+      registration.value = { mode: 'holding', held: [] }
+  }
+
+  function holdExtension(extension: ComfyExtension) {
+    const current = registration.value
+    if (current.mode === 'holding')
+      registration.value = {
+        mode: 'holding',
+        held: [...current.held, extension]
+      }
+  }
+
+  function releaseHeldExtension(extension: ComfyExtension) {
+    const current = registration.value
+    if (current.mode === 'holding')
+      registration.value = {
+        mode: 'holding',
+        held: current.held.filter((held) => held !== extension)
+      }
+  }
+
+  /** Returns the extensions held so far, in registration order; holding goes on. */
+  function takeHeldExtensions(): ComfyExtension[] {
+    const current = registration.value
+    if (current.mode !== 'holding') return []
+    registration.value = { mode: 'holding', held: [] }
+    return [...current.held]
+  }
+
+  /** Ends holding and returns the extensions still held; they stay pending until `finishLateExtensions`. */
+  function stopHoldingExtensions(): ComfyExtension[] {
+    const current = registration.value
+    if (current.mode !== 'holding') return []
+    registration.value = { mode: 'starting' }
+    return [...current.held]
+  }
+
+  function finishLateExtensions() {
+    registration.value = { mode: 'immediate' }
+  }
+
+  const nodeDefHooksOwed = ref(false)
+
+  /** The next node definitions fetched go through every extension's `addCustomNodeDefs` before they register. */
+  function oweNodeDefHooks() {
+    nodeDefHooksOwed.value = true
+  }
+
+  /** Whether the next node definitions fetched are owed to `addCustomNodeDefs`, without settling the debt. */
+  function areNodeDefHooksOwed(): boolean {
+    return nodeDefHooksOwed.value
+  }
+
+  /** Whether fetched node definitions are owed to `addCustomNodeDefs`; settles the debt. */
+  function takeOwedNodeDefHooks(): boolean {
+    const owed = nodeDefHooksOwed.value
+    nodeDefHooksOwed.value = false
+    return owed
   }
 
   function unregisterExtension(name: string) {
@@ -104,13 +187,26 @@ export const useExtensionStore = defineStore('extension', () => {
 
   return {
     extensions,
+    agentExtensions,
     enabledExtensions,
     inactiveDisabledExtensionNames,
     isExtensionInstalled,
+    isAgentCreatedExtension,
     isExtensionEnabled,
     isExtensionReadOnly,
     registerExtension,
     unregisterExtension,
+    isHoldingExtensions,
+    areLateExtensionsPending,
+    holdNewExtensions,
+    holdExtension,
+    releaseHeldExtension,
+    takeHeldExtensions,
+    stopHoldingExtensions,
+    finishLateExtensions,
+    oweNodeDefHooks,
+    areNodeDefHooksOwed,
+    takeOwedNodeDefHooks,
     loadDisabledExtensionNames,
     captureCoreExtensions,
     isCoreExtension,

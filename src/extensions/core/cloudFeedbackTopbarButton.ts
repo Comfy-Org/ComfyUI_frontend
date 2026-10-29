@@ -1,8 +1,7 @@
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { openFeedbackDialog } from '@/platform/support/feedbackDialog'
-import { useExtensionService } from '@/services/extensionService'
-import type { ActionBarButton } from '@/types/comfy'
+import type { ActionBarButton, ComfyExtension } from '@/types/comfy'
 
 function feedbackButton(): ActionBarButton {
   return {
@@ -13,11 +12,11 @@ function feedbackButton(): ActionBarButton {
   }
 }
 
-useExtensionService().registerExtension({
+export const feedbackButtonExtension: ComfyExtension = {
   name: 'Comfy.FeedbackButton',
   get actionBarButtons() {
     return useSettingStore().get('Comfy.UI.TabBarLayout') === 'Legacy'
       ? [feedbackButton()]
       : []
   }
-})
+}

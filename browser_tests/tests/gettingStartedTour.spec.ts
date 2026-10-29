@@ -11,7 +11,7 @@ import type { PromptResponse } from '@comfyorg/ingest-types'
 
 import type { AssetResponse } from '@/platform/assets/schemas/assetSchema'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
@@ -46,7 +46,6 @@ const QUEUED_PROMPT: PromptResponse = {
 }
 
 const TOUR_FEATURE_FLAGS: RemoteConfig = {
-  onboarding_tour_enabled: true,
   subscription_required: true
 }
 
@@ -54,6 +53,7 @@ const ACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   subscription_tier: 'PRO',
@@ -66,6 +66,7 @@ const INACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   is_active: false,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   subscription_tier: 'FREE',
@@ -209,8 +210,7 @@ test.describe(
       initialSettings: {
         'Comfy.TutorialCompleted': false,
         'Comfy.OnboardingCoachmarks.Seen': ['appMode']
-      },
-      initialFeatureFlags: { onboarding_tour_enabled: true }
+      }
     })
 
     test.beforeEach(async ({ page }) => {
