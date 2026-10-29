@@ -185,8 +185,9 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
     // Link goes up and out of this subgraph
     if (subgraphNode && link.originIsIoNode) {
-      const subgraphNodeInput = subgraphNode.inputs.at(link.origin_slot)
-      if (!subgraphNodeInput)
+      const hostSlot = subgraphNode.hostSlotOf(link.origin_slot)
+      const subgraphNodeInput = subgraphNode.inputs.at(hostSlot)
+      if (hostSlot === -1 || !subgraphNodeInput)
         throw new SlotIndexError(
           `No input found for slot [${link.origin_slot}] ${input.name}`
         )
@@ -197,8 +198,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         )
       // Nothing connected
       const linkId =
-        inputLinkId(subgraphNode.graph, subgraphNode.id, link.origin_slot) ??
-        null
+        inputLinkId(subgraphNode.graph, subgraphNode.id, hostSlot) ?? null
       if (linkId === null) {
         const id = subgraphNodeInput.widgetId
         if (!id) return
@@ -252,6 +252,56 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       type ?? input.type,
       visited
     )
+  }
+
+  /**
+   * For a slot fed by a list input of the enclosing subgraph: one entry per
+   * connected item, named after the slot it fills. Otherwise `undefined`.
+   */
+  resolveListInput(
+    slot: number
+  ): { name: string; resolved: ResolvedInput }[] | undefined {
+    const { subgraphNode } = this
+    const linkId = this.inputs.at(slot)?.linkId
+    if (!subgraphNode || linkId == null) return
+    const link = this.graph.getLink(linkId)
+    if (!link?.originIsIoNode) return
+    if (!subgraphNode.subgraph.inputs.at(link.origin_slot)?.list) return
+    const names = this.node.getListSlotNames?.(slot)
+    if (!names) return
+
+    const items = this._subgraphNodeDto()?.resolveListItems(link.origin_slot)
+    return (items ?? [])
+      .slice(0, names.length)
+      .map((resolved, item) => ({ name: names[item], resolved }))
+  }
+
+  /**
+   * For a subgraph node: what feeds each slot of its list input `index`, in
+   * order, expanding a slot fed by a list from further out.
+   */
+  resolveListItems(index: number): ResolvedInput[] {
+    const { node } = this
+    const { graph } = node
+    if (!node.isSubgraphNode() || !graph) return []
+    const subgraphInput = node.subgraph.inputs.at(index)
+
+    return node.inputs.flatMap((input, slot) => {
+      if (!subgraphInput || input._subgraphSlot !== subgraphInput) return []
+      const linkId = inputLinkId(graph, node.id, slot)
+      const link = linkId == null ? undefined : graph.getLink(linkId)
+      if (
+        link?.originIsIoNode &&
+        this.subgraphNode?.subgraph.inputs.at(link.origin_slot)?.list
+      )
+        return this._subgraphNodeDto()?.resolveListItems(link.origin_slot) ?? []
+      return this.resolveInput(slot) ?? []
+    })
+  }
+
+  /** The DTO of the subgraph node this node is inside. */
+  private _subgraphNodeDto(): ExecutableLGraphNode | undefined {
+    return this.nodesByExecutionId.get(this.subgraphNodePath.join(':'))
   }
 
   /**

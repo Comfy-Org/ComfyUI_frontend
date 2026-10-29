@@ -65,6 +65,9 @@ export abstract class SubgraphSlot
 
   readonly linkIds: LinkId[] = []
 
+  /** Subgraph inputs only: feeds a whole dynamic input group. */
+  list?: boolean
+
   override readonly boundingRect: Rectangle = new Rectangle(
     0,
     0,
@@ -253,7 +256,8 @@ export abstract class SubgraphSlot
       shape,
       color_off,
       color_on,
-      pos
+      pos,
+      list
     } = this
     return {
       id,
@@ -266,7 +270,8 @@ export abstract class SubgraphSlot
       shape,
       color_off,
       color_on,
-      pos
+      pos,
+      list
     }
   }
 }

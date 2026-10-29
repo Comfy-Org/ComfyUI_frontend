@@ -1020,6 +1020,12 @@ export class LGraphNode
     inputOrOutput: INodeInputSlot | INodeOutputSlot | SubgraphIO
   ): void
   onInputAdded?(this: LGraphNode, input: INodeInputSlot): void
+  /**
+   * For a slot of a dynamic input group (e.g. an autogrow input): the input
+   * names a list fed into it fills, in order: this slot, then each later slot
+   * the group can grow, up to its maximum. Undefined if it can't take a list.
+   */
+  getListSlotNames?(slot: number): string[] | undefined
   onOutputAdded?(this: LGraphNode, output: INodeOutputSlot): void
   onConfigure?(this: LGraphNode, serialisedNode: ISerialisedNode): void
   onSerialize?(this: LGraphNode, serialised: ISerialisedNode): void

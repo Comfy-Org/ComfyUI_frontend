@@ -251,6 +251,7 @@ export abstract class SubgraphIONodeBase<
     }
 
     if (slot !== this.emptySlot) {
+      options.push(...this.getExtraSlotMenuOptions(slot))
       options.push(null) // separator
       options.push({
         content: 'Remove Slot',
@@ -292,10 +293,24 @@ export abstract class SubgraphIONodeBase<
           this._promptForSlotRename(slot, event)
         }
         break
+
+      default:
+        this.onExtraSlotMenuAction(selectedItem, slot)
     }
 
     this.subgraph.setDirtyCanvas(true, true)
   }
+
+  /** Slot menu options particular to this kind of IO node. */
+  protected getExtraSlotMenuOptions(_slot: TSlot): IContextMenuValue[] {
+    return []
+  }
+
+  /** Handles an option from {@link getExtraSlotMenuOptions}. */
+  protected onExtraSlotMenuAction(
+    _selectedItem: IContextMenuValue,
+    _slot: TSlot
+  ): void {}
 
   /**
    * Prompts the user to rename a slot.

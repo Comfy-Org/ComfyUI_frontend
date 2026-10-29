@@ -29,6 +29,7 @@ import {
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
+import { listSourceOf } from '@/lib/litegraph/src/subgraph/listInputs'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -40,20 +41,16 @@ type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'onConnectionsChange'> & {
     comfyDynamic: { matchType: Record<string, Record<string, string>> }
   }
+export interface AutogrowTemplate {
+  min: number
+  max: number
+  inputSpecs: InputSpecV2[]
+  prefix?: string
+  names?: string[]
+}
 type AutogrowNode = LGraphNode &
   Pick<Required<LGraphNode>, 'onConnectionsChange' | 'widgets'> & {
-    comfyDynamic: {
-      autogrow: Record<
-        string,
-        {
-          min: number
-          max: number
-          inputSpecs: InputSpecV2[]
-          prefix?: string
-          names?: string[]
-        }
-      >
-    }
+    comfyDynamic: { autogrow: Record<string, AutogrowTemplate> }
   }
 
 function commitMutatedInputs(
@@ -548,6 +545,7 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
   const input = node.inputs.at(index)
   if (!input) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
+  if (listSourceOf(node, index)) return feedFromList(node, input, groupName)
   const lastInput = node.inputs.findLast((inp) =>
     inp.name.startsWith(groupName + '.')
   )
@@ -560,6 +558,56 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
   )
     return
   addAutogrowGroup(ordinal + 1, groupName, node)
+}
+
+/**
+ * A list from the enclosing subgraph feeds `input`: it supplies the slots
+ * after it, so drop those, and show the list and its minimum on the slot.
+ */
+function feedFromList(
+  node: AutogrowNode,
+  input: INodeInputSlot,
+  groupName: string
+) {
+  const ordinal = resolveAutogrowOrdinal(input.name, groupName, node) ?? 0
+  const later = node.inputs.filter(
+    (inp) =>
+      inp.name.startsWith(groupName + '.') &&
+      (resolveAutogrowOrdinal(inp.name, groupName, node) ?? -1) > ordinal
+  )
+  const previous = captureInputLayout(node)
+  const kept = node.inputs.filter((inp) => !later.includes(inp))
+  if (later.length && !replaceNodeInputs(node, previous, kept).ok) return
+  const min = node.comfyDynamic.autogrow[groupName].min - ordinal
+  input.label = `${groupName} (list${min > 1 ? `, min ${min}` : ''})`
+  node.size = [node.size[0], node.computeSize([...node.size])[1]]
+}
+
+/**
+ * The group a list fed into `slot` stands for: the same template, from that
+ * slot on, so a subgraph node can show it with its minimum and maximum.
+ * Single-input templates only, so that one list item fills one slot.
+ */
+export function listTemplateAt(
+  node: LGraphNode,
+  slot: number
+): (AutogrowTemplate & { slotNames: string[] }) | undefined {
+  const input = node.inputs.at(slot)
+  const groupName = input && liveAutogrowGroupOf(node, input.name)
+  if (!groupName || !hasAutogrowGroups(node)) return undefined
+  const { min, max, inputSpecs } = node.comfyDynamic.autogrow[groupName]
+  const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
+  if (inputSpecs.length !== 1 || ordinal === undefined) return undefined
+  const slots = Array.from({ length: max - ordinal }, (_, offset) =>
+    autogrowOrdinalToName(ordinal + offset, inputSpecs[0].name, groupName, node)
+  )
+  return {
+    min: Math.max(0, min - ordinal),
+    max: slots.length,
+    names: slots.map(({ display_name }) => display_name),
+    slotNames: slots.map(({ name }) => name),
+    inputSpecs
+  }
 }
 
 function hasAutogrowGroups(node: LGraphNode): node is AutogrowNode {
@@ -636,7 +684,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   //The slot was reconnected before this deferred compaction ran (e.g. a
   //connect/disconnect/reconnect sequence in immediate succession); the
   //compaction is stale and must not run against the slot's new link.
-  if (node.getInputLink(index)) return
+  if (node.inputs.at(index)?.link != null) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
   const autogrowGroup = Object.hasOwn(node.comfyDynamic.autogrow, groupName)
     ? node.comfyDynamic.autogrow[groupName]
@@ -716,6 +764,7 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   if (node.comfyDynamic?.autogrow) return
   node.comfyDynamic ??= {}
   node.comfyDynamic.autogrow = {}
+  node.getListSlotNames = (slot) => listTemplateAt(node, slot)?.slotNames
 
   let pendingConnection: number | undefined
   //Whether the input-side `connect` event for `pendingConnection` has
@@ -772,6 +821,8 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
         ? this.comfyDynamic.autogrow[key]
         : undefined
       if (!autogrowGroup) return
+      if (!listSourceOf(this, slot) && input.label?.startsWith(`${key} (list`))
+        input.label = undefined
       if (useApp().configuringGraph && input.widget)
         ensureWidgetForInput(node, input)
       if (iscon) {
@@ -812,13 +863,30 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
       transformInputSpecV1ToV2(v, { name, isOptional: index === 1 })
     )
   )
-  node.comfyDynamic.autogrow[inputSpecV2.name] = {
+  applyAutogrowTemplate(node, inputSpecV2.name, {
     names,
     min,
     max: names?.length ?? max,
     prefix,
     inputSpecs: inputsV2
+  })
+}
+
+/** Gives `node` an autogrow group named `groupName` from a parsed template. */
+export function applyAutogrowTemplate(
+  node: LGraphNode,
+  groupName: string,
+  template: AutogrowTemplate
+) {
+  withComfyAutogrow(node)
+  const { min, max, inputSpecs, prefix, names } = template
+  node.comfyDynamic.autogrow[groupName] = {
+    min,
+    max,
+    inputSpecs,
+    prefix,
+    names
   }
-  for (let i = 0; i === 0 || i < min + 1; i++)
-    addAutogrowGroup(i, inputSpecV2.name, node)
+  for (let i = 0; i === 0 || i < template.min + 1; i++)
+    addAutogrowGroup(i, groupName, node)
 }
