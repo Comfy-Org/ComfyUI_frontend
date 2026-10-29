@@ -18,7 +18,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
 
 beforeEach(() => {
   const settings = useSettingStore().settingValues
@@ -36,18 +36,18 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('@/platform/missingModel/composables/useMissingModelInteractions'),
+  import('@/platform/workflowErrors/missingModel/composables/useMissingModelInteractions'),
   () => ({
     clearMissingModelState: vi.fn()
   })
 )
 
 import { useExecutionErrorStore } from './executionErrorStore'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { toNodeId } from '@/types/nodeId'
-import { createMissingMediaCandidate } from '@/platform/missingMedia/__fixtures__/promotedMedia'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createMissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
 
 function mockGraphReady(rootGraph: LGraph) {
   vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)

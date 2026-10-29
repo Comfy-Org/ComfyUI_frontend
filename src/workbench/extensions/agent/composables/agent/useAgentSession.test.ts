@@ -1,56 +1,65 @@
 import type {
   AgentAdmissionError,
+  AgentAnswerRequest,
+  AgentAskResolvedData,
   UploadImageResponse
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { effectScope, nextTick } from 'vue'
 
-import { useTelemetry } from '@/platform/telemetry'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useTelemetry } from '@comfyorg/telemetry'
 import { listSkillPacks } from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { api } from '@/scripts/api'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import type {
   AgentAnswerAccepted,
+  AgentAnswerReceipt,
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
-  AgentThreadSummary,
   AgentTurnAccepted,
   TurnId
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   zAgentAdmissionError,
   zAgentTurnAccepted,
   zAgentWsEvent
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   AgentApiError,
   AgentResponseUnreadableError,
   createAgentRestClient
-} from '../../services/agent/agentRestClient'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   AgentRestClient,
+  DraftSnapshot,
   PostMessageInput
-} from '../../services/agent/agentRestClient'
-import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
-import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
-import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import type { AskUserResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
+import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
 import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
+const distribution = vi.hoisted(() => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
+vi.mock(import('@comfyorg/telemetry'))
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
 const telemetry = vi.mocked(telemetryProvider)
@@ -64,8 +73,12 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
         workflow_id: 'wf-1'
       })
     ),
+    getIdentity: vi.fn(async () => ({ userId: 'user-test' })),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
-    listThreads: vi.fn(async (): Promise<AgentThreadSummary[]> => []),
+    listThreads: vi.fn<AgentRestClient['listThreads']>(async () => ({
+      status: 'complete',
+      threads: []
+    })),
     getRunMode: vi.fn(
       async (): Promise<AgentRunModePreference> => ({
         mode: 'auto',
@@ -99,6 +112,7 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
         selected: []
       })
     ),
+    refreshCredential: vi.fn(async () => {}),
     uploadImage: vi.fn(
       async (): Promise<UploadImageResponse> => ({
         name: 'n',
@@ -221,15 +235,59 @@ const runApproval = (id: string, askId = 'turn-1:call-1') =>
       allow_other: false
     }
   })
-const askResolved = (id: string, askId = 'turn-1:call-1') =>
+const askResolved = (
+  id: string,
+  askId = 'turn-1:call-1',
+  selected: AgentAskResolvedData['selected'] = ['run'],
+  status: AgentAskResolvedData['status'] = 'answered'
+) =>
   wire({
     type: 'agent_ask_resolved',
     data: {
       thread_id: 'th-1',
       message_id: id,
       ask_id: askId,
-      status: 'answered',
-      selected: ['run']
+      status,
+      selected
+    }
+  })
+const PAST_ANSWER_RETRY_BACKOFF_MS = 5_000
+function deleteApproval(id: string, askId = 'turn-1:call-1') {
+  return wire({
+    type: 'agent_ask',
+    data: {
+      thread_id: 'th-1',
+      message_id: id,
+      ask_id: askId,
+      kind: 'delete_approval',
+      context: { action: 'delete_nodes', nodes: [{ id: '12' }] },
+      prompt: 'Delete these nodes?',
+      options: [
+        { id: 'delete', label: 'Delete' },
+        { id: 'keep', label: 'Keep' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+  })
+}
+const askUser = (id: string, askId = 'turn-1:call-1') =>
+  wire({
+    type: 'agent_ask',
+    data: {
+      thread_id: 'th-1',
+      message_id: id,
+      ask_id: askId,
+      kind: 'ask_user',
+      prompt: 'Which models?',
+      options: [
+        { id: 'sdxl', label: 'SDXL', description: 'Fast' },
+        { id: 'flux', label: 'Flux' }
+      ],
+      min_selections: 1,
+      max_selections: 2,
+      allow_other: true
     }
   })
 const deltaIn = (threadId: string, id: string, text: string) =>
@@ -579,6 +637,31 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
   })
 
+  it('reports an agent event for a hydrating thread before the hydrate settles', async () => {
+    const onAgentEvent = vi.fn()
+    const rest = fakeRest({ getMessages: vi.fn(hangingGetMessages) })
+    const { source, emit } = fakeEvents()
+    useAgentConversationStore().setThreadId('th-1')
+    const session = useAgentSession({ rest, events: source, onAgentEvent })
+    session.start()
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+    const restartSucceeded = wire({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-restart',
+        tool_name: 'restart_comfyui',
+        status: 'success',
+        duration_ms: 900,
+        thread_id: 'th-1',
+        message_id: 'msg-1'
+      }
+    })
+
+    emit(restartSucceeded)
+
+    expect(onAgentEvent).toHaveBeenCalledExactlyOnceWith(restartSucceeded)
+  })
+
   it.for(['success', 'failure', 'new-chat', 'newer-chat', 'cancelled'])(
     'activates only a ready current selection after %s',
     async (outcome) => {
@@ -631,6 +714,113 @@ describe('useAgentSession (v1 composition root)', () => {
       session.stop()
     }
   )
+
+  it.for(['loads', 'fails'])(
+    'keeps the open chat until a kept-open load %s',
+    async (outcome) => {
+      let answer = (_loaded: boolean) => {}
+      const getMessages = vi.fn(
+        (threadId: string): Promise<AgentMessages> =>
+          threadId === 'th-next'
+            ? new Promise((resolve, reject) => {
+                answer = (loaded) =>
+                  loaded ? resolve([]) : reject(new Error('unavailable'))
+              })
+            : Promise.resolve([])
+      )
+      const session = useAgentSession({
+        rest: fakeRest({ getMessages }),
+        events: fakeEvents().source
+      })
+      session.start()
+      await session.sendMessage('First chat')
+
+      const opening = session.loadThread('th-next', () => true, {
+        keepOpenChatUntilLoaded: true
+      })
+      expect(session.threadId.value).toBe('th-1')
+      expect(session.isTranscriptReady.value).toBe(true)
+
+      answer(outcome === 'loads')
+
+      expect(await opening).toBe(outcome === 'loads')
+      expect(session.threadId.value).toBe(
+        outcome === 'loads' ? 'th-next' : 'th-1'
+      )
+      expect(session.notices.value).toEqual([])
+      session.stop()
+    }
+  )
+
+  function keptOpenSession(
+    restored: (isCurrent: () => boolean) => Promise<boolean> | boolean
+  ) {
+    const onThreadActivated = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source,
+      onThreadActivated,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        restored: (_workflowId, isCurrent) => restored(isCurrent)
+      }
+    })
+    session.start()
+    return { session, onThreadActivated }
+  }
+
+  it.for([
+    { restore: 'fails', restored: () => false },
+    {
+      restore: 'throws',
+      restored: (): boolean => {
+        throw new Error('restore failed')
+      }
+    }
+  ])(
+    'reports a kept-open switch whose workflow restore $restore as failed, without activating it',
+    async ({ restored }) => {
+      const { session, onThreadActivated } = keptOpenSession(restored)
+
+      const opened = await session.loadThread('th-next', () => true, {
+        keepOpenChatUntilLoaded: true
+      })
+
+      expect(opened).toBe(false)
+      expect(onThreadActivated).not.toHaveBeenCalledWith('th-next')
+      expect(
+        localStorage.getItem(StorageKeys.agentThread('personal'))
+      ).toBeNull()
+      expect(session.notices.value).toEqual([])
+      session.stop()
+    }
+  )
+
+  it('finishes, but no longer navigates for, a kept-open switch the user moved on from', async () => {
+    let navigationCurrent = true
+    let restoreWasCurrent: boolean | undefined
+    const { session, onThreadActivated } = keptOpenSession((isCurrent) => {
+      navigationCurrent = false
+      restoreWasCurrent = isCurrent()
+      return true
+    })
+
+    const opened = await session.loadThread(
+      'th-next',
+      () => navigationCurrent,
+      { keepOpenChatUntilLoaded: true }
+    )
+
+    expect(restoreWasCurrent).toBe(false)
+    expect(opened).toBe(false)
+    expect(session.threadId.value).toBe('th-next')
+    expect(onThreadActivated).toHaveBeenLastCalledWith('th-next')
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-next'
+    )
+    session.stop()
+  })
 
   it('(b) a second send posts to the adopted threadId, not new', async () => {
     const postMessage = vi
@@ -1858,13 +2048,23 @@ describe('useAgentSession (v1 composition root)', () => {
       events: fakeEvents().source
     })
     session.start()
+    const onAccepted = vi.fn()
 
-    const send = session.sendMessage('late reply')
+    const send = session.sendMessage(
+      'late reply',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      onAccepted
+    )
     await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
     session.stop()
     resolvePost({ thread_id: 'th-late', message_id: 'msg-late' })
 
     await expect(send).resolves.toBe(false)
+    expect(onAccepted).toHaveBeenCalledOnce()
     expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
   })
 
@@ -2012,8 +2212,8 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('build it')
     emit(runApproval('msg-1'))
 
-    const first = session.answerAsk('turn-1:call-1', 'run')
-    const duplicate = session.answerAsk('turn-1:call-1', 'run')
+    const first = session.answerAsk('turn-1:call-1', { selected: ['run'] })
+    const duplicate = session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
     await expect(Promise.all([first, duplicate])).resolves.toEqual([
@@ -2021,7 +2221,9 @@ describe('useAgentSession (v1 composition root)', () => {
       false
     ])
     expect(answerAsk).toHaveBeenCalledTimes(1)
-    expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', ['run'])
+    expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', {
+      selected: ['run']
+    })
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
 
     emit(askResolved('msg-1'))
@@ -2031,6 +2233,640 @@ describe('useAgentSession (v1 composition root)', () => {
         (part) => part.type === 'runApproval'
       )
     ).toBe(false)
+  })
+
+  describe('superseded-answer report names the ask kind', () => {
+    async function parkedOn(
+      frame: unknown,
+      receipt: AgentAnswerReceipt | Promise<AgentAnswerReceipt> = {
+        status: 'answered'
+      }
+    ) {
+      const answerAsk = vi.fn<AgentRestClient['answerAsk']>(() =>
+        Promise.resolve(receipt)
+      )
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: source
+      })
+      session.start()
+      await session.sendMessage('go on')
+      emit(frame)
+      return { session, emit }
+    }
+
+    it.for([
+      ['run_approval', runApproval('msg-1'), ['run'], ['cancel']],
+      ['ask_user', askUser('msg-1'), ['sdxl'], ['flux']],
+      ['delete_approval', deleteApproval('msg-1'), ['keep'], ['delete']]
+    ] as const)(
+      'tags a lost %s answer with its kind',
+      async ([kind, frame, sent, won]) => {
+        const { session, emit } = await parkedOn(frame)
+        await session.answerAsk('turn-1:call-1', { selected: [...sent] })
+
+        emit(askResolved('msg-1', 'turn-1:call-1', [...won]))
+
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'agent_ask_answer_superseded',
+            tags: expect.objectContaining({ ask_kind: kind })
+          })
+        )
+      }
+    )
+
+    it('tags an answer to an ask with no card on screen as unknown', async () => {
+      const { session } = await parkedOn(askUser('msg-1'), {
+        status: 'answered',
+        selected: ['flux']
+      })
+
+      await session.answerAsk('turn-1:call-9', { selected: ['sdxl'] })
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_ask_answer_superseded',
+          tags: expect.objectContaining({ ask_kind: 'unknown' })
+        })
+      )
+    })
+
+    it('keeps the kind when a new chat starts before the answer settles', async () => {
+      let resolve: (receipt: AgentAnswerReceipt) => void = () => {}
+      const promise = new Promise<AgentAnswerReceipt>((settle) => {
+        resolve = settle
+      })
+      const { session } = await parkedOn(askUser('msg-1'), promise)
+      const answered = session.answerAsk('turn-1:call-1', {
+        selected: ['sdxl']
+      })
+
+      session.newChat()
+      resolve({ status: 'answered', selected: ['flux'] })
+      await answered
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_ask_answer_superseded',
+          tags: expect.objectContaining({ ask_kind: 'ask_user' })
+        })
+      )
+    })
+  })
+
+  describe('ask_user', () => {
+    const parkedOnQuestion = async (
+      receipt: AgentAnswerReceipt = { status: 'answered' }
+    ) => {
+      const answerAsk = vi.fn<AgentRestClient['answerAsk']>(async () => receipt)
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: source
+      })
+      session.start()
+      await session.sendMessage('pick for me')
+      emit(askUser('msg-1'))
+      return { session, answerAsk, emit }
+    }
+    const card = () =>
+      useAgentConversationStore().messages[0].parts.find(
+        (part) => part.type === 'askUser'
+      )
+    const answerPastBackoff = async (
+      session: ReturnType<typeof useAgentSession>,
+      answer: AgentAnswerRequest
+    ) => {
+      const answered = session.answerAsk('turn-1:call-1', answer)
+      await vi.advanceTimersByTimeAsync(PAST_ANSWER_RETRY_BACKOFF_MS)
+      await answered
+    }
+
+    it('posts the answer, free text included, against the ask it was given for', async () => {
+      const { session, answerAsk, emit } = await parkedOnQuestion()
+
+      await session.answerAsk('turn-1:call-1', {
+        selected: ['sdxl'],
+        other_text: 'a LoRA'
+      })
+
+      expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', {
+        selected: ['sdxl'],
+        other_text: 'a LoRA'
+      })
+      expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
+
+      emit(
+        wire({
+          type: 'agent_ask_resolved',
+          data: {
+            thread_id: 'th-1',
+            message_id: 'msg-1',
+            ask_id: 'turn-1:call-1',
+            status: 'answered',
+            selected: ['sdxl'],
+            other_text: 'a LoRA'
+          }
+        })
+      )
+
+      expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+      expect(card()).toMatchObject({
+        resolution: {
+          status: 'answered',
+          selected: ['sdxl'],
+          otherText: 'a LoRA'
+        }
+      })
+      expect(session.notices.value).toEqual([])
+    })
+
+    it('shows the free text the server committed, not the text this tab sent', async () => {
+      const { session, emit } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', {
+        selected: [],
+        other_text: 'a LoRA'
+      })
+
+      emit(
+        wire({
+          type: 'agent_ask_resolved',
+          data: {
+            thread_id: 'th-1',
+            message_id: 'msg-1',
+            ask_id: 'turn-1:call-1',
+            status: 'answered',
+            selected: [],
+            other_text: 'a ControlNet'
+          }
+        })
+      )
+
+      expect(card()).toMatchObject({
+        resolution: {
+          status: 'answered',
+          selected: [],
+          otherText: 'a ControlNet'
+        }
+      })
+    })
+
+    it('shows the answer the 202 committed when no frame follows', async () => {
+      const { session } = await parkedOnQuestion({
+        status: 'answered',
+        selected: ['sdxl'],
+        other_text: 'a LoRA'
+      })
+
+      await session.answerAsk('turn-1:call-1', {
+        selected: ['sdxl'],
+        other_text: 'a LoRA'
+      })
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(card()).toMatchObject({
+        resolution: {
+          status: 'answered',
+          selected: ['sdxl'],
+          otherText: 'a LoRA'
+        }
+      })
+      expect(session.notices.value).toEqual([])
+    })
+
+    it('reports the answer the 202 committed when another one won', async () => {
+      const { session, emit } = await parkedOnQuestion({
+        status: 'answered',
+        selected: ['flux']
+      })
+      emit(done('msg-1'))
+
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: ['flux'] }
+      })
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'agent ask resolved with a different answer'
+        }),
+        expect.objectContaining({
+          errorType: 'agent_ask_answer_superseded',
+          tags: {
+            selection_changed: true,
+            other_text_changed: false,
+            selection_known: true,
+            committed_selected_count: 1,
+            submitted_selected_count: 1,
+            ask_kind: 'ask_user'
+          }
+        })
+      )
+    })
+
+    it('warns once when the 202 and the frame both name another answer', async () => {
+      const { session, emit } = await parkedOnQuestion({
+        status: 'answered',
+        selected: ['flux']
+      })
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', ['flux']))
+
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: enMessages.agent.runApproval.answerSuperseded
+        }
+      ])
+    })
+
+    it('shows the answer a 409 reports as already committed', async () => {
+      const { session, answerAsk } = await parkedOnQuestion()
+      answerAsk.mockRejectedValue(
+        new AgentApiError('already answered', 409, {
+          error: 'already answered',
+          status: 'answered',
+          selected: ['flux']
+        })
+      )
+
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: ['flux'] }
+      })
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+    })
+
+    it.for([
+      ['no selection', { error: 'already answered', status: 'answered' }],
+      [
+        'a null selection',
+        { error: 'already answered', status: 'answered', selected: null }
+      ]
+    ] as const)(
+      'does not report a 409 with %s as another answer winning',
+      async ([, body]) => {
+        const { session, answerAsk } = await parkedOnQuestion()
+        answerAsk.mockRejectedValue(
+          new AgentApiError('already answered', 409, body)
+        )
+
+        await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+        expect(reportError).not.toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+        )
+        expect(session.notices.value).toEqual([])
+      }
+    )
+
+    it.for([
+      [
+        'a null selection',
+        {
+          error: 'already answered',
+          status: 'answered',
+          selected: null,
+          other_text: 'someone else'
+        }
+      ],
+      [
+        'no selection',
+        {
+          error: 'already answered',
+          status: 'answered',
+          other_text: 'someone else'
+        }
+      ]
+    ] as const)(
+      'reports a 409 whose free text alone shows another answer won (%s)',
+      async ([, body]) => {
+        const { session, answerAsk } = await parkedOnQuestion()
+        answerAsk.mockRejectedValue(
+          new AgentApiError('already answered', 409, body)
+        )
+
+        await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+        expect(card()).toMatchObject({
+          resolution: {
+            status: 'answered',
+            selected: [],
+            otherText: 'someone else'
+          }
+        })
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'agent_ask_answer_superseded',
+            tags: {
+              selection_changed: false,
+              other_text_changed: true,
+              selection_known: false,
+              committed_selected_count: undefined,
+              submitted_selected_count: 1,
+              ask_kind: 'ask_user'
+            }
+          })
+        )
+        expect(session.notices.value).toEqual([
+          {
+            level: 'error',
+            text: enMessages.agent.runApproval.answerSuperseded
+          }
+        ])
+      }
+    )
+
+    it.for([
+      ['reports', 'someone else', true],
+      ['does not report', 'a LoRA', false]
+    ] as const)(
+      '%s a 202 that names only free text (%s)',
+      async ([, otherText, superseded]) => {
+        const { session } = await parkedOnQuestion({
+          status: 'answered',
+          other_text: otherText
+        })
+
+        await session.answerAsk('turn-1:call-1', {
+          selected: [],
+          other_text: 'a LoRA'
+        })
+
+        expect(session.notices.value).toHaveLength(superseded ? 1 : 0)
+      }
+    )
+
+    it.for([
+      ['reports', 'someone else', true],
+      ['does not report', 'a LoRA', false]
+    ] as const)(
+      '%s a free-text-only frame (%s)',
+      async ([, otherText, superseded]) => {
+        const { session, emit } = await parkedOnQuestion()
+        await session.answerAsk('turn-1:call-1', {
+          selected: [],
+          other_text: 'a LoRA'
+        })
+
+        emit(
+          wire({
+            type: 'agent_ask_resolved',
+            data: {
+              thread_id: 'th-1',
+              message_id: 'msg-1',
+              ask_id: 'turn-1:call-1',
+              status: 'answered',
+              selected: [],
+              other_text: otherText
+            }
+          })
+        )
+
+        expect(session.notices.value).toHaveLength(superseded ? 1 : 0)
+      }
+    )
+
+    it('does not report a 409 naming only the same free text as another answer winning', async () => {
+      const { session, answerAsk } = await parkedOnQuestion()
+      answerAsk.mockRejectedValue(
+        new AgentApiError('already answered', 409, {
+          error: 'already answered',
+          status: 'answered',
+          other_text: 'a LoRA'
+        })
+      )
+
+      await session.answerAsk('turn-1:call-1', {
+        selected: ['sdxl'],
+        other_text: 'a LoRA'
+      })
+
+      expect(session.notices.value).toEqual([])
+    })
+
+    it('does not report an answered frame with a null selection as another answer winning', async () => {
+      const { session, emit } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', null))
+
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+      expect(session.notices.value).toEqual([])
+    })
+
+    it('puts the card back in service when the server rejects the selection', async () => {
+      const { session, answerAsk } = await parkedOnQuestion()
+      answerAsk.mockRejectedValueOnce(
+        new AgentApiError('selection is invalid', 422, undefined)
+      )
+
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      expect(card()).not.toHaveProperty('resolution')
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: enMessages.agent.askUser.answerRejected
+        }
+      ])
+
+      await session.answerAsk('turn-1:call-1', { selected: ['flux'] })
+
+      expect(answerAsk).toHaveBeenLastCalledWith('th-1', 'turn-1:call-1', {
+        selected: ['flux']
+      })
+    })
+
+    it('does not report a rejected answer as superseded by a later one', async () => {
+      const { session, answerAsk, emit } = await parkedOnQuestion()
+      answerAsk.mockRejectedValueOnce(
+        new AgentApiError('selection is invalid', 422, undefined)
+      )
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', ['flux']))
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: ['flux'] }
+      })
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+    })
+
+    it('reports an empty committed answer that replaced this one', async () => {
+      const { session, emit } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', []))
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: [] }
+      })
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: enMessages.agent.runApproval.answerSuperseded
+        }
+      ])
+    })
+
+    it('leaves a status-only 202 to the frame to report', async () => {
+      const { session, emit } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      expect(session.notices.value).toEqual([])
+
+      emit(askResolved('msg-1', 'turn-1:call-1', ['flux']))
+
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: enMessages.agent.runApproval.answerSuperseded
+        }
+      ])
+    })
+
+    it.for([400, 500])(
+      'marks the outcome unconfirmed when the answer may have landed (%i)',
+      async (status) => {
+        const { session, answerAsk } = await parkedOnQuestion()
+        answerAsk.mockRejectedValue(
+          new AgentApiError('blip', status, undefined)
+        )
+
+        await answerPastBackoff(session, { selected: ['flux'] })
+
+        expect(card()).toMatchObject({ resolution: { status: 'unconfirmed' } })
+      }
+    )
+
+    it('lets the server cancel replace an unconfirmed answer', async () => {
+      const { session, answerAsk, emit } = await parkedOnQuestion()
+      answerAsk.mockRejectedValue(
+        new AgentApiError('backend blip', 500, undefined)
+      )
+      await answerPastBackoff(session, { selected: ['flux'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', null, 'cancelled'))
+
+      expect(card()).toMatchObject({ resolution: { status: 'closed' } })
+    })
+
+    it.for<{
+      name: string
+      committed: Pick<AgentAskResolvedData, 'selected' | 'other_text'>
+      expected: AskUserResolution
+      changes: { selection_changed: boolean; other_text_changed: boolean }
+    }>([
+      {
+        name: 'a different option',
+        changes: { selection_changed: true, other_text_changed: true },
+        committed: { selected: ['flux'] },
+        expected: { status: 'answered', selected: ['flux'] }
+      },
+      {
+        name: 'a superset of it',
+        changes: { selection_changed: true, other_text_changed: false },
+        committed: { selected: ['sdxl', 'flux'], other_text: 'a LoRA' },
+        expected: {
+          status: 'answered',
+          selected: ['sdxl', 'flux'],
+          otherText: 'a LoRA'
+        }
+      },
+      {
+        name: 'a subset of it',
+        changes: { selection_changed: true, other_text_changed: false },
+        committed: { selected: [], other_text: 'a LoRA' },
+        expected: { status: 'answered', selected: [], otherText: 'a LoRA' }
+      },
+      {
+        name: 'free text alone',
+        changes: { selection_changed: true, other_text_changed: true },
+        committed: { selected: [], other_text: 'someone else' },
+        expected: {
+          status: 'answered',
+          selected: [],
+          otherText: 'someone else'
+        }
+      },
+      {
+        name: 'the same option with other free text',
+        changes: { selection_changed: false, other_text_changed: true },
+        committed: { selected: ['sdxl'], other_text: 'a VAE' },
+        expected: {
+          status: 'answered',
+          selected: ['sdxl'],
+          otherText: 'a VAE'
+        }
+      }
+    ])(
+      'shows the committed answer when $name won',
+      async ({ committed, expected, changes }) => {
+        const { session, emit } = await parkedOnQuestion()
+        await session.answerAsk('turn-1:call-1', {
+          selected: ['sdxl'],
+          other_text: 'a LoRA'
+        })
+
+        emit(
+          wire({
+            type: 'agent_ask_resolved',
+            data: {
+              thread_id: 'th-1',
+              message_id: 'msg-1',
+              ask_id: 'turn-1:call-1',
+              status: 'answered',
+              ...committed
+            }
+          })
+        )
+
+        const shown = card()
+        assert(shown?.type === 'askUser')
+        expect(shown.resolution).toEqual(expected)
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'agent_ask_answer_superseded',
+            tags: expect.objectContaining(changes)
+          })
+        )
+      }
+    )
+
+    it.for([403, 404, 501])(
+      'shows the card as no longer open here when the answer is refused with %i',
+      async (status) => {
+        const { session, answerAsk } = await parkedOnQuestion()
+        answerAsk.mockRejectedValueOnce(
+          new AgentApiError('refused', status, undefined)
+        )
+
+        await session.answerAsk('turn-1:call-1', { selected: ['flux'] })
+
+        expect(card()).toMatchObject({ resolution: { status: 'retired' } })
+        expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+      }
+    )
   })
 
   it('collapses a stale approval on 409 without surfacing an error', async () => {
@@ -2046,7 +2882,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('build it')
     emit(runApproval('msg-1'))
 
-    await session.answerAsk('turn-1:call-1', 'cancel')
+    await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
 
     expect(reportError).not.toHaveBeenCalled()
     expect(session.notices.value).toEqual([])
@@ -2076,7 +2912,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('build it')
     emit(runApproval('msg-1'))
 
-    await session.answerAsk('turn-1:call-1', 'run')
+    await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
       surface: 'agent',
@@ -2105,7 +2941,6 @@ describe('useAgentSession (v1 composition root)', () => {
     // Comfortably past the composable's answer backoff and the store's
     // resolution grace, without restating either: a test that pinned the exact
     // values would fail on a tuning change that broke nothing.
-    const PAST_ANSWER_RETRY_BACKOFF_MS = 5_000
     const PAST_ASK_RESOLUTION_GRACE_MS = 60_000
 
     const parkedOnApproval = async () => {
@@ -2138,11 +2973,11 @@ describe('useAgentSession (v1 composition root)', () => {
         expect(useAgentConversationStore().activeTurnId).toBeNull()
         expect(cardOnScreen()).toBe(true)
 
-        await session.answerAsk('turn-1:call-1', selection)
+        await session.answerAsk('turn-1:call-1', { selected: [selection] })
 
-        expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', [
-          selection
-        ])
+        expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', {
+          selected: [selection]
+        })
       }
     )
 
@@ -2157,9 +2992,11 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(useAgentConversationStore().activeTurnId).toBeNull()
       expect(cardOnScreen()).toBe(true)
 
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
-      expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', ['run'])
+      expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', {
+        selected: ['run']
+      })
       // No transport survives a settled turn, so no resolution frame can land
       // — the card has to retire on the response instead of waiting for one.
       expect(cardOnScreen()).toBe(false)
@@ -2169,7 +3006,7 @@ describe('useAgentSession (v1 composition root)', () => {
       const { session, emit } = await parkedOnApproval()
       emit(done('msg-1'))
 
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(cardOnScreen()).toBe(false)
       expect(session.answeringAskIds.value.size).toBe(0)
@@ -2193,7 +3030,7 @@ describe('useAgentSession (v1 composition root)', () => {
       emit(runApproval('msg-1'))
       emit(done('msg-1'))
 
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(cardOnScreen()).toBe(false)
       expect(session.answeringAskIds.value.size).toBe(0)
@@ -2219,7 +3056,7 @@ describe('useAgentSession (v1 composition root)', () => {
         await session.sendMessage('build it and run it')
         events.emit(runApproval('msg-1'))
 
-        await session.answerAsk('turn-1:call-1', 'run')
+        await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
         // Retrying reproduces it, so the card goes -- but it must not go
         // silently, or its disappearance is indistinguishable from the answer
@@ -2260,7 +3097,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(useAgentConversationStore().activeTurnId).toBe('msg-2')
       expect(cardOnScreen()).toBe(true)
 
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(cardOnScreen()).toBe(false)
       expect(session.answeringAskIds.value.size).toBe(0)
@@ -2289,7 +3126,9 @@ describe('useAgentSession (v1 composition root)', () => {
 
       vi.useFakeTimers()
       try {
-        const answered = session.answerAsk('turn-1:call-1', 'run')
+        const answered = session.answerAsk('turn-1:call-1', {
+          selected: ['run']
+        })
         await vi.advanceTimersByTimeAsync(PAST_ANSWER_RETRY_BACKOFF_MS)
         await answered
       } finally {
@@ -2298,8 +3137,8 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(answerAsk).toHaveBeenCalledTimes(2)
       expect(answerAsk.mock.calls).toEqual([
-        ['th-1', 'turn-1:call-1', ['run']],
-        ['th-1', 'turn-1:call-1', ['run']]
+        ['th-1', 'turn-1:call-1', { selected: ['run'] }],
+        ['th-1', 'turn-1:call-1', { selected: ['run'] }]
       ])
       expect(session.notices.value).toEqual([])
       expect(reportError).not.toHaveBeenCalled()
@@ -2312,7 +3151,7 @@ describe('useAgentSession (v1 composition root)', () => {
       vi.useFakeTimers()
       try {
         const { session } = await parkedOnApproval()
-        await session.answerAsk('turn-1:call-1', 'run')
+        await session.answerAsk('turn-1:call-1', { selected: ['run'] })
         expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
         expect(cardOnScreen()).toBe(true)
 
@@ -2331,13 +3170,21 @@ describe('useAgentSession (v1 composition root)', () => {
     // read as confirmation of ours.
     it('warns when the resolution names a selection other than the one it sent', async () => {
       const { session, emit } = await parkedOnApproval()
-      await session.answerAsk('turn-1:call-1', 'cancel')
+      await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
 
       emit(askResolved('msg-1'))
 
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',
-        errorType: 'agent_ask_answer_superseded'
+        errorType: 'agent_ask_answer_superseded',
+        tags: {
+          selection_changed: true,
+          other_text_changed: false,
+          selection_known: true,
+          committed_selected_count: 1,
+          submitted_selected_count: 1,
+          ask_kind: 'run_approval'
+        }
       })
       expect(session.notices.value).toHaveLength(1)
       expect(cardOnScreen()).toBe(false)
@@ -2364,7 +3211,9 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await session.sendMessage('build it and run it')
       emit(runApproval('msg-1'))
-      const answered = session.answerAsk('turn-1:call-1', 'run')
+      const answered = session.answerAsk('turn-1:call-1', {
+        selected: ['run']
+      })
 
       emit(askResolved('msg-1'))
       expect(cardOnScreen()).toBe(false)
@@ -2380,7 +3229,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     it('stays quiet when the resolution confirms the selection it sent', async () => {
       const { session, emit } = await parkedOnApproval()
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       emit(askResolved('msg-1'))
 
@@ -2405,7 +3254,7 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       events.emit(runApproval('msg-1'))
 
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(answerAsk).toHaveBeenCalledTimes(1)
       expect(cardOnScreen()).toBe(false)
@@ -2417,7 +3266,7 @@ describe('useAgentSession (v1 composition root)', () => {
     // server would discard.
     it('keeps a committed answer locked across a panel remount', async () => {
       const { session } = await parkedOnApproval()
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
       expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
       expect(cardOnScreen()).toBe(true)
 
@@ -2435,7 +3284,7 @@ describe('useAgentSession (v1 composition root)', () => {
       const session = useAgentSession({ rest, events: source })
       session.start()
 
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(rest.answerAsk).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
@@ -3367,7 +4216,9 @@ describe('useAgentSession (v1 composition root)', () => {
           })
       )
     const cancelMessage = vi.fn(
-      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+      async (): Promise<AgentCancelAccepted> => ({
+        status: 'cancelling'
+      })
     )
     const rest = fakeRest({
       postMessage,
@@ -3436,7 +4287,9 @@ describe('useAgentSession (v1 composition root)', () => {
       )
       .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
     const cancelMessage = vi.fn(
-      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+      async (): Promise<AgentCancelAccepted> => ({
+        status: 'cancelling'
+      })
     )
     const session = useAgentSession({
       rest: fakeRest({ postMessage, cancelMessage }),
@@ -3752,6 +4605,61 @@ describe('useAgentSession (v1 composition root)', () => {
       }
     ])
   })
+
+  it.for([
+    { statuses: ['complete'], completes: true },
+    { statuses: ['error'], completes: false },
+    { statuses: ['interrupted'], completes: false },
+    { statuses: ['interrupted', 'complete'], completes: true },
+    { statuses: ['complete', 'error'], completes: false }
+  ] as const)(
+    'reports a turn recovered with rows $statuses as completed: $completes',
+    async ({ statuses, completes }) => {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            ...statuses.map((rowStatus, index) => ({
+              ...historyRow(
+                2 + index,
+                'assistant',
+                'msg-1',
+                'answer',
+                index === 0 ? 'msg-1' : `msg-1-${index}`
+              ),
+              status: rowStatus
+            }))
+          ]
+        )
+      })
+      useWorkflowStore().attachWorkflow(
+        fromPartial<LoadedComfyWorkflow>({
+          path: 'workflows/a.json',
+          instanceId: 'tab-a'
+        }),
+        0
+      )
+      const conversation = useAgentConversationStore()
+      conversation.setTurnTabResolver(() => ({
+        status: 'known',
+        workflowInstanceId: 'tab-a'
+      }))
+      const completed: string[] = []
+      conversation.onTurnCompleted((path) => completed.push(path))
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+      status(false)
+      status(true)
+
+      await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+      expect(completed).toEqual(completes ? ['workflows/a.json'] : [])
+    }
+  )
 
   it('an empty interrupted row preserves the locally streamed reply', async () => {
     const interruptedWithoutParts = {
@@ -4357,6 +5265,49 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('keeps the media URL on the sent user entry', async () => {
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    await session.sendMessage('use this', [
+      {
+        ref: 'clip.mp4',
+        name: 'clip.mp4',
+        mediaUrl: '/api/view?filename=clip.mp4&type=input'
+      }
+    ])
+
+    expect(session.entries.value[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ mediaUrl: '/api/view?filename=clip.mp4&type=input' }]
+    })
+  })
+
+  it('keeps the kind and stored preview on a sent EXR', async () => {
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    await session.sendMessage('use this plate', [
+      {
+        ref: 'a1b2c3',
+        name: 'plate.exr',
+        mediaKind: 'image',
+        previewUrl: '/stored-preview.png'
+      }
+    ])
+
+    expect(session.entries.value[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ kind: 'image', previewUrl: '/stored-preview.png' }]
+    })
+  })
+
   it('serializes stable attachment refs without unrelated fields', async () => {
     const { postedBody, send } = wireSend()
 
@@ -4635,6 +5586,66 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(postMessage.mock.calls[0][1].currentTabUnbound).toBe(true)
     expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
+  })
+
+  function unboundSecondTurnSession(draft: () => DraftSnapshot) {
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockResolvedValue({
+        thread_id: 'th-9',
+        message_id: 'msg-1',
+        workflow_id: 'wf-fresh'
+      })
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        adopted: vi.fn(),
+        draft
+      }
+    })
+    session.start()
+    return { session, postMessage }
+  }
+
+  const LINKED_DRAFT: DraftSnapshot = {
+    content: {
+      nodes: [
+        { id: 1, type: 'CheckpointLoaderSimple' },
+        { id: 2, type: 'CLIPTextEncode' }
+      ],
+      links: [[1, 1, 1, 2, 1, 'CLIP']]
+    }
+  }
+  const SEVERED_DRAFT: DraftSnapshot = {
+    content: { nodes: LINKED_DRAFT.content.nodes, links: [] }
+  }
+
+  it('(h11) a second turn on a still-unbound tab sends no canvas at all (PM-1410)', async () => {
+    let draft = LINKED_DRAFT
+    const { session, postMessage } = unboundSecondTurnSession(() => draft)
+
+    await session.sendMessage('what is connected here?')
+    expect(postMessage.mock.calls[0][1].draft).toEqual(LINKED_DRAFT)
+
+    draft = SEVERED_DRAFT
+    await session.sendMessage('is it still connected?')
+
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('draft')
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('workflowId')
+  })
+
+  it.fails('(h12) a second turn on a still-unbound tab carries the connection the user severed (PM-1410)', async () => {
+    let draft = LINKED_DRAFT
+    const { session, postMessage } = unboundSecondTurnSession(() => draft)
+
+    await session.sendMessage('what is connected here?')
+    draft = SEVERED_DRAFT
+    await session.sendMessage('is it still connected?')
+
+    expect(postMessage.mock.calls[1][1].draft).toEqual(SEVERED_DRAFT)
   })
 
   it.for(['new-chat', 'history'])(
@@ -5180,6 +6191,95 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
     }
     expect(session.isStreaming.value).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_send_message_failed',
+      tags: { status: 500, operation: undefined, retryAfterSeconds: undefined }
+    })
+  })
+
+  it('tags a send failure with its status and operation so a thin alert stays diagnosable (PM-2103)', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError('', 503, undefined, undefined, 'post_thread_message')
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('boom again')).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_send_message_failed',
+      tags: {
+        status: 503,
+        operation: 'post_thread_message',
+        retryAfterSeconds: undefined
+      }
+    })
+  })
+
+  it('keeps rejected attachment names inline without reporting them', async () => {
+    const message =
+      'private-client-name.pdf is not a file type the agent accepts'
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError(message, 422, {
+          type: 'ATTACHMENT_TYPE_NOT_ACCEPTED',
+          rejected: ['private-client-name.pdf'],
+          rejected_count: 1
+        })
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('use this attachment')).toBe(false)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: `Message failed to send: ${message}`
+        }
+      ]
+    })
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('still reports a 422 send failure that is not an attachment refusal', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError('content too long', 422, {
+          type: 'VALIDATION_ERROR'
+        })
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('use this attachment')).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_send_message_failed',
+      tags: { status: 422, operation: undefined, retryAfterSeconds: undefined }
+    })
   })
 
   it('(l) newChat keeps the active turn running instead of cancelling it', async () => {
@@ -6262,31 +7362,6 @@ describe('thread resume (B17)', () => {
 
     expect(await session.loadThread('th-history')).toBe(false)
   })
-
-  it('listThreads returns the REST client thread list', async () => {
-    const listThreads = vi.fn(
-      async (): Promise<AgentThreadSummary[]> => [
-        {
-          created_at: '2026-07-07T00:00:00Z',
-          id: 'th-9',
-          last_message_at: '2026-07-07T00:00:00Z',
-          message_count: 2,
-          preview: 'build a duck',
-          status: 'active',
-          title: 'build a duck',
-          updated_at: '2026-07-07T00:00:00Z',
-          workflow_id: 'wf-9'
-        }
-      ]
-    )
-    const session = useAgentSession({
-      rest: fakeRest({ listThreads }),
-      events: fakeEvents().source
-    })
-    const threads = await session.listThreads()
-    expect(threads).toHaveLength(1)
-    expect(threads[0]).toMatchObject({ id: 'th-9', title: 'build a duck' })
-  })
 })
 
 describe('app:agent_error telemetry (TEL-8)', () => {
@@ -6388,7 +7463,8 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
       surface: 'agent',
-      errorType: 'agent_send_message_failed'
+      errorType: 'agent_send_message_failed',
+      tags: { status: 500, operation: undefined, retryAfterSeconds: undefined }
     })
   })
 
@@ -6453,7 +7529,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     })
   })
 
-  it('classifies a failure after the ack as post-acceptance and unretryable', async () => {
+  it('keeps an accepted turn live when thread persistence fails', async () => {
     const rest = fakeRest()
     const session = useAgentSession({ rest, events: fakeEvents().source })
     session.start()
@@ -6465,18 +7541,57 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 
     try {
       const ok = await session.sendMessage('make me a cat')
-      expect(ok).toBe(false)
+      expect(ok).toBe(true)
     } finally {
       setItem.mockRestore()
     }
 
     expect(rest.postMessage).toHaveBeenCalledTimes(1)
+    expect(session.threadId.value).toBe('th-1')
+    expect(session.entries.value.map(({ role }) => role)).toEqual([
+      'user',
+      'assistant'
+    ])
+    expect(session.isStreaming.value).toBe(true)
+    expect(reportError).toHaveBeenCalledWith(expect.any(DOMException), {
+      surface: 'agent',
+      errorType: 'agent_thread_persistence_failed'
+    })
     expect(telemetry.trackAgentError).toHaveBeenCalledWith({
       error_class: 'request_failed',
       failure_stage: 'post_acceptance',
       retryable: false,
       turn_accepted: true,
-      ui_treatment: 'inline_notice'
+      ui_treatment: 'none'
+    })
+  })
+
+  it('keeps an accepted turn live when workflow adoption fails', async () => {
+    const rest = fakeRest()
+    const adoptionError = new Error('adoption failed')
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {
+          throw adoptionError
+        }
+      }
+    })
+    session.start()
+
+    const ok = await session.sendMessage('make me a cat')
+
+    expect(ok).toBe(true)
+    expect(session.entries.value.map(({ role }) => role)).toEqual([
+      'user',
+      'assistant'
+    ])
+    expect(session.isStreaming.value).toBe(true)
+    expect(reportError).toHaveBeenCalledWith(adoptionError, {
+      surface: 'agent',
+      errorType: 'agent_workflow_adoption_callback_failed'
     })
   })
 
@@ -6721,7 +7836,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     emit(runApproval('msg-1'))
     telemetry.trackAgentError.mockClear()
 
-    await session.answerAsk('turn-1:call-1', 'run')
+    await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
     expect(telemetry.trackAgentError).toHaveBeenCalledWith({
       error_class: 'ask_answer_failed',
@@ -6746,7 +7861,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     emit(runApproval('msg-1'))
     telemetry.trackAgentError.mockClear()
 
-    await session.answerAsk('turn-1:call-1', 'cancel')
+    await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
 
     expect(telemetry.trackAgentError).not.toHaveBeenCalled()
   })
@@ -6765,7 +7880,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     emit(runApproval('msg-1'))
     telemetry.trackAgentError.mockClear()
 
-    await session.answerAsk('turn-1:call-1', 'run')
+    await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
     expect(telemetry.trackAgentError).toHaveBeenCalledWith({
       error_class: 'ask_answer_failed',
@@ -6796,6 +7911,28 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     })
   })
 
+  it('preserves default grouping when a failure bypasses the REST boundary', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async () => {
+        throw new AgentApiError('bad gateway', 502, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_history_load_failed',
+      tags: {},
+      fingerprint: undefined
+    })
+    const reportedError = vi.mocked(reportError).mock.calls[0][0] as Error
+    expect(reportedError.message).not.toContain('th-9')
+    expect(reportedError.stack ?? '').not.toContain('th-9')
+  })
+
   it('does not track a 404 thread-not-found history load as an error', async () => {
     const rest = fakeRest({
       getMessages: vi.fn(async () => {
@@ -6809,5 +7946,101 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 
     expect(telemetry.trackAgentError).not.toHaveBeenCalled()
     expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+  })
+})
+
+describe('useAgentSession credential refresh', () => {
+  const REFRESH_INTERVAL_MS = 4 * 60 * 1000
+
+  function startSession(
+    refreshCredential: AgentRestClient['refreshCredential'],
+    refreshCredentialDuringTurns = true
+  ) {
+    const { source, emit } = fakeEvents()
+    const scope = effectScope()
+    const session = scope.run(() =>
+      useAgentSession({
+        rest: fakeRest({ refreshCredential }),
+        events: source,
+        refreshCredentialDuringTurns
+      })
+    )
+    assert.exists(session)
+    session.start()
+    return { scope, session, emit }
+  }
+
+  it('re-sends the credential every interval while a turn runs and stops when it ends', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { scope, session, emit } = startSession(refreshCredential)
+
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS)
+    expect(refreshCredential).not.toHaveBeenCalled()
+
+    await session.sendMessage('build it')
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+
+    emit(done('msg-1'))
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+    scope.stop()
+  })
+
+  it('keeps refreshing for a turn a thread switch moved to the background', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { scope, session, emit } = startSession(refreshCredential)
+
+    await session.sendMessage('build it')
+    session.newChat()
+    expect(useAgentConversationStore().isStreaming).toBe(false)
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+
+    emit(done('msg-1'))
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+    scope.stop()
+  })
+
+  it('does not refresh when the host does not ask for it, as in the cloud', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { scope, session } = startSession(refreshCredential, false)
+
+    await session.sendMessage('build it')
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS * 2)
+
+    expect(refreshCredential).not.toHaveBeenCalled()
+    scope.stop()
+  })
+
+  it('reports a credential refresh that fails', async () => {
+    const failure = new Error('refresh failed')
+    const refreshCredential = vi.fn(async () => {
+      throw failure
+    })
+    const { scope, session } = startSession(refreshCredential)
+
+    await session.sendMessage('build it')
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS)
+
+    expect(reportError).toHaveBeenCalledWith(
+      failure,
+      expect.objectContaining({
+        errorType: 'failure_refreshing_agent_credential'
+      })
+    )
+    scope.stop()
+  })
+
+  it('stops refreshing when the panel scope is disposed mid-turn', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { scope, session } = startSession(refreshCredential)
+    await session.sendMessage('build it')
+
+    scope.stop()
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS * 2)
+
+    expect(refreshCredential).not.toHaveBeenCalled()
   })
 })

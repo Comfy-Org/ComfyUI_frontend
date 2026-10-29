@@ -1,5 +1,5 @@
-import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
+import { defineStore } from 'pinia'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
@@ -12,14 +12,13 @@ import {
   setGlobalSetting
 } from '@/platform/settings/globalSettingsApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useAuthStore } from '@/stores/authStore'
+import { agentSettingsAuthHeader } from '@/workbench/extensions/agent/services/agent/agentAuth'
 
 class AgentConsentAuthenticationError extends Error {
   override name = 'AgentConsentAuthenticationError'
 }
 
 export const useAgentConsentStore = defineStore('agentConsent', () => {
-  const authStore = useAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
   const { resolvedUserInfo } = useCurrentUser()
   const loadedIdentity = ref<string | null>(null)
@@ -95,7 +94,7 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
 
   async function requireAuth(sessionId: number, identity: string) {
     const send = webSessionRequests() ? await webSessionSend() : undefined
-    const auth = send ?? (await authStore.getWorkspaceAuthHeader())
+    const auth = send ?? (await agentSettingsAuthHeader())
     if (!stillOwns(sessionId, identity)) return null
     if (!auth) {
       throw new AgentConsentAuthenticationError(

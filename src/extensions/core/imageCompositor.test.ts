@@ -9,24 +9,11 @@ import {
   getCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyApp } from '@/scripts/app'
-import type { ComfyExtension } from '@/types/comfy'
-import type { useExtensionService } from '@/services/extensionService'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import './imageCompositor'
-
-const capturedExtensions = vi.hoisted<ComfyExtension[]>(() => [])
-
-vi.mock(import('@/services/extensionService'), () => ({
-  useExtensionService: () =>
-    fromPartial<ReturnType<typeof useExtensionService>>({
-      registerExtension: (ext: ComfyExtension) => {
-        capturedExtensions.push(ext)
-      }
-    })
-}))
+import { imageCompositorExtension } from './imageCompositor'
 
 const nodeId = toNodeId(11)
 const cacheNode = { id: nodeId } as unknown as LGraphNode
@@ -57,9 +44,7 @@ function makeNode() {
 
 function createdNode() {
   const made = makeNode()
-  const ext = capturedExtensions.find((e) => e.name === 'Comfy.ImageCompositor')
-  expect(ext).toBeDefined()
-  ext!.nodeCreated!(made.node, {} as ComfyApp)
+  imageCompositorExtension.nodeCreated!(made.node, fromPartial<ComfyApp>({}))
   return made
 }
 

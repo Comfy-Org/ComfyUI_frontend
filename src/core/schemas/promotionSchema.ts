@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 
 import { parseNodePropertyArray } from './parseNodePropertyArray'
 

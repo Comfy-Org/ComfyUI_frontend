@@ -19,6 +19,45 @@ test.use({
 })
 
 test(
+  'keeps a node reference chip on one line when the composer wraps',
+  { tag: ['@cloud', '@ui'] },
+  async ({ page, workflowSelection }) => {
+    await page.locator('#comfy-file-input').setInputFiles({
+      name: 'Portrait study.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(referenceWorkflow))
+    })
+    const panel = await new AgentPanel(page).open()
+    const editor = panel.getByRole('textbox')
+    await panel
+      .getByRole('button', { name: enMessages.agent.switchWorkflow })
+      .click()
+    await page.getByRole('menuitemradio', { name: /Portrait study/ }).click()
+    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+    workflowSelection.finishSave(true)
+    await editor.fill('@')
+    await panel
+      .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
+      .click()
+    await panel.getByRole('menuitem', { name: /Color balance/ }).click()
+    await editor.evaluate((element) => {
+      element.style.width = '80px'
+    })
+
+    const chip = editor.getByTestId('node-reference-chip')
+    // Visibility first: a hidden chip measures 0 and would satisfy the height
+    // bound without ever rendering on one line.
+    await expect(chip).toBeVisible()
+    await expect(chip).toHaveText('Color balance #12')
+    await expect
+      .poll(() =>
+        chip.evaluate((element) => element.getBoundingClientRect().height)
+      )
+      .toBeLessThanOrEqual(20)
+  }
+)
+
+test(
   'keeps asset attachments in the tray while inline references follow prompt editing and Undo',
   { tag: ['@cloud', '@ui'] },
   async ({ page, workflowSelection, assetUpload }) => {

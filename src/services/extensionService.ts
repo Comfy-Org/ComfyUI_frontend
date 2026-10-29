@@ -1,18 +1,21 @@
+import { once } from 'es-toolkit'
+import type { WatchHandle } from 'vue'
+
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import type { ComfyExtension } from '@/types/comfy'
+import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
-import { app } from '@/scripts/app'
-import type { ComfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
+import { provideExtensionService } from '@/services/extensionServiceAccess'
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
   return (
@@ -21,6 +24,56 @@ function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
       value !== null &&
       typeof (value as { then?: unknown }).then === 'function')
   )
+}
+
+const graphLoadLifecycleHooks = new Set<string>([
+  'beforeLoadGraph',
+  'beforeConfigureGraph',
+  'afterConfigureGraph',
+  'afterLoadGraph',
+  'onGraphLoadError'
+] satisfies (keyof ComfyExtension)[])
+
+const graphLoadEntrypoints = new Set<PropertyKey>([
+  'loadGraphData',
+  'loadApiJson',
+  'handleFile'
+] satisfies (keyof ComfyApp)[])
+
+function rejectNestedGraphLoad() {
+  return Promise.reject(
+    new Error('A graph-load lifecycle hook cannot start a nested graph load')
+  )
+}
+
+function createGraphLoadHookApp(app: ComfyApp) {
+  let dispatching = true
+  const hookApp = new Proxy(app, {
+    get(target, property) {
+      if (dispatching && graphLoadEntrypoints.has(property))
+        return rejectNestedGraphLoad
+      const value: unknown = Reflect.get(target, property, target)
+      return typeof value === 'function' ? value.bind(target) : value
+    }
+  })
+  return {
+    hookApp,
+    endDispatch: () => {
+      dispatching = false
+    }
+  }
+}
+
+type StartupHook =
+  | 'init'
+  | 'addCustomNodeDefs'
+  | 'registerCustomNodes'
+  | 'setup'
+
+export interface StartupHookFailure {
+  extension: ComfyExtension
+  method: StartupHook
+  error: unknown
 }
 
 export const useExtensionService = () => {
@@ -34,10 +87,19 @@ export const useExtensionService = () => {
   } = useErrorHandling()
 
   /**
-   * Register an extension with the app
-   * @param extension The extension to register
+   * Register an extension with the app.
+   * @returns A disposer that stops the extension's auth hooks and unregisters it.
    */
   const registerExtension = (extension: ComfyExtension) => {
+    if (extensionStore.isHoldingExtensions) {
+      extensionStore.holdExtension(extension)
+      return once(() => extensionStore.releaseHeldExtension(extension))
+    }
+    return registerExtensionNow(extension)
+  }
+
+  /** Registers an extension even while new ones are held. */
+  const registerExtensionNow = (extension: ComfyExtension) => {
     extensionStore.registerExtension(extension)
 
     const addKeybinding = wrapWithErrorHandling(
@@ -53,20 +115,20 @@ export const useExtensionService = () => {
     extension.settings?.forEach(addSetting)
     useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
     if (extension.getCustomWidgets) {
-      // TODO(huchenlei): We should deprecate the async return value of
-      // getCustomWidgets.
       void (async () => {
         if (extension.getCustomWidgets) {
-          const widgets = await extension.getCustomWidgets(app)
+          const widgets = await extension.getCustomWidgets(useApp())
           useWidgetStore().registerCustomWidgets(widgets)
         }
       })()
     }
 
+    const authHookHandles: WatchHandle[] = []
+
     if (extension.onAuthUserResolved) {
       const { onUserResolved } = useCurrentUser()
       const handleUserResolved = wrapWithErrorHandlingAsync(
-        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, app),
+        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, useApp()),
         (error) => {
           console.error('[Extension Auth Hook Error]', {
             extension: extension.name,
@@ -76,9 +138,11 @@ export const useExtensionService = () => {
           toastErrorHandler(error)
         }
       )
-      onUserResolved((user) => {
-        void handleUserResolved(user)
-      })
+      authHookHandles.push(
+        onUserResolved((user) => {
+          void handleUserResolved(user)
+        })
+      )
     }
 
     if (extension.onAuthTokenRefreshed) {
@@ -94,9 +158,11 @@ export const useExtensionService = () => {
           toastErrorHandler(error)
         }
       )
-      onTokenRefreshed(() => {
-        void handleTokenRefreshed()
-      })
+      authHookHandles.push(
+        onTokenRefreshed(() => {
+          void handleTokenRefreshed()
+        })
+      )
     }
 
     if (extension.onAuthUserLogout) {
@@ -112,10 +178,17 @@ export const useExtensionService = () => {
           toastErrorHandler(error)
         }
       )
-      onUserLogout(() => {
-        void handleUserLogout()
-      })
+      authHookHandles.push(
+        onUserLogout(() => {
+          void handleUserLogout()
+        })
+      )
     }
+
+    return once(() => {
+      authHookHandles.forEach((stop) => stop())
+      extensionStore.unregisterExtension(extension.name)
+    })
   }
 
   type RemoveLastAppParam<T> = T extends (
@@ -149,7 +222,7 @@ export const useExtensionService = () => {
         try {
           const fn = ext[method]
           if (typeof fn === 'function') {
-            results.push(fn.call(ext, ...args, app))
+            results.push(fn.call(ext, ...args, useApp()))
           }
         } catch (error) {
           console.error(
@@ -180,6 +253,10 @@ export const useExtensionService = () => {
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
+    const graphLoadHook = graphLoadLifecycleHooks.has(method)
+      ? createGraphLoadHookApp(useApp())
+      : undefined
+    const app = graphLoadHook?.hookApp ?? useApp()
     const logError = (ext: ComfyExtension, error: unknown) =>
       console.error(
         `Error calling extension '${ext.name}' method '${method}'`,
@@ -223,12 +300,44 @@ export const useExtensionService = () => {
         logError(ext, error)
       }
     }
-    return await Promise.all(pending)
+    try {
+      return await Promise.all(pending)
+    } finally {
+      graphLoadHook?.endDispatch()
+    }
+  }
+
+  /** Runs one startup step on the given extensions only, in order; returns the ones that threw. */
+  const invokeStartupHook = async <T extends StartupHook>(
+    extensions: ComfyExtension[],
+    method: T,
+    ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
+  ): Promise<StartupHookFailure[]> => {
+    const failures: StartupHookFailure[] = []
+    for (const extension of extensions) {
+      if (!extensionStore.isExtensionEnabled(extension.name)) continue
+      try {
+        const fn: unknown = extension[method]
+        if (typeof fn !== 'function') continue
+        if (method === 'setup')
+          legacyMenuCompat.setCurrentExtension(extension.name)
+        await fn.call(extension, ...args, useApp())
+      } catch (error) {
+        failures.push({ extension, method, error })
+      } finally {
+        if (method === 'setup') legacyMenuCompat.setCurrentExtension(null)
+      }
+    }
+    return failures
   }
 
   return {
     registerExtension,
+    registerExtensionNow,
     invokeExtensions,
-    invokeExtensionsAsync
+    invokeExtensionsAsync,
+    invokeStartupHook
   }
 }
+
+provideExtensionService(useExtensionService)

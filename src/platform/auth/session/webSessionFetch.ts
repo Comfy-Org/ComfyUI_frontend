@@ -71,7 +71,14 @@ export async function fetchOnWebSession(
     )
     const merged = new Headers(init.headers)
     for (const [name, value] of Object.entries(headers)) merged.set(name, value)
-    return fetch(url, { ...init, headers: merged, credentials })
+    return fetch(url, {
+      ...init,
+      headers: merged,
+      credentials:
+        new URL(url, location.href).origin === location.origin
+          ? 'same-origin'
+          : credentials
+    })
   }
 
   const response = await send(scope)
@@ -89,6 +96,7 @@ export async function fetchOnWebSession(
 
 /** What a signed-in tab's requests need from the web session. */
 export interface WebSessionRequests {
+  readonly refreshSession: () => Promise<void>
   /** Undefined unless this tab is signed in on the session. */
   readonly scope: () => Promise<WebSessionRequestScope | undefined>
   /** The signed-in session's team workspace, for URLs that carry no header. */

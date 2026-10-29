@@ -1,36 +1,37 @@
 <script setup lang="ts">
 import { useTimeout } from '@vueuse/core'
+import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed, ref, toValue, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
-import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
+import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
-import Popover from '@/components/ui/Popover.vue'
-import Button from '@/components/ui/button/Button.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import Button from '@comfyorg/design-system/button/Button'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
-import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
-import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
+import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
+import SubscribeToRunButton from '@/platform/billing/subscription/components/SubscribeToRun.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import LinearRunErrorWarning from '@/renderer/extensions/linearMode/LinearRunErrorWarning.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import PartnerNodesList from '@/renderer/extensions/linearMode/PartnerNodesList.vue'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
@@ -158,7 +159,7 @@ function replayAppModeTour() {
     <section
       v-if="!mobile"
       data-testid="linear-workflow-info"
-      class="flex h-12 items-center gap-2 border-x border-border-subtle bg-comfy-menu-bg px-4 py-2 contain-size"
+      class="flex h-12 items-center gap-2 border-x border-border/50 bg-background px-4 py-2 contain-size"
     >
       <span
         class="min-w-0 flex-1 truncate font-bold"
@@ -167,22 +168,22 @@ function replayAppModeTour() {
       <Button
         :tooltip="t('onboardingCoachmarks.appMode.replay')"
         tooltip-side="bottom"
-        variant="textonly"
+        variant="muted-textonly"
         size="icon"
         :aria-label="t('onboardingCoachmarks.appMode.replay')"
-        class="rounded-lg border border-solid border-border-default text-muted-foreground hover:border-interface-stroke hover:text-base-foreground"
+        class="border border-solid hover:border-border hover:text-foreground"
         @click="replayAppModeTour"
       >
-        <i class="icon-[lucide--circle-question-mark] size-4" />
+        <i class="icon-[lucide--circle-question-mark]" />
       </Button>
     </section>
     <div
-      class="flex h-full flex-col gap-2 border-x border-interface-stroke bg-comfy-menu-bg px-2 md:border-y"
+      class="flex h-full flex-col gap-2 border-x bg-background px-2 md:border-y"
     >
       <section
         v-coachmark="COACH_IDS.inputsList"
         data-testid="linear-widgets"
-        class="grow scroll-shadows-comfy-menu-bg overflow-y-auto contain-size"
+        class="grow scroll-shadows-background overflow-y-auto contain-size"
       >
         <AppModeWidgetList ref="widgetListRef" :mobile />
       </section>
@@ -193,12 +194,10 @@ function replayAppModeTour() {
         :to="toastTo"
       >
         <div
-          class="flex h-10 items-center gap-2 rounded-lg bg-base-foreground p-1 pr-2 text-base-background md:h-8 md:bg-secondary-background md:text-base-foreground"
+          class="flex h-10 items-center gap-2 rounded-lg bg-foreground p-1 pr-2 text-background md:h-8 md:bg-secondary md:text-foreground"
         >
           <template v-if="pendingJobQueues === 0">
-            <i
-              class="icon-[lucide--check] size-5 not-md:bg-success-background"
-            />
+            <i class="icon-[lucide--check] size-5 not-md:bg-success" />
             <span class="mr-auto" v-text="t('queue.jobAddedToQueue')" />
             <Button
               v-if="mobile"
@@ -219,7 +218,7 @@ function replayAppModeTour() {
         :id="linearInputDownloadStatusId"
         role="status"
         data-testid="linear-input-download-status"
-        class="mx-2 flex flex-col gap-2 rounded-lg border border-border-default bg-base-background p-3 text-sm"
+        class="mx-2 flex flex-col gap-2 rounded-lg border bg-background p-3 text-sm"
       >
         <div class="flex items-center gap-2">
           <Loader size="sm" />
@@ -236,12 +235,12 @@ function replayAppModeTour() {
           aria-valuemin="0"
           aria-valuemax="100"
           :aria-valuenow="inputDownloadProgress ?? undefined"
-          class="block h-1 overflow-hidden rounded-full bg-secondary-background"
+          class="block h-1 overflow-hidden rounded-full bg-secondary"
         >
           <span
             :class="
               cn(
-                'block h-full rounded-full bg-primary-background transition-[width]',
+                'block h-full rounded-full bg-primary transition-[width]',
                 inputDownloadProgress === null && 'w-1/3 animate-pulse'
               )
             "
@@ -257,7 +256,7 @@ function replayAppModeTour() {
       <section
         v-if="mobile"
         :data-testid="linearRunButtonTestId"
-        class="border-t border-node-component-border p-4 pb-6"
+        class="border-t p-4 pb-6"
       >
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
         <div v-coachmark="COACH_IDS.appRunButton">
@@ -267,8 +266,8 @@ function replayAppModeTour() {
           />
           <div v-else class="mt-4 flex">
             <PartnerNodesList mobile />
-            <Popover side="top" @open-auto-focus.prevent>
-              <template #button>
+            <PopoverRoot>
+              <PopoverTrigger as-child>
                 <Button size="lg" class="-mr-3 pr-7">
                   <i
                     v-if="batchCount == 1"
@@ -276,19 +275,28 @@ function replayAppModeTour() {
                   />
                   <div v-else class="tabular-nums" v-text="`${batchCount}x`" />
                 </Button>
-              </template>
-              <div
-                class="m-1 mb-2 text-node-component-slot-text"
-                v-text="t('linearMode.runCount')"
-              />
-              <ScrubableNumberInput
-                v-model="batchCount"
-                :aria-label="t('linearMode.runCount')"
-                :min="1"
-                :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
-                class="h-10 min-w-40"
-              />
-            </Popover>
+              </PopoverTrigger>
+              <PopoverContent
+                side="top"
+                :side-offset="5"
+                dismiss-on-viewport-change
+                class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
+                @open-auto-focus.prevent
+              >
+                <div
+                  class="m-1 mb-2 text-muted-foreground"
+                  v-text="t('linearMode.runCount')"
+                />
+                <ScrubableNumberInput
+                  v-model="batchCount"
+                  :aria-label="t('linearMode.runCount')"
+                  :min="1"
+                  :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
+                  class="h-10 min-w-40"
+                />
+                <PopoverArrow class="fill-background stroke-border/50" />
+              </PopoverContent>
+            </PopoverRoot>
             <Button
               variant="inverted"
               class="grow"
@@ -316,12 +324,12 @@ function replayAppModeTour() {
       <section
         v-else
         :data-testid="linearRunButtonTestId"
-        class="border-t border-node-component-border p-4 pb-6"
+        class="border-t p-4 pb-6"
       >
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
         <div v-coachmark="COACH_IDS.appRunButton">
           <div
-            class="m-1 mb-2 text-node-component-slot-text"
+            class="m-1 mb-2 text-muted-foreground"
             v-text="t('linearMode.runCount')"
           />
           <ScrubableNumberInput
@@ -338,7 +346,7 @@ function replayAppModeTour() {
           <Button
             v-else
             variant="inverted"
-            class="mt-4 w-full text-sm"
+            class="mt-4 w-full"
             size="lg"
             :aria-describedby="
               isPreparingInputDownloads
@@ -364,7 +372,7 @@ function replayAppModeTour() {
   </div>
   <div
     v-else-if="mobile"
-    class="flex size-full items-center bg-base-background p-4 text-center"
+    class="flex size-full items-center bg-background p-4 text-center"
     v-text="t('linearMode.mobileNoWorkflow')"
   />
 </template>

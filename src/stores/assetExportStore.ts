@@ -5,11 +5,10 @@ import { computed, ref, watch } from 'vue'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type {
-  TaskId,
   TaskResponse,
-  TaskResult,
   TaskStatus
-} from '@/platform/tasks/services/taskService'
+} from '@/platform/tasks/services/taskSchema'
+import type { TaskId, TaskResult } from '@/platform/tasks/services/taskService'
 import {
   TaskNotFoundError,
   taskService

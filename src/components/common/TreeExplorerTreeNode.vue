@@ -4,7 +4,7 @@
     :class="
       cn(
         'tree-node flex w-full items-center justify-between rounded-sm',
-        canDrop && 'ring-1 ring-base-foreground ring-inset'
+        canDrop && 'ring-1 ring-foreground ring-inset'
       )
     "
     :data-testid="`tree-node-${node.key}`"
@@ -43,8 +43,8 @@ import { computed, inject, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import EditableText from '@/components/common/EditableText.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
+import EditableText from '@comfyorg/design-system/common/EditableText'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable

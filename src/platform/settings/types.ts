@@ -1,7 +1,6 @@
-import type { ServerConfigValue } from '@/constants/serverConfig'
-import type { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
+import type { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
-import type { Keybinding } from '@/platform/keybindings/types'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import type { NodeBadgeMode } from '@/types/nodeSource'
 import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
@@ -246,6 +245,8 @@ export interface SettingParams<TValue = unknown> extends FormItem {
 /**
  * The base form item for rendering in a form.
  */
+export type ServerConfigValue = string | number | boolean | null | undefined
+
 export interface FormItem {
   name: string
   type: SettingInputType | SettingCustomRenderer

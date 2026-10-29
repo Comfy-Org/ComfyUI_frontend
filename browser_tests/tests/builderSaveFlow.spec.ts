@@ -39,10 +39,6 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
   })
 
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-  })
-
   test('Save as dialog appears for unsaved workflow', async ({ comfyPage }) => {
     const { saveAs } = comfyPage.appMode
     await setupBuilder(comfyPage)

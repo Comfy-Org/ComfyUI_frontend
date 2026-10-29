@@ -11,8 +11,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type {
   ComfyNode,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/workflowSchema'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import type {
@@ -25,10 +25,11 @@ import { api } from '@/scripts/api'
 import type { GlobalSubgraphData } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { UserFile } from '@/stores/userFileStore'
 import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 async function confirmOverwrite(name: string): Promise<boolean | null> {
   return await useDialogService().confirm({
@@ -167,12 +168,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
 
       return loaded
     }
-    override async promptSave(): Promise<string | null> {
-      return await useDialogService().prompt({
-        title: t('subgraphStore.saveBlueprint'),
-        message: t('subgraphStore.blueprintNamePrompt'),
-        defaultValue: this.filename
-      })
+    override readonly saveNamePrompt = {
+      title: 'subgraphStore.saveBlueprint',
+      message: 'subgraphStore.blueprintNamePrompt'
     }
     override unload(): void {
       //Skip unloading. Even if a workflow is closed after editing,

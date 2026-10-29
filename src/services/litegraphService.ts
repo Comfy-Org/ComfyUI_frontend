@@ -28,16 +28,17 @@ import type {
   GraphAddOptions,
   IContextMenuValue,
   INodeInputSlot,
-  Point,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import type {
   ExportedSubgraphInstance,
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
   ISerialisedNode
-} from '@/lib/litegraph/src/types/serialisation'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/serialisation'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -61,11 +62,17 @@ import {
   getInputSpecType,
   zDynamicGroupInputSpec
 } from '@/schemas/nodeDefSchema'
-import { ComfyApp, app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
+import { provideLitegraphService } from '@/core/graph/litegraphServiceAccess'
+import {
+  clipspace,
+  copyToClipspace,
+  pasteFromClipspace
+} from '@/scripts/clipspace'
 import { $el } from '@/scripts/ui/utils'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
@@ -74,12 +81,13 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { parseNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
-import { getErrorMessage } from '@/utils/errorUtil'
-import type { WidgetId } from '@/types/widgetId'
+import { getImageFileUrl } from '@/utils/hdrFormatUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isAnimatedOutput,
@@ -133,9 +141,6 @@ async function reencodeAsPngBlob(
     }, 'image/png')
   })
 }
-
-export const CONFIG = Symbol()
-export const GET_CONFIG = Symbol()
 
 export function getExtraOptionsForWidget(
   node: LGraphNode,
@@ -264,12 +269,12 @@ export const useLitegraphService = () => {
       }
     }
     node.strokeStyles['dragOver'] = function (this: LGraphNode) {
-      if (app.dragOverNode?.id == this.id) {
+      if (useApp().dragOverNode?.id == this.id) {
         return { color: 'dodgerblue' }
       }
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
-      if (app.lastExecutionError?.node_id == this.id) {
+      if (useApp().lastExecutionError?.node_id == this.id) {
         return { color: LiteGraph.NODE_ERROR_COLOUR, lineWidth: 3 }
       }
     }
@@ -325,7 +330,7 @@ export const useLitegraphService = () => {
     if (widgetInputSpec.type === 'COMFY_DYNAMICGROUP_V3')
       validateDynamicGroupWidgets(inputData, inputName)
     const widgetsBefore = new Set(node.widgets ?? [])
-    const result = widgetConstructor(node, inputName, inputData, app)
+    const result = widgetConstructor(node, inputName, inputData, useApp())
     const wrappedResult = result && !('type' in result) ? result : undefined
     const { minWidth = 1, minHeight = 1 } = wrappedResult ?? {}
     const returnedWidget = result && 'type' in result ? result : result?.widget
@@ -368,15 +373,15 @@ export const useLitegraphService = () => {
    * @internal Add inputs to the node.
    */
   function addInputs(node: LGraphNode, inputs: Record<string, InputSpec>) {
-    // Use input_order if available to ensure consistent widget ordering
     const orderedInputSpecs = getOrderedInputSpecs(
       node.constructor.nodeData ?? {},
       inputs
     )
 
-    // Create sockets and widgets in the determined order
-    for (const inputSpec of orderedInputSpecs) addInputSocket(node, inputSpec)
-    for (const inputSpec of orderedInputSpecs) addInputWidget(node, inputSpec)
+    for (const inputSpec of orderedInputSpecs) {
+      addInputSocket(node, inputSpec)
+      addInputWidget(node, inputSpec)
+    }
   }
 
   /**
@@ -436,7 +441,7 @@ export const useLitegraphService = () => {
       static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
 
       constructor() {
-        super(app.rootGraph, subgraph, instanceData)
+        super(useApp().rootGraph, subgraph, instanceData)
 
         subgraph.events.addEventListener('widget-promoted', () => {
           invalidateSubgraphPseudoWidgetCache(this)
@@ -711,13 +716,10 @@ export const useLitegraphService = () => {
 
     node.prototype.getExtraMenuOptions = function (canvas, options) {
       if (this.imgs) {
-        // If this node has images then we add an open in new tab item
         let img
         if (this.imageIndex != null) {
-          // An image is selected so select that
           img = this.imgs[this.imageIndex]
         } else if (this.overIndex != null) {
-          // No image is selected but one is hovered
           img = this.imgs[this.overIndex]
         }
         if (img) {
@@ -725,8 +727,7 @@ export const useLitegraphService = () => {
             {
               content: 'Open Image',
               callback: markCoreMediaMenuCallback(() => {
-                const url = new URL(img.src)
-                url.searchParams.delete('preview')
+                const url = getImageFileUrl(img)
                 void openFileInNewTab(url.toString())
               }, 'preview')
             },
@@ -734,8 +735,7 @@ export const useLitegraphService = () => {
             {
               content: 'Save Image',
               callback: markCoreMediaMenuCallback(() => {
-                const url = new URL(img.src)
-                url.searchParams.delete('preview')
+                const url = getImageFileUrl(img)
                 const filename = new URLSearchParams(url.search).get('filename')
                 downloadFile(url.toString(), filename ?? undefined)
               }, 'preview')
@@ -752,20 +752,19 @@ export const useLitegraphService = () => {
         }
       })
 
-      // prevent conflict of clipspace content
-      if (!ComfyApp.clipspace_return_node) {
+      if (!clipspace.returnNode) {
         options.push({
           content: 'Copy (Clipspace)',
           callback: () => {
-            ComfyApp.copyToClipspace(this)
+            copyToClipspace(this)
           }
         })
 
-        if (ComfyApp.clipspace != null) {
+        if (clipspace.current != null) {
           options.push({
             content: 'Paste (Clipspace)',
             callback: markCoreMediaMenuCallback(() => {
-              ComfyApp.pasteFromClipspace(this)
+              pasteFromClipspace(this)
             }, 'input')
           })
         }
@@ -954,7 +953,7 @@ export const useLitegraphService = () => {
       options
     )
 
-    const graph = useWorkflowStore().activeSubgraph ?? app.graph
+    const graph = useWorkflowStore().activeSubgraph ?? useApp().graph
     if (!node) return null
 
     graph.add(node, addOptions)
@@ -962,8 +961,8 @@ export const useLitegraphService = () => {
   }
 
   function getCanvasCenter(): Point {
-    if (!app.isGraphReady) return [0, 0]
-    const visibleArea = app.canvas.ds.visible_area
+    if (!useApp().isGraphReady) return [0, 0]
+    const visibleArea = useApp().canvas.ds.visible_area
     const [x, y, w, h] = visibleArea
     return [x + w / 2, y + h / 2]
   }
@@ -971,9 +970,9 @@ export const useLitegraphService = () => {
   function goToNode(nodeId: SerializedNodeId) {
     const parsedNodeId = parseNodeId(nodeId)
     if (!parsedNodeId) return
-    const graphNode = app.canvas.graph?.getNodeById(parsedNodeId)
+    const graphNode = useApp().canvas.graph?.getNodeById(parsedNodeId)
     if (!graphNode) return
-    app.canvas.animateToBounds(graphNode.boundingRect)
+    useApp().canvas.animateToBounds(graphNode.boundingRect)
   }
 
   function ensureBounds(nodes: LGraphNode[]) {
@@ -1022,3 +1021,5 @@ export const useLitegraphService = () => {
     updatePreviews
   }
 }
+
+provideLitegraphService(useLitegraphService)

@@ -2,9 +2,9 @@
   <div
     v-if="reconnecting"
     role="status"
-    class="fixed inset-0 z-10000 flex flex-col items-center justify-center gap-4 bg-base-background p-8 text-center"
+    class="fixed inset-0 z-blocking flex flex-col items-center justify-center gap-4 bg-background p-8 text-center"
   >
-    <h1 class="m-0 text-lg font-semibold text-base-foreground">
+    <h1 class="m-0 text-lg font-semibold">
       {{ $t('auth.webSession.reconnecting.title') }}
     </h1>
     <p class="m-0 max-w-md text-muted-foreground">
@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 
 const { reconnecting } = storeToRefs(useCloudWebSessionStore())

@@ -105,6 +105,7 @@ const ACTIVE_STANDARD = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   max_seats: 1,
@@ -476,7 +477,10 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
       const [purchase] = routes.topupRequests
       expect(transport(purchase)).toBe('xhr')
       expect(idempotencyKey(purchase)).toBeUndefined()
-      expect(purchase.postDataJSON()).toEqual({ amount_cents: 5_000 })
+      expect(purchase.postDataJSON()).toEqual({
+        amount_cents: 5_000,
+        idempotency_key: expect.stringMatching(/^[0-9a-f-]{36}$/i)
+      })
       await expect
         .poll(() => routes.balanceRequests.length)
         .toBeGreaterThan(readsBeforePurchase)

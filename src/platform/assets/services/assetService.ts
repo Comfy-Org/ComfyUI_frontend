@@ -28,6 +28,7 @@ import {
   isModelTypeCovered
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { isCloud } from '@/platform/distribution/types'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
@@ -531,12 +532,12 @@ function createAssetService() {
 
   /**
    * Whether widget-embedded asset pickers (canvas + Vue node model widgets) are
-   * enabled. Hardcoded to cloud: MODEL_NODE_MAPPINGS is only maintained for
+   * enabled on Comfy Cloud without a deployment: MODEL_NODE_MAPPINGS is maintained for
    * cloud asset tagging. NOT the asset-API gate — that is
    * useFeatureFlags().flags.assetsEnabled.
    */
   function isWidgetAssetPickerEnabled(): boolean {
-    return isCloud
+    return isCloud && !useDeploymentPickStore().bootDeployment
   }
 
   /**

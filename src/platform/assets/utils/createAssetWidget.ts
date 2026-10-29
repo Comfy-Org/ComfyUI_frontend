@@ -5,7 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IWidgetAssetOptions
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import {
   assetFilenameSchema,
@@ -77,7 +77,7 @@ function createAssetWidgetOptions({
         if (!validatedFilename.success) {
           console.error(
             'Invalid asset filename:',
-            validatedFilename.error.errors,
+            validatedFilename.error.issues,
             'for asset:',
             validatedAsset.data.id
           )

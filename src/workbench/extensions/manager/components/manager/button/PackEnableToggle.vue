@@ -9,7 +9,7 @@
       :aria-label="$t('manager.conflicts.warningTooltip')"
       @click="showConflictModal(true)"
     >
-      <i class="icon-[lucide--triangle-alert] size-6 text-warning-background" />
+      <i class="icon-[lucide--triangle-alert] size-6 text-warning" />
     </Button>
     <Switch
       v-if="!canToggleDirectly"
@@ -33,8 +33,8 @@ import { debounce } from 'es-toolkit/compat'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Switch from '@/components/ui/switch/Switch.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Switch from '@comfyorg/design-system/switch/Switch'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'

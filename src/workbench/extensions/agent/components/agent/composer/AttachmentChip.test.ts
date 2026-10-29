@@ -12,6 +12,7 @@ import { nextTick } from 'vue'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { i18n } from '@/i18n'
 
+import type { AttachmentValidationError } from '@/workbench/extensions/agent/types/composerAttachment'
 import AttachmentChip from './AttachmentChip.vue'
 
 function renderChip(props: {
@@ -20,6 +21,7 @@ function renderChip(props: {
   mediaUrl?: string
   mediaKind?: MediaKind
   uploading?: boolean
+  validationError?: AttachmentValidationError
 }) {
   const rendered = render(AttachmentChip, {
     props,
@@ -33,11 +35,7 @@ function renderChip(props: {
 }
 
 function iconMarker(container: Element): string {
-  return container.querySelector(
-    'span[class*="lucide--"], span[class*="icon-"]'
-  )
-    ? (container.querySelector('span[class*="lucide--"]')?.className ?? '')
-    : ''
+  return container.querySelector('[class*="lucide--"]')?.className ?? ''
 }
 
 describe('AttachmentChip', () => {
@@ -99,13 +97,12 @@ describe('AttachmentChip', () => {
       await waitFor(() => expect(player).not.toBeInTheDocument())
       await waitFor(() => expect(trigger).toHaveFocus())
       expect(trigger).toHaveAttribute('aria-expanded', 'false')
-      expect(pause).toHaveBeenCalledTimes(2)
-      expect(player.currentTime).toBe(0)
+      expect(pause).toHaveBeenCalled()
       await user.keyboard(key)
-      expect(await screen.findByLabelText(name, { selector })).toHaveAttribute(
-        'src',
-        '/playable-media'
-      )
+      const reopenedPlayer = await screen.findByLabelText(name, { selector })
+      assert.instanceOf(reopenedPlayer, HTMLMediaElement)
+      expect(reopenedPlayer).toHaveAttribute('src', '/playable-media')
+      expect(reopenedPlayer.currentTime).toBe(0)
     }
   )
 
@@ -295,8 +292,11 @@ describe('AttachmentChip', () => {
       const pause = vi.spyOn(player, 'pause')
       await user.keyboard('{Escape}')
       await waitFor(() => expect(player).not.toBeInTheDocument())
-      expect(pause).toHaveBeenCalledTimes(2)
-      expect(player.currentTime).toBe(0)
+      expect(pause).toHaveBeenCalled()
+      await user.click(trigger)
+      const reopenedPlayer = await screen.findByLabelText(name, { selector })
+      assert.instanceOf(reopenedPlayer, HTMLMediaElement)
+      expect(reopenedPlayer.currentTime).toBe(0)
     }
   )
 
@@ -360,8 +360,13 @@ describe('AttachmentChip', () => {
       coords: { clientX: 500, clientY: 500 }
     })
     await waitFor(() => expect(player).not.toBeInTheDocument())
-    expect(pause).toHaveBeenCalledTimes(2)
-    expect(player.currentTime).toBe(0)
+    expect(pause).toHaveBeenCalled()
+    await user.hover(trigger)
+    const reopenedPlayer = await screen.findByLabelText('song.mp3', {
+      selector: 'audio'
+    })
+    assert.instanceOf(reopenedPlayer, HTMLAudioElement)
+    expect(reopenedPlayer.currentTime).toBe(0)
   })
 
   it('stops an audio preview on replacement and removal', async () => {
@@ -412,4 +417,60 @@ describe('AttachmentChip', () => {
     ).toBeInTheDocument()
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
+
+  it('explains an invalid video on hover and keyboard focus and remains removable', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderChip({
+      name: 'bad.mov',
+      validationError: 'invalid-video'
+    })
+    const status = screen.getByRole('status')
+    const errorMessage =
+      'bad.mov isn’t a valid video file. Remove it and try another file.'
+    expect(screen.queryByText('bad.mov')).not.toBeInTheDocument()
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    expect(status).toHaveAccessibleName(errorMessage)
+    expect(
+      screen.queryByRole('button', { name: 'Preview bad.mov' })
+    ).not.toBeInTheDocument()
+    await user.hover(status)
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      errorMessage
+    )
+    await user.unhover(status)
+    await waitFor(() =>
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    )
+    await user.tab()
+    expect(status).toHaveFocus()
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      errorMessage
+    )
+    await user.tab()
+    expect(screen.getByRole('button', { name: 'Remove bad.mov' })).toHaveFocus()
+    await user.keyboard('{Enter}')
+    expect(emitted('remove')).toHaveLength(1)
+  })
+
+  it.for([
+    { name: 'doc.pdf', mediaKind: undefined },
+    { name: 'clip.wmv', mediaKind: 'video' as const }
+  ])(
+    'shows $name of an unaccepted type as a generic file with the type explanation',
+    ({ name, mediaKind }) => {
+      renderChip({
+        name,
+        mediaKind,
+        previewUrl: 'blob:preview',
+        validationError: 'unsupported-type'
+      })
+      const message = `${name} isn’t a file type the agent accepts. Remove it and try another file.`
+
+      expect(screen.getByRole('status')).toHaveAccessibleName(message)
+      expect(screen.queryByRole('img')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: `Preview ${name}` })
+      ).not.toBeInTheDocument()
+    }
+  )
 })

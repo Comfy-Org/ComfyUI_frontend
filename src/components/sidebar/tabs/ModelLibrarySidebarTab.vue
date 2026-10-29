@@ -9,7 +9,7 @@
         :aria-label="$t('g.refresh')"
         @click="withLoadFailureToast(() => modelStore.refresh())"
       >
-        <i class="icon-[lucide--refresh-cw] size-4" />
+        <i class="icon-[lucide--refresh-cw]" />
       </Button>
       <Button
         v-if="!flags.assetsEnabled"
@@ -20,7 +20,7 @@
         :aria-label="$t('g.loadAllFolders')"
         @click="withLoadFailureToast(() => modelStore.loadModels())"
       >
-        <i class="icon-[lucide--cloud-download] size-4" />
+        <i class="icon-[lucide--cloud-download]" />
       </Button>
     </template>
     <template #header>
@@ -28,6 +28,12 @@
         <SearchInput
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="
+            $t('g.searchPlaceholder', {
+              subject: $t('sideToolbar.labels.models')
+            })
+          "
           :placeholder="
             $t('g.searchPlaceholder', {
               subject: $t('sideToolbar.labels.models')
@@ -38,7 +44,7 @@
         <p
           v-if="searchResults.capped"
           role="status"
-          class="mx-2 my-1 text-xs text-muted"
+          class="mx-2 my-1 text-xs text-muted-foreground"
         >
           {{
             $t('sideToolbar.searchResultsCapped', {
@@ -72,13 +78,13 @@
 import { computed, onMounted, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelPreview from '@/components/sidebar/tabs/modelLibrary/ModelPreview.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
@@ -204,14 +210,14 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
       data: model,
       getIcon() {
         if (model) {
-          return model.image ? 'pi pi-image' : 'pi pi-file'
+          return model.image ? 'icon-[lucide--image]' : 'icon-[lucide--file]'
         }
         if (folder) {
           return folder.state === ResourceState.Loading
-            ? 'pi pi-spin pi-spinner'
-            : 'pi pi-folder'
+            ? 'animate-spin motion-reduce:animate-none icon-[lucide--loader-circle]'
+            : 'icon-[lucide--folder]'
         }
-        return 'pi pi-folder'
+        return 'icon-[lucide--folder]'
       },
       getIconImage() {
         return (model && getModelPreviewUrl(model)) || undefined
@@ -333,10 +339,3 @@ watch(
   }
 )
 </script>
-
-<style scoped>
-:deep(.pi-fake-spacer) {
-  height: 1px;
-  width: 16px;
-}
-</style>

@@ -14,15 +14,12 @@
         role="status"
         class="mt-2 flex items-start gap-2 text-sm text-muted-foreground"
       >
-        <i class="pi pi-info-circle mt-0.5" aria-hidden="true" />
+        <i class="mt-0.5 icon-[lucide--info]" aria-hidden="true" />
         <span>{{ hint }}</span>
       </div>
     </div>
     <div class="flex shrink-0 flex-wrap justify-end gap-4">
-      <div
-        v-if="type === 'overwriteBlueprint'"
-        class="flex flex-col justify-start gap-1"
-      >
+      <div v-if="type === 'overwriteBlueprint'" class="flex flex-col gap-1">
         <div class="flex gap-4">
           <input
             id="doNotAskAgain"
@@ -42,8 +39,8 @@
         >
           <template #link>
             <Button
-              variant="textonly"
-              class="cursor-pointer p-0 text-sm text-muted-foreground underline hover:bg-transparent"
+              variant="muted-textonly"
+              class="p-0 text-sm underline hover:bg-transparent"
               @click="openBlueprintOverwriteSetting"
             >
               {{ t('missingModelsDialog.reEnableInSettingsLink') }}
@@ -58,11 +55,11 @@
         autofocus
         @click="onCancel"
       >
-        <i class="pi pi-undo" />
+        <i class="icon-[lucide--undo-2]" />
         {{ $t('g.cancel') }}
       </Button>
       <Button v-if="type === 'default'" variant="primary" @click="onConfirm">
-        <i class="pi pi-check" />
+        <i class="icon-[lucide--check]" />
         {{ $t('g.confirm') }}
       </Button>
       <Button
@@ -70,7 +67,7 @@
         variant="destructive"
         @click="onConfirm"
       >
-        <i class="pi pi-trash" />
+        <i class="icon-[lucide--trash-2]" />
         {{ $t('g.delete') }}
       </Button>
       <Button
@@ -78,17 +75,17 @@
         variant="destructive"
         @click="onConfirm"
       >
-        <i class="pi pi-save" />
+        <i class="icon-[lucide--save]" />
         {{ $t('g.overwrite') }}
       </Button>
       <template v-else-if="type === 'dirtyClose'">
         <Button variant="secondary" @click="onDeny">
-          <i class="pi pi-times" />
+          <i class="icon-[lucide--x]" />
           {{ denyLabel ?? $t('g.no') }}
         </Button>
         <Button autofocus @click="onConfirm">
-          <i class="pi pi-save" />
-          {{ $t('g.save') }}
+          <i class="icon-[lucide--save]" />
+          {{ confirmLabel ?? $t('g.save') }}
         </Button>
       </template>
       <Button
@@ -96,7 +93,7 @@
         variant="destructive"
         @click="onConfirm"
       >
-        <i class="pi pi-eraser" />
+        <i class="icon-[lucide--eraser]" />
         {{ $t('desktopMenu.reinstall') }}
       </Button>
       <!-- Info - just show an OK button -->
@@ -105,7 +102,7 @@
       </Button>
       <!-- Invalid - just show a close button. -->
       <Button v-else variant="primary" @click="onCancel">
-        <i class="pi pi-times" />
+        <i class="icon-[lucide--x]" />
         {{ $t('g.close') }}
       </Button>
     </div>
@@ -116,7 +113,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import type { ConfirmationDialogType } from '@/components/dialog/content/confirmationDialogTypes'
@@ -129,6 +126,7 @@ const props = defineProps<{
   itemList?: string[]
   hint?: string
   denyLabel?: string
+  confirmLabel?: string
 }>()
 
 const { t } = useI18n()

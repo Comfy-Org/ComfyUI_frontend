@@ -1,0 +1,111 @@
+{
+  "id": "camera-authoring",
+  "capability": "Camera authoring",
+  "description": "CameraInfo and CameraAngle node viewports: camera state and orbit/roll/look-through math, Three.js handles, overlays and inset previews, widget-value bridges, Vue widgets, and extension registration. The shared Three.js renderer, Load3D viewport factory, load3d components, and viewport node wiring remain external host dependencies.",
+  "modules": [
+    {
+      "path": "src/extensions/core/load3d/components/cameraAngle/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/extensions/core/load3d/components/cameraInfo/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/extensions/core/load3d/composables/useCameraAngle.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/load3d/composables/useCameraAngle.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/load3d/composables/useCameraInfo.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/load3d/composables/useCameraInfo.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/load3d/cameraAngle.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/load3d/cameraAngle.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/load3d/cameraAngle/**",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/load3d/cameraInfo.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/load3d/cameraInfo/widgetBridge.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/load3d/cameraInfo/widgetBridge.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Camera state math converts orbit, roll, look-at, and look-through drags without drift",
+      "checks": [
+        "packages/viewport3d/src/cameraInfo/cameraTransform.test.ts",
+        "packages/viewport3d/src/cameraInfo/lookThroughDragMath.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/orbitDragMath.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/rollDragMath.test.ts",
+        "packages/viewport3d/src/cameraAngle/cameraAngleMath.test.ts"
+      ]
+    },
+    {
+      "name": "Widget bridges read, clamp, and write camera node widget values",
+      "checks": [
+        "src/extensions/core/load3d/cameraInfo/widgetBridge.test.ts",
+        "src/extensions/core/load3d/cameraAngle/widgetBridge.test.ts",
+        "src/extensions/core/load3d/composables/useCameraInfo.test.ts",
+        "src/extensions/core/load3d/composables/useCameraAngle.test.ts"
+      ]
+    },
+    {
+      "name": "Viewports, handles, overlays, and previews pick, drag, render, and dispose Three.js objects",
+      "checks": [
+        "packages/viewport3d/src/cameraInfo/CameraInfoViewport.test.ts",
+        "packages/viewport3d/src/cameraInfo/CameraInfoOverlay.test.ts",
+        "packages/viewport3d/src/cameraInfo/subjectCameraPreview.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/CameraHandle.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/OrbitHandles.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/RollHandle.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/TargetHandle.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/handlePicking.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/pointerInteraction.test.ts",
+        "packages/viewport3d/src/cameraAngle/CameraAngleViewport.test.ts",
+        "packages/viewport3d/src/cameraAngle/SubjectBox.test.ts",
+        "packages/viewport3d/src/cameraAngle/orbitGizmos.test.ts"
+      ]
+    },
+    {
+      "name": "Camera widgets render controls and the CameraAngle extension registers its node widget",
+      "checks": [
+        "src/extensions/core/load3d/components/cameraInfo/CameraInfo.test.ts",
+        "src/extensions/core/load3d/components/cameraAngle/CameraAngle.test.ts",
+        "src/extensions/core/load3d/cameraAngle.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Existing imports and runtime behavior remain unchanged; classified callers such as light authoring expose cross-domain findings rather than receiving new dependency permissions.",
+    "Classification does not move the shared Three.js renderer, Load3D viewport factory, load3d components, or viewport node wiring into camera authoring.",
+    "CameraInfo and CameraAngle widget names and serialized widget values remain unchanged."
+  ],
+  "deepImports": "inventory"
+}

@@ -52,14 +52,14 @@ const zImageInputSpec = zBaseInputOptions.extend({
   type: z.literal('IMAGE'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z.record(z.unknown()).optional()
+  options: z.record(z.string(), z.unknown()).optional()
 })
 
 const zImageCompareInputSpec = zBaseInputOptions.extend({
   type: z.literal('IMAGECOMPARE'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z.record(z.unknown()).optional()
+  options: z.record(z.string(), z.unknown()).optional()
 })
 
 const zBoundingBoxInputSpec = zBaseInputOptions.extend({
@@ -89,11 +89,11 @@ const zChartInputSpec = zBaseInputOptions.extend({
   name: z.string(),
   isOptional: z.boolean().optional(),
   chartType: z.enum(['bar', 'line']).optional(),
-  data: z.object({}).optional(),
+  data: z.record(z.string(), z.unknown()).optional(),
   options: z
     .object({
       type: z.enum(['bar', 'line']).optional(),
-      data: z.object({}).optional()
+      data: z.record(z.string(), z.unknown()).optional()
     })
     .optional()
 })
@@ -209,6 +209,14 @@ const zVideoEditInputSpec = zBaseInputOptions.extend({
   default: zVideoEditValue.optional()
 })
 
+const zVideoConcatInputSpec = zBaseInputOptions.extend({
+  type: z.literal('VIDEO_CONCAT'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  source: z.string(),
+  default: z.object({ order: z.array(z.string()).optional() }).optional()
+})
+
 const zResolutionPreviewInputSpec = zBaseInputOptions.extend({
   type: z.literal('RESOLUTION_PREVIEW'),
   name: z.string(),
@@ -243,6 +251,7 @@ const zInputSpec = z.union([
   zCurveInputSpec,
   zRangeInputSpec,
   zVideoEditInputSpec,
+  zVideoConcatInputSpec,
   zResolutionPreviewInputSpec,
   zCustomInputSpec
 ])
@@ -259,9 +268,9 @@ const zOutputSpec = z.object({
 
 // Main node definition schema
 export const zComfyNodeDef = z.object({
-  inputs: z.record(zInputSpec),
+  inputs: z.record(z.string(), zInputSpec),
   outputs: z.array(zOutputSpec),
-  hidden: z.record(z.any()).optional(),
+  hidden: z.record(z.string(), z.unknown()).optional(),
 
   name: z.string(),
   display_name: z.string(),
@@ -293,6 +302,7 @@ export type TextareaInputSpec = z.infer<typeof zTextareaInputSpec>
 export type CurveInputSpec = z.infer<typeof zCurveInputSpec>
 export type RangeInputSpec = z.infer<typeof zRangeInputSpec>
 export type VideoEditInputSpec = z.infer<typeof zVideoEditInputSpec>
+type VideoConcatInputSpec = z.infer<typeof zVideoConcatInputSpec>
 export type ResolutionPreviewInputSpec = z.infer<
   typeof zResolutionPreviewInputSpec
 >
@@ -354,6 +364,12 @@ export const isGalleriaInputSpec = (
   inputSpec: InputSpec
 ): inputSpec is GalleriaInputSpec => {
   return inputSpec.type === 'GALLERIA'
+}
+
+export const isVideoConcatInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is VideoConcatInputSpec => {
+  return inputSpec.type === 'VIDEO_CONCAT'
 }
 
 export const isResolutionPreviewInputSpec = (

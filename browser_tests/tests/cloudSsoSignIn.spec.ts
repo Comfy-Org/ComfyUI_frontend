@@ -289,15 +289,14 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
       expect(ssoStarts).toEqual([])
     })
 
-    test('an sso_error ingest sends back shows its message on the login page', async ({
+    test('an sso_error ingest sends back shows its message on the login page, then leaves the URL', async ({
       page
     }) => {
       await page.goto(`${APP_URL}/?sso_error=SSO_ORG_DISABLED`)
 
-      await expect(page).toHaveURL(
-        /\/cloud\/login\?.*sso_error=SSO_ORG_DISABLED/
-      )
       await expect(page.getByText(SSO_COPY.errors.orgDisabled)).toBeVisible()
+      await expect(page).toHaveURL(/\/cloud\/login/)
+      await expect(page).not.toHaveURL(/sso_error=/)
     })
 
     test('a customer record refused with sso_required shows the SSO notice on the page, not a failure toast', async ({

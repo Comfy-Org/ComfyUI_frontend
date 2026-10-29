@@ -1,20 +1,29 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
+import type {
+  LGraphNode,
+  LLink,
+  SubgraphInput,
+  SubgraphOutput
+} from '@comfyorg/graph-model/entityRegistry'
+
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { LabelPosition } from '@/lib/litegraph/src/draw'
-import type { OptionalProps, Point } from '@/lib/litegraph/src/interfaces'
+import type { OptionalProps } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
+} from '@comfyorg/graph-model/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import {
+  NodeSlot,
+  provideNodeInputSlotGuard
+} from '@/lib/litegraph/src/node/NodeSlot'
 import { inputHasLink, inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+
+import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   alwaysVisible?: boolean
@@ -130,3 +139,5 @@ function linkOf(slot: NodeInputSlot): LLink | undefined {
   const { graph } = slot.node
   return graph ? inputLink(graph, slot.node.id, indexOf(slot)) : undefined
 }
+
+provideNodeInputSlotGuard((slot) => slot instanceof NodeInputSlot)

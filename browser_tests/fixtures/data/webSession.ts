@@ -42,6 +42,7 @@ export const WEB_SESSION: WebSessionResponse = {
 export const WEB_SESSION_MINT: ExchangeTokenResponse = {
   token: 'session-jwt-e2e',
   expires_at: '2099-01-01T00:00:00Z',
+  user_id: 'uid-1',
   workspace: {
     id: TEAM_WORKSPACE.id,
     name: TEAM_WORKSPACE.name,
@@ -61,6 +62,17 @@ export function currentWorkspace(
     type: workspace.type,
     role: workspace.role
   }
+}
+
+/** A Team plan on another user's personal-type workspace, joined as a member. */
+export const SHARED_PERSONAL_TEAM_WORKSPACE: WorkspaceWithRole = {
+  id: 'ws-shared-personal',
+  name: 'Shared Personal Workspace',
+  type: 'personal',
+  subscription_tier: 'TEAM',
+  created_at: '2026-01-01T00:00:00Z',
+  joined_at: '2026-02-01T00:00:00Z',
+  role: 'member'
 }
 
 export const WORKSPACE_ACCESS_DENIED: ErrorResponse = {

@@ -12,11 +12,11 @@ import {
   LGraphCanvas,
   LGraphGroup
 } from '@/lib/litegraph/src/litegraph'
-import type { CanvasEventDetail } from '@/lib/litegraph/src/types/events'
+import type { CanvasEventDetail } from '@comfyorg/graph-model/events'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSelectionStore } from '@/core/selection/selectionStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toGroupId } from '@/types/groupId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import {
   createMockCanvasRenderingContext2D,
@@ -61,13 +61,13 @@ describe('ColorPickerButton', () => {
   it('should render when nodes are selected', () => {
     setCanvasSelection([createMockPositionable()])
     renderComponent()
-    expect(screen.getByTestId('color-picker-button')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Color' })).toBeInTheDocument()
   })
 
   it('should toggle color picker visibility on button click', async () => {
     setCanvasSelection([createMockPositionable()])
     const { user } = renderComponent()
-    const button = screen.getByTestId('color-picker-button')
+    const button = screen.getByRole('button', { name: 'Color' })
 
     expect(screen.queryByTestId('noColor')).not.toBeInTheDocument()
 
@@ -91,7 +91,9 @@ describe('ColorPickerButton', () => {
     await user.tab()
 
     expect(screen.getByRole('button', { name: 'No Color' })).toHaveFocus()
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('No Color')
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      'No Color'
+    )
   })
 
   it('clears the color when the active swatch is selected again', async () => {

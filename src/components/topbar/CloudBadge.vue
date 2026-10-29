@@ -19,7 +19,7 @@ const {
   displayMode = 'full',
   reverseOrder,
   noPadding,
-  backgroundColor = 'var(--comfy-menu-bg)'
+  backgroundColor = 'var(--background)'
 } = defineProps<{
   displayMode?: 'full' | 'compact' | 'icon-only'
   reverseOrder?: boolean

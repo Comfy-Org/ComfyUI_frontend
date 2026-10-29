@@ -2,10 +2,10 @@ import { toRaw } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
-import UnsavedChangesContent from '@/components/dialog/content/setting/keybinding/UnsavedChangesContent.vue'
-import UnsavedChangesHeader from '@/components/dialog/content/setting/keybinding/UnsavedChangesHeader.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
+import UnsavedChangesContent from '@/platform/keybindings/components/UnsavedChangesContent.vue'
+import UnsavedChangesHeader from '@/platform/keybindings/components/UnsavedChangesHeader.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
@@ -13,11 +13,11 @@ import { uploadFile } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { KeybindingImpl } from './keybinding'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingService } from './keybindingService'
-import { useKeybindingStore } from './keybindingStore'
-import type { KeybindingPreset } from './types'
-import { zKeybindingPreset } from './types'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import type { KeybindingPreset } from '@comfyorg/keybindings/types'
+import { zKeybindingPreset } from '@comfyorg/keybindings/types'
 
 const PRESETS_DIR = 'keybindings'
 
@@ -114,7 +114,7 @@ export function useKeybindingPresetService() {
   function applyPreset(preset: KeybindingPreset) {
     keybindingStore.resetAllKeybindings()
     for (const binding of preset.unsetBindings) {
-      keybindingStore.unsetKeybinding(new KeybindingImpl(binding))
+      keybindingStore.addUserUnsetKeybinding(new KeybindingImpl(binding))
     }
     for (const binding of preset.newBindings) {
       keybindingStore.addUserKeybinding(new KeybindingImpl(binding))

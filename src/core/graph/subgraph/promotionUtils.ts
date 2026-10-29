@@ -5,26 +5,29 @@ import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { LinkId } from '@/types/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useLitegraphService } from '@/services/litegraphService'
+import {
+  providePromoteRecommendedWidgets,
+  useCanvasStore
+} from '@/renderer/core/canvas/canvasStore'
+import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
-import type { WidgetId } from '@/types/widgetId'
-import { widgetId } from '@/types/widgetId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
@@ -606,7 +609,7 @@ function nodeWidgets(n: LGraphNode): WidgetItem[] {
 
 export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
   if (subgraphNode.properties.previewExposures !== undefined) return
-  const { updatePreviews } = useLitegraphService()
+  const { updatePreviews } = useLitegraphServiceAccess()
   const interiorNodes = subgraphNode.subgraph.nodes
   for (const node of interiorNodes) {
     node.updateComputedDisabled()
@@ -714,3 +717,5 @@ export function hasUnpromotedWidgets(subgraphNode: SubgraphNode): boolean {
     )
   )
 }
+
+providePromoteRecommendedWidgets(promoteRecommendedWidgets)

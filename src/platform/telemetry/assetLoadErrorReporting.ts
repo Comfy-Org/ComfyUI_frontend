@@ -1,6 +1,6 @@
 import { parsePreloadError } from '@/utils/preloadErrorUtil'
 
-import { reportError } from './reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 /**
  * Whether a failed resource is one we ship, and can therefore act on.

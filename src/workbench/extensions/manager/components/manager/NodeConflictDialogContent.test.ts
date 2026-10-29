@@ -162,7 +162,7 @@ describe('NodeConflictDialogContent', () => {
 
       // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const sections = container.querySelectorAll(
-        '.w-full.flex.flex-col.bg-base-background'
+        '.w-full.flex.flex-col.bg-background'
       )
 
       // Import Failed Extensions section
@@ -203,7 +203,7 @@ describe('NodeConflictDialogContent', () => {
       const chevronIcon = container.querySelector(
         '[data-testid="conflict-dialog-panel-toggle"] i'
       )
-      expect(chevronIcon).toHaveClass('pi-chevron-down')
+      expect(chevronIcon).toHaveClass('icon-[lucide--chevron-down]')
     })
 
     it('should toggle conflicts panel', async () => {
@@ -362,11 +362,11 @@ describe('NodeConflictDialogContent', () => {
       const { container } = renderComponent()
 
       // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const icons = container.querySelectorAll('i[class*="pi-chevron"]')
+      const icons = container.querySelectorAll('i[class*="lucide--chevron"]')
       expect(icons).toHaveLength(3)
 
       icons.forEach((icon) => {
-        expect(icon.className).toMatch(/pi-chevron-(right|down)/)
+        expect(icon.className).toMatch(/lucide--chevron-(right|down)/)
       })
     })
 
