@@ -929,6 +929,72 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.activeTurnId).toBe('msg-1')
   })
 
+  it('keeps socket parts and releases the composer when a settled snapshot read fails', async () => {
+    const readFailure = new AgentApiError('history unavailable', 503, undefined)
+    let rejectSettledRead: ((error: AgentApiError) => void) | undefined
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentMessages>((_resolve, reject) => {
+            rejectSettledRead = reject
+          })
+      )
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    emit(thinking('msg-1', 'live after reload'))
+    emit(done('msg-1'))
+
+    expect(session.isStreaming.value).toBe(false)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'thinking',
+          text: 'live after reload',
+          state: 'done'
+        }
+      ]
+    })
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(3))
+    assert.exists(rejectSettledRead)
+    rejectSettledRead(readFailure)
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith('history unavailable', {
+        surface: 'agent',
+        errorType: 'failure_recovering_agent_turn'
+      })
+    )
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'thinking',
+          text: 'live after reload',
+          state: 'done'
+        }
+      ]
+    })
+  })
+
   it('re-attaches to the running turn when a send is refused with TURN_IN_PROGRESS', async () => {
     const conversation = useAgentConversationStore()
     const postMessage = vi

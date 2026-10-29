@@ -11,6 +11,7 @@ import type {
   TurnId
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
+  toTurnId,
   zAgentMessages,
   zAgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -2016,8 +2017,8 @@ describe('useAgentConversationStore', () => {
   )
 
   describe('reconciling a snapshot-restored turn settled on the socket', () => {
-    const SNAPSHOT_ROW_ID = 'assistant-row-7' as TurnId
-    const SNAPSHOT_TURN_ID = 'turn-7' as TurnId
+    const SNAPSHOT_ROW_ID = toTurnId('assistant-row-7')
+    const SNAPSHOT_TURN_ID = toTurnId('turn-7')
     const liveSnapshot = (): AgentMessages =>
       zAgentMessages.parse([
         historyRow(1, 'user', SNAPSHOT_TURN_ID, 'add a loader', 'user-row-1'),
@@ -2081,6 +2082,55 @@ describe('useAgentConversationStore', () => {
       ).toEqual(storedParts())
     })
 
+    it('keeps live thinking omitted from the bounded stored trace', () => {
+      const { store } = restoredAndSettled()
+      const persisted = storedParts().filter(
+        (part) => part.type !== 'thinking' || part.text !== 'after the reload'
+      )
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        persisted
+      )
+
+      expect(
+        store.messages
+          .find((message) => message.id === SNAPSHOT_TURN_ID)
+          ?.parts.filter((part) => part.type === 'thinking')
+      ).toEqual([
+        { type: 'thinking', text: 'before the reload', state: 'done' },
+        { type: 'thinking', text: 'after the reload', state: 'done' }
+      ])
+    })
+
+    it('keeps the longer live thinking when stored thinking is truncated', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload continues'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        [
+          { type: 'thinking', text: 'after the reload', state: 'done' },
+          { type: 'text', text: 'Added it.', state: 'done' }
+        ]
+      )
+
+      expect(
+        store.messages
+          .find((message) => message.id === SNAPSHOT_TURN_ID)
+          ?.parts.filter((part) => part.type === 'thinking')
+      ).toEqual([
+        {
+          type: 'thinking',
+          text: 'after the reload continues',
+          state: 'done'
+        }
+      ])
+    })
+
     it('waits for a held tool call to clear before announcing the turn', () => {
       const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
       const store = useAgentConversationStore()
@@ -2103,34 +2153,46 @@ describe('useAgentConversationStore', () => {
 
       store.reconcileSettledTurn(
         { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
-        storedParts()
+        storedParts().map((part) =>
+          part.type === 'tool' ? { ...part, canvasConfirmed: false } : part
+        )
       )
 
       expect(
-        store.messages.find((m) => m.id === SNAPSHOT_TURN_ID)?.parts
-      ).toEqual(storedParts())
+        store.messages
+          .find((message) => message.id === SNAPSHOT_TURN_ID)
+          ?.parts.find((part) => part.type === 'tool')
+      ).toMatchObject({
+        callId: 'call-add_node',
+        ok: true,
+        canvasConfirmed: true
+      })
     })
 
-    it('does not announce a held turn when the thread is left', () => {
-      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
-      const store = useAgentConversationStore()
-      const settled: TurnId[] = []
-      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
-      store.setCanvasSyncGate(() => 'awaiting')
-      store.setThreadId('th')
-      store.hydrate(liveSnapshot())
-      store.ingest(
-        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
-          workflow_id: workflowId,
-          op_ids: ['op-add']
-        })
-      )
-      store.ingest(done(SNAPSHOT_ROW_ID))
+    it.for(['reset', 'hydrate'] as const)(
+      'does not announce a held turn when the thread is left through %s',
+      (departure) => {
+        const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+        const store = useAgentConversationStore()
+        const settled: TurnId[] = []
+        store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+        store.setCanvasSyncGate(() => 'awaiting')
+        store.setThreadId('th')
+        store.hydrate(liveSnapshot())
+        store.ingest(
+          toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+            workflow_id: workflowId,
+            op_ids: ['op-add']
+          })
+        )
+        store.ingest(done(SNAPSHOT_ROW_ID))
 
-      store.reset()
+        if (departure === 'reset') store.reset()
+        else store.hydrate([])
 
-      expect(settled).toEqual([])
-    })
+        expect(settled).toEqual([])
+      }
+    )
 
     it('announces a held turn only once when the canvas reports twice', () => {
       const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'

@@ -2022,8 +2022,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
     try {
       const outcome = await fetchTurnOutcome(turn, recovery.signal)
-      if (generation !== sessionGeneration || outcome.kind !== 'terminal')
+      if (generation !== sessionGeneration) return
+      if (outcome.kind === 'error') {
+        reportError(outcome.message, {
+          surface: 'agent',
+          errorType: 'failure_recovering_agent_turn'
+        })
         return
+      }
+      if (outcome.kind !== 'terminal') return
       conversationStore.reconcileSettledTurn(turn, outcome.parts)
     } catch (error) {
       if (!recovery.signal.aborted)

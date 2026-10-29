@@ -22,7 +22,8 @@ import type {
 import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
 import type {
   AskUserResolution,
-  AssistantMessage
+  AssistantMessage,
+  ThinkingPart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   askIdOf,
@@ -234,6 +235,86 @@ function interleaveLocalParts(
     groupStart = groupEnd
   }
   return mergedParts
+}
+
+interface AnchoredThinking {
+  part: ThinkingPart
+  index: number
+  toolCount: number
+}
+
+function anchorThinking(parts: AssistantMessage['parts']): AnchoredThinking[] {
+  const anchored: AnchoredThinking[] = []
+  let toolCount = 0
+  for (const [index, part] of parts.entries()) {
+    if (part.type === 'tool') toolCount += 1
+    if (part.type === 'thinking') anchored.push({ part, index, toolCount })
+  }
+  return anchored
+}
+
+function thinkingOverlaps(left: ThinkingPart, right: ThinkingPart): boolean {
+  return left.text.startsWith(right.text) || right.text.startsWith(left.text)
+}
+
+function mergeSnapshotThinking(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts']
+): AssistantMessage['parts'] {
+  const merged = [...persistedParts]
+  const persisted = anchorThinking(persistedParts)
+  const matchedPersisted = new Set<number>()
+  const unmatchedLive = anchorLocalParts(liveParts).filter(
+    ({ part, toolCount }) => {
+      if (part.type !== 'thinking') return false
+      const unmatched = (candidate: AnchoredThinking) =>
+        !matchedPersisted.has(candidate.index)
+      const match =
+        persisted.find(
+          (candidate) =>
+            unmatched(candidate) &&
+            candidate.toolCount === toolCount &&
+            thinkingOverlaps(candidate.part, part)
+        ) ??
+        persisted.find(
+          (candidate) =>
+            unmatched(candidate) && candidate.part.text === part.text
+        )
+      if (match === undefined) return true
+      matchedPersisted.add(match.index)
+      if (part.text.length > match.part.text.length) merged[match.index] = part
+      return false
+    }
+  )
+  return interleaveLocalParts(merged, unmatchedLive)
+}
+
+function preserveCanvasConfirmation(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts']
+): AssistantMessage['parts'] {
+  const confirmedCallIds = new Set(
+    liveParts.flatMap((part) =>
+      part.type === 'tool' && part.canvasConfirmed === true ? [part.callId] : []
+    )
+  )
+  return persistedParts.map((part) =>
+    part.type === 'tool' &&
+    part.ok === true &&
+    confirmedCallIds.has(part.callId)
+      ? { ...part, canvasConfirmed: true }
+      : part
+  )
+}
+
+function reconcileSnapshotParts(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts']
+): AssistantMessage['parts'] {
+  return preserveCanvasConfirmation(
+    liveParts,
+    mergeSnapshotThinking(liveParts, persistedParts)
+  )
 }
 
 function finishWithPersistedParts(
@@ -767,11 +848,6 @@ export const useAgentConversationStore = defineStore(
       void snapshotTurnSettled.trigger(unreconciled.turn)
     }
 
-    /**
-     * Folds the stored row's parts into a snapshot-restored turn that settled
-     * on the socket, as `settleTurn` does for one the reconnect recovery
-     * settles. One shot per turn; `reset` and `hydrate` drop the registration.
-     */
     function reconcileSettledTurn(
       turn: LiveTurn,
       persistedParts: AssistantMessage['parts'] | undefined
@@ -786,7 +862,10 @@ export const useAgentConversationStore = defineStore(
       )
       if (index < 0) return
       const reconciled = { ...messages.value[index] }
-      finishWithPersistedParts(reconciled, persistedParts)
+      finishWithPersistedParts(
+        reconciled,
+        reconcileSnapshotParts(reconciled.parts, persistedParts)
+      )
       messages.value[index] = reconciled
     }
 
@@ -1274,6 +1353,7 @@ export const useAgentConversationStore = defineStore(
     function hydrate(history: AgentMessages): void {
       const replacedSlot = activeSlot.value
       if (replacedSlot) rememberDepartedActiveTurn('no-live-turn')
+      unreconciledSnapshotTurns.clear()
       disposeActiveAndSettledTransports()
       clearActive()
       const transcript = normalizeAgentTranscript(history)
@@ -1299,7 +1379,6 @@ export const useAgentConversationStore = defineStore(
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       demotedSnapshotByStash.clear()
       restoredBackgroundMessageIds.clear()
-      unreconciledSnapshotTurns.clear()
       dropAttachmentPreviews()
       const rememberedNames =
         threadId.value === null
