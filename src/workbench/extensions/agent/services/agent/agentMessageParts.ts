@@ -199,7 +199,8 @@ export function askIdOf(part: MessagePart): string | undefined {
 const ASK_KIND_BY_PART_TYPE: Record<AskPart['type'], RenderedAskKind> = {
   runApproval: 'run_approval',
   askUser: 'ask_user',
-  deleteApproval: 'delete_approval'
+  deleteApproval: 'delete_approval',
+  paused: 'paused'
 }
 
 /** The wire kind of the ask card with this id, if one is among the parts. */
