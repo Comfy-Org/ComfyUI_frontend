@@ -437,25 +437,47 @@ describe('useJobList', () => {
     )
   }
 
-  it('shows the model a queued job is downloading, with its progress', async () => {
+  it.for(['pending', 'initialization', 'running'] as const)(
+    'shows the model download and its progress on a job in state %s',
+    async (state) => {
+      useQueueStore().pendingTasks = [
+        createTask({ jobId: 'downloading', mockState: state }),
+        createTask({ jobId: 'other', mockState: state })
+      ]
+      downloadingJob('downloading')
+
+      const { jobItems } = initComposable()
+      await flush()
+
+      const items = new Map(jobItems.value.map((item) => [item.id, item]))
+      expect(items.get('downloading')?.progressCurrentPercent).toBeCloseTo(
+        34.48
+      )
+      expect(items.get('downloading')?.progressTotalPercent).toBeUndefined()
+      expect(items.get('other')?.progressCurrentPercent).toBeUndefined()
+      const options = vi
+        .mocked(buildJobDisplay)
+        .mock.calls.map(([task, , ctx]) => [task.jobId, ctx.modelDownload])
+      expect(options).toContainEqual(['downloading', styleLora])
+      expect(options).toContainEqual(['other', undefined])
+    }
+  )
+
+  it('shows the download, not node progress, on the active job', async () => {
     useQueueStore().runningTasks = [
-      createTask({ jobId: 'downloading', mockState: 'running' }),
-      createTask({ jobId: 'other', mockState: 'running' })
+      createTask({ jobId: 'downloading', mockState: 'running' })
     ]
+    useExecutionStore().activeJobId = 'downloading'
+    const progress = ensureProgressRefs()
+    progress.totalPercent.value = 80
+    progress.currentNodePercent.value = 50
     downloadingJob('downloading')
 
     const { jobItems } = initComposable()
     await flush()
 
-    const [downloading, other] = jobItems.value
-    expect(downloading.progressCurrentPercent).toBeCloseTo(34.48)
-    expect(downloading.progressTotalPercent).toBeUndefined()
-    expect(other.progressCurrentPercent).toBeUndefined()
-    const options = vi
-      .mocked(buildJobDisplay)
-      .mock.calls.map(([task, , ctx]) => [task.jobId, ctx.modelDownload])
-    expect(options).toContainEqual(['downloading', styleLora])
-    expect(options).toContainEqual(['other', undefined])
+    expect(jobItems.value[0].progressCurrentPercent).toBeCloseTo(34.48)
+    expect(jobItems.value[0].progressTotalPercent).toBeUndefined()
   })
 
   it('shows no download for a job that already finished', async () => {
