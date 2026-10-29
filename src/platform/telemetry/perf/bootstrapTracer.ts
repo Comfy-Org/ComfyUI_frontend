@@ -224,8 +224,8 @@ export class BootstrapTracer {
     return [...this._timings].sort((a, b) => a.startMs - b.startMs)
   }
 
-  get outcome(): 'completed' | 'failed' | 'pending' {
-    return this._outcome ?? 'pending'
+  get outcome(): 'completed' | 'failed' | 'timed_out' | 'pending' {
+    return this._outcome ?? (this._timeoutReported ? 'timed_out' : 'pending')
   }
 
   /**

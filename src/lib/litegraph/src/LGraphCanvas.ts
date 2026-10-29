@@ -2519,21 +2519,26 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (this.is_rendering) return
 
     this.is_rendering = true
-    try {
-      renderFrame.call(this)
-    } catch (cause) {
-      this.is_rendering = false
-      reportError(cause, {
-        errorType: 'error_rendering_canvas_initial_frame',
-        surface: 'graph',
-        tags: { feature_area: 'litegraph', operation: 'start_rendering' }
-      })
-    }
+    let isFirstFrame = true
+    renderFrame.call(this)
 
+    // The first frame runs synchronously inside the constructor. If it throws
+    // (e.g. a userscript patching drawImage), report it and keep the loop
+    // alive so the canvas can recover instead of staying frozen all session.
     function renderFrame(this: LGraphCanvas) {
       if (!this.pause_rendering) {
-        this.draw()
+        try {
+          this.draw()
+        } catch (cause) {
+          if (!isFirstFrame) throw cause
+          reportError(cause, {
+            errorType: 'error_rendering_canvas_initial_frame',
+            surface: 'graph',
+            tags: { feature_area: 'litegraph', operation: 'start_rendering' }
+          })
+        }
       }
+      isFirstFrame = false
 
       const window = this.getCanvasWindow()
       if (this.is_rendering) {

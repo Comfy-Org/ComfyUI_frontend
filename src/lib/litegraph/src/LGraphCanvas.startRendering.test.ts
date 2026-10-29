@@ -5,9 +5,12 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 describe('LGraphCanvas.startRendering', () => {
-  it('finishes constructing and reports when the first frame throws', () => {
+  it('finishes constructing, reports, and keeps rendering when the first frame throws', () => {
+    const requestAnimationFrame = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockReturnValue(0)
     const drawFailure = new TypeError('drawImage is patched')
-    vi.spyOn(LGraphCanvas.prototype, 'draw').mockImplementation(() => {
+    vi.spyOn(LGraphCanvas.prototype, 'draw').mockImplementationOnce(() => {
       throw drawFailure
     })
 
@@ -15,7 +18,8 @@ describe('LGraphCanvas.startRendering', () => {
       skip_events: true
     })
 
-    expect(canvas.is_rendering).toBe(false)
+    expect(canvas.is_rendering).toBe(true)
+    expect(requestAnimationFrame).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       drawFailure,
       expect.objectContaining({

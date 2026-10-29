@@ -4,6 +4,7 @@ import { shallowRef } from 'vue'
 
 import type { DragAndScale } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
 import type { app as comfyApp } from '@/scripts/app'
 
 import { simpleTouchSupportExtension } from './simpleTouchSupport'
@@ -171,6 +172,37 @@ describe('Comfy.SimpleTouchSupport', () => {
     pressPointer({ isPrimary: true })
 
     expect(processMouseDown).toHaveBeenCalledOnce()
+  })
+})
+
+describe('Comfy.SimpleTouchSupport pinch zoom', () => {
+  beforeEach(() => {
+    document.body.append(container)
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
+    document.dispatchEvent(new Event('visibilitychange'))
+    hidden.mockRestore()
+  })
+
+  function viewport() {
+    const canvas = app.canvasOrUndefined
+    if (!canvas) throw new Error('Expected the mocked canvas')
+    canvas.ds.scale = 1
+    canvas.ds.offset[0] = 0
+    canvas.ds.offset[1] = 0
+    return canvas.ds
+  }
+
+  it.for([
+    { name: 'start on the same point', start: 0, move: 100 },
+    { name: 'start and stay on the same point', start: 0, move: 0 },
+    { name: 'end on the same point', start: 100, move: 0 }
+  ])('keeps the viewport finite when two fingers $name', ({ start, move }) => {
+    const ds = viewport()
+
+    dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl, start)])
+    dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, move)])
+
+    expect([ds.scale, ...ds.offset].every(Number.isFinite)).toBe(true)
   })
 })
 

@@ -169,6 +169,9 @@ export const simpleTouchSupportExtension: ComfyExtension = {
 
           if (lastScale === null || touchDist === null) return
           const scale = (lastScale * newTouchDist) / touchDist
+          // Fingers on the same point give a 0, Infinity or NaN scale, which
+          // would write non-finite values into the viewport.
+          if (!Number.isFinite(scale) || scale <= 0) return
 
           zoomCanvasAroundPinch(canvas, scale, center, lastTouch)
         }
