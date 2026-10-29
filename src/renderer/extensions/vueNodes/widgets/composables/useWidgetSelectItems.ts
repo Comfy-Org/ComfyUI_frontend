@@ -29,6 +29,7 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { AssetKind } from '@/types/widgetTypes'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import type { PagedList } from '@/utils/pagedList'
@@ -64,10 +65,23 @@ function getMediaUrl(
   return `/api/view?${params}`
 }
 
+function isPlainRelativePath(filepath: string): boolean {
+  return filepath
+    .split(/[\\/]/)
+    .every(
+      (segment) =>
+        segment !== '' &&
+        segment !== '.' &&
+        segment !== '..' &&
+        !segment.includes(':')
+    )
+}
+
 function getAnnotatedValueMediaUrl(
   value: string,
   assetKind: AssetKind | undefined
 ): string {
+  if (!isPlainRelativePath(parseAnnotatedPath(value).filepath)) return ''
   const { filename, subfolder, type } = parseImageWidgetValue(value)
   return getMediaUrl(filename, type, assetKind, subfolder)
 }

@@ -244,6 +244,25 @@ describe('useWidgetSelectItems', () => {
       }
     )
 
+    it.for([
+      '/x.png [output]',
+      '\\x.png [output]',
+      'sub/x.png/ [output]',
+      'sub//x.png [output]',
+      'D:\\x.png [output]',
+      '1:/x.png [output]',
+      'sub/../x.png [output]'
+    ])(
+      'shows no fallback preview for %s, which is not a plain relative path',
+      (value) => {
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref(value) })
+        )
+
+        expect(dropdownItems.value[0].preview_url).toBe('')
+      }
+    )
+
     it('no fallback when modelValue is undefined', () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
