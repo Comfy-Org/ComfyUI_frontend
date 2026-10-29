@@ -18,6 +18,7 @@ import { useNodeEmphasisSource } from '@/systems/nodeEmphasisSystem'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
+import PromptQueue from './composer/PromptQueue.vue'
 import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { useAgentMentionPicker } from '@/workbench/extensions/agent/composables/agent/useAgentMentionPicker'
@@ -44,7 +45,7 @@ import ComposerAddMenu from './composer/ComposerAddMenu.vue'
 import ComposerPlaceholder from './composer/ComposerPlaceholder.vue'
 import MentionMenuItem from './composer/MentionMenuItem.vue'
 import MentionMenuStatus from './composer/MentionMenuStatus.vue'
-import RunModePopover from './composer/RunModePopover.vue'
+import ComposerSendCluster from './composer/ComposerSendCluster.vue'
 
 const {
   streaming = false,
@@ -102,6 +103,16 @@ const skills = useSkillPacksStore()
 const running = computed(() => streaming || submitting)
 const promptQueue = useAgentPromptQueueStore()
 const editing = computed(() => promptQueue.editingId !== null)
+const queueRows = computed(() =>
+  promptQueue.items.map((item) => ({
+    id: item.id,
+    text: item.text,
+    status:
+      item.id === promptQueue.runningId
+        ? ('running' as const)
+        : ('waiting' as const)
+  }))
+)
 
 const composer = useComposer({
   onSend: (_text, attachments) => {
@@ -400,9 +411,6 @@ function onEnter(event: KeyboardEvent): void {
 const primaryActionLabel = computed(() =>
   showStop.value ? t('agent.stop') : t('agent.send')
 )
-const primaryActionVariant = computed(() =>
-  showStop.value ? 'secondary' : 'inverted'
-)
 const SEND_BLOCKED_MESSAGES = {
   'invalid-video': 'agent.sendBlockedByInvalidVideo',
   'unsupported-type': 'agent.sendBlockedByUnsupportedType'
@@ -599,16 +607,17 @@ defineExpose({
       />
     </div>
 
-    <slot name="beforeHeader" />
+    <PromptQueue
+      :items="queueRows"
+      :expanded="promptQueue.expanded"
+      @toggle="promptQueue.toggle"
+      @edit="promptQueue.startEdit"
+      @delete="promptQueue.deleteItem"
+    />
 
     <div
       v-if="$slots.header"
-      :class="
-        cn(
-          'flex h-11 shrink-0 items-center bg-background px-2',
-          !$slots.beforeHeader && 'rounded-t-lg'
-        )
-      "
+      class="flex h-11 shrink-0 items-center rounded-t-lg bg-background px-2"
     >
       <slot name="header" />
     </div>
@@ -733,40 +742,18 @@ defineExpose({
           </Button>
         </div>
 
-        <div class="flex items-center gap-1">
-          <RunModePopover />
-          <Button
-            v-if="editing"
-            type="button"
-            variant="muted-textonly"
-            size="sm"
-            :aria-label="t('agent.queue.cancelEdit')"
-            @click="promptQueue.cancelEdit()"
-          >
-            {{ t('agent.queue.cancelEdit') }}
-          </Button>
-          <Button
-            :tooltip="primaryActionTooltip"
-            type="button"
-            :variant="primaryActionVariant"
-            size="icon"
-            :aria-label="primaryActionLabel"
-            :aria-disabled="primaryActionAriaDisabled"
-            :aria-description="sendBlockedReason"
-            :disabled="primaryActionDisabled"
-            class="aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-foreground"
-            @click="onPrimaryAction"
-          >
-            <i-lucide:square v-if="showStop" class="size-4" />
-            <i-lucide:arrow-up v-else class="size-4" />
-            <template #tooltip>
-              {{ primaryActionTooltip }}
-              <span v-if="primaryActionShortcut" class="ml-1 opacity-50">{{
-                primaryActionShortcut
-              }}</span>
-            </template>
-          </Button>
-        </div>
+        <ComposerSendCluster
+          :editing
+          :show-stop="showStop"
+          :tooltip="primaryActionTooltip"
+          :label="primaryActionLabel"
+          :shortcut="primaryActionShortcut"
+          :blocked-reason="sendBlockedReason"
+          :aria-disabled="primaryActionAriaDisabled"
+          :disabled="primaryActionDisabled"
+          @cancel-edit="promptQueue.cancelEdit()"
+          @primary="onPrimaryAction"
+        />
       </div>
     </div>
   </div>

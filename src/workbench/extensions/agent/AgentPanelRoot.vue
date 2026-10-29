@@ -1947,14 +1947,9 @@ async function consentAllowsSubmission(
   )
 }
 
-async function sendTurn(
-  text: string,
-  attachments: ComposerAttachment[],
-  nodes: SelectedNode[],
-  references: WorkflowReference[],
-  meta: SubmissionMeta
+async function ensureSendAllowed(
+  submissionId: number | undefined
 ): Promise<boolean> {
-  const submissionId = composerStore.submission?.id
   if (!consentAccepted.value && !(await consentAllowsSubmission(submissionId)))
     return false
   if (!hasAgentCredential()) {
@@ -1967,27 +1962,74 @@ async function sendTurn(
     )
       return false
   }
+  return true
+}
 
-  const originContext = targetWorkflowTurnContext()
-  pendingSend = {
-    metadata: {
-      attachment_count: attachments.length,
-      node_tag_count: nodes.length,
-      thread_id: threadId.value,
-      workflow_id: originContext?.id ?? null,
-      client_message_id: meta.clientMessageId,
-      input_method: meta.inputMethod,
-      starter_prompt_id: meta.starterPrompt?.id ?? null,
-      starter_prompt_click_id: meta.starterPrompt?.clickId ?? null,
-      ...(meta.starterPrompt?.assignment
-        ? {
-            '$feature/agent-starter-prompt-set': meta.starterPrompt.assignment
-          }
-        : {})
-    },
-    origin:
-      originContext === undefined ? null : { tabPath: originContext.tabPath }
+function workflowIdOf(
+  origin: ReturnType<typeof targetWorkflowTurnContext>
+): string | null {
+  if (origin === undefined) return null
+  return origin.id ?? null
+}
+
+function originTab(
+  origin: ReturnType<typeof targetWorkflowTurnContext>
+): TurnOrigin {
+  if (origin === undefined) return null
+  return { tabPath: origin.tabPath }
+}
+
+function starterPromptId(starter: SubmissionMeta['starterPrompt']) {
+  if (!starter) return null
+  return starter.id
+}
+
+function starterClickId(starter: SubmissionMeta['starterPrompt']) {
+  if (!starter) return null
+  return starter.clickId ?? null
+}
+
+function applyStarterExperiment(
+  metadata: AgentMessageSentMetadata,
+  starter: SubmissionMeta['starterPrompt']
+): void {
+  if (starter?.assignment)
+    metadata['$feature/agent-starter-prompt-set'] = starter.assignment
+}
+
+function armPendingSend(
+  attachments: ComposerAttachment[],
+  nodes: SelectedNode[],
+  meta: SubmissionMeta
+): void {
+  const origin = targetWorkflowTurnContext()
+  const starter = meta.starterPrompt
+  const metadata: AgentMessageSentMetadata = {
+    attachment_count: attachments.length,
+    node_tag_count: nodes.length,
+    thread_id: threadId.value,
+    workflow_id: workflowIdOf(origin),
+    client_message_id: meta.clientMessageId,
+    input_method: meta.inputMethod,
+    starter_prompt_id: starterPromptId(starter),
+    starter_prompt_click_id: starterClickId(starter)
   }
+  applyStarterExperiment(metadata, starter)
+  pendingSend = {
+    metadata,
+    origin: originTab(origin)
+  }
+}
+
+async function sendTurn(
+  text: string,
+  attachments: ComposerAttachment[],
+  nodes: SelectedNode[],
+  references: WorkflowReference[],
+  meta: SubmissionMeta
+): Promise<boolean> {
+  if (!(await ensureSendAllowed(composerStore.submission?.id))) return false
+  armPendingSend(attachments, nodes, meta)
   const selectionWorkflow = selectedTarget.value
   try {
     return await sendWithFundsRecheck((onAccepted) =>
