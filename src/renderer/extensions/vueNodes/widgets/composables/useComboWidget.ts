@@ -2,6 +2,7 @@ import { ref, toValue } from 'vue'
 
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
 import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
+import { syncPromotedComboHostOptions } from '@/core/graph/widgets/syncPromotedComboHostOptions'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
@@ -75,7 +76,11 @@ const bindDynamicValuesOption = (
   })
 }
 
-function addLibraryModelOptions(widget: IComboWidget, folder: string) {
+function addLibraryModelOptions(
+  node: LGraphNode,
+  widget: IComboWidget,
+  folder: string
+) {
   const library = useDeploymentLibraryModelsStore()
   library.prepare(folder)
   registerComboWidgetInventory(widget, {
@@ -102,6 +107,10 @@ function addLibraryModelOptions(widget: IComboWidget, folder: string) {
     },
     () => library.refresh(folder)
   )
+  const stopSyncingHosts = library.onNamesChange(folder, () => {
+    if (node.graph) syncPromotedComboHostOptions(node.graph.rootGraph)
+    else stopSyncingHosts()
+  })
 }
 
 const addMultiSelectWidget = (
@@ -334,7 +343,7 @@ const addComboWidget = (
     })
     bindDynamicValuesOption(widget, () => remoteWidget.getValue())
   } else if (libraryFolder && isComboWidget(widget)) {
-    addLibraryModelOptions(widget, libraryFolder)
+    addLibraryModelOptions(node, widget, libraryFolder)
   }
 
   if (inputSpec.control_after_generate) {

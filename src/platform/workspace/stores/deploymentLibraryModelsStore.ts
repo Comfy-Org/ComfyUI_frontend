@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { onScopeDispose, shallowReactive, watch } from 'vue'
+import { effectScope, onScopeDispose, shallowReactive, watch } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
@@ -32,6 +32,7 @@ export const useDeploymentLibraryModelsStore = defineStore(
     const downloads = useAssetDownloadStore()
     const folders = shallowReactive(new Map<string, LibraryFolder>())
     const latestRequest = new Map<string, number>()
+    const listeners = effectScope()
     let generation = 0
     let endGeneration: () => void = () => {}
     let generationEnded = new Promise<void>((resolve) => {
@@ -125,6 +126,12 @@ export const useDeploymentLibraryModelsStore = defineStore(
       return current(folder)?.names ?? NO_NAMES
     }
 
+    /** Calls back each time the folder's offered names change; returns the stop. */
+    function onNamesChange(folder: string, callback: () => void): () => void {
+      const stop = listeners.run(() => watch(() => namesIn(folder), callback))
+      return stop ?? (() => {})
+    }
+
     function statusOf(folder: string): ComboWidgetInventoryStatus {
       return current(folder)?.status ?? 'ready'
     }
@@ -143,6 +150,7 @@ export const useDeploymentLibraryModelsStore = defineStore(
       folderFor,
       prepare,
       namesIn,
+      onNamesChange,
       statusOf,
       waitForSettled,
       refresh
