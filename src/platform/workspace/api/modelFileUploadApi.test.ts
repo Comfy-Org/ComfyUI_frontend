@@ -77,11 +77,22 @@ const started = {
   max_size_bytes: 2147483648
 }
 
-function serverAnswers(...answers: Response[]) {
-  const calls: Array<{ route: string; body: unknown }> = []
-  vi.mocked(api.fetchApi).mockImplementation(async (route, options) => {
-    calls.push({ route, body: JSON.parse(String(options?.body)) })
-    return answers.shift() ?? json(500, { code: 'INTERNAL', message: 'x' })
+function serverAnswers(...answers: Array<Response | 'never'>) {
+  const calls: Array<{ route: string; method?: string; body: unknown }> = []
+  vi.mocked(api.fetchApi).mockImplementation((route, options) => {
+    calls.push({
+      route,
+      method: options?.method,
+      body: JSON.parse(String(options?.body))
+    })
+    const answer =
+      answers.shift() ?? json(500, { code: 'INTERNAL', message: 'x' })
+    if (answer !== 'never') return Promise.resolve(answer)
+    return new Promise((_resolve, reject) => {
+      options?.signal?.addEventListener('abort', () =>
+        reject(new DOMException('Aborted', 'AbortError'))
+      )
+    })
   })
   return calls
 }
@@ -130,10 +141,12 @@ describe('modelFileUploadApi.uploadModelFile', () => {
     expect(calls).toEqual([
       {
         route: '/assets/uploads',
+        method: 'POST',
         body: { filename: file.name, size_bytes: file.size, tags }
       },
       {
         route: `/assets/uploads/${UPLOAD_ID}/complete`,
+        method: 'POST',
         body: { filename: file.name, tags }
       }
     ])
@@ -287,6 +300,30 @@ describe('modelFileUploadApi.uploadModelFile', () => {
     await expect(result).resolves.toEqual({ ok: false, reason: 'cancelled' })
     expect(put.aborted).toBe(true)
     expect(calls).toHaveLength(1)
+  })
+
+  it('stops waiting for the upload URL when cancelled', async () => {
+    serverAnswers('never')
+    const controller = new AbortController()
+    const { result } = upload(controller.signal)
+    await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledOnce())
+
+    controller.abort()
+
+    await expect(result).resolves.toEqual({ ok: false, reason: 'cancelled' })
+    expect(StorageRequest.sent).toHaveLength(0)
+  })
+
+  it('stops waiting for the finish answer when cancelled', async () => {
+    serverAnswers(json(201, started), 'never')
+    const controller = new AbortController()
+    const { result } = upload(controller.signal)
+    ;(await storageRequest()).finish(200)
+    await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(2))
+
+    controller.abort()
+
+    await expect(result).resolves.toEqual({ ok: false, reason: 'cancelled' })
   })
 
   it('fails when the finish answer is not a task', async () => {
