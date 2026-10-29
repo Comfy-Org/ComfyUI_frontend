@@ -83,7 +83,7 @@
   "publicEntryPoints": [
     "src/components/rightSidePanel/errors/LocateNodeButton.vue"
   ],
-  "allowedDependencies": [],
+  "allowedDependencies": ["keybindings"],
   "allowedConsumers": ["missing-media", "missing-models", "node-replacement"],
   "characterizationScenarios": [
     {

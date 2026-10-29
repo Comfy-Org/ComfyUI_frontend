@@ -54,7 +54,7 @@
               </span>
             </div>
             <i
-              class="icon-[lucide--chevron-down] size-3.5 scale-150 text-muted-foreground"
+              class="icon-[lucide--chevron-down] size-3.5 text-muted-foreground"
             />
           </Button>
         </PopoverTrigger>

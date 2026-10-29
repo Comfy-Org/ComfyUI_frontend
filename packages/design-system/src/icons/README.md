@@ -256,7 +256,7 @@ Icons are automatically imported using `unplugin-icons` - no manual imports need
 The icon system has two layers:
 
 1. **Tailwind CSS Plugin** (`@iconify/tailwind4`):
-   - Configured via `@plugin` directive in `packages/design-system/src/css/style.css`
+   - Configured via `@plugin` directive in `packages/design-system/src/css/theme.css`
    - Uses `from-folder(comfy, ...)` to load SVGs from `packages/design-system/src/icons/`
    - Auto-cleans and optimizes SVGs at build time
 
