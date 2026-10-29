@@ -81,7 +81,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["extension-manager"],
+  "allowedDependencies": ["extension-manager", "keybindings"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

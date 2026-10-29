@@ -192,6 +192,7 @@
   "allowedDependencies": [
     "error-reporting",
     "extension-manager",
+    "keybindings",
     "telemetry",
     "webcam-capture"
   ],

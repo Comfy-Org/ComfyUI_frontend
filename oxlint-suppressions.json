@@ -355,7 +355,7 @@
   },
   "src/lib/litegraph/src/litegraph.ts": {
     "comfy/no-reexports": {
-      "count": 44
+      "count": 43
     }
   },
   "src/lib/litegraph/src/litegraphInstance.ts": {
@@ -644,11 +644,6 @@
   "src/platform/extensions/stores/extensionStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 2
-    }
-  },
-  "src/platform/keybindings/keybindingStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
     }
   },
   "src/platform/keybindings/presetService.test.ts": {
@@ -1093,11 +1088,6 @@
     }
   },
   "src/stores/assetsStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/stores/commandStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
     }

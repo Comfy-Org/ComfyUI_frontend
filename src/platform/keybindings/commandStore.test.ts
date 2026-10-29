@@ -1,21 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useCommandStore } from '@/stores/commandStore'
-
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandlingAsync:
-      (fn: () => Promise<void>, errorHandler?: (e: unknown) => void) =>
-      async () => {
-        try {
-          await fn()
-        } catch (e) {
-          if (errorHandler) errorHandler(e)
-          else throw e
-        }
-      }
-  })
-}))
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 describe('commandStore', () => {
   describe('registerCommand', () => {
@@ -99,7 +85,36 @@ describe('commandStore', () => {
       const handler = vi.fn()
       await store.execute('err.test', { errorHandler: handler })
       expect(handler).toHaveBeenCalledWith(error)
+      expect(useToast().toasts).toEqual([])
     })
+
+    it.for(['synchronous', 'asynchronous'] as const)(
+      'shows a toast for an unhandled %s command failure',
+      async (failure) => {
+        const store = useCommandStore()
+        const error = new Error('Command failed')
+        const actions = {
+          synchronous: () => {
+            throw error
+          },
+          asynchronous: () => Promise.reject(error)
+        }
+        store.registerCommand({
+          id: 'failing.command',
+          function: actions[failure]
+        })
+
+        await store.execute('failing.command')
+
+        expect(useToast().toasts).toEqual([
+          expect.objectContaining({
+            kind: 'error',
+            title: 'Error',
+            description: 'Command failed'
+          })
+        ])
+      }
+    )
 
     it.for([
       { selectOnly: false, calls: 1 },

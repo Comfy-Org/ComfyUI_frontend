@@ -142,7 +142,8 @@
     "agent",
     "billing",
     "bounding-boxes",
-    "extension-manager"
+    "extension-manager",
+    "keybindings"
   ],
   "characterizationScenarios": [
     {

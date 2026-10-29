@@ -129,6 +129,7 @@
     "account",
     "error-reporting",
     "extension-manager",
+    "keybindings",
     "telemetry"
   ],
   "allowedConsumers": [

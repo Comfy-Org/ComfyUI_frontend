@@ -75,6 +75,7 @@
     "design-system",
     "dialog-host",
     "extension-runtime",
+    "keybindings",
     "system-info"
   ],
   "allowedConsumers": [
