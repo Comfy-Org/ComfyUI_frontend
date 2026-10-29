@@ -34,9 +34,6 @@ if (!commentStep?.run || !commentStep.env) {
 }
 const { run: commentRun, env: commentEnv } = commentStep
 
-// The step derives FORCE_RERUN from the event in its env mapping. Evaluate
-// that exact expression instead of injecting the variable, so a change to it
-// fails here rather than silently skipping the manual path.
 const forceRerunExpression =
   /^\$\{\{ github\.event_name == '([a-z_]+)' && inputs\.force_rerun \|\| 'false' \}\}$/.exec(
     commentEnv.FORCE_RERUN
