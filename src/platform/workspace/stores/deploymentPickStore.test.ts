@@ -50,6 +50,7 @@ const listing: WorkspaceDeploymentList = {
       build_name: 'Studio Build',
       release_version: 2,
       status: 'ready',
+      can_start: false,
       created_at: '2026-10-01T00:00:00Z'
     },
     {
@@ -59,6 +60,7 @@ const listing: WorkspaceDeploymentList = {
       build_name: 'Studio Build',
       release_version: 1,
       status: 'stopped',
+      can_start: true,
       created_at: '2026-09-20T00:00:00Z'
     }
   ]
