@@ -2,6 +2,8 @@ import { expect, mergeTests } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { CURSOR_GAP } from '@/platform/onboarding/coachmarkLayout'
+import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { TOUR_ROLE_PINS } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 import type { SupportedTemplateId } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 
@@ -9,7 +11,7 @@ import type { PromptResponse } from '@comfyorg/ingest-types'
 
 import type { AssetResponse } from '@/platform/assets/schemas/assetSchema'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
@@ -30,6 +32,7 @@ const GENERATING_TITLE = firstRun.result.generating.title
 const RESULT_IMAGE_TITLE = firstRun.result.image.title
 const RESULT_FAILED_TITLE = firstRun.result.failed.title
 const CARD_TESTID_PREFIX = 'getting-started-card-'
+const NUDGE_MAX_GAP = CURSOR_GAP + 8
 
 /** The prompt id the tour's run is queued under, so WS events can address it. */
 const TOUR_JOB_ID = 'first-run-tour-prompt'
@@ -43,7 +46,6 @@ const QUEUED_PROMPT: PromptResponse = {
 }
 
 const TOUR_FEATURE_FLAGS: RemoteConfig = {
-  onboarding_tour_enabled: true,
   subscription_required: true
 }
 
@@ -206,8 +208,7 @@ test.describe(
       initialSettings: {
         'Comfy.TutorialCompleted': false,
         'Comfy.OnboardingCoachmarks.Seen': ['appMode']
-      },
-      initialFeatureFlags: { onboarding_tour_enabled: true }
+      }
     })
 
     test.beforeEach(async ({ page }) => {
@@ -353,7 +354,8 @@ test.describe(
       })
 
       test('leaves the nudge until the upgrade dialog closes', async ({
-        comfyPage
+        comfyPage,
+        onboarding
       }) => {
         test.slow()
         const { page } = comfyPage
@@ -377,6 +379,38 @@ test.describe(
           nudge,
           'the tour ended, so the user still needs somewhere to go next'
         ).toBeVisible({ timeout: 10_000 })
+
+        const templatesButton = onboarding.coachAnchor(
+          FIRST_RUN_COACH_IDS.templatesButton
+        )
+        const cursor = page.getByTestId('first-run-nudge-cursor')
+        await expect(page.getByTestId('first-run-nudge-ring')).toBeVisible()
+        await expect
+          .poll(
+            async () => {
+              const [card, button, pointer] = await Promise.all([
+                nudge.boundingBox(),
+                templatesButton.boundingBox(),
+                cursor.boundingBox()
+              ])
+              if (!card || !button || !pointer) return false
+              const buttonRight = button.x + button.width
+              const gap = card.x - buttonRight
+              const sharesRow =
+                card.y < button.y + button.height &&
+                card.y + card.height > button.y
+              const pointerInGap =
+                pointer.x >= buttonRight && pointer.x + pointer.width <= card.x
+              return (
+                gap >= 0 && gap <= NUDGE_MAX_GAP && sharesRow && pointerInGap
+              )
+            },
+            {
+              message:
+                'the nudge sits just right of the Templates button with its pointer in between, not pinned to a screen corner'
+            }
+          )
+          .toBe(true)
       })
     })
 

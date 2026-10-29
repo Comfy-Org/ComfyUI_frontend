@@ -9,10 +9,6 @@ test.describe('App mode arrange step', { tag: '@ui' }, () => {
     initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
   })
 
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-  })
-
   test('Placeholder is shown when outputs are configured but no run has happened', async ({
     comfyPage
   }) => {

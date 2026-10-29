@@ -4,6 +4,7 @@ import type { Asset } from '@comfyorg/ingest-types'
 import { createCloudAssetsFixture } from '@e2e/fixtures/assetApiFixture'
 import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const WORKFLOW = 'missing/cloud_missing_model_two_unrelated_checkpoints'
 const SELECTED_NODE_MODEL_NAME = 'selected_node_missing_checkpoint.safetensors'
@@ -46,7 +47,8 @@ test.describe(
       await expect(
         missingModelsGroup.getByText(UNRELATED_NODE_MODEL_NAME)
       ).toBeVisible()
-      await expect(missingModelsGroup).toHaveScreenshot(
+      await expectElementScreenshot(
+        missingModelsGroup,
         'missing-model-panel-unrelated-node-after-selection.png'
       )
 

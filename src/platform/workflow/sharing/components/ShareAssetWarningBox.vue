@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-3 rounded-lg">
     <CollapsibleRoot
       v-model:open="isWarningExpanded"
-      class="overflow-hidden rounded-lg bg-secondary-background"
+      class="overflow-hidden rounded-lg bg-secondary"
     >
       <CollapsibleTrigger as-child>
         <Button
@@ -10,17 +10,17 @@
           class="w-full justify-between px-4 py-1 text-sm"
         >
           <i
-            class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
+            class="icon-[lucide--circle-alert] text-warning"
             aria-hidden="true"
           />
-          <span class="m-0 flex-1 text-left text-sm text-muted-foreground">
+          <span class="flex-1 text-left text-sm text-muted-foreground">
             {{ $t('shareWorkflow.privateAssetsDescription') }}
           </span>
 
           <i
             :class="
               cn(
-                'icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform',
+                'icon-[lucide--chevron-right] text-muted-foreground transition-transform',
                 isWarningExpanded && 'rotate-90'
               )
             "
@@ -39,7 +39,7 @@
       <input
         v-model="acknowledged"
         type="checkbox"
-        class="size-3.5 shrink-0 cursor-pointer accent-primary-background"
+        class="size-3.5 shrink-0 cursor-pointer accent-primary"
       />
       <span class="text-sm text-muted-foreground">
         {{ $t('shareWorkflow.acknowledgeCheckbox') }}
@@ -59,7 +59,7 @@ import { ref } from 'vue'
 import type { AssetInfo } from '@comfyorg/ingest-types'
 import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectionList.vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const { items } = defineProps<{
   items: AssetInfo[]

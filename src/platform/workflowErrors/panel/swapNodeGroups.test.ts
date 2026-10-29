@@ -1,0 +1,175 @@
+import { fromAny } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
+
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import type { useComfyRegistryService } from '@/services/comfyRegistryService'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+
+import { useErrorGroups } from './useErrorGroups'
+vi.mock(import('@/services/comfyRegistryService'), () => ({
+  useComfyRegistryService: () =>
+    fromAny<ReturnType<typeof useComfyRegistryService>, unknown>({
+      inferPackFromNodeName: vi.fn(async () => null),
+      listAllPacks: vi.fn(async () => ({ nodes: [] })),
+      getPackById: vi.fn()
+    })
+}))
+
+vi.mock(import('@/scripts/app'))
+
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+  getNodeByExecutionId: vi.fn(),
+  getExecutionIdByNode: vi.fn(),
+  getRootParentNode: vi.fn(() => null),
+  forEachNode: vi.fn(),
+  mapAllNodes: vi.fn(() => [])
+}))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: false
+}))
+
+vi.mock(import('@/i18n'), () => ({
+  te: vi.fn(() => false),
+  t: vi.fn((key: string) => key),
+  st: vi.fn((_key: string, fallback: string) => fallback)
+}))
+
+vi.mock(import('@/utils/nodeTitleUtil'), () => ({
+  resolveNodeDisplayName: vi.fn(() => '')
+}))
+
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
+  isLGraphNode: vi.fn(() => false)
+}))
+
+function makeMissingNodeType(
+  type: string,
+  opts: {
+    nodeId?: string
+    isReplaceable?: boolean
+    replacement?: { new_node_id: string }
+  } = {}
+): MissingNodeType {
+  return {
+    type,
+    nodeId: opts.nodeId ?? '1',
+    isReplaceable: opts.isReplaceable ?? false,
+    replacement: opts.replacement
+      ? {
+          old_node_id: type,
+          new_node_id: opts.replacement.new_node_id,
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        }
+      : undefined
+  }
+}
+
+describe('swapNodeGroups computed', () => {
+  function getSwapNodeGroups(nodeTypes: MissingNodeType[]) {
+    useMissingNodesErrorStore().surfaceMissingNodes(nodeTypes)
+
+    const searchQuery = ref('')
+    const { swapNodeGroups } = useErrorGroups(searchQuery)
+    return swapNodeGroups
+  }
+
+  it('returns empty array when no missing nodes', () => {
+    const swap = getSwapNodeGroups([])
+    expect(swap.value).toEqual([])
+  })
+
+  it('returns empty array when no nodes are replaceable', () => {
+    const swap = getSwapNodeGroups([
+      makeMissingNodeType('NodeA', { isReplaceable: false }),
+      makeMissingNodeType('NodeB', { isReplaceable: false })
+    ])
+    expect(swap.value).toEqual([])
+  })
+
+  it('groups replaceable nodes by type', async () => {
+    const swap = getSwapNodeGroups([
+      makeMissingNodeType('OldNode', {
+        nodeId: '1',
+        isReplaceable: true,
+        replacement: { new_node_id: 'NewNode' }
+      }),
+      makeMissingNodeType('OldNode', {
+        nodeId: '2',
+        isReplaceable: true,
+        replacement: { new_node_id: 'NewNode' }
+      })
+    ])
+    await nextTick()
+    expect(swap.value).toHaveLength(1)
+    expect(swap.value[0].type).toBe('OldNode')
+    expect(swap.value[0].newNodeId).toBe('NewNode')
+    expect(swap.value[0].nodeTypes).toHaveLength(2)
+  })
+
+  it('creates separate groups for different types', async () => {
+    const swap = getSwapNodeGroups([
+      makeMissingNodeType('TypeA', {
+        nodeId: '1',
+        isReplaceable: true,
+        replacement: { new_node_id: 'NewA' }
+      }),
+      makeMissingNodeType('TypeB', {
+        nodeId: '2',
+        isReplaceable: true,
+        replacement: { new_node_id: 'NewB' }
+      })
+    ])
+    await nextTick()
+    expect(swap.value).toHaveLength(2)
+    expect(swap.value.map((g) => g.type)).toEqual(['TypeA', 'TypeB'])
+  })
+
+  it('sorts groups alphabetically by type', async () => {
+    const swap = getSwapNodeGroups([
+      makeMissingNodeType('Zebra', {
+        nodeId: '1',
+        isReplaceable: true,
+        replacement: { new_node_id: 'NewZ' }
+      }),
+      makeMissingNodeType('Alpha', {
+        nodeId: '2',
+        isReplaceable: true,
+        replacement: { new_node_id: 'NewA' }
+      })
+    ])
+    await nextTick()
+    expect(swap.value[0].type).toBe('Alpha')
+    expect(swap.value[1].type).toBe('Zebra')
+  })
+
+  it('excludes string nodeType entries', async () => {
+    const swap = getSwapNodeGroups([
+      fromAny<MissingNodeType, unknown>('StringGroupNode'),
+      makeMissingNodeType('OldNode', {
+        nodeId: '1',
+        isReplaceable: true,
+        replacement: { new_node_id: 'NewNode' }
+      })
+    ])
+    await nextTick()
+    expect(swap.value).toHaveLength(1)
+    expect(swap.value[0].type).toBe('OldNode')
+  })
+
+  it('sets newNodeId to undefined when replacement is missing', async () => {
+    const swap = getSwapNodeGroups([
+      makeMissingNodeType('OldNode', {
+        nodeId: '1',
+        isReplaceable: true
+        // no replacement
+      })
+    ])
+    await nextTick()
+    expect(swap.value).toHaveLength(1)
+    expect(swap.value[0].newNodeId).toBeUndefined()
+  })
+})

@@ -7,13 +7,9 @@ import { useNodeMenuOptions } from '@/composables/graph/useNodeMenuOptions'
 import type { Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-// canvasStore transitively imports the app singleton; stub it so the real
-// ComfyApp module never loads during these unit tests.
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { canvas: { selected_nodes: null } }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock<unknown>(import('@/composables/graph/useNodeCustomization'), () => ({
   useNodeCustomization: () => ({

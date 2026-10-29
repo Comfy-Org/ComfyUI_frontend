@@ -1,3 +1,4 @@
+import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { shallowReactive } from 'vue'
 
 import { assert } from '@/base/assert'
@@ -6,19 +7,18 @@ import {
   transferLayoutAttachment
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { zeroUuid } from '@/utils/uuid'
 
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
-import type { NodeState } from '@/types/nodeState'
+} from '@comfyorg/graph-model/slots'
+
+import type { TitleMode } from '@comfyorg/graph-model/globalEnums'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 
 /**
  * Wraps a node's `inputs` array with a rehydration view — e.g.
@@ -65,14 +65,17 @@ export function createNodeShellState(
   }
 }
 
-/** Writes a shell-state field, emitting `node:property:changed` on change. */
+/**
+ * Writes a shell-state field, emitting `node:property:changed` on change.
+ * Returns whether the value changed.
+ */
 export function setTrackedNodeState<K extends keyof NodeState>(
   node: LGraphNode,
   property: K,
   value: NodeState[K]
-): void {
+): boolean {
   const oldValue = node._state[property]
-  if (oldValue === value) return
+  if (oldValue === value) return false
 
   node._state[property] = value
   node.graph?.trigger('node:property:changed', {
@@ -81,6 +84,7 @@ export function setTrackedNodeState<K extends keyof NodeState>(
     oldValue,
     newValue: value
   })
+  return true
 }
 
 /**

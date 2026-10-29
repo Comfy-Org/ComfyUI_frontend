@@ -1,10 +1,10 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IImageCompareWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IImageCompareWidget } from '@comfyorg/graph-model/widgets'
 import type {
   ImageCompareInputSpec,
   InputSpec as InputSpecV2
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 export const useImageCompareWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): IImageCompareWidget => {
@@ -12,11 +12,10 @@ export const useImageCompareWidget = (): ComfyWidgetConstructorV2 => {
 
     const widget = node.addWidget('imagecompare', name, ['', ''], () => {}, {
       serialize: true,
-      ...options
+      ...options,
+      hideInPanel: true
     }) as IImageCompareWidget
 
-    // widget.serialize controls workflow persistence; widget.options.serialize
-    // controls prompt (API) serialization — only disable the former.
     widget.serialize = false
 
     return widget

@@ -1,0 +1,11 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "plugins": [],
+  "categories": { "correctness": "off" },
+  "jsPlugins": ["./serverFacts.ts"],
+  "rules": {
+    "comfy/no-capability-recombination": "error",
+    "comfy/no-server-fact-literals": "error",
+    "comfy/no-stray-server-fact-constructor": "error"
+  }
+}

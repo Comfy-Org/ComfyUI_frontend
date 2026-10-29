@@ -3,9 +3,9 @@
  * `activate()`, so a host can construct the session client at module load
  * while the identity's module (and the SDK behind it) stays a lazy chunk.
  */
-import type { AccountIdentity } from './identity.js'
-import { brandIdentity } from './identity.js'
-import type { AccountUser } from './sessionContracts.js'
+import type { AccountIdentity } from './identity'
+import { brandIdentity } from './identity'
+import type { AccountUser } from './sessionContracts'
 
 /**
  * Single-owner: one driver calls `activate()` and `deactivate()`; a second
@@ -25,6 +25,22 @@ export interface LazyIdentity<
    * delivered a signed-in user.
    */
   deactivate: () => void
+}
+
+/**
+ * An identity that has already settled signed-out: for a `load` that
+ * legitimately has no source to resolve, so the port still delivers once and
+ * a subscriber reaches signed-out instead of hanging in `pending` forever.
+ */
+export function createUnavailableIdentity<
+  TUser extends AccountUser
+>(): AccountIdentity<TUser> {
+  return brandIdentity<TUser>({
+    onUserChanged: (callback) => {
+      callback(null)
+      return () => undefined
+    }
+  })
 }
 
 export function createLazyIdentity<TUser extends AccountUser>(
@@ -61,7 +77,22 @@ export function createLazyIdentity<TUser extends AccountUser>(
         if (started !== generation) return
         activation = undefined
         settleActivation = undefined
-        reject(error)
+        // A load that can't produce an identity still owes subscribers an
+        // answer: deliver signed-out so nobody is left waiting on a promise
+        // this activation will never settle. A throwing listener must not
+        // swallow the loader's own error, so reject unconditionally; this
+        // runs inside an unawaited .catch(), so a listener's own exception
+        // is reported rather than left to become an unhandled rejection.
+        try {
+          deliver(null)
+        } catch (deliverError) {
+          console.warn(
+            'lazyIdentity: a listener threw delivering signed-out after a load failure',
+            deliverError
+          )
+        } finally {
+          reject(error)
+        }
       })
     })
     return activation

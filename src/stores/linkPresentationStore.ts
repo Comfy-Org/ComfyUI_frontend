@@ -1,14 +1,14 @@
 import { defineStore } from 'pinia'
 import { reactive } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   GraphScope,
   OwningGraphId,
   RootGraphId
-} from '@/types/graphScopeId'
-import type { LinkId } from '@/types/linkId'
-import type { LinkPresentation } from '@/types/linkPresentation'
+} from '@comfyorg/graph-model/graphScopeId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
 
 const EMPTY_LINK_IDS: readonly LinkId[] = []
 
@@ -92,6 +92,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     const incumbent = bucket?.byId.get(linkId)
     if (incumbent && incumbent.graphId !== scope.owningGraphId) {
       reportError(new Error('Link presentation ownership conflict'), {
+        surface: 'platform',
         errorType: 'link_presentation_ownership_conflict',
         context: {
           linkId,
@@ -157,7 +158,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     const bucket = roots.get(scope.rootGraphId)
     const ownerIds = bucket?.idsByOwner.get(scope.owningGraphId)
     if (!bucket || !ownerIds) return
-    for (const linkId of [...ownerIds]) {
+    for (const linkId of Array.from(ownerIds)) {
       displace(scope.rootGraphId, bucket, linkId, scope.owningGraphId)
     }
   }

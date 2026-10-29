@@ -1,15 +1,28 @@
 <template>
-  <BaseModalLayout content-title="" data-testid="settings-dialog" size="full">
+  <BaseModalLayout
+    :labels="modalLayoutLabels"
+    :content-title="$t('g.settings')"
+    data-testid="settings-dialog"
+    size="md"
+    :content-padding="isWorkspaceCategoryActive ? 'none' : 'default'"
+    header-padding="symmetric"
+    :close-button-variant="closeButtonVariant"
+    :close-icon="closeIcon"
+    @close="onClose"
+  >
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />
-      <h2 class="text-neutral text-base">{{ $t('g.settings') }}</h2>
+      <h2 class="text-base text-foreground">{{ $t('g.settings') }}</h2>
     </template>
 
     <template #leftPanel>
       <div class="px-3">
         <SearchInput
           v-model:model-value="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="$t('g.searchSettings') + '...'"
           size="md"
+          class="rounded-lg ring-1 ring-border/50"
           :placeholder="$t('g.searchSettings') + '...'"
           :debounce-time="128"
           :autofocus="activeCategoryKey !== 'keybinding'"
@@ -19,7 +32,7 @@
 
       <nav
         ref="navRef"
-        class="flex scrollbar-hide flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
+        class="flex scrollbar-hide flex-1 flex-col gap-1 overflow-y-auto px-3 pt-1 pb-4"
       >
         <div
           v-for="(group, index) in navGroups"
@@ -49,6 +62,13 @@
         id="keybinding-panel-header"
         class="flex-1"
       />
+      <SettingsWorkspaceHeader
+        v-else-if="isWorkspaceCategoryActive"
+        :workspace-name="workspaceName"
+        :subscription-tier="activeSummary?.subscriptionTier"
+        :collapsed="isHeaderCollapsed"
+        :large="unifiedBillingSettingsEnabled"
+      />
     </template>
 
     <template #header-right-area>
@@ -59,65 +79,81 @@
     </template>
 
     <template #content>
-      <template v-if="activePanel">
-        <Suspense>
-          <component :is="activePanel.component" v-bind="activePanel.props" />
-          <template #fallback>
-            <div>
-              {{ $t('g.loadingPanel', { panel: activePanel.node.label }) }}
-            </div>
-          </template>
-        </Suspense>
-      </template>
-      <template v-else-if="inSearch">
-        <SettingsPanel :setting-groups="searchResults" />
-      </template>
-      <template v-else-if="activeSettingCategory">
-        <CurrentUserMessage v-if="activeSettingCategory.label === 'Comfy'" />
-        <ColorPaletteMessage
-          v-if="activeSettingCategory.label === 'Appearance'"
-        />
-        <SettingsPanel :setting-groups="sortedGroups(activeSettingCategory)" />
-      </template>
+      <div
+        :class="
+          cn(
+            'flex min-h-0 flex-1 flex-col',
+            isWorkspaceCategoryActive && 'px-6'
+          )
+        "
+        @scroll.capture="handlePanelScroll"
+      >
+        <template v-if="activePanel">
+          <Suspense>
+            <component :is="activePanel.component" v-bind="activePanel.props" />
+            <template #fallback>
+              <div>
+                {{ $t('g.loadingPanel', { panel: activePanel.node.label }) }}
+              </div>
+            </template>
+          </Suspense>
+        </template>
+        <template v-else-if="inSearch">
+          <SettingsPanel :setting-groups="searchResults" />
+        </template>
+        <template v-else-if="activeSettingCategory">
+          <CurrentUserMessage v-if="activeSettingCategory.label === 'Comfy'" />
+          <ColorPaletteMessage
+            v-if="activeSettingCategory.label === 'Appearance'"
+          />
+          <SettingsPanel
+            :setting-groups="sortedGroups(activeSettingCategory)"
+          />
+        </template>
+      </div>
     </template>
   </BaseModalLayout>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import SettingsWorkspaceHeader from '@/platform/settings/components/SettingsWorkspaceHeader.vue'
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
-import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
-import NavItem from '@/components/widget/nav/NavItem.vue'
-import NavTitle from '@/components/widget/nav/NavTitle.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
+import NavItem from '@comfyorg/design-system/navigation/NavItem'
+import NavTitle from '@comfyorg/design-system/navigation/NavTitle'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
-import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
 import type {
   ISettingGroup,
-  SettingPanelType,
+  SettingDialogProps,
   SettingParams
 } from '@/platform/settings/types'
-import { OnCloseKey } from '@/types/widgetTypes'
+import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 import { flattenTree } from '@/utils/treeUtil'
 
-const { onClose, defaultPanel, scrollToSettingId } = defineProps<{
-  onClose: () => void
-  defaultPanel?: SettingPanelType
-  scrollToSettingId?: string
-}>()
+const { onClose, defaultPanel, scrollToSettingId } =
+  defineProps<SettingDialogProps>()
 
-provide(OnCloseKey, onClose)
+const modalLayoutLabels = useModalLayoutLabels()
 
 const {
   defaultCategory,
   settingCategories,
   navGroups,
+  unifiedBillingSettingsEnabled,
   findCategoryByKey,
   findPanelByKey
 } = useSettingUI(defaultPanel, scrollToSettingId)
@@ -135,6 +171,33 @@ const { fetchBalance } = useBillingContext()
 
 const navRef = ref<HTMLElement | null>(null)
 const activeCategoryKey = ref<string | null>(defaultCategory.value?.key ?? null)
+
+const WORKSPACE_CATEGORY_KEYS = new Set([
+  'workspace',
+  'workspace-members',
+  'workspace-allowlist'
+])
+const closeButtonVariant = computed(() =>
+  unifiedBillingSettingsEnabled.value ? 'textonly' : undefined
+)
+const closeIcon = computed(() =>
+  unifiedBillingSettingsEnabled.value ? 'icon-[lucide--x]' : undefined
+)
+const isWorkspaceCategoryActive = computed(
+  () =>
+    activeCategoryKey.value !== null &&
+    WORKSPACE_CATEGORY_KEYS.has(activeCategoryKey.value)
+)
+const { workspaceName } = storeToRefs(useTeamWorkspaceStore())
+const { activeSummary } = storeToRefs(useWorkspaceBillingStateStore())
+
+const { isHeaderCollapsed, handlePanelScroll, resetHeaderCollapse } =
+  useSettingsHeaderCollapse()
+
+// A panel change swaps the scroller out from under the collapse state, and the
+// state outlives the dialog, so a reopen would otherwise start collapsed.
+watch(activeCategoryKey, resetHeaderCollapse)
+onBeforeUnmount(resetHeaderCollapse)
 
 const navItems = computed(() => navGroups.value.flatMap((group) => group.items))
 const searchableNavItems = computed(() =>
@@ -269,11 +332,7 @@ watch(activeCategoryKey, (newKey, oldKey) => {
     background-color: transparent;
   }
   30% {
-    background-color: color-mix(
-      in srgb,
-      var(--p-primary-color) 15%,
-      transparent
-    );
+    background-color: color-mix(in srgb, var(--primary) 15%, transparent);
   }
 }
 </style>

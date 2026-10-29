@@ -2,13 +2,13 @@ import type { Ref } from 'vue'
 import { computed, watch } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import type { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import type { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { NodeError } from '@/platform/remote/comfyui/types'
-import { getParentExecutionIds } from '@/types/nodeIdentification'
+import { getParentExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 import { hasErrorForSlot } from '@/utils/executionErrorUtil'
 import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
@@ -107,13 +107,14 @@ export function useNodeErrorFlagSync(
       showErrorsTab
     ],
     () => {
-      if (!app.isGraphReady) return
+      const rootGraph = useApp().rootGraphOrUndefined
+      if (!rootGraph) return
       // Legacy (LGraphNode) only: suppress missing-resource error flags
       // when the Errors tab is hidden, since legacy nodes lack the per-widget
       // red highlight that Vue nodes use to indicate *why* a node has errors.
       // Vue nodes compute hasAnyError independently and are unaffected.
       reconcileNodeErrorFlags(
-        app.rootGraph,
+        rootGraph,
         nodeErrors.value,
         showErrorsTab.value
           ? missingModelStore.missingModelAncestorExecutionIds

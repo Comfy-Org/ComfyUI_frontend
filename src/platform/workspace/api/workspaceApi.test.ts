@@ -1,19 +1,20 @@
-import { useAuthStore } from '@/stores/authStore'
-
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   BillingOpStatusResponse,
   SavedPaymentMethod
-} from './workspaceApi'
+} from '@comfyorg/billing-core'
 
 const { mockAxiosInstance } = vi.hoisted(() => ({
   mockAxiosInstance: {
     get: vi.fn(),
     post: vi.fn(),
+    put: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
-    interceptors: { response: { use: vi.fn() } }
+    interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } }
   }
 }))
 
@@ -31,50 +32,136 @@ vi.mock<unknown>(import('axios'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: vi.fn((key: string) => key)
+vi.mock(import('@/i18n'))
+
+vi.mock(import('@/platform/remote/ingest/ingestApiUrl'), () => ({
+  ingestApiUrl: (path: string) => `/api${path}`
 }))
-
-vi.mock(import('./workspaceApiUrl'), () => ({
-  workspaceApiUrl: (path: string) => `/api${path}`
-}))
-
-vi.mock(import('firebase/auth'), { spy: true })
-
-beforeEach(() => {
-  stubFirebaseAuthHarness()
-})
 
 import { workspaceApi } from './workspaceApi'
-import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { setIngestApiAuth } from '@/platform/remote/ingest/ingestApi'
+import type { IngestApiAuth } from '@/platform/remote/ingest/ingestApi'
+import { NoWorkspaceAccessError } from '@/platform/remote/ingest/ingestApiError'
+const auth = {
+  getWorkspaceAuthHeader: vi.fn<IngestApiAuth['getWorkspaceAuthHeader']>(),
+  getFirebaseAuthHeader: vi.fn<IngestApiAuth['getFirebaseAuthHeader']>(),
+  attachRetryInterceptor: vi.fn()
+}
+
+beforeEach(() => {
+  setIngestApiAuth(auth)
+})
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
 
+function axiosRejection(status: number, data: unknown) {
+  return {
+    isAxiosError: true,
+    name: 'AxiosError',
+    code: 'ERR_BAD_RESPONSE',
+    message: `Request failed with status code ${status}`,
+    status,
+    response: { status, statusText: '', headers: {}, data }
+  }
+}
+
 describe('workspaceApi', () => {
   beforeEach(() => {
-    vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockResolvedValue(
-      AUTH_HEADER
+    vi.mocked(auth.getWorkspaceAuthHeader).mockResolvedValue(AUTH_HEADER)
+    vi.mocked(auth.getFirebaseAuthHeader).mockResolvedValue(AUTH_HEADER)
+  })
+
+  describe('billing request dispatch telemetry', () => {
+    const record = vi.fn()
+
+    beforeEach(() => {
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackBillingEvent: record })
+      setTelemetryRegistry(registry)
+    })
+    afterEach(() => setTelemetryRegistry(null))
+
+    it.for(['pending_payment', 'needs_payment_method', 'subscribed'] as const)(
+      'records subscription checkout response %s without calling it payment success',
+      async (status) => {
+        const response = { billing_op_id: 'op-subscription', status }
+        mockAxiosInstance.post.mockResolvedValueOnce({ data: response })
+        await expect(billingApi.subscribe('standard-monthly')).resolves.toEqual(
+          response
+        )
+        expect(record).toHaveBeenLastCalledWith({
+          operation: 'subscription_checkout',
+          stage: 'checkout_received',
+          outcome: 'pending',
+          billing_op_id: 'op-subscription',
+          checkout_status: status
+        })
+        expect(record).toHaveBeenCalledTimes(2)
+      }
     )
-    vi.mocked(useAuthStore().getFirebaseAuthHeaderOrThrow).mockResolvedValue(
-      AUTH_HEADER
+
+    it.for(['pending', 'failed', 'completed'] as const)(
+      'records top-up checkout response %s without calling it payment success',
+      async (status) => {
+        const response = {
+          billing_op_id: 'op-topup',
+          topup_id: 'op-topup',
+          status,
+          amount_cents: 5000
+        }
+        mockAxiosInstance.post.mockResolvedValueOnce({ data: response })
+        await expect(billingApi.createTopup(5000)).resolves.toEqual(response)
+        expect(record).toHaveBeenLastCalledWith({
+          operation: 'topup',
+          stage: 'checkout_received',
+          outcome: 'pending',
+          billing_op_id: 'op-topup',
+          checkout_status: status
+        })
+        expect(record).toHaveBeenCalledTimes(2)
+      }
+    )
+
+    it.for(['subscription_checkout', 'topup'] as const)(
+      'records %s dispatch before its response, but not when authentication fails',
+      async (operation) => {
+        const send = () =>
+          operation === 'topup'
+            ? billingApi.createTopup(5000)
+            : billingApi.subscribe('standard-monthly')
+        const error = new Error('request rejected')
+        mockAxiosInstance.post.mockImplementationOnce(() => {
+          expect(record).toHaveBeenCalledExactlyOnceWith({
+            operation,
+            stage: 'request_sent',
+            outcome: 'pending'
+          })
+          return Promise.reject(error)
+        })
+        await expect(send()).rejects.toBe(error)
+
+        record.mockClear()
+        mockAxiosInstance.post.mockClear()
+        vi.mocked(auth.getWorkspaceAuthHeader).mockRejectedValueOnce(error)
+        await expect(send()).rejects.toBe(error)
+        expect(record).not.toHaveBeenCalled()
+        expect(mockAxiosInstance.post).not.toHaveBeenCalled()
+      }
     )
   })
 
   describe('authentication', () => {
     it('propagates error when workspace authentication rejects', async () => {
       const authError = new Error('toastMessages.userNotAuthenticated')
-      vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockRejectedValue(
-        authError
-      )
+      vi.mocked(auth.getWorkspaceAuthHeader).mockRejectedValue(authError)
 
       await expect(workspaceApi.list()).rejects.toBe(authError)
     })
 
     it('propagates error when getFirebaseAuthHeaderOrThrow rejects', async () => {
       const authError = new Error('toastMessages.userNotAuthenticated')
-      vi.mocked(useAuthStore().getFirebaseAuthHeaderOrThrow).mockRejectedValue(
-        authError
-      )
+      vi.mocked(auth.getFirebaseAuthHeader).mockRejectedValue(authError)
 
       await expect(workspaceApi.acceptInvite('token')).rejects.toBe(authError)
     })
@@ -95,6 +182,57 @@ describe('workspaceApi', () => {
         message: 'Forbidden'
       })
     })
+
+    it.for([
+      {
+        operation: 'getBillingOpStatus',
+        call: () => billingApi.getBillingOpStatus('op-1'),
+        code: undefined
+      },
+      {
+        operation: 'acceptInvite',
+        call: () => workspaceApi.acceptInvite('token'),
+        code: undefined
+      },
+      {
+        operation: 'getCurrentWorkspace',
+        call: () => workspaceApi.getCurrentWorkspace(),
+        code: 'no_workspace_access'
+      }
+    ])(
+      'names $operation as the failed operation',
+      async ({ operation, call, code }) => {
+        const axiosErr = {
+          isAxiosError: true,
+          response: { status: 403, data: { message: 'Forbidden', code } },
+          message: 'Request failed'
+        }
+        mockAxiosInstance.get.mockRejectedValue(axiosErr)
+        mockAxiosInstance.post.mockRejectedValue(axiosErr)
+
+        await expect(call()).rejects.toMatchObject({ operation })
+      }
+    )
+
+    it.for([
+      { status: 403, code: 'no_workspace_access', typed: true },
+      { status: 403, code: undefined, typed: false },
+      { status: 404, code: 'no_workspace_access', typed: false }
+    ])(
+      'a $status with code $code is NoWorkspaceAccessError: $typed',
+      async ({ status, code, typed }) => {
+        mockAxiosInstance.get.mockRejectedValue({
+          isAxiosError: true,
+          response: { status, data: { message: 'No workspace', code } },
+          message: 'Request failed'
+        })
+
+        const error = await workspaceApi.list().catch((e: unknown) => e)
+
+        expect(error instanceof NoWorkspaceAccessError).toBe(typed)
+        expect(error).toMatchObject({ status, code })
+      }
+    )
 
     it('falls back to err.message when response data has no message', async () => {
       const axiosErr = {
@@ -214,6 +352,295 @@ describe('workspaceApi', () => {
         { headers: AUTH_HEADER }
       )
     })
+  })
+
+  describe('deployment picking', () => {
+    it('listDeployments() sends GET /workspaces/:id/deployments with a 30 second timeout and no status retry', async () => {
+      const data = { items: [], builds_visible: true }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.listDeployments('ws-1')
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployments',
+        { headers: AUTH_HEADER, timeout: 30_000, __skipStatusRetry: true }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getDeploymentCpuServer() sends GET /workspaces/:id/deployment/cpu-server and reads the step', async () => {
+      const data = { deployment_id: 'dep-1', cpu_server: 'building' }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getDeploymentCpuServer('ws-1')
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployment/cpu-server',
+        { headers: AUTH_HEADER, timeout: 15_000 }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getDeploymentCpuServer() rejects a step it does not know instead of reading it as one', async () => {
+      mockAxiosInstance.get.mockResolvedValue({
+        data: { cpu_server: 'exists' }
+      })
+
+      await expect(
+        workspaceApi.getDeploymentCpuServer('ws-1')
+      ).rejects.toThrow()
+    })
+
+    it.for([
+      { status: 404, code: 'NOT_FOUND' },
+      { status: 502, code: 'cpu_server_unknown' }
+    ])(
+      'getDeploymentCpuServer() turns a $status into a WorkspaceApiError with code $code',
+      async ({ status, code }) => {
+        mockAxiosInstance.get.mockRejectedValue(
+          axiosRejection(status, { code, message: 'Refused' })
+        )
+
+        await expect(
+          workspaceApi.getDeploymentCpuServer('ws-1')
+        ).rejects.toMatchObject({
+          name: 'WorkspaceApiError',
+          status,
+          code,
+          message: 'Refused',
+          operation: 'getDeploymentCpuServer'
+        })
+      }
+    )
+
+    it('getReleaseUnsupportedPacks() sends GET /release/unsupported-packs and reads the packs and their release', async () => {
+      const data = {
+        release_id: 'release-2',
+        packs: [
+          {
+            folder: 'ComfyUI-NVIDIA-VFX',
+            registry_id: 'comfyui-nvidia-vfx',
+            repository: 'https://github.com/NVIDIA/ComfyUI-NVIDIA-VFX',
+            cause: 'needs a GPU'
+          }
+        ]
+      }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getReleaseUnsupportedPacks()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/release/unsupported-packs',
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getReleaseUnsupportedPacks() reads a pack not installed from the registry, with its cause', async () => {
+      const data = {
+        release_id: 'rel-picked',
+        packs: [
+          {
+            folder: 'ComfyUI_Nvidia_RTX_Nodes',
+            registry_id: '',
+            repository: '',
+            cause: 'needs a GPU'
+          }
+        ]
+      }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getReleaseUnsupportedPacks()
+
+      expect(result.packs).toEqual([
+        {
+          folder: 'ComfyUI_Nvidia_RTX_Nodes',
+          registry_id: '',
+          repository: '',
+          cause: 'needs a GPU'
+        }
+      ])
+    })
+
+    it('getReleaseUnsupportedPacks() rejects a pack whose registry id is in camelCase', async () => {
+      mockAxiosInstance.get.mockResolvedValue({
+        data: {
+          release_id: 'rel-picked',
+          packs: [
+            {
+              folder: 'ComfyUI_Nvidia_RTX_Nodes',
+              registryId: '',
+              repository: '',
+              cause: 'needs a GPU'
+            }
+          ]
+        }
+      })
+
+      await expect(workspaceApi.getReleaseUnsupportedPacks()).rejects.toThrow()
+    })
+
+    it('getReleaseUnsupportedPacks() rejects a body without packs', async () => {
+      mockAxiosInstance.get.mockResolvedValue({ data: { items: [] } })
+
+      await expect(workspaceApi.getReleaseUnsupportedPacks()).rejects.toThrow()
+    })
+
+    it('pickDeployment() sends PUT /workspaces/:id/deployment with the deployment', async () => {
+      mockAxiosInstance.put.mockResolvedValue({})
+
+      await workspaceApi.pickDeployment('ws-1', { deployment_id: 'dep-1' })
+
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployment',
+        { deployment_id: 'dep-1' },
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('does not dispatch a canceled deployment selection when authorization finishes late', async () => {
+      let finishAuth!: (headers: typeof AUTH_HEADER) => void
+      const pendingAuth = new Promise<typeof AUTH_HEADER>((resolve) => {
+        finishAuth = resolve
+      })
+      vi.mocked(auth.getWorkspaceAuthHeader).mockReturnValue(pendingAuth)
+      const controller = new AbortController()
+      const selected = workspaceApi.pickDeployment(
+        'ws-1',
+        { deployment_id: 'dep-1' },
+        controller.signal
+      )
+      controller.abort()
+      finishAuth(AUTH_HEADER)
+      await expect(selected).rejects.toMatchObject({ name: 'AbortError' })
+      expect(mockAxiosInstance.put).not.toHaveBeenCalled()
+    })
+
+    it('does not mint a canceled top-up checkout when authorization finishes late', async () => {
+      let finishAuth!: (headers: typeof AUTH_HEADER) => void
+      const pendingAuth = new Promise<typeof AUTH_HEADER>((resolve) => {
+        finishAuth = resolve
+      })
+      vi.mocked(auth.getWorkspaceAuthHeader).mockReturnValue(pendingAuth)
+      const controller = new AbortController()
+      const checkout = billingApi.createTopupCheckout(
+        1000,
+        'https://cloud.comfy.org/topup-return',
+        controller.signal
+      )
+      controller.abort()
+      finishAuth(AUTH_HEADER)
+      await expect(checkout).rejects.toMatchObject({ name: 'AbortError' })
+      expect(mockAxiosInstance.post).not.toHaveBeenCalled()
+    })
+
+    it('forwards deployment selection cancellation to the transport', async () => {
+      mockAxiosInstance.put.mockResolvedValue({})
+      const controller = new AbortController()
+      await workspaceApi.pickDeployment(
+        'ws-1',
+        { deployment_id: 'dep-1' },
+        controller.signal
+      )
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployment',
+        { deployment_id: 'dep-1' },
+        { headers: AUTH_HEADER, signal: controller.signal }
+      )
+    })
+
+    it('clearDeployment() sends DELETE /workspaces/:id/deployment, with follow=workspace only when asked', async () => {
+      mockAxiosInstance.delete.mockResolvedValue({})
+
+      await workspaceApi.clearDeployment('ws-1')
+      await workspaceApi.clearDeployment('ws-1', { follow: 'workspace' })
+
+      expect(mockAxiosInstance.delete).toHaveBeenNthCalledWith(
+        1,
+        '/api/workspaces/ws-1/deployment',
+        { headers: AUTH_HEADER, params: undefined }
+      )
+      expect(mockAxiosInstance.delete).toHaveBeenNthCalledWith(
+        2,
+        '/api/workspaces/ws-1/deployment',
+        { headers: AUTH_HEADER, params: { follow: 'workspace' } }
+      )
+    })
+
+    it('setDefaultDeployment() sends PUT /workspaces/:id/default-deployment with the deployment', async () => {
+      mockAxiosInstance.put.mockResolvedValue({})
+
+      await workspaceApi.setDefaultDeployment('ws-1', {
+        deployment_id: 'dep-1'
+      })
+
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/default-deployment',
+        { deployment_id: 'dep-1' },
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('clearDefaultDeployment() sends DELETE /workspaces/:id/default-deployment', async () => {
+      mockAxiosInstance.delete.mockResolvedValue({})
+
+      await workspaceApi.clearDefaultDeployment('ws-1')
+
+      expect(mockAxiosInstance.delete).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/default-deployment',
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('checkDeploymentCompatibility() sends POST /workspaces/:id/deployments/compatibility with the node types', async () => {
+      const data = {
+        deployments: [
+          { deployment_id: 'dep-1', missing_node_types: [], unknown: false }
+        ],
+        cloud: { missing_node_types: ['Power Lora Loader (rgthree)'] }
+      }
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      const result = await workspaceApi.checkDeploymentCompatibility('ws-1', [
+        'KSampler',
+        'Power Lora Loader (rgthree)'
+      ])
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployments/compatibility',
+        { node_types: ['KSampler', 'Power Lora Loader (rgthree)'] },
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it.for([
+      {
+        answer: 'a Comfy Cloud answer with no missing list',
+        data: {
+          deployments: [
+            { deployment_id: 'dep-1', missing_node_types: [], unknown: false }
+          ],
+          cloud: {}
+        }
+      },
+      {
+        answer: 'a deployment answer with no unknown flag',
+        data: {
+          deployments: [{ deployment_id: 'dep-1', missing_node_types: [] }],
+          cloud: { missing_node_types: [] }
+        }
+      }
+    ])(
+      'checkDeploymentCompatibility() rejects $answer instead of reading it as runs',
+      async ({ data }) => {
+        mockAxiosInstance.post.mockResolvedValue({ data })
+
+        await expect(
+          workspaceApi.checkDeploymentCompatibility('ws-1', ['KSampler'])
+        ).rejects.toMatchObject({ name: 'ZodError' })
+      }
+    )
   })
 
   describe('member management', () => {
@@ -338,10 +765,8 @@ describe('workspaceApi', () => {
 
       const result = await workspaceApi.acceptInvite('abc-token')
 
-      expect(useAuthStore().getFirebaseAuthHeaderOrThrow).toHaveBeenCalled()
-      expect(
-        useAuthStore().getWorkspaceAuthHeaderOrThrow
-      ).not.toHaveBeenCalled()
+      expect(auth.getFirebaseAuthHeader).toHaveBeenCalled()
+      expect(auth.getWorkspaceAuthHeader).not.toHaveBeenCalled()
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/invites/abc-token/accept',
         null,
@@ -356,7 +781,7 @@ describe('workspaceApi', () => {
       const data = { is_active: true, has_funds: true }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingStatus()
+      const result = await billingApi.getBillingStatus()
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/status',
@@ -371,7 +796,7 @@ describe('workspaceApi', () => {
       const data = { amount_micros: 5000000, currency: 'USD' }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingBalance()
+      const result = await billingApi.getBillingBalance()
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/balance',
@@ -393,14 +818,19 @@ describe('workspaceApi', () => {
           can_reactivate: true,
           can_change_seats: true,
           can_invite_members: true,
+          can_manage_members: true,
+          can_delete_workspace: false,
+          can_leave_workspace: false,
+          can_manage_billing: false,
+          can_manage_partner_node_access: false,
+          can_view_pending_invites: false,
+          can_view_team_usage: false,
           can_downgrade_to_personal: false
         }
       }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingCapabilities(
-        controller.signal
-      )
+      const result = await billingApi.getBillingCapabilities(controller.signal)
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/capabilities',
@@ -409,11 +839,24 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
+    it('getBillingAutoReload() sends GET /billing/auto-reload with a 10 second timeout', async () => {
+      const data = { status: 'off' }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await billingApi.getBillingAutoReload()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/auto-reload',
+        { headers: AUTH_HEADER, timeout: 10_000 }
+      )
+      expect(result).toEqual(data)
+    })
+
     it('getBillingPlans() sends GET /billing/plans', async () => {
       const data = { plans: [] }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingPlans()
+      const result = await billingApi.getBillingPlans()
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/billing/plans', {
         headers: AUTH_HEADER
@@ -421,51 +864,101 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
-    it('getChurnkeyAuth() returns validated Stripe-provider credentials', async () => {
-      const data = {
-        customer_id: 'cus_test_1',
-        auth_hash: 'hash-1',
-        mode: 'test'
+    const retentionFlow = {
+      session_id: '00000000-0000-4000-8000-000000000001',
+      expires_at: 2_000_000_000,
+      subscription: {
+        currency: 'usd',
+        unit_amount: 2000,
+        quantity: 1,
+        period_end: 2_000_000_000
       }
-      mockAxiosInstance.get.mockResolvedValue({ data })
+    }
 
-      await expect(workspaceApi.getChurnkeyAuth()).resolves.toEqual(data)
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-        '/api/billing/churnkey/auth',
-        { headers: AUTH_HEADER }
+    it.for([
+      { name: 'without an offer', data: retentionFlow },
+      {
+        name: 'with an offer',
+        data: {
+          ...retentionFlow,
+          experiment_variant: 'save_30_next_3_v1',
+          offer: {
+            id: 'save_30_next_3_v1',
+            percent_off: 30,
+            duration_in_months: 3
+          }
+        }
+      }
+    ])('prepareRetentionFlow() returns a session $name', async ({ data }) => {
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      await expect(billingApi.prepareRetentionFlow()).resolves.toEqual(data)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/retention/prepare',
+        {},
+        { headers: AUTH_HEADER, timeout: 5_000 }
       )
     })
 
-    it('getChurnkeyAuth() rejects malformed credentials', async () => {
-      mockAxiosInstance.get.mockResolvedValue({
-        data: {
-          customer_id: 'cus_test_1',
-          auth_hash: '',
-          mode: 'test'
-        }
+    it('prepareRetentionFlow() rejects a malformed session', async () => {
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { ...retentionFlow, session_id: 'not-a-session' }
       })
 
-      await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
+      await expect(billingApi.prepareRetentionFlow()).rejects.toMatchObject({
         name: 'ZodError'
       })
     })
 
-    it('getChurnkeyAuth() normalizes Axios failures', async () => {
-      mockAxiosInstance.get.mockRejectedValue({
+    it('acceptRetentionOffer() sends only the session', async () => {
+      const data = { billing_op_id: 'op-1', status: 'pending' }
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      await expect(
+        billingApi.acceptRetentionOffer(retentionFlow.session_id)
+      ).resolves.toEqual(data)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/retention/accept',
+        { session_id: retentionFlow.session_id },
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('recordRetentionFlowEvent() posts the event', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: undefined })
+      const event = {
+        session_id: retentionFlow.session_id,
+        event: 'offer_shown'
+      } as const
+
+      await billingApi.recordRetentionFlowEvent(event)
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/retention/events',
+        event,
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('prepareRetentionFlow() normalizes Axios failures', async () => {
+      mockAxiosInstance.post.mockRejectedValue({
         isAxiosError: true,
         response: {
           status: 503,
-          data: { message: 'Churnkey auth unavailable', code: 'UNAVAILABLE' }
+          data: {
+            message: 'cancellation offers are unavailable',
+            code: 'RETENTION_UNAVAILABLE'
+          }
         },
         message: 'Request failed',
         config: { headers: AUTH_HEADER }
       })
 
-      await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
+      await expect(billingApi.prepareRetentionFlow()).rejects.toMatchObject({
         name: 'WorkspaceApiError',
         status: 503,
-        code: 'UNAVAILABLE',
-        message: 'Churnkey auth unavailable'
+        code: 'RETENTION_UNAVAILABLE',
+        message: 'cancellation offers are unavailable'
       })
     })
   })
@@ -483,7 +976,7 @@ describe('workspaceApi', () => {
       ]
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.listSavedPaymentMethods()
+      const result = await billingApi.listSavedPaymentMethods()
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/payment-methods',
@@ -495,7 +988,7 @@ describe('workspaceApi', () => {
     it('previewSubscribe() sends the promotion code only when applied', async () => {
       mockAxiosInstance.post.mockResolvedValue({ data: { allowed: true } })
 
-      await workspaceApi.previewSubscribe('pro-monthly', {
+      await billingApi.previewSubscribe('pro-monthly', {
         promotionCode: 'SAVE20'
       })
 
@@ -511,7 +1004,7 @@ describe('workspaceApi', () => {
         data: { billing_op_id: 'op-quote', status: 'subscribed' }
       })
 
-      await workspaceApi.subscribe('pro-monthly', {
+      await billingApi.subscribe('pro-monthly', {
         promotionCode: 'SAVE20',
         quoteId: 'quote_123',
         quoteVersion: 2,
@@ -535,7 +1028,7 @@ describe('workspaceApi', () => {
         data: { billing_op_id: 'op-no-promo', status: 'subscribed' }
       })
 
-      await workspaceApi.subscribe('pro-monthly')
+      await billingApi.subscribe('pro-monthly')
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/subscribe',
@@ -544,54 +1037,11 @@ describe('workspaceApi', () => {
       )
     })
 
-    it('subscribe() rejects mutually exclusive payment credentials', async () => {
-      await expect(
-        workspaceApi.subscribe('pro-monthly', {
-          confirmationToken: 'ctoken_1',
-          savedPaymentMethodId: 'pm_saved'
-        })
-      ).rejects.toThrow(
-        'confirmationToken and savedPaymentMethodId are mutually exclusive'
-      )
-
-      expect(mockAxiosInstance.post).not.toHaveBeenCalled()
-    })
-
-    it('subscribe() omits an empty credential from the request', async () => {
-      mockAxiosInstance.post.mockResolvedValueOnce({ data: {} })
-
-      await workspaceApi.subscribe('pro-monthly', { confirmationToken: '' })
-
-      const body = mockAxiosInstance.post.mock.calls[0][1]
-      expect(body).not.toHaveProperty('confirmation_token', '')
-      expect(body.confirmation_token).toBeUndefined()
-
-      mockAxiosInstance.post.mockResolvedValueOnce({ data: {} })
-      await workspaceApi.subscribe('pro-monthly', { savedPaymentMethodId: '' })
-
-      const savedBody = mockAxiosInstance.post.mock.calls[1][1]
-      expect(savedBody).not.toHaveProperty('saved_payment_method_id', '')
-      expect(savedBody.saved_payment_method_id).toBeUndefined()
-    })
-
-    it('subscribe() rejects an empty credential alongside a saved one', async () => {
-      await expect(
-        workspaceApi.subscribe('pro-monthly', {
-          confirmationToken: '',
-          savedPaymentMethodId: 'pm_saved'
-        })
-      ).rejects.toThrow(
-        'confirmationToken and savedPaymentMethodId are mutually exclusive'
-      )
-
-      expect(mockAxiosInstance.post).not.toHaveBeenCalled()
-    })
-
     it('previewSubscribe() sends fields defined by the ingest contract', async () => {
       const data = { allowed: true, transition_type: 'new_subscription' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.previewSubscribe(
+      const result = await billingApi.previewSubscribe(
         'team_per_credit_annual',
         {
           teamCreditStopId: 'team_700'
@@ -613,7 +1063,7 @@ describe('workspaceApi', () => {
       const data = { billing_op_id: 'op-1', status: 'subscribed' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.subscribe('pro-monthly', {
+      const result = await billingApi.subscribe('pro-monthly', {
         confirmationToken: 'ctoken_1',
         returnUrl: 'https://return.url',
         cancelUrl: 'https://cancel.url'
@@ -638,7 +1088,7 @@ describe('workspaceApi', () => {
       const data = { billing_op_id: 'op-1b', status: 'needs_payment_method' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.subscribe('team_per_credit_annual', {
+      const result = await billingApi.subscribe('team_per_credit_annual', {
         teamCreditStopId: 'team_700',
         billingCycle: 'yearly'
       })
@@ -662,7 +1112,7 @@ describe('workspaceApi', () => {
       const data = { billing_op_id: 'op-1c', status: 'subscribed' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.subscribe('pro-monthly', {
+      const result = await billingApi.subscribe('pro-monthly', {
         confirmReactivation: true,
         prorationAt: '2026-07-29T12:00:00Z'
       })
@@ -683,7 +1133,7 @@ describe('workspaceApi', () => {
       const data = { billing_op_id: 'op-2', cancel_at: '2026-05-01' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.cancelSubscription('key-1')
+      const result = await billingApi.cancelSubscription('key-1')
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/subscription/cancel',
@@ -697,7 +1147,7 @@ describe('workspaceApi', () => {
       const data = { billing_op_id: 'op-3', status: 'active' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.resubscribe('key-2')
+      const result = await billingApi.resubscribe('key-2')
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/subscription/resubscribe',
@@ -713,16 +1163,36 @@ describe('workspaceApi', () => {
       const data = { url: 'https://stripe.com/portal' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getPaymentPortalUrl(
+      const result = await billingApi.getPaymentPortalUrl(
         'https://app.com/settings'
       )
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/payment-portal',
         { return_url: 'https://app.com/settings' },
-        { headers: AUTH_HEADER }
+        { headers: AUTH_HEADER, timeout: 30_000 }
       )
       expect(result).toEqual(data)
+    })
+
+    it('getPaymentPortalUrl() asks for the payment-method update flow when named', async () => {
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { url: 'https://stripe.com/portal' }
+      })
+
+      await billingApi.getPaymentPortalUrl(
+        'https://app.com/settings',
+        'payment_method_update'
+      )
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/payment-portal',
+        {
+          return_url: 'https://app.com/settings',
+          flow_type: 'payment_method_update'
+        },
+        { headers: AUTH_HEADER, timeout: 30_000 }
+      )
     })
 
     it('createTopup() sends POST with amount_cents and idempotency_key', async () => {
@@ -734,7 +1204,7 @@ describe('workspaceApi', () => {
       }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.createTopup(1000, 'key-3')
+      const result = await billingApi.createTopup(1000, 'key-3')
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/topup',
@@ -750,7 +1220,7 @@ describe('workspaceApi', () => {
       const data = { total: 0, events: [], page: 1, limit: 10, totalPages: 0 }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingEvents({
+      const result = await billingApi.getBillingEvents({
         page: 1,
         limit: 10
       })
@@ -776,7 +1246,7 @@ describe('workspaceApi', () => {
       } satisfies BillingOpStatusResponse
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingOpStatus('op-1')
+      const result = await billingApi.getBillingOpStatus('op-1')
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/ops/op-1',

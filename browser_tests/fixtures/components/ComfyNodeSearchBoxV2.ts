@@ -25,9 +25,12 @@ export class ComfyNodeSearchBoxV2 {
     const page = comfyPage.page
     this.dialog = page.getByRole('search')
     this.input = this.dialog.getByRole('combobox')
-    this.filterSearch = this.dialog.getByRole('textbox', { name: 'Search' })
+    const filterPopover = page.getByTestId(searchBoxV2.typeFilterPopover)
+    this.filterSearch = filterPopover.getByRole('textbox', {
+      name: 'Search'
+    })
     this.results = this.dialog.getByTestId(searchBoxV2.resultItem)
-    this.filterOptions = this.dialog.getByTestId(searchBoxV2.filterOption)
+    this.filterOptions = filterPopover.getByTestId(searchBoxV2.filterOption)
     this.filterChips = this.dialog.getByTestId(searchBoxV2.filterChip)
     this.noResults = this.dialog.getByTestId(searchBoxV2.noResults)
     this.nodeIdBadge = this.dialog.getByTestId(searchBoxV2.nodeIdBadge)
@@ -99,6 +102,29 @@ export class ComfyNodeSearchBoxV2 {
     await expect(this.results.first()).toContainText(query)
     await this.comfyPage.page.keyboard.press('Enter')
     await expect(this.dialog).toBeHidden()
+    await expect(this.comfyPage.page.getByTestId('dialog-overlay')).toHaveCount(
+      0
+    )
     await this.comfyPage.page.mouse.click(position.x, position.y)
+  }
+
+  /** {@link addNode}, returning the id the graph gave the added node. */
+  async addNodeAndGetId(
+    query: string,
+    options: { position?: Position } = {}
+  ): Promise<string> {
+    const before = new Set(await this.comfyPage.workflow.getGraphNodeIds())
+    await this.addNode(query, options)
+    await expect
+      .poll(async () =>
+        (await this.comfyPage.workflow.getGraphNodeIds()).filter(
+          (id) => !before.has(id)
+        )
+      )
+      .toHaveLength(1)
+    const after = await this.comfyPage.workflow.getGraphNodeIds()
+    const [added] = after.filter((id) => !before.has(id))
+    if (!added) throw new Error(`${query}: the search box add produced no node`)
+    return added
   }
 }

@@ -1,15 +1,16 @@
-import { createSharedComposable, whenever } from '@vueuse/core'
+import { createSharedComposable } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { toValue } from 'vue'
 
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { NodeBoundsUpdate, Point } from '@/renderer/core/layout/types'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeBoundsUpdate } from '@comfyorg/graph-model/layout'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
@@ -45,7 +46,11 @@ export const useNodeDrag = createSharedComposable(() => {
   let lastPointerX = 0
   let lastPointerY = 0
 
-  function startDrag(event: PointerEvent, nodeId: NodeId) {
+  function startDrag(
+    event: PointerEvent,
+    nodeId: NodeId,
+    initialShiftKey: boolean
+  ) {
     const { rootGraphId } = canvasStore
     if (!rootGraphId) return
 
@@ -54,7 +59,7 @@ export const useNodeDrag = createSharedComposable(() => {
     const position = layout.position
 
     // Track shift key state and sync to canvas for snap preview
-    stopShiftSync = trackShiftKey(event)
+    stopShiftSync = trackShiftKey(initialShiftKey)
 
     dragStartPos = { ...position }
     dragStartMouse = { x: event.clientX, y: event.clientY }
@@ -213,12 +218,6 @@ export const useNodeDrag = createSharedComposable(() => {
     // Throttle position updates using requestAnimationFrame for better performance
     if (rafId !== null) return // Skip if frame already scheduled
 
-    const { target, pointerId } = event
-    if (target instanceof HTMLElement && !target.hasPointerCapture(pointerId)) {
-      // Delay capture to drag to allow for the Node cloning
-      target.setPointerCapture(pointerId)
-    }
-
     lastPointerX = event.clientX
     lastPointerY = event.clientY
     startAutoPan(event, nodeId)
@@ -315,10 +314,10 @@ export const useNodeDrag = createSharedComposable(() => {
     }
   }
 
-  whenever(() => !layoutStore.isDraggingVueNodes.value, resetDragState)
   return {
     startDrag,
     handleDrag,
-    endDrag
+    endDrag,
+    cancelDrag: resetDragState
   }
 })

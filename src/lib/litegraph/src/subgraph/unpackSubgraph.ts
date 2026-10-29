@@ -1,14 +1,15 @@
+import type { LGraph } from '@comfyorg/graph-model/entityRegistry'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4 } from '@/utils/uuid'
-import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import { mintNodeId } from '../idAllocation'
-import type { INodeInputSlot, Point } from '../interfaces'
-import type { LGraph } from '../LGraph'
-import { LGraphNode } from '../LGraphNode'
-import { LiteGraph } from '../litegraph'
-import type { ISerialisedNode } from '../types/serialisation'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 
 export type UnpackedTargetInput =
   | {
@@ -200,16 +201,28 @@ export function materializeSubgraphNodes({
 
   for (const nodeInfo of nodeInfos) {
     const node = createNodeForUnpack(nodeInfo)
-    const newNodeId = mintNodeId(graph.state)
-    nodeIdMap.set(toNodeId(nodeInfo.id), newNodeId)
-    node.id = newNodeId
-    nodeInfo.id = newNodeId
+    const oldNodeId = toNodeId(nodeInfo.id)
 
     // Strip links before configure so callbacks cannot resolve subgraph link
     // IDs against unrelated links in the parent graph.
     stripSerializedLinks(nodeInfo)
 
+    // `node.id` starts UNASSIGNED (as freshly constructed), so this `add`
+    // takes `LGraph.add`'s own unassigned-id path — the same graph-aware
+    // disjoint-mode selection a directly-added node gets — instead of this
+    // call preassigning a plain sequential id itself and only observing it
+    // into `graph.add`. Preassigning would both bypass that selection (so
+    // unpacking into a doc-bound root could mint inside the agent's
+    // reserved range) and, for a disjoint mint, spuriously advance
+    // `graph.state.lastNodeId` to the minted value through the
+    // already-assigned-id `observe` path `graph.add` falls back to —
+    // something a fresh disjoint mint must never do (see `LGraph.test.ts`'s
+    // "never advancing lastNodeId" case).
     graph.add(node, true)
+    const newNodeId = node.id
+    nodeIdMap.set(oldNodeId, newNodeId)
+    nodeInfo.id = newNodeId
+
     node.configure(nodeInfo)
 
     inputSlots.set(

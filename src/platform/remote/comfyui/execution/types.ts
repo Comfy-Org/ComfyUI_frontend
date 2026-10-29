@@ -1,5 +1,7 @@
+import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
-import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zNodeId } from '@comfyorg/graph-model/workflowSchema'
+import type { TaskStatus } from '@/platform/tasks/services/taskSchema'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
 
 export type JobId = string
@@ -8,7 +10,9 @@ export const zResultItem = z.object({
   filename: z.string().optional(),
   subfolder: z.string().optional(),
   type: resultItemType.optional(),
-  display_name: z.string().optional()
+  display_name: z.string().optional(),
+  id: z.string().optional(),
+  preview_id: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
 // Uses .passthrough() because custom nodes can output arbitrary keys.
@@ -30,9 +34,7 @@ export type NodeOutputWith<T extends Record<string, unknown>> =
 
 type NodeId = z.infer<typeof zNodeId>
 
-export interface StatusWsMessageStatus {
-  exec_info: { queue_remaining: number }
-}
+export type StatusWsMessageStatus = PromptInfo
 export interface StatusWsMessage {
   status?: StatusWsMessageStatus | null
   sid?: string | null
@@ -118,14 +120,18 @@ export interface LogsRawResponse {
   entries: LogEntry[]
 }
 export type FeatureFlagsWsMessage = Record<string, unknown>
-type AssetTaskStatus = 'created' | 'running' | 'completed' | 'failed'
+/** ComfyUI's `agent` server feature, pushed again on every change. */
+export interface AgentStatusWsMessage {
+  state: 'starting' | 'ready' | 'failed'
+  reason?: string | null
+}
 export interface AssetDownloadWsMessage {
   task_id: string
   asset_name: string
   bytes_total: number
   bytes_downloaded: number
   progress: number
-  status: AssetTaskStatus
+  status: TaskStatus
   asset_id?: string
   error?: string
 }
@@ -138,8 +144,16 @@ export interface AssetExportWsMessage {
   bytes_total: number
   bytes_processed: number
   progress: number
-  status: AssetTaskStatus
+  status: TaskStatus
   error?: string
+}
+export interface AssetSeedCompletedWsMessage {
+  created: number
+  elapsed: number
+  enriched: number
+  phase: 'fast' | 'enrich' | 'full'
+  skipped: number
+  total: number
 }
 
 export const zTaskOutput = z.record(zNodeId, zOutputs)

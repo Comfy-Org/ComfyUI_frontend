@@ -2,18 +2,13 @@ import { useDialogService } from '@/services/dialogService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import * as utils from '@/scripts/utils'
 import { useWorkflowActionsService } from './workflowActionsService'
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({ openWorkflow: vi.fn() })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const minimalWorkflow: ComfyWorkflowJSON = {
   version: 0.4,

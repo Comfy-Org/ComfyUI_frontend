@@ -4,14 +4,14 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
+import { createNode } from './createNode'
 import {
-  createNode,
   getWidgetIdForNode,
   mapLiveWidgetsById,
   migrateWidgetsValues,
@@ -239,7 +239,6 @@ describe('getWidgetIdForNode', () => {
   })
 
   it('maps every widget when one duplicate cannot be renamed', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const node = fakeNode(42)
     const first = {
       name: 'shared',
@@ -266,16 +265,15 @@ describe('getWidgetIdForNode', () => {
     expect(mappedFirst).toBe(first)
     expect(mappedFrozen).toBe(frozen)
     expect(node.widgets.map(({ name }) => name)).toEqual(['shared', 'shared'])
-    expect(warn).toHaveBeenCalledOnce()
-    warn.mockClear()
+    expect(console.warn).toHaveBeenCalledOnce()
+    vi.mocked(console.warn).mockClear()
     expect(getWidgetIdForNode(node, frozen)).toBe(
       widgetId(graphId, toNodeId(42), 'shared#1')
     )
-    expect(warn).toHaveBeenCalledOnce()
+    expect(console.warn).toHaveBeenCalledOnce()
   })
 
   it('maps repeated widget object references only once', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const node = fakeNode(42)
     const first = {
       name: 'shared',
@@ -307,7 +305,7 @@ describe('getWidgetIdForNode', () => {
       'shared',
       'shared'
     ])
-    expect(warn).toHaveBeenCalledOnce()
+    expect(console.warn).toHaveBeenCalledOnce()
   })
 
   it('returns undefined when the node has no graph', () => {

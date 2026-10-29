@@ -262,6 +262,49 @@ https://github.com/user-attachments/assets/5696a89d-4a47-4fcc-9e8c-71e1264943f2
 
 ### Developer APIs
 
+<details id='extension-api-toast-kinds'>
+  <summary>v1.58: Kind-based toast API</summary>
+
+`app.extensionManager.toast` has `success`, `error`, `info`, `warning`, and
+`loading`. Each takes `(title, { description, duration, closable, action })`
+and returns an id for `dismiss(id)`. `dismissAll()` removes every toast.
+
+```js
+const toast = app.extensionManager.toast
+
+toast.info('Loaded!', { description: 'Extension loaded!', duration: 3000 })
+
+const toastId = toast.warning('Model missing', {
+  action: {
+    label: 'Download',
+    onClick: () => {
+      startDownload()
+      toast.dismiss(toastId)
+    }
+  }
+})
+```
+
+A toast stays open until dismissed unless `duration` (ms) is set. Clicking an
+`action` button does not dismiss the toast.
+
+`add()` and `addAlert()` still work but are deprecated. `addAlert(message)` now
+shows `message` as the warning title, like `warning(message)`. `remove()` and
+`removeAll()` were removed; use `dismiss(id)` or `dismissAll()`.
+
+`add()` maps the PrimeVue message fields onto the new API and ignores every
+other field:
+
+| `add()` field | New API                                                                                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `severity`    | kind: `warn` → `warning` (`warning` also works but is deprecated); `success`, `error` unchanged; `info`, `secondary`, `contrast` → `info`; any other value logs an error and shows nothing |
+| `summary`     | `title` (`detail` becomes the title when `summary` is missing)                                                                                                                             |
+| `detail`      | `description`                                                                                                                                                                              |
+| `life`        | `duration` in ms; `0` or unset keeps the toast open                                                                                                                                        |
+| `closable`    | `closable`                                                                                                                                                                                 |
+
+</details>
+
 <details>
   <summary>v1.6.13: prompt/confirm/alert replacements for ComfyUI desktop</summary>
 
@@ -320,7 +363,7 @@ app.registerExtension({
     {
       label: 'Test Badge',
       url: 'https://example.com',
-      icon: 'pi pi-box'
+      icon: 'icon-[lucide--box]'
     }
   ]
 })
@@ -472,7 +515,9 @@ app.extensionManager.toast.add({
 })
 ```
 
-Documentation of all supported options can be found here: <https://primevue.org/toast/#api.toast.interfaces.ToastMessageOptions>
+Only `severity`, `summary`, `detail`, `life` and `closable` are honoured; see the field mapping under the [kind-based toast API](#extension-api-toast-kinds).
+
+Deprecated in v1.58 by the [kind-based toast API](#extension-api-toast-kinds).
 
 ![image](https://github.com/user-attachments/assets/de02cd7e-cd81-43d1-a0b0-bccef92ff487)
 
@@ -486,7 +531,7 @@ Extensions now can call the following API to register a sidebar tab.
 ```js
 app.extensionManager.registerSidebarTab({
   id: 'search',
-  icon: 'pi pi-search',
+  icon: 'icon-[lucide--search]',
   title: 'search',
   tooltip: 'search',
   type: 'custom',
@@ -496,7 +541,7 @@ app.extensionManager.registerSidebarTab({
 })
 ```
 
-The list of supported icons can be found here: <https://primevue.org/icons/#list>
+Icon classes render only for [Lucide](https://lucide.dev/icons/) icons the frontend already uses, because Tailwind generates `icon-[lucide--*]` classes only for icons found in the frontend's source. PrimeIcons (`pi pi-*`) still work but are being phased out.
 
 We will support custom icons later.
 
@@ -516,7 +561,7 @@ app.registerExtension({
     {
       id: 'test.selection.command',
       label: 'Test Command',
-      icon: 'pi pi-star',
+      icon: 'icon-[lucide--star]',
       function: () => {
         // Command logic here
       }

@@ -2,7 +2,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
-import { app } from '../../scripts/app'
+import { app } from '@/scripts/app'
+import type { ComfyExtension } from '@/types/comfy'
 
 const saveNodeTypes = new Set([
   'SaveImage',
@@ -29,7 +30,7 @@ const saveNodeTypes = new Set([
 
 // Use widget values and dates in output filenames
 
-app.registerExtension({
+export const saveImageExtraOutputExtension: ComfyExtension = {
   name: 'Comfy.SaveImageExtraOutput',
   async beforeRegisterNodeDef(
     nodeType: typeof LGraphNode,
@@ -41,13 +42,12 @@ app.registerExtension({
       nodeType.prototype.onNodeCreated = function () {
         const r = onNodeCreated?.call(this)
 
-        // @ts-expect-error fixme ts strict error
-        const widget = this.widgets.find((w) => w.name === 'filename_prefix')
-        // @ts-expect-error fixme ts strict error
-        widget.serializeValue = () => {
-          // @ts-expect-error fixme ts strict error
-          return applyTextReplacements(app.graph, widget.value)
-        }
+        const widget = this.widgets?.find((w) => w.name === 'filename_prefix')
+        if (!widget) return r
+        widget.serializeValue = () =>
+          typeof widget.value === 'string'
+            ? applyTextReplacements(app.graph, widget.value)
+            : widget.value
 
         return r
       }
@@ -65,4 +65,4 @@ app.registerExtension({
       }
     }
   }
-})
+}

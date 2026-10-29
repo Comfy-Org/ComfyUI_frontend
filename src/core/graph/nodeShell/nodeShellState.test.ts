@@ -8,9 +8,9 @@ import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { createInputSlotView } from '@/lib/litegraph/src/node/slotDescriptorView'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import type { NodeState } from '@/types/nodeState'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 
 import { createNodeShellState, unregisterNodeState } from './nodeShellState'
@@ -106,7 +106,6 @@ describe('node shell state', () => {
 describe('node registration invariants', () => {
   beforeEach(() => {
     vi.stubEnv('DEV', true)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
   it('refuses to register a node under a second root graph', () => {

@@ -1,4 +1,3 @@
-import type { ComfyApp } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -7,25 +6,17 @@ import {
   findOutputAsset,
   findServerPreviewUrl,
   isAssetPreviewSupported,
-  persistThumbnail
+  persistThumbnail,
+  resolvePreviewUrl
 } from '@/platform/assets/utils/assetPreviewUtil'
 
-const mockFetchApi = vi.hoisted(() => vi.fn())
-const mockApiURL = vi.hoisted(() =>
-  vi.fn((path: string) => `http://localhost:8188${path}`)
-)
+import { api } from '@/scripts/api'
+
 const mockUploadAssetFromBase64 = vi.hoisted(() => vi.fn())
 const mockUpdateAsset = vi.hoisted(() => vi.fn())
 const mockInvalidateOutputAssets = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    fetchApi: mockFetchApi,
-    apiURL: mockApiURL,
-    api_base: ''
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
@@ -36,10 +27,7 @@ vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
 }))
 
 function mockFetchResponse(assets: Record<string, unknown>[]) {
-  mockFetchApi.mockResolvedValueOnce({
-    ok: true,
-    json: () => Promise.resolve({ assets })
-  })
+  vi.mocked(api.fetchApi).mockResolvedValueOnce(Response.json({ assets }))
 }
 
 function mockFetchEmpty() {
@@ -47,7 +35,9 @@ function mockFetchEmpty() {
 }
 
 function mockFetchError() {
-  mockFetchApi.mockResolvedValueOnce({ ok: false })
+  vi.mocked(api.fetchApi).mockResolvedValueOnce(
+    new Response(null, { status: 500 })
+  )
 }
 
 const cloudAsset = {
@@ -79,6 +69,9 @@ const localAssetWithPreview = {
 }
 
 beforeEach(() => {
+  vi.mocked(api.apiURL).mockImplementation(
+    (path) => `http://localhost:8188${path}`
+  )
   vi.spyOn(useAssetsStore().outputAssets, 'invalidate').mockImplementation(
     mockInvalidateOutputAssets
   )
@@ -95,14 +88,47 @@ describe('isAssetPreviewSupported', () => {
   })
 })
 
+describe('resolvePreviewUrl', () => {
+  it.for([
+    {
+      kind: 'a preview_url',
+      asset: cloudAssetWithPreview,
+      url: 'http://localhost:8188/api/view?type=output&filename=preview.png'
+    },
+    {
+      kind: 'a preview_id without preview_url',
+      asset: { ...cloudAsset, preview_id: 'aaaa-bbbb' },
+      url: 'http://localhost:8188/assets/aaaa-bbbb/content'
+    },
+    {
+      kind: 'a job-grouped card with no preview',
+      asset: {
+        ...cloudAsset,
+        id: 'job-1',
+        user_metadata: { jobId: 'job-1', subfolder: '', assetId: 'file-1' }
+      },
+      url: 'http://localhost:8188/assets/file-1/content'
+    },
+    {
+      kind: 'an ungrouped card with no preview',
+      asset: cloudAsset,
+      url: `http://localhost:8188/assets/${cloudAsset.id}/content`
+    }
+  ])('resolves $kind', ({ asset, url }) => {
+    expect(resolvePreviewUrl(asset)).toBe(url)
+  })
+})
+
 describe('findOutputAsset', () => {
   it('finds asset by hash (cloud)', async () => {
     mockFetchResponse([cloudAsset])
 
     const result = await findOutputAsset('c6cadcee57dd.glb')
 
-    expect(mockFetchApi).toHaveBeenCalledOnce()
-    expect(mockFetchApi.mock.calls[0][0]).toContain('hash=c6cadcee57dd.glb')
+    expect(api.fetchApi).toHaveBeenCalledOnce()
+    expect(vi.mocked(api.fetchApi).mock.calls[0][0]).toContain(
+      'hash=c6cadcee57dd.glb'
+    )
     expect(result).toEqual(cloudAsset)
   })
 
@@ -112,9 +138,9 @@ describe('findOutputAsset', () => {
 
     const result = await findOutputAsset('ComfyUI_00081_.glb')
 
-    expect(mockFetchApi).toHaveBeenCalledTimes(2)
-    expect(mockFetchApi.mock.calls[0][0]).toContain('hash=')
-    expect(mockFetchApi.mock.calls[1][0]).toContain('name_contains=')
+    expect(api.fetchApi).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(api.fetchApi).mock.calls[0][0]).toContain('hash=')
+    expect(vi.mocked(api.fetchApi).mock.calls[1][0]).toContain('name_contains=')
     expect(result).toEqual(localAsset)
   })
 
@@ -159,7 +185,7 @@ describe('findServerPreviewUrl', () => {
 
     const result = await findServerPreviewUrl('c6cadcee57dd.glb')
 
-    expect(mockApiURL).toHaveBeenCalledWith(cloudAssetWithPreview.preview_url)
+    expect(api.apiURL).toHaveBeenCalledWith(cloudAssetWithPreview.preview_url)
     expect(result).toBe(
       `http://localhost:8188${cloudAssetWithPreview.preview_url}`
     )
@@ -182,7 +208,7 @@ describe('findServerPreviewUrl', () => {
   })
 
   it('returns null on error', async () => {
-    mockFetchApi.mockRejectedValueOnce(new Error('network error'))
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(new Error('network error'))
 
     const result = await findServerPreviewUrl('test.glb')
     expect(result).toBeNull()
@@ -311,7 +337,4 @@ describe('persistThumbnail', () => {
   })
 })
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))

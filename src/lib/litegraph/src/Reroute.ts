@@ -1,16 +1,29 @@
+import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { moveRerouteLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import { toSelectableKey } from '@/core/selection/selectionState'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
-import type { GraphScope } from '@/types/graphScopeId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import {
+  graphScopeOf,
+  toOwningGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import { zeroUuid } from '@/utils/uuid'
-import type { FloatingRerouteSlot, RerouteChain } from '@/types/rerouteChain'
-import type { RerouteId } from '@/types/rerouteId'
+import type {
+  FloatingRerouteSlot,
+  RerouteChain
+} from '@comfyorg/graph-model/rerouteChain'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { UUID } from '@/utils/uuid'
-import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
+import type {
+  Point2D as LayoutPoint,
+  PointTuple as Point,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 function isPointLike(value: unknown): value is ArrayLike<number> {
   return (
@@ -27,28 +40,32 @@ function hasPointLength(value: unknown): boolean {
 }
 
 import { LGraphBadge } from './LGraphBadge'
-import type { LGraph } from './LGraph'
-import type { LGraphNode } from './LGraphNode'
+
 import { LLink } from './LLink'
-import type { LinkId } from './LLink'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { createMutationView } from './infrastructure/createMutationView'
 import type {
   CanvasColour,
-  INodeInputSlot,
-  INodeOutputSlot,
-  LinkNetwork,
   LinkSegment,
-  Point,
-  Positionable,
-  ReadOnlyRect,
+  Positionable
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import type {
+  LinkNetwork,
   ReadonlyLinkNetwork
-} from './interfaces'
-import { LiteGraph } from './litegraph'
+} from '@comfyorg/graph-model/linkNetwork'
+import { litegraph } from './litegraphInstance'
 import { distance, isPointInRect } from './measure'
-import type { Serialisable, SerialisableReroute } from './types/serialisation'
+import type {
+  Serialisable,
+  SerialisableReroute
+} from '@comfyorg/graph-model/serialisation'
 
-export type { FloatingRerouteSlot } from '@/types/rerouteChain'
-export type { RerouteId } from '@/types/rerouteId'
+export type { FloatingRerouteSlot } from '@comfyorg/graph-model/rerouteChain'
+export type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 
 /**
  * Represents an additional point on the graph that a link path will travel through.  Used for visual organisation only.
@@ -197,7 +214,17 @@ export class Reroute
   }
 
   /** @inheritdoc */
-  selected?: boolean
+  get selected(): boolean {
+    return isSelectedIn(this._graphScope, toSelectableKey('reroute', this.id))
+  }
+
+  set selected(value: boolean | undefined) {
+    setSelectedIn(
+      this._graphScope,
+      toSelectableKey('reroute', this.id),
+      !!value
+    )
+  }
 
   private get membership(): RerouteMembership {
     return this._graphScope
@@ -462,7 +489,7 @@ export class Reroute
   snapToGrid(snapTo: number): boolean {
     if (!snapTo) return false
 
-    const offsetY = LiteGraph.NODE_SLOT_HEIGHT * 0.7
+    const offsetY = litegraph().NODE_SLOT_HEIGHT * 0.7
     const { x, y } = this.storedPosition
     const snappedX = snapTo * Math.round(x / snapTo)
     const snappedY = snapTo * Math.round((y - offsetY) / snapTo) + offsetY
@@ -476,7 +503,7 @@ export class Reroute
     const network = this.network.deref()
     if (!network) return
 
-    for (const linkId of [...this.floatingLinkIds]) {
+    for (const linkId of Array.from(this.floatingLinkIds)) {
       const floatingLink = network.floatingLinks.get(linkId)
       if (floatingLink) network.removeFloatingLink(floatingLink)
     }
@@ -888,4 +915,10 @@ export function unregisterAllRerouteChains(
   graph: Pick<LGraph, 'reroutes'>
 ): void {
   for (const reroute of graph.reroutes.values()) unregisterRerouteChain(reroute)
+}
+
+type RegisteredReroute = Reroute
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface Reroute extends RegisteredReroute {}
 }

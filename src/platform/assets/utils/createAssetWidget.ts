@@ -5,13 +5,13 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IWidgetAssetOptions
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import {
   assetFilenameSchema,
   assetItemSchema
 } from '@/platform/assets/schemas/assetSchema'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 
@@ -51,7 +51,7 @@ function createAssetWidgetOptions({
   const assetBrowserDialog = useAssetBrowserDialog()
 
   async function openModal(widget: IBaseWidget) {
-    const toastStore = useToastStore()
+    const toast = useToast()
 
     await assetBrowserDialog.show({
       nodeType: nodeTypeForBrowser,
@@ -65,10 +65,8 @@ function createAssetWidgetOptions({
             'Invalid asset item:',
             fromZodError(validatedAsset.error).message
           )
-          toastStore.add({
-            severity: 'error',
-            summary: t('assetBrowser.invalidAsset'),
-            detail: t('assetBrowser.invalidAssetDetail')
+          toast.error(t('assetBrowser.invalidAsset'), {
+            description: t('assetBrowser.invalidAssetDetail')
           })
           return
         }
@@ -79,14 +77,12 @@ function createAssetWidgetOptions({
         if (!validatedFilename.success) {
           console.error(
             'Invalid asset filename:',
-            validatedFilename.error.errors,
+            validatedFilename.error.issues,
             'for asset:',
             validatedAsset.data.id
           )
-          toastStore.add({
-            severity: 'error',
-            summary: t('assetBrowser.invalidFilename'),
-            detail: t('assetBrowser.invalidFilenameDetail')
+          toast.error(t('assetBrowser.invalidFilename'), {
+            description: t('assetBrowser.invalidFilenameDetail')
           })
           return
         }

@@ -2,10 +2,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IResolutionPreviewWidget,
   IWidgetResolutionPreviewOptions
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { isResolutionPreviewInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 export const useResolutionPreviewWidget = (): ComfyWidgetConstructorV2 => {
   return (

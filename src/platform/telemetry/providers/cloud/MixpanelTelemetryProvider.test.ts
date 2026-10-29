@@ -42,8 +42,8 @@ import type {
   TemplateMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata
-} from '@/platform/telemetry/types'
-import { TelemetryEvents } from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 const waitForMixpanelInit = () =>
   vi.waitFor(() => expect(mockMixpanel.init).toHaveBeenCalled())
@@ -56,19 +56,17 @@ describe('MixpanelTelemetryProvider — without configured token', () => {
   })
 
   it('warns and disables itself when no mixpanel_token is configured', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
-
     try {
       const provider = new MixpanelTelemetryProvider()
       provider.trackUserLoggedIn()
 
-      expect(warn).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining('Mixpanel token')
       )
       expect(mockMixpanel.track).not.toHaveBeenCalled()
       expect(mockMixpanel.init).not.toHaveBeenCalled()
     } finally {
-      warn.mockRestore()
+      vi.mocked(console.warn).mockRestore()
     }
   })
 })
@@ -434,7 +432,8 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       trigger_source: 'button',
       view_mode: 'graph',
       is_app_mode: false,
-      dock_state: 'floating'
+      dock_state: 'floating',
+      agent_panel_open: false
     }
 
     provider.trackRunButton(properties)

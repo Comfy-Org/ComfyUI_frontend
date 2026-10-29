@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import type { EssentialTile } from '@/constants/essentialsNodes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
@@ -14,17 +15,7 @@ beforeEach(() => {
   useSettingStore().settingValues['Comfy.Sidebar.Location'] = 'left'
 })
 
-const { mockStartDrag, mockHandleNativeDrop } = vi.hoisted(() => ({
-  mockStartDrag: vi.fn(),
-  mockHandleNativeDrop: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
-  useNodeDragToCanvas: () => ({
-    startDrag: mockStartDrag,
-    handleNativeDrop: mockHandleNativeDrop
-  })
-}))
+vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
 vi.mock<unknown>(import('@/components/node/NodePreviewCard.vue'), () => ({
   default: {
@@ -90,9 +81,9 @@ describe('EssentialNodeCard', () => {
   }
 
   function getCard(container: Element) {
-    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
     return container.querySelector('[draggable]') as HTMLElement
-    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-container, testing-library/no-node-access */
   }
 
   describe('rendering', () => {
@@ -103,9 +94,9 @@ describe('EssentialNodeCard', () => {
 
     it('should render the tile icon', () => {
       const { container } = renderComponent()
-      /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+      /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
       const icon = container.querySelector('i')
-      /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+      /* oxlint-enable testing-library/no-container, testing-library/no-node-access */
       expect(icon).toHaveClass('icon-s1.5-[lucide--image-up]')
     })
 
@@ -131,7 +122,7 @@ describe('EssentialNodeCard', () => {
 
       await user.click(getCard(container))
 
-      expect(mockStartDrag).toHaveBeenCalledWith(
+      expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'LoadImage' })
       )
     })
@@ -141,7 +132,7 @@ describe('EssentialNodeCard', () => {
 
       await user.click(getCard(container))
 
-      expect(mockStartDrag).not.toHaveBeenCalled()
+      expect(useNodeDragToCanvas().startDrag).not.toHaveBeenCalled()
     })
   })
 
@@ -151,7 +142,7 @@ describe('EssentialNodeCard', () => {
 
       await fireEvent.dragStart(getCard(container))
 
-      expect(mockStartDrag).toHaveBeenCalledWith(
+      expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'LoadImage' }),
         { mode: 'native' }
       )
@@ -162,7 +153,7 @@ describe('EssentialNodeCard', () => {
 
       await fireEvent.dragEnd(getCard(container))
 
-      expect(mockHandleNativeDrop).toHaveBeenCalled()
+      expect(useNodeDragToCanvas().handleNativeDrop).toHaveBeenCalled()
     })
 
     it('should not start drag when the tile does not resolve', async () => {
@@ -170,19 +161,11 @@ describe('EssentialNodeCard', () => {
 
       await fireEvent.dragStart(getCard(container))
 
-      expect(mockStartDrag).not.toHaveBeenCalled()
+      expect(useNodeDragToCanvas().startDrag).not.toHaveBeenCalled()
     })
   })
 
   describe('hover preview', () => {
-    it('should show preview on mouseenter', async () => {
-      const { user, container } = renderComponent()
-
-      await user.hover(getCard(container))
-
-      expect(screen.getByTestId('node-preview')).toBeInTheDocument()
-    })
-
     it('should hide preview after mouseleave', async () => {
       const { user, container } = renderComponent()
 

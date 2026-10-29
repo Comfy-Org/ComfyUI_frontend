@@ -1,6 +1,6 @@
 import type { TWidgetValue } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 /**
  * Gets an ordered array of InputSpec objects based on input_order.
@@ -11,7 +11,7 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
  * @returns Array of InputSpec objects in the correct order
  */
 export function getOrderedInputSpecs(
-  nodeDefImpl: ComfyNodeDefImpl,
+  nodeDefImpl: Pick<ComfyNodeDefImpl, 'input_order'>,
   inputs: Partial<Record<string, InputSpec>>
 ): InputSpec[] {
   const orderedInputSpecs: InputSpec[] = []

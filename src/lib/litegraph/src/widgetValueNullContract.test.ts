@@ -2,17 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TWidgetValue } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackNamedValuesShadowDiffMismatch: vi.fn(),
-    trackNamedValuesShadowDiffSummary: vi.fn()
-  })
-}))
+vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock(import('@/platform/nodeReplacement/cnrIdUtil'), () => ({
+vi.mock(import('@/platform/workflowErrors/nodeReplacement/cnrIdUtil'), () => ({
   getCnrIdFromNode: () => undefined
 }))
 

@@ -13,7 +13,7 @@ import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -119,7 +119,7 @@ export function useOutputHistory(): {
         user_metadata.outputCount <= user_metadata.allOutputs.length) &&
       item.preview_url
     ) {
-      const reversed = user_metadata.allOutputs.toReversed()
+      const reversed = [...user_metadata.allOutputs].reverse()
       resolvedCache.set(item.id, reversed)
       return filterByOutputNodes(reversed)
     }
@@ -135,7 +135,7 @@ export function useOutputHistory(): {
         if (!jobDetail?.outputs) return []
         const results = Object.entries(jobDetail.outputs)
           .flatMap(flattenNodeOutput)
-          .toReversed()
+          .reverse()
         resolvedCache.set(itemId, results)
         return results
       }),

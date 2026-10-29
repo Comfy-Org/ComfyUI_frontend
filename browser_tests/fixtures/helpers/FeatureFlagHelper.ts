@@ -160,6 +160,38 @@ export class FeatureFlagHelper {
   }
 
   /**
+   * Answer the app's websocket handshake with a `feature_flags` message, which
+   * is the channel `api.serverFeatureFlags` is actually populated from
+   * (`api.ts:1012`).
+   *
+   * Early enough for a flag a **boot-time** read depends on, unlike
+   * `seedServerFlags()`, which hooks the `window.app` assignment in
+   * `GraphCanvas`'s `onMounted` — already too late for anything the billing
+   * gate reads while resolving auth and workspace.
+   *
+   * It is not the *earliest* seam, and for the billing SDK flags it is no
+   * longer the primary one. #18141 moved them onto `/api/features`, which boot
+   * awaits at `main.ts:56`, so a route stub on that endpoint lands before the
+   * handshake. Prefer it for those flags and use this to pin both channels.
+   *
+   * `ff:` still cannot reach these flags from a spec, though not for the
+   * reason this note used to give: `getDevOverride` is tree-shaken outside
+   * DEV, and `getSessionOverride` needs a signed-in, email-verified
+   * `@comfy.org` identity.
+   *
+   * Must be called before `page.goto()`. The socket is answered locally and
+   * never connected to a server, which suits a fully mocked cloud spec: the
+   * app's other websocket traffic has no backend to reach in one anyway.
+   */
+  async serveServerFlagsOnHandshake(
+    flags: Record<string, unknown>
+  ): Promise<void> {
+    await this.page.routeWebSocket(/\/ws/, (socket) => {
+      socket.send(JSON.stringify({ type: 'feature_flags', data: flags }))
+    })
+  }
+
+  /**
    * Mock server feature flags via route interception on /api/features.
    */
   async mockServerFeatures(features: Record<string, unknown>): Promise<void> {

@@ -14,8 +14,16 @@ import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 const ASSETS_ROUTE_PATTERN = /\/api\/assets(?:\?.*)?$/
 const cloudAssetRequestsByPage = new WeakMap<Page, string[]>()
 
-function makeAssetsResponse(assets: ReadonlyArray<Asset>): ListAssetsResponse {
-  return { assets: [...assets], total: assets.length, has_more: false }
+export function makeAssetsResponse(
+  url: string,
+  allAssets: ReadonlyArray<Asset>
+): ListAssetsResponse {
+  const hash = new URL(url).searchParams.get('hash')
+  const assets =
+    hash === null
+      ? [...allAssets]
+      : allAssets.filter((asset) => asset.hash === hash)
+  return { assets, total: assets.length, has_more: false }
 }
 
 export function assetRequestIncludesTag(url: string, tag: string): boolean {
@@ -55,8 +63,6 @@ export const assetApiFixture = base.extend<{
     if (folders) await new ModelLibraryHelper(page).mockModelFolders(folders)
 
     await use(assetApi)
-
-    await assetApi.clearMocks()
   }
 })
 
@@ -69,11 +75,12 @@ export function createCloudAssetsFixture(assets: ReadonlyArray<Asset>) {
       cloudAssetRequestsByPage.set(page, cloudAssetRequests)
 
       async function assetsRouteHandler(route: Route) {
-        cloudAssetRequests.push(route.request().url())
+        const url = route.request().url()
+        cloudAssetRequests.push(url)
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(makeAssetsResponse(assets))
+          body: JSON.stringify(makeAssetsResponse(url, assets))
         })
       }
 

@@ -5,6 +5,14 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.page
+      .context()
+      .route('https://{api,stagingapi}.comfy.org/releases**', (route) =>
+        route.fulfill({ json: [] })
+      )
+  })
+
   test('Client and server exchange feature flags on connection', async ({
     comfyPage
   }) => {
@@ -27,7 +35,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
           if (parsed.type === 'feature_flags') {
             window.__capturedMessages!.clientFeatureFlags = parsed
           }
-        } catch (e) {
+        } catch {
           // Not JSON, ignore
         }
         return originalSend.call(this, data)
@@ -245,6 +253,15 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
   test('Server features are immutable when accessed via getServerFeatures', async ({
     comfyPage
   }) => {
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(
+          () =>
+            window.app!.api.getServerFeatures().supports_preview_metadata !==
+            undefined
+        )
+      )
+      .toBe(true)
     const immutabilityTest = await comfyPage.page.evaluate(() => {
       // Get a copy of server features
       const features1 = window.app!.api.getServerFeatures()

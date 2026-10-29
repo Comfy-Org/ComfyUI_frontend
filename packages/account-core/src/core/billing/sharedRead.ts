@@ -17,11 +17,14 @@ import type {
   BillingRequest,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import type { BillingScopeContext } from './billingScope.js'
-import { sameBillingScope } from './billingScope.js'
-import { readBillingErrorCode } from './billingErrorBody.js'
-import { codeForHttpStatus } from './httpStatus.js'
+} from './billingContracts'
+import type { BillingScopeContext } from './billingScope'
+import { sameBillingScope } from './billingScope'
+import {
+  readBillingErrorCode,
+  readBillingErrorMessage
+} from './billingErrorBody'
+import { codeForHttpStatus } from './httpStatus'
 
 /**
  * An abandoned wait is transient, the same bucket the transport reports an
@@ -64,11 +67,13 @@ export async function readValidatedBillingResponse<T>(
   const { httpStatus, body } = response.value
   if (httpStatus < 200 || httpStatus >= 300) {
     const serverCode = readBillingErrorCode(body)
+    const serverMessage = readBillingErrorMessage(body)
     return {
       status: 'error',
       code: codeForHttpStatus(response.value),
       httpStatus,
-      ...(serverCode === undefined ? {} : { serverCode })
+      ...(serverCode === undefined ? {} : { serverCode }),
+      ...(serverMessage === undefined ? {} : { serverMessage })
     }
   }
 

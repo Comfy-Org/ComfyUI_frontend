@@ -3,6 +3,12 @@
     <SidebarTopArea>
       <SearchInput
         v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :accessible-label="
+          $t('g.searchPlaceholder', {
+            subject: $t('sideToolbar.labels.assets')
+          })
+        "
         :placeholder="
           $t('g.searchPlaceholder', {
             subject: $t('sideToolbar.labels.assets')
@@ -10,21 +16,23 @@
         "
       />
       <template #actions>
-        <MediaAssetFilterButton
-          v-if="isCloud"
-          v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
-          :active="hasActiveFilters"
-        >
-          <template #default>
-            <MediaAssetFilterMenu
-              v-model:date-filter="dateFilter"
-              v-model:media-type-filters="mediaTypeFilters"
+        <Menu v-if="isCloud" :modal="false">
+          <template #trigger>
+            <Button
+              :tooltip="$t('assetBrowser.filterBy')"
+              variant="secondary"
+              size="icon"
+              icon="icon-[lucide--list-filter]"
+              :indicator="hasActiveFilters"
+              :aria-label="$t('assetBrowser.filterBy')"
             />
           </template>
-        </MediaAssetFilterButton>
-        <MediaAssetSettingsButton
-          v-tooltip.top="{ value: $t('sideToolbar.mediaAssets.viewSettings') }"
-        >
+          <MediaAssetFilterMenu
+            v-model:date-filter="dateFilter"
+            v-model:media-type-filters="mediaTypeFilters"
+          />
+        </Menu>
+        <MediaAssetSettingsButton>
           <template #default>
             <MediaAssetSettingsMenu
               v-model:view-mode="viewMode"
@@ -39,12 +47,12 @@
 
     <div
       v-if="filterChips.length"
-      class="flex flex-wrap items-center gap-1.5 px-2 pb-2 2xl:px-4"
+      class="flex flex-wrap items-center gap-1.5 px-4 pb-2"
     >
       <span
         v-for="chip in filterChips"
         :key="chip.key"
-        class="inline-flex items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap"
+        class="inline-flex items-center gap-1 rounded-md bg-secondary py-1 pr-1 pl-2 text-xs whitespace-nowrap"
       >
         <span>{{ chip.label }}</span>
         <Button
@@ -61,19 +69,10 @@
           <i class="icon-[lucide--x] size-3" />
         </Button>
       </span>
-      <Button
-        variant="textonly"
-        class="h-6 px-1.5 text-xs text-muted-foreground"
-        @click="clearFilters"
-      >
+      <Button variant="muted-textonly" class="h-6 px-1.5" @click="clearFilters">
         {{ $t('sideToolbar.mediaAssets.clearFilters') }}
       </Button>
     </div>
-
-    <div
-      v-if="bottomDivider"
-      class="border-t border-dashed border-comfy-input"
-    />
   </div>
 </template>
 
@@ -81,9 +80,10 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
-import Button from '@/components/ui/button/Button.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import { isCloud } from '@/platform/distribution/types'
 import {
   dateFilterOptions,
@@ -91,16 +91,14 @@ import {
 } from '@/platform/assets/mediaAssetFilterOptions'
 import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
 
-import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
 import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'
 import MediaAssetSettingsButton from './MediaAssetSettingsButton.vue'
 import MediaAssetSettingsMenu from './MediaAssetSettingsMenu.vue'
 import type { SortBy } from './MediaAssetSettingsMenu.vue'
 import type { MediaAssetViewMode } from './mediaAssetViewOptions'
 
-const { showGenerationTimeSort = false, bottomDivider = false } = defineProps<{
+const { showGenerationTimeSort = false } = defineProps<{
   showGenerationTimeSort?: boolean
-  bottomDivider?: boolean
 }>()
 
 const searchQuery = defineModel<string>('searchQuery', { required: true })

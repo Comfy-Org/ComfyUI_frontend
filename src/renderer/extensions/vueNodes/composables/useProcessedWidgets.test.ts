@@ -1,4 +1,3 @@
-import type { TooltipOptions } from 'primevue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
@@ -9,8 +8,9 @@ import {
   setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
@@ -21,13 +21,16 @@ import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
-import type { WidgetId } from '@/types/widgetId'
+} from '@comfyorg/graph-model/nodeIdentification'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 const GRAPH_ID = 'graph-test'
 
@@ -76,7 +79,7 @@ function createGraphWithNode(
 }
 
 const noopUi = {
-  getTooltipConfig: () => ({}) as TooltipOptions,
+  getTooltipText: () => '',
   handleNodeRightClick: () => {}
 }
 
@@ -517,15 +520,43 @@ describe('promoted subgraph widgets', () => {
 })
 
 describe('computeProcessedWidgets', () => {
+  it('renders an opaque-ID widget before its graph is ready', () => {
+    const nodeId = toNodeId('insert:abc123:root:node:5')
+    const id = widgetId(GRAPH_ID, nodeId, 'text')
+    registerWidgetState(id, { type: 'text', value: 'before' })
+    const missingModelSpy = vi.spyOn(
+      useMissingModelStore(),
+      'isWidgetMissingModel'
+    )
+    const missingMediaSpy = vi.spyOn(
+      useMissingMediaStore(),
+      'isWidgetMissingMedia'
+    )
+    const clearErrorSpy = vi.spyOn(
+      useExecutionErrorStore(),
+      'clearWidgetRelatedErrors'
+    )
+
+    const [processed] = processWidgets({ widgetIds: [id], nodeId })
+
+    expect(processed.simplified.value).toBe('before')
+    expect(processed.hasError).toBe(false)
+    expect(missingModelSpy).not.toHaveBeenCalled()
+    expect(missingMediaSpy).not.toHaveBeenCalled()
+
+    processed.updateHandler('after')
+
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe('after')
+    expect(clearErrorSpy).not.toHaveBeenCalled()
+  })
+
   it('applies advanced border styling to advanced widgets', () => {
     const id = widgetId(GRAPH_ID, toNodeId(1), 'text')
     registerWidgetState(id, { type: 'text', options: { advanced: true } })
 
     const result = processWidgets({ widgetIds: [id], showAdvanced: true })
 
-    expect(result[0].simplified.borderStyle).toBe(
-      'ring ring-component-node-widget-advanced'
-    )
+    expect(result[0].simplified.borderStyle).toBe('ring ring-primary')
   })
 
   it('reads widget identity, value, label, and options from widgetId state', () => {
@@ -670,7 +701,7 @@ describe('computeProcessedWidgets', () => {
       hasLayoutSize: true,
       simplified: {
         name: 'display_slot',
-        borderStyle: 'ring ring-component-node-widget-advanced'
+        borderStyle: 'ring ring-primary'
       }
     })
     expect(result[0].vueComponent).toBe(WidgetDOM)
@@ -709,6 +740,31 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     const [processed] = processUpdateWidgets([widget])
     processed.updateHandler(42)
 
+    expect(callback).toHaveBeenCalledWith(42, undefined, expect.any(LGraphNode))
+  })
+
+  it('fires the live widget callback for a node id carrying a colon that is not a subgraph-scope prefix (insert_workflow remap, PM-1580)', () => {
+    // comfy-multi-player's insert_workflow remaps every inserted node's id
+    // to a derived string with colons unrelated to subgraph scoping
+    // (insert:<opId>:root:node:<originalId>). A colon-rejecting locator-id
+    // path resolves no host LGraphNode for such a node, so the stored
+    // widget value updates but the widget's own callback is silently
+    // skipped.
+    const nodeId = toNodeId('insert:abc123:root:node:5')
+    const callback = vi.fn()
+    const id = widgetId(GRAPH_ID, nodeId, 'seed')
+    const widget = createMockWidget({ name: 'seed', widgetId: id, callback })
+    registerWidgetState(id, { type: 'combo', value: 0 })
+    const { graph } = createGraphWithNode([widget], nodeId)
+
+    const [processed] = processWidgets({
+      widgetIds: [id],
+      nodeId,
+      rootGraph: graph
+    })
+    processed.updateHandler(42)
+
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe(42)
     expect(callback).toHaveBeenCalledWith(42, undefined, expect.any(LGraphNode))
   })
 

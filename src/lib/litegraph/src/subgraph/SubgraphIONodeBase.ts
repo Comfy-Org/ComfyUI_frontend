@@ -1,34 +1,42 @@
-import { serializeNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
+import type {
+  LinkConnector,
+  Subgraph,
+  SubgraphInput,
+  SubgraphOutput
+} from '@comfyorg/graph-model/entityRegistry'
+import { toSelectableKey } from '@/core/selection/selectionState'
+import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { serializeNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   DefaultConnectionColors,
-  Hoverable,
-  INodeInputSlot,
-  INodeOutputSlot,
-  Point,
-  Positionable
-} from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+  Positionable,
+  CanvasColour
+} from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
-  CanvasColour,
-  CanvasPointer,
-  CanvasPointerEvent,
-  IContextMenuValue
-} from '@/lib/litegraph/src/litegraph'
+  Hoverable,
+  CanvasPointerEvent
+} from '@comfyorg/graph-model/events'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { snapPoint } from '@/lib/litegraph/src/measure'
-import { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'
+import { CanvasItem } from '@comfyorg/graph-model/globalEnums'
 import type {
   ExportedSubgraphIONode,
   Serialisable
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 import type { EmptySubgraphInput } from './EmptySubgraphInput'
 import type { EmptySubgraphOutput } from './EmptySubgraphOutput'
-import type { Subgraph } from './Subgraph'
-import type { SubgraphInput } from './SubgraphInput'
-import type { SubgraphOutput } from './SubgraphOutput'
 
 export abstract class SubgraphIONodeBase<
   TSlot extends SubgraphInput | SubgraphOutput
@@ -47,7 +55,21 @@ export abstract class SubgraphIONodeBase<
     return this._boundingRect
   }
 
-  selected: boolean = false
+  get selected(): boolean {
+    return isSelectedIn(
+      graphScopeOf(this.subgraph),
+      toSelectableKey('io', this.id)
+    )
+  }
+
+  set selected(value: boolean) {
+    setSelectedIn(
+      graphScopeOf(this.subgraph),
+      toSelectableKey('io', this.id),
+      value
+    )
+  }
+
   pinned: boolean = false
   readonly removable = false
 
@@ -378,4 +400,12 @@ export abstract class SubgraphIONodeBase<
       pinned: this.pinned ? true : undefined
     }
   }
+}
+
+type RegisteredSubgraphIONode = SubgraphIONodeBase<
+  SubgraphInput | SubgraphOutput
+>
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface SubgraphIONode extends RegisteredSubgraphIONode {}
 }

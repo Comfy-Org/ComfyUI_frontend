@@ -96,12 +96,11 @@ test.describe('Load Image upload persistence', { tag: '@widget' }, () => {
   test.describe('Vue image uploads', { tag: '@vue-nodes' }, () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.menu.topbar.newWorkflowButton.click()
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
     })
 
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.workflow.deleteWorkflow('image-upload-root')
-      await comfyPage.canvasOps.resetView()
     })
 
     test('LoadImageMask keeps the pasted input selected and available after reload', async ({

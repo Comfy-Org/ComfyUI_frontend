@@ -1,5 +1,20 @@
-import type { LGraphNode } from '../LGraphNode'
-import type { Direction, IBoundaryNodes, NewNodePosition } from '../interfaces'
+import type {
+  Point2D,
+  RectSide as Direction
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+
+export interface NewNodePosition {
+  node: LGraphNode
+  newPos: Point2D
+}
+
+export interface IBoundaryNodes {
+  top: LGraphNode
+  right: LGraphNode
+  bottom: LGraphNode
+  left: LGraphNode
+}
 
 /**
  * Finds the nodes that are farthest in all four directions, representing the boundary of the nodes.

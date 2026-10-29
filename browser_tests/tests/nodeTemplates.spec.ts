@@ -16,10 +16,6 @@ function isStoreTemplatesRequest(url: string, method: string): boolean {
 }
 
 function defineNodeTemplatesTests(mode: NodeMode) {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.canvasOps.resetView()
-  })
-
   test('Save Selected as Template persists the selection under the given name', async ({
     nodeTemplates
   }, testInfo) => {
@@ -49,9 +45,7 @@ function defineNodeTemplatesTests(mode: NodeMode) {
       await nodeTemplates.insertTemplate(name)
     })
 
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(initialNodeCount + 1)
+    await comfyPage.expectNodeCount(initialNodeCount + 1)
   })
 
   test('Deleting a template in the manage dialog removes it from the list', async ({
@@ -98,10 +92,6 @@ test.describe('Node Templates', { tag: ['@canvas'] }, () => {
   // Import/Export are dialog-only flows unaffected by node rendering mode;
   // run once outside the Vue/Litegraph matrix.
   test.describe('Dialog import/export', () => {
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     test('Export downloads a JSON file containing the saved template', async ({
       comfyPage,
       nodeTemplates
@@ -153,7 +143,8 @@ test.describe('Node Templates', { tag: ['@canvas'] }, () => {
         mimeType: 'application/json',
         buffer: Buffer.from(JSON.stringify(payload))
       })
-      expect((await storeResponse).ok()).toBe(true)
+      const response = await storeResponse
+      expect(response.ok()).toBe(true)
       await manageDialog.waitForHidden()
 
       await nodeTemplates.openManageDialog()

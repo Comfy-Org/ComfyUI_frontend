@@ -2,7 +2,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
@@ -69,7 +69,7 @@ export function useHelpCenter() {
    * Show the node conflict dialog with current conflict data
    */
   const showConflictModal = () => {
-    void showNodeConflictDialog({
+    showNodeConflictDialog({
       showAfterWhatsNew: true,
       dialogComponentProps: {
         onClose: () => {

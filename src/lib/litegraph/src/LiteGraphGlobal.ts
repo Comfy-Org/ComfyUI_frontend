@@ -5,22 +5,30 @@ import { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
-import type { NodeProperty } from './LGraphNode'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { LLink } from './LLink'
 import { Reroute } from './Reroute'
 import { InputIndicators } from './canvas/InputIndicators'
 import { LabelPosition, SlotDirection, SlotShape, SlotType } from './draw'
 import { Rectangle } from './infrastructure/Rectangle'
 import type {
-  CreateNodeOptions,
   Dictionary,
+  INodeFlags,
   ISlotType,
-  Rect,
   WhenNullish
-} from './interfaces'
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  Rect,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { distance, isInsideRectangle, overlapBounding } from './measure'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphSlot } from './subgraph/SubgraphSlotBase'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
 import {
   LGraphEventMode,
   LinkDirection,
@@ -28,8 +36,24 @@ import {
   NodeSlotType,
   RenderShape,
   TitleMode
-} from './types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 import { createUuidv4 } from '@/utils/uuid'
+
+/** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
+export interface CreateNodeOptions {
+  pos?: Point
+  size?: Size
+  properties?: Dictionary<NodeProperty | undefined>
+  flags?: Partial<INodeFlags>
+  mode?: LGraphEventMode
+  color?: string
+  bgcolor?: string
+  boxcolor?: string
+  title?: string
+  shape?: RenderShape
+  inputs?: Partial<INodeInputSlot>[]
+  outputs?: Partial<INodeOutputSlot>[]
+}
 
 export interface SlotTypeDefaultNodeOpts {
   node?: string
@@ -233,24 +257,73 @@ export class LiteGraphGlobal {
   auto_load_slot_types = false
 
   // set these values if not using auto_load_slot_types
+  private registeredSlotInTypes: Record<string, { nodes: string[] }> = {}
+  private registeredSlotOutTypes: Record<string, { nodes: string[] }> = {}
+  private slotTypesOut: string[] = []
+  private slotTypesDefaultIn: Record<string, SlotTypeDefault> = {}
+  private slotTypesDefaultOut: Record<string, SlotTypeDefault> = {}
+  private fillSlotTypeTables?: () => void
+
   /** slot types for nodeclass */
-  registered_slot_in_types: Record<string, { nodes: string[] }> = {}
+  get registered_slot_in_types(): Record<string, { nodes: string[] }> {
+    this.flushSlotTypeTables()
+    return this.registeredSlotInTypes
+  }
+  set registered_slot_in_types(value: Record<string, { nodes: string[] }>) {
+    this.registeredSlotInTypes = value
+  }
   /** slot types for nodeclass */
-  registered_slot_out_types: Record<string, { nodes: string[] }> = {}
+  get registered_slot_out_types(): Record<string, { nodes: string[] }> {
+    this.flushSlotTypeTables()
+    return this.registeredSlotOutTypes
+  }
+  set registered_slot_out_types(value: Record<string, { nodes: string[] }>) {
+    this.registeredSlotOutTypes = value
+  }
   /** slot types IN */
   slot_types_in: string[] = []
   /** slot types OUT */
-  slot_types_out: string[] = []
+  get slot_types_out(): string[] {
+    this.flushSlotTypeTables()
+    return this.slotTypesOut
+  }
+  set slot_types_out(value: string[]) {
+    this.slotTypesOut = value
+  }
   /**
    * specify for each IN slot type a(/many) default node(s), use single string, array, or object
    * (with node, title, parameters, ..) like for search
    */
-  slot_types_default_in: Record<string, SlotTypeDefault> = {}
+  get slot_types_default_in(): Record<string, SlotTypeDefault> {
+    this.flushSlotTypeTables()
+    return this.slotTypesDefaultIn
+  }
+  set slot_types_default_in(value: Record<string, SlotTypeDefault>) {
+    this.slotTypesDefaultIn = value
+  }
   /**
    * specify for each OUT slot type a(/many) default node(s), use single string, array, or object
    * (with node, title, parameters, ..) like for search
    */
-  slot_types_default_out: Record<string, SlotTypeDefault> = {}
+  get slot_types_default_out(): Record<string, SlotTypeDefault> {
+    this.flushSlotTypeTables()
+    return this.slotTypesDefaultOut
+  }
+  set slot_types_default_out(value: Record<string, SlotTypeDefault>) {
+    this.slotTypesDefaultOut = value
+  }
+
+  /** Defers filling the slot type tables until one is read or {@link flushSlotTypeTables} runs. */
+  deferSlotTypeTables(fill: () => void): void {
+    this.fillSlotTypeTables = fill
+  }
+
+  /** Runs the fill passed to {@link deferSlotTypeTables}, if it has not run yet. */
+  flushSlotTypeTables(): void {
+    const fill = this.fillSlotTypeTables
+    this.fillSlotTypeTables = undefined
+    fill?.()
+  }
 
   /** [true!] very handy, ALT click to clone and drag the new node */
   alt_drag_do_clone_nodes = false
@@ -431,9 +504,16 @@ export class LiteGraphGlobal {
     base_class.title ||= classname
 
     // extend class
+    const targetPrototype = base_class.prototype as unknown as Record<
+      string,
+      unknown
+    >
+    const sourcePrototype = LGraphNode.prototype as unknown as Record<
+      string,
+      unknown
+    >
     for (const i in LGraphNode.prototype) {
-      // @ts-expect-error #576 This functionality is deprecated and should be removed.
-      base_class.prototype[i] ||= LGraphNode.prototype[i]
+      targetPrototype[i] ||= sourcePrototype[i]
     }
 
     const prev = Object.hasOwn(this.registered_node_types, type)
@@ -480,7 +560,7 @@ export class LiteGraphGlobal {
 
   /**
    * Save a slot type and his node
-   * @param type name of the node or the node constructor itself
+   * @param type the node instance whose class is registered for the slot type
    * @param slot_type name of the slot type (variable type), eg. string, number, array, boolean, ..
    */
   registerNodeAndSlotType(
@@ -489,15 +569,7 @@ export class LiteGraphGlobal {
     out?: boolean
   ): void {
     out ||= false
-    const base_class =
-      typeof type === 'string' &&
-      // @ts-expect-error Confirm this function no longer supports string types - base_class should always be an instance not a constructor.
-      this.registered_node_types[type] !== 'anonymous'
-        ? this.registered_node_types[type]
-        : type
-
-    // @ts-expect-error Confirm this function no longer supports string types - base_class should always be an instance not a constructor.
-    const class_type = base_class.constructor.type
+    const class_type = type.constructor.type
 
     let allTypes: string[]
     if (typeof slot_type === 'string') {
@@ -512,15 +584,14 @@ export class LiteGraphGlobal {
       if (slotType === '') slotType = '*'
 
       const register = out
-        ? this.registered_slot_out_types
-        : this.registered_slot_in_types
+        ? this.registeredSlotOutTypes
+        : this.registeredSlotInTypes
       register[slotType] ??= { nodes: [] }
 
       const { nodes } = register[slotType]
-      if (!nodes.includes(class_type)) nodes.push(class_type)
+      if (class_type && !nodes.includes(class_type)) nodes.push(class_type)
 
-      // check if is a new type
-      const types = out ? this.slot_types_out : this.slot_types_in
+      const types = out ? this.slotTypesOut : this.slot_types_in
       const type = slotType.toLowerCase()
 
       if (!types.includes(type)) {
@@ -676,12 +747,12 @@ export class LiteGraphGlobal {
   ): WhenNullish<T, null> {
     if (obj == null) return null as WhenNullish<T, null>
 
-    const r = JSON.parse(JSON.stringify(obj))
-    if (!target) return r
+    const r: Record<string, unknown> = JSON.parse(JSON.stringify(obj))
+    if (!target) return r as WhenNullish<T, null>
 
+    const targetRecord = target as unknown as Record<string, unknown>
     for (const i in r) {
-      // @ts-expect-error deprecated
-      target[i] = r[i]
+      targetRecord[i] = r[i]
     }
     return target
   }
@@ -803,20 +874,19 @@ export class LiteGraphGlobal {
       case 'move':
       case 'over':
       case 'out':
-      // @ts-expect-error - intentional fallthrough
       case 'enter': {
-        oDOM.addEventListener(sMethod + sEvent, fCall, capture)
+        return oDOM.addEventListener(sMethod + sEvent, fCall, capture)
       }
       // only pointerevents
       // falls through
       case 'leave':
       case 'cancel':
       case 'gotpointercapture':
-      // @ts-expect-error - intentional fallthrough
       case 'lostpointercapture': {
         if (sMethod != 'mouse') {
           return oDOM.addEventListener(sMethod + sEvent, fCall, capture)
         }
+        return oDOM.addEventListener(sEvent, fCall, capture)
       }
       // not "pointer" || "mouse"
       // falls through
@@ -840,7 +910,6 @@ export class LiteGraphGlobal {
       case 'move':
       case 'over':
       case 'out':
-      // @ts-expect-error - intentional fallthrough
       case 'enter': {
         if (
           this.pointerevents_method == 'pointer' ||
@@ -851,14 +920,15 @@ export class LiteGraphGlobal {
             fCall,
             capture
           )
+          return
         }
+        return oDOM.removeEventListener(sEvent, fCall, capture)
       }
       // only pointerevents
       // falls through
       case 'leave':
       case 'cancel':
       case 'gotpointercapture':
-      // @ts-expect-error - intentional fallthrough
       case 'lostpointercapture': {
         if (this.pointerevents_method == 'pointer') {
           return oDOM.removeEventListener(
@@ -867,6 +937,7 @@ export class LiteGraphGlobal {
             capture
           )
         }
+        return oDOM.removeEventListener(sEvent, fCall, capture)
       }
       // not "pointer" || "mouse"
       // falls through
@@ -933,14 +1004,11 @@ export class LiteGraphGlobal {
     }
     hex = hex.toUpperCase()
     const hex_alphabets = '0123456789ABCDEF'
-    const value = new Array(3)
-    let k = 0
-    let int1, int2
+    const value: number[] = []
     for (let i = 0; i < 6; i += 2) {
-      int1 = hex_alphabets.indexOf(hex.charAt(i))
-      int2 = hex_alphabets.indexOf(hex.charAt(i + 1))
-      value[k] = int1 * 16 + int2
-      k++
+      const int1 = hex_alphabets.indexOf(hex.charAt(i))
+      const int2 = hex_alphabets.indexOf(hex.charAt(i + 1))
+      value.push(int1 * 16 + int2)
     }
     return value
   }
@@ -981,7 +1049,7 @@ export class LiteGraphGlobal {
   ): void {
     for (const i in origin) {
       // copy class properties
-      // eslint-disable-next-line no-prototype-builtins
+      // oxlint-disable-next-line no-prototype-builtins
       if (target.hasOwnProperty(i)) continue
       target[i] = origin[i]
     }
@@ -993,11 +1061,11 @@ export class LiteGraphGlobal {
       // copy prototype properties
       for (const i in originProto) {
         // only enumerable
-        // eslint-disable-next-line no-prototype-builtins
+        // oxlint-disable-next-line no-prototype-builtins
         if (!originProto.hasOwnProperty(i)) continue
 
         // avoid overwriting existing ones
-        // eslint-disable-next-line no-prototype-builtins
+        // oxlint-disable-next-line no-prototype-builtins
         if (targetProto.hasOwnProperty(i)) continue
 
         // Use Object.getOwnPropertyDescriptor to copy getters/setters properly
@@ -1008,4 +1076,12 @@ export class LiteGraphGlobal {
       }
     }
   }
+}
+
+type RegisteredSlotTypeDefaultNodeOpts = SlotTypeDefaultNodeOpts
+type RegisteredLiteGraphGlobal = LiteGraphGlobal
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface SlotTypeDefaultNodeOpts extends RegisteredSlotTypeDefaultNodeOpts {}
+  interface LiteGraphGlobal extends RegisteredLiteGraphGlobal {}
 }
