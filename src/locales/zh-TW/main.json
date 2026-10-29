@@ -41,6 +41,7 @@
     "attachmentsAlreadyAdded": "{name} 已在素材匣中 | 已略過 {count} 個重複素材",
     "backToPreviousChat": "返回上一個聊天",
     "beta": "測試版",
+    "canvasIsEmptyAfterTurn": "此畫布是空的 — 尚未加入任何內容。這裡目前沒有可執行、儲存或匯出的內容。",
     "changeWorkflowForChat": "變更代理程式可編輯的工作流程",
     "chatOptions": "聊天選項",
     "chooseWorkflow": "選擇工作流程",
@@ -259,6 +260,7 @@
     "toolForgotPreference": "已忘記偏好設定",
     "toolLoadedSkill": "已載入 {skill}",
     "toolLoadingSkill": "正在載入 {skill}",
+    "toolNotConfirmedOnCanvas": "{tool} — 尚未在你的畫布上確認",
     "toolOpenedNewTab": "已開啟新分頁",
     "toolOpeningNewTab": "正在開啟新分頁",
     "toolSavedPreference": "已儲存偏好設定",
@@ -277,10 +279,11 @@
     "worked": "已完成",
     "workedForMinutes": "已處理 {minutes} 分 {seconds} 秒",
     "workedForSeconds": "已處理 {seconds} 秒",
+    "workedNotConfirmedOnCanvas": "你的畫布上的變更尚未確認",
     "workflowEditNotice": "代理現在可以編輯 {workflow}。它一次只能處理 1 個工作流程，您可在聊天期間切換工作流程。",
     "workflowReferenceUnavailableReason": "此參照的工作流程已無法使用，或您沒有存取權限。",
     "workflowSyncFailedDetail": "此工作流程是使用不相容的文件版本建立。您的畫布未受到變更。",
-    "workflowSyncFailedDetailCatalogMismatch": "此工作流程使用的節點目錄與此工作區不相容。您的畫布未受到變更。",
+    "workflowSyncFailedDetailCatalogMismatch": "自從代理上次查看後，這個工作流程中的某個節點已變更。您的畫布未經變更。您的下一則訊息會傳送您的畫布，讓代理重新建立其工作流程副本。",
     "workflowSyncFailedDetailStaleClient": "此頁面已過期，因此無法顯示代理程式的變更。請重新載入頁面以查看變更。",
     "workflowSyncFailedTitle": "此工作流程無法同步",
     "workflows": "工作流程",
@@ -1168,6 +1171,7 @@
     "eventType": "事件類型",
     "eventTypes": {
       "accountCreated": "帳號已建立",
+      "agentUsage": "代理使用量",
       "apiNodeUsage": "合作夥伴節點使用量",
       "apiUsage": "API 使用量",
       "creditAdded": "已新增點數",
@@ -5797,10 +5801,7 @@
       "totalMembersCount": "共 {maxSeats} 位成員，目前有 {count} 位。",
       "totalMembersUnlimited": "共 {count} 位成員。|共 {count} 位成員。",
       "upgradeToTeam": "升級為團隊方案",
-      "upsellBanner": "若要新增團隊成員，請升級您的方案。",
-      "upsellBannerEnterpriseEnded": "請聯絡業務團隊以重新啟用您的 Enterprise 方案。",
-      "upsellBannerPlanEnded": "請聯絡業務團隊以重新啟用您的方案。",
-      "upsellBannerReactivate": "若要新增更多團隊成員，請重新啟用您的方案。"
+      "upsellBanner": "若要新增團隊成員，請升級您的方案。"
     },
     "menu": {
       "creatorCannotLeave": "工作區建立者無法離開自己建立的工作區",

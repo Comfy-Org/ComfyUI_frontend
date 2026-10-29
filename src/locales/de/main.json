@@ -41,6 +41,7 @@
     "attachmentsAlreadyAdded": "{name} befindet sich bereits in der Asset-Ablage | {count} doppelte Assets übersprungen",
     "backToPreviousChat": "Zum vorherigen Chat zurück",
     "beta": "BETA",
+    "canvasIsEmptyAfterTurn": "Dieser Canvas ist leer – es wurde nichts hinzugefügt. Es gibt noch nichts, das Sie ausführen, speichern oder exportieren können.",
     "changeWorkflowForChat": "Ändern Sie den Workflow, den der Agent bearbeiten kann",
     "chatOptions": "Chatoptionen",
     "chooseWorkflow": "Workflow auswählen",
@@ -259,6 +260,7 @@
     "toolForgotPreference": "Eine Einstellung vergessen",
     "toolLoadedSkill": "{skill} geladen",
     "toolLoadingSkill": "{skill} wird geladen",
+    "toolNotConfirmedOnCanvas": "{tool} – nicht auf Ihrem Canvas bestätigt",
     "toolOpenedNewTab": "Einen neuen Tab geöffnet",
     "toolOpeningNewTab": "Öffnet einen neuen Tab",
     "toolSavedPreference": "Eine Einstellung gespeichert",
@@ -277,10 +279,11 @@
     "worked": "Abgeschlossen",
     "workedForMinutes": "Bearbeitungszeit: {minutes}m {seconds}s",
     "workedForSeconds": "Bearbeitungszeit: {seconds} Sekunden",
+    "workedNotConfirmedOnCanvas": "Änderungen auf Ihrem Canvas nicht bestätigt",
     "workflowEditNotice": "Der Agent kann jetzt {workflow} bearbeiten. Er arbeitet jeweils an einem Workflow, und Sie können während des Chats zwischen Workflows wechseln.",
     "workflowReferenceUnavailableReason": "Dieser referenzierte Workflow ist nicht mehr verfügbar oder Sie haben keinen Zugriff darauf.",
     "workflowSyncFailedDetail": "Dieser Workflow wurde mit einer inkompatiblen Dokumentversion erstellt. Ihr Canvas wurde nicht verändert.",
-    "workflowSyncFailedDetailCatalogMismatch": "Dieser Workflow verwendet einen Node-Katalog, der nicht mit diesem Workspace kompatibel ist. Ihr Canvas wurde nicht verändert.",
+    "workflowSyncFailedDetailCatalogMismatch": "Ein Node in diesem Workflow hat sich geändert, seit der Agent ihn zuletzt gesehen hat. Ihr Canvas wurde unverändert gelassen. Ihre nächste Nachricht übermittelt Ihr Canvas, damit der Agent seine Kopie des Workflows neu erstellen kann.",
     "workflowSyncFailedDetailStaleClient": "Diese Seite ist nicht mehr aktuell, daher können die Änderungen des Agenten nicht angezeigt werden. Laden Sie die Seite neu, um sie zu sehen.",
     "workflowSyncFailedTitle": "Dieser Workflow kann nicht synchronisiert werden",
     "workflows": "Workflows",
@@ -1168,6 +1171,7 @@
     "eventType": "Ereignistyp",
     "eventTypes": {
       "accountCreated": "Konto erstellt",
+      "agentUsage": "Agent-Nutzung",
       "apiNodeUsage": "Nutzung von Partner-Nodes",
       "apiUsage": "API-Nutzung",
       "creditAdded": "Credits hinzugefügt",
@@ -5797,10 +5801,7 @@
       "totalMembersCount": "{count} von insgesamt {maxSeats} Mitgliedern.",
       "totalMembersUnlimited": "{count} Mitglied insgesamt. | {count} Mitglieder insgesamt.",
       "upgradeToTeam": "Auf Team upgraden",
-      "upsellBanner": "Um Teammitglieder hinzuzufügen, upgraden Sie Ihren Plan.",
-      "upsellBannerEnterpriseEnded": "Wenden Sie sich an den Vertrieb, um Ihren Enterprise-Plan zu reaktivieren.",
-      "upsellBannerPlanEnded": "Wenden Sie sich an den Vertrieb, um Ihren Plan zu reaktivieren.",
-      "upsellBannerReactivate": "Um weitere Teammitglieder hinzuzufügen, reaktivieren Sie Ihren Plan."
+      "upsellBanner": "Um Teammitglieder hinzuzufügen, upgraden Sie Ihren Plan."
     },
     "menu": {
       "creatorCannotLeave": "Der Ersteller des Workspace kann den von ihm erstellten Workspace nicht verlassen",

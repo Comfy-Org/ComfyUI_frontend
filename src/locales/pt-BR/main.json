@@ -41,6 +41,7 @@
     "attachmentsAlreadyAdded": "{name} já está na bandeja de ativos | {count} ativos duplicados ignorados",
     "backToPreviousChat": "Voltar à conversa anterior",
     "beta": "BETA",
+    "canvasIsEmptyAfterTurn": "Esta tela está vazia — nada foi adicionado a ela. Ainda não há nada aqui para executar, salvar ou exportar.",
     "changeWorkflowForChat": "Altere o fluxo de trabalho que o agente pode editar",
     "chatOptions": "Opções de conversa",
     "chooseWorkflow": "Escolha um fluxo de trabalho",
@@ -259,6 +260,7 @@
     "toolForgotPreference": "Esqueceu uma preferência",
     "toolLoadedSkill": "{skill} carregada",
     "toolLoadingSkill": "Carregando {skill}",
+    "toolNotConfirmedOnCanvas": "{tool} — não confirmado na sua tela",
     "toolOpenedNewTab": "Abriu uma nova aba",
     "toolOpeningNewTab": "Abrindo uma nova aba",
     "toolSavedPreference": "Salvou uma preferência",
@@ -277,10 +279,11 @@
     "worked": "Concluído",
     "workedForMinutes": "Concluído em {minutes}m {seconds}s",
     "workedForSeconds": "Concluído em {seconds} segundos",
+    "workedNotConfirmedOnCanvas": "Alterações não confirmadas na sua tela",
     "workflowEditNotice": "O agente agora pode editar {workflow}. Ele trabalha em um fluxo de trabalho por vez, e você pode alternar entre fluxos de trabalho durante o chat.",
     "workflowReferenceUnavailableReason": "Este fluxo de trabalho referenciado não está mais disponível ou você não tem acesso a ele.",
     "workflowSyncFailedDetail": "Este fluxo de trabalho foi criado com uma versão de documento incompatível. Sua tela foi mantida inalterada.",
-    "workflowSyncFailedDetailCatalogMismatch": "Este fluxo de trabalho usa um catálogo de nós incompatível com este espaço de trabalho. Sua tela foi mantida inalterada.",
+    "workflowSyncFailedDetailCatalogMismatch": "Um nó neste fluxo de trabalho foi alterado desde a última vez que o agente o viu. Seu canvas foi mantido inalterado. Sua próxima mensagem envia seu canvas para que o agente possa reconstruir sua cópia do fluxo de trabalho.",
     "workflowSyncFailedDetailStaleClient": "Esta página está desatualizada, portanto as alterações do agente não podem ser exibidas. Recarregue a página para vê-las.",
     "workflowSyncFailedTitle": "Não é possível sincronizar este fluxo de trabalho",
     "workflows": "Fluxos de trabalho",
@@ -1168,6 +1171,7 @@
     "eventType": "Tipo de evento",
     "eventTypes": {
       "accountCreated": "Conta criada",
+      "agentUsage": "Uso do agente",
       "apiNodeUsage": "Uso de Node Parceiro",
       "apiUsage": "Uso da API",
       "creditAdded": "Créditos adicionados",
@@ -5797,10 +5801,7 @@
       "totalMembersCount": "{count} de {maxSeats} membros no total.",
       "totalMembersUnlimited": "{count} membro no total. | {count} membros no total.",
       "upgradeToTeam": "Fazer upgrade para Team",
-      "upsellBanner": "Para adicionar colegas de equipe, faça upgrade do seu plano.",
-      "upsellBannerEnterpriseEnded": "Entre em contato com a equipe de vendas para reativar seu plano Enterprise.",
-      "upsellBannerPlanEnded": "Entre em contato com a equipe de vendas para reativar seu plano.",
-      "upsellBannerReactivate": "Para adicionar mais colegas de equipe, reative seu plano."
+      "upsellBanner": "Para adicionar colegas de equipe, faça upgrade do seu plano."
     },
     "menu": {
       "creatorCannotLeave": "O criador do workspace não pode sair do workspace que criou",

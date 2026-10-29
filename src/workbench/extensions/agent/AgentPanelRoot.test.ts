@@ -1,3 +1,5 @@
+import { setImmediate } from 'node:timers/promises'
+
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -51,6 +53,8 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
 import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.vue'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -827,6 +831,30 @@ describe('AgentPanelRoot onboarding', () => {
     } finally {
       firstRunHolds.value = false
     }
+  })
+
+  it('defers the coach while a global dialog is open, like the desktop sign-in confirm', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-dialog'
+    })
+    const dialogStore = useDialogStore()
+    const dialog = dialogStore.showDialog({
+      component: defineComponent({})
+    })
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(
+      screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).not.toBeInTheDocument()
+    expect(
+      useTelemetry()!.trackAgentOnboardingNotShown
+    ).toHaveBeenCalledExactlyOnceWith({ reason: 'dialog_open' })
+
+    dialogStore.closeDialog({ key: dialog.key })
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
   })
 
   it('stays quiet when App Mode pauses a coach that was already on screen', async () => {
@@ -1948,6 +1976,93 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
     expect(messageBodies).toHaveLength(1)
     expect(messageBodies[0]).toMatchObject({ content: 'continue anyway' })
+  })
+
+  it('keeps the standing card visible until the server admits the turn', async () => {
+    let releaseAdmission = () => {}
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith('/api/agent/threads'))
+        return json(200, agentThreadList())
+      return new Promise<Response>((resolve) => {
+        releaseAdmission = () =>
+          resolve(json(202, { thread_id: 'th-1', message_id: 'm-1' }))
+      })
+    })
+    paywallHasFunds.value = false
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    renderWithSelectedTarget()
+    activateThread()
+    await screen.findByTestId(STANDING)
+
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('continue anyway')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(screen.getByTestId(STANDING)).toBeInTheDocument()
+    releaseAdmission()
+    await screen.findByRole('button', { name: 'Stop' })
+  })
+
+  it('releases an admitted-turn funds recheck when billing identity changes', async () => {
+    const accountId = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({
+      id: accountId.value
+    }))
+    let releaseRefresh = () => {}
+    paywallBilling.fetchStatus.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseRefresh = resolve
+        })
+    )
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith('/api/agent/threads'))
+        return json(200, agentThreadList())
+      return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+    })
+    paywallHasFunds.value = false
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    const firstPanel = renderWithSelectedTarget()
+
+    await sendFromComposer('continue anyway')
+    await waitFor(() =>
+      expect(paywallBilling.fetchStatus).toHaveBeenCalledOnce()
+    )
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+
+    firstPanel.unmount()
+    renderWithSelectedTarget()
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+
+    accountId.value = 'account-b'
+
+    expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
+    releaseRefresh()
+    await setImmediate()
+    expect(screen.getByTestId(STANDING)).toBeInTheDocument()
+  })
+
+  it('waits for an adopted billing read when its own refresh is superseded', async () => {
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith('/api/agent/threads'))
+        return json(200, agentThreadList())
+      return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+    })
+    paywallHasFunds.value = false
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    renderWithSelectedTarget()
+
+    await sendFromComposer('continue anyway')
+    await waitFor(() =>
+      expect(paywallBilling.fetchStatus).toHaveBeenCalledOnce()
+    )
+    await setImmediate()
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+
+    paywallAgentScopedHasFunds.value = false
+
+    expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
   })
 
   it('reports the impression against the credits_exhausted surface', async () => {
@@ -5464,9 +5579,8 @@ describe('AgentPanelRoot lifecycle', () => {
     // PM-1575: the gate is reset to the always-safe default even though a
     // step three places ahead of it threw.
     expect(setCanvasSyncGate).toHaveBeenCalledOnce()
-    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
-    expect(gate?.()).toBe(false)
-    expect(outcomeCount?.()).toBe(0)
+    const [gate] = setCanvasSyncGate.mock.lastCall ?? []
+    expect(gate?.()).toBe('none')
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'detach failed' }),
       expect.objectContaining({
@@ -5505,9 +5619,8 @@ describe('AgentPanelRoot lifecycle', () => {
     panel.unmount()
 
     expect(setCanvasSyncGate).toHaveBeenCalledOnce()
-    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
-    expect(gate?.()).toBe(false)
-    expect(outcomeCount?.()).toBe(0)
+    const [gate] = setCanvasSyncGate.mock.lastCall ?? []
+    expect(gate?.()).toBe('none')
     expect(errorHandler).not.toHaveBeenCalled()
   })
 
@@ -5565,6 +5678,56 @@ describe('AgentPanelRoot lifecycle', () => {
 
     expect(activity.$state.editingTabPath).toBeNull()
     expect(activity.$state.creatingTab).toBe(false)
+  })
+})
+
+describe('AgentPanelRoot node definition refresh', () => {
+  const restartSucceeded = {
+    tool_call_id: 'call-restart',
+    tool_name: 'restart_comfyui',
+    status: 'success',
+    duration_ms: 900,
+    thread_id: 'th-1',
+    message_id: 'm-1'
+  }
+
+  beforeEach(() => {
+    ws.clear()
+    vi.useFakeTimers()
+  })
+
+  it('refreshes node definitions when ComfyUI reconnects after the agent restarts it while the panel is open', async () => {
+    const refreshNodeDefinitions = vi.fn()
+    useCommandStore().registerCommand({
+      id: 'Comfy.RefreshNodeDefinitions',
+      function: refreshNodeDefinitions
+    })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    ws.emit('agent_tool_call', restartSucceeded)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(refreshNodeDefinitions).not.toHaveBeenCalled()
+
+    ws.emit('reconnected')
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refreshNodeDefinitions).toHaveBeenCalledOnce()
+  })
+
+  it('stops observing restarts once the panel unmounts', async () => {
+    const refreshNodeDefinitions = vi.fn()
+    useCommandStore().registerCommand({
+      id: 'Comfy.RefreshNodeDefinitions',
+      function: refreshNodeDefinitions
+    })
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    unmount()
+    ws.emit('agent_tool_call', restartSucceeded)
+    ws.emit('reconnected')
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refreshNodeDefinitions).not.toHaveBeenCalled()
   })
 })
 
@@ -8273,6 +8436,152 @@ describe('AgentPanelRoot workflow binding', () => {
       await screen.findByText(i18n.global.t('agent.working'))
     ).toBeInTheDocument()
   })
+
+  it('marks a mismatched or switched-away canvas unavailable', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    const setCanvasSyncGate = vi.spyOn(
+      useAgentConversationStore(),
+      'setCanvasSyncGate'
+    )
+
+    await renderAndSend('add a node')
+
+    const [gate] = setCanvasSyncGate.mock.calls.at(-1) ?? []
+    expect(gate?.('wf-other')).toBe('unavailable')
+
+    workflowStore.activeWorkflow = addTab('workflows/other.json')
+    await nextTick()
+
+    expect(gate?.('wf-42')).toBe('unavailable')
+  })
+
+  it('clears an empty-canvas correction when the thread changes', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('inspect this canvas')
+    dispatchApiEvent('agent_tool_call', {
+      tool_call_id: 'call-print-workflow',
+      tool_name: 'print_workflow',
+      status: 'success',
+      duration_ms: 90,
+      thread_id: 'th-1',
+      message_id: 'm-1'
+    })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+
+    expect(
+      await screen.findByText(i18n.global.t('agent.canvasIsEmptyAfterTurn'))
+    ).toBeVisible()
+
+    useAgentConversationStore().setThreadId('th-next')
+    await nextTick()
+
+    expect(
+      screen.queryByText(i18n.global.t('agent.canvasIsEmptyAfterTurn'))
+    ).not.toBeInTheDocument()
+  })
+
+  type ToolOutcomes = [string, 'success' | 'error'][]
+
+  function reportTools(tools: ToolOutcomes): void {
+    tools.forEach(([toolName, status], index) => {
+      dispatchApiEvent('agent_tool_call', {
+        tool_call_id: `call-${index}-${toolName}`,
+        tool_name: toolName,
+        status,
+        duration_ms: 90,
+        thread_id: 'th-1',
+        message_id: 'm-1'
+      })
+    })
+  }
+
+  it.for([
+    { name: 'a single clear', tools: [['clear_canvas', 'success']] },
+    {
+      name: 'an inspect then clear',
+      tools: [
+        ['print_workflow', 'success'],
+        ['clear_canvas', 'success']
+      ]
+    },
+    {
+      name: 'an add then clear',
+      tools: [
+        ['add_node', 'success'],
+        ['clear_canvas', 'success']
+      ]
+    }
+  ] satisfies { name: string; tools: ToolOutcomes }[])(
+    'does not contradict an empty canvas after $name',
+    async ({ tools }) => {
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+
+      await renderAndSend('empty the canvas')
+      reportTools(tools)
+      dispatchApiEvent('agent_message_done', {
+        message_id: 'm-1',
+        thread_id: 'th-1'
+      })
+
+      expect(
+        await screen.findByRole('button', {
+          name: i18n.global.t('agent.worked')
+        })
+      ).toBeVisible()
+      expect(
+        screen.queryByText(i18n.global.t('agent.canvasIsEmptyAfterTurn'))
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    {
+      name: 'content was added after a clear',
+      tools: [
+        ['clear_canvas', 'success'],
+        ['add_node', 'success']
+      ]
+    },
+    {
+      name: 'a clear after an add failed',
+      tools: [
+        ['add_node', 'success'],
+        ['clear_canvas', 'error']
+      ]
+    },
+    {
+      name: 'nodes were added and one was deleted',
+      tools: [
+        ['add_node', 'success'],
+        ['add_node', 'success'],
+        ['delete_node', 'success']
+      ]
+    }
+  ] satisfies { name: string; tools: ToolOutcomes }[])(
+    'flags an empty canvas when $name',
+    async ({ tools }) => {
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+
+      await renderAndSend('build on the canvas')
+      reportTools(tools)
+      dispatchApiEvent('agent_message_done', {
+        message_id: 'm-1',
+        thread_id: 'th-1'
+      })
+
+      expect(
+        await screen.findByText(i18n.global.t('agent.canvasIsEmptyAfterTurn'))
+      ).toBeVisible()
+    }
+  )
 
   it('shows a sticky error toast when the doc-host permanently refuses the subscribe', async () => {
     makeTab('wf-42')
@@ -12054,3 +12363,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 })
+
+function dispatchApiEvent(type: string, detail: unknown): void {
+  ws.emit(type, detail)
+}

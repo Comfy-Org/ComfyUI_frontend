@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "בחירה מתוך קלטים מחוברים לפי שם. ניתן לשנות את שמות הקלטים בלחיצה כפולה עליהם.",
+    "display_name": "הסתעפות",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "הוספת אובייקט המתואר בטקסט חופשי לתמונה באמצעות Bria. ‏Bria מרנדרת מחדש את הפריים כולו בכמגה-פיקסל אחד, ולכן התוצאה אינה מיושרת ברמת הפיקסל לקלט.",
     "display_name": "Bria הוספת אובייקט",
@@ -10237,6 +10258,128 @@
       }
     }
   },
+  "Kling4EditVideoNode": {
+    "description": "עריכת וידאו באמצעות פרומפט טקסט ותמונות וסרטוני וידאו להפניה, לפי הצורך. התוצאה תהיה באותו אורך כמו סרטון הווידאו הקלט.",
+    "display_name": "Kling 4.0 עריכת וידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_גובה-רוחב"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ImageToVideoNode": {
+    "description": "יצירת וידאו עם שמע באמצעות עד 10 פריימטי מפתח. הפריימים האמצעיים מרווחים באופן שווה; הווידאו מקבל את יחס הגובה-רוחב של פריים המפתח הראשון.",
+    "display_name": "Kling 4.0 מתמונה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ReferenceToVideoNode": {
+    "description": "יצירת וידאו עם שמע מתמונות ומסרטוני וידאו להפניה, עם אפשרות להתחיל או לסיים בפריימים נתונים.",
+    "display_name": "Kling 4.0 מהפניה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_גובה-רוחב"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4TextToVideoNode": {
+    "description": "יצירת וידאו עם שמע מפרומפט טקסט.",
+    "display_name": "Kling 4.0 מטקסט לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_גובה-רוחב"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingAvatarNode": {
     "description": "יצירת סרטוני דמות דיגיטלית בסגנון שידור מתמונה בודדת וקובץ שמע.",
     "display_name": "Kling Avatar 2.0",
@@ -16743,6 +16886,170 @@
       },
       "transformer_blocks_9_": {
         "name": "transformer_blocks.9."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "final_linear_video_": {
+        "name": "final_linear_video."
+      },
+      "final_norm_video_": {
+        "name": "final_norm_video."
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "layers.23."
+      },
+      "layers_24_": {
+        "name": "layers.24."
+      },
+      "layers_25_": {
+        "name": "layers.25."
+      },
+      "layers_26_": {
+        "name": "layers.26."
+      },
+      "layers_27_": {
+        "name": "layers.27."
+      },
+      "layers_28_": {
+        "name": "layers.28."
+      },
+      "layers_29_": {
+        "name": "layers.29."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_30_": {
+        "name": "layers.30."
+      },
+      "layers_31_": {
+        "name": "layers.31."
+      },
+      "layers_32_": {
+        "name": "layers.32."
+      },
+      "layers_33_": {
+        "name": "layers.33."
+      },
+      "layers_34_": {
+        "name": "layers.34."
+      },
+      "layers_35_": {
+        "name": "layers.35."
+      },
+      "layers_36_": {
+        "name": "layers.36."
+      },
+      "layers_37_": {
+        "name": "layers.37."
+      },
+      "layers_38_": {
+        "name": "layers.38."
+      },
+      "layers_39_": {
+        "name": "layers.39."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_40_": {
+        "name": "layers.40."
+      },
+      "layers_41_": {
+        "name": "layers.41."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "video_head_modulation_": {
+        "name": "video_head_modulation."
       }
     }
   },
@@ -25248,7 +25555,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "מקודד הוראת עריכה עם תמונות ייחוס עבור LoRA של עריכת MOSS-Image; יש להשתמש בו גם עבור ההנחיה השלילית. תמונות הייחוס משמשות בגודל שבו הן מתקבלות, ולכן יש לשנות את קנה המידה שלהן תחילה.",
+    "description": "מקודד הוראת עריכה עם תמונות ייחוס עבור LoRA לעריכת MOSS-Image; יש להשתמש בו גם עבור הפרומפט השלילי. נעשה שימוש בתמונות הייחוס בגודל שבו הן מתקבלות, לכן יש לשנות את גודלן תחילה. ללא VAE, התמונות נשלחות רק למקודד הטקסט.",
     "display_name": "קידוד טקסט לעריכת MOSS-Image",
     "inputs": {
       "clip": {
@@ -25258,6 +25565,10 @@
         "name": "edit_format",
         "tooltip": "הפריסה שאיתה אומן ה-LoRA לעריכה: MOSS-Image Edit Training של ai-toolkit (אפשרות ה-kv_cache שלו מופעלת או מושבתת) או Moss-Image-Edit. כאשר kv_cache מושבת, תמונות הייחוס מתייחסות גם לתמונה הנוצרת, ולכן הן מחושבות מחדש בכל שלב."
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "קובע את מידת ההתייחסות של המודל לתמונות שמקודד הטקסט רואה (בתבניות ai-toolkit, או ללא VAE): 0 מתעלם מהן, 1 אינו משנה אותן, וערך מעל 1 מדגיש אותן."
+      },
       "images": {
         "name": "תמונות"
       },
@@ -25265,7 +25576,8 @@
         "name": "הנחיה"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "מקודד את התמונות כ-latent-ים של ייחוס עבור LoRA העריכה."
       }
     },
     "outputs": {

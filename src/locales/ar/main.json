@@ -41,6 +41,7 @@
     "attachmentsAlreadyAdded": "{name} موجود بالفعل في درج الأصول | تم تخطي {count} من الأصول المكررة",
     "backToPreviousChat": "العودة إلى المحادثة السابقة",
     "beta": "تجريبي",
+    "canvasIsEmptyAfterTurn": "هذه اللوحة فارغة — لم يُضف إليها شيء. لا يوجد هنا ما يمكن تشغيله أو حفظه أو تصديره بعد.",
     "changeWorkflowForChat": "غيّر سير العمل الذي يمكن للوكيل تعديله",
     "chatOptions": "خيارات المحادثة",
     "chooseWorkflow": "اختر سير عمل",
@@ -259,6 +260,7 @@
     "toolForgotPreference": "نسي تفضيلًا",
     "toolLoadedSkill": "تم تحميل {skill}",
     "toolLoadingSkill": "جارٍ تحميل {skill}",
+    "toolNotConfirmedOnCanvas": "{tool} — لم يتم تأكيده على لوحتك",
     "toolOpenedNewTab": "فتح علامة تبويب جديدة",
     "toolOpeningNewTab": "فتح علامة تبويب جديدة",
     "toolSavedPreference": "حفظ تفضيلًا",
@@ -277,10 +279,11 @@
     "worked": "اكتمل",
     "workedForMinutes": "عمل لمدة {minutes} د {seconds} ث",
     "workedForSeconds": "عمل لمدة {seconds} ثوانٍ",
+    "workedNotConfirmedOnCanvas": "لم يتم تأكيد التغييرات على لوحتك",
     "workflowEditNotice": "يمكن للوكيل الآن تعديل {workflow}. يعمل على سير عمل واحد في كل مرة، ويمكنك التبديل بين سير العمل أثناء الدردشة.",
     "workflowReferenceUnavailableReason": "سير العمل المشار إليه هذا لم يعد متاحًا أو ليس لديك صلاحية الوصول إليه.",
     "workflowSyncFailedDetail": "أُنشئ مخطط سير العمل هذا بإصدار مستند غير متوافق. لم يتم تغيير لوحتك.",
-    "workflowSyncFailedDetailCatalogMismatch": "يستخدم مخطط سير العمل هذا كتالوج عقد غير متوافق مع مساحة العمل هذه. لم يتم تغيير لوحتك.",
+    "workflowSyncFailedDetailCatalogMismatch": "تغيّرت عقدة في سير العمل هذا منذ أن اطّلع عليها الوكيل آخر مرة. لم يُجرَ أي تغيير على لوحتك. سترسل رسالتك التالية لوحتك لكي يتمكن الوكيل من إعادة إنشاء نسخته من سير العمل.",
     "workflowSyncFailedDetailStaleClient": "هذه الصفحة غير محدّثة، لذا لا يمكن عرض تغييرات الوكيل. أعد تحميل الصفحة لرؤيتها.",
     "workflowSyncFailedTitle": "لا يمكن مزامنة مخطط سير العمل هذا",
     "workflows": "سير العمل",
@@ -1168,6 +1171,7 @@
     "eventType": "نوع الحدث",
     "eventTypes": {
       "accountCreated": "تم إنشاء الحساب",
+      "agentUsage": "استخدام الوكيل",
       "apiNodeUsage": "استخدام عقدة الشريك",
       "apiUsage": "استخدام API",
       "creditAdded": "تمت إضافة أرصدة",
@@ -5797,10 +5801,7 @@
       "totalMembersCount": "{count} من أصل {maxSeats} عضوًا إجمالًا.",
       "totalMembersUnlimited": "{count} عضو إجمالًا. | {count} أعضاء إجمالًا.",
       "upgradeToTeam": "الترقية إلى فريق",
-      "upsellBanner": "لإضافة زملاء، قم بترقية خطتك.",
-      "upsellBannerEnterpriseEnded": "تواصل مع المبيعات لإعادة تفعيل خطة المؤسسات الخاصة بك.",
-      "upsellBannerPlanEnded": "تواصل مع المبيعات لإعادة تفعيل خطتك.",
-      "upsellBannerReactivate": "لإضافة المزيد من الزملاء، فعّل خطتك من جديد."
+      "upsellBanner": "لإضافة زملاء، قم بترقية خطتك."
     },
     "menu": {
       "creatorCannotLeave": "لا يمكن لمنشئ مساحة العمل مغادرة المساحة التي أنشأها",

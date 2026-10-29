@@ -41,6 +41,7 @@
     "attachmentsAlreadyAdded": "{name} 已在资源栏中 | 已跳过 {count} 个重复资源",
     "backToPreviousChat": "返回上一个聊天",
     "beta": "测试版",
+    "canvasIsEmptyAfterTurn": "此画布为空——尚未向其中添加任何内容。这里目前没有可运行、保存或导出的内容。",
     "changeWorkflowForChat": "更改代理可编辑的工作流",
     "chatOptions": "聊天选项",
     "chooseWorkflow": "选择工作流",
@@ -259,6 +260,7 @@
     "toolForgotPreference": "已忘记偏好设置",
     "toolLoadedSkill": "已加载 {skill}",
     "toolLoadingSkill": "正在加载 {skill}",
+    "toolNotConfirmedOnCanvas": "{tool}——尚未在你的画布上确认",
     "toolOpenedNewTab": "已打开新标签页",
     "toolOpeningNewTab": "正在打开新标签页",
     "toolSavedPreference": "已保存偏好设置",
@@ -277,10 +279,11 @@
     "worked": "已完成",
     "workedForMinutes": "已用时 {minutes} 分 {seconds} 秒",
     "workedForSeconds": "已用时 {seconds} 秒",
+    "workedNotConfirmedOnCanvas": "你的画布上的更改尚未确认",
     "workflowEditNotice": "智能体现在可以编辑 {workflow}。它一次只能处理 1 个工作流，你可以在聊天过程中切换工作流。",
     "workflowReferenceUnavailableReason": "此引用的工作流已不可用，或你无权访问它。",
     "workflowSyncFailedDetail": "此工作流使用不兼容的文档版本创建。你的画布未被更改。",
-    "workflowSyncFailedDetailCatalogMismatch": "此工作流使用与此工作区不兼容的节点目录。你的画布未被更改。",
+    "workflowSyncFailedDetailCatalogMismatch": "自代理上次看到它以来，此工作流中的一个节点已发生更改。你的画布保持不变。你的下一条消息会发送你的画布，以便代理重建其工作流副本。",
     "workflowSyncFailedDetailStaleClient": "此页面已过期，因此无法显示智能体的更改。请重新加载页面以查看这些更改。",
     "workflowSyncFailedTitle": "此工作流无法同步",
     "workflows": "工作流",
@@ -1168,6 +1171,7 @@
     "eventType": "事件类型",
     "eventTypes": {
       "accountCreated": "账户已创建",
+      "agentUsage": "代理使用情况",
       "apiNodeUsage": "合作节点使用",
       "apiUsage": "API 使用",
       "creditAdded": "已添加积分",
@@ -5797,10 +5801,7 @@
       "totalMembersCount": "{count} / {maxSeats} 名成员。",
       "totalMembersUnlimited": "{count} 名成员。 | {count} 名成员。",
       "upgradeToTeam": "升级到团队版",
-      "upsellBanner": "如需添加队友，请升级您的套餐。",
-      "upsellBannerEnterpriseEnded": "请联系销售团队以重新激活你的企业套餐。",
-      "upsellBannerPlanEnded": "请联系销售团队以重新激活你的套餐。",
-      "upsellBannerReactivate": "如需添加更多队友，请重新激活您的套餐。"
+      "upsellBanner": "如需添加队友，请升级您的套餐。"
     },
     "menu": {
       "creatorCannotLeave": "工作区创建者无法离开他们创建的工作区",

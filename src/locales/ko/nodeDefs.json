@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "이름으로 연결된 입력 중에서 선택합니다. 입력은 더블 클릭하여 이름을 변경할 수 있습니다.",
+    "display_name": "분기",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "Bria를 사용하여 일반 텍스트로 설명한 객체를 이미지에 삽입합니다. Bria는 전체 프레임을 약 100만 픽셀로 다시 렌더링하므로 결과가 입력과 픽셀 단위로 정렬되지 않습니다.",
     "display_name": "Bria 객체 추가",
@@ -10237,6 +10258,128 @@
       }
     }
   },
+  "Kling4EditVideoNode": {
+    "description": "텍스트 프롬프트와 선택적 참조 이미지 및 비디오를 사용하여 비디오를 편집합니다. 결과물의 길이는 입력 비디오와 동일합니다.",
+    "display_name": "Kling 4.0 비디오 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ImageToVideoNode": {
+    "description": "최대 10개의 키프레임을 통해 오디오가 포함된 비디오를 생성합니다. 중간 프레임은 균등하게 배치되며, 비디오는 첫 번째 키프레임의 종횡비를 따릅니다.",
+    "display_name": "Kling 4.0 이미지를 비디오로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ReferenceToVideoNode": {
+    "description": "참조 이미지와 비디오로부터 오디오가 포함된 비디오를 생성하며, 필요에 따라 지정된 프레임으로 시작하거나 끝낼 수 있습니다.",
+    "display_name": "Kling 4.0 참조를 비디오로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4TextToVideoNode": {
+    "description": "텍스트 프롬프트로부터 오디오가 포함된 비디오를 생성합니다.",
+    "display_name": "Kling 4.0 텍스트를 비디오로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingAvatarNode": {
     "description": "한 장의 사진과 오디오 파일로 방송 스타일의 디지털 휴먼 영상을 생성합니다.",
     "display_name": "Kling Avatar 2.0",
@@ -16743,6 +16886,170 @@
       },
       "transformer_blocks_9_": {
         "name": "transformer_blocks.9."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "final_linear_video_": {
+        "name": "final_linear_video."
+      },
+      "final_norm_video_": {
+        "name": "final_norm_video."
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "layers.23."
+      },
+      "layers_24_": {
+        "name": "layers.24."
+      },
+      "layers_25_": {
+        "name": "layers.25."
+      },
+      "layers_26_": {
+        "name": "layers.26."
+      },
+      "layers_27_": {
+        "name": "layers.27."
+      },
+      "layers_28_": {
+        "name": "layers.28."
+      },
+      "layers_29_": {
+        "name": "layers.29."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_30_": {
+        "name": "layers.30."
+      },
+      "layers_31_": {
+        "name": "layers.31."
+      },
+      "layers_32_": {
+        "name": "layers.32."
+      },
+      "layers_33_": {
+        "name": "layers.33."
+      },
+      "layers_34_": {
+        "name": "layers.34."
+      },
+      "layers_35_": {
+        "name": "layers.35."
+      },
+      "layers_36_": {
+        "name": "layers.36."
+      },
+      "layers_37_": {
+        "name": "layers.37."
+      },
+      "layers_38_": {
+        "name": "layers.38."
+      },
+      "layers_39_": {
+        "name": "layers.39."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_40_": {
+        "name": "layers.40."
+      },
+      "layers_41_": {
+        "name": "layers.41."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "video_head_modulation_": {
+        "name": "video_head_modulation."
       }
     }
   },
@@ -25248,7 +25555,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "MOSS-Image 편집 LoRA용으로 참조 이미지와 함께 편집 지시를 인코딩합니다. 네거티브 프롬프트에도 사용하세요. 참조 이미지는 입력된 크기로 사용되므로 먼저 크기를 조정하세요.",
+    "description": "참조 이미지와 함께 편집 지시문을 MOSS-Image 편집 LoRA용으로 인코딩합니다. 네거티브 프롬프트에도 사용하세요. 참조 이미지는 입력된 크기 그대로 사용되므로 먼저 크기를 조정하세요. VAE가 없으면 이미지는 텍스트 인코더로만 전달됩니다.",
     "display_name": "텍스트 인코드 MOSS-Image 편집",
     "inputs": {
       "clip": {
@@ -25258,6 +25565,10 @@
         "name": "edit_format",
         "tooltip": "편집 LoRA가 학습된 레이아웃입니다: ai-toolkit의 MOSS-Image Edit Training(kv_cache 옵션 켜짐 또는 꺼짐) 또는 Moss-Image-Edit. kv_cache가 꺼져 있으면 참조 이미지도 생성되는 이미지에 어텐션하므로 매 단계마다 다시 계산됩니다."
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "텍스트 인코더가 보는 이미지에 모델이 얼마나 주의를 기울일지 조절합니다(ai-toolkit 형식 또는 VAE 없음). 0이면 무시하고, 1이면 변경되지 않으며, 1보다 크면 더 강조합니다."
+      },
       "images": {
         "name": "이미지"
       },
@@ -25265,7 +25576,8 @@
         "name": "프롬프트"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "편집 LoRA용 참조 latent로 이미지를 인코딩합니다."
       }
     },
     "outputs": {

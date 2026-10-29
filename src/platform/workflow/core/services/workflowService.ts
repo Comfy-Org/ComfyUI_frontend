@@ -20,6 +20,7 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { reportWorkflowStateAnomaly } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 // oxlint-disable-next-line comfy/no-restricted-paths
@@ -103,6 +104,33 @@ function closingKey(workflow: ComfyWorkflow): ComfyWorkflow {
  */
 function activeStateFallbackId(workflow: ComfyWorkflow): string | undefined {
   return workflow.activeState?.id
+}
+
+/**
+ * Resets the tracker of a workflow that `openWorkflow` just activated and
+ * restores its view state. Typed against `ComfyWorkflow` for the same reason as
+ * `activeStateFallbackId`: `LoadedComfyWorkflow` promises a tracker the
+ * unchecked cast cannot guarantee. Returns false (after reporting) when the
+ * workflow has none, so the caller skips the reset instead of throwing.
+ */
+function resetAndRestoreTracker(
+  workflow: ComfyWorkflow,
+  workflowData: ComfyWorkflowJSON,
+  isActive: boolean
+): boolean {
+  const tracker = workflow.changeTracker
+  if (!tracker) {
+    reportWorkflowStateAnomaly(
+      'Activated workflow has no change tracker',
+      'activateLoadedWorkflow.resetTracker',
+      workflow,
+      { isActive }
+    )
+    return false
+  }
+  tracker.reset(ensureWorkflowId(workflowData, activeStateFallbackId(workflow)))
+  tracker.restore()
+  return true
 }
 
 /** @internal Test-only: clears the module-level load queue between tests. */
@@ -365,12 +393,16 @@ export const useWorkflowService = () => {
 
   /**
    * Reload the current workflow
-   * This is used to refresh the node definitions update, e.g. when the locale changes.
+   * Waits for queued loads; skipped when a later open replaces the workflow.
    */
   const reloadCurrentWorkflow = async () => {
+    await workflowLoadTail
     const workflow = workflowStore.activeWorkflow
     if (workflow) {
-      await openWorkflow(workflow, { force: true })
+      await openWorkflow(workflow, {
+        force: true,
+        isCurrent: () => workflowStore.activeWorkflow === workflow
+      })
     }
   }
 
@@ -463,6 +495,7 @@ export const useWorkflowService = () => {
           return false
         }
 
+        workflow.changeTracker?.prepareForSave()
         const loaded = await useApp().loadGraphData(
           toRaw(workflow.activeState) as ComfyWorkflowJSON,
           /* clean=*/ true,
@@ -476,8 +509,6 @@ export const useWorkflowService = () => {
           }
         )
         if (loaded === false) {
-          // Same invariant as the catch: a failed load's intent must not
-          // stay newest (guarded no-op when the publish already superseded).
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           await restoreRetainedWorkflow(workflow)
           return false
@@ -487,7 +518,6 @@ export const useWorkflowService = () => {
         })
         return true
       } catch (error) {
-        // A failed load's intent must not stay newest (suppresses the survivor's hash).
         useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
         throw error
       }
@@ -660,7 +690,19 @@ export const useWorkflowService = () => {
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
-      activeWorkflow.changeTracker.deactivate()
+      // Typed as `ComfyWorkflow`: the active workflow's tracker can be absent
+      // despite `LoadedComfyWorkflow`'s declared type.
+      const tracker = (activeWorkflow as ComfyWorkflow).changeTracker
+      if (tracker) {
+        tracker.deactivate()
+      } else {
+        reportWorkflowStateAnomaly(
+          'Active workflow has no change tracker before loading a new graph',
+          'beforeLoadNewGraph',
+          activeWorkflow,
+          { isActive: true }
+        )
+      }
       persistActiveWorkflowDraft(activeWorkflow)
       // Cache missing model/media/node state for restore on tab switch.
       // Always overwrite to reflect the current store state (e.g. after
@@ -774,23 +816,30 @@ export const useWorkflowService = () => {
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
             // is the authoritative saved state.
+            // `initialState` is null when the tracker never loaded.
+            const initialState = (loadedWorkflow as ComfyWorkflow).initialState
+            if (!initialState) {
+              reportWorkflowStateAnomaly(
+                'Activated workflow has no initial state',
+                'activateLoadedWorkflow.initialMode',
+                loadedWorkflow,
+                { isActive: workflowStore.isActive(loadedWorkflow) }
+              )
+            }
             loadedWorkflow.initialMode =
-              linearModeToAppMode(
-                loadedWorkflow.initialState.extra?.linearMode
-              ) ?? freshLoadMode
+              linearModeToAppMode(initialState?.extra?.linearMode) ??
+              freshLoadMode
             trackIfEnteringApp(loadedWorkflow)
           }
           if (shareId) {
             loadedWorkflow.shareId = shareId
           }
           loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
-          loadedWorkflow.changeTracker.reset(
-            ensureWorkflowId(
-              workflowData,
-              activeStateFallbackId(loadedWorkflow)
-            )
+          resetAndRestoreTracker(
+            loadedWorkflow,
+            workflowData,
+            workflowStore.isActive(loadedWorkflow)
           )
-          loadedWorkflow.changeTracker.restore()
           return
         }
       }
@@ -821,10 +870,11 @@ export const useWorkflowService = () => {
       trackIfEnteringApp(loadedWorkflow)
     }
     loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
-    loadedWorkflow.changeTracker.reset(
-      ensureWorkflowId(workflowData, activeStateFallbackId(loadedWorkflow))
+    resetAndRestoreTracker(
+      loadedWorkflow,
+      workflowData,
+      workflowStore.isActive(loadedWorkflow)
     )
-    loadedWorkflow.changeTracker.restore()
   }
 
   /**

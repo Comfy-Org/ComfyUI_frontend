@@ -41,6 +41,7 @@
     "attachmentsAlreadyAdded": "{name} ya está en la bandeja de recursos | Se omitieron {count} recursos duplicados",
     "backToPreviousChat": "Volver al chat anterior",
     "beta": "BETA",
+    "canvasIsEmptyAfterTurn": "Este lienzo está vacío; no se le añadió nada. Aún no hay nada que ejecutar, guardar ni exportar.",
     "changeWorkflowForChat": "Cambia el flujo de trabajo que el agente puede editar",
     "chatOptions": "Opciones de chat",
     "chooseWorkflow": "Elige un flujo de trabajo",
@@ -259,6 +260,7 @@
     "toolForgotPreference": "Olvidó una preferencia",
     "toolLoadedSkill": "Se cargó {skill}",
     "toolLoadingSkill": "Cargando {skill}",
+    "toolNotConfirmedOnCanvas": "{tool}: no confirmado en tu lienzo",
     "toolOpenedNewTab": "Abrió una pestaña nueva",
     "toolOpeningNewTab": "Abriendo una nueva pestaña",
     "toolSavedPreference": "Guardó una preferencia",
@@ -277,10 +279,11 @@
     "worked": "Completado",
     "workedForMinutes": "Completado en {minutes}m {seconds}s",
     "workedForSeconds": "Completado en {seconds} segundos",
+    "workedNotConfirmedOnCanvas": "Cambios no confirmados en tu lienzo",
     "workflowEditNotice": "El agente ahora puede editar {workflow}. Funciona con 1 flujo de trabajo a la vez y puedes cambiar de flujo de trabajo durante el chat.",
     "workflowReferenceUnavailableReason": "Este flujo de trabajo referenciado ya no está disponible o no tienes acceso a él.",
     "workflowSyncFailedDetail": "Este flujo de trabajo se creó con una versión de documento incompatible. Tu lienzo no se ha modificado.",
-    "workflowSyncFailedDetailCatalogMismatch": "Este flujo de trabajo utiliza un catálogo de nodos incompatible con este espacio de trabajo. Tu lienzo no se ha modificado.",
+    "workflowSyncFailedDetailCatalogMismatch": "Un nodo de este flujo de trabajo ha cambiado desde la última vez que el agente lo vio. Tu lienzo se ha dejado sin cambios. Tu próximo mensaje envía tu lienzo para que el agente pueda reconstruir su copia del flujo de trabajo.",
     "workflowSyncFailedDetailStaleClient": "Esta página no está actualizada, por lo que no se pueden mostrar los cambios del agente. Recarga la página para verlos.",
     "workflowSyncFailedTitle": "Este flujo de trabajo no se puede sincronizar",
     "workflows": "Flujos de trabajo",
@@ -1168,6 +1171,7 @@
     "eventType": "Tipo de evento",
     "eventTypes": {
       "accountCreated": "Cuenta creada",
+      "agentUsage": "Uso del agente",
       "apiNodeUsage": "Uso de nodo asociado",
       "apiUsage": "Uso de API",
       "creditAdded": "Créditos añadidos",
@@ -5797,10 +5801,7 @@
       "totalMembersCount": "{count} de {maxSeats} miembros en total.",
       "totalMembersUnlimited": "{count} miembro en total. | {count} miembros en total.",
       "upgradeToTeam": "Actualizar a Team",
-      "upsellBanner": "Para agregar compañeros de equipo, actualiza tu plan.",
-      "upsellBannerEnterpriseEnded": "Contacta con ventas para reactivar tu plan Enterprise.",
-      "upsellBannerPlanEnded": "Contacta con ventas para reactivar tu plan.",
-      "upsellBannerReactivate": "Para agregar más compañeros de equipo, reactiva tu plan."
+      "upsellBanner": "Para agregar compañeros de equipo, actualiza tu plan."
     },
     "menu": {
       "creatorCannotLeave": "El creador del espacio de trabajo no puede abandonar el espacio que creó",

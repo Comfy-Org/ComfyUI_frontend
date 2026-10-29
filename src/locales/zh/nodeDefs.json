@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "按名称从已连接的输入中选择。双击输入即可重命名。",
+    "display_name": "分支",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "使用 Bria 将纯文本描述的对象插入图像。Bria 会以约 100 万像素重新渲染整个画面，因此结果不会与输入图像像素对齐。",
     "display_name": "Bria 添加对象",
@@ -10237,6 +10258,128 @@
       }
     }
   },
+  "Kling4EditVideoNode": {
+    "description": "使用文本提示词以及可选的参考图像和视频编辑视频。结果视频与输入视频时长相同。",
+    "display_name": "Kling 4.0 视频编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ImageToVideoNode": {
+    "description": "通过最多 10 个关键帧生成带音频的视频。中间帧均匀间隔；视频采用第一个关键帧的宽高比。",
+    "display_name": "Kling 4.0 图生视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ReferenceToVideoNode": {
+    "description": "根据参考图像和视频生成带音频的视频，并可选择以指定帧开始或结束。",
+    "display_name": "Kling 4.0 参考生视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4TextToVideoNode": {
+    "description": "根据文本提示词生成带音频的视频。",
+    "display_name": "Kling 4.0 文生视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingAvatarNode": {
     "description": "从单张照片和音频文件生成广播风格的数字人视频。",
     "display_name": "Kling Avatar 2.0",
@@ -16743,6 +16886,170 @@
       },
       "transformer_blocks_9_": {
         "name": "transformer_blocks.9."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "final_linear_video_": {
+        "name": "最终视频线性层."
+      },
+      "final_norm_video_": {
+        "name": "最终视频归一化."
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "layers.23."
+      },
+      "layers_24_": {
+        "name": "layers.24."
+      },
+      "layers_25_": {
+        "name": "layers.25."
+      },
+      "layers_26_": {
+        "name": "layers.26."
+      },
+      "layers_27_": {
+        "name": "layers.27."
+      },
+      "layers_28_": {
+        "name": "layers.28."
+      },
+      "layers_29_": {
+        "name": "layers.29."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_30_": {
+        "name": "layers.30."
+      },
+      "layers_31_": {
+        "name": "层.31."
+      },
+      "layers_32_": {
+        "name": "层.32."
+      },
+      "layers_33_": {
+        "name": "层.33."
+      },
+      "layers_34_": {
+        "name": "层.34."
+      },
+      "layers_35_": {
+        "name": "层.35."
+      },
+      "layers_36_": {
+        "name": "层.36."
+      },
+      "layers_37_": {
+        "name": "层.37."
+      },
+      "layers_38_": {
+        "name": "层.38."
+      },
+      "layers_39_": {
+        "name": "层.39."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_40_": {
+        "name": "层.40."
+      },
+      "layers_41_": {
+        "name": "层.41."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "video_head_modulation_": {
+        "name": "视频头调制."
       }
     }
   },
@@ -25248,7 +25555,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "使用参考图像为 MOSS-Image 编辑 LoRA 编码编辑指令；也请将其用于负面提示词。参考图像将按其输入时的尺寸使用，请先进行缩放。",
+    "description": "使用参考图像为 MOSS-Image 编辑 LoRA 编码编辑指令，也将其用于负面提示词。参考图像会按输入时的尺寸使用，请先缩放。没有 VAE 时，图像只会传递给文本编码器。",
     "display_name": "文本编码 MOSS-Image 编辑",
     "inputs": {
       "clip": {
@@ -25258,6 +25565,10 @@
         "name": "edit_format",
         "tooltip": "编辑 LoRA 训练时使用的布局：ai-toolkit 的 MOSS-Image Edit Training（其 kv_cache 选项开启或关闭）或 Moss-Image-Edit。关闭 kv_cache 时，参考图像也会关注正在生成的图像，因此每一步都会重新计算。"
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "控制模型对文本编码器所见图像的关注程度（ai-toolkit 格式，或无 VAE 时）：0 会忽略图像，1 保持不变，大于 1 则会强调图像。"
+      },
       "images": {
         "name": "图像"
       },
@@ -25265,7 +25576,8 @@
         "name": "提示词"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "将图像编码为用于编辑 LoRA 的参考潜空间。"
       }
     },
     "outputs": {

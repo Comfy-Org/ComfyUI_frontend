@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "名前で接続された入力から選択します。入力はダブルクリックして名前を変更できます。",
+    "display_name": "分岐",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "Bria を使用して、プレーンテキストで説明したオブジェクトを画像に挿入します。Bria はフレーム全体を約1メガピクセルで再レンダリングするため、結果は入力画像とピクセル単位では一致しません。",
     "display_name": "Bria オブジェクトを追加",
@@ -10237,6 +10258,128 @@
       }
     }
   },
+  "Kling4EditVideoNode": {
+    "description": "テキストプロンプトと任意の参照画像・動画を使用して動画を編集します。結果は入力動画と同じ長さになります。",
+    "display_name": "Kling 4.0 動画編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ImageToVideoNode": {
+    "description": "最大10個のキーフレームを使用して、音声付き動画を生成します。中間フレームは等間隔に配置され、動画は最初のキーフレームのアスペクト比を使用します。",
+    "display_name": "Kling 4.0 画像から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ReferenceToVideoNode": {
+    "description": "参照画像と動画から、指定したフレームで開始または終了することもできる音声付き動画を生成します。",
+    "display_name": "Kling 4.0 参照から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4TextToVideoNode": {
+    "description": "テキストプロンプトから音声付き動画を生成します。",
+    "display_name": "Kling 4.0 テキストから動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingAvatarNode": {
     "description": "1枚の写真と音声ファイルから、放送スタイルのデジタルヒューマン動画を生成します。",
     "display_name": "Kling Avatar 2.0",
@@ -16743,6 +16886,170 @@
       },
       "transformer_blocks_9_": {
         "name": "トランスフォーマーブロック.9."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "final_linear_video_": {
+        "name": "final_linear_video."
+      },
+      "final_norm_video_": {
+        "name": "final_norm_video."
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "layers.23."
+      },
+      "layers_24_": {
+        "name": "layers.24."
+      },
+      "layers_25_": {
+        "name": "layers.25."
+      },
+      "layers_26_": {
+        "name": "layers.26."
+      },
+      "layers_27_": {
+        "name": "layers.27."
+      },
+      "layers_28_": {
+        "name": "layers.28."
+      },
+      "layers_29_": {
+        "name": "layers.29."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_30_": {
+        "name": "layers.30."
+      },
+      "layers_31_": {
+        "name": "layers.31."
+      },
+      "layers_32_": {
+        "name": "layers.32."
+      },
+      "layers_33_": {
+        "name": "layers.33."
+      },
+      "layers_34_": {
+        "name": "layers.34."
+      },
+      "layers_35_": {
+        "name": "layers.35."
+      },
+      "layers_36_": {
+        "name": "layers.36."
+      },
+      "layers_37_": {
+        "name": "layers.37."
+      },
+      "layers_38_": {
+        "name": "layers.38."
+      },
+      "layers_39_": {
+        "name": "layers.39."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_40_": {
+        "name": "layers.40."
+      },
+      "layers_41_": {
+        "name": "layers.41."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "video_head_modulation_": {
+        "name": "video_head_modulation."
       }
     }
   },
@@ -25248,7 +25555,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "MOSS-Image編集lora用に、参照画像とともに編集指示をエンコードします。ネガティブプロンプトにも使用してください。参照画像は入力時のサイズで使用されるため、先に拡大・縮小してください。",
+    "description": "MOSS-Image編集LoRA用に、参照画像とともに編集指示をエンコードします。ネガティブプロンプトにも使用してください。参照画像は入力時のサイズで使用されるため、先にスケールしてください。VAEがない場合、画像はテキストエンコーダーにのみ渡されます。",
     "display_name": "MOSS-Image Edit テキストエンコード",
     "inputs": {
       "clip": {
@@ -25258,6 +25565,10 @@
         "name": "edit_format",
         "tooltip": "編集loraの学習に使用されたレイアウト: ai-toolkitのMOSS-Image Edit Training（kv_cacheオプションのオンまたはオフ）またはMoss-Image-Edit。kv_cacheがオフの場合、参照画像も生成中の画像にattentionするため、各ステップで再計算されます。"
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "テキストエンコーダーが見る画像にモデルがどの程度注意を向けるかを調整します（ai-toolkit形式、またはVAEなしの場合）：0では無視され、1では変更されず、1を超えると強調されます。"
+      },
       "images": {
         "name": "画像"
       },
@@ -25265,7 +25576,8 @@
         "name": "プロンプト"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "画像を編集LoRA用の参照latentとしてエンコードします。"
       }
     },
     "outputs": {

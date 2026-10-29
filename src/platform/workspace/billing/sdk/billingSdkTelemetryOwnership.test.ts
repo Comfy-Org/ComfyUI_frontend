@@ -341,6 +341,18 @@ async function driveDowngrade() {
     ...permissions.value,
     canDowngradeToPersonal: true
   }))
+  Object.assign(useTeamWorkspaceStore(), {
+    members: [
+      {
+        id: 'owner',
+        name: 'Owner',
+        email: 'owner@example.com',
+        joinDate: new Date('2026-01-01T00:00:00Z'),
+        role: 'owner',
+        isOriginalOwner: true
+      }
+    ]
+  })
   await useDowngradeToPersonal()
     .downgradeToPersonal('standard-yearly')
     .catch(() => undefined)

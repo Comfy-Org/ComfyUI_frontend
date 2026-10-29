@@ -41,6 +41,7 @@
     "attachmentsAlreadyAdded": "{name} zaten varlık tepsisinde | Yinelenen {count} varlık atlandı",
     "backToPreviousChat": "Önceki sohbete dön",
     "beta": "BETA",
+    "canvasIsEmptyAfterTurn": "Bu tuval boş — buna hiçbir şey eklenmedi. Burada henüz çalıştıracak, kaydedecek veya dışa aktaracak hiçbir şey yok.",
     "changeWorkflowForChat": "Ajanın düzenleyebileceği iş akışını değiştirin",
     "chatOptions": "Sohbet seçenekleri",
     "chooseWorkflow": "Bir iş akışı seçin",
@@ -259,6 +260,7 @@
     "toolForgotPreference": "Bir tercih unutuldu",
     "toolLoadedSkill": "{skill} yüklendi",
     "toolLoadingSkill": "{skill} yükleniyor",
+    "toolNotConfirmedOnCanvas": "{tool} — tuvalinizde onaylanmadı",
     "toolOpenedNewTab": "Yeni bir sekme açıldı",
     "toolOpeningNewTab": "Yeni bir sekme açılıyor",
     "toolSavedPreference": "Bir tercih kaydedildi",
@@ -277,10 +279,11 @@
     "worked": "Çalıştı",
     "workedForMinutes": "{minutes} dk. {seconds} sn. çalıştı",
     "workedForSeconds": "{seconds} saniye çalıştı",
+    "workedNotConfirmedOnCanvas": "Tuvalinizdeki değişiklikler onaylanmadı",
     "workflowEditNotice": "Ajan artık {workflow} iş akışını düzenleyebilir. Aynı anda 1 iş akışında çalışır ve sohbet sırasında iş akışları arasında geçiş yapabilirsiniz.",
     "workflowReferenceUnavailableReason": "Referans verilen bu iş akışı artık kullanılamıyor veya erişim izniniz yok.",
     "workflowSyncFailedDetail": "Bu iş akışı uyumsuz bir belge sürümüyle oluşturuldu. Tuvaliniz değiştirilmeden bırakıldı.",
-    "workflowSyncFailedDetailCatalogMismatch": "Bu iş akışı, bu çalışma alanıyla uyumsuz bir düğüm kataloğu kullanıyor. Tuvaliniz değiştirilmeden bırakıldı.",
+    "workflowSyncFailedDetailCatalogMismatch": "Bu iş akışındaki bir düğüm, aracı onu son gördüğünden beri değişti. Tuvaliniz değiştirilmeden bırakıldı. Bir sonraki mesajınız tuvalinizi gönderir; böylece aracı iş akışının kendi kopyasını yeniden oluşturabilir.",
     "workflowSyncFailedDetailStaleClient": "Bu sayfa güncel değil, bu nedenle aracının değişiklikleri gösterilemiyor. Görmek için sayfayı yeniden yükleyin.",
     "workflowSyncFailedTitle": "Bu iş akışı senkronize edilemiyor",
     "workflows": "İş akışları",
@@ -1168,6 +1171,7 @@
     "eventType": "Etkinlik Türü",
     "eventTypes": {
       "accountCreated": "Hesap Oluşturuldu",
+      "agentUsage": "Ajan Kullanımı",
       "apiNodeUsage": "Partner Node Kullanımı",
       "apiUsage": "API Kullanımı",
       "creditAdded": "Kredi Eklendi",
@@ -5797,10 +5801,7 @@
       "totalMembersCount": "Toplam {maxSeats} üyenin {count} kadarı.",
       "totalMembersUnlimited": "Toplam {count} üye. | Toplam {count} üye.",
       "upgradeToTeam": "Takıma Yükselt",
-      "upsellBanner": "Takım arkadaşları eklemek için planınızı yükseltin.",
-      "upsellBannerEnterpriseEnded": "Enterprise planınızı yeniden etkinleştirmek için satış ekibiyle iletişime geçin.",
-      "upsellBannerPlanEnded": "Planınızı yeniden etkinleştirmek için satış ekibiyle iletişime geçin.",
-      "upsellBannerReactivate": "Daha fazla takım arkadaşı eklemek için planınızı yeniden etkinleştirin."
+      "upsellBanner": "Takım arkadaşları eklemek için planınızı yükseltin."
     },
     "menu": {
       "creatorCannotLeave": "Çalışma alanını oluşturan kişi, oluşturduğu çalışma alanından ayrılamaz",

@@ -608,6 +608,31 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
   })
 
+  it('reports an agent event for a hydrating thread before the hydrate settles', async () => {
+    const onAgentEvent = vi.fn()
+    const rest = fakeRest({ getMessages: vi.fn(hangingGetMessages) })
+    const { source, emit } = fakeEvents()
+    useAgentConversationStore().setThreadId('th-1')
+    const session = useAgentSession({ rest, events: source, onAgentEvent })
+    session.start()
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+    const restartSucceeded = wire({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-restart',
+        tool_name: 'restart_comfyui',
+        status: 'success',
+        duration_ms: 900,
+        thread_id: 'th-1',
+        message_id: 'msg-1'
+      }
+    })
+
+    emit(restartSucceeded)
+
+    expect(onAgentEvent).toHaveBeenCalledExactlyOnceWith(restartSucceeded)
+  })
+
   it.for(['success', 'failure', 'new-chat', 'newer-chat', 'cancelled'])(
     'activates only a ready current selection after %s',
     async (outcome) => {
@@ -1887,13 +1912,23 @@ describe('useAgentSession (v1 composition root)', () => {
       events: fakeEvents().source
     })
     session.start()
+    const onAccepted = vi.fn()
 
-    const send = session.sendMessage('late reply')
+    const send = session.sendMessage(
+      'late reply',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      onAccepted
+    )
     await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
     session.stop()
     resolvePost({ thread_id: 'th-late', message_id: 'msg-late' })
 
     await expect(send).resolves.toBe(false)
+    expect(onAccepted).toHaveBeenCalledOnce()
     expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
   })
 
@@ -2197,8 +2232,19 @@ describe('useAgentSession (v1 composition root)', () => {
         resolution: { status: 'answered', selected: ['flux'] }
       })
       expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+        expect.objectContaining({
+          message: 'agent ask resolved with a different answer'
+        }),
+        expect.objectContaining({
+          errorType: 'agent_ask_answer_superseded',
+          tags: {
+            selection_changed: true,
+            other_text_changed: false,
+            selection_known: true,
+            committed_selected_count: 1,
+            submitted_selected_count: 1
+          }
+        })
       )
     })
 
@@ -2238,6 +2284,168 @@ describe('useAgentSession (v1 composition root)', () => {
         expect.any(Error),
         expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
       )
+    })
+
+    it.for([
+      ['no selection', { error: 'already answered', status: 'answered' }],
+      [
+        'a null selection',
+        { error: 'already answered', status: 'answered', selected: null }
+      ]
+    ] as const)(
+      'does not report a 409 with %s as another answer winning',
+      async ([, body]) => {
+        const { session, answerAsk } = await parkedOnQuestion()
+        answerAsk.mockRejectedValue(
+          new AgentApiError('already answered', 409, body)
+        )
+
+        await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+        expect(reportError).not.toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+        )
+        expect(session.notices.value).toEqual([])
+      }
+    )
+
+    it.for([
+      [
+        'a null selection',
+        {
+          error: 'already answered',
+          status: 'answered',
+          selected: null,
+          other_text: 'someone else'
+        }
+      ],
+      [
+        'no selection',
+        {
+          error: 'already answered',
+          status: 'answered',
+          other_text: 'someone else'
+        }
+      ]
+    ] as const)(
+      'reports a 409 whose free text alone shows another answer won (%s)',
+      async ([, body]) => {
+        const { session, answerAsk } = await parkedOnQuestion()
+        answerAsk.mockRejectedValue(
+          new AgentApiError('already answered', 409, body)
+        )
+
+        await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+        expect(card()).toMatchObject({
+          resolution: {
+            status: 'answered',
+            selected: [],
+            otherText: 'someone else'
+          }
+        })
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'agent_ask_answer_superseded',
+            tags: {
+              selection_changed: false,
+              other_text_changed: true,
+              selection_known: false,
+              committed_selected_count: undefined,
+              submitted_selected_count: 1
+            }
+          })
+        )
+        expect(session.notices.value).toEqual([
+          {
+            level: 'error',
+            text: enMessages.agent.runApproval.answerSuperseded
+          }
+        ])
+      }
+    )
+
+    it.for([
+      ['reports', 'someone else', true],
+      ['does not report', 'a LoRA', false]
+    ] as const)(
+      '%s a 202 that names only free text (%s)',
+      async ([, otherText, superseded]) => {
+        const { session } = await parkedOnQuestion({
+          status: 'answered',
+          other_text: otherText
+        })
+
+        await session.answerAsk('turn-1:call-1', {
+          selected: [],
+          other_text: 'a LoRA'
+        })
+
+        expect(session.notices.value).toHaveLength(superseded ? 1 : 0)
+      }
+    )
+
+    it.for([
+      ['reports', 'someone else', true],
+      ['does not report', 'a LoRA', false]
+    ] as const)(
+      '%s a free-text-only frame (%s)',
+      async ([, otherText, superseded]) => {
+        const { session, emit } = await parkedOnQuestion()
+        await session.answerAsk('turn-1:call-1', {
+          selected: [],
+          other_text: 'a LoRA'
+        })
+
+        emit(
+          wire({
+            type: 'agent_ask_resolved',
+            data: {
+              thread_id: 'th-1',
+              message_id: 'msg-1',
+              ask_id: 'turn-1:call-1',
+              status: 'answered',
+              selected: [],
+              other_text: otherText
+            }
+          })
+        )
+
+        expect(session.notices.value).toHaveLength(superseded ? 1 : 0)
+      }
+    )
+
+    it('does not report a 409 naming only the same free text as another answer winning', async () => {
+      const { session, answerAsk } = await parkedOnQuestion()
+      answerAsk.mockRejectedValue(
+        new AgentApiError('already answered', 409, {
+          error: 'already answered',
+          status: 'answered',
+          other_text: 'a LoRA'
+        })
+      )
+
+      await session.answerAsk('turn-1:call-1', {
+        selected: ['sdxl'],
+        other_text: 'a LoRA'
+      })
+
+      expect(session.notices.value).toEqual([])
+    })
+
+    it('does not report an answered frame with a null selection as another answer winning', async () => {
+      const { session, emit } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', null))
+
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+      expect(session.notices.value).toEqual([])
     })
 
     it('puts the card back in service when the server rejects the selection', async () => {
@@ -2344,14 +2552,17 @@ describe('useAgentSession (v1 composition root)', () => {
       name: string
       committed: Pick<AgentAskResolvedData, 'selected' | 'other_text'>
       expected: AskUserResolution
+      changes: { selection_changed: boolean; other_text_changed: boolean }
     }>([
       {
         name: 'a different option',
+        changes: { selection_changed: true, other_text_changed: true },
         committed: { selected: ['flux'] },
         expected: { status: 'answered', selected: ['flux'] }
       },
       {
         name: 'a superset of it',
+        changes: { selection_changed: true, other_text_changed: false },
         committed: { selected: ['sdxl', 'flux'], other_text: 'a LoRA' },
         expected: {
           status: 'answered',
@@ -2361,11 +2572,13 @@ describe('useAgentSession (v1 composition root)', () => {
       },
       {
         name: 'a subset of it',
+        changes: { selection_changed: true, other_text_changed: false },
         committed: { selected: [], other_text: 'a LoRA' },
         expected: { status: 'answered', selected: [], otherText: 'a LoRA' }
       },
       {
         name: 'free text alone',
+        changes: { selection_changed: true, other_text_changed: true },
         committed: { selected: [], other_text: 'someone else' },
         expected: {
           status: 'answered',
@@ -2375,12 +2588,13 @@ describe('useAgentSession (v1 composition root)', () => {
       },
       {
         name: 'the same option with other free text',
+        changes: { selection_changed: false, other_text_changed: true },
         committed: { selected: ['sdxl'], other_text: 'a VAE' },
         expected: { status: 'answered', selected: ['sdxl'], otherText: 'a VAE' }
       }
     ])(
       'shows the committed answer when $name won',
-      async ({ committed, expected }) => {
+      async ({ committed, expected, changes }) => {
         const { session, emit } = await parkedOnQuestion()
         await session.answerAsk('turn-1:call-1', {
           selected: ['sdxl'],
@@ -2405,7 +2619,10 @@ describe('useAgentSession (v1 composition root)', () => {
         expect(shown.resolution).toEqual(expected)
         expect(reportError).toHaveBeenCalledWith(
           expect.any(Error),
-          expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+          expect.objectContaining({
+            errorType: 'agent_ask_answer_superseded',
+            tags: expect.objectContaining(changes)
+          })
         )
       }
     )
@@ -2733,7 +2950,14 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',
-        errorType: 'agent_ask_answer_superseded'
+        errorType: 'agent_ask_answer_superseded',
+        tags: {
+          selection_changed: true,
+          other_text_changed: false,
+          selection_known: true,
+          committed_selected_count: 1,
+          submitted_selected_count: 1
+        }
       })
       expect(session.notices.value).toHaveLength(1)
       expect(cardOnScreen()).toBe(false)

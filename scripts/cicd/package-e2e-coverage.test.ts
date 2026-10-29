@@ -83,6 +83,10 @@ set -euo pipefail
 if [[ "$1" == "--remove" ]]; then
   exit 0
 fi
+if [[ " $* " != *" --ignore-errors inconsistent,corrupt "* ]]; then
+  echo 'missing function-metadata error allowance' >&2
+  exit 64
+fi
 inputs=()
 output=''
 while [[ $# -gt 0 ]]; do
@@ -193,6 +197,18 @@ describe('package-e2e-coverage.sh', () => {
     expect(result.output).not.toContain('::warning::')
   })
 
+  it('preserves line coverage when function metadata is inconsistent', () => {
+    using fixture = coverageFixture()
+    fixture.writeShard('e2e-coverage-shard-1', coverage('src'))
+
+    const result = fixture.run(true)
+
+    expect(result.status).toBe(0)
+    expect(
+      readFileSync(join(fixture.output, 'coverage.lcov'), 'utf8')
+    ).toContain('SF:src/file 0.ts')
+  })
+
   // Preserves #15342: a flaky shard must not discard every other shard's real
   // coverage. It stays published for Codecov and the PR comment, but flagged.
   it('publishes a run with a whitespace path but flags a red matrix', () => {
@@ -300,6 +316,16 @@ describe('completeness gate wiring', () => {
     expect(field(job, 'with', 'shards_succeeded')).toBe(
       `\${{ needs.${SHARDED}.result == 'success' }}`
     )
+  })
+
+  it('packages coverage against the revision exercised by the workflow', () => {
+    const job = field(
+      readWorkflow('.github/workflows/ci-tests-e2e.yaml'),
+      'jobs',
+      'upload-e2e-coverage'
+    )
+
+    expect(field(job, 'with', 'source_sha')).toBe('${{ github.sha }}')
   })
 
   it('gates the saved E2E baseline on a whole merge', () => {

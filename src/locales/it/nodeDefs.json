@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "Seleziona dagli input collegati in base al nome. Gli input possono essere rinominati facendo doppio clic su di essi.",
+    "display_name": "Diramazione",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "Inserisce in un'immagine un oggetto descritto in testo semplice usando Bria. Bria renderizza nuovamente l'intero fotogramma a circa 1 megapixel, quindi il risultato non è allineato a livello di pixel con l'input.",
     "display_name": "Bria Aggiungi oggetto",
@@ -10237,6 +10258,128 @@
       }
     }
   },
+  "Kling4EditVideoNode": {
+    "description": "Modifica un video con un prompt di testo e immagini e video di riferimento facoltativi. Il risultato ha la stessa durata del video di input.",
+    "display_name": "Kling 4.0 Modifica video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      },
+      "model_seed": {
+        "name": "seme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ImageToVideoNode": {
+    "description": "Genera un video con audio usando fino a 10 fotogrammi chiave. I fotogrammi intermedi sono distribuiti uniformemente; il video assume le proporzioni del primo fotogramma chiave.",
+    "display_name": "Kling 4.0 Da immagine a video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_duration": {
+        "name": "durata"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      },
+      "model_seed": {
+        "name": "seme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ReferenceToVideoNode": {
+    "description": "Genera un video con audio da immagini e video di riferimento, facoltativamente iniziando o terminando con determinati fotogrammi.",
+    "display_name": "Kling 4.0 Da riferimento a video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "durata"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      },
+      "model_seed": {
+        "name": "seme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4TextToVideoNode": {
+    "description": "Genera un video con audio da un prompt di testo.",
+    "display_name": "Kling 4.0 Da testo a video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "durata"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      },
+      "model_seed": {
+        "name": "seme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingAvatarNode": {
     "description": "Genera video digitali in stile broadcast di esseri umani a partire da una singola foto e un file audio.",
     "display_name": "Kling Avatar 2.0",
@@ -16743,6 +16886,170 @@
       },
       "transformer_blocks_9_": {
         "name": "transformer_blocks.9."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "final_linear_video_": {
+        "name": "final_linear_video."
+      },
+      "final_norm_video_": {
+        "name": "final_norm_video."
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "layers.23."
+      },
+      "layers_24_": {
+        "name": "layers.24."
+      },
+      "layers_25_": {
+        "name": "layers.25."
+      },
+      "layers_26_": {
+        "name": "layers.26."
+      },
+      "layers_27_": {
+        "name": "layers.27."
+      },
+      "layers_28_": {
+        "name": "layers.28."
+      },
+      "layers_29_": {
+        "name": "layers.29."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_30_": {
+        "name": "layers.30."
+      },
+      "layers_31_": {
+        "name": "layers.31."
+      },
+      "layers_32_": {
+        "name": "layers.32."
+      },
+      "layers_33_": {
+        "name": "layers.33."
+      },
+      "layers_34_": {
+        "name": "layers.34."
+      },
+      "layers_35_": {
+        "name": "layers.35."
+      },
+      "layers_36_": {
+        "name": "layers.36."
+      },
+      "layers_37_": {
+        "name": "layers.37."
+      },
+      "layers_38_": {
+        "name": "layers.38."
+      },
+      "layers_39_": {
+        "name": "layers.39."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_40_": {
+        "name": "layers.40."
+      },
+      "layers_41_": {
+        "name": "layers.41."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "video_head_modulation_": {
+        "name": "video_head_modulation."
       }
     }
   },
@@ -25248,7 +25555,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "Codifica un'istruzione di modifica con immagini di riferimento per un LoRA MOSS-Image Edit; usalo anche per il prompt negativo. I riferimenti vengono utilizzati nelle dimensioni in cui arrivano, quindi ridimensionali prima.",
+    "description": "Codifica un'istruzione di modifica con immagini di riferimento per una LoRA di modifica MOSS-Image; usala anche per il prompt negativo. Le immagini di riferimento vengono usate alle dimensioni in cui arrivano, ridimensionali prima. Senza un VAE, le immagini vengono inviate solo al codificatore di testo.",
     "display_name": "Codifica testo MOSS-Image Edit",
     "inputs": {
       "clip": {
@@ -25258,6 +25565,10 @@
         "name": "edit_format",
         "tooltip": "Il layout con cui è stato addestrato il LoRA di modifica: MOSS-Image Edit Training di ai-toolkit (con l'opzione kv_cache attivata o disattivata) oppure Moss-Image-Edit. Con kv_cache disattivato, anche i riferimenti partecipano all'attenzione sull'immagine generata, quindi vengono ricalcolati a ogni passaggio."
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "Regola quanto il modello presta attenzione alle immagini visualizzate dal codificatore di testo (formati ai-toolkit o nessun VAE): 0 le ignora, 1 non le modifica, oltre 1 le enfatizza."
+      },
       "images": {
         "name": "immagini"
       },
@@ -25265,7 +25576,8 @@
         "name": "prompt"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Codifica le immagini come latent di riferimento per la LoRA di modifica."
       }
     },
     "outputs": {

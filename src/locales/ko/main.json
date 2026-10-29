@@ -41,6 +41,7 @@
     "attachmentsAlreadyAdded": "{name}이(가) 이미 에셋 트레이에 있습니다 | 중복 에셋 {count}개 건너뜀",
     "backToPreviousChat": "이전 채팅으로 돌아가기",
     "beta": "베타",
+    "canvasIsEmptyAfterTurn": "이 캔버스는 비어 있습니다 — 추가된 항목이 없습니다. 아직 여기에는 실행, 저장 또는 내보낼 항목이 없습니다.",
     "changeWorkflowForChat": "에이전트가 편집할 수 있는 워크플로 변경",
     "chatOptions": "채팅 옵션",
     "chooseWorkflow": "워크플로 선택",
@@ -259,6 +260,7 @@
     "toolForgotPreference": "환경설정을 잊었습니다",
     "toolLoadedSkill": "{skill} 로드됨",
     "toolLoadingSkill": "{skill} 로드 중",
+    "toolNotConfirmedOnCanvas": "{tool} — 캔버스에서 확인되지 않았습니다",
     "toolOpenedNewTab": "새 탭을 열었습니다",
     "toolOpeningNewTab": "새 탭 여는 중",
     "toolSavedPreference": "환경설정을 저장했습니다",
@@ -277,10 +279,11 @@
     "worked": "작업 완료",
     "workedForMinutes": "{minutes}분 {seconds}초 동안 작업함",
     "workedForSeconds": "{seconds}초 동안 작업함",
+    "workedNotConfirmedOnCanvas": "캔버스에서 변경 사항이 확인되지 않았습니다",
     "workflowEditNotice": "이제 에이전트가 {workflow}을(를) 편집할 수 있습니다. 한 번에 하나의 워크플로에서 작업하며, 채팅 중에 워크플로를 전환할 수 있습니다.",
     "workflowReferenceUnavailableReason": "참조된 이 워크플로는 더 이상 사용할 수 없거나 액세스 권한이 없습니다.",
     "workflowSyncFailedDetail": "이 워크플로는 호환되지 않는 문서 버전으로 생성되었습니다. 캔버스는 변경되지 않았습니다.",
-    "workflowSyncFailedDetailCatalogMismatch": "이 워크플로는 이 작업 공간과 호환되지 않는 노드 카탈로그를 사용합니다. 캔버스는 변경되지 않았습니다.",
+    "workflowSyncFailedDetailCatalogMismatch": "이 워크플로의 노드 하나가 에이전트가 마지막으로 확인한 이후 변경되었습니다. 캔버스는 변경되지 않은 상태로 유지되었습니다. 다음 메시지를 보내면 캔버스가 에이전트에게 전송되어 에이전트가 워크플로 사본을 다시 구성할 수 있습니다.",
     "workflowSyncFailedDetailStaleClient": "이 페이지가 최신 상태가 아니므로 에이전트의 변경 사항을 표시할 수 없습니다. 페이지를 새로고침하여 확인하세요.",
     "workflowSyncFailedTitle": "이 워크플로는 동기화할 수 없습니다",
     "workflows": "워크플로",
@@ -1168,6 +1171,7 @@
     "eventType": "이벤트 유형",
     "eventTypes": {
       "accountCreated": "계정 생성됨",
+      "agentUsage": "에이전트 사용량",
       "apiNodeUsage": "파트너 노드 사용",
       "apiUsage": "API 사용",
       "creditAdded": "크레딧 추가됨",
@@ -5797,10 +5801,7 @@
       "totalMembersCount": "전체 멤버 {maxSeats}명 중 {count}명.",
       "totalMembersUnlimited": "총 멤버 {count}명 | 총 멤버 {count}명",
       "upgradeToTeam": "팀으로 업그레이드",
-      "upsellBanner": "팀원을 추가하려면 요금제를 업그레이드하세요.",
-      "upsellBannerEnterpriseEnded": "Enterprise 요금제를 다시 활성화하려면 영업팀에 문의하세요.",
-      "upsellBannerPlanEnded": "요금제를 다시 활성화하려면 영업팀에 문의하세요.",
-      "upsellBannerReactivate": "더 많은 팀원을 추가하려면 요금제를 재활성화하세요."
+      "upsellBanner": "팀원을 추가하려면 요금제를 업그레이드하세요."
     },
     "menu": {
       "creatorCannotLeave": "워크스페이스 생성자는 자신이 만든 워크스페이스를 떠날 수 없습니다",

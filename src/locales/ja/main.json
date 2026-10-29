@@ -41,6 +41,7 @@
     "attachmentsAlreadyAdded": "{name} はすでにアセットトレイにあります | 重複するアセット {count} 件をスキップしました",
     "backToPreviousChat": "前のチャットに戻る",
     "beta": "ベータ",
+    "canvasIsEmptyAfterTurn": "このキャンバスは空です。何も追加されていません。まだ実行、保存、またはエクスポートできるものはありません。",
     "changeWorkflowForChat": "エージェントが編集できるワークフローを変更",
     "chatOptions": "チャットオプション",
     "chooseWorkflow": "ワークフローを選択",
@@ -259,6 +260,7 @@
     "toolForgotPreference": "設定を削除しました",
     "toolLoadedSkill": "{skill} を読み込みました",
     "toolLoadingSkill": "{skill} を読み込み中",
+    "toolNotConfirmedOnCanvas": "{tool} — キャンバス上で確認されていません",
     "toolOpenedNewTab": "新しいタブを開きました",
     "toolOpeningNewTab": "新しいタブを開いています",
     "toolSavedPreference": "設定を保存しました",
@@ -277,10 +279,11 @@
     "worked": "完了",
     "workedForMinutes": "{minutes}分{seconds}秒間処理しました",
     "workedForSeconds": "{seconds}秒間処理しました",
+    "workedNotConfirmedOnCanvas": "キャンバス上の変更は確認されていません",
     "workflowEditNotice": "エージェントが{workflow}を編集できるようになりました。一度に作業できるワークフローは1つですが、チャット中に切り替えられます。",
     "workflowReferenceUnavailableReason": "参照されているこのワークフローは利用できなくなったか、アクセス権がありません。",
     "workflowSyncFailedDetail": "このワークフローは互換性のないドキュメントバージョンで作成されています。キャンバスは変更されていません。",
-    "workflowSyncFailedDetailCatalogMismatch": "このワークフローは、このワークスペースと互換性のないノードカタログを使用しています。キャンバスは変更されていません。",
+    "workflowSyncFailedDetailCatalogMismatch": "このワークフロー内のノードは、エージェントが前回確認して以降に変更されています。キャンバスは変更されていません。次のメッセージでキャンバスが送信され、エージェントはワークフローのコピーを再構築できます。",
     "workflowSyncFailedDetailStaleClient": "このページは最新ではないため、エージェントの変更を表示できません。表示するにはページを再読み込みしてください。",
     "workflowSyncFailedTitle": "このワークフローは同期できません",
     "workflows": "ワークフロー",
@@ -1168,6 +1171,7 @@
     "eventType": "イベントタイプ",
     "eventTypes": {
       "accountCreated": "アカウント作成",
+      "agentUsage": "エージェント使用量",
       "apiNodeUsage": "パートナーノード利用",
       "apiUsage": "API利用",
       "creditAdded": "クレジット追加",
@@ -5797,10 +5801,7 @@
       "totalMembersCount": "全メンバー数 {maxSeats} 人中 {count} 人。",
       "totalMembersUnlimited": "合計 {count} 人のメンバー。 | 合計 {count} 人のメンバー。",
       "upgradeToTeam": "チームにアップグレード",
-      "upsellBanner": "チームメンバーを追加するには、プランをアップグレードしてください。",
-      "upsellBannerEnterpriseEnded": "Enterpriseプランを再有効化するには営業担当者にお問い合わせください。",
-      "upsellBannerPlanEnded": "プランを再有効化するには営業担当者にお問い合わせください。",
-      "upsellBannerReactivate": "さらにメンバーを追加するには、プランを再有効化してください。"
+      "upsellBanner": "チームメンバーを追加するには、プランをアップグレードしてください。"
     },
     "menu": {
       "creatorCannotLeave": "ワークスペースの作成者は、自分が作成したワークスペースを退出できません",
