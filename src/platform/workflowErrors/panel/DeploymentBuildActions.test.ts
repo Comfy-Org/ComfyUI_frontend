@@ -86,18 +86,24 @@ const nvidiaVfx: ReleaseUnsupportedPack = {
 
 describe('DeploymentBuildActions', () => {
   it.for([
-    { build: 'is known', buildId: 'build-7', path: '/profile/builds/build-7' },
+    {
+      build: 'is known',
+      buildId: 'build-7',
+      label: 'Edit build on Platform',
+      path: '/profile/builds/build-7'
+    },
     {
       build: 'is not in the listing',
       buildId: undefined,
+      label: 'Open Builds on Platform',
       path: '/profile/builds'
     }
   ])(
-    'links to the Build on Platform when its id $build',
-    ({ buildId, path }) => {
+    'links to "$label" on Platform when the Build id $build',
+    ({ buildId, label, path }) => {
       renderActions({ deployment: { ...deployment, build_id: buildId } })
 
-      const link = screen.getByRole('link', { name: /Edit build on Platform/ })
+      const link = screen.getByRole('link', { name: label })
       expect(new URL(link.getAttribute('href') ?? '').pathname).toBe(path)
       expect(link).toHaveAttribute('target', '_blank')
     }

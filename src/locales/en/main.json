@@ -5095,6 +5095,7 @@
     "finishSetupBeforeRun": "Finish setup before running the workflow",
     "addToDeploymentBuild": "Add these to {deployment}'s build on Platform, then deploy a new release.",
     "editBuildOnPlatform": "Edit build on Platform",
+    "openBuildsOnPlatform": "Open Builds on Platform",
     "severityCountsStatus": "{errors} blocking, {setup} setup required",
     "errorsFilter": "{count} Error | {count} Errors",
     "errorsFilterActive": "{count} Error detected | {count} Errors detected",

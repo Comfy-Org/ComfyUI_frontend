@@ -365,12 +365,12 @@ describe('ErrorGroupList selection emphasis', () => {
   }
 
   it.for([
-    { runsOn: 'a deployment', sendsToBuild: true },
-    { runsOn: 'Comfy Cloud', sendsToBuild: false }
+    { runsOn: 'a deployment', bootDeployment: production, sendsToBuild: true },
+    { runsOn: 'Comfy Cloud', bootDeployment: null, sendsToBuild: false }
   ])(
     'on $runsOn, the summary sends a missing model to the Build: $sendsToBuild',
-    ({ sendsToBuild }) => {
-      const hero = showMissingModelOn(sendsToBuild ? production : null)
+    ({ bootDeployment, sendsToBuild }) => {
+      const hero = showMissingModelOn(bootDeployment)
 
       expect(
         within(hero).queryByText(
@@ -386,6 +386,21 @@ describe('ErrorGroupList selection emphasis', () => {
           name: /Build with your agent/
         }) !== null
       ).toBe(sendsToBuild)
+    }
+  )
+
+  it.for([
+    { runsOn: 'a deployment', bootDeployment: production, offersImport: false },
+    { runsOn: 'Comfy Cloud', bootDeployment: null, offersImport: true }
+  ])(
+    'on $runsOn, a missing model offers Comfy Cloud import: $offersImport',
+    ({ bootDeployment, offersImport }) => {
+      showMissingModelOn(bootDeployment)
+
+      const group = screen.getByTestId('error-group-missing-model')
+      expect(
+        within(group).queryByRole('button', { name: 'Import' }) !== null
+      ).toBe(offersImport)
     }
   )
 

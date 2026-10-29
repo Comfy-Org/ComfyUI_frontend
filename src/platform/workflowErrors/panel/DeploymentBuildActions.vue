@@ -13,7 +13,11 @@
       class="w-full no-underline"
       data-testid="deployment-build-platform"
     >
-      {{ $t('rightSidePanel.editBuildOnPlatform') }}
+      {{
+        deployment.build_id
+          ? $t('rightSidePanel.editBuildOnPlatform')
+          : $t('rightSidePanel.openBuildsOnPlatform')
+      }}
       <i class="icon-[lucide--square-arrow-out-up-right]" aria-hidden="true" />
     </Button>
     <Button

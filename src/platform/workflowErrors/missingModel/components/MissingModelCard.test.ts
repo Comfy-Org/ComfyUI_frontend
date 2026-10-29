@@ -260,7 +260,7 @@ describe('MissingModelCard', () => {
       ).toBeInTheDocument()
     })
 
-    it('on a deployment, lists every row in one list without Comfy Cloud import', () => {
+    it('on a deployment, lists every row in one list', () => {
       mountCard({
         onDeployment: true,
         missingModelGroups: [
@@ -281,9 +281,6 @@ describe('MissingModelCard', () => {
         'importable.safetensors',
         'custom-node-model.safetensors'
       ])
-      expect(
-        rows.map((row) => row.getAttribute('data-can-cloud-import'))
-      ).toEqual(['false', 'false'])
       expect(
         screen.queryByTestId('missing-model-import-not-supported-section')
       ).not.toBeInTheDocument()

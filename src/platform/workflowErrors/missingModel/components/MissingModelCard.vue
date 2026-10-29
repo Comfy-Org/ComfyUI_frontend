@@ -116,7 +116,7 @@ const {
   missingModelGroups: MissingModelGroup[]
   /** Execution node ids to emphasize (current canvas selection). */
   highlightedNodeIds?: Set<string>
-  /** On a deployment, whose models come from its Build, not a Cloud import. */
+  /** Lists every model in one list, with no Comfy Cloud import. */
   onDeployment?: boolean
 }>()
 
