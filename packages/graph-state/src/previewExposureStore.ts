@@ -6,7 +6,7 @@ import type {
   ResolvedPreviewChain
 } from './previewExposureChain'
 import { resolvePreviewExposureChain } from './previewExposureChain'
-import type { PromotedWidgetSource } from './promotedWidgetTypes'
+import type { PromotedWidgetSource } from '@comfyorg/graph-model/promotedWidgetTypes'
 import type { PreviewExposure } from './previewExposureSchema'
 
 import type { OwnedNode } from './graphOwner'

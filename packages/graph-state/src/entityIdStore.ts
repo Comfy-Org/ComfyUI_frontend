@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { shallowReactive } from 'vue'
 
-import { createLGraphState } from './lgraphState'
-import type { LGraphState } from './lgraphState'
+import { createLGraphState } from '@comfyorg/graph-model/lgraphState'
+import type { LGraphState } from '@comfyorg/graph-model/lgraphState'
 import type { UUID } from '@comfyorg/graph-model/uuid'
 
 export const useEntityIdStore = defineStore('entityId', () => {

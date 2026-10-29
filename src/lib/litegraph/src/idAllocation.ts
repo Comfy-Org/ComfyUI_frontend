@@ -13,7 +13,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import type { LGraphState } from '@comfyorg/graph-state/lgraphState'
+import type { LGraphState } from '@comfyorg/graph-model/lgraphState'
 
 export interface ReservedIdIndex {
   has(id: number): boolean

@@ -7,16 +7,12 @@ import type {
   RootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
-import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
+import type {
+  EndpointPatch,
+  LinkTopology
+} from '@comfyorg/graph-model/linkTopology'
 import { isFloatingTopology } from '@comfyorg/graph-model/linkTopology'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-
-export type EndpointPatch = Partial<
-  Pick<
-    LinkTopology,
-    'originNodeId' | 'originSlot' | 'targetNodeId' | 'targetSlot'
-  >
->
 
 export interface EndpointUpdate {
   topology: LinkTopology

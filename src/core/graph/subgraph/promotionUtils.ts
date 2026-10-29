@@ -1,6 +1,6 @@
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import { addBreadcrumb } from '@sentry/vue'
-import type { PromotedWidgetSource } from '@comfyorg/graph-state/promotedWidgetTypes'
+import type { PromotedWidgetSource } from '@comfyorg/graph-model/promotedWidgetTypes'
 import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'

@@ -14,7 +14,7 @@ import {
   observeNodeId,
   observeRerouteId
 } from './idAllocation'
-import { createLGraphState } from '@comfyorg/graph-state/lgraphState'
+import { createLGraphState } from '@comfyorg/graph-model/lgraphState'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

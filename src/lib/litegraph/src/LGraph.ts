@@ -62,12 +62,12 @@ import {
   observeRerouteId,
   rerouteIdReservations
 } from '@/lib/litegraph/src/idAllocation'
-import { createLGraphState } from '@comfyorg/graph-state/lgraphState'
+import { createLGraphState } from '@comfyorg/graph-model/lgraphState'
 import type {
   NodeIdMintMode,
   ReservedIdIndex
 } from '@/lib/litegraph/src/idAllocation'
-import type { LGraphState } from '@comfyorg/graph-state/lgraphState'
+import type { LGraphState } from '@comfyorg/graph-model/lgraphState'
 import { isRootGraphDocBound } from './docBoundGraphs'
 import {
   emitGraphIntent,
@@ -261,7 +261,7 @@ function copyUnhandledCanonicalFields(
  */
 export type SubgraphId = UUID
 
-export type { LGraphState } from '@comfyorg/graph-state/lgraphState'
+export type { LGraphState } from '@comfyorg/graph-model/lgraphState'
 
 type ParamsArray<T, K extends MethodNames<T>> = Parameters<
   Extract<T[K], (...args: never[]) => unknown>

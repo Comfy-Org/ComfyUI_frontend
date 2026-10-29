@@ -27,9 +27,8 @@ import {
 } from '@comfyorg/graph-model/nodeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
-import type { EndpointPatch } from '@comfyorg/graph-state/linkStore'
+import type { EndpointPatch,LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
-import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 
 import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'

@@ -2,7 +2,7 @@ import type { LLink } from '@comfyorg/graph-model/entityRegistry'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
-import type { EndpointPatch } from '@comfyorg/graph-state/linkStore'
+import type { EndpointPatch } from '@comfyorg/graph-model/linkTopology'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 /**

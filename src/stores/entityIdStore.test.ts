@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { describe } from 'vitest'
 
 import { mintNodeId } from '@/lib/litegraph/src/idAllocation'
-import { createLGraphState } from '@comfyorg/graph-state/lgraphState'
+import { createLGraphState } from '@comfyorg/graph-model/lgraphState'
 import { test } from '@/testing/pinia'
 import type { UUID } from '@comfyorg/graph-model/uuid'
 

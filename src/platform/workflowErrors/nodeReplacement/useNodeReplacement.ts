@@ -24,14 +24,11 @@ import {
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app, sanitizeNodeName } from '@/scripts/app'
 import { clearNodeOwnedStoreState } from '@comfyorg/graph-state/clearNodeOwnedStoreState'
-import type {
-  EndpointPatch,
-  EndpointUpdate
-} from '@comfyorg/graph-state/linkStore'
+import type { EndpointUpdate } from '@comfyorg/graph-state/linkStore'
+import type { EndpointPatch,LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
-import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { collectAllNodes } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 interface ReplacementGroup {

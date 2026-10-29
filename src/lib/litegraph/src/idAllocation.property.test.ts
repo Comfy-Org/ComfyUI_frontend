@@ -12,7 +12,7 @@ import {
   mintNodeId,
   mintRerouteId
 } from './idAllocation'
-import { createLGraphState } from '@comfyorg/graph-state/lgraphState'
+import { createLGraphState } from '@comfyorg/graph-model/lgraphState'
 
 /**
  * The id-collision root cause at the unit level: `idAllocation.ts`'s node-id

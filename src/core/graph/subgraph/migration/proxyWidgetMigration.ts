@@ -1,7 +1,7 @@
 import { isEqual } from 'es-toolkit/compat'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
-import type { PromotedWidgetSource } from '@comfyorg/graph-state/promotedWidgetTypes'
+import type { PromotedWidgetSource } from '@comfyorg/graph-model/promotedWidgetTypes'
 import {
   findHostInputForPromotion,
   getPromotableWidgets,

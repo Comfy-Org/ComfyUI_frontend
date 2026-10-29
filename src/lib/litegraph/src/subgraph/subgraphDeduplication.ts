@@ -10,7 +10,7 @@ import {
   observeNodeId,
   observeRerouteId
 } from '@/lib/litegraph/src/idAllocation'
-import type { LGraphState } from '@comfyorg/graph-state/lgraphState'
+import type { LGraphState } from '@comfyorg/graph-model/lgraphState'
 import {
   normalizeConfiguredTopology,
   remapLinkReferences

@@ -1,7 +1,7 @@
-import { toLinkId } from '@comfyorg/graph-model/linkId'
-import type { LinkId } from '@comfyorg/graph-model/linkId'
-import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import { toLinkId } from './linkId'
+import type { LinkId } from './linkId'
+import { toRerouteId } from './rerouteId'
+import type { RerouteId } from './rerouteId'
 
 export interface LGraphState {
   /** Counter, not an id — brand at the point a group is constructed. */

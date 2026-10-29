@@ -22,7 +22,7 @@ import {
   buildPromotedWidgetExecutionSources,
   resolveActivePromotedWidgetConsumers
 } from '@/lib/litegraph/src/subgraph/promotion/resolveConcretePromotedWidget'
-import type { PromotedWidgetExecutionSource } from '@comfyorg/graph-state/promotedWidgetTypes'
+import type { PromotedWidgetExecutionSource } from '@comfyorg/graph-model/promotedWidgetTypes'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
