@@ -105,6 +105,23 @@ describe('shared PR report disclosure', () => {
     }
   )
 
+  it('accepts a slug with hyphens and digits and writes its section file', () => {
+    using dir = fixture()
+    const result = runExplainCheck(dir.root, {
+      slug: 'custom-nodes-2',
+      status: 'pass'
+    })
+
+    expect(result.status).toBe(0)
+    const sectionFile = join(dir.root, '.explain-check-custom-nodes-2.md')
+    expect(readFileSync(join(dir.root, 'output'), 'utf8')).toBe(
+      `file=${sectionFile}\n`
+    )
+    expect(readFileSync(sectionFile, 'utf8')).toMatch(
+      /^## {2}Test check: ✅ Passed\n/
+    )
+  })
+
   it('keeps failed FPS targets visible while collapsing passing scenario timings', () => {
     using dir = fixture()
     mkdirSync(join(dir.root, 'test-results'))
