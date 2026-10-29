@@ -8,10 +8,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.ts",
       "role": "application"
     },
@@ -28,16 +24,8 @@
       "role": "application"
     },
     {
-      "path": "src/renderer/extensions/firstRunTour/tour/canvasCoachTarget.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/renderer/extensions/firstRunTour/tour/canvasCoachTarget.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/services/useNewUserService.test.ts",
-      "role": "application"
     },
     {
       "path": "src/services/useNewUserService.ts",

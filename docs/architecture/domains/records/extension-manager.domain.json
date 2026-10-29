@@ -32,10 +32,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/customNodes/manager/composables/useImportFailedDetection.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/customNodes/manager/composables/useImportFailedDetection.ts",
       "role": "presentation"
     },

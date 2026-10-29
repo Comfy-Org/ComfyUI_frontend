@@ -8,10 +8,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/sidebar/SidebarHelpCenterIcon.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/sidebar/SidebarHelpCenterIcon.vue",
       "role": "presentation"
     },
