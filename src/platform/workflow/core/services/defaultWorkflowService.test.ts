@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { api } from '@/scripts/api'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 
@@ -12,7 +12,7 @@ import {
 } from './defaultWorkflowService'
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const fetchApi = vi.mocked(api.fetchApi)
 
