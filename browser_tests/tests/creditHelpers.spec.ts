@@ -122,7 +122,7 @@ testWithMockedObjectInfo.describe(
           .getByTestId('node-badges')
         await expect(badges).toBeVisible()
 
-        const badgeContainer = badges.getByTestId('credit-badge-required')
+        const badgeContainer = badges.getByTestId('node-badge-group-credits')
         await expect(badgeContainer).toBeVisible()
         await expect
           .poll(async () => (await badgeContainer.textContent())?.trim() ?? '')
@@ -152,7 +152,7 @@ testWithMockedObjectInfo.describe(
           .getByTestId('node-badges')
         await expect(badges).toBeVisible()
 
-        const badgeContainer = badges.getByTestId('credit-badge-required')
+        const badgeContainer = badges.getByTestId('node-badge-group-credits')
         await expect
           .poll(async () => (await badgeContainer.textContent())?.trim() ?? '')
           .toContain('2.1-21.1')
@@ -181,7 +181,7 @@ testWithMockedObjectInfo.describe(
           .getByTestId('node-badges')
         await expect(badges).toBeVisible()
 
-        const badgeContainer = badges.getByTestId('credit-badge-required')
+        const badgeContainer = badges.getByTestId('node-badge-group-credits')
         await expect
           .poll(async () => (await badgeContainer.textContent())?.trim() ?? '')
           .toContain('4.2/10.6')
