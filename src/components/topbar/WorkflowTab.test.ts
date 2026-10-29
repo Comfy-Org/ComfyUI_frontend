@@ -413,7 +413,7 @@ describe('WorkflowTab - Agent target', () => {
     expect(screen.getByText('test.json')).toBeVisible()
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
     expect(screen.getByTestId('workflow-target-icon')).toHaveClass(
-      'icon-[lucide--scan]',
+      'icon-[lucide--focus]',
       'text-credit'
     )
     expect(

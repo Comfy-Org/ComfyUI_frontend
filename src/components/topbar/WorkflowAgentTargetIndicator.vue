@@ -26,7 +26,7 @@ const agentPanelStore = useAgentPanelStore()
       >
         <i
           data-testid="workflow-target-icon"
-          class="icon-[lucide--scan] size-3.5 text-credit"
+          class="icon-[lucide--focus] size-3.5 text-credit"
         />
       </span>
     </TooltipTrigger>

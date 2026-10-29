@@ -139,7 +139,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
             v-else
             aria-hidden="true"
             data-testid="workflow-selector-icon"
-            class="icon-[lucide--scan] size-3.5 text-credit"
+            class="icon-[lucide--focus] size-3.5 text-credit"
           />
           <span class="min-w-0 truncate">{{
             current?.name ?? t('agent.selectWorkflowForAgent')

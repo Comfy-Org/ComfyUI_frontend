@@ -72,10 +72,10 @@ const trigger = () =>
   screen.getByRole('button', { name: enMessages.agent.switchWorkflow })
 
 describe('WorkflowSelectorChip', () => {
-  it('uses the workflow-target scan icon on the trigger', () => {
+  it('uses the workflow-target focus icon on the trigger', () => {
     renderChip()
     expect(screen.getByTestId('workflow-selector-icon')).toHaveClass(
-      'icon-[lucide--scan]',
+      'icon-[lucide--focus]',
       'text-credit'
     )
   })
