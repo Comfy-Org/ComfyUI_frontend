@@ -53,6 +53,7 @@ import type {
   PostMessageInput
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type { AskUserResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { useAgentChatHistoryStore } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
@@ -68,7 +69,8 @@ vi.mock(import('@comfyorg/telemetry'))
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
 const telemetry = vi.mocked(telemetryProvider)
-const scope = unsafeStorageScope
+const scope = (value: string) =>
+  unsafeStorageScope(value.includes(':') ? `cloud:${value}` : value)
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
@@ -1090,7 +1092,12 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('watches storage ownership only while started and resumes once', async () => {
     const conversationStore = useAgentConversationStore()
+    const historyStore = useAgentChatHistoryStore()
     const reset = vi.spyOn(conversationStore, 'resetForStorageOwnerTransition')
+    const resetHistory = vi.spyOn(
+      historyStore,
+      'resetForStorageOwnerTransition'
+    )
     const session = useAgentSession({
       rest: fakeRest(),
       events: fakeEvents().source
@@ -1106,13 +1113,48 @@ describe('useAgentSession (v1 composition root)', () => {
 
     session.start({ restore: false })
     expect(reset).toHaveBeenCalledOnce()
+    expect(resetHistory).toHaveBeenCalledOnce()
     await session.sendMessage('account B turn')
 
     setStorageIdentity('user-c')
     setStorageWorkspaceId('personal')
     expect(reset).toHaveBeenCalledTimes(2)
+    expect(resetHistory).toHaveBeenCalledTimes(2)
     expect(session.entries.value).toEqual([])
 
+    setStorageIdentity('user-test')
+    session.stop()
+  })
+
+  it("rejects owner A's initial hydration after owner B replaces it", async () => {
+    let resolveHistory: ((messages: AgentMessages) => void) | undefined
+    const getMessages = vi.fn(
+      () =>
+        new Promise<AgentMessages>((resolve) => {
+          resolveHistory = resolve
+        })
+    )
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:personal')),
+      'thread-a'
+    )
+    const events = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: events.source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledOnce())
+    events.emit(delta('message-a', 'owner A'))
+
+    setStorageIdentity('user-b')
+    resolveHistory?.([
+      historyRow(1, 'assistant', 'message-a', 'owner A', 'message-a')
+    ])
+    await Promise.resolve()
+
+    expect(session.entries.value).toEqual([])
+    expect(session.threadId.value).toBeNull()
     setStorageIdentity('user-test')
     session.stop()
   })

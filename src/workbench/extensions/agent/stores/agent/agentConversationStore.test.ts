@@ -1390,6 +1390,18 @@ describe('useAgentConversationStore', () => {
     }
   })
 
+  it('drops background turns at a storage owner boundary', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.stashActiveTurn()
+    expect(store.liveTurns()).toEqual([{ threadId: 'th', messageId: T1 }])
+
+    store.resetForStorageOwnerTransition()
+
+    expect(store.liveTurns()).toEqual([])
+  })
+
   it('recordFailedSend renders [user, assistant(notice)] and leaves the turn idle', () => {
     const store = useAgentConversationStore()
     store.recordFailedSend('local-error-1' as TurnId, 'boom', 'send failed')

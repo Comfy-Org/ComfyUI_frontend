@@ -206,11 +206,12 @@ export function useWorkflowPersistenceV2() {
   function queueIdentityTransition(identity: string | null): void {
     const transitionVersion = ++identityTransitionVersion
     clearWorkflowRestoreState()
-    workflowStore.resetForIdentityChange()
     identityTransition = identityTransition
       .then(async () => {
         if (transitionVersion !== identityTransitionVersion) return
         await useWorkflowService().loadBlankWorkflow()
+        if (transitionVersion !== identityTransitionVersion) return
+        workflowStore.resetForIdentityChange()
         if (
           transitionVersion !== identityTransitionVersion ||
           identity === null

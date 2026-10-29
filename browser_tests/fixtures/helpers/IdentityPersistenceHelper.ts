@@ -67,7 +67,7 @@ export class IdentityPersistenceHelper {
         has_more: false
       }
     }
-    await this.page.route('**/api/agent/threads', (route) =>
+    await this.page.route('**/api/agent/threads?*', (route) =>
       route.fulfill(jsonRoute(threads))
     )
     await this.page.route('**/api/agent/threads/*/messages', (route) => {

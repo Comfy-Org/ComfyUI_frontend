@@ -67,6 +67,7 @@ import {
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
 import type { LiveTurn } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentChatHistoryStore } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
@@ -193,6 +194,22 @@ const HYDRATION_HANDOFF_MS = 30_000
 const HYDRATION_MAILBOX_MS = 5 * 60_000
 const MAX_HYDRATION_EVENTS = 256
 const MAX_HYDRATION_MAILBOXES = 32
+
+function clearHydrationState(): void {
+  const buffers = new Set([
+    ...hydrationBuffers.values(),
+    ...hydrationMailboxes.values()
+  ])
+  for (const buffer of buffers) {
+    if (buffer.retirement !== undefined) clearTimeout(buffer.retirement)
+    if (buffer.mailboxRetirement !== undefined)
+      clearTimeout(buffer.mailboxRetirement)
+    buffer.events.length = 0
+    buffer.pending = false
+  }
+  hydrationBuffers.clear()
+  hydrationMailboxes.clear()
+}
 
 /**
  * After a reconnect the server may still be finishing the turn, and its
@@ -413,7 +430,7 @@ let sendInFlight: SendInFlight | null = null
 let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
 
 function hasCurrentOwnerSend(): boolean {
-  return sendInFlight?.owner === getStorageIdentity()
+  return sendInFlight?.owner === getStorageScope()
 }
 
 function consumeStopPendingAck() {
@@ -471,7 +488,7 @@ function isCurrentStorageContinuation(
   currentGeneration: number,
   owner: string | null
 ): boolean {
-  return generation === currentGeneration && owner === getStorageIdentity()
+  return generation === currentGeneration && owner === getStorageScope()
 }
 
 function parseTurnInProgress(error: unknown) {
@@ -510,6 +527,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   const conversationStore = useAgentConversationStore()
+  const historyStore = useAgentChatHistoryStore()
   const sendGateStore = useAgentSendGateStore()
   const skillPacks = useSkillPacksStore()
   const skillTurnUsage = new Map<string, { scope: string; used: boolean }>()
@@ -659,12 +677,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (currentOwner === observedStorageOwner) return
     observedStorageOwner = currentOwner
     storageOwnerGeneration++
+    clearHydrationState()
     for (const recovery of recoveringTurns.values()) recovery.controller.abort()
     recoveringTurns.clear()
     loadGeneration++
     readyThreadId.value = null
     promptEditState.value = { phase: 'idle' }
     conversationStore.resetForStorageOwnerTransition()
+    historyStore.resetForStorageOwnerTransition()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
     notices.value = []
@@ -676,6 +696,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     stopPendingAck = null
     sending.value = false
     connection = 'initial'
+    skillTurnUsage.clear()
     malformedStreamReports.clear()
     snapshotTurns.clear()
   }
@@ -1386,7 +1407,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (
       sent?.id === undefined ||
       !disownsWorkflow(error) ||
-      storageOwnerAtSend !== getStorageIdentity()
+      storageOwnerAtSend !== getStorageScope()
     )
       return
     bindingStore.unbindWorkflow(sent.id)
@@ -1448,7 +1469,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function createSendAttempt(request: SendRequest): SendAttempt {
     const generation = loadGeneration
-    const storageOwnerAtSend = getStorageIdentity()
+    const storageOwnerAtSend = getStorageScope()
     return {
       request,
       generation,
@@ -1577,7 +1598,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     promptEditState.value = { phase: 'idle' }
     const sendSlot = {
-      owner: getStorageIdentity()
+      owner: getStorageScope()
     }
     sending.value = true
     const releaseSendGate = sendGateStore.begin()
@@ -1727,7 +1748,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function stopTurn(method?: AgentStopMethod): Promise<void> {
     const generation = loadGeneration
-    const storageOwnerAtStop = getStorageIdentity()
+    const storageOwnerAtStop = getStorageScope()
     const isCurrentStop = () =>
       isCurrentStorageContinuation(
         generation,
@@ -1764,7 +1785,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answer: AgentAnswerRequest
   ): Promise<boolean> {
     const generation = loadGeneration
-    const storageOwnerAtAnswer = getStorageIdentity()
+    const storageOwnerAtAnswer = getStorageScope()
     const isCurrentAnswer = () =>
       isCurrentStorageContinuation(
         generation,
@@ -1918,7 +1939,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     { keepOpenChatUntilLoaded = false } = {}
   ): Promise<boolean> {
     transitionStorageOwner()
-    const storageOwnerAtLoad = getStorageIdentity()
+    const storageOwnerAtLoad = getStorageScope()
     const load = {
       generation: loadGeneration,
       stashedTurn: false,
@@ -1927,7 +1948,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const isLoadCurrent = () =>
       load.generation === loadGeneration &&
       ownedGeneration === sessionGeneration &&
-      storageOwnerAtLoad === getStorageIdentity()
+      storageOwnerAtLoad === getStorageScope()
     const isCurrent = () => isLoadCurrent() && isNavigationCurrent()
     const outlivedItsNavigation = () =>
       load.switched &&

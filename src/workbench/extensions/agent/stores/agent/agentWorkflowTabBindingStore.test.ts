@@ -17,7 +17,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 const LEGACY_KEY = 'Comfy.Agent.WorkflowTabBindings'
 const UNSCOPED_STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings.v2'
-const scope = unsafeStorageScope
+const scope = (value: string) =>
+  unsafeStorageScope(value.includes(':') ? `cloud:${value}` : value)
 const STORAGE_KEY = StorageKeys.agentWorkflowTabBindings(
   scope('user-test:personal')
 )

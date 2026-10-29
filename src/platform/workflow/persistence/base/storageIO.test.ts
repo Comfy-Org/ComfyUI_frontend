@@ -23,7 +23,8 @@ import {
 } from './storageIO'
 
 describe('storageIO', () => {
-  const scope = unsafeStorageScope
+  const scope = (value: string) =>
+    unsafeStorageScope(value.includes(':') ? `cloud:${value}` : value)
   beforeEach(() => {
     vi.resetModules()
   })

@@ -15,13 +15,23 @@ describe('storageKeys', () => {
       const { resolveStorageScope } = await import('./storageKeys')
 
       expect(resolveStorageScope('user-a', 'workspace-1')).toBe(
-        'user-a:workspace-1'
+        'cloud:user-a:workspace-1'
       )
       expect(resolveStorageScope('user-b', 'workspace-1')).toBe(
-        'user-b:workspace-1'
+        'cloud:user-b:workspace-1'
       )
       expect(resolveStorageScope(null, 'workspace-1')).toBeNull()
       expect(resolveStorageScope('user-a', null)).toBeNull()
+    })
+
+    it('keeps delimiter-bearing Cloud identity tuples distinct', async () => {
+      const { resolveStorageScope } = await import('./storageKeys')
+
+      expect(resolveStorageScope('a:b', 'c')).toBe('cloud:a%3Ab:c')
+      expect(resolveStorageScope('a', 'b:c')).toBe('cloud:a:b%3Ac')
+      expect(resolveStorageScope('a:b', 'c')).not.toBe(
+        resolveStorageScope('a', 'b:c')
+      )
     })
 
     it('uses the personal scope outside Cloud', async () => {

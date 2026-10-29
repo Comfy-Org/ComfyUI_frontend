@@ -416,8 +416,14 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     try {
       const workflow = JSON.parse(payload)
       if (isCurrent?.() === false) return false
-      await useApp().loadGraphData(workflow, true, true, workflowName)
-      return true
+      const loaded = await useApp().loadGraphData(
+        workflow,
+        true,
+        true,
+        workflowName
+      )
+      if (!loaded) onFailure?.()
+      return Boolean(loaded)
     } catch (err) {
       reportError(err, {
         surface: 'graph',

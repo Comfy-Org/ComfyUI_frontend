@@ -109,6 +109,11 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     activeId.value = id
   }
 
+  function resetForStorageOwnerTransition(): void {
+    sessions.value = []
+    activeId.value = null
+  }
+
   return {
     sessions,
     activeId,
@@ -117,6 +122,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     rename,
     remove,
     replaceAll,
-    setActive
+    setActive,
+    resetForStorageOwnerTransition
   }
 })

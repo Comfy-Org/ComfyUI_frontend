@@ -68,10 +68,14 @@ function failPayloadWrites(failTimes = Infinity): MockInstance {
 }
 
 describe('workflowDraftStoreV2', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     localStorage.clear()
     sessionStorage.clear()
     resetStorageAvailable()
+    const { app } = (await vi.importMock('@/scripts/app')) as {
+      app: { loadGraphData: MockInstance }
+    }
+    app.loadGraphData.mockResolvedValue(true)
     activeSpy = null
   })
 

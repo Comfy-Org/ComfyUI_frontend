@@ -89,7 +89,10 @@ export const useAuthActions = () => {
       email: authStore.userEmail ?? undefined,
       organizationId: error.organizationId
     })
-    if (presented) void authStore.logout().catch(toastErrorHandler)
+    if (presented)
+      void authStore
+        .logout(authStore.currentUserIdentity())
+        .catch(toastErrorHandler)
     return presented
   }
 
@@ -174,7 +177,7 @@ export const useAuthActions = () => {
           return
       }
 
-      await authStore.logout(isCloud ? departingIdentity : undefined)
+      await authStore.logout(departingIdentity)
       if (isCloud) {
         const identityAfterLogout = authStore.currentUserIdentity()
         if (

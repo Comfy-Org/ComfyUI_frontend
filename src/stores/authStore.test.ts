@@ -1138,7 +1138,7 @@ describe('useAuthStore', () => {
     it('should sign out the user', async () => {
       vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
 
-      await store.logout()
+      await store.logout(store.currentUserIdentity())
 
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
     })
@@ -1147,7 +1147,9 @@ describe('useAuthStore', () => {
       const mockError = new Error('Network error')
       vi.mocked(firebaseAuth.signOut).mockRejectedValue(mockError)
 
-      await expect(store.logout()).rejects.toThrow('Network error')
+      await expect(store.logout(store.currentUserIdentity())).rejects.toThrow(
+        'Network error'
+      )
 
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
     })
@@ -1288,7 +1290,7 @@ describe('useAuthStore', () => {
       vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
 
       // Logout
-      await store.logout()
+      await store.logout(store.currentUserIdentity())
 
       // Simulate successful auth state update after logout
       authStateCallback(null)
@@ -2913,7 +2915,7 @@ describe('useAuthStore in local/desktop distribution', () => {
       const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
       await startDesktopHostSession(bridge)
 
-      await store.logout()
+      await store.logout(store.currentUserIdentity())
 
       expect(bridge.signOut).toHaveBeenCalledOnce()
       expect(store.userId).not.toBe('host-user')
@@ -2926,7 +2928,7 @@ describe('useAuthStore in local/desktop distribution', () => {
       vi.mocked(apiKeyStore.getApiKey).mockReturnValue('stored-key')
       await startDesktopHostSession(hostBridge({ status: 'signed_out' }))
 
-      await store.logout()
+      await store.logout(store.currentUserIdentity())
 
       expect(apiKeyStore.clearStoredApiKey).not.toHaveBeenCalled()
     })
@@ -2940,7 +2942,9 @@ describe('useAuthStore in local/desktop distribution', () => {
       bridge.signOut.mockResolvedValue(signedIn)
       await startDesktopHostSession(bridge)
 
-      await expect(store.logout()).rejects.toBeInstanceOf(AuthStoreError)
+      await expect(
+        store.logout(store.currentUserIdentity())
+      ).rejects.toBeInstanceOf(AuthStoreError)
       expect(store.isAuthenticated).toBe(true)
     })
 

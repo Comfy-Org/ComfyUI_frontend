@@ -17,7 +17,8 @@ import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/st
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 import { useStorageScopeLifecycle } from './useStorageScopeLifecycle'
 
-const scope = unsafeStorageScope
+const scope = (value: string) =>
+  unsafeStorageScope(value.includes(':') ? `cloud:${value}` : value)
 
 const apiEvents: EventTarget = api
 
@@ -418,7 +419,7 @@ describe('useWorkflowPersistenceV2', () => {
       })
       writeActivePath(workflow.path)
 
-      mocks.loadGraphDataMock.mockResolvedValue(undefined)
+      mocks.loadGraphDataMock.mockResolvedValue(true)
 
       const { initializeWorkflow } = mountWorkflowPersistence()
       await initializeWorkflow()
@@ -426,6 +427,27 @@ describe('useWorkflowPersistenceV2', () => {
       // Should load draft via loadGraphData, not via workflowService.openWorkflow
       expect(mocks.loadGraphDataMock).toHaveBeenCalled()
       expect(openWorkflowMock).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the saved workflow when graph loading refuses its draft', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const draftStore = useWorkflowDraftStoreV2()
+      const workflow = workflowStore.createTemporary('RefusedDraft.json')
+      draftStore.saveDraft(workflow.path, '{"nodes":[]}', {
+        name: workflow.filename,
+        isTemporary: true
+      })
+      writeActivePath(workflow.path)
+      mocks.loadGraphDataMock.mockResolvedValue(false)
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(openWorkflowMock).toHaveBeenCalledWith(workflow, {
+        isCurrent: expect.any(Function)
+      })
+      expect(draftStore.getDraft(workflow.path)).toBeNull()
     })
 
     it('falls back to latest draft only when no session path exists', async () => {
@@ -439,7 +461,7 @@ describe('useWorkflowPersistenceV2', () => {
         isTemporary: true
       })
 
-      mocks.loadGraphDataMock.mockResolvedValue(undefined)
+      mocks.loadGraphDataMock.mockResolvedValue(true)
 
       const { initializeWorkflow } = mountWorkflowPersistence()
       await initializeWorkflow()
@@ -1231,10 +1253,18 @@ describe('useWorkflowPersistenceV2', () => {
 
   it('does not adopt live workflows during a direct identity replacement', async () => {
     distributionMocks.isCloud = true
+    const blankLoad = createDeferred()
+    loadBlankWorkflowMock.mockImplementation(async () => {
+      await blankLoad.promise
+      mocks.state.currentGraph = { marker: 'blank' }
+    })
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('AccountA.json').load()
     workflowStore.activeWorkflow = workflow
     workflowStore.openWorkflowsInBackground({ right: [workflow.path] })
+    const activeWorkflowBeforeTransition = workflowStore.activeWorkflow
+    const openWorkflowBeforeTransition = workflowStore.openWorkflows[0]
+    const catalogWorkflowBeforeTransition = workflowStore.workflows[0]
     const teamWorkspaceStore = useTeamWorkspaceStore()
     vi.spyOn(teamWorkspaceStore, 'initialize').mockResolvedValue()
     mountWorkflowPersistence()
@@ -1267,18 +1297,35 @@ describe('useWorkflowPersistenceV2', () => {
     })
     await nextTick()
 
+    await vi.waitFor(() => expect(loadBlankWorkflowMock).toHaveBeenCalledOnce())
+    expect(mocks.state.currentGraph).toEqual({ marker: 'account-a' })
+    expect(workflowStore.activeWorkflow).toBe(activeWorkflowBeforeTransition)
+    expect(workflowStore.openWorkflows).toEqual([openWorkflowBeforeTransition])
+    expect(workflowStore.workflows).toEqual([catalogWorkflowBeforeTransition])
+
+    blankLoad.resolve()
+    await vi.runAllTimersAsync()
+    expect(mocks.state.currentGraph).toEqual({ marker: 'blank' })
+
     mocks.state.currentGraph = { marker: 'must-not-cross-owners' }
     apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
     expect(workflowStore.activeWorkflow).toBeNull()
     expect(workflowStore.openWorkflows).toEqual([])
+    expect(workflowStore.workflows).toEqual([])
     expect(localStorage.getItem(destinationPayloadKey)).toBeNull()
     expect(
-      localStorage.getItem(
-        StorageKeys.lastOpenPaths(scope('user-b:workspace-1'))
+      JSON.parse(
+        localStorage.getItem(
+          StorageKeys.lastOpenPaths(scope('user-b:workspace-1'))
+        ) ?? ''
       )
-    ).toBeNull()
+    ).toEqual({
+      workspaceId: scope('user-b:workspace-1'),
+      paths: [],
+      activeIndex: -1
+    })
   })
 
   it('drops edits made in a post-identity null gap before the next owner resolves', async () => {

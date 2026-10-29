@@ -239,7 +239,7 @@ describe('useAuthActions.logout', () => {
 
     expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
-    expect(mockAuthStore.logout).toHaveBeenCalledExactlyOnceWith(undefined)
+    expect(mockAuthStore.logout).toHaveBeenCalledExactlyOnceWith(null)
     expect(mockClearWorkflowStorageForScope).not.toHaveBeenCalled()
   })
 

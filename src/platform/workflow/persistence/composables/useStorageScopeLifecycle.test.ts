@@ -54,7 +54,7 @@ describe('useStorageScopeLifecycle', () => {
     })
     await nextTick()
 
-    expect(getStorageScope()).toBe('user-a:workspace-a')
+    expect(getStorageScope()).toBe('cloud:user-a:workspace-a')
     expect(getStorageWriteGate()).toBe('open')
     scope.stop()
   })
@@ -75,7 +75,7 @@ describe('useStorageScopeLifecycle', () => {
     await nextTick()
 
     expect(getStorageIdentity()).toBe('user-a')
-    expect(getStorageScope()).toBe('user-a:workspace-a')
+    expect(getStorageScope()).toBe('cloud:user-a:workspace-a')
     scope.stop()
   })
 
@@ -94,7 +94,7 @@ describe('useStorageScopeLifecycle', () => {
     })
     await nextTick()
 
-    expect(getStorageScope()).toBe('api-key-user:api-key-bound-workspace')
+    expect(getStorageScope()).toBe('cloud:api-key-user:api-key-bound-workspace')
     expect(getStorageWriteGate()).toBe('open')
     scope.stop()
   })
@@ -113,7 +113,7 @@ describe('useStorageScopeLifecycle', () => {
     expect(
       sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
     ).toBeNull()
-    expect(getStorageScope()).toBe('api-key-user:api-key-bound-workspace')
+    expect(getStorageScope()).toBe('cloud:api-key-user:api-key-bound-workspace')
     expect(getStorageWriteGate()).toBe('open')
     scope.stop()
   })
@@ -150,7 +150,7 @@ describe('useStorageScopeLifecycle', () => {
       initState: 'ready'
     })
     await nextTick()
-    expect(getStorageScope()).toBe('api-key-user-a:workspace-a')
+    expect(getStorageScope()).toBe('cloud:api-key-user-a:workspace-a')
 
     resolvedUser.value = { id: 'api-key-user-b' }
 
@@ -166,7 +166,7 @@ describe('useStorageScopeLifecycle', () => {
     })
     await nextTick()
 
-    expect(getStorageScope()).toBe('api-key-user-b:workspace-b')
+    expect(getStorageScope()).toBe('cloud:api-key-user-b:workspace-b')
     expect(getStorageWriteGate()).toBe('open')
     scope.stop()
   })

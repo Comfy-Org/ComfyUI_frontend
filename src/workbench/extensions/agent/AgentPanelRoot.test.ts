@@ -107,7 +107,8 @@ import {
   createTestDragAndScale
 } from '@/utils/__tests__/canvasTestUtils'
 
-const scope = unsafeStorageScope
+const scope = (value: string) =>
+  unsafeStorageScope(value.includes(':') ? `cloud:${value}` : value)
 const agentTestScope = scope('account-a:personal')
 
 const getServerFeature = vi.hoisted(() =>

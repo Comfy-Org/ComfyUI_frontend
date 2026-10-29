@@ -56,7 +56,7 @@ export function useCloudAuthPage(options: {
         email: authStore.userEmail ?? undefined,
         returnTo: resolveSsoReturnTo(route, router)
       })
-      await authStore.logout()
+      await authStore.logout(authStore.currentUserIdentity())
       return
     }
     await redirectAfterAuth()

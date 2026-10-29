@@ -1179,6 +1179,7 @@ export const useAgentConversationStore = defineStore(
 
     function resetForStorageOwnerTransition(): void {
       retiredAsks.clear()
+      dropBackgroundTurns()
       reset()
     }
 

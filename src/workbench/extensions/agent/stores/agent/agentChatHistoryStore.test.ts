@@ -17,7 +17,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 const NOW = new Date(2026, 2, 15, 12, 0, 0).getTime()
 const DAY = 86_400_000
-const scope = unsafeStorageScope
+const scope = (value: string) =>
+  unsafeStorageScope(value.includes(':') ? `cloud:${value}` : value)
 
 const session = (
   id: string,
@@ -141,6 +142,17 @@ describe('useAgentChatHistoryStore', () => {
     store.remove('b')
 
     expect(store.activeId).toBe('a')
+  })
+
+  it('drops history and selection at a storage owner boundary', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', 1), session('b', 2)])
+    store.setActive('a')
+
+    store.resetForStorageOwnerTransition()
+
+    expect(store.sessions).toEqual([])
+    expect(store.activeId).toBeNull()
   })
 
   it('restores titles and tombstones only from the current scope', () => {

@@ -3,14 +3,13 @@ import { isCloud } from '@/platform/distribution/types'
 import type { StorageScope } from './draftTypes'
 import { hashPath } from './hashUtil'
 
-/** Resolves the current user and workspace storage scope. */
 export function resolveStorageScope(
   userId: string | null,
   workspaceId: string | null
 ): StorageScope | null {
   if (!isCloud) return 'personal' as StorageScope
   return userId && workspaceId
-    ? (`${userId}:${workspaceId}` as StorageScope)
+    ? (`cloud:${encodeURIComponent(userId)}:${encodeURIComponent(workspaceId)}` as StorageScope)
     : null
 }
 

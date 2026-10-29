@@ -1044,26 +1044,54 @@ export const useAuthStore = defineStore('auth', () => {
     return currentUser.value?.uid === user?.uid ? token : undefined
   }
 
-  const logout = async (expectedIdentity?: string | null): Promise<void> =>
+  const captureLogoutFallbackIdentities = (): {
+    apiKeyStore: ReturnType<typeof useApiKeyAuthStore>
+    identities: Set<string>
+  } => {
+    const apiKeyStore = useApiKeyAuthStore()
+    const identities = new Set<string>()
+    const sessionIdentity = sessionUser.value?.id
+    const firebaseIdentityId = currentUser.value?.uid
+    const apiKeyIdentity = apiKeyStore.getApiKey()
+    if (sessionIdentity) identities.add(sessionIdentity)
+    if (firebaseIdentityId) identities.add(firebaseIdentityId)
+    if (apiKeyIdentity) identities.add(apiKeyIdentity)
+    return { apiKeyStore, identities }
+  }
+
+  const signOutDesktopHostForLogout = async (): Promise<boolean> => {
+    const signsOutDesktopHost = isDesktopHostSignedIn()
+    if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
+      throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
+    }
+    return signsOutDesktopHost
+  }
+
+  const logoutIdentityStillOwned = (
+    expectedIdentity: string | null,
+    fallbackIdentities: Set<string>
+  ): boolean => {
+    const remainingIdentity = currentUserIdentity()
+    return (
+      remainingIdentity === null ||
+      remainingIdentity === expectedIdentity ||
+      fallbackIdentities.has(remainingIdentity)
+    )
+  }
+
+  const logout = async (expectedIdentity: string | null): Promise<void> =>
     executeAuthAction(async () => {
+      const { apiKeyStore, identities } = captureLogoutFallbackIdentities()
       await revokePartnerNodeLogin()
-      const signsOutDesktopHost = isDesktopHostSignedIn()
-      if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
-        throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
-      }
+      const signsOutDesktopHost = await signOutDesktopHostForLogout()
       // Local and Desktop keep the key: partner nodes run on it. A Desktop
       // host logout drops it, or an earlier session's key would take over.
       const dropsStoredApiKey =
         signsOutDesktopHost ||
         (flags.ssoEnabled && flags.unifiedWebSessionEnabled)
       await useCloudWebSessionStore().signOut()
-      if (
-        expectedIdentity !== undefined &&
-        currentUserIdentity() !== expectedIdentity
-      )
-        return
+      if (!logoutIdentityStillOwned(expectedIdentity, identities)) return
       if (currentUser.value) await firebaseIdentity.signOut()
-      const apiKeyStore = useApiKeyAuthStore()
       if (dropsStoredApiKey && apiKeyStore.getApiKey() !== null) {
         await apiKeyStore.clearStoredApiKey()
       }

@@ -167,6 +167,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   function resetForIdentityChange() {
     syncGeneration++
     clearWorkflowCatalog()
+    useWorkflowBookmarkStore().resetForIdentityChange()
   }
 
   /**
@@ -863,11 +864,16 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
     await setBookmarked(path, !bookmarks.value.has(path))
   }
 
+  function resetForIdentityChange(): void {
+    bookmarks.value = new Set()
+  }
+
   return {
     isBookmarked,
     loadBookmarks,
     saveBookmarks,
     setBookmarked,
-    toggleBookmarked
+    toggleBookmarked,
+    resetForIdentityChange
   }
 })

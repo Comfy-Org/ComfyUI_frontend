@@ -251,7 +251,7 @@ describe('queueAuthToken', () => {
         return { status: 'signed_out' }
       })
 
-      await useAuthStore().logout()
+      await useAuthStore().logout(useAuthStore().currentUserIdentity())
 
       expect(revokeBearers()).toEqual(['Bearer host-oauth-token'])
       expect(revokesAtSignOut).toEqual([1])
@@ -272,7 +272,7 @@ describe('sign-out', () => {
       revokesAtSignOut.push(fetchRequests(REVOKE_URL).length)
     })
 
-    await useAuthStore().logout()
+    await useAuthStore().logout(useAuthStore().currentUserIdentity())
 
     expect(revokeBearers()).toEqual(['Bearer firebase-id-token'])
     expect(revokesAtSignOut).toEqual([1])
@@ -284,7 +284,7 @@ describe('sign-out', () => {
     respondWithPartnerNodeToken()
     await queueAuthToken(WORKSPACE_TOKEN, 'ws-a')
 
-    await useAuthStore().logout()
+    await useAuthStore().logout(useAuthStore().currentUserIdentity())
     signInFirebase('user-b', 'firebase-id-token-b')
     await queueAuthToken(WORKSPACE_TOKEN, 'ws-a')
 
@@ -302,7 +302,7 @@ describe('sign-out', () => {
       }
     })
 
-    await useAuthStore().logout()
+    await useAuthStore().logout(useAuthStore().currentUserIdentity())
 
     expect(revokeBearers()).not.toContain('Bearer firebase-id-token')
   })
@@ -331,7 +331,7 @@ describe('sign-out', () => {
   it('sends nothing with the flag off', async () => {
     signInFirebase()
 
-    await useAuthStore().logout()
+    await useAuthStore().logout(useAuthStore().currentUserIdentity())
 
     expect(fetchRequests(REVOKE_URL)).toHaveLength(0)
   })
@@ -350,7 +350,9 @@ describe('sign-out', () => {
     signInFirebase()
     respondToFetch(REVOKE_URL, respond)
 
-    await expect(useAuthStore().logout()).resolves.toBeUndefined()
+    await expect(
+      useAuthStore().logout(useAuthStore().currentUserIdentity())
+    ).resolves.toBeUndefined()
 
     expect(signOut).toHaveBeenCalledOnce()
     await vi.waitFor(() => expect(reportError).toHaveBeenCalledOnce())

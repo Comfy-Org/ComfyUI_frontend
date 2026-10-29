@@ -30,14 +30,16 @@ over.
 
 `resolveStorageScope(userId, workspaceId)` is the only production constructor
 for `StorageScope`, an opaque branded string. A Cloud scope is
-`${userId}:${workspaceId}` when both components are resolved and `null`
-otherwise. Non-Cloud builds resolve to `personal`, preserving their existing
-keys. The root-mounted `useStorageScopeLifecycle()` composable owns auth and
-workspace lifecycle updates for all persistence consumers; workflow and agent
-features only read the resulting state, so neither depends on GraphCanvas
-mounting first. The workspace store's resolved `activeWorkspaceId` is the
-authoritative workspace component; persistence does not independently derive
-scope from the `Comfy.Workspace.Current` session cache.
+`cloud:${encodeURIComponent(userId)}:${encodeURIComponent(workspaceId)}` when
+both components are resolved and `null` otherwise. Encoding each component
+before joining makes the tuple unambiguous even when either identifier contains
+the delimiter. Non-Cloud builds resolve to `personal`, preserving their
+existing keys. The root-mounted `useStorageScopeLifecycle()` composable owns
+auth and workspace lifecycle updates for all persistence consumers; workflow
+and agent features only read the resulting state, so neither depends on
+GraphCanvas mounting first. The workspace store's resolved `activeWorkspaceId`
+is the authoritative workspace component; persistence does not independently
+derive scope from the `Comfy.Workspace.Current` session cache.
 
 Draft indexes and payloads, persistent tab pointers, agent thread IDs, workflow
 tab bindings, title overrides, and deletion markers all use `StorageScope`.
