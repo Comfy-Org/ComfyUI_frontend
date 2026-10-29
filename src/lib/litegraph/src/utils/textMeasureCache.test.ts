@@ -61,4 +61,34 @@ describe('textMeasureCache', () => {
     expect(w1).not.toBe(w2)
     expect(ctx.measureText).toHaveBeenCalledTimes(2)
   })
+
+  it('measures requested fonts without changing subsequent drawing', () => {
+    const ctx = createMockCtx('12px sans-serif')
+    vi.mocked(ctx.measureText).mockImplementation(() =>
+      fromPartial<TextMetrics>({
+        width: ctx.font === '24px monospace' ? 83 : 31
+      })
+    )
+
+    expect([
+      cachedMeasureText(ctx, 'hello', '24px monospace'),
+      ctx.font,
+      cachedMeasureText(ctx, 'hello'),
+      cachedMeasureText(ctx, 'hello', '24px monospace'),
+      ctx.font
+    ]).toEqual([83, '12px sans-serif', 31, 83, '12px sans-serif'])
+  })
+
+  it('restores the drawing font when measurement fails', () => {
+    const ctx = createMockCtx('12px sans-serif')
+    vi.mocked(ctx.measureText).mockImplementationOnce(() => {
+      throw new Error('unavailable')
+    })
+
+    expect(() => cachedMeasureText(ctx, 'hello', '24px monospace')).toThrow(
+      'unavailable'
+    )
+    expect(ctx.font).toBe('12px sans-serif')
+    expect(cachedMeasureText(ctx, 'hello', '24px monospace')).toBe(35)
+  })
 })
