@@ -239,6 +239,23 @@ the census registers _after_ `registerCustomNodes`. The harness already deviates
 from that order (see the hook table above); the census deviates by one step
 further.
 
+### What it costs, because it is not free
+
+Registering 3,857 classes and instantiating each one costs **~5.3s of CPU per
+pack** on top of the battery's ~1.5s — measured over the detection-proof corpus
+at four workers: 16.03s user CPU for 11 packs with the 7-class fixture, 74.44s
+with the full projection. At ~485 packs that is ~43 CPU-minutes added per shard,
+which is why `ecosystem-matrix`'s `timeout-minutes` went from 20 to 40.
+
+**If that becomes tight again, raise the shard count rather than the timeout.**
+The work parallelises across shards and the per-pack cost does not shrink.
+
+Note also where the matrix actually executes packs: `should-run` restricts that
+on pull requests to branches named `version-bump-*`, so an ordinary PR does not
+execute packs and the aggregate check passes without them. The census therefore
+produces its numbers on a push to `main`, on a `version-bump-*` PR, on a
+`workflow_dispatch` — or locally.
+
 ### The seam, and why it is faithful in both directions
 
 `proveWidgetForm` needs the array `serialiseWidgetValues` produced **before**

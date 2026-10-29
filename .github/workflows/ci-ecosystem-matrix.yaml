@@ -252,7 +252,17 @@ jobs:
     needs: corpus
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Raised from 20 when the widget-form census was added. The census
+    # registers every class in object_info.shape.json per pack and instantiates
+    # each one, which costs ~5.3s of CPU per pack on top of the battery's ~1.5s
+    # (measured over the detection-proof corpus at 4 workers: 16.03s user CPU
+    # for 11 packs with the 7-class fixture, 74.44s with the 3,857-class
+    # projection). At ~485 packs a shard that is ~43 CPU-minutes added, so the
+    # headroom here is what keeps a telemetry channel from timing out a gate
+    # whose own criteria are unaffected by it. If this becomes tight again,
+    # raise the shard count rather than the timeout: the work parallelises and
+    # the per-pack cost does not shrink.
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
