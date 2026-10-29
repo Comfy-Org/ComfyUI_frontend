@@ -203,7 +203,8 @@ export const useCanvasStore = defineStore('canvas', () => {
         newCanvas.canvas,
         'subgraph-converted',
         (e: CustomEvent<{ subgraphNode: SubgraphNode }>) => {
-          mergeListRuns(e.detail.subgraphNode)
+          // A frame later, once conversion's connections have settled
+          requestAnimationFrame(() => mergeListRuns(e.detail.subgraphNode))
           promoteRecommendedWidgets(e.detail.subgraphNode)
         }
       )

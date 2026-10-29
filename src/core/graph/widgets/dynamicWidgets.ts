@@ -760,7 +760,9 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   node.size = [node.size[0], node.computeSize([...node.size])[1]]
 }
 
-function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
+export function withComfyAutogrow(
+  node: LGraphNode
+): asserts node is AutogrowNode {
   if (node.comfyDynamic?.autogrow) return
   node.comfyDynamic ??= {}
   node.comfyDynamic.autogrow = {}
