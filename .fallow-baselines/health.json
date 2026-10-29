@@ -526,7 +526,7 @@
         "count": 1
       }
     },
-    "src/components/rightSidePanel/errors/ErrorGroupList.vue": {
+    "src/platform/workflowErrors/panel/ErrorGroupList.vue": {
       "complexity_critical": {
         "count": 1
       },
@@ -3171,7 +3171,7 @@
     "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.vue:complexity",
     "src/utils/executionUtil.ts:complexity",
     "src/scripts/metadata/avif.ts:complexity",
-    "src/components/rightSidePanel/errors/ErrorGroupList.vue:complexity",
+    "src/platform/workflowErrors/panel/ErrorGroupList.vue:complexity",
     "src/renderer/extensions/linearMode/DropZone.vue:complexity",
     "src/platform/customNodes/manager/components/manager/ManagerDialog.vue:circular dependency",
     "packages/mask-editor/src/useCanvasHistory.ts:circular dependency",

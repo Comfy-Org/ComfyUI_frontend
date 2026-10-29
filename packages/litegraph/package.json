@@ -13,6 +13,7 @@
   "exports": {
     "./litegraph.css": "./public/css/litegraph.css",
     "./*": {
+      "@comfyorg/litegraph": "./src/*.ts",
       "types": "./dist-types/*.d.ts",
       "default": "./src/*.ts"
     }
