@@ -196,10 +196,6 @@
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/CanvasInteractionMode.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/lib/litegraph/src/canvas/InputIndicators.ts",
       "role": "presentation"
     },

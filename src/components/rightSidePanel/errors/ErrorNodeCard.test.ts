@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import { resolveRunErrorMessage } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'

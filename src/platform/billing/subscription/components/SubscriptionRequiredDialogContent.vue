@@ -162,7 +162,7 @@ import SubscriptionBenefits from '@/platform/billing/subscription/components/Sub
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 
 const { onClose, reason, paymentIntentSource, onChooseTeam } = defineProps<{

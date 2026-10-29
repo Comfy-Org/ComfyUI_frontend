@@ -80,6 +80,7 @@ const galleryItems = computed(() =>
   galleryAssets.value.map(replyAssetResultItem)
 )
 const galleryIndex = ref(-1)
+const autoplayGalleryVideo = ref(false)
 
 // Preserve controller identity inside Vue's deeply reactive state record.
 type ThumbnailState =
@@ -385,6 +386,7 @@ function inspect(asset: ReplyVisualAssetData): void {
     })
     return
   }
+  autoplayGalleryVideo.value = asset.kind === 'video'
   galleryIndex.value = galleryAssets.value.indexOf(asset)
 }
 </script>
@@ -432,6 +434,7 @@ function inspect(asset: ReplyVisualAssetData): void {
       v-if="galleryIndex !== -1"
       :all-gallery-items="galleryItems"
       :active-index="galleryIndex"
+      :autoplay-video="autoplayGalleryVideo"
       @update:active-index="galleryIndex = $event"
     />
   </div>
