@@ -87,6 +87,7 @@ const isDevBuild = import.meta.env.DEV
 
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
+const { showSignInDialog } = useAuthDialogs()
 const { uploadingLabel } = useCloudMenuCopy()
 const checkStore = useCloudWorkflowCheckStore()
 const { state: check } = storeToRefs(checkStore)
@@ -129,7 +130,7 @@ function runOnCloud() {
       openUploadModelsDialog(state.models).catch(toastErrorHandler)
       return
     case 'signedOut':
-      void useAuthDialogs().showSignInDialog()
+      void showSignInDialog()
       return
     case 'checking':
       return

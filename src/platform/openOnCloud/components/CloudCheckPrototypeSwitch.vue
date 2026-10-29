@@ -3,7 +3,7 @@
     <div
       role="group"
       :aria-label="$t('openOnCloud.prototype.label')"
-      class="fixed right-4 bottom-4 z-3000 flex w-88 flex-col gap-1.5 rounded-lg border border-border bg-background p-2 text-xs shadow-lg"
+      class="fixed right-4 bottom-4 z-3000 flex w-96 flex-col gap-1.5 rounded-lg border border-border bg-background p-2 text-xs shadow-lg"
       data-prototype-panel
       data-testid="cloud-check-prototype-switch"
     >
@@ -21,7 +21,7 @@
           :key="scenario.value"
           :value="scenario.value"
           size="sm"
-          class="justify-start px-2.5"
+          class="h-auto min-h-6 justify-start px-2.5 py-1 text-left"
         >
           {{ scenario.label }}
         </ToggleGroupItem>

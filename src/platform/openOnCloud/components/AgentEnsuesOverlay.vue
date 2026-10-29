@@ -9,7 +9,7 @@
       data-testid="agent-ensues"
       @click="localAgent.stop()"
     >
-      <span class="text-6xl font-semibold tracking-tight text-white">
+      <span class="text-5xl font-semibold tracking-tight text-white">
         {{ $t('openOnCloud.convertDialog.agentEnsues') }}
       </span>
     </div>
