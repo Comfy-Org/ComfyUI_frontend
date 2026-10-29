@@ -34,10 +34,11 @@ const warnSpecDrift: InputSpecDiagnosticSink = (spec, error, optionIndex) => {
 }
 
 export const {
-  splitSlotTypes,
   inputSpecTree,
   ownSlotTypes,
   dynamicComboOptionKeys,
   dynamicComboOptionTypes,
-  matchTypeTemplate
+  flattenInputSpecs,
+  collectSearchableInputTypes,
+  collectSearchableOutputTypes
 } = createInputSpecInterpreter(warnSpecDrift)

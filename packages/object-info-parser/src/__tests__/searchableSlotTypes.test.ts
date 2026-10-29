@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
-import type { OutputSpec as OutputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
-import {
-  collectSearchableInputTypes,
-  collectSearchableOutputTypes
-} from '@/schemas/nodeDef/searchableSlotTypes'
-import type { ComfyInputsSpec, InputSpec } from '@comfyorg/object-info-parser'
+import { createInputSpecInterpreter } from '#/inputSpecInterpreter'
+import { transformInputSpecV1ToV2 } from '#/migration'
+import type { ComfyInputsSpec, InputSpec } from '#/schemas/nodeDefSchema'
+import type { OutputSpec as OutputSpecV2 } from '#/schemas/nodeDefSchemaV2'
+
+const { collectSearchableInputTypes, collectSearchableOutputTypes } =
+  createInputSpecInterpreter(() => {})
 
 function dynamicCombo(
   options: { key: string; inputs: ComfyInputsSpec }[]

@@ -1,8 +1,11 @@
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
-import { inputSpecTree, ownSlotTypes } from '@/schemas/nodeDef/inputSpecTree'
+import {
+  collectSearchableOutputTypes,
+  inputSpecTree,
+  ownSlotTypes
+} from '@/schemas/nodeDef/inputSpecTree'
 import { transformNodeDefV1ToV2 } from '@comfyorg/object-info-parser/migration'
-import { collectSearchableOutputTypes } from '@/schemas/nodeDef/searchableSlotTypes'
 
 import { ComfyWidgets } from '@/scripts/widgets'
 

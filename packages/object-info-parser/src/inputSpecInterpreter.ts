@@ -1,7 +1,10 @@
 import type { ZodError } from 'zod'
 
 import { transformInputSpecV1ToV2 } from '#/migration'
-import type { InputSpec as InputSpecV2 } from '#/schemas/nodeDefSchemaV2'
+import type {
+  InputSpec as InputSpecV2,
+  OutputSpec as OutputSpecV2
+} from '#/schemas/nodeDefSchemaV2'
 import type {
   ComfyInputsSpec,
   DynamicControlType
@@ -185,12 +188,60 @@ export function createInputSpecInterpreter(
     }
   }
 
+  /** Top-level and nested input specs, deduped by name with the first occurrence kept. */
+  function flattenInputSpecs(
+    inputs: Record<string, InputSpecV2>
+  ): InputSpecV2[] {
+    const seenNames = new Set<string>()
+    return Object.values(inputs)
+      .flatMap(inputSpecTree)
+      .filter(({ name }) => {
+        if (seenNames.has(name)) return false
+        seenNames.add(name)
+        return true
+      })
+  }
+
+  /** Every slot type an input could expose across all DynamicCombo options; for search only. */
+  function collectSearchableInputTypes(input: InputSpecV2): string[] {
+    return inputSpecTree(input).flatMap(ownSlotTypes)
+  }
+
+  /** Every slot type an output could produce, resolving MatchType outputs to their template's allowed types. */
+  function collectSearchableOutputTypes(
+    outputs: OutputSpecV2[],
+    inputs: Record<string, InputSpecV2>,
+    outputMatchTypes: (string | undefined)[] | undefined
+  ): string[] {
+    const allowedTypesByTemplate = new Map<string, string[]>()
+    for (const spec of Object.values(inputs).flatMap(inputSpecTree)) {
+      const template = matchTypeTemplate(spec)
+      if (!template) continue
+
+      const seen = allowedTypesByTemplate.get(template.templateId) ?? []
+      allowedTypesByTemplate.set(template.templateId, [
+        ...new Set([...seen, ...template.allowedTypes])
+      ])
+    }
+
+    return outputs.flatMap((output) => {
+      if (output.type !== 'COMFY_MATCHTYPE_V3')
+        return splitSlotTypes(output.type)
+
+      const templateId = outputMatchTypes?.[output.index]
+      return templateId ? (allowedTypesByTemplate.get(templateId) ?? []) : []
+    })
+  }
+
   return {
     splitSlotTypes,
     inputSpecTree,
     ownSlotTypes,
     dynamicComboOptionKeys,
     dynamicComboOptionTypes,
-    matchTypeTemplate
+    matchTypeTemplate,
+    flattenInputSpecs,
+    collectSearchableInputTypes,
+    collectSearchableOutputTypes
   }
 }
