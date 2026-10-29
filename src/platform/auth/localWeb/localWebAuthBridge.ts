@@ -264,7 +264,7 @@ export function createLocalWebAuthBridge(
     const result = await refreshAccessToken(kept.refreshToken, tokenOptions())
     if (result.ok) return { kind: 'kept', tokens: result.tokens }
     if (result.reason === 'unavailable') return { kind: 'unavailable' }
-    env.tokens.forgetWorkspace(workspaceId)
+    env.tokens.forgetWorkspace(workspaceId, kept)
     return { kind: 'missing' }
   }
 

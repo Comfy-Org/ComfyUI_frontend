@@ -918,6 +918,29 @@ describe('switchWorkspace', () => {
     expect(env.openPopup).toHaveBeenCalledOnce()
   })
 
+  it('keeps tokens written for the workspace while its refused refresh was in flight', async () => {
+    const { bridge, env, clock, tokens } = await signedInToBothWorkspaces(30)
+    clock.now += 60_000
+    let answer: (response: Response) => void = () => {}
+    env.fetchImpl.mockImplementationOnce(
+      () => new Promise((resolve) => (answer = resolve))
+    )
+    const switching = bridge.switchWorkspace?.('ws-1')
+    await vi.waitFor(() => expect(env.fetchImpl).toHaveBeenCalledOnce())
+    const renewed = {
+      accessToken: WS1_TOKEN,
+      refreshToken: 'refresh-newer',
+      expiresAt: clock.now + 3_600_000,
+      scope: 'comfy-cloud:user:read'
+    }
+    tokens.writeWorkspace('ws-1', renewed)
+
+    answer(oauthError('invalid_grant'))
+    await switching
+
+    expect(tokens.readWorkspace('ws-1')).toEqual(renewed)
+  })
+
   it('forgets every workspace on sign-out', async () => {
     const { bridge, env, tokens } = await signedInToBothWorkspaces()
     await bridge.signOut()
@@ -1131,6 +1154,21 @@ describe('across tabs sharing stored tokens', () => {
       reason: 'storage-unavailable'
     })
     expect(memory.read()).toBeUndefined()
+  })
+
+  it('signs this tab out when another tab forgets the workspace it is on', async () => {
+    const { first, second, events } = tabs()
+    await expect(second.bridge.getState()).resolves.toMatchObject({
+      workspaceId: 'ws-1'
+    })
+    first.storage.setItem(TAB_WORKSPACE_KEY, 'ws-2')
+    const kept = first.tokens.readWorkspace('ws-1')
+    if (!kept) throw new Error('ws-1 tokens were not kept')
+
+    first.tokens.forgetWorkspace('ws-1', kept)
+    events.dispatchEvent(storageEvent('Comfy.LocalWebSignIn.WorkspaceTokens'))
+
+    expect(second.states.at(-1)).toEqual({ status: 'signed_out' })
   })
 
   it('tells listeners when another tab signs out', async () => {
