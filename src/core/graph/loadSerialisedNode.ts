@@ -2,10 +2,10 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import { captureWidgetRestorationSlots } from '@/lib/litegraph/src/node/widgetsView'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useExtensionService } from '@/services/extensionService'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 export function createMissingNode(
   type: string,

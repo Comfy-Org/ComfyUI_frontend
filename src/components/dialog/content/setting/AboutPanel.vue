@@ -38,7 +38,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SystemStatsPanel from '@/components/common/SystemStatsPanel.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { useAboutPanelStore } from '@/stores/aboutPanelStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 

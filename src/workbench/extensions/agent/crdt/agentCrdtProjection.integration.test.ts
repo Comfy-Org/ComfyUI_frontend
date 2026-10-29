@@ -1,15 +1,15 @@
 import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { assert } from '@/base/assert'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
@@ -366,5 +366,36 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     expect(graph._nodes).toEqual([source])
     expect(source.title).toBe('Reminted')
     expect(graph.links.size).toBe(0)
+  })
+
+  it('keeps only the groups the document holds again when retrying', () => {
+    const { graph } = buildLiveGraph()
+    const restored = new LiteGraph.LGraphGroup('Prompt group')
+    const dropped = new LiteGraph.LGraphGroup('Output group')
+    graph.add(restored)
+    graph.add(dropped)
+    const { host, hostEdit, projection, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+    const [restoredGroup] = host.getMap('meta').get('groups') as unknown[]
+
+    function fail(): never {
+      throw new Error('remove failed')
+    }
+    vi.spyOn(graph, 'remove')
+      .mockImplementationOnce(fail)
+      .mockImplementationOnce(fail)
+    hostEdit(() => host.getMap('meta').set('groups', []))
+    expect(projection.hasPendingFailure(WORKFLOW_ID)).toBe(true)
+    expect(graph.groups).toEqual([restored, dropped])
+
+    hostEdit(() => host.getMap('meta').set('groups', [restoredGroup]))
+    expect(projection.retryFailed(WORKFLOW_ID)).toMatchObject({
+      failureCount: 0
+    })
+    expect(graph.groups).toEqual([restored])
+    expect(projection.hasPendingFailure(WORKFLOW_ID)).toBe(false)
   })
 })

@@ -18,7 +18,7 @@ import {
 import {
   redactTelemetryUrls,
   redactTelemetryValues
-} from './redactTelemetryUrls'
+} from '@comfyorg/telemetry/redactTelemetryUrls'
 
 const FIRST_PARTY_EXTENSION_FOLDERS = new Set(['cloud', 'core'])
 

@@ -10,7 +10,7 @@
       :aria-label="t('dynamicGroup.remove', { row: widget.label })"
       @click="removeRow"
     >
-      <i class="icon-[lucide--x] size-4" />
+      <i class="icon-[lucide--x]" />
     </Button>
   </div>
 </template>
@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const { widget } = defineProps<{ widget: SimplifiedWidget }>()

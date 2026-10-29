@@ -4,15 +4,15 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { loadSerialisedNode } from '@/core/graph/loadSerialisedNode'
 import { withGraphConfiguring } from '@/core/graph/withGraphConfiguring'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
 
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 class KSampler extends LGraphNode {
   constructor() {
