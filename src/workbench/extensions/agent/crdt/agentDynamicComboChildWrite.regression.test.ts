@@ -4,6 +4,7 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
+import { has } from 'es-toolkit/compat'
 import { render } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -233,20 +234,13 @@ function setup() {
   return { graph, node, widget, hostApplies, hostPositionalValue, localWrites }
 }
 
-function hasProperty<Key extends PropertyKey>(
-  value: unknown,
-  key: Key
-): value is Record<Key, unknown> {
-  return typeof value === 'object' && value !== null && key in value
-}
-
 function sentWireOps(raw: string): WireOpEnvelope[] {
   const frame: unknown = JSON.parse(raw)
-  if (!hasProperty(frame, 'type')) return []
+  if (!has(frame, 'type')) return []
   if (frame.type !== 'doc_ops') return []
-  if (!hasProperty(frame, 'data')) return []
+  if (!has(frame, 'data')) return []
   const { data } = frame
-  if (!hasProperty(data, 'ops')) return []
+  if (!has(data, 'ops')) return []
   const parsed = parseWireOps(data.ops)
   return parsed.ok ? parsed.ops : []
 }
