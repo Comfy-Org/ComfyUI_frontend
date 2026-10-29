@@ -97,7 +97,7 @@ import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatal
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import {
-  isGraphLoadHookActive,
+  isGraphLoadHookOrigin,
   useExtensionService
 } from '@/services/extensionService'
 import { beginChangeCaptureSuppression } from '@/services/changeCaptureSuppression'
@@ -1201,7 +1201,6 @@ export class ComfyApp implements IComfyApp {
     workflow: string | null | ComfyWorkflow = null,
     options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
-    if (isGraphLoadHookActive()) return false
     return this.enqueueGraphLoad(() =>
       this.loadGraphDataNow(graphData, clean, restore_view, workflow, options)
     )
@@ -1227,11 +1226,14 @@ export class ComfyApp implements IComfyApp {
       workflowNavigationId
     } = options
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-    useWorkflowService().beforeLoadNewGraph(clean)
-    ChangeTracker.isLoadingGraph = true
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
+      // Inside the try because `beforeLoadGraph` has already run: deactivating
+      // the outgoing graph captures it, which can reach a custom node's
+      // serializer, and a throw there owes this load an error terminal.
+      useWorkflowService().beforeLoadNewGraph(clean)
+      ChangeTracker.isLoadingGraph = true
       useExecutionErrorStore().setActiveGraph(null)
 
       if (skipAssetScans) {
@@ -1390,7 +1392,8 @@ export class ComfyApp implements IComfyApp {
       }
     } catch (error) {
       // This try wraps everything between `beforeLoadGraph` and
-      // `rootGraph.configure`: asset-scan resets, `clean()`, workflow
+      // `rootGraph.configure`: the outgoing-workflow preflight, asset-scan
+      // resets, `clean()`, workflow
       // cloning, `validateWorkflow`, reroute-migration inspection, a
       // malformed subgraph definition, a `beforeConfigureGraph` extension
       // hook throwing, or a node-replacement load failure. Any of those
@@ -2117,7 +2120,9 @@ export class ComfyApp implements IComfyApp {
       onNodeCreated?: (node: LGraphNode) => void
     }
   ) {
-    const fromGraphLoadHook = isGraphLoadHookActive()
+    // Read before the first await: the origin marker only spans this call's
+    // synchronous entry, which is what keeps it scoped to the hook that made it.
+    const fromGraphLoadHook = isGraphLoadHookOrigin()
     const previousDiscovery = this.fileLoadDiscoveryQueue
     let releaseDiscovery!: () => void
     this.fileLoadDiscoveryQueue = new Promise<void>((resolve) => {
@@ -2462,7 +2467,6 @@ export class ComfyApp implements IComfyApp {
     fileName: string,
     options: { deferWarnings?: boolean } = {}
   ): Promise<void | false> {
-    if (isGraphLoadHookActive()) return false
     return this.enqueueGraphLoad(() =>
       this.loadApiJsonNow(apiData, fileName, options)
     )

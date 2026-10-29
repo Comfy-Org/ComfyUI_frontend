@@ -33,7 +33,7 @@ vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import type { CurveData } from '@comfyorg/graph-model/curve'
 import type { useExtensionService } from '@/services/extensionService'
-import { isGraphLoadHookActive } from '@/services/extensionService'
+import { isGraphLoadHookOrigin } from '@/services/extensionService'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
@@ -84,7 +84,6 @@ import {
 } from '@/composables/usePaste'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { getFromPngFile } from '@/scripts/metadata/png'
 import { runMissingModelPipeline } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
 import * as missingMediaPipeline from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 import * as missingMediaScan from '@/platform/workflowErrors/missingMedia/missingMediaScan'
@@ -194,7 +193,7 @@ vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
 }))
 
 vi.mock(import('@/services/extensionService'), () => ({
-  isGraphLoadHookActive: vi.fn(() => false),
+  isGraphLoadHookOrigin: vi.fn(() => false),
   useExtensionService: vi.fn(() =>
     fromPartial<ReturnType<typeof useExtensionService>>(mockExtensionService)
   )
@@ -647,6 +646,36 @@ describe('ComfyApp', () => {
         'onGraphLoadError',
         expect.objectContaining({ message: 'bad extension' })
       )
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+    })
+
+    it('resolves false and notifies onGraphLoadError when the outgoing preflight throws', async () => {
+      // `beforeLoadNewGraph` deactivates the outgoing workflow, which captures
+      // it and so can reach a custom node's throwing serializer. It runs after
+      // `beforeLoadGraph`, so a throw there owes this load an error terminal;
+      // outside the try it rejected instead, leaving the loading state a
+      // `beforeLoadGraph` listener had opened for this load unclosed.
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+      mockWorkflowService.beforeLoadNewGraph.mockImplementationOnce(() => {
+        throw new Error('outgoing serializer blew up')
+      })
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false, true, null, {
+          workflowNavigationId: 21
+        })
+      ).resolves.toBe(false)
+
+      expect(showDialog).toHaveBeenCalledOnce()
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ message: 'outgoing serializer blew up' })
+      )
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
       expect(
         mockExtensionService.invokeExtensionsAsync
       ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
@@ -1168,9 +1197,15 @@ describe('ComfyApp', () => {
       })
     })
 
-    it('brackets an API JSON import with graph-load hooks', async () => {
+    it('brackets an API JSON import with graph-load hooks', async ({
+      onTestFinished
+    }) => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
+      const previousGraph = singletonApp.rootGraphOrUndefined
+      onTestFinished(() => {
+        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+      })
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
 
@@ -1229,9 +1264,30 @@ describe('ComfyApp', () => {
       ])
     })
 
-    it.for(['API JSON', 'A1111'])(
-      'does not capture a %s import into the outgoing workflow',
-      async (format) => {
+    it.for([
+      {
+        format: 'API JSON',
+        load: () => app.loadApiJson({}, 'empty.json')
+      },
+      {
+        format: 'A1111',
+        load: async () => {
+          vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+            parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+          })
+          mockImportA1111.mockImplementation(
+            async (incomingGraph, _parameters, beforeGraphClear) => {
+              await beforeGraphClear?.()
+              incomingGraph.clear()
+              return 'imported'
+            }
+          )
+          await app.handleFile(createTestFile('a1111.png', 'image/png'))
+        }
+      }
+    ])(
+      'does not capture a $format import into the outgoing workflow',
+      async ({ load }) => {
         onTestFinished(attachLegacyUI(singletonApp))
         app.canvasElRef.value = document.createElement('canvas')
         const graph = new LGraph()
@@ -1261,21 +1317,7 @@ describe('ComfyApp', () => {
           }
         )
 
-        if (format === 'API JSON') {
-          await app.loadApiJson({}, 'empty.json')
-        } else {
-          vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
-            parameters: 'positive\nNegative prompt: negative\nSteps: 20'
-          })
-          mockImportA1111.mockImplementation(
-            async (incomingGraph, _parameters, beforeGraphClear) => {
-              await beforeGraphClear?.()
-              incomingGraph.clear()
-              return 'imported'
-            }
-          )
-          await app.handleFile(createTestFile('a1111.png', 'image/png'))
-        }
+        await load()
 
         expect(tracker.activeState).toEqual(outgoingState)
         expect(tracker.undoQueue).toHaveLength(0)
@@ -3666,18 +3708,14 @@ describe('ComfyApp', () => {
     it('loads the next file after an earlier metadata parse rejects', async () => {
       const parsed = createWorkflowGraphData()
       parsed.extra = { marker: 'recovered' }
+      // The real truncated-header rejection is covered by `png.test.ts`; here
+      // `getWorkflowDataFromFile` is mocked, so what this case owns is that a
+      // rejecting parse still releases the file-discovery queue.
       vi.mocked(getWorkflowDataFromFile)
-        .mockImplementationOnce(async (file) => await getFromPngFile(file))
+        .mockRejectedValueOnce(new RangeError('metadata parse failed'))
         .mockResolvedValueOnce({ workflow: parsed })
-      const pngSignature = new Uint8Array([
-        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
-      ])
-      const truncatedPng = new Uint8Array(pngSignature.length + 1)
-      truncatedPng.set(pngSignature)
 
-      const failed = app.handleFile(
-        new File([truncatedPng], 'broken.png', { type: 'image/png' })
-      )
+      const failed = app.handleFile(createTestFile('broken.png', 'image/png'))
       const next = app.handleFile(
         createTestFile('next.json', 'application/json')
       )
@@ -3689,7 +3727,7 @@ describe('ComfyApp', () => {
     })
 
     it('allows a non-graph media file from a graph lifecycle hook', async () => {
-      vi.mocked(isGraphLoadHookActive).mockReturnValueOnce(true)
+      vi.mocked(isGraphLoadHookOrigin).mockReturnValueOnce(true)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
       vi.mocked(createNode).mockResolvedValue(null)
 
@@ -3699,7 +3737,7 @@ describe('ComfyApp', () => {
     })
 
     it('refuses a graph-bearing file from a graph lifecycle hook', async () => {
-      vi.mocked(isGraphLoadHookActive).mockReturnValueOnce(true)
+      vi.mocked(isGraphLoadHookOrigin).mockReturnValueOnce(true)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
         workflow: createWorkflowGraphData()
       })

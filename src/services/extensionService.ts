@@ -39,20 +39,28 @@ const graphLoadEntrypoints = [
   'loadApiJson'
 ] satisfies (keyof ComfyApp)[]
 
-let graphLoadHookDepth = 0
+let graphLoadHookOriginDepth = 0
 
-export function isGraphLoadHookActive(): boolean {
-  return graphLoadHookDepth > 0
+/**
+ * True only for the synchronous entry of a call made through the `app` a
+ * graph-load hook was handed. It is deliberately not "a hook is in flight
+ * somewhere": a dispatch can stay pending across awaits, and refusing every
+ * caller for that window breaks FIFO ordering for independent callers and
+ * makes a user-initiated load fail while an unrelated extension hook awaits.
+ *
+ * Only `handleFile` needs it, because that entrypoint still accepts non-graph
+ * media from a hook and so cannot be refused at the proxy.
+ */
+export function isGraphLoadHookOrigin(): boolean {
+  return graphLoadHookOriginDepth > 0
 }
 
-async function runGraphLoadHookDispatch<T>(
-  operation: () => Promise<T>
-): Promise<T> {
-  graphLoadHookDepth++
+function markGraphLoadHookOrigin<T>(operation: () => T): T {
+  graphLoadHookOriginDepth++
   try {
-    return await operation()
+    return operation()
   } finally {
-    graphLoadHookDepth--
+    graphLoadHookOriginDepth--
   }
 }
 
@@ -63,6 +71,14 @@ function createGraphLoadHookDispatch(app: ComfyApp) {
     const original = app[name]
     overrides.set(name, (...args: unknown[]) =>
       dispatching ? Promise.resolve(false) : Reflect.apply(original, app, args)
+    )
+  }
+  {
+    const original = app.handleFile
+    overrides.set('handleFile', (...args: unknown[]) =>
+      dispatching
+        ? markGraphLoadHookOrigin(() => Reflect.apply(original, app, args))
+        : Reflect.apply(original, app, args)
     )
   }
   const hookApp = new Proxy(app, {
@@ -273,52 +289,52 @@ export const useExtensionService = () => {
     const graphLoadDispatch = graphLoadLifecycleHooks.has(method)
       ? createGraphLoadHookDispatch(useApp())
       : undefined
-    const invokeAll = () => {
-      const app = graphLoadDispatch?.hookApp ?? useApp()
-      const logError = (ext: ComfyExtension, error: unknown) =>
-        console.error(
-          `Error calling extension '${ext.name}' method '${method}'`,
-          { error },
-          { extension: ext },
-          { args }
-        )
+    const app = graphLoadDispatch?.hookApp ?? useApp()
+    const logError = (ext: ComfyExtension, error: unknown) =>
+      console.error(
+        `Error calling extension '${ext.name}' method '${method}'`,
+        { error },
+        { extension: ext },
+        { args }
+      )
 
-      const pending: unknown[] = []
-      for (const ext of extensionStore.enabledExtensions) {
-        try {
-          const fn = ext[method]
-          if (typeof fn !== 'function') continue
+    // This runs once per node def per extension, so avoid allocating promises
+    // or closures for extensions that do not define the hook.
+    const pending: unknown[] = []
+    for (const ext of extensionStore.enabledExtensions) {
+      // The property read is inside the try so a throwing getter or Proxy trap
+      // only affects its own extension.
+      try {
+        const fn = ext[method]
+        if (typeof fn !== 'function') continue
 
-          if (method === 'setup') {
-            pending.push(
-              (async () => {
-                legacyMenuCompat.setCurrentExtension(ext.name)
-                try {
-                  return await fn.call(ext, ...args, app)
-                } finally {
-                  legacyMenuCompat.setCurrentExtension(null)
-                }
-              })().catch((error) => logError(ext, error))
-            )
-            continue
-          }
-
-          const result: unknown = fn.call(ext, ...args, app)
+        if (method === 'setup') {
+          // Track the current extension for legacy compatibility
           pending.push(
-            isPromiseLike(result)
-              ? Promise.resolve(result).catch((error) => logError(ext, error))
-              : result
+            (async () => {
+              legacyMenuCompat.setCurrentExtension(ext.name)
+              try {
+                return await fn.call(ext, ...args, app)
+              } finally {
+                legacyMenuCompat.setCurrentExtension(null)
+              }
+            })().catch((error) => logError(ext, error))
           )
-        } catch (error) {
-          logError(ext, error)
+          continue
         }
+
+        const result: unknown = fn.call(ext, ...args, app)
+        pending.push(
+          isPromiseLike(result)
+            ? Promise.resolve(result).catch((error) => logError(ext, error))
+            : result
+        )
+      } catch (error) {
+        logError(ext, error)
       }
-      return pending
     }
     try {
-      return graphLoadDispatch
-        ? await runGraphLoadHookDispatch(() => Promise.all(invokeAll()))
-        : await Promise.all(invokeAll())
+      return await Promise.all(pending)
     } finally {
       graphLoadDispatch?.endDispatch()
     }

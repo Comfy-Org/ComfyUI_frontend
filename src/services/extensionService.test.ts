@@ -7,7 +7,7 @@ import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'
 
-import { useExtensionService } from './extensionService'
+import { isGraphLoadHookOrigin, useExtensionService } from './extensionService'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -203,34 +203,23 @@ describe('invokeExtensionsAsync', () => {
     }
   )
 
-  it('refuses a nested load reached through the global app after an await', async () => {
-    let nested: Promise<unknown> | undefined
-    register({
-      name: 'global-app-loader',
-      beforeLoadGraph: async () => {
-        await Promise.resolve()
-        nested = useApp().loadGraphData()
-        await nested
-      }
-    })
-
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-
-    await expect(nested).resolves.toBe(false)
-  })
-
-  it('refuses a graph-bearing file reached through the global app', async () => {
+  it('marks a graph-bearing file started through the hook app as hook-originated', async () => {
     const file = new File(
       [JSON.stringify({ version: 0.4, nodes: [], links: [] })],
       'nested.json',
       { type: 'application/json' }
     )
+    const handleFile = vi
+      .spyOn(useApp(), 'handleFile')
+      .mockImplementation(async () =>
+        isGraphLoadHookOrigin() ? false : void 0
+      )
     let nested: Promise<unknown> | undefined
     register({
-      name: 'global-file-loader',
-      beforeLoadGraph: async () => {
+      name: 'hook-file-loader',
+      beforeLoadGraph: async (app: HookApp) => {
         await Promise.resolve()
-        nested = useApp().handleFile(file)
+        nested = app.handleFile(file)
         await nested
       }
     })
@@ -238,6 +227,24 @@ describe('invokeExtensionsAsync', () => {
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
     await expect(nested).resolves.toBe(false)
+    expect(handleFile).toHaveBeenCalledWith(file)
+  })
+
+  it('does not treat an independent caller as hook-originated while a hook awaits', async () => {
+    let release!: () => void
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    register({ name: 'awaiting-extension', beforeLoadGraph: () => held })
+
+    const dispatch =
+      useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    await Promise.resolve()
+    const originWhileHookAwaits = isGraphLoadHookOrigin()
+    release()
+    await dispatch
+
+    expect(originWhileHookAwaits).toBe(false)
   })
 
   it('lets a retained hook app load once the hook dispatch has finished', async () => {

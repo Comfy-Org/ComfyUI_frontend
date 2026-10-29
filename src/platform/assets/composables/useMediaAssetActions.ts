@@ -360,21 +360,23 @@ export function useMediaAssetActions() {
 
     const result = await openAssetWorkflow(targetAsset)
 
-    if (
-      !result.success &&
-      (!('errorPresentation' in result) ||
-        result.errorPresentation !== 'handled')
-    ) {
-      toast.warning(t('g.warning'), {
-        description: result.error || t('mediaAsset.noWorkflowDataFound'),
-        duration: 2000
-      })
-    } else {
+    if (result.success) {
       toast.success(t('g.success'), {
         description: t('mediaAsset.workflowOpenedInNewTab'),
         duration: 2000
       })
+      return
     }
+
+    // The graph loader already showed this failure; a second toast would
+    // contradict the dialog the user is looking at.
+    if ('errorPresentation' in result && result.errorPresentation === 'handled')
+      return
+
+    toast.warning(t('g.warning'), {
+      description: result.error || t('mediaAsset.noWorkflowDataFound'),
+      duration: 2000
+    })
   }
 
   /**
@@ -485,6 +487,7 @@ export function useMediaAssetActions() {
   const openMultipleWorkflows = async (assets: AssetItem[]) => {
     let succeeded = 0
     let failed = 0
+    let alreadyPresented = 0
 
     for (const asset of assets) {
       try {
@@ -494,6 +497,11 @@ export function useMediaAssetActions() {
           succeeded++
         } else {
           failed++
+          if (
+            'errorPresentation' in result &&
+            result.errorPresentation === 'handled'
+          )
+            alreadyPresented++
         }
       } catch {
         failed++
@@ -508,10 +516,13 @@ export function useMediaAssetActions() {
         duration: 2000
       })
     } else if (succeeded === 0) {
-      toast.warning(t('g.warning'), {
-        description: t('mediaAsset.selection.noWorkflowsFound'),
-        duration: 3000
-      })
+      // Every failure already showed its own graph-load error, so
+      // "no workflows found" would be both duplicate and wrong.
+      if (alreadyPresented < failed)
+        toast.warning(t('g.warning'), {
+          description: t('mediaAsset.selection.noWorkflowsFound'),
+          duration: 3000
+        })
     } else {
       toast.warning(t('g.warning'), {
         description: t('mediaAsset.selection.partialWorkflowsOpened', {

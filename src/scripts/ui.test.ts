@@ -65,16 +65,24 @@ describe('ComfyUI file input', () => {
     expect(fileInput.value).toBe('')
   })
 
-  it('does not warn again when a rejected import was already presented', async () => {
+  it('does not warn again when a rejected import was already presented', async ({
+    onTestFinished
+  }) => {
     const file = new File([''], 'a1111.png', { type: 'image/png' })
     const error = markGraphLoadFailurePresented(new Error('import failed'))
     vi.mocked(app.handleFile).mockRejectedValue(error)
-    new ComfyUI(app, {
+    const ui = new ComfyUI(app, {
       resetView: vi.fn(),
       restoreOutputs: vi.fn(),
       trackRunButton: vi.fn(),
       enterFocusMode: vi.fn()
     })
+    // The real constructor registers a window resize listener under the
+    // instance's lifetime signal; the dialog doubles are bare classes, so
+    // `dispose()` needs removable elements before it can abort that.
+    ui.dialog.element = document.createElement('div')
+    ui.settings.element = document.createElement('dialog')
+    onTestFinished(() => ui.dispose())
     const fileInput = document.getElementById(
       'comfy-file-input'
     ) as HTMLInputElement
