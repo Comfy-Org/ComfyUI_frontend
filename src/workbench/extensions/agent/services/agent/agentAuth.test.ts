@@ -7,6 +7,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
@@ -106,6 +108,30 @@ describe('agentSettingsAuthHeader', () => {
       await expect(agentSettingsAuthHeader()).resolves.toBeNull()
     }
   )
+
+  it('reports the cause when a credential cannot be read', async () => {
+    const failure = new Error('token exchange failed')
+    signInPersonal()
+    workspaceToken(failure)
+
+    await expect(agentSettingsAuthHeader()).resolves.toBeNull()
+
+    // null means "authentication required" to callers, which is right for a signed-out
+    // user and for a mint that failed alike -- so the cause has to reach telemetry or
+    // the two become indistinguishable.
+    expect(reportError).toHaveBeenCalledWith(
+      failure,
+      expect.objectContaining({
+        errorType: 'failure_reading_agent_settings_credential'
+      })
+    )
+  })
+
+  it('reports nothing when nobody is signed in', async () => {
+    await expect(agentSettingsAuthHeader()).resolves.toBeNull()
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
 
   it('resolves null when the cloud workspace header cannot be obtained', async () => {
     distribution.isCloud = true

@@ -2,6 +2,8 @@ import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { authCredentialOf } from '@/platform/auth/authCredential'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { api } from '@/scripts/api'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -39,7 +41,16 @@ export async function agentSettingsAuthHeader(): Promise<AuthHeader | null> {
   try {
     if (isCloud) return await useAuthStore().getWorkspaceAuthHeader()
     return await agentAuthHeader()
-  } catch {
+  } catch (error) {
+    // `null` stays the contract: callers read it as "authentication required", which is
+    // the right retryable message whether nobody is signed in or a credential would not
+    // mint. But a token exchange that fails is not the same event as a signed-out user,
+    // and the bare catch left no trace of which one happened.
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'failure_reading_agent_settings_credential',
+      level: 'warning'
+    })
     return null
   }
 }
