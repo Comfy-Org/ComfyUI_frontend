@@ -16,10 +16,13 @@ const TRACEFILE = Array.from(
 ).join('')
 
 /** A string is written verbatim, so cases can supply unparseable metadata. */
-function render(metadata: Record<string, unknown> | string | null): string {
+function render(
+  metadata: Record<string, unknown> | string | null,
+  tracefile = TRACEFILE
+): string {
   const dir = mkdtempSync(join(tmpdir(), 'coverage-report-'))
   const lcov = join(dir, 'coverage.lcov')
-  writeFileSync(lcov, TRACEFILE)
+  writeFileSync(lcov, tracefile)
   if (metadata !== null) {
     writeFileSync(
       join(dir, 'coverage-metadata.json'),
@@ -91,5 +94,15 @@ describe('coverage-report shard banner', () => {
     ['an unverified merge', { complete: false }]
   ] as const)('still reports the totals with %s', ([, metadata]) => {
     expect(render(metadata)).toContain('| Lines | 3 | 6 | 50.0%')
+  })
+})
+
+describe('coverage-report line totals', () => {
+  it('warns instead of showing a percentage when no lines were recorded', () => {
+    const output = render({ complete: true }, '')
+
+    expect(output.split('\n')[0]).toBe(
+      '## 🔬 E2E Coverage: ⚠️ No line coverage recorded'
+    )
   })
 })
