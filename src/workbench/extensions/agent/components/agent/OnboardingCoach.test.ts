@@ -448,11 +448,15 @@ describe('OnboardingCoach', () => {
     expect(useOnboardingOverlayStore().active).toBe(true)
   })
 
-  function mountWithFinished(storageKey: string, onFinished: () => void) {
+  function mountWithFinished(
+    storageKey: string,
+    onFinished: () => void,
+    steps = STEPS
+  ) {
     return render(
       {
         components: { OnboardingCoach },
-        setup: () => ({ steps: STEPS, storageKey, onFinished }),
+        setup: () => ({ steps, storageKey, onFinished }),
         template:
           '<div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" /><OnboardingCoach :steps="steps" :storage-key="storageKey" @finished="onFinished" />'
       },
@@ -489,9 +493,7 @@ describe('OnboardingCoach', () => {
 
   it('reports finished once when the user clicks Done', async () => {
     const onFinished = vi.fn()
-    mountWithFinished('coach-done-once', onFinished)
-    for (const name of ['Next', 'Next', 'Next'])
-      await userEvent.click(await screen.findByRole('button', { name }))
+    mountWithFinished('coach-done-once', onFinished, [STEPS[0]])
     await userEvent.click(await screen.findByRole('button', { name: 'Done' }))
     await nextTick()
     await nextTick()
