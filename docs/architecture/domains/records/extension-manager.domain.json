@@ -73,7 +73,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["keybindings"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

@@ -125,7 +125,12 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["account", "error-reporting", "telemetry"],
+  "allowedDependencies": [
+    "account",
+    "error-reporting",
+    "keybindings",
+    "telemetry"
+  ],
   "allowedConsumers": ["error-reporting", "selection-toolbox"],
   "characterizationScenarios": [
     {

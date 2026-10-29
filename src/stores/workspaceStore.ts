@@ -17,7 +17,7 @@ import type {
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import { useApiKeyAuthStore } from './apiKeyAuthStore'
-import { useCommandStore } from './commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionErrorStore } from './executionErrorStore'
 import { useAuthStore } from './authStore'
 import { useQueueSettingsStore } from './queueSettingsStore'

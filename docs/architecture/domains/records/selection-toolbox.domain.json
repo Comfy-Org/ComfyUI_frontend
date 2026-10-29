@@ -192,6 +192,7 @@
   "allowedDependencies": [
     "app-host",
     "canvas-renderer",
+    "keybindings",
     "properties-panel",
     "telemetry",
     "test-support"
