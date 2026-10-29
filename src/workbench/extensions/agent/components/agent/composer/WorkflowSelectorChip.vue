@@ -11,6 +11,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import Input from '@comfyorg/design-system/input/Input'
+import { selectedMenuButtonClass } from '@comfyorg/design-system/lib/menu/menuStyles'
 import MenuContent from '@comfyorg/design-system/menu/MenuContent'
 import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
 import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
@@ -124,7 +125,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           :aria-label="t('agent.switchWorkflow')"
           :class="
             cn(
-              'group h-7 min-w-0 justify-start gap-2 px-2 text-left text-xs/4 font-normal',
+              'group min-w-0 justify-start gap-2 px-2 text-left text-xs/4 font-normal',
               current && 'flex-1'
             )
           "
@@ -161,15 +162,25 @@ function onSearchKeydown(event: KeyboardEvent): void {
         width="trigger"
         class="agent-scope"
       >
-        <Input
-          ref="searchInput"
-          v-model="query"
-          :disabled="selectingTabPath !== null"
-          type="text"
-          :placeholder="t('agent.searchWorkflows')"
-          class="mb-1 h-8 bg-background px-2.5 py-1 text-xs"
-          @keydown="onSearchKeydown"
-        />
+        <div
+          data-testid="workflow-selector-search"
+          class="-mx-1 -mt-1 flex items-center gap-2 border-b border-border px-2 py-1.5"
+        >
+          <i
+            aria-hidden="true"
+            data-testid="workflow-search-icon"
+            class="icon-[lucide--search] text-muted-foreground"
+          />
+          <Input
+            ref="searchInput"
+            v-model="query"
+            :disabled="selectingTabPath !== null"
+            type="text"
+            :placeholder="t('agent.searchWorkflows')"
+            class="h-auto rounded-none bg-transparent px-0 py-0 text-xs focus-visible:ring-0"
+            @keydown="onSearchKeydown"
+          />
+        </div>
         <DropdownMenuRadioGroup
           :model-value="current?.path ?? ''"
           class="max-h-52 overflow-y-auto"
@@ -183,7 +194,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
               <div
                 v-if="section.label"
                 aria-hidden="true"
-                class="px-1.5 py-1 text-[11px]/4 text-muted-foreground"
+                class="px-1.5 py-1 text-xs text-muted-foreground"
               >
                 {{ section.label }}
               </div>
@@ -193,7 +204,15 @@ function onSearchKeydown(event: KeyboardEvent): void {
                 :value="tab.path"
                 :disabled="disabled || selectingTabPath !== null"
                 :aria-busy="selectingTabPath === tab.path || undefined"
-                class="gap-1 px-1.5 text-xs"
+                :class="
+                  cn(
+                    'gap-1 rounded-md px-1.5 text-xs text-foreground',
+                    tab.path === current?.path && [
+                      selectedMenuButtonClass,
+                      'data-highlighted:bg-muted'
+                    ]
+                  )
+                "
                 @select.prevent
               >
                 <span

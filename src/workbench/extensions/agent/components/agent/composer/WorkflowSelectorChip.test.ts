@@ -78,6 +78,34 @@ describe('WorkflowSelectorChip', () => {
       'icon-[lucide--focus]',
       'text-credit'
     )
+    expect(trigger()).not.toHaveClass('h-7')
+  })
+
+  it('uses compact menu labels, a full-width search row, and a muted selected row', async () => {
+    const { user } = renderChip()
+    await user.click(trigger())
+    const menu = await screen.findByRole('menu')
+    const targetLabel = within(menu).getByText(enMessages.agent.currentTab)
+    expect(targetLabel).toHaveClass('text-xs')
+    expect(targetLabel).not.toHaveClass('text-[11px]/4')
+    expect(
+      within(menu).getByText(enMessages.agent.otherOpenWorkflows)
+    ).toHaveClass('text-xs')
+    expect(
+      within(menu).getByPlaceholderText(enMessages.agent.searchWorkflows)
+    ).toHaveClass('bg-transparent')
+    expect(within(menu).getByTestId('workflow-selector-search')).toHaveClass(
+      'border-b',
+      'border-border'
+    )
+    expect(within(menu).getByTestId('workflow-search-icon')).toHaveClass(
+      'icon-[lucide--search]'
+    )
+    const checked = await screen.findByRole('menuitemradio', {
+      checked: true
+    })
+    expect(checked).toHaveClass('bg-muted', 'rounded-md', 'text-foreground')
+    expect(checked).toBeChecked()
   })
 
   it('omits decorative icons from menu rows', async () => {

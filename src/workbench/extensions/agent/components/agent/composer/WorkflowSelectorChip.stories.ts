@@ -46,7 +46,7 @@ const meta: Meta<typeof WorkflowSelectorChip> = {
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope w-93 rounded-lg bg-secondary p-1"><story /></div>'
+        '<div class="agent-scope w-93 rounded-t-lg bg-background p-1"><story /></div>'
     })
   ]
 }
