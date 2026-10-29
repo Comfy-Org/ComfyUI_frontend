@@ -210,21 +210,28 @@ jobs:
 
             # A backport made by hand lives on a branch the bot did not
             # create. Count it only when its title marks it as a backport to
-            # this target and its title or body names this PR.
+            # this target and it says it carries this PR: the title names it,
+            # its head branch names it, or a body line starts with "Backport
+            # of" and names it. A body that only mentions the PR ("not included: #N",
+            # "follow-up to the backport of #N") does not count.
             MANUAL_PR=$(
               gh pr list \
                 --state merged \
                 --base "${target}" \
                 --search "${PR_NUMBER} in:title,body" \
-                --json number,title,body,isCrossRepository |
+                --json number,title,body,headRefName,isCrossRepository |
                 jq -r --arg target "$target" --arg pr "$PR_NUMBER" '
+                  "([^0-9]|$)" as $end |
                   map(select(
                     (.isCrossRepository | not) and
                     (.title | ascii_downcase |
                       startswith("[backport \($target)]") or
                       startswith("[\($target)]")) and
-                    ((.title + "\n" + (.body // "")) |
-                      test("(#|/pull/|PR )\($pr)([^0-9]|$)"; "i"))
+                    ((.title | test("#\($pr)\($end)")) or
+                      (.headRefName | test("(^|[^0-9])\($pr)\($end)")) or
+                      ((.body // "") | test(
+                        "(^|\n)[ \t]*backport of (#|https://github[.]com/Comfy-Org/ComfyUI_frontend/pull/)\($pr)\($end)";
+                        "i")))
                   )) | if length > 0 then .[0].number else "" end'
             )
             if [ -n "$MANUAL_PR" ]; then

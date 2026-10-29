@@ -53,6 +53,7 @@ matches=$(jq -c --arg state "$state" --arg head "$head" --arg base "$base" --arg
     and ($search != "" or .head == $head)))
   | map({
       number,
+      headRefName: .head,
       isCrossRepository: (.crossRepository // false),
       title: (.title // ""),
       body: (.body // "")
@@ -242,22 +243,24 @@ describe('pr-backport filter-targets', () => {
 
     it.for([
       {
-        name: 'a pull URL in the body',
+        name: 'a "Backport of" line with a pull URL',
         pr: {
           ...handMade,
-          body: 'Ports https://github.com/Comfy-Org/ComfyUI_frontend/pull/21829 here.'
+          head: 'someone/agent-answer-fix',
+          body: 'Context first.\n\nBackport of https://github.com/Comfy-Org/ComfyUI_frontend/pull/21829 to core/1.57.'
         }
       },
       {
         name: 'the number in the title',
         pr: {
           ...handMade,
+          head: 'someone/agent-answer-fix',
           title: '[core/1.57] fix(agent): answer (#21829)',
           body: ''
         }
       },
       {
-        name: 'a plain "PR <number>" mention',
+        name: 'the number in the head branch',
         pr: { ...handMade, body: 'PR 21829 conflicted on this branch.' }
       }
     ])('recognises $name', ({ pr }) => {
@@ -266,6 +269,8 @@ describe('pr-backport filter-targets', () => {
         'all-merged': 'true'
       })
     })
+
+    const mentionOnly: StubPr = { ...handMade, head: 'someone/other-fixes' }
 
     it.for([
       {
@@ -277,8 +282,26 @@ describe('pr-backport filter-targets', () => {
         pr: { ...handMade, title: '[backport cloud/1.57] fix(agent): answer' }
       },
       {
+        name: 'a body that names the PR as left out',
+        pr: { ...mentionOnly, body: 'Not included: #21829, it needs #21700.' }
+      },
+      {
+        name: 'a follow-up to the backport',
+        pr: {
+          ...mentionOnly,
+          body: 'Follow-up to the backport of #21829 on this line.'
+        }
+      },
+      {
+        name: 'a backport of a PR in another repository',
+        pr: {
+          ...mentionOnly,
+          body: 'Backport of https://github.com/Comfy-Org/ComfyUI/pull/21829.'
+        }
+      },
+      {
         name: 'a longer number sharing the prefix',
-        pr: { ...handMade, body: 'Backport of #218290.' }
+        pr: { ...mentionOnly, body: 'Backport of #218290.' }
       },
       {
         name: 'a fork',
