@@ -131,8 +131,9 @@ numeric string to a number. In `callback`, `e` is `undefined`, and so is
 
 `setValue` returns without a change when the value, after a number widget
 clamps it, is already identical (`===`) to the current value, or when a number
-widget receives a value that isn't a number. Neither
-`callback` nor `onWidgetChanged` fires, and the graph version doesn't change.
+widget receives a value for which `Number(value)` is `NaN`. Neither `callback`
+nor `onWidgetChanged` fires, and the graph version doesn't change. A numeric
+string such as `'7'` is converted and applied.
 
 ## Don't call `useWidgetValueStore()` from extension code
 
