@@ -13,11 +13,13 @@
       "
       @select="emit('select', $event)"
     >
-      <DeploymentStatusIcon
-        :tone
-        icon-class="size-3.5 text-muted-foreground"
-        ring-class="ring-1 ring-background group-data-highlighted:ring-accent group-aria-checked:ring-secondary group-aria-checked:group-data-highlighted:ring-accent"
-      />
+      <slot name="icon">
+        <DeploymentStatusIcon
+          :tone
+          icon-class="size-3.5 text-muted-foreground"
+          ring-class="ring-1 ring-background group-data-highlighted:ring-accent group-aria-checked:ring-secondary group-aria-checked:group-data-highlighted:ring-accent"
+        />
+      </slot>
       <span ref="titleText" class="min-w-0 flex-1 truncate text-foreground">
         {{ title }}
       </span>

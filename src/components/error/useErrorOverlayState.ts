@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 
 import { isIssuesTabEnabled } from '@/platform/settings/missingWarningVisibility'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { isOutOfMemoryGroup } from '@/platform/openOnCloud/isOutOfMemoryGroup'
 import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
 import type {
   MissingPackGroup,
@@ -156,6 +157,10 @@ export function useErrorOverlayState() {
     allErrorGroups.value.some((group) => group.type === 'missing_node')
   )
 
+  const isOutOfMemory = computed(() =>
+    allErrorGroups.value.some(isOutOfMemoryGroup)
+  )
+
   const totalErrorCount = computed(() =>
     allErrorGroups.value.reduce((sum, group) => sum + group.count, 0)
   )
@@ -211,6 +216,7 @@ export function useErrorOverlayState() {
 
   return {
     hasError,
+    isOutOfMemory,
     hasMissingNodes,
     isVisible,
     overlayMessage,

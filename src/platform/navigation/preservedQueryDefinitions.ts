@@ -65,5 +65,9 @@ export const PRESERVED_QUERY_DEFINITIONS: PreservedQueryDefinition[] = [
     namespace: PRESERVED_QUERY_NAMESPACES.WORKFLOWS,
     keys: ['workflows'],
     rejectRepeated: true
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF,
+    keys: ['from_local']
   }
 ]

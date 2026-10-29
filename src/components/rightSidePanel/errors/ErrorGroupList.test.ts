@@ -27,6 +27,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { prototypeOutOfMemoryError } from '@/platform/openOnCloud/prototypeOutOfMemory'
 
 import ErrorGroupList from './ErrorGroupList.vue'
 
@@ -149,6 +150,9 @@ function renderList(pinia: Pinia) {
       stubs: {
         AsyncSearchInput: {
           template: '<input />'
+        },
+        DeploySetupErrorAction: {
+          template: '<div data-testid="deploy-setup-error-action" />'
         }
       }
     }
@@ -426,6 +430,38 @@ it.for([
     expect(screen.getByTestId('error-group-missing-model')).toBeInTheDocument()
     expect(screen.queryAllByTestId('blocked-last-run-indicator')).toHaveLength(
       badgeCount
+    )
+  }
+)
+
+it.for([
+  { error: 'an out-of-memory error', message: undefined, offered: true },
+  {
+    error: 'any other run error',
+    message: 'Something odd happened',
+    offered: false
+  }
+])(
+  'offers Deploy your setup to Comfy Cloud ($offered) under $error',
+  ({ message, offered }) => {
+    const pinia = getActivePinia()!
+    const outOfMemory = prototypeOutOfMemoryError(
+      [{ id: 1, type: 'KSampler' }],
+      0
+    )!
+    useExecutionErrorStore(pinia).recordExecutionError({
+      ...outOfMemory,
+      ...(message && {
+        exception_type: 'RuntimeError',
+        exception_message: message
+      })
+    })
+
+    renderList(pinia)
+
+    expect(screen.getByTestId('error-group-execution')).toBeInTheDocument()
+    expect(screen.queryByTestId('deploy-setup-error-action') !== null).toBe(
+      offered
     )
   }
 )
