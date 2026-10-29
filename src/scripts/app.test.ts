@@ -30,6 +30,8 @@ import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
+import * as fc from 'fast-check'
+
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import type { CurveData } from '@comfyorg/graph-model/curve'
 import type { useExtensionService } from '@/services/extensionService'
@@ -3704,6 +3706,58 @@ describe('ComfyApp', () => {
       expect(app.rootGraph.extra).toMatchObject({ marker: 'second' })
       expect(loadedMarkers).toEqual(['first', 'second'])
     })
+
+    // The two-file case fixes one interleaving. This requires call order to
+    // survive every order the parses can finish in, which is the invariant the
+    // discovery queue exists for.
+    it('applies files in call order for any parse completion order', async () => {
+      const fileCount = 4
+      const callOrder = [...Array(fileCount).keys()]
+
+      await fc.assert(
+        fc.asyncProperty(
+          fc.shuffledSubarray(callOrder, {
+            minLength: fileCount,
+            maxLength: fileCount
+          }),
+          async (completionOrder) => {
+            const resolvers: ((
+              value: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
+            ) => void)[] = []
+            for (const _ of callOrder) {
+              vi.mocked(getWorkflowDataFromFile).mockReturnValueOnce(
+                new Promise((resolve) => {
+                  resolvers.push(resolve)
+                })
+              )
+            }
+            const loadedMarkers: unknown[] = []
+            mockExtensionService.invokeExtensionsAsync.mockImplementation(
+              async (hook) => {
+                if (hook === 'afterLoadGraph')
+                  loadedMarkers.push(app.rootGraph.extra.marker)
+              }
+            )
+
+            const pending = callOrder.map((index) =>
+              app.handleFile(
+                createTestFile(`file-${index}.json`, 'application/json')
+              )
+            )
+            await Promise.resolve()
+            for (const index of completionOrder) {
+              const graph = createWorkflowGraphData()
+              graph.extra = { marker: index }
+              resolvers[index]({ workflow: graph })
+            }
+            await Promise.all(pending)
+
+            expect(loadedMarkers).toEqual(callOrder)
+          }
+        ),
+        { numRuns: 20 }
+      )
+    }, 30_000)
 
     it('loads the next file after an earlier metadata parse rejects', async () => {
       const parsed = createWorkflowGraphData()
