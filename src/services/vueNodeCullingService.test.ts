@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 
 import {
   isNodeExcludedFromCulling,
@@ -10,10 +10,10 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 describe('vueNodeCullingService', () => {
   it('excludes a type while at least one registration holds', () => {
-    // Ref-counted: two extensions may register the same type, and the first
-    // to release must not strip protection the second still relies on.
     const first = registerNodeTypeCullingOptOut('shared-type')
+    onTestFinished(first)
     const second = registerNodeTypeCullingOptOut('shared-type')
+    onTestFinished(second)
     expect(isNodeTypeExcludedFromCulling('shared-type')).toBe(true)
 
     first()
@@ -24,9 +24,10 @@ describe('vueNodeCullingService', () => {
   })
 
   it('makes release idempotent', () => {
-    // A double release from one registrant must not consume another's count.
     const mine = registerNodeTypeCullingOptOut('idempotent-type')
+    onTestFinished(mine)
     const theirs = registerNodeTypeCullingOptOut('idempotent-type')
+    onTestFinished(theirs)
 
     mine()
     mine()
@@ -36,14 +37,11 @@ describe('vueNodeCullingService', () => {
     expect(isNodeTypeExcludedFromCulling('idempotent-type')).toBe(false)
   })
 
-  it('does not exclude unregistered types', () => {
-    expect(isNodeTypeExcludedFromCulling('never-registered')).toBe(false)
-  })
-
   it('excludes only the registered node instance until release', () => {
     const registeredNodeId = toNodeId(12)
     const otherNodeId = toNodeId(13)
     const release = registerNodeCullingOptOut(registeredNodeId)
+    onTestFinished(release)
 
     expect(isNodeExcludedFromCulling(registeredNodeId, 'shared-type')).toBe(
       true

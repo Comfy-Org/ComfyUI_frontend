@@ -3,29 +3,16 @@ import {
   useMutationObserver,
   useThrottleFn
 } from '@vueuse/core'
-import { computed, nextTick, shallowRef, watchEffect } from 'vue'
+import { computed, nextTick, shallowRef, watch } from 'vue'
 
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const LIVE_STATE_SELECTOR = 'iframe, video, audio'
-
-/**
- * Matches the sibling viewport composable's refresh cadence. The subtree scan
- * below runs against every attached node, and it fires on precisely the churn
- * KeepAlive generates - each activate and deactivate is a childList mutation
- * under the root - so unthrottled it would rescan on every batch of exactly
- * the work it exists to bound.
- */
 const LIVE_STATE_SCAN_THROTTLE_MS = 100
 
-interface LinkDragSource {
-  isConnecting: boolean
-  renderLinks: readonly { node?: { id?: unknown } | null }[]
-}
-
-export function findLiveStateNodeIds(root: ParentNode): Set<NodeId> {
+function findLiveStateNodeIds(root: ParentNode): Set<NodeId> {
   const nodeIds = new Set<NodeId>()
   for (const element of root.querySelectorAll(LIVE_STATE_SELECTOR)) {
     const isLive =
@@ -41,17 +28,14 @@ export function findLiveStateNodeIds(root: ParentNode): Set<NodeId> {
   return nodeIds
 }
 
-export function findLinkDragSourceIds(
-  connector: LinkDragSource | null | undefined
+function findLinkDragSourceIds(
+  connector: LinkConnector | null | undefined
 ): Set<NodeId> {
   const nodeIds = new Set<NodeId>()
   if (!connector?.isConnecting) return nodeIds
 
   for (const link of connector.renderLinks) {
-    const nodeId = link.node?.id
-    if (typeof nodeId === 'string' || typeof nodeId === 'number') {
-      nodeIds.add(toNodeId(nodeId))
-    }
+    nodeIds.add(link.node.id)
   }
   return nodeIds
 }
@@ -61,19 +45,6 @@ interface UseViewportKeepAlivePinsOptions {
   getLinkConnector: () => LinkConnector | null | undefined
 }
 
-/**
- * Nodes that must stay attached while they hold state a detach would destroy:
- * the node being typed in (caret, IME composition), media mid-playback, an
- * iframe's document, and the source of a link drag in flight.
- *
- * Selection is deliberately not a pin. Under KeepAlive a detached node keeps
- * its component instance and its graph state, so selecting it costs nothing to
- * detach - and selection is the one input that can be graph-sized. Retaining
- * on selection lets select-all followed by a pan accumulate every node the
- * viewport ever touched, silently disabling the feature. Every pin here is
- * bounded by construction: one focus, one drag, and media that is actually
- * playing.
- */
 export function useViewportKeepAlivePins({
   getRoot,
   getLinkConnector
@@ -109,39 +80,28 @@ export function useViewportKeepAlivePins({
     linkDragSourceIds.value = findLinkDragSourceIds(getLinkConnector())
   }
 
-  useEventListener(document, 'focusin', refreshFocusedNode, { capture: true })
-  useEventListener(document, 'focusout', refreshFocusedNode, { capture: true })
-  useEventListener(document, 'play', refreshLiveState, { capture: true })
-  useEventListener(document, 'pause', refreshLiveState, { capture: true })
-  useEventListener(document, 'ended', refreshLiveState, { capture: true })
-  // Not re-entrant: the scan reads the DOM and writes a shallowRef; it adds
-  // and removes nothing under the root, so it cannot re-trigger itself.
-  useMutationObserver(
-    () => getRoot(),
-    () => void refreshLiveStateThrottled(),
-    {
-      childList: true,
-      subtree: true
-    }
-  )
-
-  watchEffect((onCleanup) => {
-    const connector = getLinkConnector()
-    if (!connector) return
-
-    const refreshAfterReset = () => queueMicrotask(refreshLinkDragSources)
-    connector.events.addEventListener('drag-started', refreshLinkDragSources)
-    connector.events.addEventListener('reset', refreshAfterReset)
-    refreshLinkDragSources()
-
-    onCleanup(() => {
-      connector.events.removeEventListener(
-        'drag-started',
-        refreshLinkDragSources
-      )
-      connector.events.removeEventListener('reset', refreshAfterReset)
-    })
+  useEventListener(document, ['focusin', 'focusout'], refreshFocusedNode, {
+    capture: true
   })
+  useEventListener(document, ['play', 'pause', 'ended'], refreshLiveState, {
+    capture: true
+  })
+  useMutationObserver(getRoot, () => void refreshLiveStateThrottled(), {
+    childList: true,
+    subtree: true
+  })
+
+  watch(getLinkConnector, refreshLinkDragSources, { immediate: true })
+  useEventListener(
+    () => getLinkConnector()?.events,
+    'drag-started',
+    refreshLinkDragSources
+  )
+  useEventListener(
+    () => getLinkConnector()?.events,
+    'reset',
+    () => queueMicrotask(refreshLinkDragSources)
+  )
 
   void nextTick(refreshLiveState)
 

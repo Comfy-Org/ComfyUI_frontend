@@ -281,27 +281,6 @@ function untrackElement(element: HTMLElement) {
 
 import.meta.hot?.dispose(stopResizeTracking)
 
-/**
- * Tracks DOM element size/position changes for a Vue component and syncs to layout store
- *
- * Sets up automatic ResizeObserver tracking when the component mounts and cleans up
- * when unmounted. The tracked element is identified by a data attribute set on the
- * component's root DOM element.
- *
- * @param appIdentifier - Application-level identifier for this tracked element (not a DOM ID)
- *                       Example: node ID like 'node-123', widget ID like 'widget-456'
- * @param trackingType - Type of element being tracked, determines which tracking config to use
- *                      Example: 'node' for Vue nodes, 'widget' for UI widgets
- *
- * @example
- * ```ts
- * // Track a Vue node component with ID 'my-node-123'
- * useVueElementTracking('my-node-123', 'node')
- *
- * // Would set data-node-id="my-node-123" on the component's root element
- * // and sync size changes to layoutStore.batchUpdateNodeBounds()
- * ```
- */
 export function useVueElementTracking(
   appIdentifier: string,
   trackingType: string

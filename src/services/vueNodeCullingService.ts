@@ -1,14 +1,12 @@
-import { shallowRef } from 'vue'
+import { shallowReactive } from 'vue'
 
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-const excludedNodeTypeCounts = new Map<string, number>()
-const excludedNodeCounts = new Map<NodeId, number>()
-const cullingOptOutVersion = shallowRef(0)
+const excludedNodeTypeCounts = shallowReactive(new Map<string, number>())
+const excludedNodeCounts = shallowReactive(new Map<NodeId, number>())
 
 function registerCullingOptOut<T>(counts: Map<T, number>, key: T): () => void {
   counts.set(key, (counts.get(key) ?? 0) + 1)
-  cullingOptOutVersion.value++
 
   let registered = true
   return () => {
@@ -18,7 +16,6 @@ function registerCullingOptOut<T>(counts: Map<T, number>, key: T): () => void {
     const currentCount = counts.get(key) ?? 0
     if (currentCount <= 1) counts.delete(key)
     else counts.set(key, currentCount - 1)
-    cullingOptOutVersion.value++
   }
 }
 
@@ -31,7 +28,6 @@ export function registerNodeCullingOptOut(nodeId: NodeId): () => void {
 }
 
 export function isNodeTypeExcludedFromCulling(nodeType: string): boolean {
-  void cullingOptOutVersion.value
   return excludedNodeTypeCounts.has(nodeType)
 }
 
@@ -39,14 +35,15 @@ export function isNodeExcludedFromCulling(
   nodeId: NodeId,
   nodeType?: string
 ): boolean {
-  void cullingOptOutVersion.value
   return (
     excludedNodeCounts.has(nodeId) ||
     (nodeType !== undefined && excludedNodeTypeCounts.has(nodeType))
   )
 }
 
-/** Bumps on every registration change; watch it to re-evaluate exclusions. */
-export function getCullingOptOutVersion(): number {
-  return cullingOptOutVersion.value
+export function getCullingOptOuts() {
+  return {
+    nodeTypes: [...excludedNodeTypeCounts.keys()],
+    nodeIds: [...excludedNodeCounts.keys()]
+  }
 }

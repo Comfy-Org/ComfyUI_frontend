@@ -4,11 +4,12 @@ import type { ComputedRef } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/renderer/core/layout/types'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { boundsIntersect } from '@/renderer/core/layout/utils/layoutMath'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import {
-  getCullingOptOutVersion,
+  getCullingOptOuts,
   isNodeExcludedFromCulling
 } from '@/services/vueNodeCullingService'
 
@@ -18,27 +19,12 @@ const VIEWPORT_MARGIN_RATIO = 0.5
 const MAX_MARGIN_GRAPH_UNITS = 2000
 const REFRESH_THROTTLE_MS = 100
 
-interface Size {
-  width: number
-  height: number
-}
-
-interface Camera {
-  x: number
-  y: number
-  z: number
-}
+type Size = Pick<Bounds, 'width' | 'height'>
+type Camera = ReturnType<typeof useTransformState>['camera']
 
 interface UseViewportKeepAliveOptions {
-  nodeIds: ComputedRef<NodeId[]>
-  getNodeType: (nodeId: NodeId) => string | undefined
+  nodes: ComputedRef<readonly Pick<NodeState, 'id' | 'type'>[]>
   pinnedNodeIds: ComputedRef<ReadonlySet<NodeId>>
-  /**
-   * Support escape hatch. A getter so the composable has a reactive dependency
-   * on it: read inside plain callbacks alone, turning it back on would not
-   * recompute the set, and turning it off would leave whatever was last
-   * computed in place rather than attaching everything.
-   */
   isEnabled?: () => boolean
   getNodeBounds: (nodeId: NodeId) => Bounds | null
   getViewportSize: () => Size
@@ -82,8 +68,7 @@ function setsEqual<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): boolean {
 }
 
 export function useViewportKeepAlive({
-  nodeIds,
-  getNodeType,
+  nodes,
   pinnedNodeIds,
   isEnabled = () => true,
   getNodeBounds,
@@ -94,22 +79,18 @@ export function useViewportKeepAlive({
   const activeNodeIds = shallowRef<Set<NodeId>>(new Set())
   let keepAliveActive = false
 
-  function shouldAttachNode(nodeId: NodeId, viewportBounds: Bounds): boolean {
-    const nodeType = getNodeType(nodeId)
-    if (isNodeExcludedFromCulling(nodeId, nodeType)) return true
-
-    const bounds = getNodeBounds(nodeId)
-    return (
-      !bounds ||
-      !isUsableBounds(bounds) ||
-      boundsIntersect(bounds, viewportBounds)
-    )
-  }
-
-  function getViewportActiveNodeIds(ids: NodeId[], viewportBounds: Bounds) {
+  function getViewportActiveNodeIds(viewportBounds: Bounds) {
     const next = new Set<NodeId>()
-    for (const nodeId of ids) {
-      if (shouldAttachNode(nodeId, viewportBounds)) next.add(nodeId)
+    for (const { id, type } of nodes.value) {
+      const bounds = getNodeBounds(id)
+      if (
+        isNodeExcludedFromCulling(id, type) ||
+        !bounds ||
+        !isUsableBounds(bounds) ||
+        boundsIntersect(bounds, viewportBounds)
+      ) {
+        next.add(id)
+      }
     }
 
     for (const nodeId of pinnedNodeIds.value) {
@@ -119,15 +100,14 @@ export function useViewportKeepAlive({
   }
 
   function refresh(): void {
-    const ids = nodeIds.value
     keepAliveActive =
       isEnabled() &&
       (keepAliveActive
-        ? ids.length >= MIN_NODES_FOR_KEEP_ALIVE * KEEP_ALIVE_EXIT_RATIO
-        : ids.length >= MIN_NODES_FOR_KEEP_ALIVE)
+        ? nodes.value.length >= MIN_NODES_FOR_KEEP_ALIVE * KEEP_ALIVE_EXIT_RATIO
+        : nodes.value.length >= MIN_NODES_FOR_KEEP_ALIVE)
 
     if (!keepAliveActive) {
-      const next = new Set(ids)
+      const next = new Set(nodes.value.map(({ id }) => id))
       if (!setsEqual(next, activeNodeIds.value)) activeNodeIds.value = next
       return
     }
@@ -136,30 +116,24 @@ export function useViewportKeepAlive({
     if (viewport.width <= 0 || viewport.height <= 0) return
 
     const viewportBounds = getKeepAliveBounds(camera, viewport)
-    const next = getViewportActiveNodeIds(ids, viewportBounds)
+    const next = getViewportActiveNodeIds(viewportBounds)
 
     if (!setsEqual(next, activeNodeIds.value)) activeNodeIds.value = next
   }
 
   const refreshThrottled = useThrottleFn(refresh, REFRESH_THROTTLE_MS, true)
 
-  watch(nodeIds, refresh, { immediate: true })
+  watch([nodes, isEnabled], refresh, { immediate: true })
   watch(
-    () => [camera.x, camera.y, camera.z],
+    [
+      () => [camera.x, camera.y, camera.z],
+      getViewportSize,
+      pinnedNodeIds,
+      getCullingOptOuts,
+      getGeometryVersion
+    ],
     () => void refreshThrottled()
   )
-  watch(
-    () => {
-      const viewport = getViewportSize()
-      return [viewport.width, viewport.height]
-    },
-    () => void refreshThrottled()
-  )
-  watch(pinnedNodeIds, () => void refreshThrottled())
-  watch(isEnabled, refresh)
-  watch(getCullingOptOutVersion, () => void refreshThrottled())
-
-  watch(getGeometryVersion, () => void refreshThrottled())
 
   return { activeNodeIds }
 }

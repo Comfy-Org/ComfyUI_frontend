@@ -558,10 +558,6 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.reportContentSize).not.toHaveBeenCalled()
   })
 
-  afterEach(() => {
-    document.body.replaceChildren()
-  })
-
   it('ignores resize entries emitted after a node is detached', () => {
     const nodeId = toNodeId('test-node')
     const { entry } = createResizeEntry({ nodeId, width: 0, height: 0 })
@@ -582,16 +578,11 @@ describe('useVueNodeResizeTracking', () => {
 
   it('observes only while a KeepAlive node is active', async () => {
     const active = ref(true)
-    const TrackedNode = defineComponent({
-      setup() {
-        useVueElementTracking('tracked-node', 'node')
-      },
-      template: '<div data-testid="tracked-node" />'
-    })
     const Parent = defineComponent({
       components: { TrackedNode },
       setup: () => ({ active }),
-      template: '<KeepAlive><TrackedNode v-if="active" /></KeepAlive>'
+      template:
+        '<KeepAlive><TrackedNode v-if="active" node-id="node" /></KeepAlive>'
     })
     render(Parent)
     const element = screen.getByTestId('tracked-node')
