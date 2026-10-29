@@ -164,6 +164,7 @@ import {
   toAgentPaywallCta,
   toAgentPaywallReason
 } from './services/agent/agentPaywallPresentation'
+import { isCreditsStopPart } from './services/agent/agentMessageParts'
 import type { CanvasConfirmation } from './services/agent/agentEventTransport'
 import { toolCanClaimCanvasContent } from './services/agent/agentToolClassification'
 import { areAgentWorkflowIdsEquivalent } from './services/agent/agentWorkflowId'
@@ -339,15 +340,18 @@ watch(
     // click is still reported, so the funnel saw CTAs with no impression.
     capabilityReadSettled.value
       ? conversationMessages.value
-          .filter((message) =>
-            message.parts.some((part) => part.type === 'paywall')
-          )
-          .map((message) => message.id)
+          .filter((message) => message.parts.some(isCreditsStopPart))
+          .map((message) => ({
+            id: message.id,
+            surface: message.parts.some((part) => part.type === 'paywall')
+              ? ('refused_send' as const)
+              : ('credits_exhausted' as const)
+          }))
       : [],
-  (paywallMessageIds) => {
+  (creditsStops) => {
     const telemetry = useTelemetry()
     if (!telemetry) return
-    for (const id of paywallMessageIds) {
+    for (const { id, surface } of creditsStops) {
       if (!conversationStore.claimPaywallImpression(id)) continue
       telemetry.trackAgentPaywallShown({
         // An unavailable read leaves `canTopUp` guessing true for an owner, so
@@ -356,7 +360,7 @@ watch(
         reason: snapshotAuthoritative.value
           ? toAgentPaywallReason(paywallPresentation.value)
           : 'unknown',
-        surface: 'refused_send'
+        surface
       })
     }
   },
@@ -422,7 +426,7 @@ const latestEntryHasPaywall = computed(() => {
   const latestEntry = conversationEntries.value.at(-1)
   return (
     latestEntry?.role === 'assistant' &&
-    latestEntry.parts.some((part) => part.type === 'paywall')
+    latestEntry.parts.some(isCreditsStopPart)
   )
 })
 const threadHasUserMessage = computed(() =>
