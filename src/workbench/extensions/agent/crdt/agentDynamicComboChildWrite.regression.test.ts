@@ -45,7 +45,6 @@ const CLASS = 'TestSeedance'
 const WORKFLOW_ID = 'wf-seedance'
 const HOST_ACTOR = 'agent:comfy:host'
 const AGENT_ACTOR = 'agent:test'
-const PERSON_ACTOR = 'user:person'
 
 const modelSpec: InputSpec = [
   'COMFY_DYNAMICCOMBO_V3',
@@ -140,8 +139,6 @@ function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
   }
 }
 
-// Reads one widget out of a host projection by the order the catalog declares,
-// so a reordering moves the probe and the array apart rather than together.
 function projectedValue(
   workflow: WorkflowJSON,
   nodeId: unknown,
@@ -156,26 +153,21 @@ function projectedValue(
 }
 
 let stamp = 1
-function setWidget(
-  node: LGraphNode,
-  widget: string,
-  value: unknown,
-  actor = AGENT_ACTOR
-): Op {
+function setWidget(node: LGraphNode, widget: string, value: unknown): Op {
   stamp++
   return {
     op: 'set_widget',
-    op_id: `${actor}-${widget}-${stamp}`,
-    actor,
+    op_id: `${AGENT_ACTOR}-${widget}-${stamp}`,
+    actor: AGENT_ACTOR,
     base_version: 1,
-    stamp: [stamp, actor],
+    stamp: [stamp, AGENT_ACTOR],
     node_id: node.id,
     widget,
     value
   }
 }
 
-function setup() {
+function createWorkflowGraph() {
   const graph = new LGraph()
   const node = withGraphIntentSource('load', () => {
     const created = LiteGraph.createNode(CLASS)
@@ -192,6 +184,11 @@ function setup() {
     widget('model').value = MODEL
     widget('model.prompt').value = 'a singer on stage'
   })
+  return { graph, node, widget }
+}
+
+function setup() {
+  const { graph, node, widget } = createWorkflowGraph()
 
   const host = mint(toWorkflowJson(structuredClone(graph.serialize())), CATALOG)
   const follower = new FollowerDoc()
@@ -236,37 +233,26 @@ function setup() {
   return { graph, node, widget, hostApplies, hostPositionalValue, localWrites }
 }
 
+function hasProperty<Key extends PropertyKey>(
+  value: unknown,
+  key: Key
+): value is Record<Key, unknown> {
+  return typeof value === 'object' && value !== null && key in value
+}
+
 function sentWireOps(raw: string): WireOpEnvelope[] {
   const frame: unknown = JSON.parse(raw)
-  if (typeof frame !== 'object' || frame === null) return []
-  const { type, data } = frame as { type?: unknown; data?: unknown }
-  if (type !== 'doc_ops' || typeof data !== 'object' || data === null) return []
-  const parsed = parseWireOps((data as { ops?: unknown }).ops)
+  if (!hasProperty(frame, 'type')) return []
+  if (frame.type !== 'doc_ops') return []
+  if (!hasProperty(frame, 'data')) return []
+  const { data } = frame
+  if (!hasProperty(data, 'ops')) return []
+  const parsed = parseWireOps(data.ops)
   return parsed.ok ? parsed.ops : []
 }
 
-// The production composition: the real `attachDocOpMinter` turns the person's
-// canvas edit into wire ops, the real host applies those ops and answers with
-// its own `op_ids`, and that acknowledgement comes back through the follower.
-// `setup()` above hand-builds the person's op instead, so a minter that
-// mistranslated a dynamic-combo child write would leave it green.
 function connectMintedWorkflow() {
-  const graph = new LGraph()
-  const node = withGraphIntentSource('load', () => {
-    const created = LiteGraph.createNode(CLASS)
-    if (!created) throw new Error(`${CLASS} not registered`)
-    graph.add(created)
-    return created
-  })
-  const widget = (name: string) => {
-    const found = node.widgets?.find((candidate) => candidate.name === name)
-    if (!found) throw new Error(`no widget ${name}`)
-    return found
-  }
-  withGraphIntentSource('load', () => {
-    widget('model').value = MODEL
-    widget('model.prompt').value = 'a singer on stage'
-  })
+  const { graph, node, widget } = createWorkflowGraph()
 
   const host = new HostDoc(
     WORKFLOW_ID,
@@ -318,8 +304,6 @@ function connectMintedWorkflow() {
       ])
     )
 
-  // Runs the person's edits, waits for the minter's own flush, then lets the
-  // real host apply whatever it put on the wire and delivers the answer back.
   async function personEdits(edit: () => void): Promise<WireOpEnvelope[]> {
     const before = agentSocket.send.mock.calls.length
     edit()
@@ -338,21 +322,21 @@ function connectMintedWorkflow() {
   const hostValue = (name: string) =>
     projectedValue(host.projection(), node.id, name)
 
-  return { node, widget, agentWrites, personEdits, hostValue }
+  return { widget, agentWrites, personEdits, hostValue }
 }
 
-// The minted child writes a batch carries for one widget, in wire order.
 function mintedValuesFor(
   sent: WireOpEnvelope[],
   widgetName: string
 ): unknown[] {
-  return sent
-    .filter(
-      (op): op is WireOpEnvelope & { widget: string; value: unknown } =>
-        op.op === 'set_widget' &&
-        (op as { widget?: unknown }).widget === widgetName
-    )
-    .map((op) => op.value)
+  return sent.flatMap((op) =>
+    op.op === 'set_widget' &&
+    'widget' in op &&
+    op.widget === widgetName &&
+    'value' in op
+      ? [op.value]
+      : []
+  )
 }
 
 beforeEach(() => {
@@ -390,26 +374,6 @@ describe('an Agent write to a dynamic-combo child (PM-2326)', () => {
     expect(
       s.localWrites.filter((write) => write.name === 'model.generate_audio')
     ).toEqual([])
-  })
-
-  it('keeps the Agent value when the person edit round-trips through the host', () => {
-    const s = setup()
-    s.hostApplies([setWidget(s.node, 'model.generate_audio', false)])
-
-    s.widget('model.prompt').value = 'typed by the person'
-    const edit = s.localWrites.find((write) => write.name === 'model.prompt')
-    if (!edit) throw new Error('the person edit emitted no local set_widget')
-    expect(edit.nodeId).toBe(s.node.id)
-    s.hostApplies([setWidget(s.node, edit.name, edit.value, PERSON_ACTOR)])
-
-    expect(s.hostPositionalValue('model.prompt')).toBe('typed by the person')
-    expect(s.hostPositionalValue('model.generate_audio')).toBe(false)
-    expect(s.widget('model.generate_audio').value).toBe(false)
-    expect(
-      s.localWrites
-        .filter((write) => write.name === 'model.generate_audio')
-        .map((write) => write.value)
-    ).not.toContain(true)
   })
 
   it('survives the person re-selecting the same model', () => {
@@ -490,6 +454,10 @@ describe('an Agent write to a dynamic-combo child (PM-2326)', () => {
         s.widget('model.prompt').value = 'typed after the rebuild'
       })
 
+      expect(mintedValuesFor(sent, 'model.prompt').at(-1)).toBe(
+        'typed after the rebuild'
+      )
+      expect(s.hostValue('model.prompt')).toBe('typed after the rebuild')
       expect(mintedValuesFor(sent, 'model.generate_audio')).not.toContain(true)
       expect(s.hostValue('model.generate_audio')).toBe(false)
       expect(s.widget('model.generate_audio').value).toBe(false)
