@@ -10,7 +10,7 @@ import { useDialogService } from '@/services/dialogService'
 import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
 import { isDesktop } from '@/platform/distribution/types'
 import { electronAPI as getElectronAPI } from '@/utils/envUtil'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 export async function registerElectronAdapterExtension(): Promise<boolean> {
   if (!isDesktop) return false
@@ -114,7 +114,7 @@ export async function registerElectronAdapterExtension(): Promise<boolean> {
       {
         id: 'Comfy-Desktop.Folders.OpenLogsFolder',
         label: 'Open Logs Folder',
-        icon: 'pi pi-folder-open',
+        icon: 'icon-[lucide--folder-open]',
         function() {
           electronAPI.openLogsFolder()
         }
@@ -122,7 +122,7 @@ export async function registerElectronAdapterExtension(): Promise<boolean> {
       {
         id: 'Comfy-Desktop.Folders.OpenModelsFolder',
         label: 'Open Models Folder',
-        icon: 'pi pi-folder-open',
+        icon: 'icon-[lucide--folder-open]',
         async function() {
           await electronAPI.openModelsFolder()
         }
@@ -130,7 +130,7 @@ export async function registerElectronAdapterExtension(): Promise<boolean> {
       {
         id: 'Comfy-Desktop.Folders.OpenOutputsFolder',
         label: 'Open Outputs Folder',
-        icon: 'pi pi-folder-open',
+        icon: 'icon-[lucide--folder-open]',
         async function() {
           await electronAPI.openOutputsFolder()
         }
@@ -138,7 +138,7 @@ export async function registerElectronAdapterExtension(): Promise<boolean> {
       {
         id: 'Comfy-Desktop.Folders.OpenInputsFolder',
         label: 'Open Inputs Folder',
-        icon: 'pi pi-folder-open',
+        icon: 'icon-[lucide--folder-open]',
         async function() {
           await electronAPI.openInputsFolder()
         }
@@ -146,7 +146,7 @@ export async function registerElectronAdapterExtension(): Promise<boolean> {
       {
         id: 'Comfy-Desktop.Folders.OpenCustomNodesFolder',
         label: 'Open Custom Nodes Folder',
-        icon: 'pi pi-folder-open',
+        icon: 'icon-[lucide--folder-open]',
         async function() {
           await electronAPI.openCustomNodesFolder()
         }
@@ -154,7 +154,7 @@ export async function registerElectronAdapterExtension(): Promise<boolean> {
       {
         id: 'Comfy-Desktop.Folders.OpenModelConfig',
         label: 'Open extra_model_paths.yaml',
-        icon: 'pi pi-file',
+        icon: 'icon-[lucide--file]',
         async function() {
           await electronAPI.openModelConfig()
         }
@@ -162,7 +162,7 @@ export async function registerElectronAdapterExtension(): Promise<boolean> {
       {
         id: 'Comfy-Desktop.OpenDevTools',
         label: 'Open DevTools',
-        icon: 'pi pi-code',
+        icon: 'icon-[lucide--code]',
         function() {
           electronAPI.openDevTools()
         }
@@ -170,7 +170,7 @@ export async function registerElectronAdapterExtension(): Promise<boolean> {
       {
         id: 'Comfy-Desktop.OpenUserGuide',
         label: 'Desktop User Guide',
-        icon: 'pi pi-book',
+        icon: 'icon-[lucide--book]',
         function() {
           window.open(
             buildDocsUrl('/installation/desktop', {
@@ -184,7 +184,7 @@ export async function registerElectronAdapterExtension(): Promise<boolean> {
       {
         id: 'Comfy-Desktop.CheckForUpdates',
         label: 'Check for Updates',
-        icon: 'pi pi-sync',
+        icon: 'icon-[lucide--refresh-cw]',
         async function() {
           try {
             const updateInfo = await electronAPI.checkForUpdates({
@@ -226,7 +226,7 @@ export async function registerElectronAdapterExtension(): Promise<boolean> {
       {
         id: 'Comfy-Desktop.Reinstall',
         label: 'Reinstall',
-        icon: 'pi pi-refresh',
+        icon: 'icon-[lucide--rotate-cw]',
         async function() {
           const proceed = await useDialogService().confirm({
             message: t('desktopMenu.confirmReinstall'),
@@ -240,7 +240,7 @@ export async function registerElectronAdapterExtension(): Promise<boolean> {
       {
         id: 'Comfy-Desktop.Restart',
         label: 'Restart',
-        icon: 'pi pi-refresh',
+        icon: 'icon-[lucide--rotate-cw]',
         async function() {
           await electronAPI.restartApp()
         }
@@ -248,7 +248,7 @@ export async function registerElectronAdapterExtension(): Promise<boolean> {
       {
         id: 'Comfy-Desktop.Quit',
         label: 'Quit',
-        icon: 'pi pi-sign-out',
+        icon: 'icon-[lucide--log-out]',
         async function() {
           if (workflowStore.modifiedWorkflows.length > 0) {
             const confirmed = await useDialogService().confirm({
@@ -305,7 +305,7 @@ export async function registerElectronAdapterExtension(): Promise<boolean> {
       {
         label: 'ComfyUI_desktop v' + desktopAppVersion,
         url: staticUrls.githubElectron,
-        icon: 'pi pi-github'
+        icon: 'icon-[lucide--github]'
       }
     ]
   })

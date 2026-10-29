@@ -21,7 +21,7 @@
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
-        <i class="pi pi-times" aria-hidden="true" />
+        <i class="icon-[lucide--x]" aria-hidden="true" />
       </button>
     </header>
 
@@ -65,7 +65,7 @@
             </div>
             <span class="shrink-0 text-sm font-medium">
               {{ $t('teamWorkspacesDialog.switch') }}
-              <i class="pi pi-arrow-right text-xs" aria-hidden="true" />
+              <i class="icon-[lucide--arrow-right] size-3" aria-hidden="true" />
             </span>
           </button>
         </li>
@@ -121,7 +121,7 @@
           :disabled="!isValidName || loading"
           @click="onCreate"
         >
-          <i class="pi pi-plus text-xs" aria-hidden="true" />
+          <i class="icon-[lucide--plus] size-3" aria-hidden="true" />
           {{ $t('teamWorkspacesDialog.createWorkspace') }}
         </Button>
       </section>
@@ -145,7 +145,7 @@ import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspa
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const { onConfirm } = defineProps<{
   onConfirm?: (name: string) => void | Promise<void>

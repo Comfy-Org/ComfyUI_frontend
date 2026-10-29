@@ -2,12 +2,13 @@ import { useStorage } from '@vueuse/core'
 import { computed, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { AgentOnboardingNotShownMetadata } from '@comfyorg/telemetry/types'
+
 import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants/agent'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
-import type { AgentOnboardingNotShownMetadata } from '@/platform/telemetry/types'
 
 export interface CoachStep {
   target: string

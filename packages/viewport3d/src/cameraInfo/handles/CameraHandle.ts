@@ -1,3 +1,4 @@
+import type { Quaternion } from '@comfyorg/shared-frontend-utils/geometry'
 import * as THREE from 'three'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
@@ -7,7 +8,7 @@ export type CameraHandleMode = 'translate' | 'rotate'
 
 export interface CameraHandleTransform {
   position: THREE.Vector3Like
-  quaternion: { x: number; y: number; z: number; w: number }
+  quaternion: Quaternion
 }
 
 type ChangeListener = (
@@ -80,10 +81,7 @@ export class CameraHandle {
     return this.mode
   }
 
-  setSubject(
-    position: THREE.Vector3Like,
-    quaternion: { x: number; y: number; z: number; w: number }
-  ): void {
+  setSubject(position: THREE.Vector3Like, quaternion: Quaternion): void {
     const samePosition =
       this.proxy.position.x === position.x &&
       this.proxy.position.y === position.y &&

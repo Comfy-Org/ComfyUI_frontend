@@ -21,10 +21,12 @@ export interface PlanRowFacts {
   endDate: string | null
   scheduledChange: { planName: string; effectiveAt: string } | null
   freeRuns: { remaining: number; total: number } | null
+  planKind: PlanKind | null
 }
 
 export type PlanRowState =
   | { kind: 'activating'; planName: string }
+  | { kind: 'paused'; planName: string }
   | {
       kind: 'active'
       planName: string
@@ -47,6 +49,12 @@ export type PlanRowState =
   | {
       kind: 'noPlan'
       freeRuns: { remaining: number; total: number } | null
+    }
+  | {
+      kind: 'salesManaged'
+      planName: string | null
+      cadence: BillingCadence | null
+      renewsAt: string | null
     }
   | { kind: 'unknown' }
 
@@ -72,6 +80,25 @@ function toCadence(
   return null
 }
 
+function salesManagedRow(facts: PlanRowFacts): PlanRowState | null {
+  if (facts.planKind !== 'sales_managed') return null
+  switch (facts.billingStatus) {
+    case 'paused':
+      return null
+  }
+  switch (facts.subscriptionStatus) {
+    case 'active':
+      return {
+        kind: 'salesManaged',
+        planName: facts.planName,
+        cadence: toCadence(facts.duration),
+        renewsAt: facts.renewalDate
+      }
+    default:
+      return null
+  }
+}
+
 /** Maps the served status fields onto the plan row; whatever they cannot render is `unknown`. */
 export function derivePlanRow(facts: PlanRowFacts): PlanRowState {
   const { subscriptionStatus, planName, renewalDate, endDate } = facts
@@ -81,10 +108,12 @@ export function derivePlanRow(facts: PlanRowFacts): PlanRowState {
   if (subscriptionStatus === null) {
     return { kind: 'noPlan', freeRuns: facts.freeRuns }
   }
+  const salesManaged = salesManagedRow(facts)
+  if (salesManaged) return salesManaged
   if (planName === null) return UNKNOWN
   switch (facts.billingStatus) {
     case 'paused':
-      return UNKNOWN
+      return { kind: 'paused', planName }
   }
 
   const cadence = toCadence(facts.duration)
@@ -124,13 +153,15 @@ export function planRowAction(
   switch (state.kind) {
     case 'activating':
     case 'active':
+    case 'ending':
+    case 'paused':
     case 'unknown':
       return 'manage'
     case 'noPlan':
       return 'subscribe'
     case 'ended':
       return 'choosePlan'
-    case 'ending':
+    case 'salesManaged':
       return null
   }
 }

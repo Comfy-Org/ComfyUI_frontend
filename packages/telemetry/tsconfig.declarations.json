@@ -1,0 +1,11 @@
+{
+  "extends": ["./tsconfig.json", "../../tsconfig.declarations.json"],
+  "references": [
+    { "path": "../account-core/tsconfig.declarations.json" },
+    { "path": "../billing-contract/tsconfig.declarations.json" },
+    { "path": "../graph-model/tsconfig.declarations.json" },
+    { "path": "../ingest-types/tsconfig.declarations.json" },
+    { "path": "../shared-frontend-utils/tsconfig.declarations.json" }
+  ],
+  "exclude": ["src/__mocks__/**", "src/**/*.test.ts"]
+}
