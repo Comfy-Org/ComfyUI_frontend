@@ -563,7 +563,7 @@ export const useExecutionStore = defineStore('execution', () => {
     )
   }
 
-  function belongsToActiveWorkflow(
+  function rememberStampAndCheckActiveWorkflow(
     jobId: JobId | undefined,
     workflowId?: string
   ): boolean {
@@ -749,7 +749,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function applyProgressState(detail: ProgressStateWsMessage) {
     const { nodes, prompt_id: jobId, workflow_id: workflowId } = detail
-    const isOwned = belongsToActiveWorkflow(jobId, workflowId)
+    const isOwned = rememberStampAndCheckActiveWorkflow(jobId, workflowId)
 
     if (isOwned) {
       revokeStartedNodePreviews(
@@ -1043,7 +1043,11 @@ export const useExecutionStore = defineStore('execution', () => {
       if (jobId === activeJobId.value || !(jobId in queuedJobs.value)) continue
       const workflow = jobIdToWorkflow.get(jobId)
       forgetJob(jobId)
-      if (workflow && !hasStartedJobForWorkflow(workflow)) {
+      if (
+        workflow &&
+        getWorkflowStatus(workflow) === 'running' &&
+        !hasStartedJobForWorkflow(workflow)
+      ) {
         clearWorkflowStatus(workflow)
       }
     }
@@ -1264,7 +1268,7 @@ export const useExecutionStore = defineStore('execution', () => {
       (jobId) => queuedJobs.value[jobId].executionStartedAt !== undefined
     )
     const ownedJobId = startedJobIds.findLast((jobId) =>
-      belongsToActiveWorkflow(jobId)
+      rememberStampAndCheckActiveWorkflow(jobId)
     )
     executionIdToLocatorCache.clear()
     if (!ownedJobId) {
@@ -1306,7 +1310,7 @@ export const useExecutionStore = defineStore('execution', () => {
     runningJobIds,
     runningWorkflowCount,
     initializingJobIds,
-    belongsToActiveWorkflow,
+    rememberStampAndCheckActiveWorkflow,
     isActiveWorkflowRunning,
     isJobInitializing,
     clearInitializationByJobId,

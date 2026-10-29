@@ -786,7 +786,7 @@ export class ComfyApp implements IComfyApp {
 
     api.addEventListener('executed', ({ detail }) => {
       if (
-        !useExecutionStore().belongsToActiveWorkflow(
+        !useExecutionStore().rememberStampAndCheckActiveWorkflow(
           detail.prompt_id,
           detail.workflow_id
         )
@@ -833,7 +833,12 @@ export class ComfyApp implements IComfyApp {
       if (!displayNodeExecutionId) return
       const blobUrl = createSharedObjectUrl(blob)
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
-      if (!useExecutionStore().belongsToActiveWorkflow(jobId, workflowId)) {
+      if (
+        !useExecutionStore().rememberStampAndCheckActiveWorkflow(
+          jobId,
+          workflowId
+        )
+      ) {
         releaseSharedObjectUrl(blobUrl)
         return
       }

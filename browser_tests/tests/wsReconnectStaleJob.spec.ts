@@ -108,78 +108,100 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
     const exec = new ExecutionHelper(comfyPage, ws)
     const topbar = comfyPage.menu.topbar
 
-    await comfyPage.workflow.waitForActiveWorkflow()
-    await comfyPage.workflow.waitForWorkflowIdle()
+    // Two workflows, each with an unreadable job. The orphaned one is the
+    // completion barrier: its badge can only clear from inside the same
+    // `forgetFinishedJobs` batch that forgets the shared workflow's stale
+    // job, so observing it gone is what proves cleanup ran. Counting detail
+    // requests cannot — the counter moves before the response is fulfilled.
+    const { orphanedIndicator, sharedIndicator, staleJobIds, runningJobId } =
+      await test.step('Strand one job per workflow behind a live sibling', async () => {
+        await comfyPage.workflow.waitForActiveWorkflow()
+        await comfyPage.workflow.waitForWorkflowIdle()
 
-    const finishedJobId = await exec.run()
-    const runningJobId = await exec.run()
-    exec.executionStart(finishedJobId)
-    exec.executionStart(runningJobId)
+        const orphanedJobId = await exec.run()
+        exec.executionStart(orphanedJobId)
 
-    await topbar.newWorkflowButton.click()
-    await comfyPage.workflow.waitForWorkflowIdle()
-    await expect(topbar.getActiveTab()).toContainText('(2)')
+        await comfyPage.workflow.loadWorkflow('default')
+        await comfyPage.workflow.waitForWorkflowIdle()
 
-    const backgroundTab = topbar.getTab(0)
-    const runningIndicator = backgroundTab.getByRole('img', {
-      name: 'Running'
+        const sharedStaleJobId = await exec.run()
+        const runningJobId = await exec.run()
+        exec.executionStart(sharedStaleJobId)
+        exec.executionStart(runningJobId)
+
+        await comfyPage.workflow.newBlankWorkflow()
+        await comfyPage.workflow.waitForWorkflowIdle()
+        await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
+
+        const orphanedIndicator = topbar
+          .getTab(0)
+          .getByRole('img', { name: 'Running' })
+        const sharedIndicator = topbar
+          .getTab(1)
+          .getByRole('img', { name: 'Running' })
+        await expect(orphanedIndicator).toBeVisible()
+        await expect(sharedIndicator).toBeVisible()
+
+        return {
+          orphanedIndicator,
+          sharedIndicator,
+          staleJobIds: [orphanedJobId, sharedStaleJobId],
+          runningJobId
+        }
+      })
+
+    await test.step('Recover the remaining job after stale-job cleanup', async () => {
+      const remainingJobScenario: Scenario = {
+        name: 'preserves the remaining same-workflow job',
+        queueBody: () =>
+          JSON.stringify(
+            jobsResponse([
+              { id: runningJobId, status: 'in_progress', create_time: 0 }
+            ])
+          ),
+        expectsActiveAfter: true
+      }
+      const staleJobReads = await Promise.all(
+        staleJobIds.map((staleJobId) =>
+          mockJobsRoute(
+            comfyPage,
+            new RegExp(`/api/jobs/${staleJobId}$`),
+            '{}',
+            404
+          )
+        )
+      )
+
+      // MAX_UNREADABLE_REFRESHES is 3, so three refresh passes reach the
+      // give-up boundary that calls forgetFinishedJobs. Each pass reads a
+      // stale job twice (the initial read and the retry), and a reconnect
+      // arriving mid-pass is absorbed into the in-flight refresh — so gate
+      // each reconnect on the previous pass having issued both of its reads,
+      // or two reconnects collapse into one pass and the boundary is missed.
+      let socket = ws
+      for (let pass = 1; pass <= 3; pass++) {
+        const nextSocketPromise = nextWebSocket()
+        await triggerReconnect(
+          comfyPage,
+          socket,
+          remainingJobScenario,
+          runningJobId
+        )
+        for (const reads of staleJobReads) {
+          await expect.poll(reads).toBeGreaterThanOrEqual(2 * pass)
+        }
+        socket = await nextSocketPromise
+      }
+
+      await expect(
+        orphanedIndicator,
+        'the workflow whose only job went unreadable must release its badge'
+      ).toBeHidden()
+      await expect(
+        sharedIndicator,
+        'the same cleanup batch must leave the still-running sibling alone'
+      ).toBeVisible()
     })
-    await expect(runningIndicator).toBeVisible()
-
-    const remainingJobScenario: Scenario = {
-      name: 'preserves the remaining same-workflow job',
-      queueBody: () =>
-        JSON.stringify(
-          jobsResponse([
-            {
-              id: runningJobId,
-              status: 'in_progress',
-              create_time: Date.now()
-            }
-          ])
-        ),
-      expectsActiveAfter: true
-    }
-    const finishedJobReads = await mockJobsRoute(
-      comfyPage,
-      new RegExp(`/api/jobs/${finishedJobId}$`),
-      '{}',
-      404
-    )
-
-    const secondSocketPromise = nextWebSocket()
-    await triggerReconnect(comfyPage, ws, remainingJobScenario, runningJobId)
-    await expect.poll(finishedJobReads).toBeGreaterThanOrEqual(2)
-    const secondSocket = await secondSocketPromise
-
-    const thirdSocketPromise = nextWebSocket()
-    await triggerReconnect(
-      comfyPage,
-      secondSocket,
-      remainingJobScenario,
-      runningJobId
-    )
-    await expect.poll(finishedJobReads).toBeGreaterThanOrEqual(4)
-    const thirdSocket = await thirdSocketPromise
-
-    const fourthSocketPromise = nextWebSocket()
-    await triggerReconnect(
-      comfyPage,
-      thirdSocket,
-      remainingJobScenario,
-      runningJobId
-    )
-    await expect.poll(finishedJobReads).toBeGreaterThanOrEqual(6)
-    const fourthSocket = await fourthSocketPromise
-
-    await triggerReconnect(
-      comfyPage,
-      fourthSocket,
-      remainingJobScenario,
-      runningJobId
-    )
-
-    await expect(runningIndicator).toBeVisible()
   })
 
   test.describe('app mode skeleton', () => {

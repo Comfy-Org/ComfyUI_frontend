@@ -2,7 +2,6 @@
 import type { UUID } from '@comfyorg/graph-model/uuid'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 export type { UUID } from '@comfyorg/graph-model/uuid'
-export { zeroUuid } from '@comfyorg/graph-model/uuid'
 
 /** Pre-allocated storage for uuid random values. */
 const randomStorage = new Uint32Array(31)

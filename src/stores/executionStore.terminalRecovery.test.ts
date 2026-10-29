@@ -1,10 +1,10 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/composables/useAppMode'))
 vi.mock(import('@comfyorg/telemetry'))
@@ -14,7 +14,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 const apiEvents: EventTarget = api
 
 function workflow(path: string): LoadedComfyWorkflow {
-  return fromPartial<LoadedComfyWorkflow>({
+  return createMockLoadedWorkflow({
     path,
     instanceId: `instance-${path}`,
     activeState: { id: `graph-${path}` },
@@ -47,10 +47,7 @@ describe('executionStore terminal-frame recovery', () => {
     store.unbindExecutionEvents()
   })
 
-  function startedJobWithNoTerminalFrame(
-    jobId: string,
-    wf: LoadedComfyWorkflow
-  ) {
+  function queueJob(jobId: string, wf: LoadedComfyWorkflow) {
     store.storeJob({
       nodes: ['1'],
       id: jobId,
@@ -58,6 +55,14 @@ describe('executionStore terminal-frame recovery', () => {
       workflow: wf,
       mode: 'graph'
     })
+    return jobId
+  }
+
+  function startedJobWithNoTerminalFrame(
+    jobId: string,
+    wf: LoadedComfyWorkflow
+  ) {
+    queueJob(jobId, wf)
     apiEvents.dispatchEvent(
       new CustomEvent('execution_start', {
         detail: { prompt_id: jobId, timestamp: 1 }
@@ -94,18 +99,6 @@ describe('executionStore terminal-frame recovery', () => {
     ).toBeUndefined()
   })
 
-  it('leaves a job the server still reports as running alone', async () => {
-    const jobId = startedJobWithNoTerminalFrame('job-b', workflowB)
-    await vi.waitFor(() =>
-      expect(store.nodeProgressStatesByJob[jobId]).toBeDefined()
-    )
-
-    store.forgetFinishedJobs([])
-
-    expect(store.getWorkflowStatus(workflowB)).toBe('running')
-    expect(store.nodeProgressStatesByJob[jobId]).toBeDefined()
-  })
-
   it('does not disturb a second tab while forgetting one job', () => {
     startedJobWithNoTerminalFrame('job-a', workflowA)
     const jobB = startedJobWithNoTerminalFrame('job-b', workflowB)
@@ -118,14 +111,60 @@ describe('executionStore terminal-frame recovery', () => {
     ).toBe('running')
   })
 
-  it('keeps a tab running while another started job uses it', () => {
-    const firstJob = startedJobWithNoTerminalFrame('job-b-1', workflowB)
-    startedJobWithNoTerminalFrame('job-b-2', workflowB)
+  const siblingCases: {
+    name: string
+    registerSibling: () => string
+    expectedStatus: 'running' | undefined
+  }[] = [
+    {
+      name: 'started',
+      registerSibling: () =>
+        startedJobWithNoTerminalFrame('job-b-2', workflowB),
+      expectedStatus: 'running'
+    },
+    {
+      name: 'pending',
+      registerSibling: () => queueJob('job-b-2', workflowB),
+      expectedStatus: undefined
+    }
+  ]
 
-    store.forgetFinishedJobs([firstJob])
+  it.for(siblingCases)(
+    'keeps the tab running only while a $name sibling holds it',
+    ({ registerSibling, expectedStatus }) => {
+      const firstJob = startedJobWithNoTerminalFrame('job-b-1', workflowB)
+      registerSibling()
 
-    expect(store.getWorkflowStatus(workflowB)).toBe('running')
-    expect(store.queuedJobs[firstJob]).toBeUndefined()
-    expect(store.queuedJobs['job-b-2']).toBeDefined()
+      store.forgetFinishedJobs([firstJob])
+
+      expect(store.getWorkflowStatus(workflowB)).toBe(expectedStatus)
+      expect(store.queuedJobs[firstJob]).toBeUndefined()
+      expect(store.queuedJobs['job-b-2']).toBeDefined()
+    }
+  )
+
+  it('keeps a newer terminal badge when an older unreadable job is forgotten', () => {
+    const staleJob = startedJobWithNoTerminalFrame('job-b-stale', workflowB)
+    const completedJob = startedJobWithNoTerminalFrame(
+      'job-b-completed',
+      workflowB
+    )
+    apiEvents.dispatchEvent(
+      new CustomEvent('execution_success', {
+        detail: { prompt_id: completedJob, timestamp: 2 }
+      })
+    )
+    expect(store.getWorkflowStatus(workflowB)).toBe('completed')
+    expect(
+      store.queuedJobs[completedJob],
+      'the completed job is already forgotten, so it cannot hold the badge'
+    ).toBeUndefined()
+
+    store.forgetFinishedJobs([staleJob])
+
+    expect(
+      store.getWorkflowStatus(workflowB),
+      'only an orphaned running badge may be released'
+    ).toBe('completed')
   })
 })

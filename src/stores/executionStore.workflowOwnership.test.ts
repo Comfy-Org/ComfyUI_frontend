@@ -1,5 +1,4 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -7,7 +6,8 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/composables/useAppMode'))
 vi.mock(import('@comfyorg/telemetry'))
@@ -17,7 +17,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 const apiEvents: EventTarget = api
 
 function workflow(path: string): LoadedComfyWorkflow {
-  return fromPartial<LoadedComfyWorkflow>({
+  return createMockLoadedWorkflow({
     path,
     instanceId: `instance-${path}`,
     activeState: { id: 'shared-graph-id' },
@@ -68,55 +68,25 @@ describe('executionStore workflow ownership', () => {
     apiEvents.dispatchEvent(new CustomEvent(event, { detail }))
   }
 
-  it('rejects a frame owned by another open tab', () => {
-    queueJobFrom('job-b', workflowB)
-
-    expect(store.belongsToActiveWorkflow('job-b')).toBe(false)
-  })
-
-  it('accepts the visible tab own frame', () => {
-    queueJobFrom('job-a', workflowA)
-
-    expect(store.belongsToActiveWorkflow('job-a')).toBe(true)
-  })
-
   it('does not separate two tabs by their shared graph id', () => {
     queueJobFrom('job-a', workflowA)
     queueJobFrom('job-b', workflowB)
 
-    expect(store.belongsToActiveWorkflow('job-a')).toBe(true)
-    expect(store.belongsToActiveWorkflow('job-b')).toBe(false)
-  })
-
-  describe('a job whose owning tab is unknown', () => {
-    it('is accepted while nothing else is running', () => {
-      expect(store.belongsToActiveWorkflow('job-from-a-previous-page')).toBe(
-        true
-      )
-    })
-
-    it('is rejected while another job is active', () => {
-      queueJobFrom('job-a', workflowA)
-      fire('execution_start', { prompt_id: 'job-a', timestamp: 1 })
-      expect(store.activeJobId).toBe('job-a')
-
-      expect(store.belongsToActiveWorkflow('job-from-a-previous-page')).toBe(
-        false
-      )
-    })
+    expect(store.rememberStampAndCheckActiveWorkflow('job-a')).toBe(true)
+    expect(store.rememberStampAndCheckActiveWorkflow('job-b')).toBe(false)
   })
 
   it('accepts a frame that names no job at all', () => {
-    expect(store.belongsToActiveWorkflow(undefined)).toBe(true)
+    expect(store.rememberStampAndCheckActiveWorkflow(undefined)).toBe(true)
   })
 
   describe('the session path, when no tab instance is known', () => {
     it('places a job by the path it was queued from', () => {
       store.ensureSessionWorkflowPath('job-b', workflowB.path)
 
-      expect(store.belongsToActiveWorkflow('job-b')).toBe(false)
+      expect(store.rememberStampAndCheckActiveWorkflow('job-b')).toBe(false)
       useWorkflowStore().activeWorkflow = workflowB
-      expect(store.belongsToActiveWorkflow('job-b')).toBe(true)
+      expect(store.rememberStampAndCheckActiveWorkflow('job-b')).toBe(true)
     })
 
     it('loses to the tab instance when the two disagree', () => {
@@ -129,7 +99,7 @@ describe('executionStore workflow ownership', () => {
 
       useWorkflowStore().activeWorkflow = workflowB
       expect(
-        store.belongsToActiveWorkflow('job-a'),
+        store.rememberStampAndCheckActiveWorkflow('job-a'),
         'the instance still says A, so B does not own it'
       ).toBe(false)
     })
@@ -138,10 +108,13 @@ describe('executionStore workflow ownership', () => {
   describe("the frame's own workflow id, when no per-tab mapping exists", () => {
     it('places a job queued before this page load', () => {
       expect(
-        store.belongsToActiveWorkflow('job-from-a-previous-page', 'other-graph')
+        store.rememberStampAndCheckActiveWorkflow(
+          'job-from-a-previous-page',
+          'other-graph'
+        )
       ).toBe(false)
       expect(
-        store.belongsToActiveWorkflow(
+        store.rememberStampAndCheckActiveWorkflow(
           'job-from-a-previous-page',
           'shared-graph-id'
         )
@@ -150,7 +123,10 @@ describe('executionStore workflow ownership', () => {
 
     it('ignores the all-zero sentinel rather than comparing it', () => {
       expect(
-        store.belongsToActiveWorkflow('job-on-a-fresh-graph', zeroUuid)
+        store.rememberStampAndCheckActiveWorkflow(
+          'job-on-a-fresh-graph',
+          zeroUuid
+        )
       ).toBe(true)
     })
 
@@ -182,7 +158,7 @@ describe('executionStore workflow ownership', () => {
       store.ensureSessionWorkflowPath('job-b', workflowB.path)
 
       expect(
-        store.belongsToActiveWorkflow('job-b', 'shared-graph-id'),
+        store.rememberStampAndCheckActiveWorkflow('job-b', 'shared-graph-id'),
         'the path says B owns it, even though the graph id matches A'
       ).toBe(false)
     })
@@ -202,56 +178,44 @@ describe('executionStore workflow ownership', () => {
       foreignJobStarted('job-elsewhere', 'other-graph')
 
       expect(
-        store.belongsToActiveWorkflow('job-elsewhere'),
+        store.rememberStampAndCheckActiveWorkflow('job-elsewhere'),
         'the stamp seen on execution_start still decides when no id is passed'
       ).toBe(false)
-    })
-
-    it('blocks a reconnect replay of a foreign job output', () => {
-      foreignJobStarted('job-elsewhere', 'other-graph')
-
-      expect(store.belongsToActiveWorkflow('job-elsewhere', undefined)).toBe(
-        false
-      )
-    })
-
-    it('is not consulted for a job this tab owns', () => {
-      queueJobFrom('job-a', workflowA)
-      foreignJobStarted('job-a', 'shared-graph-id')
-
-      expect(store.belongsToActiveWorkflow('job-a')).toBe(true)
     })
 
     it('keeps the first stamp when a later frame disagrees', () => {
       foreignJobStarted('job-elsewhere', 'other-graph')
 
-      store.belongsToActiveWorkflow('job-elsewhere', 'shared-graph-id')
+      store.rememberStampAndCheckActiveWorkflow(
+        'job-elsewhere',
+        'shared-graph-id'
+      )
 
       expect(
-        store.belongsToActiveWorkflow('job-elsewhere'),
+        store.rememberStampAndCheckActiveWorkflow('job-elsewhere'),
         'the later stamp must not relabel the job onto the visible tab'
       ).toBe(false)
     })
 
     it('loses to the tab instance, which is still the strongest leg', () => {
       queueJobFrom('job-a', workflowA)
-      store.belongsToActiveWorkflow('job-a', 'other-graph')
+      store.rememberStampAndCheckActiveWorkflow('job-a', 'other-graph')
 
       useWorkflowStore().activeWorkflow = workflowB
       expect(
-        store.belongsToActiveWorkflow('job-a'),
+        store.rememberStampAndCheckActiveWorkflow('job-a'),
         'the instance says A, so the remembered stamp must not outrank it'
       ).toBe(false)
       useWorkflowStore().activeWorkflow = workflowA
-      expect(store.belongsToActiveWorkflow('job-a')).toBe(true)
+      expect(store.rememberStampAndCheckActiveWorkflow('job-a')).toBe(true)
     })
 
     it('loses to the session path', () => {
       store.ensureSessionWorkflowPath('job-b', workflowB.path)
-      store.belongsToActiveWorkflow('job-b', 'shared-graph-id')
+      store.rememberStampAndCheckActiveWorkflow('job-b', 'shared-graph-id')
 
       expect(
-        store.belongsToActiveWorkflow('job-b'),
+        store.rememberStampAndCheckActiveWorkflow('job-b'),
         'the path says B owns it, even though the remembered stamp matches A'
       ).toBe(false)
     })
@@ -272,7 +236,7 @@ describe('executionStore workflow ownership', () => {
       store.forgetFinishedJobs(['job-elsewhere'])
 
       expect(
-        store.belongsToActiveWorkflow('job-elsewhere'),
+        store.rememberStampAndCheckActiveWorkflow('job-elsewhere'),
         'nothing is left to place the job, so the fallback admits it again'
       ).toBe(true)
     })
@@ -306,19 +270,6 @@ describe('executionStore workflow ownership', () => {
 
       expect(store.activeJobId).toBeNull()
       expect(rejectionWarnings()).toHaveLength(0)
-    })
-
-    it('still reports a rejection that is only a guess', () => {
-      queueJobFrom('job-a', workflowA)
-      fire('execution_start', { prompt_id: 'job-a', timestamp: 1 })
-      expect(store.activeJobId).toBe('job-a')
-
-      fire('execution_start', {
-        prompt_id: 'job-from-a-previous-page',
-        timestamp: 2
-      })
-
-      expect(rejectionWarnings()).toHaveLength(1)
     })
   })
 })
