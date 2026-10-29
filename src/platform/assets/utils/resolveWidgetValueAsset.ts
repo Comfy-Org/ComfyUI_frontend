@@ -29,8 +29,6 @@ export async function resolveWidgetValueAsset(
   if (!useFeatureFlags().flags.assetsEnabled) return undefined
   if (!hashFilename) return null
 
-  // Template example inputs belong to the shared public catalog, so opt in
-  // explicitly rather than relying on the server's include_public default.
   const query = encodeParams({
     limit: 1,
     hash: hashFilename,

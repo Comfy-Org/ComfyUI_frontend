@@ -15,19 +15,16 @@ const templateHash =
 
 beforeEach(() => {
   vi.mocked(useFeatureFlags().flags).assetsEnabled = true
-  const store = useAssetsStore()
-  store.inputAssets = fromPartial({ items: [] })
-  store.outputAssets = fromPartial({ items: [] })
   vi.mocked(api.fetchApi).mockImplementation(async () =>
     Response.json({ assets: [], total: 0, has_more: false })
   )
+  const store = useAssetsStore()
+  store.inputAssets = fromPartial({ items: [] })
+  store.outputAssets = fromPartial({ items: [] })
 })
 
 describe('resolveWidgetValueAsset', () => {
   it('asks for public assets explicitly in the remote hash lookup', async () => {
-    // Template example inputs live in the shared public catalog, not in the
-    // user's own assets. The lookup must opt in to public assets itself, so it
-    // keeps finding them if the server default for include_public changes.
     await resolveWidgetValueAsset(templateHash)
 
     const hashLookups = vi
