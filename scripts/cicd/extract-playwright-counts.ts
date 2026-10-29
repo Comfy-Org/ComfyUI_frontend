@@ -12,18 +12,19 @@ interface TestStats {
 
 interface TestCase {
   status: 'skipped' | 'expected' | 'unexpected' | 'flaky'
+  projectName?: string
 }
 
 interface Spec {
   id: string
   title: string
-  file: string
-  tests: TestCase[]
+  file?: string
+  tests?: TestCase[]
 }
 
 interface Suite {
   title: string
-  file: string
+  file?: string
   specs?: Spec[]
   suites?: Suite[]
 }
@@ -53,6 +54,24 @@ interface TestCounts {
   failures?: FailedTest[]
 }
 
+const MAX_LISTED_FAILURES = 20
+
+function toCount(value: unknown): number {
+  return Number.isSafeInteger(value) && (value as number) >= 0
+    ? (value as number)
+    : 0
+}
+
+function singleLine(text: string): string {
+  return text.replace(/[|\r\n]+/g, ' ')
+}
+
+function markdownSafe(text: string): string {
+  return singleLine(text)
+    .replace(/[\\[\]<>`]/g, '')
+    .replace(/@/g, '@\u200b')
+}
+
 function repoRelativePath(
   file: string,
   config: FullReportData['config']
@@ -62,50 +81,72 @@ function repoRelativePath(
     path.posix.dirname(config.configFile),
     config.rootDir
   )
-  return testRoot.startsWith('..') || path.posix.isAbsolute(testRoot)
-    ? file
-    : path.posix.join(testRoot, file)
+  const outside =
+    testRoot === '' ||
+    testRoot === '..' ||
+    testRoot.startsWith('../') ||
+    path.posix.isAbsolute(testRoot)
+  return outside ? file : path.posix.join(testRoot, file)
+}
+
+function projectLabel(spec: Spec, test: TestCase): string {
+  return (spec.tests?.length ?? 0) > 1 && test.projectName
+    ? ` (${test.projectName})`
+    : ''
+}
+
+function specFailures(
+  spec: Spec,
+  suite: Suite,
+  suitePath: string[],
+  config: FullReportData['config'],
+  reportLinkBase: string | undefined
+): FailedTest[] {
+  const file = spec.file || suite.file
+  if (!file) return []
+  const name = [...suitePath, spec.title].filter(Boolean).join(' › ')
+  const repoFile = repoRelativePath(singleLine(file), config)
+    .split('/')
+    .map(encodeURIComponent)
+    .join('/')
+  const traceUrl = reportLinkBase
+    ? `${reportLinkBase}/#?testId=${encodeURIComponent(spec.id)}`
+    : undefined
+  return (spec.tests ?? [])
+    .filter((test) => test.status === 'unexpected')
+    .map((test) => ({
+      name: markdownSafe(name + projectLabel(spec, test)),
+      file: repoFile,
+      traceUrl
+    }))
 }
 
 function extractFailedTests(
   reportData: FullReportData,
   baseUrl?: string
 ): FailedTest[] {
-  const failures: FailedTest[] = []
   const reportLinkBase = baseUrl?.startsWith('https://') ? baseUrl : undefined
 
-  function processSuite(suite: Suite, parentPath: string[] = []) {
+  function processSuite(suite: Suite, parentPath: string[]): FailedTest[] {
     const suitePath = suite.title ? [...parentPath, suite.title] : parentPath
-
-    for (const spec of suite.specs ?? []) {
-      if (!spec.tests.some((test) => test.status === 'unexpected')) continue
-      const file = repoRelativePath(spec.file || suite.file, reportData.config)
-      failures.push({
-        name: [...suitePath, spec.title].filter(Boolean).join(' › '),
-        file,
-        traceUrl: reportLinkBase
-          ? `${reportLinkBase}/#?testId=${spec.id}`
-          : undefined
-      })
-    }
-
-    for (const childSuite of suite.suites ?? []) {
-      processSuite(childSuite, suitePath)
-    }
+    return [
+      ...(suite.specs ?? []).flatMap((spec) =>
+        specFailures(spec, suite, suitePath, reportData.config, reportLinkBase)
+      ),
+      ...(suite.suites ?? []).flatMap((child) => processSuite(child, suitePath))
+    ]
   }
 
-  for (const suite of reportData.suites ?? []) {
-    processSuite(suite)
-  }
-
-  return failures
+  return (reportData.suites ?? [])
+    .flatMap((suite) => processSuite(suite, []))
+    .slice(0, MAX_LISTED_FAILURES)
 }
 
 function countsFromStats(stats: TestStats): TestCounts {
-  const passed = stats.expected || 0
-  const failed = stats.unexpected || 0
-  const flaky = stats.flaky || 0
-  const skipped = stats.skipped || 0
+  const passed = toCount(stats.expected)
+  const failed = toCount(stats.unexpected)
+  const flaky = toCount(stats.flaky)
+  const skipped = toCount(stats.skipped)
   return {
     passed,
     failed,
@@ -116,121 +157,121 @@ function countsFromStats(stats: TestStats): TestCounts {
   }
 }
 
+function safeFailures(
+  reportData: FullReportData,
+  baseUrl?: string
+): FailedTest[] {
+  try {
+    return extractFailedTests(reportData, baseUrl)
+  } catch (error) {
+    console.error('Could not list failed tests:', error)
+    return []
+  }
+}
+
+function emptyCounts(): TestCounts {
+  return countsFromStats({})
+}
+
+function countsFromJsonReport(
+  reportDir: string,
+  baseUrl?: string
+): TestCounts | null {
+  const jsonReportFile = path.join(reportDir, 'report.json')
+  if (!fs.existsSync(jsonReportFile)) return null
+  const reportJson: FullReportData = JSON.parse(
+    fs.readFileSync(jsonReportFile, 'utf-8')
+  )
+  if (!reportJson.stats) return null
+  const counts = countsFromStats(reportJson.stats)
+  if (counts.failed > 0) counts.failures = safeFailures(reportJson, baseUrl)
+  return counts
+}
+
+function parseEmbeddedStats(json: string): TestCounts | null {
+  try {
+    const reportData: ReportData = JSON.parse(json)
+    return reportData.stats ? countsFromStats(reportData.stats) : null
+  } catch {
+    return null
+  }
+}
+
+function countsFromEmbeddedReport(content: string): TestCounts | null {
+  const base64 = content.match(
+    /window\.playwrightReportBase64\s*=\s*["']([^"']+)["']/
+  )
+  const fromBase64 = base64
+    ? parseEmbeddedStats(Buffer.from(base64[1], 'base64').toString('utf-8'))
+    : null
+  if (fromBase64) return fromBase64
+  const literal = content.match(/window\.playwrightReport\s*=\s*({[\s\S]*?});/)
+  return literal ? parseEmbeddedStats(literal[1]) : null
+}
+
+function countsFromRenderedStats(content: string): TestCounts | null {
+  const match = content.match(
+    /(\d+)\s+passed[^0-9]*(\d+)\s+failed[^0-9]*(\d+)\s+flaky[^0-9]*(\d+)\s+skipped/i
+  )
+  if (!match) return null
+  const [passed, failed, flaky, skipped] = match
+    .slice(1)
+    .map((n) => parseInt(n) || 0)
+  return {
+    passed,
+    failed,
+    flaky,
+    skipped,
+    total: passed + failed + flaky + skipped,
+    failures: []
+  }
+}
+
+function summaryCount(content: string, outcome: string): number {
+  const match = content.match(
+    new RegExp(`(\\d+)\\s+(?:tests?|specs?)\\s+${outcome}`, 'i')
+  )
+  return match ? parseInt(match[1]) || 0 : 0
+}
+
+function countsFromSummaryText(content: string): TestCounts {
+  const passed = summaryCount(content, 'passed')
+  const failed = summaryCount(content, 'failed')
+  const flaky = summaryCount(content, 'flaky')
+  const skipped = summaryCount(content, 'skipped')
+  const total =
+    summaryCount(content, '(?:total|ran)') || passed + failed + flaky + skipped
+  return { passed, failed, flaky, skipped, total, failures: [] }
+}
+
+function countsFromHtmlReport(reportDir: string): TestCounts | null {
+  const indexFile = path.join(reportDir, 'index.html')
+  if (!fs.existsSync(indexFile)) return null
+  const content = fs.readFileSync(indexFile, 'utf-8')
+  return (
+    countsFromEmbeddedReport(content) ??
+    countsFromRenderedStats(content) ??
+    countsFromSummaryText(content)
+  )
+}
+
 /**
- * Extract test counts from Playwright HTML report
+ * Extract test counts from a Playwright report directory
  * @param reportDir - Path to the playwright-report directory
- * @param baseUrl - Base URL of the deployed report (for trace links)
+ * @param baseUrl - Base URL of the deployed report (for test links)
  * @returns Test counts { passed, failed, flaky, skipped, total, failures }
  */
 function extractTestCounts(reportDir: string, baseUrl?: string): TestCounts {
-  const counts: TestCounts = {
-    passed: 0,
-    failed: 0,
-    flaky: 0,
-    skipped: 0,
-    total: 0,
-    failures: []
-  }
-
   try {
-    // First, try to find report.json which Playwright generates with JSON reporter
-    const jsonReportFile = path.join(reportDir, 'report.json')
-    if (fs.existsSync(jsonReportFile)) {
-      const reportJson: FullReportData = JSON.parse(
-        fs.readFileSync(jsonReportFile, 'utf-8')
-      )
-      if (reportJson.stats) {
-        const jsonCounts = countsFromStats(reportJson.stats)
-        if (jsonCounts.failed > 0) {
-          jsonCounts.failures = extractFailedTests(reportJson, baseUrl)
-        }
-        return jsonCounts
-      }
-    }
-
-    // Try index.html - Playwright HTML report embeds data in a script tag
-    const indexFile = path.join(reportDir, 'index.html')
-    if (fs.existsSync(indexFile)) {
-      const content = fs.readFileSync(indexFile, 'utf-8')
-
-      // Look for the embedded report data in various formats
-      // Format 1: window.playwrightReportBase64
-      let dataMatch = content.match(
-        /window\.playwrightReportBase64\s*=\s*["']([^"']+)["']/
-      )
-      if (dataMatch) {
-        try {
-          const decodedData = Buffer.from(dataMatch[1], 'base64').toString(
-            'utf-8'
-          )
-          const reportData: ReportData = JSON.parse(decodedData)
-
-          if (reportData.stats) return countsFromStats(reportData.stats)
-        } catch {
-          // Continue to try other formats
-        }
-      }
-
-      // Format 2: window.playwrightReport
-      dataMatch = content.match(/window\.playwrightReport\s*=\s*({[\s\S]*?});/)
-      if (dataMatch) {
-        try {
-          // Use Function constructor instead of eval for safety
-          const reportData = new Function(
-            'return ' + dataMatch[1]
-          )() as ReportData
-
-          if (reportData.stats) return countsFromStats(reportData.stats)
-        } catch {
-          // Continue to try other formats
-        }
-      }
-
-      // Format 3: Look for stats in the HTML content directly
-      // Playwright sometimes renders stats in the UI
-      const statsMatch = content.match(
-        /(\d+)\s+passed[^0-9]*(\d+)\s+failed[^0-9]*(\d+)\s+flaky[^0-9]*(\d+)\s+skipped/i
-      )
-      if (statsMatch) {
-        counts.passed = parseInt(statsMatch[1]) || 0
-        counts.failed = parseInt(statsMatch[2]) || 0
-        counts.flaky = parseInt(statsMatch[3]) || 0
-        counts.skipped = parseInt(statsMatch[4]) || 0
-        counts.total =
-          counts.passed + counts.failed + counts.flaky + counts.skipped
-        return counts
-      }
-
-      // Format 4: Try to extract from summary text patterns
-      const passedMatch = content.match(/(\d+)\s+(?:tests?|specs?)\s+passed/i)
-      const failedMatch = content.match(/(\d+)\s+(?:tests?|specs?)\s+failed/i)
-      const flakyMatch = content.match(/(\d+)\s+(?:tests?|specs?)\s+flaky/i)
-      const skippedMatch = content.match(/(\d+)\s+(?:tests?|specs?)\s+skipped/i)
-      const totalMatch = content.match(
-        /(\d+)\s+(?:tests?|specs?)\s+(?:total|ran)/i
-      )
-
-      if (passedMatch) counts.passed = parseInt(passedMatch[1]) || 0
-      if (failedMatch) counts.failed = parseInt(failedMatch[1]) || 0
-      if (flakyMatch) counts.flaky = parseInt(flakyMatch[1]) || 0
-      if (skippedMatch) counts.skipped = parseInt(skippedMatch[1]) || 0
-      if (totalMatch) {
-        counts.total = parseInt(totalMatch[1]) || 0
-      } else if (
-        counts.passed ||
-        counts.failed ||
-        counts.flaky ||
-        counts.skipped
-      ) {
-        counts.total =
-          counts.passed + counts.failed + counts.flaky + counts.skipped
-      }
-    }
+    return (
+      countsFromJsonReport(reportDir, baseUrl) ??
+      countsFromHtmlReport(reportDir) ??
+      emptyCounts()
+    )
   } catch (error) {
     console.error(`Error reading report from ${reportDir}:`, error)
+    return emptyCounts()
   }
-
-  return counts
 }
 
 // Main execution

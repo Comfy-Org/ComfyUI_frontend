@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -9,7 +9,7 @@ import type {
   JSONReportSuite,
   JSONReportTest
 } from '@playwright/test/reporter'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 
 const ROOT = join(import.meta.dirname, '../..')
 const TSX = join(ROOT, 'node_modules/.bin/tsx')
@@ -49,17 +49,34 @@ function stats(
   return { startTime: '2026-10-29T00:00:00.000Z', duration: 1, ...counts }
 }
 
-function extract(report: ReportFixture, baseUrl = BASE_URL) {
+function runExtractor(files: Record<string, string>, baseUrl = BASE_URL) {
   const dir = mkdtempSync(join(tmpdir(), 'extract-playwright-counts-'))
   try {
-    writeFileSync(join(dir, 'report.json'), JSON.stringify(report))
+    for (const [name, content] of Object.entries(files))
+      writeFileSync(join(dir, name), content)
     const run = spawnSync(TSX, [SCRIPT, dir, baseUrl], { encoding: 'utf8' })
     if (run.status !== 0) {
       throw new Error(`extractor exited ${run.status}: ${run.stderr}`)
     }
-    return JSON.parse(run.stdout)
+    return { counts: JSON.parse(run.stdout), stdout: run.stdout, dir }
   } finally {
     rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+function extract(report: unknown, baseUrl = BASE_URL) {
+  return runExtractor({ 'report.json': JSON.stringify(report) }, baseUrl).counts
+}
+
+function failing(...specs: SpecFixture[]): ReportFixture {
+  return {
+    stats: stats({
+      expected: 0,
+      unexpected: specs.length,
+      flaky: 0,
+      skipped: 0
+    }),
+    suites: [{ title: FILE, file: FILE, specs }]
   }
 }
 
@@ -133,5 +150,125 @@ describe('extract-playwright-counts on a Playwright JSON report', () => {
         ]
       })
     ).toMatchObject({ passed: 1, failed: 0, flaky: 1, total: 2, failures: [] })
+  })
+
+  it('reports each failing project of a merged spec', () => {
+    const merged: SpecFixture = {
+      ...spec('fail-2', 'saves a workflow', 'unexpected'),
+      tests: [
+        { status: 'unexpected', projectName: 'chromium' },
+        { status: 'expected', projectName: 'mobile-chrome' },
+        { status: 'unexpected', projectName: 'cloud' }
+      ]
+    }
+
+    expect(
+      extract(failing(merged)).failures.map(
+        ({ name }: { name: string }) => name
+      )
+    ).toEqual([
+      `${FILE} › saves a workflow (chromium)`,
+      `${FILE} › saves a workflow (cloud)`
+    ])
+  })
+
+  it('caps the failure list so the PR comment stays within its size limit', () => {
+    const specs = Array.from({ length: 30 }, (_, i) =>
+      spec(`f${i}`, `case ${i}`, 'unexpected')
+    )
+    const counts = extract(failing(...specs))
+
+    expect(counts.failed).toBe(30)
+    expect(counts.failures).toHaveLength(20)
+  })
+
+  it('keeps the counts when a spec is malformed', () => {
+    const malformed = { id: 'x', title: 'broken' }
+
+    expect(
+      extract({
+        ...failing(spec('fail-1', 'saves', 'unexpected')),
+        suites: [{ title: FILE, specs: [malformed] }]
+      })
+    ).toMatchObject({ failed: 1, total: 1, failures: [] })
+  })
+})
+
+describe('extract-playwright-counts on untrusted report content', () => {
+  it('counts only non-negative integers', () => {
+    expect(
+      extract({
+        stats: {
+          expected: 'a[$(touch pwned)]',
+          unexpected: -2,
+          flaky: 1.5,
+          skipped: 2
+        },
+        suites: []
+      })
+    ).toMatchObject({ passed: 0, failed: 0, flaky: 0, skipped: 2, total: 2 })
+  })
+
+  it('strips characters that break the comment script or its markdown', () => {
+    const [failure] = extract(
+      failing({
+        ...spec(
+          '../x?y',
+          'a|b\nc [x](https://evil) <!-- section:z:end --> @team',
+          'unexpected'
+        ),
+        file: 'tests/a|b\n.spec.ts'
+      })
+    ).failures
+
+    expect(failure.name).not.toMatch(/[|\n\r<>[\]]/)
+    expect(failure.name).toContain('@\u200bteam')
+    expect(failure.file).not.toMatch(/[|\n\r]/)
+    expect(failure.traceUrl).toBe(`${BASE_URL}/#?testId=..%2Fx%3Fy`)
+  })
+
+  it('never evaluates script embedded in an HTML report', () => {
+    const marker = join(tmpdir(), `extract-playwright-${process.pid}-pwned`)
+    const { counts } = runExtractor({
+      'index.html': `<script>window.playwrightReport = {stats: (() => { process.getBuiltinModule('fs').writeFileSync(${JSON.stringify(marker)}, ''); return { expected: 1 } })()};</script>`
+    })
+
+    onTestFinished(() => rmSync(marker, { force: true }))
+
+    expect(existsSync(marker)).toBe(false)
+    expect(counts.total).toBe(0)
+  })
+})
+
+describe('extract-playwright-counts on an HTML report without report.json', () => {
+  it.for([
+    {
+      format: 'embedded base64 report',
+      html: `<script>window.playwrightReportBase64 = "${Buffer.from(
+        JSON.stringify({
+          stats: { expected: 4, unexpected: 1, flaky: 0, skipped: 1 }
+        })
+      ).toString('base64')}"</script>`
+    },
+    {
+      format: 'embedded JSON report',
+      html: '<script>window.playwrightReport = {"stats": {"expected": 4, "unexpected": 1, "flaky": 0, "skipped": 1}};</script>'
+    },
+    {
+      format: 'rendered stats',
+      html: '<div>4 passed · 1 failed · 0 flaky · 1 skipped</div>'
+    },
+    {
+      format: 'summary text',
+      html: '<p>4 tests passed</p><p>1 test failed</p><p>1 test skipped</p>'
+    }
+  ])('reads the counts from the $format', ({ html }) => {
+    expect(runExtractor({ 'index.html': html }).counts).toMatchObject({
+      passed: 4,
+      failed: 1,
+      flaky: 0,
+      skipped: 1,
+      total: 6
+    })
   })
 })
