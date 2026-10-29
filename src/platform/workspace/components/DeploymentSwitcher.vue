@@ -108,7 +108,7 @@ const switchingTo = ref<string | null>(null)
 watch(switcherOpenAsks, () => {
   if (!isOffered.value || !isVisible.value) return
   isOpen.value = true
-  void store.load()
+  onOpenChange(true)
 })
 
 let pendingRetry: Promise<void> | undefined

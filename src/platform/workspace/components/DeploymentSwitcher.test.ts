@@ -1373,15 +1373,35 @@ describe('DeploymentSwitcher', () => {
     })
   })
 
-  it('opens its list when the missing-nodes message asks for the switcher', async () => {
+  it('opens its list and remembers the first open when the missing-nodes message asks for the switcher', async () => {
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }
+    })
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-    renderSwitcher()
-    await screen.findByTestId('deployment-switcher-trigger')
+    const user = renderSwitcher()
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
     expect(screen.queryByRole('menu')).toBeNull()
 
     useDeploymentPickStore().requestSwitcherOpen()
 
     expect(await screen.findByRole('menu')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(api.storeSetting).toHaveBeenCalledWith(
+        'Comfy.DeploymentSwitcher.Seen',
+        true
+      )
+    )
+    expect(screen.getByTestId('deployment-switcher-new')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('deployment-switcher-new')
+      ).not.toBeInTheDocument()
+    )
+    expect(trigger).toHaveAccessibleName(
+      'Running on Comfy Cloud. Choose where this editor runs'
+    )
   })
 
   it('does not open on its own later for an ask made before it could show', async () => {
