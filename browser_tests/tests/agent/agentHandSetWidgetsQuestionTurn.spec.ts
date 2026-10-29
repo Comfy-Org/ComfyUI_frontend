@@ -20,12 +20,11 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import {
   AGENT_NODE_IDS,
-  addLoadImageNode,
   emptySeed
 } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
-import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { pinCanvasTransform } from '@e2e/fixtures/utils/pinCanvasTransform'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const WORKFLOW_ID = '3601a000-0000-4000-8000-000000000001'
@@ -70,7 +69,7 @@ const nodeDefs = {
 }
 
 function addSamplerNode(nodeId: number): RecordedGraphOperation {
-  const pos = [120, 460]
+  const pos = [700, 460]
   return {
     op: 'add_node',
     pos,
@@ -89,6 +88,29 @@ function addSamplerNode(nodeId: number): RecordedGraphOperation {
     },
     node_id: nodeId,
     class_type: 'KSampler'
+  }
+}
+
+function addLoadImage(nodeId: number): RecordedGraphOperation {
+  const pos = [700, 100]
+  return {
+    op: 'add_node',
+    pos,
+    node: {
+      id: nodeId,
+      pos,
+      mode: 0,
+      size: [220, 300],
+      type: 'LoadImage',
+      flags: {},
+      order: 1,
+      inputs: [],
+      outputs: [],
+      properties: {},
+      widgets_values: [AGENT_IMAGE, 'image']
+    },
+    node_id: nodeId,
+    class_type: 'LoadImage'
   }
 }
 
@@ -195,6 +217,8 @@ test.describe(
           })
         )
       })
+      // Room for the agent panel beside the nodes, as in the dynamic combo spec.
+      await page.setViewportSize({ width: 1920, height: 1280 })
       await bootAgentApp(page, true, {
         objectInfo: 'server',
         settings: { 'Comfy.Graph.CanvasInfo': false }
@@ -207,8 +231,6 @@ test.describe(
       )
 
       async function setWidgetsByHand(): Promise<void> {
-        // The agent places both nodes; bring them into view before clicking.
-        await fitToViewInstant(comfyPage)
         await comfyPage.vueNodes.setInputNumberValue(
           comfyPage.vueNodes.getWidgetRowByLabel(samplerNode, 'cfg'),
           String(HAND_CFG)
@@ -225,10 +247,7 @@ test.describe(
         await panel.sendMessage('Add a KSampler and a Load Image node.')
         await hostSocket.waitForSubscribe()
         hostSocket.send(
-          host.apply([
-            addSamplerNode(SAMPLER_ID),
-            addLoadImageNode(LOAD_IMAGE_ID, 0)
-          ])
+          host.apply([addSamplerNode(SAMPLER_ID), addLoadImage(LOAD_IMAGE_ID)])
         )
         hostSocket.send(done(FIRST_MESSAGE_ID))
 
@@ -236,6 +255,7 @@ test.describe(
           .poll(() => canvasValues(page))
           .toEqual({ cfg: AGENT_CFG, image: AGENT_IMAGE })
         await expect(panel.sendButton).toBeVisible()
+        await pinCanvasTransform(page)
       }
 
       async function askQuestion(): Promise<AgentPostMessageRequest> {
