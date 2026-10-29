@@ -2,7 +2,11 @@ import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
-import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
+import type {
+  AgentMessages,
+  RenderedAskKind,
+  TurnId
+} from '../../schemas/agentApiSchema'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type {
   AgentChatEvent,
@@ -17,6 +21,7 @@ import type {
 } from '../../services/agent/agentMessageParts'
 import {
   askIdOf,
+  askKindOf,
   createAssistantMessage,
   isOpenAskPart,
   isPendingAskPart,
@@ -230,6 +235,11 @@ function finishWithPersistedParts(
 
 const MAX_DEPARTED_TURNS = 32
 
+interface SubmittedAskAnswer {
+  answer: AgentAnswerRequest
+  kind: RenderedAskKind | 'unknown'
+}
+
 export const useAgentConversationStore = defineStore(
   'agentConversation',
   () => {
@@ -438,15 +448,19 @@ export const useAgentConversationStore = defineStore(
       return retired
     }
 
-    const submittedAskAnswers = new Map<string, AgentAnswerRequest>()
+    const submittedAskAnswers = new Map<string, SubmittedAskAnswer>()
 
     function recordAskAnswer(askId: string, answer: AgentAnswerRequest): void {
-      submittedAskAnswers.set(askId, answer)
+      const kind =
+        messages.value
+          .map((message) => askKindOf(message.parts, askId))
+          .find((found) => found !== undefined) ?? 'unknown'
+      submittedAskAnswers.set(askId, { answer, kind })
     }
 
     function takeSubmittedAskAnswer(
       askId: string
-    ): AgentAnswerRequest | undefined {
+    ): SubmittedAskAnswer | undefined {
       const answer = submittedAskAnswers.get(askId)
       submittedAskAnswers.delete(askId)
       return answer
