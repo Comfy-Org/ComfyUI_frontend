@@ -654,7 +654,6 @@ jobs:
           fi
           exit 1
 
-  # Only needs-backport starts the job above; release labels alone do not.
   warn-missing-needs-backport:
     if: >
       github.event_name == 'pull_request_target' &&
@@ -673,8 +672,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # The event payload is a snapshot; labels may have changed while
-          # this run waited in the per-PR concurrency queue.
           LABELS=$(gh api --paginate \
             "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name')
           if grep -qx 'needs-backport' <<<"${LABELS}"; then
