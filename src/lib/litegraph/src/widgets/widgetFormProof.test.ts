@@ -300,7 +300,7 @@ describe('proveWidgetForm', () => {
     const widgets = [widget('dup', { value: 1 }), widget('dup', { value: 2 })]
     const { values, serialised } = produce(widgets)
 
-    for (const proof of [
+    const proofs = [
       proveWidgetForm(widgets, serialised, values, {
         serializeWidgets: true,
         coreIsLastWriter: true
@@ -322,11 +322,11 @@ describe('proveWidgetForm', () => {
         serializeWidgets: true,
         coreIsLastWriter: true
       })
-    ]) {
-      expect(proof.provable).toBe(false)
-      expect(proof.order).toBeNull()
-      expect(proof.refusal).not.toBeNull()
-    }
+    ]
+
+    expect(proofs.map((p) => p.provable)).toEqual(proofs.map(() => false))
+    expect(proofs.map((p) => p.order)).toEqual(proofs.map(() => null))
+    expect(proofs.filter((p) => p.refusal === null)).toEqual([])
   })
 })
 
