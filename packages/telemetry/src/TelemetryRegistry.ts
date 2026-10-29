@@ -25,6 +25,7 @@ import type {
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
+  AgentSendGatedMetadata,
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
@@ -577,6 +578,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) =>
       provider.trackAgentOnboardingNotShown?.(metadata)
     )
+  }
+
+  trackAgentSendGated(metadata: AgentSendGatedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentSendGated?.(metadata))
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {

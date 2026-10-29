@@ -20,6 +20,7 @@ import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import type {
+  AgentSendGatedMetadata,
   AuthMetadata,
   BootstrapCompleteMetadata,
   ExecutionOutcomeMetadata,
@@ -83,6 +84,14 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
 
   trackSsoEvent(event: SsoTelemetryEvent): void {
     datadogRum.addAction(event.name, event.properties)
+  }
+
+  /**
+   * A funnel drop-off worth a monitor, so ADR-TELEMETRY-ROUTING-0013 puts it
+   * here as well as in PostHog rather than only in the growth layer.
+   */
+  trackAgentSendGated(metadata: AgentSendGatedMetadata): void {
+    datadogRum.addAction(TelemetryEvents.AGENT_SEND_GATED, metadata)
   }
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {

@@ -35,7 +35,10 @@ const { steps, storageKey, holdNotice } = defineProps<{
   storageKey?: string
   holdNotice?: string
 }>()
-const emit = defineEmits<{ finished: []; stalled: [] }>()
+const emit = defineEmits<{
+  finished: [action: 'finish' | 'skip']
+  stalled: []
+}>()
 
 const { active, index, step, isLast, next, previous, finish, restart } =
   useOnboarding(() => steps, storageKey)
@@ -111,13 +114,13 @@ function onNext(): void {
   const finished = isLast.value
   reportStep(isLast.value ? 'finish' : 'next')
   next()
-  if (finished) emit('finished')
+  if (finished) emit('finished', 'finish')
 }
 
 function onSkip(): void {
   reportStep('skip')
   finish()
-  emit('finished')
+  emit('finished', 'skip')
 }
 
 const targetObserver = new MutationObserver(resolveTargets)

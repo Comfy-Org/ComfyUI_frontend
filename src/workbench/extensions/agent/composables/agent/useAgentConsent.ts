@@ -46,6 +46,8 @@ const AgentConsentCard = defineAsyncComponent(
 export interface ConsentOfferHooks {
   /** Asked right before the card mounts, after every await that precedes it. */
   canShow?: () => boolean
+  /** Told when the user turns the card down rather than accepting it. */
+  onExit?: (exit: 'declined' | 'dismissed') => void
 }
 
 const CARD_ERROR_TYPE = {
@@ -81,7 +83,7 @@ export function useAgentConsent() {
     trigger: AgentConsentTrigger,
     persistOnAccept = true,
     expectedIdentity?: string,
-    { canShow }: ConsentOfferHooks = {},
+    { canShow, onExit }: ConsentOfferHooks = {},
     initialError: ConsentCardError | '' = ''
   ): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
@@ -233,6 +235,7 @@ export function useAgentConsent() {
             if (settled) return
             markIntroductionResponded()
             reportOutcome('rejected')
+            onExit?.('declined')
             closeWith(false)
           }
         },
@@ -247,6 +250,7 @@ export function useAgentConsent() {
             if (shown) {
               clearPendingSignInAccept()
               reportOutcome('dismissed')
+              onExit?.('dismissed')
             } else reportRequestExit('card_closed_before_mount', trigger)
             resolve(false)
           }
