@@ -21,14 +21,14 @@ const { pricing = [] } = defineProps<{
   >
     <div
       v-if="core.length"
-      class="flex h-5 items-center justify-center gap-1 divide-x divide-muted-foreground overflow-clip rounded-md bg-input"
+      class="flex h-5 items-center justify-center gap-1 overflow-clip rounded-md bg-input"
     >
       <NodeBadge
         v-for="badge of core"
         :key="badge.text"
         bg-color="transparent"
         v-bind="badge"
-        class="h-4 rounded-none py-0 first:pl-2 last:pr-2"
+        class="relative h-4 rounded-none py-0 not-last:after:absolute not-last:after:inset-y-0 not-last:after:-right-0.5 not-last:after:w-px not-last:after:bg-muted-foreground first:pl-2 last:pr-2"
       />
     </div>
     <div
@@ -47,7 +47,7 @@ const { pricing = [] } = defineProps<{
     </div>
     <div
       v-if="extension.length"
-      class="flex h-5 items-center justify-center gap-1 divide-x divide-muted-foreground overflow-clip rounded-md bg-input"
+      class="flex h-5 items-center justify-center gap-1 overflow-clip rounded-md bg-input"
     >
       <NodeBadge
         v-for="badge of extension"
@@ -56,7 +56,7 @@ const { pricing = [] } = defineProps<{
         v-bind="badge"
         :class="
           cn(
-            'h-4 rounded-none py-0 first:pl-2 last:pr-2',
+            'relative h-4 rounded-none py-0 not-last:after:absolute not-last:after:inset-y-0 not-last:after:-right-0.5 not-last:after:w-px not-last:after:bg-muted-foreground first:pl-2 last:pr-2',
             badge.onClick && 'pointer-events-auto'
           )
         "
