@@ -27,7 +27,7 @@ const { t } = useI18n()
 
 function statusIcon(status: PromptQueueRowStatus): string {
   if (status === 'running') return 'icon-[lucide--loader-circle] animate-spin'
-  return 'icon-[lucide--circle]'
+  return 'icon-[lucide--circle-dashed]'
 }
 </script>
 
