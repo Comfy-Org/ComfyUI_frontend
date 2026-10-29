@@ -177,7 +177,12 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["error-reporting", "telemetry", "webcam-capture"],
+  "allowedDependencies": [
+    "error-reporting",
+    "keybindings",
+    "telemetry",
+    "webcam-capture"
+  ],
   "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {

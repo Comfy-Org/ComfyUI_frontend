@@ -38,6 +38,9 @@ const config: KnipConfig = {
     'packages/graph-model': {
       project: ['src/**/*.ts']
     },
+    'packages/keybindings': {
+      project: ['src/**/*.ts']
+    },
     'packages/design-system': {
       entry: ['tests/consumer/vite.config.ts'],
       project: ['src/**/*.{css,js,ts,vue}'],
