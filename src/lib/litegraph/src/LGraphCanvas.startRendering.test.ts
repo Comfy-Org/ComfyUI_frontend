@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvasElement
+} from '@/utils/__tests__/canvasTestUtils'
 
 function captureFrames() {
   const frames: FrameRequestCallback[] = []
@@ -30,9 +33,11 @@ describe('LGraphCanvas.startRendering', () => {
   it('finishes constructing, reports, and keeps rendering when the first frame throws', () => {
     const { requestAnimationFrame } = captureFrames()
     const drawFailure = new TypeError('drawImage is patched')
-    vi.spyOn(LGraphCanvas.prototype, 'draw').mockImplementationOnce(() => {
-      throw drawFailure
-    })
+    vi.spyOn(LGraphCanvas.prototype, 'draw')
+      .mockImplementation(() => {})
+      .mockImplementationOnce(() => {
+        throw drawFailure
+      })
 
     const canvas = createCanvas()
 
@@ -50,11 +55,12 @@ describe('LGraphCanvas.startRendering', () => {
     const { runNextFrame, frames } = captureFrames()
     const draw = vi
       .spyOn(LGraphCanvas.prototype, 'draw')
+      .mockImplementation(() => {})
       .mockImplementationOnce(() => {
-        throw new TypeError('first')
+        throw new TypeError('transient')
       })
       .mockImplementationOnce(() => {
-        throw new TypeError('second')
+        throw new TypeError('transient')
       })
 
     const canvas = createCanvas()
@@ -87,6 +93,81 @@ describe('LGraphCanvas.startRendering', () => {
     vi.mocked(LGraphCanvas.prototype.draw).mockImplementation(() => {})
     canvas.startRendering()
     expect(canvas.is_rendering).toBe(true)
+  })
+
+  it('reports a failure that first happens on a later frame and keeps rendering', () => {
+    const { runNextFrame, frames } = captureFrames()
+    const drawFailure = new TypeError('later')
+    vi.spyOn(LGraphCanvas.prototype, 'draw')
+      .mockImplementation(() => {})
+      .mockImplementationOnce(() => {})
+      .mockImplementationOnce(() => {
+        throw drawFailure
+      })
+
+    const canvas = createCanvas()
+    runNextFrame()
+
+    expect(canvas.is_rendering).toBe(true)
+    expect(frames).toHaveLength(1)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      drawFailure,
+      expect.objectContaining({ errorType: 'error_rendering_canvas_frame' })
+    )
+  })
+
+  it('resets the drawing context and redraws everything after a failed frame', () => {
+    captureFrames()
+    const ctx = createMockCanvasRenderingContext2D()
+    vi.spyOn(LGraphCanvas.prototype, 'draw')
+      .mockImplementation(() => {})
+      .mockImplementationOnce(() => {
+        throw new TypeError('mid-frame')
+      })
+
+    const canvas = new LGraphCanvas(
+      createTestCanvasElement({ ctx }),
+      new LGraph(),
+      { skip_events: true }
+    )
+
+    expect(ctx.setTransform).toHaveBeenLastCalledWith(
+      canvas.dpr,
+      0,
+      0,
+      canvas.dpr,
+      0,
+      0
+    )
+    expect([canvas.dirty_canvas, canvas.dirty_bgcanvas]).toEqual([true, true])
+  })
+
+  it('stops after repeated failures even when idle frames succeed between them', () => {
+    const { runNextFrame, frames } = captureFrames()
+    const draw = vi.spyOn(LGraphCanvas.prototype, 'draw')
+    draw.mockImplementation(function (this: LGraphCanvas) {
+      if (this.dirty_canvas) throw new TypeError('dirty frames fail')
+    })
+
+    const canvas = createCanvas()
+    for (let i = 0; i < 200 && frames.length > 0; i++) {
+      canvas.dirty_canvas = canvas.dirty_bgcanvas = i % 2 === 0
+      runNextFrame()
+    }
+
+    expect(canvas.is_rendering).toBe(false)
+  })
+
+  it('finishes constructing when scheduling the first frame throws', () => {
+    vi.spyOn(LGraphCanvas.prototype, 'draw').mockImplementation(() => {})
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => {
+      throw new TypeError('patched scheduler')
+    })
+
+    const canvas = createCanvas()
+
+    expect(canvas.is_rendering).toBe(false)
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('keeps scheduling frames when the first frame succeeds', () => {

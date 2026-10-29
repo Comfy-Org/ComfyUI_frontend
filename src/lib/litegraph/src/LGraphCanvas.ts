@@ -547,7 +547,6 @@ interface SnappingLink {
   endDirection?: LinkDirection
 }
 
-/** Consecutive throwing frames after which the render loop stops. */
 const MAX_FAILED_FRAMES = 60
 
 /**
@@ -2524,40 +2523,47 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.is_rendering = true
     let isFirstFrame = true
     let failedFrames = 0
-    let reportedFailure = false
-    renderFrame.call(this)
+    const reportedFailures = new Set<string>()
 
-    // A frame that throws (e.g. a userscript patching drawImage) used to stop
-    // the loop for good; the first frame runs inside the constructor, so it
-    // also left app.canvas unassigned. Report the first failure and keep
-    // drawing so a transient failure recovers; report at most once per loop. A persistent one stops the
-    // loop after MAX_FAILED_FRAMES in a row, leaving it restartable.
+    const reportFrameFailure = (cause: unknown) => {
+      const key =
+        cause instanceof Error
+          ? `${cause.name}:${cause.message}`
+          : String(cause)
+      if (reportedFailures.has(key)) return
+      reportedFailures.add(key)
+      reportError(cause, {
+        errorType: isFirstFrame
+          ? 'error_rendering_canvas_initial_frame'
+          : 'error_rendering_canvas_frame',
+        surface: 'graph',
+        tags: { feature_area: 'litegraph', operation: 'start_rendering' }
+      })
+    }
+
+    const recoverFromFailedFrame = (cause: unknown) => {
+      failedFrames++
+      reportFrameFailure(cause)
+      this.resetDrawingContexts()
+      this.setDirty(true, true)
+      if (failedFrames < MAX_FAILED_FRAMES) return
+      this.is_rendering = false
+      reportError(cause, {
+        errorType: 'error_rendering_canvas_stopped',
+        surface: 'graph',
+        tags: { feature_area: 'litegraph', operation: 'start_rendering' },
+        context: { failedFrames }
+      })
+    }
+
     function renderFrame(this: LGraphCanvas) {
       if (!this.pause_rendering) {
+        const drawsSomething = this.dirty_canvas || this.dirty_bgcanvas
         try {
           this.draw()
-          failedFrames = 0
+          if (drawsSomething) failedFrames = 0
         } catch (cause) {
-          failedFrames++
-          if (!reportedFailure) {
-            reportedFailure = true
-            reportError(cause, {
-              errorType: isFirstFrame
-                ? 'error_rendering_canvas_initial_frame'
-                : 'error_rendering_canvas_frame',
-              surface: 'graph',
-              tags: { feature_area: 'litegraph', operation: 'start_rendering' }
-            })
-          }
-          if (failedFrames >= MAX_FAILED_FRAMES) {
-            this.is_rendering = false
-            reportError(cause, {
-              errorType: 'error_rendering_canvas_stopped',
-              surface: 'graph',
-              tags: { feature_area: 'litegraph', operation: 'start_rendering' },
-              context: { failedFrames }
-            })
-          }
+          recoverFromFailedFrame(cause)
         }
       }
       isFirstFrame = false
@@ -2572,6 +2578,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           window.requestAnimationFrame(renderFrame.bind(this))
         }
       }
+    }
+
+    try {
+      renderFrame.call(this)
+    } catch (cause) {
+      this.is_rendering = false
+      reportFrameFailure(cause)
+    }
+  }
+
+  private resetDrawingContexts(): void {
+    const { dpr } = this
+    for (const canvas of new Set([this.canvas, this.bgcanvas])) {
+      // oxlint-disable-next-line no-self-assign
+      canvas.width = canvas.width
+      canvas.getContext('2d')?.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
   }
 

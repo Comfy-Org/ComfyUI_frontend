@@ -9,6 +9,8 @@ import type { ComfyExtension } from '@/types/comfy'
 
 type TouchPoint = { clientX: number; clientY: number }
 
+const MIN_PINCH_DISTANCE = 8
+
 function zoomCanvasAroundPinch(
   canvas: LGraphCanvas,
   requestedScale: number,
@@ -157,17 +159,13 @@ export const simpleTouchSupportExtension: ComfyExtension = {
       const center = getMultiTouchCenter(e)
 
       if (lastScale === null || touchDist === null) return
-      if (touchDist === 0) {
-        // Fingers that started on the same point: measure the pinch from the
-        // first frame where they are apart.
+      if (touchDist < MIN_PINCH_DISTANCE) {
         touchDist = newTouchDist
         lastScale = canvas.ds.scale
         lastTouch = center
         return
       }
       const scale = (lastScale * newTouchDist) / touchDist
-      // Fingers on the same point give a 0, Infinity or NaN scale, which would
-      // write non-finite values into the viewport.
       if (!Number.isFinite(scale) || scale <= 0) return
 
       zoomCanvasAroundPinch(canvas, scale, center, lastTouch)

@@ -223,6 +223,16 @@ describe('Comfy.SimpleTouchSupport pinch zoom', () => {
     }
   )
 
+  it('waits for a usable distance before measuring a pinch', () => {
+    const ds = viewport()
+
+    dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl)])
+    dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 2)])
+    dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 50)])
+
+    expect(ds.scale).toBe(1)
+  })
+
   it('zooms once fingers that started on the same point move apart', () => {
     const ds = viewport()
 
