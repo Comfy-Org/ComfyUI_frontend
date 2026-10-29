@@ -14,113 +14,101 @@
     </Button>
   </DefineDocsLink>
 
-  <div class="@container w-[min(640px,calc(100vw-2rem))]">
-    <div
-      data-testid="custom-deployment-card"
-      class="relative max-h-[85dvh] overflow-y-auto rounded-2xl border bg-background shadow-2xl"
-    >
-      <Button
-        variant="muted-textonly"
-        size="icon"
-        :aria-label="$t('g.close')"
-        class="absolute top-3 right-3 z-20"
-        @click="emit('dismiss')"
+  <DeploymentDialogFrame
+    data-testid="custom-deployment-card"
+    @dismiss="emit('dismiss')"
+  >
+    <div class="p-2">
+      <Video
+        :sources="videoSources"
+        :poster-src="posterSrc"
+        autoplay
+        muted
+        loop
+        plays-inline
+        playback-control
+        class="aspect-video w-full rounded-lg object-cover"
       >
-        <i class="icon-[lucide--x]" />
-      </Button>
-
-      <div class="p-2">
-        <Video
-          :sources="videoSources"
-          :poster-src="posterSrc"
-          autoplay
-          muted
-          loop
-          plays-inline
-          playback-control
-          class="aspect-video w-full rounded-lg object-cover"
-        >
-          <template #fallback>
-            <div
-              class="grid aspect-video w-full place-items-center rounded-lg bg-secondary"
-            >
-              <span
-                class="grid size-16 place-items-center rounded-full border border-foreground/30 bg-foreground/10"
-                aria-hidden="true"
-              >
-                <i class="icon-[lucide--play] size-6" />
-              </span>
-            </div>
-          </template>
-        </Video>
-      </div>
-
-      <section class="flex flex-col gap-7 px-6 pt-5 pb-6 @xl:px-9 @xl:pb-8">
-        <div class="flex flex-col gap-3">
-          <DialogTitle class="my-0 text-xl @xl:text-2xl">
-            {{ pitch.title }}
-          </DialogTitle>
-          <p class="my-0 text-sm/5 text-muted-foreground">
-            {{ pitch.body }}
-          </p>
-          <ul class="my-0 flex list-none flex-col gap-2 p-0">
-            <li
-              v-for="point in pitch.points"
-              :key="point"
-              class="flex items-start gap-2.5 text-sm/5 text-foreground/75"
-            >
-              <i
-                class="mt-0.75 icon-[lucide--check] size-3.5 text-muted-foreground"
-                aria-hidden="true"
-              />
-              {{ point }}
-            </li>
-          </ul>
-          <ReuseDocsLink class="@xl:hidden" />
-        </div>
-
-        <footer
-          class="flex flex-col-reverse gap-2.5 @xl:flex-row @xl:items-center @xl:justify-end"
-        >
-          <ReuseDocsLink class="hidden @xl:mr-auto @xl:inline-flex" />
-          <Button
-            variant="secondary"
-            size="lg"
-            :class="cn('w-full @xl:w-auto', !copied && 'gap-3')"
-            data-testid="custom-deployment-agent"
-            :loading="isCopying"
-            @click="copyBrief"
+        <template #fallback>
+          <div
+            class="grid aspect-video w-full place-items-center rounded-lg bg-secondary"
           >
-            <template v-if="copied">
-              <i class="icon-[lucide--check]" aria-hidden="true" />
-              {{ $t('deployToComfyApi.copied') }}
-            </template>
-            <template v-else>
-              <AgentMarks />
-              {{ $t('deployToComfyApi.deployWithAgent') }}
-            </template>
-          </Button>
-          <Button
-            variant="inverted"
-            size="lg"
-            class="w-full no-underline @xl:w-auto"
-            as="a"
-            :href="createDeploymentUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="custom-deployment-platform"
-            @click="emit('done')"
+            <span
+              class="grid size-16 place-items-center rounded-full border border-foreground/30 bg-foreground/10"
+              aria-hidden="true"
+            >
+              <i class="icon-[lucide--play] size-6" />
+            </span>
+          </div>
+        </template>
+      </Video>
+    </div>
+
+    <section class="flex flex-col gap-7 px-6 pt-5 pb-6 @xl:px-9 @xl:pb-8">
+      <div class="flex flex-col gap-3">
+        <DialogTitle class="my-0 text-xl @xl:text-2xl">
+          {{ pitch.title }}
+        </DialogTitle>
+        <p class="my-0 text-sm/5 text-muted-foreground">
+          {{ pitch.body }}
+        </p>
+        <ul class="my-0 flex list-none flex-col gap-2 p-0">
+          <li
+            v-for="point in pitch.points"
+            :key="point"
+            class="flex items-start gap-2.5 text-sm/5 text-foreground/75"
           >
-            {{ pitch.platformLabel }}
             <i
-              class="icon-[lucide--square-arrow-out-up-right]"
+              class="mt-0.75 icon-[lucide--check] size-3.5 text-muted-foreground"
               aria-hidden="true"
             />
-          </Button>
-        </footer>
-      </section>
-    </div>
-  </div>
+            {{ point }}
+          </li>
+        </ul>
+        <ReuseDocsLink class="@xl:hidden" />
+      </div>
+
+      <footer
+        class="flex flex-col-reverse gap-2.5 @xl:flex-row @xl:items-center @xl:justify-end"
+      >
+        <ReuseDocsLink class="hidden @xl:mr-auto @xl:inline-flex" />
+        <Button
+          variant="secondary"
+          size="lg"
+          :class="cn('w-full @xl:w-auto', !copied && 'gap-3')"
+          data-testid="custom-deployment-agent"
+          :loading="isCopying"
+          @click="copyBrief"
+        >
+          <template v-if="copied">
+            <i class="icon-[lucide--check]" aria-hidden="true" />
+            {{ $t('deployToComfyApi.copied') }}
+          </template>
+          <template v-else>
+            <AgentMarks />
+            {{ $t('deployToComfyApi.deployWithAgent') }}
+          </template>
+        </Button>
+        <Button
+          variant="inverted"
+          size="lg"
+          class="w-full no-underline @xl:w-auto"
+          as="a"
+          :href="createDeploymentUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="custom-deployment-platform"
+          @click="emit('done')"
+        >
+          {{ pitch.platformLabel }}
+          <i
+            class="icon-[lucide--square-arrow-out-up-right]"
+            aria-hidden="true"
+          />
+        </Button>
+      </footer>
+    </section>
+  </DeploymentDialogFrame>
 </template>
 
 <script setup lang="ts">
@@ -135,6 +123,7 @@ import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 import AgentMarks from '@/platform/workflow/deploy/components/AgentMarks.vue'
 import { CUSTOM_DEPLOYMENT_BRIEF } from '@/platform/workspace/customDeploymentBrief'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'

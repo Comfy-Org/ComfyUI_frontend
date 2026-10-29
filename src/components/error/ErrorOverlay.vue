@@ -49,7 +49,8 @@
 
         <ErrorOverlayDeploymentOffer v-if="hasMissingNodes" />
 
-        <div class="flex w-full items-center justify-end pt-2">
+        <div class="flex w-full items-center justify-end gap-2 pt-2">
+          <DeploySetupErrorAction v-if="isOutOfMemory" />
           <Button
             variant="secondary"
             size="unset"
@@ -88,6 +89,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
+import DeploySetupErrorAction from '@/platform/openOnCloud/components/DeploySetupErrorAction.vue'
 import ErrorOverlayDeploymentOffer from '@/platform/workspace/components/ErrorOverlayDeploymentOffer.vue'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
@@ -96,8 +98,14 @@ const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const { viewErrorsInGraph } = useViewErrorsInGraph()
 
-const { hasError, hasMissingNodes, isVisible, overlayMessage, overlayTitle } =
-  useErrorOverlayState()
+const {
+  hasError,
+  hasMissingNodes,
+  isOutOfMemory,
+  isVisible,
+  overlayMessage,
+  overlayTitle
+} = useErrorOverlayState()
 
 function dismiss() {
   executionErrorStore.dismissErrorOverlay()
