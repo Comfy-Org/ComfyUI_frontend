@@ -122,10 +122,8 @@ testWithMockedObjectInfo.describe(
           .getByTestId('node-badges')
         await expect(badges).toBeVisible()
 
-        const creditsBadge = badges.locator('i[class*="lucide--coins"]')
-        await expect(creditsBadge).toBeVisible()
-
         const badgeContainer = badges.getByTestId('credit-badge-required')
+        await expect(badgeContainer).toBeVisible()
         await expect
           .poll(async () => (await badgeContainer.textContent())?.trim() ?? '')
           .toContain('10.6')

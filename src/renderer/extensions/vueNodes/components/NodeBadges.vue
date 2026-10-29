@@ -17,7 +17,7 @@ const { pricing = [] } = defineProps<{
   <div
     v-if="hasComfyBadge || core.length || extension.length || pricing.length"
     data-testid="node-badges"
-    class="flex w-max items-center gap-2 text-muted-foreground"
+    class="pointer-events-none flex w-max items-center gap-2 text-muted-foreground"
   >
     <div
       v-if="core.length"
@@ -61,7 +61,12 @@ const { pricing = [] } = defineProps<{
         <NodeBadge
           bg-color="transparent"
           v-bind="badge"
-          class="h-6 first:pl-2 last:pr-2"
+          :class="
+            cn(
+              'h-6 first:pl-2 last:pr-2',
+              badge.onClick && 'pointer-events-auto'
+            )
+          "
         />
       </template>
     </div>
