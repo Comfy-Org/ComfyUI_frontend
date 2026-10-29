@@ -22,7 +22,10 @@ import {
   zMatchTypeOptions
 } from '@/schemas/nodeDefSchema'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
-import { addShimWidget } from '@/core/graph/widgets/inputWidgetShim'
+import {
+  addAutogrowGroupWidget,
+  addShimWidget
+} from '@/core/graph/widgets/inputWidgetShim'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import {
@@ -480,12 +483,20 @@ function addAutogrowGroup(
     ...autogrowOrdinalToName(ordinal, input.name, groupName, node)
   }))
 
+  const startingWidgetCount = node.widgets.length
   const newInputs = namedSpecs.map((namedSpec) => {
     addNodeInput(node, namedSpec)
     const input = node.inputs.splice(node.inputs.length - 1, 1)[0]
-    if (inputSpecs.length !== 1) ensureWidgetForInput(node, input)
+    ensureWidgetForInput(node, input)
     return input
   })
+  //Keep the group's rows contiguous behind its group widget
+  const addedWidgets = node.widgets.splice(startingWidgetCount)
+  const lastGroupWidget = node.widgets.findLastIndex(
+    (w) => w.name === groupName || w.name.startsWith(`${groupName}.`)
+  )
+  node.widgets.splice(lastGroupWidget + 1, 0, ...addedWidgets)
+  syncNodeWidgetOrder(node)
 
   for (const newInput of newInputs) {
     for (const existingInput of remove(
@@ -782,6 +793,8 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   )
 }
 function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
+  if (!node.widgets?.some((w) => w.name === inputSpecV2.name))
+    addAutogrowGroupWidget(node, inputSpecV2.name, inputSpecV2.display_name)
   withComfyAutogrow(node)
 
   const parseResult = zAutogrowOptions.safeParse(inputSpecV2)

@@ -18,12 +18,34 @@
     >
       <template v-for="row in section.rows" :key="row.widget.renderKey">
         <div
+          v-if="row.autogrowGroup"
+          data-testid="autogrow-group-drop-row"
+          :data-autogrow-group="row.widget.simplified.name"
+          :class="
+            cn(
+              'col-span-full flex h-5 items-center gap-2 rounded-r-lg border border-dashed border-node-foreground/40 pr-2',
+              isHoveredGroup(row.widget.simplified.name) &&
+                'border-solid border-primary bg-primary/10'
+            )
+          "
+        >
+          <div
+            data-autogrow-group-dot
+            class="size-2 shrink-0 -translate-x-1/2 rounded-full border border-solid border-foreground/10 bg-ink-100"
+          />
+          <span class="truncate">
+            {{ row.widget.simplified.label || row.widget.simplified.name }}
+          </span>
+        </div>
+        <div
+          v-else
           :data-testid="row.testId"
           :data-widget-name="row.widget.simplified.name"
           :class="
             cn(
               'group col-span-full grid grid-cols-subgrid items-stretch',
-              row.showsControl && 'lg-node-widget'
+              row.showsControl && 'lg-node-widget',
+              row.inHoveredGroup && 'rounded-sm ring-1 ring-primary'
             )
           "
         >
@@ -40,6 +62,7 @@
               :node-id
               :has-error="row.widget.hasError"
               :index="row.widget.slotMetadata.index"
+              :compatible="row.inHoveredGroup"
               :socketless="row.widget.simplified.spec?.socketless"
               :standalone="row.standalone"
               :dot-only="row.showsControl"
@@ -90,7 +113,9 @@ import { computed, nextTick, useTemplateRef, watch } from 'vue'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { AUTOGROW_GROUP_WIDGET_TYPE } from '@/core/graph/widgets/inputWidgetShim'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAutogrowGroupDropState } from '@/renderer/core/canvas/links/autogrowGroupDropState'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
@@ -122,8 +147,41 @@ const {
 
 useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')
 const canvasStore = useCanvasStore()
+const { ioInputDragActive, hoveredGroup } = useAutogrowGroupDropState()
+
+function isHoveredGroup(groupName: string) {
+  const hovered = hoveredGroup.value
+  return (
+    !!hovered && hovered.nodeId === nodeId && hovered.groupName === groupName
+  )
+}
+
+function inHoveredGroup(widgetName: string) {
+  const hovered = hoveredGroup.value
+  return (
+    !!hovered &&
+    hovered.nodeId === nodeId &&
+    widgetName.startsWith(`${hovered.groupName}.`)
+  )
+}
+
 const renderedRows = computed(() =>
   processedWidgets.flatMap((widget) => {
+    if (widget.simplified.type === AUTOGROW_GROUP_WIDGET_TYPE) {
+      if (!ioInputDragActive.value) return []
+      return [
+        {
+          widget,
+          autogrowGroup: true,
+          inHoveredGroup: false,
+          showsControl: false,
+          slotClass: '',
+          standalone: false,
+          testId: undefined,
+          rowSize: 'min-content'
+        }
+      ]
+    }
     const isConverted = isConvertedWidgetType(widget.simplified.type)
     const showsControl = !isConverted && widget.visible
     const shouldRender = isConverted
@@ -131,17 +189,22 @@ const renderedRows = computed(() =>
       : widget.visible ||
         (!!widget.suppressedByConnection && !!widget.slotMetadata)
     if (!shouldRender) return []
+    const highlighted = inHoveredGroup(widget.simplified.name)
 
     return [
       {
         widget,
+        autogrowGroup: false,
+        inHoveredGroup: highlighted,
         showsControl,
         slotClass: cn(
           'z-10 flex items-stretch',
           showsControl
             ? 'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100'
             : 'col-span-full',
-          (widget.slotMetadata?.linked || widget.slotMetadata?.alwaysVisible) &&
+          (widget.slotMetadata?.linked ||
+            widget.slotMetadata?.alwaysVisible ||
+            highlighted) &&
             'opacity-100'
         ),
         standalone: !showsControl && !!widget.suppressedByConnection,

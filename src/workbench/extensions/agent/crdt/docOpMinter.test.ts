@@ -836,7 +836,11 @@ describe('attachDocOpMinter', () => {
           to_node: sink.id,
           to_slot: null,
           link_type: 'IMAGE',
-          grow: { name: `${IMAGES_GROUP}.image_3`, type: 'IMAGE' }
+          grow: {
+            name: `${IMAGES_GROUP}.image_3`,
+            type: 'IMAGE',
+            widget: `${IMAGES_GROUP}.image_3`
+          }
         }
       ])
       expect(applyMinted(doc, minted)).toEqual(['applied'])
