@@ -850,6 +850,31 @@ describe('switchWorkspace', () => {
     expect(env.reportSignInFailure).not.toHaveBeenCalled()
   })
 
+  it('closes an open switch popup on sign-out so a new sign-in gets its own', async () => {
+    const { bridge, env, storage, popup, post } = await signedIn()
+    void bridge.switchWorkspace?.('ws-2')
+    await authorized(env)
+
+    await bridge.signOut()
+    expect(popup.closed).toBe(true)
+    popup.closed = false
+    popup.location.href = 'about:blank'
+    const signingIn = bridge.requestSignIn()
+    expect(env.openPopup).toHaveBeenCalledTimes(2)
+    await authorized(env)
+    const { state } = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
+    post({
+      origin: ISSUER,
+      source: popup,
+      data: {
+        type: 'comfy-local-web-sign-in',
+        search: `?code=code-3&state=${encodeURIComponent(state)}`
+      }
+    })
+
+    await expect(signingIn).resolves.toMatchObject({ status: 'signed_in' })
+  })
+
   it('forgets every workspace on sign-out', async () => {
     const { bridge, env, tokens } = await signedInToBothWorkspaces()
     await bridge.signOut()
