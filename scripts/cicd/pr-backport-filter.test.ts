@@ -35,24 +35,28 @@ const filterScript = () => {
 }
 
 const GH_STUB = `#!/usr/bin/env bash
-state="" head="" base="" filter="." fields=""
+state="" head="" base="" search="" filter="." fields=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --state) state="$2"; shift 2 ;;
     --head) head="$2"; shift 2 ;;
     --base) base="$2"; shift 2 ;;
+    --search) search="$2"; shift 2 ;;
     --json) fields="$2"; shift 2 ;;
     --jq) filter="$2"; shift 2 ;;
     *) shift ;;
   esac
 done
-matches="[]"
-while IFS='|' read -r s h b n cross; do
-  [ -z "$s" ] && continue
-  if [ "$s" = "$state" ] && [ "$h" = "$head" ] && { [ -z "$base" ] || [ "$b" = "$base" ]; }; then
-    matches=$(jq -c --argjson n "$n" --argjson cross "$cross" '. + [{number: $n, isCrossRepository: $cross}]' <<< "$matches")
-  fi
-done <<< "$STUB_PRS"
+matches=$(jq -c --arg state "$state" --arg head "$head" --arg base "$base" --arg search "$search" '
+  map(select(.state == $state
+    and ($base == "" or .base == $base)
+    and ($search != "" or .head == $head)))
+  | map({
+      number,
+      isCrossRepository: (.crossRepository // false),
+      title: (.title // ""),
+      body: (.body // "")
+    })' <<< "$STUB_PRS")
 matches=$(jq -c --arg fields "$fields" 'map(with_entries(select(.key as $key | $fields | split(",") | index($key))))' <<< "$matches")
 jq -r "$filter" <<< "$matches"
 `
@@ -69,6 +73,8 @@ interface StubPr {
   base: string
   number: number
   crossRepository?: boolean
+  title?: string
+  body?: string
 }
 
 interface Scenario {
@@ -114,17 +120,7 @@ function runFilter({
         FORCE_RERUN_INPUT: String(forceRerun),
         PR_NUMBER: '21829',
         REQUESTED_TARGETS: targets.join(' '),
-        STUB_PRS: prs
-          .map((pr) =>
-            [
-              pr.state,
-              pr.head,
-              pr.base,
-              pr.number,
-              pr.crossRepository ?? false
-            ].join('|')
-          )
-          .join('\n'),
+        STUB_PRS: JSON.stringify(prs),
         STUB_BRANCHES: branches.join(' ')
       },
       encoding: 'utf8'
@@ -220,6 +216,95 @@ describe('pr-backport filter-targets', () => {
       skip: 'true',
       'all-merged': 'false',
       'already-exists': 'core/1.57 (PR #21881)'
+    })
+  })
+
+  describe('backports made by hand', () => {
+    const handMade: StubPr = {
+      state: 'merged',
+      head: 'dante/21829-backport-core-1.57',
+      base: 'core/1.57',
+      number: 22001,
+      title: '[backport core/1.57] fix(agent): report a free-text-only answer',
+      body: 'Backport of #21829 to core/1.57. The bot cherry-pick conflicted.'
+    }
+
+    it('skips a target whose hand-made backport already merged', () => {
+      expect(
+        runFilter({ targets: ['core/1.57'], prs: [handMade] })
+      ).toMatchObject({
+        skip: 'true',
+        'pending-targets': '',
+        'already-exists': 'core/1.57 (merged PR #22001, made by hand)',
+        'all-merged': 'true'
+      })
+    })
+
+    it.for([
+      {
+        name: 'a pull URL in the body',
+        pr: {
+          ...handMade,
+          body: 'Ports https://github.com/Comfy-Org/ComfyUI_frontend/pull/21829 here.'
+        }
+      },
+      {
+        name: 'the number in the title',
+        pr: {
+          ...handMade,
+          title: '[core/1.57] fix(agent): answer (#21829)',
+          body: ''
+        }
+      },
+      {
+        name: 'a plain "PR <number>" mention',
+        pr: { ...handMade, body: 'PR 21829 conflicted on this branch.' }
+      }
+    ])('recognises $name', ({ pr }) => {
+      expect(runFilter({ targets: ['core/1.57'], prs: [pr] })).toMatchObject({
+        skip: 'true',
+        'all-merged': 'true'
+      })
+    })
+
+    it.for([
+      {
+        name: 'a title that is not a backport to this target',
+        pr: { ...handMade, title: 'fix(agent): follow-up to #21829' }
+      },
+      {
+        name: 'a backport title for another branch',
+        pr: { ...handMade, title: '[backport cloud/1.57] fix(agent): answer' }
+      },
+      {
+        name: 'a longer number sharing the prefix',
+        pr: { ...handMade, body: 'Backport of #218290.' }
+      },
+      {
+        name: 'a fork',
+        pr: { ...handMade, crossRepository: true }
+      },
+      {
+        name: 'a different base',
+        pr: { ...handMade, base: 'core/1.58' }
+      }
+    ])('ignores $name', ({ pr }) => {
+      expect(runFilter({ targets: ['core/1.57'], prs: [pr] })).toMatchObject({
+        skip: 'false',
+        'pending-targets': 'core/1.57'
+      })
+    })
+
+    it('prefers the bot backport when both exist', () => {
+      expect(
+        runFilter({ targets: ['core/1.57'], prs: [mergedCore157, handMade] })
+      ).toMatchObject({ 'already-exists': 'core/1.57 (merged PR #21880)' })
+    })
+
+    it('retries a hand-made target when force_rerun is set', () => {
+      expect(
+        runFilter({ targets: ['core/1.57'], prs: [handMade], forceRerun: true })
+      ).toMatchObject({ skip: 'false', 'pending-targets': 'core/1.57' })
     })
   })
 })

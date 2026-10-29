@@ -208,6 +208,31 @@ jobs:
               continue
             fi
 
+            # A backport made by hand lives on a branch the bot did not
+            # create. Count it only when its title marks it as a backport to
+            # this target and its title or body names this PR.
+            MANUAL_PR=$(
+              gh pr list \
+                --state merged \
+                --base "${target}" \
+                --search "${PR_NUMBER} in:title,body" \
+                --json number,title,body,isCrossRepository |
+                jq -r --arg target "$target" --arg pr "$PR_NUMBER" '
+                  map(select(
+                    (.isCrossRepository | not) and
+                    (.title | ascii_downcase |
+                      startswith("[backport \($target)]") or
+                      startswith("[\($target)]")) and
+                    ((.title + "\n" + (.body // "")) |
+                      test("(#|/pull/|PR )\($pr)([^0-9]|$)"; "i"))
+                  )) | if length > 0 then .[0].number else "" end'
+            )
+            if [ -n "$MANUAL_PR" ]; then
+              SKIPPED+=("${target} (merged PR #${MANUAL_PR}, made by hand)")
+              MERGED+=("$target")
+              continue
+            fi
+
             if printf '%s\n' "${EXISTING_BRANCHES[@]:-}" |
               grep -Fq "refs/heads/${BACKPORT_BRANCH}"; then
               OPEN_PR=$(
