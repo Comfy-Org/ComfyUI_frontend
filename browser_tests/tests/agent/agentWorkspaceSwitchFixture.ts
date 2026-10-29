@@ -117,9 +117,19 @@ export const agentWorkspaceSwitcherTest = base.extend<{
           route.fulfill(jsonRoute(runMode))
         )
         await page.route('**/api/agent/identity', (route) => {
-          reads.push({ workspaceId })
+          const token = route
+            .request()
+            .headers()
+            ['authorization']?.replace(/^Bearer /, '')
+          const identityWorkspace = WORKSPACE_SWITCHER_WORKSPACES.find(
+            ({ id }) => token === `mock-workspace-token-${id}`
+          )
+          if (!identityWorkspace) {
+            return route.fulfill({ status: 401 })
+          }
+          reads.push({ workspaceId: identityWorkspace.id })
           const identity: AgentIdentity = {
-            workspace_id: workspaceId,
+            workspace_id: identityWorkspace.id,
             user_id: 'uid-1'
           }
           return route.fulfill(jsonRoute(identity))
