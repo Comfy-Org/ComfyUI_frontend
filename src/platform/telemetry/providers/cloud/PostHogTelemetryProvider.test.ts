@@ -18,8 +18,8 @@ import type {
   BootstrapCompleteMetadata,
   OnboardingTourStage,
   RunButtonProperties
-} from '@/platform/telemetry/types'
-import { TelemetryEvents } from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 const hoisted = vi.hoisted(() => {
   const mockCapture = vi.fn()
@@ -154,6 +154,14 @@ function mockPostHogPersistence(initial: Record<string, unknown> = {}) {
 
 function setLocation(search: string): void {
   window.history.replaceState({}, '', `/${search}`)
+}
+
+function surveyIds(count: number): string[] {
+  return Array.from({ length: count }, (_, index) => `survey-${index}`)
+}
+
+function trackSurveys(provider: PostHogTelemetryProvider, ids: string[]): void {
+  ids.forEach((surveyId) => provider.trackInAppSurvey('shown', { surveyId }))
 }
 
 describe('PostHogTelemetryProvider', () => {
@@ -536,6 +544,25 @@ describe('PostHogTelemetryProvider', () => {
   })
 
   describe('event tracking', () => {
+    it('bounds events queued before PostHog initializes', async () => {
+      const provider = createProvider()
+      const ids = surveyIds(102)
+
+      trackSurveys(provider, ids)
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockCapture).toHaveBeenCalledTimes(100)
+      expect(
+        hoisted.mockCapture.mock.calls.map(
+          ([, properties]) => properties?.$survey_id
+        )
+      ).toEqual(ids.slice(0, 100))
+      expect(console.warn).toHaveBeenCalledOnce()
+      expect(console.warn).toHaveBeenCalledWith(
+        'PostHog pre-initialization event queue is full; dropping events'
+      )
+    })
+
     it('captures events after initialization', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

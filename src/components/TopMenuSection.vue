@@ -80,7 +80,7 @@
                 :aria-label="t('menu.manageExtensions')"
                 @click="openCustomNodeManager"
               >
-                <i class="icon-[comfy--extensions-blocks] size-4" />
+                <i class="icon-[comfy--extensions-blocks]" />
                 <span
                   v-if="shouldShowRedDot"
                   class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
@@ -96,7 +96,7 @@
                 data-testid="run-bar-deploy"
                 @click="openDeployInstallationDialog"
               >
-                <i class="icon-[lucide--rocket] size-4" />
+                <i class="icon-[lucide--rocket]" />
               </Button>
               <Button
                 v-if="isCloud"
@@ -108,7 +108,7 @@
                 @click="() => openShareDialog().catch(toastErrorHandler)"
                 @pointerenter="prefetchShareDialog"
               >
-                <i class="icon-[comfy--send] size-4" />
+                <i class="icon-[comfy--send]" />
               </Button>
               <div v-if="!isRightSidePanelOpen" class="relative">
                 <Button
@@ -125,7 +125,7 @@
                   :aria-label="t('rightSidePanel.togglePanel')"
                   @click="openRightSidePanel"
                 >
-                  <i class="icon-[lucide--panel-right] size-4" />
+                  <i class="icon-[lucide--panel-right]" />
                 </Button>
                 <Badge
                   v-if="showErrorIndicatorOnPanelButton"
@@ -192,15 +192,15 @@ import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

@@ -2,8 +2,8 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { loadIntoBootWorkflow } from '@e2e/fixtures/agentPanelFixture'
 
 function highest(values: readonly unknown[]): number {

@@ -24,9 +24,7 @@
     >
       <div class="flex min-w-0 flex-1 flex-col gap-2">
         <div class="flex items-center gap-2">
-          <i
-            class="icon-[lucide--triangle-alert] size-4 shrink-0 text-warning"
-          />
+          <i class="icon-[lucide--triangle-alert] text-warning" />
           <span class="text-sm text-foreground">{{ banner.title }}</span>
         </div>
         <p class="m-0 pl-6 text-sm text-muted-foreground">{{ banner.body }}</p>
@@ -45,7 +43,7 @@
         </Button>
         <Button
           v-if="banner.action === 'addCredits'"
-          variant="secondary"
+          :variant="addCreditsVariant"
           size="md"
           @click="handleAddCredits"
         >
@@ -66,11 +64,14 @@
 </template>
 
 <script setup lang="ts">
-import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import {
+  centsToCredits,
+  formatCreditsFromCents
+} from '@/base/credits/comfyCredits'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import BillingAutoTopUpBanner from '@/platform/billing/components/billingTab/BillingAutoTopUpBanner.vue'
 import { useAutoTopUpBannerKind } from '@/platform/billing/composables/useAutoTopUpBannerKind'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -83,8 +84,8 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 type BannerAction = 'addCredits' | 'updatePayment'
 
@@ -97,13 +98,14 @@ interface BannerView {
 
 const bs = 'workspacePanel.billingStatus'
 
-const { suppressed = false } = defineProps<{
+const { suppressed = false, addCreditsVariant = 'secondary' } = defineProps<{
   suppressed?: boolean
+  addCreditsVariant?: 'secondary' | 'inverted'
 }>()
 
 const billing = useBillingContext()
 const { flags } = useFeatureFlags()
-const { permissions } = useWorkspaceUI()
+const { permissions, workspaceType } = useBillingUI()
 const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
@@ -241,10 +243,22 @@ function creditsLeft(): string {
   })
 }
 
+function lowCreditsBodyKey(): string {
+  if (!isCloud) return `${bs}.lowCredits.localBody`
+  if (workspaceType.value !== 'team') return `${bs}.lowCredits.personalBody`
+  return canManageBilling.value
+    ? `${bs}.lowCredits.ownerBody`
+    : `${bs}.lowCredits.memberBody`
+}
+
 function lowCreditsView(): BannerView {
   return {
     title: t(`${bs}.lowCredits.title`),
-    body: t(`${bs}.lowCredits.localBody`, { credits: creditsLeft() }),
+    body: t(
+      lowCreditsBodyKey(),
+      { credits: creditsLeft() },
+      centsToCredits(availableCents.value ?? 0)
+    ),
     action: canTopUp.value ? 'addCredits' : null,
     dismissible: true
   }

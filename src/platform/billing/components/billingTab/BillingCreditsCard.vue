@@ -152,7 +152,7 @@ import {
   formatCredits,
   formatCreditsFromCents
 } from '@/base/credits/comfyCredits'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { CreditsCardState } from '@/platform/billing/components/billingTab/creditsCard'
 
 const {
@@ -205,6 +205,8 @@ function longDate(raw: string | null): string {
 function planLine() {
   if (state.kind !== 'plan') return ''
   const amount = planAmount(state.planCents, state.planPoolCredits)
+  if (state.refillAwaitsPayment)
+    return `${amount} ${t('subscription.refillsAfterPayment')}`
   const date = longDate(state.renewalDate)
   if (!date) return amount
   return `${amount} ${t('subscription.refillsDate', { date })}`

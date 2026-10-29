@@ -47,6 +47,7 @@ import {
   trackSsoSignInCompleted
 } from '@/platform/auth/sso/ssoTelemetry'
 import { webSessionUser } from '@/platform/auth/session/webSessionUser'
+import { getDesktopInstallId } from '@/platform/auth/session/desktopInstallId'
 import {
   clearInteractiveSignIn,
   markInteractiveSignIn,
@@ -63,8 +64,8 @@ import {
   provideWebSessionRequests,
   WebSessionTokenError
 } from '@/platform/auth/session/webSessionFetch'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -155,10 +156,13 @@ function selectedWorkspaceId(): string | undefined {
   return currentWorkspace?.id ?? deniedWorkspaceId ?? undefined
 }
 
+const SESSION_REQUEST_TIMEOUT_MS = 15_000
+
 function sessionOptions(): WebSessionOptions {
   return {
     apiBaseUrl: api.apiURL(''),
-    fetchImpl: (input, init) => fetch(input, init)
+    fetchImpl: (input, init) => fetch(input, init),
+    timeoutMs: SESSION_REQUEST_TIMEOUT_MS
   }
 }
 
@@ -314,9 +318,14 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       getSession: currentSession
     })
     const authorize = createRequestAuthorizer({
-      getWorkspaceToken: mint.getWorkspaceToken
+      getWorkspaceToken: mint.getWorkspaceToken,
+      getInstallId: getDesktopInstallId
     })
     releaseRequests = provideWebSessionRequests({
+      refreshSession: async () => {
+        await session.refresh()
+        await whenDecided()
+      },
       scope: requestScope,
       workspaceId: () => (currentSession() ? selectedWorkspaceId() : undefined),
       send: (url, init, scope) => send(url, init, scope, authorize),

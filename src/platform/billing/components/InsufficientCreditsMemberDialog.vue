@@ -1,6 +1,7 @@
 <template>
   <AppDialogPanel
     size="compact"
+    class="w-90 max-w-full"
     data-testid="insufficient-credits-member-message"
     @close="onClose"
   >
@@ -22,7 +23,7 @@
 
 <script setup lang="ts">
 import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const { onClose } = defineProps<{
   onClose: () => void

@@ -280,14 +280,14 @@
 import { useElementSize } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import {
   PAINTER_TOOLS,
   usePainter
 } from '@/renderer/extensions/painter/composables/usePainter'
-import type { NodeId } from '@/types/nodeId'
-import { toHexFromFormat } from '@/utils/colorUtil'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toHexFromFormat } from '@comfyorg/shared-frontend-utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { nodeId } = defineProps<{

@@ -35,8 +35,16 @@ const config: KnipConfig = {
     'packages/billing-contract': {
       project: ['src/**/*.ts']
     },
+    'packages/graph-model': {
+      project: ['src/**/*.ts']
+    },
+    'packages/keybindings': {
+      project: ['src/**/*.ts']
+    },
     'packages/design-system': {
-      project: ['src/**/*.{css,js,ts}']
+      entry: ['tests/consumer/vite.config.ts'],
+      project: ['src/**/*.{css,js,ts,vue}'],
+      ignoreDependencies: ['tailwind-merge']
     },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']

@@ -1,7 +1,7 @@
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile, downloadFileAsBlob } from '@/base/common/downloadUtil'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 
 interface DirectAssetDownload {

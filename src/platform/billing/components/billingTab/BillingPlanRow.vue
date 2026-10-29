@@ -27,7 +27,7 @@
         class="shrink-0 no-underline"
       >
         {{ $t('workspacePanel.billingTab.plan.actions.contactSales') }}
-        <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
+        <i class="icon-[lucide--external-link]" aria-hidden="true" />
       </Button>
       <Button
         v-else-if="action"
@@ -46,7 +46,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import BillingPlanLifecycle from '@/platform/billing/components/billingTab/BillingPlanLifecycle.vue'
 import {
   CONTACT_SALES_URL,
@@ -81,6 +81,11 @@ const title = computed(() => {
   }
   if (state.kind === 'unknown') {
     return t('workspacePanel.billingTab.plan.unknown.title')
+  }
+  if (state.kind === 'salesManaged') {
+    return (
+      state.planName ?? t('workspacePanel.billingTab.plan.salesManaged.title')
+    )
   }
   return state.planName
 })
@@ -118,7 +123,15 @@ const statusLine = computed(() => {
     return t(`${key}.activating`, { plan: state.planName })
   }
   if (state.kind === 'active') return activeLine(state)
+  if (state.kind === 'paused') return t(`${key}.paused`)
   if (state.kind === 'noPlan') return noPlanLine(state)
+  if (state.kind === 'salesManaged') {
+    return state.renewsAt
+      ? t(`${key}.salesManaged.renews`, {
+          date: formatPlanDate(state.renewsAt, locale.value, state.cadence)
+        })
+      : t(`${key}.salesManaged.line`)
+  }
   if (state.kind === 'ending') {
     return t(`${key}.ending`, {
       date: formatPlanDate(state.endsAt, locale.value, state.cadence)

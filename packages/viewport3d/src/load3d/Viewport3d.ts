@@ -1,3 +1,7 @@
+import type {
+  Size2D,
+  Bounds as ViewportRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import * as THREE from 'three'
 
 import type { RendererView } from '#/three/RendererView'
@@ -17,11 +21,7 @@ import type {
 import { attachContextMenuGuard } from './load3dContextMenuGuard'
 import type { RenderLoopHandle } from './load3dRenderLoop'
 import { startRenderLoop } from './load3dRenderLoop'
-import type {
-  LetterboxedViewport,
-  LetterboxNdc,
-  ViewportRect
-} from './load3dViewport'
+import type { LetterboxedViewport, LetterboxNdc } from './load3dViewport'
 import {
   clientPointToLetterboxNdc,
   computeLetterboxBars,
@@ -81,7 +81,7 @@ export class Viewport3d {
   protected timer: THREE.Timer
   private renderLoop: RenderLoopHandle | null = null
   private onContextMenuCallback?: (event: MouseEvent) => void
-  private getDimensionsCallback?: () => { width: number; height: number } | null
+  private getDimensionsCallback?: () => Size2D | null
 
   eventManager: EventManager
   sceneManager: SceneManager
@@ -207,7 +207,7 @@ export class Viewport3d {
     return this.viewHelperManager
   }
 
-  getTargetSize(): { width: number; height: number } {
+  getTargetSize(): Size2D {
     return {
       width: this.targetWidth,
       height: this.targetHeight
