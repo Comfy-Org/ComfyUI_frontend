@@ -14,7 +14,7 @@ import type {
   WorkflowQueueIntent
 } from '@comfyorg/telemetry/types'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { isGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 
 import { api } from './api'

@@ -49,7 +49,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["error-reporting"],
+  "allowedDependencies": ["error-reporting", "keybindings"],
   "allowedConsumers": [
     "agent",
     "bounding-boxes",

@@ -3218,6 +3218,7 @@
     "creditsYouveAdded": "Additional",
     "remaining": "remaining",
     "refillsDate": "Refills {date}",
+    "refillsAfterPayment": "Refills when the payment goes through",
     "refillsNextCycle": "Refills next cycle",
     "creditsUsed": "{used} used",
     "creditsLeftOfTotal": "{remaining} left of {total}",
@@ -3634,7 +3635,7 @@
           "off": "Off",
           "on": "On",
           "onHold": "On hold",
-          "paused": "Paused"
+          "limitReached": "Limit reached"
         },
         "title": "Auto top-up",
         "unavailable": "Couldn't load auto top-up."
@@ -3689,13 +3690,19 @@
           "line": "Subscribe to run workflows on Cloud.",
           "title": "This workspace has no active plan"
         },
+        "paused": "Paused. The renewal payment didn't go through.",
         "resumeConfirm": {
           "body": "Your plan will renew on {date}. You can cancel again anytime.",
           "title": "Resume your {plan} plan?"
         },
+        "salesManaged": {
+          "line": "Billed by contract.",
+          "renews": "Billed by contract. Renews {date}.",
+          "title": "Enterprise"
+        },
         "scheduledChange": "Changes to {plan} on {date}.",
         "stayConfirm": {
-          "body": "Your plan won't change to {plan} on {date}. You can schedule a change again anytime.",
+          "bodyNoAmount": "You'll stay on {current}. You can schedule a change again anytime.",
           "title": "Cancel your change to {plan}?"
         },
         "unknown": {
@@ -3745,7 +3752,10 @@
       },
       "lowCredits": {
         "title": "Credits are low",
-        "localBody": "You have {credits} credits left. Add credits to keep running Partner Nodes."
+        "localBody": "You have {credits} credit left. Add credits to keep running Partner Nodes. | You have {credits} credits left. Add credits to keep running Partner Nodes.",
+        "personalBody": "You have {credits} credit left. Add credits before you run out. | You have {credits} credits left. Add credits before you run out.",
+        "ownerBody": "This workspace has {credits} credit left. Add credits before you run out. | This workspace has {credits} credits left. Add credits before you run out.",
+        "memberBody": "This workspace has {credits} credit left. Ask the workspace owner to add credits before you run out. | This workspace has {credits} credits left. Ask the workspace owner to add credits before you run out."
       },
       "ending": {
         "title": "Your Team plan ends on {date}",
@@ -3768,7 +3778,7 @@
           "title": "Payment received"
         },
         "verifyPayment": {
-          "action": "Verify your payment",
+          "action": "Complete verification",
           "body": "Your bank requires additional verification to complete this payment.",
           "title": "Verify your payment"
         }
@@ -4123,7 +4133,14 @@
     "compatibleEnvironments": "Compatible environments",
     "incompatibleEnvironments": "Incompatible environments",
     "missingNodesNamed": "{deployment} cannot run this workflow. It is missing {nodes}.",
-    "notCheckedNamed": "Could not check whether {deployment} can run this workflow."
+    "notCheckedNamed": "Could not check whether {deployment} can run this workflow.",
+    "reason": {
+      "starting": "{deployment} is starting. Pick it once it's ready.",
+      "startElsewhere": "{deployment} isn't running. Start it on the Developer Platform, then pick it.",
+      "notReady": "{deployment} isn't ready. Pick it once it's ready."
+    },
+    "missingNodesAfterReason": "It cannot run this workflow. It is missing {nodes}.",
+    "notCheckedAfterReason": "Could not check whether it can run this workflow."
   },
   "selectionToolbox": {
     "executeButton": {
@@ -5886,6 +5903,7 @@
   "agent": {
     "previewAsset": "Preview {name}",
     "title": "Comfy Agent",
+    "openVideo": "Open video: {name}",
     "diagnosticReport": {
       "retry": "Retry copy report",
       "clipboardFailed": "Clipboard access failed. Select and copy the report below, or retry.",
