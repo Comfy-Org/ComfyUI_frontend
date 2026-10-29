@@ -31,11 +31,12 @@ import {
 const TARGET_MISSING_AFTER_MS = 8000
 const COACH_HOVER_ATTRIBUTE = 'data-coach-hover'
 
-const { steps, storageKey } = defineProps<{
+const { steps, storageKey, holdNotice } = defineProps<{
   steps: CoachStep[]
   storageKey?: string
+  holdNotice?: string
 }>()
-const emit = defineEmits<{ finished: [] }>()
+const emit = defineEmits<{ finished: []; stalled: [] }>()
 
 const { active, index, step, isLast, next, previous, finish, restart } =
   useOnboarding(() => steps, storageKey)
@@ -55,6 +56,7 @@ defineExpose({
 
 const titleId = useId()
 const bodyId = useId()
+const holdNoticeId = useId()
 const target = ref<HTMLElement | null>(null)
 const visible = computed(() => active.value && target.value !== null)
 // Let surfaces like the What's New popup defer while a coach card is on
@@ -106,31 +108,46 @@ function reportStep(action: AgentOnboardingAction): void {
   useTelemetry()?.trackAgentOnboardingStep({ step: index.value + 1, action })
 }
 
+let finishedHere = false
+
 function onNext(): void {
   const finished = isLast.value
   reportStep(isLast.value ? 'finish' : 'next')
+  if (finished) finishedHere = true
   next()
   if (finished) emit('finished')
 }
 
 function onSkip(): void {
   reportStep('skip')
+  finishedHere = true
   finish()
   emit('finished')
 }
+
+const completed = computed(() => !active.value && !!step.value)
+watch(completed, (isCompleted) => {
+  if (isCompleted && !finishedHere) emit('finished')
+  finishedHere = false
+})
 
 const targetObserver = new MutationObserver(resolveTargets)
 targetObserver.observe(document.body, {
   childList: true,
   subtree: true
 })
+let reportedStalled = false
 const missingTarget = computed(() =>
   active.value && !target.value ? step.value.target : null
 )
 const { start: startMissingTargetTimer, stop: stopMissingTargetTimer } =
   useTimeoutFn(
-    (selector: string, step: number) =>
-      reportMissingCoachTarget(selector, step),
+    (selector: string, step: number) => {
+      reportMissingCoachTarget(selector, step)
+      if (reportedStalled) return
+      reportedStalled = true
+      emit('stalled')
+    },
     TARGET_MISSING_AFTER_MS,
     { immediate: false }
   )
@@ -276,7 +293,7 @@ useEventListener(
           role="dialog"
           aria-modal="true"
           :aria-labelledby="titleId"
-          :aria-describedby="bodyId"
+          :aria-describedby="holdNotice ? `${bodyId} ${holdNoticeId}` : bodyId"
           tabindex="-1"
           :style="{
             ...floatingStyles,
@@ -312,6 +329,14 @@ useEventListener(
                 class="m-0 text-sm/normal text-pretty text-muted-foreground"
               >
                 {{ step.body }}
+              </p>
+              <p
+                v-if="holdNotice"
+                :id="holdNoticeId"
+                class="m-0 text-xs/normal text-muted-foreground"
+                data-testid="agent-coach-hold-notice"
+              >
+                {{ holdNotice }}
               </p>
             </div>
             <div class="flex justify-end gap-3">

@@ -20,7 +20,8 @@ import {
   h,
   nextTick,
   reactive,
-  ref
+  ref,
+  watch
 } from 'vue'
 import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
@@ -5831,6 +5832,7 @@ describe('AgentPanelRoot workflow binding', () => {
       (_trigger, onAccept) =>
         new Promise<void>((resolve) => {
           accept = () => {
+            Object.assign(useAgentConsentStore(), { accepted: true })
             onAccept()
             resolve()
           }
@@ -5887,6 +5889,224 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
     )
     expect(bodies).toHaveLength(0)
+  })
+
+  describe('a first send held by the coach', () => {
+    const HOLD_NOTICE =
+      'Your message will send when you finish or skip the tour.'
+
+    beforeEach(() => {
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-hold'
+      })
+      Object.assign(useAgentConsentStore(), { accepted: false })
+      withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
+        Object.assign(useAgentConsentStore(), { accepted: true })
+        onAccept()
+      })
+    })
+
+    async function sendHeldByCoach(text: string) {
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste(text)
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      return screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    }
+
+    it('tells the user why the send is waiting, and sends once on Skip', async () => {
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      renderWithSelectedTarget()
+
+      const coach = await sendHeldByCoach('build me a workflow')
+
+      expect(
+        within(coach).getByTestId('agent-coach-hold-notice')
+      ).toHaveTextContent(HOLD_NOTICE)
+      expect(bodies).toHaveLength(0)
+
+      await userEvent.click(within(coach).getByRole('button', { name: 'Skip' }))
+      await waitFor(() => expect(bodies).toHaveLength(1))
+    })
+
+    it('shows no hold notice on a replay with nothing held', async () => {
+      withConsent.mockReset()
+      Object.assign(useAgentConsentStore(), { accepted: true })
+      localStorage.setItem(
+        'Comfy.AgentPanel.onboarded.account-a.workspace-hold',
+        'true'
+      )
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Take the tour' })
+      )
+
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+      expect(screen.queryByTestId('agent-coach-hold-notice')).toBeNull()
+    })
+
+    it('sends once when another tab finishes the tour during the hold', async () => {
+      const key = 'Comfy.AgentPanel.onboarded.account-a.workspace-hold'
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      renderWithSelectedTarget()
+      await sendHeldByCoach('build me a workflow')
+      expect(bodies).toHaveLength(0)
+
+      localStorage.setItem(key, 'true')
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key,
+          newValue: 'true',
+          storageArea: localStorage
+        })
+      )
+
+      await waitFor(() => expect(bodies).toHaveLength(1))
+    })
+
+    it('sends once when a coach step never finds its target', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      renderWithSelectedTarget()
+
+      await sendHeldByCoach('build me a workflow')
+      await user.click(
+        within(
+          await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+        ).getByRole('button', { name: 'Next' })
+      )
+      await user.click(
+        within(
+          await screen.findByRole('dialog', {
+            name: "Your agent edits the workflow you're viewing"
+          })
+        ).getByRole('button', { name: 'Next' })
+      )
+      expect(bodies).toHaveLength(0)
+
+      await vi.advanceTimersByTimeAsync(8_000)
+
+      await waitFor(() => expect(bodies).toHaveLength(1))
+      await vi.advanceTimersByTimeAsync(8_000)
+      expect(bodies).toHaveLength(1)
+      expect(
+        localStorage.getItem(
+          'Comfy.AgentPanel.onboarded.account-a.workspace-hold'
+        )
+      ).not.toBe('true')
+    })
+
+    it.for([
+      { teardown: 'before', flush: 'sync' },
+      { teardown: 'after', flush: 'post' }
+    ] as const)(
+      'sends once when App Mode tears the panel down $teardown the panel releases the hold',
+      async ({ flush }) => {
+        Object.assign(useAgentPanelStore(), { enabled: true, isOpen: true })
+        makeTab('wf-42')
+        const bodies = mockMessagesEndpoint('wf-42')
+        const { unmount } = renderWithSelectedTarget()
+        await sendHeldByCoach('build me a workflow')
+        const stopUnmountOnAppMode = watch(
+          () => canvasStore.linearMode,
+          () => unmount(),
+          { flush }
+        )
+
+        try {
+          canvasStore.linearMode = true
+
+          await waitFor(() => expect(bodies).toHaveLength(1))
+        } finally {
+          stopUnmountOnAppMode()
+        }
+      }
+    )
+
+    it('puts the draft back when consent is cleared before App Mode releases the hold', async () => {
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      const settleSubmission = vi.spyOn(
+        useAgentComposerStore(),
+        'settleSubmission'
+      )
+      renderWithSelectedTarget()
+      await sendHeldByCoach('build me a workflow')
+
+      Object.assign(useAgentConsentStore(), { accepted: false })
+      canvasStore.linearMode = true
+
+      await waitFor(() =>
+        expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
+      )
+      expect(bodies).toHaveLength(0)
+    })
+
+    it('puts the draft back when consent is cleared while the panel stays open', async () => {
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      const settleSubmission = vi.spyOn(
+        useAgentComposerStore(),
+        'settleSubmission'
+      )
+      renderWithSelectedTarget()
+      await sendHeldByCoach('build me a workflow')
+
+      Object.assign(useAgentConsentStore(), { accepted: false })
+
+      await waitFor(() =>
+        expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
+      )
+      expect(bodies).toHaveLength(0)
+    })
+
+    it('puts the draft back when the consent identity changes during the hold', async () => {
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      const settleSubmission = vi.spyOn(
+        useAgentComposerStore(),
+        'settleSubmission'
+      )
+      renderWithSelectedTarget()
+      await sendHeldByCoach('build me a workflow')
+
+      Object.assign(useAgentConsentStore(), {
+        identity: JSON.stringify(['account-b', 'workspace-hold', 0])
+      })
+
+      await waitFor(() =>
+        expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
+      )
+      expect(bodies).toHaveLength(0)
+    })
+
+    it('puts the draft back instead of sending when the panel closes', async () => {
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      const settleSubmission = vi.spyOn(
+        useAgentComposerStore(),
+        'settleSubmission'
+      )
+      const { unmount } = renderWithSelectedTarget()
+      await sendHeldByCoach('build me a workflow')
+
+      useAgentPanelStore().close('close_button')
+      unmount()
+
+      await waitFor(() =>
+        expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
+      )
+      expect(bodies).toHaveLength(0)
+      renderWithSelectedTarget()
+      expect(await screen.findByRole('textbox')).toHaveTextContent(
+        'build me a workflow'
+      )
+      expect(bodies).toHaveLength(0)
+    })
   })
 
   it('reports a message sent from an empty-state suggestion chip as a suggestion', async () => {
