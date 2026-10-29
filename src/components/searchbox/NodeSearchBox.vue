@@ -10,6 +10,7 @@
       <NodePreview
         :key="hoveredSuggestion?.name || ''"
         :node-def="hoveredSuggestion"
+        position="relative"
       />
     </div>
 
