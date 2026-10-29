@@ -1,3 +1,4 @@
+import { uniq } from 'es-toolkit'
 import { fromZodError } from 'zod-validation-error'
 import { z } from 'zod'
 
@@ -237,9 +238,6 @@ function compareLoaderPaths(a: string, b: string): number {
   return 0
 }
 
-/**
- * Validates asset response data using Zod schema
- */
 function isDeploymentDownloadableName(name: string): boolean {
   return (
     !name.startsWith('.') &&
@@ -249,6 +247,9 @@ function isDeploymentDownloadableName(name: string): boolean {
   )
 }
 
+/**
+ * Validates asset response data using Zod schema
+ */
 function validateAssetResponse(data: unknown): AssetResponse {
   const result = assetResponseSchema.safeParse(data)
   if (result.success) return result.data
@@ -780,9 +781,7 @@ function createAssetService() {
   }
 
   /**
-   * Lists the loader names of every private model in one folder of the
-   * workspace's library, including the ones teammates added, that a
-   * deployment can download: bare `.safetensors` file names.
+   * Lists the unique loader names in one folder of the workspace library that a deployment can download.
    */
   async function getWorkspaceLibraryModels(folder: string): Promise<string[]> {
     const assets = await walkAssetPages(
@@ -800,13 +799,15 @@ function createAssetService() {
           `workspace library models in ${folder}`
         )
     )
-    return assets
-      .map((asset) => asset.loader_path ?? getAssetFilename(asset))
-      .filter(
-        (name) =>
-          assetFilenameSchema.safeParse(name).success &&
-          isDeploymentDownloadableName(name)
-      )
+    return uniq(
+      assets
+        .map((asset) => asset.loader_path ?? getAssetFilename(asset))
+        .filter(
+          (name) =>
+            assetFilenameSchema.safeParse(name).success &&
+            isDeploymentDownloadableName(name)
+        )
+    )
   }
 
   /**

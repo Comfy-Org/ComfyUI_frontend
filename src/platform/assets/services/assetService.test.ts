@@ -977,6 +977,32 @@ describe(assetService.getWorkspaceLibraryModels, () => {
     ).resolves.toEqual(['Upper_Case.SAFETENSORS'])
   })
 
+  it('lists a loader name once when two members added a model under it', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-00000000000c',
+          'my_style_v2.safetensors'
+        ),
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-00000000000d',
+          'teammate_style.safetensors'
+        ),
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-00000000000e',
+          'my_style_v2.safetensors'
+        )
+      ])
+    )
+
+    await expect(
+      assetService.getWorkspaceLibraryModels('loras')
+    ).resolves.toEqual([
+      'my_style_v2.safetensors',
+      'teammate_style.safetensors'
+    ])
+  })
+
   it('fails when the listing fails, so the dropdown can report it', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       buildResponse(
