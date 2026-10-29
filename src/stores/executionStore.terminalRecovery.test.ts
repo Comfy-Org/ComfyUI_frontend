@@ -25,12 +25,6 @@ function workflow(path: string): LoadedComfyWorkflow {
 const workflowA = workflow('workflows/a.json')
 const workflowB = workflow('workflows/b.json')
 
-/**
- * Register tabs through the real store, so `isOpen` and `openWorkflows` are the
- * production implementations. A hand-built double would keep passing if
- * `isOpen` changed what it keys on, and `applyWorkflowStatus` refuses to record
- * a status for a workflow the store does not consider open.
- */
 function openTabs(...workflows: LoadedComfyWorkflow[]) {
   const workflowStore = useWorkflowStore()
   for (const wf of workflows) {
@@ -49,16 +43,10 @@ describe('executionStore terminal-frame recovery', () => {
     store.bindExecutionEvents()
   })
 
-  // `api` is a module singleton, so without this each test's listeners
-  // accumulate and later tests re-run earlier handlers against disposed stores.
   afterEach(() => {
     store.unbindExecutionEvents()
   })
 
-  /**
-   * A job that started and then never reported a terminal frame: the frame was
-   * dropped, or the socket went away before it arrived.
-   */
   function startedJobWithNoTerminalFrame(
     jobId: string,
     wf: LoadedComfyWorkflow
@@ -108,7 +96,6 @@ describe('executionStore terminal-frame recovery', () => {
 
   it('leaves a job the server still reports as running alone', async () => {
     const jobId = startedJobWithNoTerminalFrame('job-b', workflowB)
-    // progress_state is RAF-coalesced, so the per-job record lands a frame later.
     await vi.waitFor(() =>
       expect(store.nodeProgressStatesByJob[jobId]).toBeDefined()
     )
@@ -129,5 +116,16 @@ describe('executionStore terminal-frame recovery', () => {
       store.getWorkflowStatus(workflowA),
       'A never went terminal, so forgetting B must not release it'
     ).toBe('running')
+  })
+
+  it('keeps a tab running while another started job uses it', () => {
+    const firstJob = startedJobWithNoTerminalFrame('job-b-1', workflowB)
+    startedJobWithNoTerminalFrame('job-b-2', workflowB)
+
+    store.forgetFinishedJobs([firstJob])
+
+    expect(store.getWorkflowStatus(workflowB)).toBe('running')
+    expect(store.queuedJobs[firstJob]).toBeUndefined()
+    expect(store.queuedJobs['job-b-2']).toBeDefined()
   })
 })

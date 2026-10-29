@@ -99,6 +99,89 @@ async function triggerReconnect(
 }
 
 test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
+  test('keeps the visible workflow running status when cleanup forgets one job', async ({
+    comfyPage,
+    getWebSocket,
+    nextWebSocket
+  }) => {
+    const ws = await getWebSocket()
+    const exec = new ExecutionHelper(comfyPage, ws)
+    const topbar = comfyPage.menu.topbar
+
+    await comfyPage.workflow.waitForActiveWorkflow()
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    const finishedJobId = await exec.run()
+    const runningJobId = await exec.run()
+    exec.executionStart(finishedJobId)
+    exec.executionStart(runningJobId)
+
+    await topbar.newWorkflowButton.click()
+    await comfyPage.workflow.waitForWorkflowIdle()
+    await expect(topbar.getActiveTab()).toContainText('(2)')
+
+    const backgroundTab = topbar.getTab(0)
+    const runningIndicator = backgroundTab.getByRole('img', {
+      name: 'Running'
+    })
+    await expect(runningIndicator).toBeVisible()
+
+    const remainingJobScenario: Scenario = {
+      name: 'preserves the remaining same-workflow job',
+      queueBody: () =>
+        JSON.stringify(
+          jobsResponse([
+            {
+              id: runningJobId,
+              status: 'in_progress',
+              create_time: Date.now()
+            }
+          ])
+        ),
+      expectsActiveAfter: true
+    }
+    const finishedJobReads = await mockJobsRoute(
+      comfyPage,
+      new RegExp(`/api/jobs/${finishedJobId}$`),
+      '{}',
+      404
+    )
+
+    const secondSocketPromise = nextWebSocket()
+    await triggerReconnect(comfyPage, ws, remainingJobScenario, runningJobId)
+    await expect.poll(finishedJobReads).toBeGreaterThanOrEqual(2)
+    const secondSocket = await secondSocketPromise
+
+    const thirdSocketPromise = nextWebSocket()
+    await triggerReconnect(
+      comfyPage,
+      secondSocket,
+      remainingJobScenario,
+      runningJobId
+    )
+    await expect.poll(finishedJobReads).toBeGreaterThanOrEqual(4)
+    const thirdSocket = await thirdSocketPromise
+
+    const fourthSocketPromise = nextWebSocket()
+    await triggerReconnect(
+      comfyPage,
+      thirdSocket,
+      remainingJobScenario,
+      runningJobId
+    )
+    await expect.poll(finishedJobReads).toBeGreaterThanOrEqual(6)
+    const fourthSocket = await fourthSocketPromise
+
+    await triggerReconnect(
+      comfyPage,
+      fourthSocket,
+      remainingJobScenario,
+      runningJobId
+    )
+
+    await expect(runningIndicator).toBeVisible()
+  })
+
   test.describe('app mode skeleton', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.appMode.enterAppModeWithInputs([[KSAMPLER_NODE, 'seed']])

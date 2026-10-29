@@ -7,12 +7,6 @@ import { resultItemType } from '@/schemas/resultItemTypeSchema'
 
 export type JobId = string
 
-/**
- * Stamped by the server onto every frame carrying a `prompt_id`, from the
- * `workflow_metadata` the client sent or from `extra_pnginfo.workflow.id`
- * (ComfyUI#16763). Optional because `status` and `logs` frames have no
- * `prompt_id`, and an older server sends it nowhere.
- */
 type StampedWorkflowId = { workflow_id?: WorkflowId }
 
 export const zResultItem = z.object({
