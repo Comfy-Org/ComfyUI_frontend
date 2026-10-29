@@ -352,6 +352,12 @@ When using `take_snapshot` to inspect dropdowns, listboxes, or other components 
 - Use `verbose: true` to see the full accessibility tree including list items
 - Non-verbose snapshots often omit nested options in comboboxes/listboxes
 
+## Cursor Cloud specific instructions
+
+- Node 26.13.0 lives at `~/.local/share/node-v26.13.0` and `~/.bashrc` prepends it for login shells. `pnpm` is 11.13.1. A non-login shell can still resolve `node` to `/exec-daemon/node` (Node 22). If `node -v` is not 26, run `export PATH="$HOME/.local/share/node-v26.13.0/bin:$PATH"` before `pnpm`, Vite, or tests.
+- Boot runs `pnpm dev:cloud`. The app is at http://localhost:5173/ and proxies API calls to https://testcloud.comfy.org/. Do not start `pnpm dev:cloud:prod`. Vite binds IPv6 localhost; open http://localhost:5173/.
+- Playwright Chromium is installed. `pnpm test:browser:local` still needs a local ComfyUI backend (`pnpm container:start`), which needs Docker and a GHCR token with `read:packages` (`GH_TOKEN` or `COMFY_CI_CONTAINER_TOKEN`). That backend is not started on boot. `pnpm dev:cloud` and `pnpm test:unit` do not need it.
+
 ### Temporary Files
 
 - Put planning documents under `/temp/plans/`
