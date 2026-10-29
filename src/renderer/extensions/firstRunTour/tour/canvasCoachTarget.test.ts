@@ -12,6 +12,7 @@ import {
   shallowRef
 } from 'vue'
 
+import { isNodeExcludedFromCulling } from '@/services/vueNodeCullingService'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -96,8 +97,10 @@ describe('canvasNodeTarget', () => {
 
   it('releases what it watches when the tour drops it', () => {
     useCanvasStore().currentGraph = graph('root')
-    const target = canvasNodeTarget(toNodeId(1))
+    const nodeId = toNodeId(1)
+    const target = canvasNodeTarget(nodeId)
     expect(state.releaseBounds).not.toHaveBeenCalled()
+    expect(isNodeExcludedFromCulling(nodeId)).toBe(true)
 
     target.dispose?.()
 
@@ -105,6 +108,7 @@ describe('canvasNodeTarget', () => {
       state.releaseBounds,
       'nothing here runs from a component, so unreleased observers outlive every tour'
     ).toHaveBeenCalledTimes(1)
+    expect(isNodeExcludedFromCulling(nodeId)).toBe(false)
   })
 
   it('places the rect over the node, title bar included', () => {

@@ -20,6 +20,14 @@
         ]
       },
       {
+        "name": "canvas-renderer/integration/public",
+        "patterns": ["src/renderer/core/canvas/litegraph/slotCalculations.ts"]
+      },
+      {
+        "name": "color-palettes/application/public",
+        "patterns": ["src/stores/workspace/colorPaletteStore.ts"]
+      },
+      {
         "name": "comfyui-api/domain/public",
         "patterns": ["src/platform/remote/comfyui/execution/types.ts"]
       },
@@ -75,10 +83,26 @@
         ]
       },
       {
+        "name": "settings/application/public",
+        "patterns": ["src/platform/settings/settingStore.ts"]
+      },
+      {
+        "name": "vue-node-renderer/application/public",
+        "patterns": ["src/renderer/extensions/vueNodes/utils/nodeStyleUtils.ts"]
+      },
+      {
+        "name": "vue-node-renderer/presentation/public",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/components/NodeBoxOverlay.vue"
+        ]
+      },
+      {
         "name": "vue-node-renderer/integration/public",
         "patterns": [
           "src/renderer/extensions/vueNodes/composables/useViewportKeepAlive.ts",
-          "src/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins.ts"
+          "src/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins.ts",
+          "src/renderer/extensions/vueNodes/composables/useLowQualityRendering.ts",
+          "src/renderer/extensions/vueNodes/utils/createNodeBox.ts"
         ]
       },
       {
@@ -3112,6 +3136,8 @@
         "patterns": [
           "src/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale.test.ts",
           "src/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale.ts",
+          "src/renderer/extensions/vueNodes/utils/createNodeBox.test.ts",
+          "src/renderer/extensions/vueNodes/utils/createNodeBox.ts",
           "src/renderer/extensions/vueNodes/utils/eventUtils.ts"
         ]
       },
@@ -3995,6 +4021,36 @@
         ]
       },
       {
+        "from": "canvas-renderer/integration/public",
+        "allow": [
+          "canvas-renderer/integration/public",
+          "keybindings/application/public",
+          "keybindings/integration/public",
+          "canvas-renderer/domain",
+          "canvas-renderer/application",
+          "canvas-renderer/infrastructure",
+          "canvas-renderer/presentation",
+          "canvas-renderer/integration",
+          "keybindings/domain",
+          "keybindings/presentation",
+          "keybindings/integration",
+          "canvas-renderer/application/outer-1",
+          "canvas-renderer/infrastructure/outer-1",
+          "canvas-renderer/integration/outer-1",
+          "keybindings/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "color-palettes/application/public",
+        "allow": [
+          "color-palettes/application/public",
+          "color-palettes/domain",
+          "color-palettes/application",
+          "unclassified"
+        ]
+      },
+      {
         "from": "comfyui-api/domain/public",
         "allow": [
           "comfyui-api/domain/public",
@@ -4116,13 +4172,109 @@
         ]
       },
       {
+        "from": "settings/application/public",
+        "allow": [
+          "keybindings/application/public",
+          "settings/application/public",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "keybindings/domain",
+          "settings/domain",
+          "settings/application",
+          "settings/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "authentication/infrastructure/outer-1",
+          "keybindings/application/outer-1",
+          "settings/application/outer-1",
+          "telemetry/domain/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "vue-node-renderer/application/public",
+        "allow": [
+          "color-palettes/application/public",
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
+          "link-connection/application/public",
+          "settings/application/public",
+          "vue-node-renderer/application/public",
+          "color-palettes/domain",
+          "color-palettes/application",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/infrastructure",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "link-connection/domain",
+          "link-connection/application",
+          "litegraph-api/infrastructure",
+          "settings/domain",
+          "settings/application",
+          "settings/infrastructure",
+          "vue-node-renderer/domain",
+          "vue-node-renderer/application",
+          "vue-node-renderer/infrastructure",
+          "graph-layout/application/outer-1",
+          "graph-model/domain/outer-1",
+          "settings/application/outer-1",
+          "vue-node-renderer/application/outer-1",
+          "graph-layout/domain/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "vue-node-renderer/presentation/public",
+        "allow": [
+          "color-palettes/application/public",
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
+          "link-connection/application/public",
+          "settings/application/public",
+          "vue-node-renderer/application/public",
+          "vue-node-renderer/presentation/public",
+          "color-palettes/domain",
+          "color-palettes/application",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/presentation",
+          "graph-model/domain",
+          "graph-model/application",
+          "link-connection/domain",
+          "link-connection/application",
+          "settings/domain",
+          "settings/application",
+          "settings/presentation",
+          "vue-node-renderer/domain",
+          "vue-node-renderer/application",
+          "vue-node-renderer/presentation",
+          "graph-layout/application/outer-1",
+          "graph-model/domain/outer-1",
+          "settings/application/outer-1",
+          "vue-node-renderer/application/outer-1",
+          "graph-layout/domain/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "vue-node-renderer/integration/public",
         "allow": [
+          "color-palettes/application/public",
           "graph-layout/domain/public",
           "graph-layout/application/public",
           "link-connection/application/public",
           "litegraph-api/integration/public",
+          "settings/application/public",
+          "vue-node-renderer/application/public",
+          "vue-node-renderer/presentation/public",
           "vue-node-renderer/integration/public",
+          "color-palettes/domain",
+          "color-palettes/application",
           "graph-layout/domain",
           "graph-layout/application",
           "graph-layout/infrastructure",
@@ -4137,6 +4289,11 @@
           "link-connection/integration",
           "litegraph-api/infrastructure",
           "litegraph-api/integration",
+          "settings/domain",
+          "settings/application",
+          "settings/infrastructure",
+          "settings/presentation",
+          "settings/integration",
           "vue-node-renderer/domain",
           "vue-node-renderer/application",
           "vue-node-renderer/infrastructure",
@@ -4146,6 +4303,7 @@
           "graph-layout/integration/outer-1",
           "graph-model/domain/outer-1",
           "graph-model/integration/outer-1",
+          "settings/application/outer-1",
           "vue-node-renderer/application/outer-1",
           "vue-node-renderer/integration/outer-1",
           "graph-layout/domain/outer-2",
@@ -4401,25 +4559,38 @@
       {
         "from": "app-host/domain",
         "allow": [
+          "graph-layout/domain/public",
           "app-host/domain",
+          "canvas-renderer/domain",
           "error-reporting/domain",
+          "graph-layout/domain",
           "keybindings/domain",
           "vue-node-renderer/domain",
           "app-host/domain/outer-1",
           "telemetry/domain/outer-1",
+          "graph-layout/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "app-host/application",
         "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
           "keybindings/application/public",
+          "vue-node-renderer/application/public",
           "app-host/domain",
           "app-host/application",
           "app-host/infrastructure",
+          "canvas-renderer/domain",
+          "canvas-renderer/application",
+          "canvas-renderer/infrastructure",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/infrastructure",
           "keybindings/domain",
           "telemetry/application",
           "telemetry/infrastructure",
@@ -4427,22 +4598,35 @@
           "vue-node-renderer/application",
           "vue-node-renderer/infrastructure",
           "app-host/domain/outer-1",
+          "canvas-renderer/application/outer-1",
+          "canvas-renderer/infrastructure/outer-1",
+          "graph-layout/application/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
           "vue-node-renderer/application/outer-1",
+          "graph-layout/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "app-host/infrastructure",
         "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
           "keybindings/application/public",
+          "vue-node-renderer/application/public",
           "app-host/domain",
           "app-host/application",
           "app-host/infrastructure",
+          "canvas-renderer/domain",
+          "canvas-renderer/application",
+          "canvas-renderer/infrastructure",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/infrastructure",
           "keybindings/domain",
           "telemetry/application",
           "telemetry/infrastructure",
@@ -4450,9 +4634,13 @@
           "vue-node-renderer/application",
           "vue-node-renderer/infrastructure",
           "app-host/domain/outer-1",
+          "canvas-renderer/application/outer-1",
+          "canvas-renderer/infrastructure/outer-1",
+          "graph-layout/application/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
           "vue-node-renderer/application/outer-1",
+          "graph-layout/domain/outer-2",
           "unclassified"
         ]
       },
@@ -4460,12 +4648,22 @@
         "from": "app-host/presentation",
         "allow": [
           "account/presentation/public",
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
           "keybindings/application/public",
+          "vue-node-renderer/application/public",
+          "vue-node-renderer/presentation/public",
           "app-host/domain",
           "app-host/application",
           "app-host/presentation",
+          "canvas-renderer/domain",
+          "canvas-renderer/application",
+          "canvas-renderer/presentation",
           "error-reporting/domain",
           "error-reporting/application",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/presentation",
           "keybindings/domain",
           "keybindings/presentation",
           "telemetry/application",
@@ -4474,9 +4672,12 @@
           "vue-node-renderer/presentation",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
+          "canvas-renderer/application/outer-1",
+          "graph-layout/application/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
           "vue-node-renderer/application/outer-1",
+          "graph-layout/domain/outer-2",
           "unclassified"
         ]
       },
@@ -4485,17 +4686,32 @@
         "allow": [
           "account/presentation/public",
           "account/integration/public",
+          "canvas-renderer/integration/public",
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
           "keybindings/application/public",
           "keybindings/integration/public",
+          "vue-node-renderer/application/public",
+          "vue-node-renderer/presentation/public",
           "vue-node-renderer/integration/public",
           "app-host/domain",
           "app-host/application",
           "app-host/infrastructure",
           "app-host/presentation",
           "app-host/integration",
+          "canvas-renderer/domain",
+          "canvas-renderer/application",
+          "canvas-renderer/infrastructure",
+          "canvas-renderer/presentation",
+          "canvas-renderer/integration",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/infrastructure",
+          "graph-layout/presentation",
+          "graph-layout/integration",
           "keybindings/domain",
           "keybindings/presentation",
           "keybindings/integration",
@@ -4509,11 +4725,17 @@
           "vue-node-renderer/integration",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
+          "canvas-renderer/application/outer-1",
+          "canvas-renderer/infrastructure/outer-1",
+          "canvas-renderer/integration/outer-1",
+          "graph-layout/application/outer-1",
+          "graph-layout/integration/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
           "telemetry/integration/outer-1",
           "vue-node-renderer/application/outer-1",
           "vue-node-renderer/integration/outer-1",
+          "graph-layout/domain/outer-2",
           "unclassified"
         ]
       },
@@ -5025,6 +5247,7 @@
       {
         "from": "canvas-renderer/integration",
         "allow": [
+          "canvas-renderer/integration/public",
           "keybindings/application/public",
           "keybindings/integration/public",
           "canvas-renderer/domain",
@@ -5126,6 +5349,7 @@
       {
         "from": "color-palettes/application",
         "allow": [
+          "color-palettes/application/public",
           "color-palettes/domain",
           "color-palettes/application",
           "unclassified"
@@ -6783,6 +7007,7 @@
       {
         "from": "selection-toolbox/integration",
         "allow": [
+          "canvas-renderer/integration/public",
           "keybindings/application/public",
           "keybindings/integration/public",
           "app-host/domain",
@@ -6843,6 +7068,7 @@
         "from": "settings/application",
         "allow": [
           "keybindings/application/public",
+          "settings/application/public",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -6865,6 +7091,7 @@
         "from": "settings/infrastructure",
         "allow": [
           "keybindings/application/public",
+          "settings/application/public",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -6888,6 +7115,7 @@
         "allow": [
           "account/presentation/public",
           "keybindings/application/public",
+          "settings/application/public",
           "authentication/domain",
           "authentication/application",
           "authentication/presentation",
@@ -6913,6 +7141,7 @@
           "account/integration/public",
           "keybindings/application/public",
           "keybindings/integration/public",
+          "settings/application/public",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -7224,9 +7453,11 @@
         "from": "vue-node-renderer/domain",
         "allow": [
           "graph-layout/domain/public",
+          "color-palettes/domain",
           "graph-layout/domain",
           "graph-model/domain",
           "link-connection/domain",
+          "settings/domain",
           "vue-node-renderer/domain",
           "graph-model/domain/outer-1",
           "graph-layout/domain/outer-2",
@@ -7236,9 +7467,14 @@
       {
         "from": "vue-node-renderer/application",
         "allow": [
+          "color-palettes/application/public",
           "graph-layout/domain/public",
           "graph-layout/application/public",
           "link-connection/application/public",
+          "settings/application/public",
+          "vue-node-renderer/application/public",
+          "color-palettes/domain",
+          "color-palettes/application",
           "graph-layout/domain",
           "graph-layout/application",
           "graph-layout/infrastructure",
@@ -7248,11 +7484,15 @@
           "link-connection/domain",
           "link-connection/application",
           "litegraph-api/infrastructure",
+          "settings/domain",
+          "settings/application",
+          "settings/infrastructure",
           "vue-node-renderer/domain",
           "vue-node-renderer/application",
           "vue-node-renderer/infrastructure",
           "graph-layout/application/outer-1",
           "graph-model/domain/outer-1",
+          "settings/application/outer-1",
           "vue-node-renderer/application/outer-1",
           "graph-layout/domain/outer-2",
           "unclassified"
@@ -7261,9 +7501,14 @@
       {
         "from": "vue-node-renderer/infrastructure",
         "allow": [
+          "color-palettes/application/public",
           "graph-layout/domain/public",
           "graph-layout/application/public",
           "link-connection/application/public",
+          "settings/application/public",
+          "vue-node-renderer/application/public",
+          "color-palettes/domain",
+          "color-palettes/application",
           "graph-layout/domain",
           "graph-layout/application",
           "graph-layout/infrastructure",
@@ -7273,11 +7518,15 @@
           "link-connection/domain",
           "link-connection/application",
           "litegraph-api/infrastructure",
+          "settings/domain",
+          "settings/application",
+          "settings/infrastructure",
           "vue-node-renderer/domain",
           "vue-node-renderer/application",
           "vue-node-renderer/infrastructure",
           "graph-layout/application/outer-1",
           "graph-model/domain/outer-1",
+          "settings/application/outer-1",
           "vue-node-renderer/application/outer-1",
           "graph-layout/domain/outer-2",
           "unclassified"
@@ -7286,9 +7535,15 @@
       {
         "from": "vue-node-renderer/presentation",
         "allow": [
+          "color-palettes/application/public",
           "graph-layout/domain/public",
           "graph-layout/application/public",
           "link-connection/application/public",
+          "settings/application/public",
+          "vue-node-renderer/application/public",
+          "vue-node-renderer/presentation/public",
+          "color-palettes/domain",
+          "color-palettes/application",
           "graph-layout/domain",
           "graph-layout/application",
           "graph-layout/presentation",
@@ -7296,11 +7551,15 @@
           "graph-model/application",
           "link-connection/domain",
           "link-connection/application",
+          "settings/domain",
+          "settings/application",
+          "settings/presentation",
           "vue-node-renderer/domain",
           "vue-node-renderer/application",
           "vue-node-renderer/presentation",
           "graph-layout/application/outer-1",
           "graph-model/domain/outer-1",
+          "settings/application/outer-1",
           "vue-node-renderer/application/outer-1",
           "graph-layout/domain/outer-2",
           "unclassified"
@@ -7309,11 +7568,17 @@
       {
         "from": "vue-node-renderer/integration",
         "allow": [
+          "color-palettes/application/public",
           "graph-layout/domain/public",
           "graph-layout/application/public",
           "link-connection/application/public",
           "litegraph-api/integration/public",
+          "settings/application/public",
+          "vue-node-renderer/application/public",
+          "vue-node-renderer/presentation/public",
           "vue-node-renderer/integration/public",
+          "color-palettes/domain",
+          "color-palettes/application",
           "graph-layout/domain",
           "graph-layout/application",
           "graph-layout/infrastructure",
@@ -7328,6 +7593,11 @@
           "link-connection/integration",
           "litegraph-api/infrastructure",
           "litegraph-api/integration",
+          "settings/domain",
+          "settings/application",
+          "settings/infrastructure",
+          "settings/presentation",
+          "settings/integration",
           "vue-node-renderer/domain",
           "vue-node-renderer/application",
           "vue-node-renderer/infrastructure",
@@ -7337,6 +7607,7 @@
           "graph-layout/integration/outer-1",
           "graph-model/domain/outer-1",
           "graph-model/integration/outer-1",
+          "settings/application/outer-1",
           "vue-node-renderer/application/outer-1",
           "vue-node-renderer/integration/outer-1",
           "graph-layout/domain/outer-2",
@@ -7856,12 +8127,16 @@
       {
         "from": "app-host/domain/outer-1",
         "allow": [
+          "graph-layout/domain/public",
           "app-host/domain",
+          "canvas-renderer/domain",
           "error-reporting/domain",
+          "graph-layout/domain",
           "keybindings/domain",
           "vue-node-renderer/domain",
           "app-host/domain/outer-1",
           "telemetry/domain/outer-1",
+          "graph-layout/domain/outer-2",
           "unclassified"
         ]
       },
@@ -7869,12 +8144,22 @@
         "from": "app-host/presentation/outer-1",
         "allow": [
           "account/presentation/public",
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
           "keybindings/application/public",
+          "vue-node-renderer/application/public",
+          "vue-node-renderer/presentation/public",
           "app-host/domain",
           "app-host/application",
           "app-host/presentation",
+          "canvas-renderer/domain",
+          "canvas-renderer/application",
+          "canvas-renderer/presentation",
           "error-reporting/domain",
           "error-reporting/application",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/presentation",
           "keybindings/domain",
           "keybindings/presentation",
           "telemetry/application",
@@ -7883,9 +8168,12 @@
           "vue-node-renderer/presentation",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
+          "canvas-renderer/application/outer-1",
+          "graph-layout/application/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
           "vue-node-renderer/application/outer-1",
+          "graph-layout/domain/outer-2",
           "unclassified"
         ]
       },
@@ -8086,6 +8374,7 @@
       {
         "from": "canvas-renderer/integration/outer-1",
         "allow": [
+          "canvas-renderer/integration/public",
           "keybindings/application/public",
           "keybindings/integration/public",
           "canvas-renderer/domain",
@@ -8534,6 +8823,7 @@
       {
         "from": "selection-toolbox/integration/outer-1",
         "allow": [
+          "canvas-renderer/integration/public",
           "keybindings/application/public",
           "keybindings/integration/public",
           "app-host/domain",
@@ -8575,6 +8865,7 @@
         "from": "settings/application/outer-1",
         "allow": [
           "keybindings/application/public",
+          "settings/application/public",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -8698,9 +8989,14 @@
       {
         "from": "vue-node-renderer/application/outer-1",
         "allow": [
+          "color-palettes/application/public",
           "graph-layout/domain/public",
           "graph-layout/application/public",
           "link-connection/application/public",
+          "settings/application/public",
+          "vue-node-renderer/application/public",
+          "color-palettes/domain",
+          "color-palettes/application",
           "graph-layout/domain",
           "graph-layout/application",
           "graph-layout/infrastructure",
@@ -8710,11 +9006,15 @@
           "link-connection/domain",
           "link-connection/application",
           "litegraph-api/infrastructure",
+          "settings/domain",
+          "settings/application",
+          "settings/infrastructure",
           "vue-node-renderer/domain",
           "vue-node-renderer/application",
           "vue-node-renderer/infrastructure",
           "graph-layout/application/outer-1",
           "graph-model/domain/outer-1",
+          "settings/application/outer-1",
           "vue-node-renderer/application/outer-1",
           "graph-layout/domain/outer-2",
           "unclassified"
@@ -8723,11 +9023,17 @@
       {
         "from": "vue-node-renderer/integration/outer-1",
         "allow": [
+          "color-palettes/application/public",
           "graph-layout/domain/public",
           "graph-layout/application/public",
           "link-connection/application/public",
           "litegraph-api/integration/public",
+          "settings/application/public",
+          "vue-node-renderer/application/public",
+          "vue-node-renderer/presentation/public",
           "vue-node-renderer/integration/public",
+          "color-palettes/domain",
+          "color-palettes/application",
           "graph-layout/domain",
           "graph-layout/application",
           "graph-layout/infrastructure",
@@ -8742,6 +9048,11 @@
           "link-connection/integration",
           "litegraph-api/infrastructure",
           "litegraph-api/integration",
+          "settings/domain",
+          "settings/application",
+          "settings/infrastructure",
+          "settings/presentation",
+          "settings/integration",
           "vue-node-renderer/domain",
           "vue-node-renderer/application",
           "vue-node-renderer/infrastructure",
@@ -8751,6 +9062,7 @@
           "graph-layout/integration/outer-1",
           "graph-model/domain/outer-1",
           "graph-model/integration/outer-1",
+          "settings/application/outer-1",
           "vue-node-renderer/application/outer-1",
           "vue-node-renderer/integration/outer-1",
           "graph-layout/domain/outer-2",
@@ -9037,6 +9349,8 @@
         "allow": [
           "account/presentation/public",
           "account/integration/public",
+          "canvas-renderer/integration/public",
+          "color-palettes/application/public",
           "comfyui-api/domain/public",
           "graph-layout/domain/public",
           "graph-layout/application/public",
@@ -9048,6 +9362,9 @@
           "litegraph-api/integration/public",
           "node-definition/domain/public",
           "server-facts/domain/public",
+          "settings/application/public",
+          "vue-node-renderer/application/public",
+          "vue-node-renderer/presentation/public",
           "vue-node-renderer/integration/public",
           "webcam-capture/integration/public",
           "agent/domain",

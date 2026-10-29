@@ -2,13 +2,23 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import largeGraphWorkflow from '@e2e/assets/large-graph-workflow.json' with { type: 'json' }
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+
+const LARGE_GRAPH_WORKFLOW = zComfyWorkflow.parse({
+  ...largeGraphWorkflow,
+  extra: {
+    ...largeGraphWorkflow.extra,
+    ds: { ...largeGraphWorkflow.extra.ds, scale: 1 }
+  }
+})
 
 test.describe(
   'Vue node viewport KeepAlive',
   { tag: ['@canvas', '@node', '@vue-nodes', '@slow'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+      await comfyPage.workflow.loadGraphData(LARGE_GRAPH_WORKFLOW)
       await comfyPage.canvasOps.setScale(1)
       await comfyPage.canvasOps.setOffset([0, 0])
     })
@@ -129,6 +139,63 @@ test.describe(
       await expect
         .poll(() => sourceElement.evaluate((element) => element.isConnected))
         .toBe(false)
+    })
+
+    test('uses boxes at low quality and restores the same node element', async ({
+      comfyPage
+    }) => {
+      const initialNode = comfyPage.vueNodes.nodes.first()
+      const nodeId = await initialNode.getAttribute('data-node-id')
+      const initialElement = await initialNode.elementHandle()
+      if (!nodeId) {
+        throw new Error('Expected an active Vue node with an id')
+      }
+      const node = await comfyPage.nodeOps.getNodeRefById(nodeId)
+      const initialSize = await node.getSize()
+
+      await comfyPage.canvasOps.setScale(0.4)
+      await expect(comfyPage.page.getByTestId('node-box-overlay')).toBeVisible()
+      await expect
+        .poll(() => initialElement.evaluate((element) => element.isConnected))
+        .toBe(false)
+
+      await comfyPage.canvasOps.setScale(1)
+      const returnedNode = comfyPage.vueNodes.getNodeLocator(nodeId)
+      await expect(returnedNode).toBeVisible()
+      const returnedElement = await returnedNode.elementHandle()
+
+      expect(
+        await initialElement.evaluate(
+          (element, candidate) => element === candidate,
+          returnedElement
+        )
+      ).toBe(true)
+      expect(await node.getSize()).toEqual(initialSize)
+    })
+
+    test('keeps the focused node connected in low-quality mode', async ({
+      comfyPage
+    }) => {
+      const focusedNode = comfyPage.vueNodes.nodes.first()
+      const focusedElement = await focusedNode.elementHandle()
+      const unpinnedNode = comfyPage.vueNodes.nodes.nth(1)
+      await expect(unpinnedNode).toBeVisible()
+      const unpinnedElement = await unpinnedNode.elementHandle()
+      await focusedNode.focus()
+
+      await comfyPage.canvasOps.setScale(0.4)
+      await expect(comfyPage.page.getByTestId('node-box-overlay')).toBeVisible()
+      await expect
+        .poll(() => unpinnedElement.evaluate((element) => element.isConnected))
+        .toBe(false)
+      expect(
+        await focusedElement.evaluate((element) => element.isConnected)
+      ).toBe(true)
+      expect(
+        await focusedElement.evaluate((element) =>
+          element.contains(document.activeElement)
+        )
+      ).toBe(true)
     })
   }
 )

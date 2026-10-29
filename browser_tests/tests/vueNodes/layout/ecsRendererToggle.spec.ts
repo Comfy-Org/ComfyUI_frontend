@@ -206,6 +206,10 @@ test.describe(
         const longWidgetLabel = 'guidance scale'
 
         await test.step(`Configure long text at ${label} zoom`, async () => {
+          await comfyPage.settings.setSetting(
+            'LiteGraph.Canvas.MinFontSizeForLOD',
+            0
+          )
           await comfyPage.page.evaluate(
             ({ longTitle, longWidgetLabel }) => {
               const node = window.app!.graph.nodes.find(

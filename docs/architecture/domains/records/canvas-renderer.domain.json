@@ -176,10 +176,19 @@
       "role": "application"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/renderer/core/canvas/litegraph/slotCalculations.ts"
+  ],
   "allowedDependencies": ["keybindings"],
-  "allowedConsumers": ["selection-toolbox"],
+  "allowedConsumers": ["app-host", "selection-toolbox"],
   "characterizationScenarios": [
+    {
+      "name": "Slot calculations provide expanded, collapsed, measured, and widget slot positions for simplified node boxes",
+      "checks": [
+        "src/renderer/core/canvas/litegraph/slotCalculations.test.ts",
+        "src/renderer/extensions/vueNodes/utils/createNodeBox.test.ts"
+      ]
+    },
     {
       "name": "Canvas store, interaction mode, and redraw scheduling preserve canvas state",
       "checks": [
@@ -249,7 +258,7 @@
     "docs/adr/RENDERING-INVALIDATION-0021-classified-frame-coalesced-canvas-invalidation.md"
   ],
   "compatibilityPromises": [
-    "Existing callers in the Vue node renderer, widget runtime, linear mode, minimap, onboarding, agent, workbench, and shared composables may continue importing canvas internals during inventory; this record grants no new cross-domain permissions.",
+    "Existing callers in the Vue node renderer, widget runtime, linear mode, minimap, onboarding, agent, workbench, and shared composables may continue importing canvas internals during inventory; app-host consumes the tested slot-calculation entry point.",
     "LiteGraph canvas callbacks, setDirty semantics, and the DragAndScale state shape observed by extensions remain unchanged."
   ],
   "deepImports": "inventory"

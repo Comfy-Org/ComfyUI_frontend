@@ -14,6 +14,10 @@ test.describe(
   () => {
     test.setTimeout(60_000)
 
+    test.use({
+      initialSettings: { 'LiteGraph.Canvas.MinFontSizeForLOD': 0 }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('inputs/native_lora_model')
       await expect(comfyPage.vueNodes.nodes).toHaveCount(4)
@@ -25,7 +29,10 @@ test.describe(
 
     test.describe('node creation and model drops', () => {
       test.use({
-        initialSettings: { 'Comfy.ModelLibrary.UseAssetBrowser': false }
+        initialSettings: {
+          'LiteGraph.Canvas.MinFontSizeForLOD': 0,
+          'Comfy.ModelLibrary.UseAssetBrowser': false
+        }
       })
 
       for (const title of ['Load LoRA (Model)', 'Load LoRA (Text Encoder)']) {
@@ -279,7 +286,12 @@ test.describe(
     }
 
     test.describe('populated rows', () => {
-      test.use({ initialSettings: { 'Comfy.Workflow.Persist': true } })
+      test.use({
+        initialSettings: {
+          'LiteGraph.Canvas.MinFontSizeForLOD': 0,
+          'Comfy.Workflow.Persist': true
+        }
+      })
 
       test.beforeEach(async ({ lora }) => {
         await lora.populate()

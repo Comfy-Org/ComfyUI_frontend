@@ -1,9 +1,12 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 
 import {
+  isNodeExcludedFromCulling,
   isNodeTypeExcludedFromCulling,
+  registerNodeCullingOptOut,
   registerNodeTypeCullingOptOut
 } from '@/services/vueNodeCullingService'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 describe('vueNodeCullingService', () => {
   it('excludes a type while at least one registration holds', () => {
@@ -32,5 +35,22 @@ describe('vueNodeCullingService', () => {
 
     theirs()
     expect(isNodeTypeExcludedFromCulling('idempotent-type')).toBe(false)
+  })
+
+  it('excludes only the registered node instance until release', () => {
+    const registeredNodeId = toNodeId(12)
+    const otherNodeId = toNodeId(13)
+    const release = registerNodeCullingOptOut(registeredNodeId)
+    onTestFinished(release)
+
+    expect(isNodeExcludedFromCulling(registeredNodeId, 'shared-type')).toBe(
+      true
+    )
+    expect(isNodeExcludedFromCulling(otherNodeId, 'shared-type')).toBe(false)
+
+    release()
+    expect(isNodeExcludedFromCulling(registeredNodeId, 'shared-type')).toBe(
+      false
+    )
   })
 })
