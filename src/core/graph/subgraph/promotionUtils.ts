@@ -155,7 +155,7 @@ export function reorderSubgraphInputsByWidgetOrder(
   subgraphNode: SubgraphNode,
   orderedWidgets: readonly Pick<IBaseWidget, 'widgetId'>[]
 ): void {
-  const remainingIndices = new Set(subgraphNode.inputs.keys())
+  const remainingIndices = new Set(subgraphNode.subgraph.inputs.keys())
   const orderedIndices = orderedWidgets.flatMap((orderedWidget) => {
     for (const index of remainingIndices) {
       if (isSamePromotedInput(subgraphNode, index, orderedWidget)) {
@@ -175,8 +175,14 @@ function applySubgraphInputOrder(
   subgraphNode: SubgraphNode,
   orderedIndices: readonly number[]
 ): void {
-  const widgetValues = subgraphNode.inputs.map((input) => {
-    const id = input.widgetId
+  const hostInputOf = (index: number) => {
+    const subgraphInput = subgraphNode.subgraph.inputs[index]
+    return subgraphNode.inputs.find(
+      (input) => input._subgraphSlot === subgraphInput
+    )
+  }
+  const widgetValues = subgraphNode.subgraph.inputs.map((_, index) => {
+    const id = hostInputOf(index)?.widgetId
     if (!id) return undefined
     return useWidgetValueStore().getWidget(id)?.value
   })
@@ -185,14 +191,16 @@ function applySubgraphInputOrder(
   useWidgetValueStore().setNodeWidgetOrder(
     subgraphNode.rootGraph.id,
     subgraphNode.id,
-    subgraphNode.inputs.flatMap((input) =>
-      input.widgetId ? [input.widgetId] : []
-    )
+    subgraphNode.inputs.flatMap((input) => {
+      const id =
+        input.widgetId ?? subgraphNode.getWidgetFromSlot(input)?.widgetId
+      return id ? [id] : []
+    })
   )
 
   for (const [newIndex, oldIndex] of orderedIndices.entries()) {
     const value = widgetValues[oldIndex]
-    const id = subgraphNode.inputs[newIndex]?.widgetId
+    const id = hostInputOf(newIndex)?.widgetId
     if (value === undefined || !id) continue
     useWidgetValueStore().setValue(id, value)
   }
@@ -203,8 +211,10 @@ function isSamePromotedInput(
   inputIndex: number,
   orderedWidget: Pick<IBaseWidget, 'widgetId'>
 ): boolean {
-  const input = subgraphNode.inputs.at(inputIndex)
-  const linkedInput = input?._subgraphSlot
+  const linkedInput = subgraphNode.subgraph.inputs.at(inputIndex)
+  const input = subgraphNode.inputs.find(
+    (input) => input._subgraphSlot === linkedInput
+  )
   if (!input || !linkedInput) return false
 
   for (const linkId of linkedInput.linkIds) {

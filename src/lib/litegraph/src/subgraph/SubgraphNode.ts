@@ -136,13 +136,23 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this.graph = graph
 
     Object.defineProperty(this, 'widgets', {
-      get: () => [
-        ...this.inputs.flatMap((input) => {
-          const widget = this._projectPromotedWidget(input)
-          return widget ? [widget] : []
-        }),
-        ...this._extraWidgets
-      ],
+      get: () => {
+        //Widgets this node owns for an input (e.g. an autogrow group and its
+        //children) take that input's position
+        const owned = new Set<IBaseWidget>()
+        const widgets = this.inputs.flatMap((input) => {
+          const widget =
+            this._projectPromotedWidget(input) ??
+            this._extraWidgets.find((w) => w.name === input.widget?.name)
+          if (!widget) return []
+          owned.add(widget)
+          return [widget]
+        })
+        return [
+          ...widgets,
+          ...this._extraWidgets.filter((widget) => !owned.has(widget))
+        ]
+      },
       set: () => {
         if (import.meta.env.DEV)
           console.warn(
@@ -175,6 +185,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
           const { inputNode, input } = link.resolve(subgraph)
           if (!inputNode || !input) return
+          if (this.bindDynamicInput(existingInput, inputNode, input)) return
 
           const widget = inputNode.getWidgetFromSlot(input)
           if (widget)
@@ -197,7 +208,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = e.detail.input._widget
         if (widget) this.ensureWidgetRemoved(widget)
 
-        this.removeInput(e.detail.index)
+        const input = this.inputs.find(
+          (input) => input._subgraphSlot === e.detail.input
+        )
+        if (input) this.unbindDynamicInput(input)
+        this.removeInput(input ? this.inputs.indexOf(input) : e.detail.index)
         this.invalidatePromotedViews()
         this.setDirtyCanvas(true, true)
       },
@@ -225,8 +240,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphEvents.addEventListener(
       'renaming-input',
       (e) => {
-        const { index, oldName, newName } = e.detail
-        const input = this.inputs.at(index)
+        const { oldName, newName } = e.detail
+        const input = this.inputs.find(
+          (input) => input._subgraphSlot === e.detail.input
+        )
         if (!input) {
           console.error('Subgraph input not found')
           return
@@ -330,6 +347,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         // widget is never torn down.
         input._pendingDemotionToken = undefined
         if (!e.detail.widget || !e.detail.node) return
+        if (this.bindDynamicInput(input, e.detail.node, e.detail.input)) return
 
         this._setWidget(
           subgraphInput,
@@ -369,6 +387,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         queueMicrotask(() => {
           if (input._pendingDemotionToken !== token) return
           input._pendingDemotionToken = undefined
+          this.unbindDynamicInput(input)
 
           if (widget) this.ensureWidgetRemoved(widget)
           if (id && !this.inputs.some((i) => i.widgetId === id)) {
@@ -535,19 +554,22 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override _internalConfigureAfterSlots() {
     this._rebindInputSubgraphSlots()
 
-    this.inputs = this.inputs.filter((input) => input._subgraphSlot)
+    //Keep the inputs a subgraph input's group owns, named under it
+    const groupNames = this.inputs.flatMap((input) =>
+      input._subgraphSlot ? [`${input.name}.`] : []
+    )
+    this.inputs = this.inputs.filter(
+      (input) =>
+        input._subgraphSlot ||
+        groupNames.some((groupName) => input.name.startsWith(groupName))
+    )
     this.invalidatePromotedViews()
 
     this._hydratePreviewExposures()
 
     for (const input of this.inputs) {
       const subgraphInput = input._subgraphSlot
-      if (!subgraphInput) {
-        console.warn(
-          `[SubgraphNode.configure] No subgraph input found for input ${input.name}, skipping`
-        )
-        continue
-      }
+      if (!subgraphInput) continue
 
       this._addSubgraphInputListeners(subgraphInput, input)
       this._resolveInputWidget(subgraphInput, input)
@@ -633,6 +655,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         console.warn('Failed to find corresponding input', link, inputNode)
         continue
       }
+      if (this.bindDynamicInput(input, inputNode, targetInput)) break
 
       const widget = inputNode.getWidgetFromSlot(targetInput)
       if (widget) {
@@ -741,6 +764,27 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     _sourceWidget: Readonly<IBaseWidget>
   ): IBaseWidget | undefined {
     return undefined
+  }
+
+  /**
+   * App-layer hook to bind an input linked to an interior dynamic input group
+   * (e.g. autogrow), which this node then owns instead of promoting.
+   * @returns Whether the input was bound.
+   */
+  protected bindDynamicInput(
+    _input: INodeInputSlot,
+    _interiorNode: LGraphNode,
+    _interiorInput: INodeInputSlot
+  ): boolean {
+    return false
+  }
+
+  /**
+   * App-layer hook to release an input bound by {@link bindDynamicInput}.
+   * @returns Whether the input was bound.
+   */
+  protected unbindDynamicInput(_input: INodeInputSlot): boolean {
+    return false
   }
 
   /**
