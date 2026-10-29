@@ -12,7 +12,7 @@ import {
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
-import { addShimWidget } from '@/core/graph/widgets/inputWidgetStub'
+import { addShimWidget } from '@/core/graph/widgets/inputWidgetShim'
 import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
   LGraphCanvas,
