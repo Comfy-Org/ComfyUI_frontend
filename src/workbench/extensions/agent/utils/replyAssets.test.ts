@@ -34,7 +34,23 @@ function servedUnder(subpath: string) {
   })
 }
 
+function removeUrlParse() {
+  const descriptor = Object.getOwnPropertyDescriptor(URL, 'parse')
+  Reflect.deleteProperty(URL, 'parse')
+  onTestFinished(() => {
+    if (descriptor) Object.defineProperty(URL, 'parse', descriptor)
+  })
+}
+
 describe('resolveAgentAssetUrl', () => {
+  it('re-homes a loopback asset when URL.parse is unavailable', () => {
+    removeUrlParse()
+
+    expect(resolveAgentAssetUrl(LOOPBACK_VIEW)).toBe(
+      `${window.location.origin}/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
+    )
+  })
+
   it('keeps the whole query, including an empty subfolder', () => {
     expect(resolveAgentAssetUrl(LOOPBACK_VIEW)).toBe(
       `${window.location.origin}/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
