@@ -210,18 +210,21 @@ describe('useModelStore', () => {
     })
   })
 
-  // Runs right after the test above, which already reported a failure. Each
-  // test gets a fresh global Pinia, so the once-per-session flag must reset.
   it('reports metadata load failures again in a new store session', async () => {
     enableMocks()
     vi.mocked(api.viewMetadata).mockRejectedValue(new Error('down'))
-    store = useModelStore()
-    await store.loadModelFolders()
-    const folderStore = await store.getLoadedModelFolder('checkpoints')
+    const loadFirstModel = async () => {
+      const modelStore = useModelStore()
+      await modelStore.loadModelFolders()
+      const folderStore = await modelStore.getLoadedModelFolder('checkpoints')
+      await folderStore!.models['0/sdxl.safetensors'].load()
+      modelStore.$dispose()
+    }
 
-    await folderStore!.models['0/sdxl.safetensors'].load()
+    await loadFirstModel()
+    await loadFirstModel()
 
-    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledTimes(2)
   })
 
   it('should handle no metadata', async () => {

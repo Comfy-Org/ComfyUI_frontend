@@ -297,7 +297,6 @@ export const useModelStore = defineStore('models', () => {
   const useAssetModels = computed(
     () => flags.assetsEnabled && !deploymentPick?.bootDeployment
   )
-  // Scoped to the store instance so each Pinia (and each test) starts fresh.
   let hasReportedMetadataLoadFailure = false
   function reportMetadataLoadFailure(fileName: string, error: unknown) {
     if (hasReportedMetadataLoadFailure) {
