@@ -20,13 +20,13 @@
 import { useI18n } from 'vue-i18n'
 
 import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
-import { useAgentSidebarTabs } from '@/composables/useAgentSidebarTabs'
-import type { SidebarTabExtension } from '@/types/extensionTypes'
+import { useAgentSidebarTabs } from '@/composables/useAgentSidebarTabs';
+import type { AgentSidebarTab } from '@/composables/useAgentSidebarTabs';
 
 import SidebarIcon from './SidebarIcon.vue'
 
 defineProps<{
-  tab: SidebarTabExtension
+  tab: AgentSidebarTab
   tooltipSuffix: string
   isSmall: boolean
   selected: boolean

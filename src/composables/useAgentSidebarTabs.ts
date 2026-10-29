@@ -7,6 +7,8 @@ import { useExtensionStore } from '@/stores/extensionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
+export type AgentSidebarTab = SidebarTabExtension
+
 export function useAgentSidebarTabs() {
   const { t } = useI18n()
   const workspaceStore = useWorkspaceStore()
