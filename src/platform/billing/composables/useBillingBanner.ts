@@ -228,6 +228,21 @@ function useBillingBannerInternal() {
   const kind = computed<BillingBannerKind | null>(() =>
     isCloud ? deriveBillingBanner(bannerInputs.value, now.value) : null
   )
+  const lifecycleKind = computed<BillingBannerKind | null>(() =>
+    isCloud
+      ? deriveBillingBanner(
+          {
+            ...bannerInputs.value,
+            hasFunds: true,
+            topUpDeniedPastDue: false,
+            runDeniedPastDue: false,
+            planEndedDismissed: false,
+            planChangeDismissed: false
+          },
+          now.value
+        )
+      : null
+  )
   const audience = computed(() => billingBannerAudience(bannerInputs.value))
 
   const hasExhaustedFunds = computed(
@@ -243,7 +258,7 @@ function useBillingBannerInternal() {
     if (kind.value === 'planChange') planChangeDismissed.value = true
   }
 
-  return { kind, audience, dismiss }
+  return { kind, lifecycleKind, audience, dismiss }
 }
 
 export const useBillingBanner = createSharedComposable(useBillingBannerInternal)
