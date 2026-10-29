@@ -47,6 +47,23 @@ The stores reach litegraph only through small leaves:
 - the `litegraph()` singleton accessor, which the layout code reads for node
   metrics.
 
+The stores and litegraph import each other, so neither can leave `src` alone:
+
+```mermaid
+flowchart LR
+  appCode["app code"]
+  classes["src/lib/litegraph<br/>LGraph · LGraphNode · LGraphCanvas"]
+  stores["app: entity, layout<br/>and selection stores"]
+  adapters["app: litegraph adapters"]
+  i18n["app: @/i18n"]
+  leaves["src/lib/litegraph<br/>graphIntents · idAllocation<br/>restoredWidgetValue"]
+  appCode --> classes
+  classes -- "store getters" --> stores
+  classes <-- "both ways" --> adapters
+  classes -- "labels" --> i18n
+  stores -- "intents, IDs" --> leaves
+```
+
 Litegraph classes call store getters directly throughout the class layer. An
 active Pinia is already required before the first graph exists: `main.ts`
 installs it before extensions load, and the Vitest setup installs a testing
@@ -104,6 +121,33 @@ about 3% and did not change native typecheck wall time.
    lists the app modules litegraph may still import, and each later step only
    removes entries. Once litegraph is a package, the rule forbids every import
    from the package into the app.
+
+The resulting packages form one direction of dependency. The app reaches
+litegraph's labels only by registering its translator at startup:
+
+```mermaid
+flowchart LR
+  appCode["app (src/)"]
+  litegraph["@comfyorg/litegraph<br/>classes · adapters · translate()"]
+  graphState["@comfyorg/graph-state<br/>entity stores · layoutStore · selectionStore"]
+  graphModel["@comfyorg/graph-model<br/>contracts · LGraphState"]
+  appCode --> litegraph
+  appCode --> graphState
+  litegraph --> graphState
+  litegraph --> graphModel
+  graphState --> graphModel
+  appCode -. "provideTranslator(st)" .-> litegraph
+```
+
+A litegraph label resolves through the port, so a missing translator falls back
+to English instead of failing:
+
+```mermaid
+flowchart TB
+  call["translate(key, fallback)"] --> registered{"translator<br/>registered?"}
+  registered -- yes --> localized["app st(key, fallback)"]
+  registered -- no --> english["fallback, in English"]
+```
 
 ## Extension compatibility
 
@@ -170,7 +214,9 @@ fallback)` (decision 6).
    `LGraphState` contract from ID allocation, so that contract went to
    graph-model while allocation and the graph-intent emitters stay in
    litegraph. Graph-state types the owning graph and node structurally instead
-   of importing litegraph classes.
+   of importing litegraph classes. The `litegraph()` accessor stays in
+   litegraph: once the layout store stopped reading node title height, its only
+   store-side reader was an app utility.
 6. `@comfyorg/graph-state` holds the stores (decision 1). Graph-state tests that
    build litegraph graphs stay in the app.
 7. Litegraph is the declaration-backed `@comfyorg/litegraph` package. The app
