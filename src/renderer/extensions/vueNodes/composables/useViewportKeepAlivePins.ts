@@ -12,12 +12,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 const LIVE_STATE_SELECTOR = 'iframe, video, audio'
 const LIVE_STATE_SCAN_THROTTLE_MS = 100
 
-interface LinkDragSource {
-  isConnecting: boolean
-  renderLinks: readonly { node?: { id?: unknown } | null }[]
-}
-
-export function findLiveStateNodeIds(root: ParentNode): Set<NodeId> {
+function findLiveStateNodeIds(root: ParentNode): Set<NodeId> {
   const nodeIds = new Set<NodeId>()
   for (const element of root.querySelectorAll(LIVE_STATE_SELECTOR)) {
     const isLive =
@@ -33,17 +28,14 @@ export function findLiveStateNodeIds(root: ParentNode): Set<NodeId> {
   return nodeIds
 }
 
-export function findLinkDragSourceIds(
-  connector: LinkDragSource | null | undefined
+function findLinkDragSourceIds(
+  connector: LinkConnector | null | undefined
 ): Set<NodeId> {
   const nodeIds = new Set<NodeId>()
   if (!connector?.isConnecting) return nodeIds
 
   for (const link of connector.renderLinks) {
-    const nodeId = link.node?.id
-    if (typeof nodeId === 'string' || typeof nodeId === 'number') {
-      nodeIds.add(toNodeId(nodeId))
-    }
+    nodeIds.add(link.node.id)
   }
   return nodeIds
 }

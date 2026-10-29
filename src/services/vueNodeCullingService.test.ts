@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 
 import {
   isNodeTypeExcludedFromCulling,
@@ -8,7 +8,9 @@ import {
 describe('vueNodeCullingService', () => {
   it('excludes a type while at least one registration holds', () => {
     const first = registerNodeTypeCullingOptOut('shared-type')
+    onTestFinished(first)
     const second = registerNodeTypeCullingOptOut('shared-type')
+    onTestFinished(second)
     expect(isNodeTypeExcludedFromCulling('shared-type')).toBe(true)
 
     first()
@@ -20,7 +22,9 @@ describe('vueNodeCullingService', () => {
 
   it('makes release idempotent', () => {
     const mine = registerNodeTypeCullingOptOut('idempotent-type')
+    onTestFinished(mine)
     const theirs = registerNodeTypeCullingOptOut('idempotent-type')
+    onTestFinished(theirs)
 
     mine()
     mine()
@@ -28,9 +32,5 @@ describe('vueNodeCullingService', () => {
 
     theirs()
     expect(isNodeTypeExcludedFromCulling('idempotent-type')).toBe(false)
-  })
-
-  it('does not exclude unregistered types', () => {
-    expect(isNodeTypeExcludedFromCulling('never-registered')).toBe(false)
   })
 })

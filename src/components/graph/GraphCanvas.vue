@@ -352,17 +352,12 @@ const allNodes = computed((): NodeState[] => {
   if (!rootGraphId || graphId === undefined) return []
   return nodeDataStore.getGraphNodesFor(rootGraphId, graphId)
 })
-const allNodeIds = computed(() => allNodes.value.map(({ id }) => id))
-const nodeTypesById = computed(
-  () => new Map(allNodes.value.map(({ id, type }) => [id, type]))
-)
 const { pinnedNodeIds } = useViewportKeepAlivePins({
   getRoot: () => transformPaneRef.value?.element ?? null,
   getLinkConnector: () => canvasStore.canvas?.linkConnector
 })
 const { activeNodeIds } = useViewportKeepAlive({
-  nodeIds: allNodeIds,
-  getNodeType: (nodeId) => nodeTypesById.value.get(nodeId),
+  nodes: allNodes,
   pinnedNodeIds,
   isEnabled: () => settingStore.get('Comfy.VueNodes.ViewportKeepAlive'),
   getNodeBounds: (nodeId) => {

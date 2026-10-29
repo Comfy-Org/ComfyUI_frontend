@@ -1,6 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { computed, effectScope, reactive, ref } from 'vue'
 
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import {
@@ -19,7 +28,7 @@ vi.mock<unknown>(
 
 const activeScopes: ReturnType<typeof effectScope>[] = []
 
-function nodeData(id: string, type = 'test') {
+function nodeData(id: string, type = 'test'): Pick<NodeState, 'id' | 'type'> {
   return {
     id: toNodeId(id),
     type
@@ -37,9 +46,7 @@ function setup(bounds: Record<string, Bounds | null>) {
   const activeNodeIds = scope.run(
     () =>
       useViewportKeepAlive({
-        nodeIds: computed(() => nodes.value.map((node) => node.id)),
-        getNodeType: (nodeId) =>
-          nodes.value.find((node) => node.id === nodeId)?.type,
+        nodes: computed(() => nodes.value),
         pinnedNodeIds: computed(() => pinned.value),
         isEnabled: () => enabled.value,
         getNodeBounds: (nodeId) => bounds[nodeId],
@@ -52,7 +59,6 @@ function setup(bounds: Record<string, Bounds | null>) {
 }
 
 beforeEach(() => {
-  vi.useFakeTimers()
   Object.assign(camera, { x: 0, y: 0, z: 1 })
 })
 
@@ -120,48 +126,27 @@ describe('useViewportKeepAlive', () => {
   })
 
   it('releases accumulated viewport nodes when graph-wide pins clear', async () => {
-    const COUNT = 150
-    const bounds = Object.fromEntries(
-      Array.from({ length: COUNT }, (_, index) => [
-        `node-${index}`,
-        { x: index * 400, y: 0, width: 100, height: 100 }
-      ])
-    )
-    const { activeNodeIds, pinned } = setup(bounds)
-    await vi.advanceTimersByTimeAsync(150)
-    expect(activeNodeIds.value.size).toBeLessThan(COUNT / 4)
-
-    pinned.value = new Set(Object.keys(bounds).map(toNodeId))
-    for (let x = 0; x <= COUNT * 400; x += 2000) {
-      camera.x = -x
-      await vi.advanceTimersByTimeAsync(150)
-    }
-
-    expect(activeNodeIds.value.size).toBe(COUNT)
-
-    pinned.value = new Set()
-    await vi.advanceTimersByTimeAsync(150)
-    expect(activeNodeIds.value.size).toBeLessThan(COUNT / 4)
-  })
-
-  it('releases a retained node once its pin clears', async () => {
     const bounds = Object.fromEntries(
       Array.from({ length: 150 }, (_, index) => [
         `node-${index}`,
-        { x: index * 400, y: 0, width: 100, height: 100 }
+        { x: index * 2000, y: 0, width: 100, height: 100 }
       ])
     )
     const { activeNodeIds, pinned } = setup(bounds)
-    await vi.advanceTimersByTimeAsync(150)
+    expect(activeNodeIds.value).toEqual(new Set(['node-0']))
 
     pinned.value = new Set(Object.keys(bounds).map(toNodeId))
-    camera.x = -40_000
+    camera.x = -2000
     await vi.advanceTimersByTimeAsync(150)
-    expect(activeNodeIds.value.has(toNodeId('node-0'))).toBe(true)
+    expect(activeNodeIds.value).toEqual(new Set(['node-0', 'node-1']))
+
+    camera.x = -4000
+    await vi.advanceTimersByTimeAsync(150)
+    expect(activeNodeIds.value).toEqual(new Set(['node-0', 'node-1', 'node-2']))
 
     pinned.value = new Set()
     await vi.advanceTimersByTimeAsync(150)
-    expect(activeNodeIds.value.has(toNodeId('node-0'))).toBe(false)
+    expect(activeNodeIds.value).toEqual(new Set(['node-2']))
   })
 
   it('keeps a registered node type attached wherever it is', async () => {
@@ -172,20 +157,32 @@ describe('useViewportKeepAlive', () => {
       ])
     )
     const { activeNodeIds, nodes } = setup(bounds)
-    nodes.value = nodes.value.map((node) =>
-      node.id === toNodeId('node-1') ? { ...node, type: 'canvas-widget' } : node
-    )
+    const nodeTypes = new Map([
+      [toNodeId('node-1'), 'canvas-widget'],
+      [toNodeId('node-2'), 'editor-widget']
+    ])
+    nodes.value = nodes.value.map((node) => ({
+      ...node,
+      type: nodeTypes.get(node.id) ?? node.type
+    }))
 
     await vi.advanceTimersByTimeAsync(150)
-    expect(activeNodeIds.value.has(toNodeId('node-1'))).toBe(false)
+    expect(activeNodeIds.value).toEqual(new Set(['node-0']))
 
     const release = registerNodeTypeCullingOptOut('canvas-widget')
+    onTestFinished(release)
     await vi.advanceTimersByTimeAsync(150)
-    expect(activeNodeIds.value.has(toNodeId('node-1'))).toBe(true)
+    expect(activeNodeIds.value).toEqual(new Set(['node-0', 'node-1']))
 
     release()
+    const releaseEditor = registerNodeTypeCullingOptOut('editor-widget')
+    onTestFinished(releaseEditor)
     await vi.advanceTimersByTimeAsync(150)
-    expect(activeNodeIds.value.has(toNodeId('node-1'))).toBe(false)
+    expect(activeNodeIds.value).toEqual(new Set(['node-0', 'node-2']))
+
+    releaseEditor()
+    await vi.advanceTimersByTimeAsync(150)
+    expect(activeNodeIds.value).toEqual(new Set(['node-0']))
   })
 
   it('attaches every node while disabled, and recomputes when re-enabled', async () => {
