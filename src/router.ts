@@ -27,6 +27,7 @@ import {
 import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useAuthStore } from '@/stores/authStore'
@@ -162,19 +163,20 @@ function installCloudAuthGuards(router: Router): void {
       delay(PUBLIC_ROUTE_SIGN_IN_TIMEOUT_MS).then(() => 'signed_out' as const)
     ])
   }
-  /**
-   * A sign-in check that throws (e.g. browser storage blocked) counts as
-   * signed out, so the tab lands on sign-in instead of an aborted first
-   * navigation that renders nothing.
-   */
-  async function signInOrSignedOut(
+  async function signInOrCurrentUser(
     check: () => Promise<CloudSignIn>
   ): Promise<CloudSignIn> {
     try {
       return await check()
     } catch (error) {
-      console.error('Cloud sign-in check failed:', error)
-      return 'signed_out'
+      reportError(error, {
+        surface: 'auth',
+        errorType: 'cloud_sign_in_check_failed',
+        level: 'warning'
+      })
+      const { useCurrentUser } =
+        await import('@/composables/auth/useCurrentUser')
+      return useCurrentUser().isLoggedIn.value ? 'signed_in' : 'signed_out'
     }
   }
   const watchedSessions = new WeakSet<object>()
@@ -241,11 +243,11 @@ function installCloudAuthGuards(router: Router): void {
       }
     }
 
-    let signIn = await signInOrSignedOut(() =>
+    let signIn = await signInOrCurrentUser(() =>
       isPublicRoute(to) ? publicRouteSignIn() : cloudSignIn()
     )
     if (signIn === 'pending' && !isPublicRoute(to)) {
-      signIn = await signInOrSignedOut(async () => {
+      signIn = await signInOrCurrentUser(async () => {
         await useCloudWebSessionStore().whenDecided()
         return cloudSignIn()
       })

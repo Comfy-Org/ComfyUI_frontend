@@ -42,7 +42,6 @@ const readFromStorage = (namespace: string): Record<string, string> | null => {
   }
 }
 
-/** Never throws: sessionStorage itself is unreadable when site data is blocked. */
 const removeFromStorage = (namespace: string) => {
   try {
     sessionStorage.removeItem(getStorageKey(namespace))

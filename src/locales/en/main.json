@@ -2751,6 +2751,8 @@
       "storageFailedDetail": "Please try again.",
       "stored": "API Key stored",
       "storedDetail": "Your API Key has been stored successfully",
+      "storedForSession": "API Key saved for this session only",
+      "storedForSessionDetail": "Your browser could not save it, so the key will be cleared when you reload.",
       "cleared": "API Key cleared",
       "clearedDetail": "Your API Key has been cleared successfully",
       "invalid": "Invalid API Key",

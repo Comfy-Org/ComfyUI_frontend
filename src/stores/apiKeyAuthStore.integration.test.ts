@@ -3,6 +3,7 @@ import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -96,8 +97,31 @@ describe('API key authentication initialization', () => {
     await apiKeyStore.storeApiKey('memory-key')
 
     expect(apiKeyStore.getApiKey()).toBe('memory-key')
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'API Key saved for this session only'
+      })
+    )
     await vi.waitFor(() =>
       expect(apiKeyStore.currentUser).toEqual({ id: 'test-customer-id' })
+    )
+  })
+
+  it('says the key is session-only when localStorage rejects the write', async () => {
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Quota exceeded', 'QuotaExceededError')
+    })
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+
+    await apiKeyStore.storeApiKey('memory-key')
+
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'API Key saved for this session only'
+      })
     )
   })
 

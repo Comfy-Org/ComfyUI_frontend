@@ -16,9 +16,13 @@ const STORAGE_KEY = 'comfy_api_key'
 
 export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const authStore = useAuthStoreAccess()
-  // useStorage, unlike useLocalStorage, falls back to an in-memory ref when
-  // reading `window.localStorage` throws (site data blocked).
-  const apiKey = useStorage<string | null>(STORAGE_KEY, null)
+  let storageUnavailable = false
+  const apiKey = useStorage<string | null>(STORAGE_KEY, null, undefined, {
+    onError: (error) => {
+      storageUnavailable = true
+      console.error(error)
+    }
+  })
   const toast = useToast()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
@@ -68,6 +72,14 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
 
   const storeApiKey = wrapWithErrorHandlingAsync(async (newApiKey: string) => {
     apiKey.value = newApiKey
+    await nextTick()
+    if (storageUnavailable) {
+      toast.warning(t('auth.apiKey.storedForSession'), {
+        description: t('auth.apiKey.storedForSessionDetail'),
+        duration: 8000
+      })
+      return true
+    }
     toast.success(t('auth.apiKey.stored'), {
       description: t('auth.apiKey.storedDetail'),
       duration: 5000
