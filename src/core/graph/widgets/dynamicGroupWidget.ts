@@ -14,7 +14,7 @@ import {
   getWidgetIds,
   resolveNodeRootGraphId
 } from '@/lib/litegraph/src/utils/widget'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { zDynamicGroupInputSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'

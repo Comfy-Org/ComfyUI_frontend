@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 
 const mockCanvas = vi.hoisted(() => ({
   graph_mouse: [0, 0] as [number, number],

@@ -26,7 +26,7 @@ import {
 import { markRaw, ref } from 'vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 

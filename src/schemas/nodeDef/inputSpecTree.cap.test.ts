@@ -2,8 +2,8 @@ import { expect, it } from 'vitest'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { inputSpecTree, ownSlotTypes } from '@/schemas/nodeDef/inputSpecTree'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 
 it('reports the first 10 unique locations and suppresses the 11th', () => {
   const locations: Array<{

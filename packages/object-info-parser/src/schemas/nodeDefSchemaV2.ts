@@ -8,7 +8,7 @@ import {
   zFloatInputOptions,
   zIntInputOptions,
   zStringInputOptions
-} from '@/schemas/nodeDefSchema'
+} from '#/schemas/nodeDefSchema'
 
 const zIntInputSpec = zIntInputOptions.extend({
   type: z.literal('INT'),

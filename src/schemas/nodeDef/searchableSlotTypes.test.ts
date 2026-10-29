@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { OutputSpec as OutputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { OutputSpec as OutputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import {
   collectSearchableInputTypes,
   collectSearchableOutputTypes

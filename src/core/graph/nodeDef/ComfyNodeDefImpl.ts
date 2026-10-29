@@ -5,12 +5,12 @@ import {
   collectSearchableInputTypes,
   collectSearchableOutputTypes
 } from '@/schemas/nodeDef/searchableSlotTypes'
-import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
+import { transformNodeDefV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
   InputSpec as InputSpecV2,
   OutputSpec as OutputSpecV2
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+} from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type {
   ComfyInputsSpec as ComfyInputSpecV1,
   ComfyNodeDef as ComfyNodeDefV1,

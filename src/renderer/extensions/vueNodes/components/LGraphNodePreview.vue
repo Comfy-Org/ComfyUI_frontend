@@ -46,7 +46,7 @@ import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widget
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { dynamicComboOptionKeys } from '@/schemas/nodeDef/inputSpecTree'
-import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComfyNodeDef as ComfyNodeDefV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'

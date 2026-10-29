@@ -1,7 +1,7 @@
 {
   "id": "node-definition",
   "capability": "Node definition contracts (shared technical module)",
-  "description": "Shared technical module, not a business domain. The node definition contract read from /object_info: the V1 schema re-export from @comfyorg/object-info-parser, the V2 schema and V1-to-V2 migration, input spec tree diagnostics and flattening, searchable slot type collection, node source classification, upload input augmentation, input ordering for widget values, node help base URLs, and the essentials node list. The node definition store, node library and search UI, and widget constructors that consume these contracts belong to their own records.",
+  "description": "Shared technical module, not a business domain. The node definition contract read from /object_info: the V1 schema re-export from @comfyorg/object-info-parser, which also owns the V2 schema, V1-to-V2 migration and input spec interpreter, the app's input spec tree diagnostics binding and flattening, searchable slot type collection, node source classification, upload input augmentation, input ordering for widget values, node help base URLs, and the essentials node list. The node definition store, node library and search UI, and widget constructors that consume these contracts belong to their own records.",
   "modules": [
     {
       "path": "src/constants/essentialsNodes.ts",
@@ -24,16 +24,17 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"],
+  "publicEntryPoints": [],
   "allowedDependencies": [],
   "allowedConsumers": ["graph-model"],
   "characterizationScenarios": [
     {
       "name": "V1 node definitions migrate to V2 and input spec trees report diagnostics within bounds",
       "checks": [
-        "src/schemas/nodeDef/migration.test.ts",
+        "packages/object-info-parser/src/__tests__/migration.test.ts",
         "src/schemas/nodeDef/inputSpecTree.test.ts",
-        "src/schemas/nodeDef/inputSpecTree.cap.test.ts"
+        "src/schemas/nodeDef/inputSpecTree.cap.test.ts",
+        "packages/object-info-parser/src/__tests__/inputSpecInterpreter.test.ts"
       ]
     },
     {
@@ -47,7 +48,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior. nodeDefSchemaV2 is the only public entry point and graph-model its only approved consumer; other cross-module imports remain inherited debt."
+    "Inventory preserves existing exports and runtime behavior. The V2 schema is public through @comfyorg/object-info-parser; cross-module imports of the remaining app files are inherited debt."
   ],
   "deepImports": "inventory"
 }

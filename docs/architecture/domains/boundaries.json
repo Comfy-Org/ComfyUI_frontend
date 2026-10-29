@@ -44,10 +44,6 @@
         "patterns": ["src/platform/keybindings/composables/useShortcutsTab.ts"]
       },
       {
-        "name": "node-definition/domain/public",
-        "patterns": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"]
-      },
-      {
         "name": "server-facts/domain/public",
         "patterns": [
           "src/platform/serverFacts/pendingServerFact.ts",
@@ -4033,15 +4029,6 @@
         ]
       },
       {
-        "from": "node-definition/domain/public",
-        "allow": [
-          "node-definition/domain/public",
-          "node-definition/domain",
-          "node-definition/domain/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "server-facts/domain/public",
         "allow": [
           "server-facts/domain/public",
@@ -5546,7 +5533,6 @@
         "from": "graph-model/domain",
         "allow": [
           "comfyui-api/domain/public",
-          "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
           "graph-model/domain",
@@ -5561,7 +5547,6 @@
         "from": "graph-model/application",
         "allow": [
           "comfyui-api/domain/public",
-          "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
           "error-reporting/application",
@@ -5580,7 +5565,6 @@
         "from": "graph-model/infrastructure",
         "allow": [
           "comfyui-api/domain/public",
-          "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
           "error-reporting/application",
@@ -5599,7 +5583,6 @@
         "from": "graph-model/integration",
         "allow": [
           "comfyui-api/domain/public",
-          "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
           "error-reporting/application",
@@ -6284,7 +6267,6 @@
       {
         "from": "node-definition/domain",
         "allow": [
-          "node-definition/domain/public",
           "node-definition/domain",
           "node-definition/domain/outer-1",
           "unclassified"
@@ -8077,7 +8059,6 @@
         "from": "graph-model/domain/outer-1",
         "allow": [
           "comfyui-api/domain/public",
-          "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
           "graph-model/domain",
@@ -8092,7 +8073,6 @@
         "from": "graph-model/integration/outer-1",
         "allow": [
           "comfyui-api/domain/public",
-          "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
           "error-reporting/application",
@@ -8244,7 +8224,6 @@
       {
         "from": "node-definition/domain/outer-1",
         "allow": [
-          "node-definition/domain/public",
           "node-definition/domain",
           "node-definition/domain/outer-1",
           "unclassified"
@@ -8781,7 +8760,6 @@
           "ingest-api/infrastructure/public",
           "keybindings/application/public",
           "keybindings/integration/public",
-          "node-definition/domain/public",
           "server-facts/domain/public",
           "webcam-capture/integration/public",
           "agent/domain",

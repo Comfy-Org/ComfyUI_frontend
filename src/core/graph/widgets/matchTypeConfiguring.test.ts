@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 import { effect, stop } from 'vue'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 

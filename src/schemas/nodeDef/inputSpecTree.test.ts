@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { inputSpecTree, ownSlotTypes } from '@/schemas/nodeDef/inputSpecTree'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 
 interface BadSpecScenario {

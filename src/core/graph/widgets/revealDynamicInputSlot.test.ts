@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { revealDynamicInputSlot } from '@/core/graph/widgets/revealDynamicInputSlot'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 

@@ -19,7 +19,7 @@ import type {
   IComboWidget,
   WidgetCallbackOptions
 } from '@comfyorg/graph-model/widgets'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
 import { useApp } from '@/scripts/appInstance'
 import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'

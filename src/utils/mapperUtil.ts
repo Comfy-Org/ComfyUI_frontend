@@ -1,8 +1,8 @@
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
   InputSpec
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+} from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { components } from '@/types/comfyRegistryTypes'
 

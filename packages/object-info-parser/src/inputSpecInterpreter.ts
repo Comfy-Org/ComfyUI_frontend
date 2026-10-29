@@ -1,11 +1,11 @@
 import type { ZodError } from 'zod'
 
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { transformInputSpecV1ToV2 } from '#/migration'
+import type { InputSpec as InputSpecV2 } from '#/schemas/nodeDefSchemaV2'
 import type {
   ComfyInputsSpec,
   DynamicControlType
-} from '@/schemas/nodeDefSchema'
+} from '#/schemas/nodeDefSchema'
 import {
   isDynamicControlType,
   zAutogrowOptions,
@@ -13,7 +13,7 @@ import {
   zDynamicComboSpecV2,
   zDynamicGroupInputSpec,
   zMatchTypeOptions
-} from '@/schemas/nodeDefSchema'
+} from '#/schemas/nodeDefSchema'
 
 interface DynamicControl {
   nestedInputs: (spec: InputSpecV2) => ComfyInputsSpec[]
