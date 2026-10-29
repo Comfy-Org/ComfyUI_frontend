@@ -114,6 +114,8 @@ export class AgentFollowerHostSocket {
   private refusedSubscribes = 0
 
   private socket: WebSocketRoute | null = null
+  private agentProcessDown = false
+  private refusedConnections = 0
   private comfySocket: WebSocketRoute | null = null
   private comfyConnections = 0
   private connections = 0
@@ -154,10 +156,33 @@ export class AgentFollowerHostSocket {
       )
     })
     await this.page.routeWebSocket(AGENT_SOCKET_URL, (socket) => {
+      if (this.agentProcessDown) {
+        this.refusedConnections += 1
+        void socket.close()
+        return
+      }
       this.connections += 1
       this.socket = socket
       socket.onMessage((raw) => this.onClientFrame(raw))
     })
+  }
+
+  /** Refuses reconnect attempts until the outage ends. */
+  async beginAgentOutage(): Promise<void> {
+    this.agentProcessDown = true
+    const socket = this.socket
+    this.socket = null
+    await socket?.close()
+  }
+
+  /** Allows the next reconnect attempt. */
+  endAgentOutage(): void {
+    this.agentProcessDown = false
+  }
+
+  /** Returns the number of refused reconnect attempts. */
+  refusedConnectionCount(): number {
+    return this.refusedConnections
   }
 
   send(frame: AgentWsEvent | AgentAskServerFrame | HostFrame): void {
