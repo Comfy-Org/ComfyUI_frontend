@@ -6,7 +6,9 @@
  */
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import crypto from 'node:crypto'
 import fs from 'node:fs'
+import path from 'node:path'
 import { vi } from 'vitest'
 
 import defaultWorkflow from '../../browser_tests/assets/default.json'
@@ -17,7 +19,13 @@ import type {
   Point
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { WidgetFormRefusal } from '@/lib/litegraph/src/widgets/widgetFormProof'
+import {
+  needsFormButHasNone,
+  proveWidgetForm
+} from '@/lib/litegraph/src/widgets/widgetFormProof'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -71,6 +79,253 @@ interface OpRecord {
   desync: string
   dispatching: boolean
   note: string
+}
+
+/**
+ * One node's outcome: provable, one of the predicate's own refusals, or a
+ * state only this harness can reach. Typed as the real union so a refusal the
+ * predicate adds or renames breaks this file rather than quietly widening the
+ * histogram with a string nothing reads.
+ */
+type FormVerdict =
+  | 'provable'
+  | WidgetFormRefusal
+  | (typeof HARNESS_VERDICT)[keyof typeof HARNESS_VERDICT]
+
+/**
+ * Whether each node's `widgets_values` could be PROVEN to be the array core
+ * produced from `node.widgets`, which is the gate for emitting
+ * `widgets_values_form` (`proveWidgetForm`).
+ */
+interface FormAgreement {
+  /** `type#id` -> verdict, over the battery graph as the pack left it. */
+  graph: Record<string, FormVerdict>
+  /** The pack's OWN registered node types, freshly created -> verdict. */
+  driven: Record<string, FormVerdict>
+  /** Keys from either map whose values are object-shaped with no form. */
+  needsForm: string[]
+  /** Set only when the measurement itself failed; the maps are then empty. */
+  err?: string
+}
+
+/** `onSerialize` never fired, as distinct from firing with no values. */
+const NOT_CAPTURED = Symbol('widgets_values not captured')
+
+/** A verdict this harness produced rather than the predicate. */
+const HARNESS_VERDICT = {
+  /** `node.serialize()` threw, so there is no payload to prove anything about. */
+  threw: '!serialize_threw',
+  /** `LiteGraph.createNode` returned null for a type the pack registered. */
+  uncreatable: '!createNode_null',
+  /**
+   * Not provable and no refusal named. The predicate's type permits it and
+   * its code does not produce it, so this firing means the two have drifted.
+   */
+  unnamed: '!no_refusal_named'
+} as const
+
+/**
+ * The `coreIsLastWriter` answer for one node, computed the way the predicate's
+ * own documentation prescribes: compare both serialization entry points
+ * against the base implementations.
+ *
+ * This is a REQUIRED option with no default, deliberately, because assuming it
+ * is how the predicate came to accept a subgraph host. The comparison has to be
+ * made here rather than inside the predicate because this is where both sides
+ * are in scope.
+ *
+ * It has one blind spot the census measures separately rather than ignoring: a
+ * pack that reassigns `LGraphNode.prototype.serialize` leaves every node still
+ * identical to the prototype, so this reads `true` while core is no longer the
+ * last writer. `prototypePatched` in the registry census records whether that
+ * happened, so the number can be read against it.
+ */
+function coreIsLastWriter(node: LGraphNode, base: typeof LGraphNode): boolean {
+  return (
+    node.serializeFromStoreState === base.prototype.serializeFromStoreState &&
+    node.serialize === base.prototype.serialize
+  )
+}
+
+interface Capture {
+  /** The payload `node.serialize()` returned, i.e. after every writer. */
+  serialised: ISerialisedNode
+  /** `widgets_values` as the extension serialize hook saw it. */
+  produced: unknown
+  /** False when the hook never ran at all. */
+  captured: boolean
+}
+
+/**
+ * Serialize one node, capturing `widgets_values` as the extension serialize
+ * hook saw it — which is BEFORE anything downstream could replace it.
+ *
+ * `proveWidgetForm` needs the array `serialiseWidgetValues` returned before
+ * that hook ran, because identity is the whole proof, and core hands that array
+ * to exactly one thing outside `LGraphNode`: the node's own `onSerialize`,
+ * which `runExtensionSerializeHook` calls with the payload itself (`const view
+ * = canonical`). So a chained `onSerialize` is the seam, and it is a faithful
+ * one in both directions:
+ *
+ * - It cannot manufacture a pass. The post-hook identity is read from the
+ *   RETURNED payload, so anything that replaces `widgets_values` after the
+ *   capture — a pack's own `onSerialize` running after ours, a `serialize`
+ *   override writing after `super`, `SubgraphNode.serializeFromStoreState`
+ *   rebuilding from `inputs` — still refuses. For the last of those the
+ *   `coreIsLastWriter` precondition refuses first, before identity is reached.
+ * - It cannot manufacture a refusal. Installing a hook does force the hook
+ *   path for a node that would otherwise have returned early, but that path
+ *   leaves a JSON-cloneable `widgets_values` alone: the post-hook writeback
+ *   skips cloneable values, and the one `Object.assign` that could overwrite
+ *   the field draws from `readExtensionFields`, which excludes every
+ *   canonical field by construction.
+ *
+ * Returns `null` when `serialize()` threw: there is then no payload to prove
+ * anything about, which is a harness verdict rather than a refusal.
+ */
+function captureSerialization(node: LGraphNode): Capture | null {
+  const descriptor = Object.getOwnPropertyDescriptor(node, 'onSerialize')
+  const inherited = node.onSerialize
+  // A sentinel rather than a boolean flag: `undefined` is a legitimate
+  // captured value (a node whose hook ran with no widgets_values), and the
+  // two have to stay distinguishable.
+  let produced: unknown = NOT_CAPTURED
+  node.onSerialize = function (serialised: ISerialisedNode) {
+    produced = serialised.widgets_values
+    inherited?.call(this, serialised)
+  }
+  try {
+    const serialised = node.serialize()
+    return {
+      serialised,
+      produced: produced === NOT_CAPTURED ? undefined : produced,
+      captured: produced !== NOT_CAPTURED
+    }
+  } catch {
+    return null
+  } finally {
+    if (descriptor) Object.defineProperty(node, 'onSerialize', descriptor)
+    else Reflect.deleteProperty(node, 'onSerialize')
+  }
+}
+
+/** Run the predicate over one capture and name the outcome. */
+function verdictOf(
+  widgets: readonly IBaseWidget[] | undefined,
+  serialised: { widgets_values?: unknown; has_errors?: boolean },
+  producedValues: unknown,
+  options: {
+    serializeWidgets?: boolean
+    replayed: boolean
+    lastWriter: boolean
+  }
+): { verdict: FormVerdict; order: string[] | null } {
+  const proof = proveWidgetForm(widgets, serialised, producedValues, {
+    serializeWidgets: options.serializeWidgets,
+    replayed: options.replayed,
+    coreIsLastWriter: options.lastWriter
+  })
+  return {
+    verdict: proof.provable
+      ? 'provable'
+      : (proof.refusal ?? HARNESS_VERDICT.unnamed),
+    order: proof.order
+  }
+}
+
+function proveNodeForm(
+  node: LGraphNode,
+  base: typeof LGraphNode
+): { verdict: FormVerdict; needsForm: boolean } {
+  const capture = captureSerialization(node)
+  if (!capture) return { verdict: HARNESS_VERDICT.threw, needsForm: false }
+  const { verdict } = verdictOf(
+    node.widgets,
+    capture.serialised,
+    capture.captured ? capture.produced : undefined,
+    {
+      serializeWidgets: node.serialize_widgets,
+      // The shell path returns the stored payload before the hook, so a
+      // missed capture there is the replay itself, not an absent producer.
+      replayed: !capture.captured && !!node.last_serialization,
+      lastWriter: coreIsLastWriter(node, base)
+    }
+  )
+  return { verdict, needsForm: needsFormButHasNone(capture.serialised) }
+}
+
+/**
+ * Prove one node type, created fresh and added to a graph.
+ *
+ * Re-created rather than measured in place: a node the drive loop already
+ * added and removed has been disconnected and detached, and a detached node is
+ * not the shape a producer would serialize.
+ */
+function proveFreshNode(
+  graph: LGraph,
+  type: string,
+  createNode: (type: string) => LGraphNode | null,
+  base: typeof LGraphNode
+): { verdict: FormVerdict; needsForm: boolean } {
+  try {
+    const node = createNode(type)
+    if (!node) return { verdict: HARNESS_VERDICT.uncreatable, needsForm: false }
+    node.pos = [1400, 100]
+    graph.add(node)
+    try {
+      return proveNodeForm(node, base)
+    } finally {
+      graph.remove(node)
+    }
+  } catch {
+    // Creating, adding or removing a node type is pack code running, and
+    // `driveTypes` already measures that. Here it only means the form verdict
+    // is unobtainable.
+    return { verdict: HARNESS_VERDICT.threw, needsForm: false }
+  }
+}
+
+/**
+ * The form verdict for every node the battery exercised, and for the pack's
+ * own node types created fresh.
+ *
+ * Telemetry: a population number for how much of the registry a minimal
+ * `widgets_values_form` producer would actually cover. Never gated — a
+ * refusal is the designed outcome for most of these shapes, so a floor here
+ * would fail the run for the predicate working.
+ *
+ * Total, so that a telemetry channel cannot cost the row: the caller writes
+ * the result straight into the row, and an escaping throw there would leave
+ * the write-ahead stub in place — and stub rate IS a gated criterion.
+ */
+function measureFormAgreement(
+  graph: LGraph,
+  packTypes: string[],
+  createNode: (type: string) => LGraphNode | null,
+  base: typeof LGraphNode
+): FormAgreement {
+  const agreement: FormAgreement = { graph: {}, driven: {}, needsForm: [] }
+  try {
+    for (const node of graph._nodes) {
+      const key = `${node.type}#${String(node.id)}`
+      const { verdict, needsForm } = proveNodeForm(node, base)
+      agreement.graph[key] = verdict
+      if (needsForm) agreement.needsForm.push(key)
+    }
+    for (const type of packTypes) {
+      const { verdict, needsForm } = proveFreshNode(
+        graph,
+        type,
+        createNode,
+        base
+      )
+      agreement.driven[type] = verdict
+      if (needsForm) agreement.needsForm.push(type)
+    }
+  } catch (e) {
+    agreement.err = errMsg(e)
+  }
+  return agreement
 }
 
 const COMBO = (o: string[]): InputSpec => [o, {}]
@@ -131,6 +386,443 @@ const DEFS: Record<string, Partial<ComfyNodeDef>> = {
     output: [],
     output_name: []
   }
+}
+
+// ---------------------------------------------------------------------------
+// The registry form census: `proveWidgetForm` over REAL node classes.
+//
+// `DEFS` above is six classes, and the battery it feeds is the gated part of
+// this instrument. Six classes is also the scope limit that made the first
+// form census unable to say anything about the ecosystem: every
+// Python-defined pack class — which is where widget-shape diversity actually
+// lives — was invisible to it, because there was no `object_info` to register
+// one from.
+//
+// So the census registers the real thing: `object_info.shape.json`, a
+// node-shape projection of the `/object_info` dump the agent image bakes
+// (3,857 classes across core and 97 packs; see `object_info.pin.json` for the
+// provenance and `project_object_info.py` for what the projection drops and
+// why).
+//
+// It runs LAST, after every gated channel has been read off, and that
+// placement is load-bearing rather than tidy:
+//
+//  - Registering 3,857 defs runs each pack's `beforeRegisterNodeDef` 3,857
+//    times instead of six. `packs free of contained hook errors` is a GATED
+//    criterion with a measured baseline, so folding those firings into it
+//    would move a required gate for a reason no pull request caused. The
+//    census keeps its own `hookErrors`, which is a finding, not a floor.
+//  - It re-registers the six battery classes from their real defs, which is
+//    the correct shape to measure them at — but only after the battery that
+//    needs the hardcoded ones is finished with them.
+//
+// The cost of that placement, stated because it is a real fidelity loss: the
+// app's order is `addCustomNodeDefs` -> `registerNodeDef` ->
+// `registerCustomNodes`, and the census registers after
+// `registerCustomNodes`. The harness already deviates from that order (see the
+// README's hook table); the census deviates by one step further.
+// ---------------------------------------------------------------------------
+
+/**
+ * A node-shape def as `object_info.shape.json` carries it. `python_module` is
+ * the only non-shape field kept, because it is the sole attribution of a class
+ * to the pack that defines it — and a census whose classes cannot be
+ * attributed to packs has no per-pack denominator, which is the scope limit
+ * this file exists to remove.
+ */
+type ShapeDef = Partial<ComfyNodeDef> & { python_module?: string }
+
+const SHAPE_RELATIVE = 'scripts/registry-census/object_info.shape.json'
+
+/** Where the projection lives; `MATRIX_OBJECT_INFO` overrides it. */
+export function shapeDefsPath(): string {
+  const override = process.env.MATRIX_OBJECT_INFO
+  return override ? path.resolve(override) : path.resolve(SHAPE_RELATIVE)
+}
+
+/**
+ * Load the node-shape projection.
+ *
+ * Fails loudly with the resolved path rather than degrading to the six
+ * hardcoded defs. A census that silently narrows its own population back to
+ * six classes would publish a number against the wrong denominator, which is
+ * the exact defect being repaired here.
+ */
+export function loadShapeDefs(): Record<string, ShapeDef> {
+  const file = shapeDefsPath()
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(fs.readFileSync(file, 'utf8'))
+  } catch (e) {
+    throw new Error(
+      `object_info shape projection unreadable at ${file}: ${errMsg(e)}`,
+      { cause: e }
+    )
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`${file} is not an /object_info object`)
+  }
+  const defs = parsed as Record<string, ShapeDef>
+  if (!Object.keys(defs).length) throw new Error(`${file} carries no classes`)
+  return defs
+}
+
+/** `LGraphNode`'s serialization entry points as they stood before pack load. */
+interface PristineSerialization {
+  serialize: unknown
+  serializeFromStoreState: unknown
+}
+
+export function captureSerializationEntryPoints(
+  base: typeof LGraphNode
+): PristineSerialization {
+  return {
+    serialize: base.prototype.serialize,
+    serializeFromStoreState: base.prototype.serializeFromStoreState
+  }
+}
+
+/** `SubgraphNode`: the known hard refusal, reached through the real path. */
+interface SubgraphFormProbe {
+  /** Which host topology this row measured. */
+  scenario: string
+  /** The verdict as the predicate actually answers it. */
+  verdict?: FormVerdict
+  needsForm?: boolean
+  /** The predicate's required option, as computed for the host. */
+  coreIsLastWriter?: boolean
+  /** The host's promoted widget count, so a refusal can be read in context. */
+  widgets?: number
+  /**
+   * The verdict at THIS seam if `coreIsLastWriter` were wrongly answered
+   * `true`. This harness reads the payload `node.serialize()` RETURNED, which
+   * is already past the subclass's rewrite, so the identity check still
+   * catches it here.
+   */
+  ifAssumedFinal?: FormVerdict
+  /**
+   * The verdict at the call site the predicate's own docstring prescribes —
+   * inside `serializeFromStoreState`, where the extension serialize hook sees
+   * the payload — if `coreIsLastWriter` were wrongly answered `true`.
+   *
+   * This is the acceptance the required option exists to prevent, and it is
+   * the one number here that is evidence rather than confirmation: at that
+   * moment the values ARE still core's own array, so the identity check passes
+   * and the predicate publishes an order for a payload that is about to be
+   * discarded.
+   */
+  ifAssumedFinalAtHookSite?: FormVerdict
+  /** The order that wrong acceptance would have published. */
+  wrongOrder?: string[] | null
+  /** What the payload actually ended up carrying, for the comparison. */
+  finalValues?: unknown
+  err?: string
+}
+
+export interface RegistryFormCensus {
+  /** The projection this row's population came from. */
+  source: string
+  /** Classes the projection carries. */
+  classes: number
+  /** Classes that registered without throwing. */
+  registered: number
+  registerErrors: string[]
+  /** verdict -> count, over every class the census could instantiate. */
+  histogram: Record<string, number>
+  /** class -> verdict, for every class whose verdict is not `provable`. */
+  refusals: Record<string, FormVerdict>
+  /** Classes whose serialized values are object-shaped with no form. */
+  needsForm: string[]
+  /** `python_module` -> [provable, measured]. */
+  byModule: Record<string, [number, number]>
+  /** sha256 of the sorted class->verdict map: any changed verdict is visible. */
+  digest: string
+  subgraph: SubgraphFormProbe[]
+  /**
+   * Whether pack code reassigned either prototype serialization entry point.
+   *
+   * This is the one blind spot in the predicate's own prescribed
+   * `coreIsLastWriter` check: a prototype reassignment leaves every node still
+   * `=== LGraphNode.prototype.serialize`, so the check reads `true` while core
+   * is no longer the last writer. Measured rather than assumed away, because a
+   * provable rate is only as good as this flag is false.
+   */
+  prototypePatched: { serialize: boolean; serializeFromStoreState: boolean }
+  /** Contained extension-hook errors raised during the census phase only. */
+  hookErrors: string[]
+  err?: string
+}
+
+async function registerShapeDefs(
+  defs: Record<string, ShapeDef>
+): Promise<{ registered: number; errors: string[] }> {
+  const { useLitegraphService } = await import('@/services/litegraphService')
+  const svc = useLitegraphService()
+  const errors: string[] = []
+  let registered = 0
+  for (const [name, def] of Object.entries(defs)) {
+    try {
+      await svc.registerNodeDef(name, {
+        name,
+        display_name: name,
+        category: def.category ?? 'census',
+        python_module: def.python_module ?? 'nodes',
+        description: '',
+        output_is_list: def.output_is_list ?? [],
+        output_node: def.output_node ?? false,
+        ...def
+      })
+      registered++
+    } catch (e) {
+      if (errors.length < 40) errors.push(`${name}:${errMsg(e)}`)
+    }
+  }
+  return { registered, errors }
+}
+
+/**
+ * Prove the form for `SubgraphNode`, built the way a user builds one.
+ *
+ * Constructed through `LGraph.convertToSubgraph` rather than `new
+ * SubgraphNode(...)`: the constructor takes a `Subgraph` and an
+ * `ExportedSubgraphInstance` that only the conversion produces, and a
+ * hand-assembled host would be measuring a shape the product never makes.
+ *
+ * The expected verdict is `class_may_rewrite_payload`, and it must come from
+ * the precondition rather than from the identity check downstream of it:
+ * `SubgraphNode.serializeFromStoreState` calls `super` — hook included — and
+ * only then replaces `widgets_values` from its own inputs, so at the moment
+ * the hook sees the payload the values ARE still core's array. That is the
+ * acceptance the required option exists to prevent, so `coreIsLastWriter` is
+ * recorded beside the verdict.
+ */
+/**
+ * Build a subgraph host whose widget list is non-empty.
+ *
+ * A host with no promoted widgets refuses for a second, uninteresting reason
+ * (`widgets_not_serialized`), which would make the counterfactuals below
+ * vacuous. Promotion is driven by a boundary input link landing on a
+ * widget-backed input, so the recipe is: a source outside, a widget-backed
+ * node inside, a link across what becomes the boundary.
+ */
+async function buildSubgraphHost(
+  lg: { LGraph: typeof LGraph },
+  createNode: (type: string) => LGraphNode | null
+): Promise<LGraphNode> {
+  const graph = new lg.LGraph()
+  // The production registration path: `ComfyApp.setup` wires exactly this
+  // listener, and without it `convertToSubgraph` cannot create its host
+  // ("Failed to create subgraph node") because the subgraph id was never
+  // registered as a node type. The litegraph test fixtures register a
+  // `TestSubgraphNode` subclass instead; measuring that would be measuring a
+  // class the product never makes.
+  const { useSubgraphService } = await import('@/services/subgraphService')
+  graph.events.addEventListener('subgraph-created', (e) => {
+    const { subgraph, data } = e.detail
+    useSubgraphService().registerNewSubgraph(subgraph, data)
+  })
+
+  const inner = createNode('CLIPTextEncode')
+  const source = createNode('PrimitiveString')
+  if (!inner || !source) throw new Error('could not create the probe nodes')
+  graph.add(inner)
+  graph.add(source)
+  const textSlot = inner.inputs.findIndex((input) => input.name === 'text')
+  if (textSlot < 0) throw new Error('CLIPTextEncode has no text input slot')
+  if (!source.connect(0, inner, textSlot))
+    throw new Error('could not connect the promotable widget input')
+  return graph.convertToSubgraph(new Set([inner])).node
+}
+
+async function probeSubgraphForm(
+  lg: { LGraph: typeof LGraph; LGraphNode: typeof LGraphNode },
+  createNode: (type: string) => LGraphNode | null,
+  scenario: string,
+  dress: (host: LGraphNode) => void
+): Promise<SubgraphFormProbe> {
+  try {
+    const host = await buildSubgraphHost(lg, createNode)
+    dress(host)
+    const capture = captureSerialization(host)
+    if (!capture) return { scenario, err: 'host serialize threw' }
+    const shared = {
+      serializeWidgets: host.serialize_widgets,
+      replayed: !capture.captured && !!host.last_serialization
+    }
+    const produced = capture.captured ? capture.produced : undefined
+    const actual = verdictOf(host.widgets, capture.serialised, produced, {
+      ...shared,
+      lastWriter: coreIsLastWriter(host, lg.LGraphNode)
+    })
+    const atReturn = verdictOf(host.widgets, capture.serialised, produced, {
+      ...shared,
+      lastWriter: true
+    })
+    // The payload as the extension serialize hook saw it: `widgets_values` is
+    // still the array core built, because the subclass replaces it only after
+    // `super` returns. Reconstructed from the captured array rather than
+    // re-serialized, so it is the same object identity the hook was handed.
+    const atHook = verdictOf(
+      host.widgets,
+      { widgets_values: produced },
+      produced,
+      { ...shared, lastWriter: true }
+    )
+    return {
+      scenario,
+      verdict: actual.verdict,
+      needsForm: needsFormButHasNone(capture.serialised),
+      coreIsLastWriter: coreIsLastWriter(host, lg.LGraphNode),
+      widgets: host.widgets?.length ?? 0,
+      ifAssumedFinal: atReturn.verdict,
+      ifAssumedFinalAtHookSite: atHook.verdict,
+      wrongOrder: atHook.order,
+      finalValues: capture.serialised.widgets_values
+    }
+  } catch (e) {
+    return { scenario, err: errMsg(e) }
+  }
+}
+
+/**
+ * The two subgraph-host topologies worth measuring.
+ *
+ * `promoted-only` is the plain conversion: one promoted widget, one serialized
+ * value. The wrong acceptance there publishes an order that happens to match
+ * the payload, so it proves the acceptance but not a harm.
+ *
+ * `plus-custom-widget` adds an extension widget through the public
+ * `addCustomWidget` API, which `SubgraphNode` keeps in `_extraWidgets` and
+ * therefore counts in `widgets` — while `widgets_values` is rebuilt only from
+ * promoted `inputs`. The order and the payload then disagree in LENGTH, which
+ * is the misplacement the predicate exists to prevent rather than merely the
+ * acceptance.
+ */
+const SUBGRAPH_SCENARIOS: {
+  scenario: string
+  dress: (host: LGraphNode) => void
+}[] = [
+  { scenario: 'promoted-only', dress: () => {} },
+  {
+    scenario: 'plus-custom-widget',
+    dress: (host) => {
+      host.addCustomWidget({
+        name: 'EXTRA',
+        type: 'X.EXTRA',
+        value: 1,
+        options: {},
+        y: 0,
+        computeSize: () => [100, 20]
+      } as unknown as IBaseWidget)
+    }
+  }
+]
+
+function emptyCensus(source: string, classes: number): RegistryFormCensus {
+  return {
+    source,
+    classes,
+    registered: 0,
+    registerErrors: [],
+    histogram: {},
+    refusals: {},
+    needsForm: [],
+    byModule: {},
+    digest: '',
+    subgraph: [],
+    prototypePatched: { serialize: false, serializeFromStoreState: false },
+    hookErrors: []
+  }
+}
+
+function recordVerdict(
+  census: RegistryFormCensus,
+  name: string,
+  module: string,
+  verdict: FormVerdict,
+  needsForm: boolean
+): void {
+  census.histogram[verdict] = (census.histogram[verdict] ?? 0) + 1
+  if (verdict !== 'provable') census.refusals[name] = verdict
+  if (needsForm) census.needsForm.push(name)
+  const rollup = (census.byModule[module] ??= [0, 0])
+  rollup[1]++
+  if (verdict === 'provable') rollup[0]++
+}
+
+/**
+ * Register every class in the projection, instantiate each one, and prove (or
+ * refuse) its widget form.
+ *
+ * Telemetry, never gated, for the same reason `formAgreement` is: a refusal is
+ * the predicate working as designed on a shape it was built to decline, so a
+ * floor here would fail the run for correct behaviour.
+ *
+ * Total, so a telemetry channel cannot cost a row. The caller writes the
+ * result straight into the row; an escaping throw would leave the write-ahead
+ * stub in place, and stub rate IS a gated criterion.
+ */
+export async function censusRegistryForms(options: {
+  lg: { LGraph: typeof LGraph; LGraphNode: typeof LGraphNode }
+  createNode: (type: string) => LGraphNode | null
+  /** Seeds `app.rootGraphInternal`, which DOM widgets read during configure. */
+  seedRootGraph: (graph: LGraph) => void
+  pristine: PristineSerialization
+  /** Returns and clears the contained hook errors seen so far. */
+  drainHookErrors: () => string[]
+}): Promise<RegistryFormCensus> {
+  const { lg, createNode, seedRootGraph, pristine, drainHookErrors } = options
+  let census = emptyCensus(shapeDefsPath(), 0)
+  try {
+    const defs = loadShapeDefs()
+    census = emptyCensus(shapeDefsPath(), Object.keys(defs).length)
+    drainHookErrors()
+    const { registered, errors } = await registerShapeDefs(defs)
+    census.registered = registered
+    census.registerErrors = errors
+
+    // A fresh graph: the battery graph has been spliced, muted, collapsed and
+    // reordered by design, and a class verdict read off it would be a verdict
+    // about the battery rather than the class.
+    const graph = new lg.LGraph()
+    seedRootGraph(graph)
+    const verdicts: string[] = []
+    for (const name of Object.keys(defs).sort()) {
+      const { verdict, needsForm } = proveFreshNode(
+        graph,
+        name,
+        createNode,
+        lg.LGraphNode
+      )
+      recordVerdict(
+        census,
+        name,
+        defs[name].python_module ?? 'unknown',
+        verdict,
+        needsForm
+      )
+      verdicts.push(`${name}=${verdict}`)
+    }
+    census.digest = crypto
+      .createHash('sha256')
+      .update(verdicts.join('\n'))
+      .digest('hex')
+    for (const { scenario, dress } of SUBGRAPH_SCENARIOS) {
+      census.subgraph.push(
+        await probeSubgraphForm(lg, createNode, scenario, dress)
+      )
+    }
+    census.prototypePatched = {
+      serialize: lg.LGraphNode.prototype.serialize !== pristine.serialize,
+      serializeFromStoreState:
+        lg.LGraphNode.prototype.serializeFromStoreState !==
+        pristine.serializeFromStoreState
+    }
+    census.hookErrors = [...new Set(drainHookErrors())].slice(0, 20)
+  } catch (e) {
+    census.err = errMsg(e)
+  }
+  return census
 }
 
 async function installGlobals() {
@@ -257,6 +949,12 @@ export async function runPack(
   let storeReadErrors = 0
   const { lg, app } = await installGlobals()
   const { LGraph, LiteGraph } = lg
+  // Captured BEFORE any pack entry runs, so the census can tell a pack that
+  // reassigned `LGraphNode.prototype.serialize` from one that did not. After
+  // such a reassignment every node is still `=== prototype.serialize`, so the
+  // predicate's prescribed `coreIsLastWriter` check reads `true` while core is
+  // no longer the last writer.
+  const pristine = captureSerializationEntryPoints(lg.LGraphNode)
 
   // ---- LOAD the pack's real entry files ---------------------------------
   const typesBefore = new Set(Object.keys(LiteGraph.registered_node_types))
@@ -672,5 +1370,75 @@ export async function runPack(
   row.hookErrors = [...new Set(hookErrors)].slice(0, 20)
   row.vueNodesMode = LiteGraph.vueNodesMode
 
+  // Last of all, for two reasons beyond each channel's own containment. The
+  // capture seam cannot reach a gated operation, and `hookErrors` is already
+  // read off, so neither re-instantiating a pack's node types nor registering
+  // the real `object_info` can add to a gated channel.
+  row.formAgreement = measureFormAgreement(
+    graph,
+    newTypes.slice(0, 8),
+    (t) => LiteGraph.createNode(t),
+    lg.LGraphNode
+  )
+  row.registryForms = await censusRegistryForms({
+    lg,
+    createNode: (t) => LiteGraph.createNode(t),
+    seedRootGraph: (g) => Reflect.set(app, 'rootGraphInternal', g),
+    pristine,
+    drainHookErrors: () => hookErrors.splice(0, hookErrors.length)
+  })
+
   fs.writeFileSync(rowPath, JSON.stringify(row))
 }
+
+/**
+ * The registry form census with NO pack code loaded: the baseline population.
+ *
+ * This is the denominator every per-pack `registryForms` row is read against.
+ * A pack row's `digest` differing from this one's is the whole signal that the
+ * pack changed a class's verdict, and its `refusals` map says which.
+ *
+ * Kept separate from `runPack` rather than folded into it because it is a
+ * different population, measured once, and conflating the two is how the first
+ * census ended up quoting six classes as the registry.
+ */
+export async function runRegistryCensus(outPath: string): Promise<void> {
+  const hookErrors: string[] = []
+  vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+    const text = args.map(argText).join(' ').replace(/\s+/g, ' ')
+    if (text.includes('Error calling extension'))
+      hookErrors.push(text.slice(0, 200))
+  })
+  vi.spyOn(console, 'warn').mockImplementation(() => {})
+  vi.spyOn(console, 'log').mockImplementation(() => {})
+  vi.spyOn(console, 'info').mockImplementation(() => {})
+  setActivePinia(createTestingPinia({ stubActions: false }))
+
+  const { lg, app } = await installGlobals()
+  const pristine = captureSerializationEntryPoints(lg.LGraphNode)
+  const census = await censusRegistryForms({
+    lg,
+    createNode: (t) => lg.LiteGraph.createNode(t),
+    seedRootGraph: (g) => Reflect.set(app, 'rootGraphInternal', g),
+    pristine,
+    drainHookErrors: () => hookErrors.splice(0, hookErrors.length)
+  })
+  fs.mkdirSync(path.dirname(outPath), { recursive: true })
+  fs.writeFileSync(
+    outPath,
+    JSON.stringify(
+      { pack: BASELINE_PACK, safe: BASELINE_PACK, registryForms: census },
+      null,
+      1
+    )
+  )
+}
+
+/**
+ * The row identity the baseline census writes under.
+ *
+ * Deliberately not a pack id: it shares an output directory with pack rows, and
+ * an aggregator that counted it as a pack would inflate every per-pack
+ * denominator by one.
+ */
+export const BASELINE_PACK = '_registry-baseline'

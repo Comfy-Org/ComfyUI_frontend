@@ -4,16 +4,39 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
-import { runPack } from './matrix_runner'
+import { loadShapeDefs, runPack, shapeDefsPath } from './matrix_runner'
+
+const HERE = path.dirname(new URL(import.meta.url).pathname)
+/**
+ * A seven-class slice of the real projection, used so that `runPack`'s census
+ * phase stays fast here while still registering real node definitions.
+ *
+ * Every class in it is asserted below to be byte-identical to its entry in the
+ * committed projection, so the fixture cannot drift into a shape no real node
+ * has — which would make every verdict measured through it fiction.
+ */
+const FIXTURE = path.join(HERE, 'object_info.fixture.json')
 
 const initialVueNodesMode = LiteGraph.vueNodesMode
+// Captured so the prototype-patching case below cannot leak into any test that
+// runs after it. One of these tests deliberately reassigns a shared prototype
+// method, which is exactly the thing that makes a later green run meaningless.
+const pristineSerialize = LGraphNode.prototype.serialize
+const pristineFromStore = LGraphNode.prototype.serializeFromStoreState
+const outputDirs: string[] = []
 let outputDir = ''
 
 afterEach(() => {
   LiteGraph.vueNodesMode = initialVueNodesMode
-  if (outputDir) fs.rmSync(outputDir, { recursive: true })
+  LGraphNode.prototype.serialize = pristineSerialize
+  LGraphNode.prototype.serializeFromStoreState = pristineFromStore
+  for (const dir of [...outputDirs, outputDir].filter(Boolean)) {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+  outputDirs.length = 0
   outputDir = ''
 })
 
@@ -23,11 +46,12 @@ describe('matrix runner', () => {
     { renderer: 'Vue', matrixVue: '1', selectedMode: true }
   ])(
     'records $renderer initialization and post-pack mutation',
-    { timeout: 30_000 },
+    { timeout: 60_000 },
     async ({ matrixVue, selectedMode }) => {
       outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
       vi.stubEnv('MATRIX_OUT', outputDir)
       vi.stubEnv('MATRIX_VUE', matrixVue)
+      vi.stubEnv('MATRIX_OBJECT_INFO', FIXTURE)
       LiteGraph.vueNodesMode = !selectedMode
       let modeDuringLoad: boolean | undefined
 
@@ -50,6 +74,320 @@ describe('matrix runner', () => {
       expect(modeDuringLoad).toBe(selectedMode)
       expect(row.loadedOk).toBe(1)
       expect(row.vueNodesMode).toBe(!selectedMode)
+    }
+  )
+})
+
+interface FormAgreementRow {
+  graph: Record<string, string>
+  driven: Record<string, string>
+  needsForm: string[]
+  err?: string
+}
+
+interface SubgraphProbe {
+  scenario: string
+  verdict?: string
+  coreIsLastWriter?: boolean
+  widgets?: number
+  ifAssumedFinal?: string
+  ifAssumedFinalAtHookSite?: string
+  wrongOrder?: string[] | null
+  finalValues?: unknown
+  err?: string
+}
+
+interface RegistryFormsRow {
+  source: string
+  classes: number
+  registered: number
+  registerErrors: string[]
+  histogram: Record<string, number>
+  refusals: Record<string, string>
+  needsForm: string[]
+  byModule: Record<string, [number, number]>
+  digest: string
+  subgraph: SubgraphProbe[]
+  prototypePatched: { serialize: boolean; serializeFromStoreState: boolean }
+  hookErrors: string[]
+  err?: string
+}
+
+interface MatrixRow {
+  formAgreement?: FormAgreementRow
+  registryForms?: RegistryFormsRow
+  incomplete?: boolean
+}
+
+/**
+ * Run one pack whose only behaviour is the given extension, installed the way
+ * packs install one, and hand back the row's two form channels.
+ *
+ * `install` undefined is the clean control: no pack code touches serialization
+ * at all, so the verdicts are the frontend's own.
+ */
+async function rowFor(
+  name: string,
+  install?: () => Promise<void> | void
+): Promise<MatrixRow> {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-form-'))
+  outputDirs.push(dir)
+  vi.stubEnv('MATRIX_OUT', dir)
+  vi.stubEnv('MATRIX_OBJECT_INFO', FIXTURE)
+
+  await runPack(name, { entry: async () => install?.() }, ['entry'], name)
+
+  const row = JSON.parse(
+    fs.readFileSync(path.join(dir, `${name}.json`), 'utf8')
+  ) as MatrixRow
+  // Not a formality: the row starts life as a write-ahead stub, and stub rate
+  // is a GATED criterion. A telemetry channel must not be able to cost a row.
+  expect(row.incomplete).toBeUndefined()
+  expect(row.formAgreement).toBeDefined()
+  expect(row.registryForms).toBeDefined()
+  return row
+}
+
+/** A pack whose `onSerialize` does `serializer`, installed through the hook. */
+const serializingPack =
+  (name: string, serializer: (serialised: ISerialisedNode) => void) =>
+  async () => {
+    const { useExtensionService } = await import('@/services/extensionService')
+    useExtensionService().registerExtension({
+      name: `matrix.test.${name}`,
+      beforeRegisterNodeDef(nodeType: typeof LGraphNode) {
+        nodeType.prototype.onSerialize = serializer
+      }
+    })
+  }
+
+/** The verdict for the battery's single node of this type. */
+const verdictFor = (agreement: FormAgreementRow, type: string): string => {
+  const keys = Object.keys(agreement.graph).filter((k) =>
+    k.startsWith(`${type}#`)
+  )
+  expect(keys).toHaveLength(1)
+  return agreement.graph[keys[0]]
+}
+
+const keyFor = (agreement: FormAgreementRow, type: string): string =>
+  Object.keys(agreement.graph).find((k) => k.startsWith(`${type}#`))!
+
+describe('form agreement', () => {
+  it(
+    'proves a node whose values no pack touched, and refuses one with no values',
+    { timeout: 60_000 },
+    async () => {
+      const { formAgreement } = await rowFor('form-clean')
+      const agreement = formAgreement!
+
+      // KSampler is the node the battery mutates hardest - splice, reorder,
+      // convert, and two pushed widgets - and it is still provable, because
+      // the proof is about who produced the array, not whether the widget
+      // list looks sane. If this ever reads as a refusal the seam has broken,
+      // not the ecosystem.
+      expect(verdictFor(agreement, 'KSampler')).toBe('provable')
+      // VAEDecode has no widgets at all, so no values were written. This is
+      // the "nothing to describe" population, not a failure.
+      expect(verdictFor(agreement, 'VAEDecode')).toBe('widgets_not_serialized')
+      expect(agreement.needsForm).toEqual([])
+    }
+  )
+
+  it(
+    'refuses a rebuilt array, and still runs the pack hook',
+    { timeout: 60_000 },
+    async () => {
+      const seen: string[] = []
+
+      // A pack that copies the array - the single most common shape in the
+      // ecosystem, and the one deep equality would wave through. Identity is
+      // what catches it.
+      const { formAgreement } = await rowFor(
+        'form-rebuilt',
+        serializingPack('form-rebuilt', function (data) {
+          seen.push('rebuilt')
+          data.widgets_values = [...(data.widgets_values ?? [])]
+        })
+      )
+
+      expect(verdictFor(formAgreement!, 'KSampler')).toBe('values_replaced')
+      // Chained, not clobbered: the capture seam must leave the pack's own
+      // serializer in the call path or every row downstream of it is a
+      // measurement of the harness.
+      expect(seen).toContain('rebuilt')
+      expect(formAgreement!.needsForm).toEqual([])
+    }
+  )
+})
+
+describe('form agreement, shapes nothing can describe', () => {
+  it(
+    'refuses an object-shaped payload and counts it as needing a form',
+    { timeout: 60_000 },
+    async () => {
+      const { formAgreement } = await rowFor(
+        'form-object',
+        serializingPack('form-object', function (data) {
+          Object.assign(data, { widgets_values: { seed: 1 } })
+        })
+      )
+      const agreement = formAgreement!
+
+      // Refused, AND counted as the population a form would rescue, since
+      // nothing can address it today.
+      expect(verdictFor(agreement, 'KSampler')).toBe('values_not_positional')
+      expect(agreement.needsForm).toContain(keyFor(agreement, 'KSampler'))
+    }
+  )
+
+  it(
+    'records a pack that cannot serialize at all without losing the row',
+    { timeout: 60_000 },
+    async () => {
+      const { formAgreement, registryForms } = await rowFor(
+        'form-throws',
+        serializingPack('form-throws', () => {
+          throw new Error('pack serializer exploded')
+        })
+      )
+
+      // Every node refuses, and the row is still complete - rowFor asserts
+      // that. A hostile serializer must cost its own verdict and nothing else.
+      expect(new Set(Object.values(formAgreement!.graph))).toEqual(
+        new Set(['!serialize_threw'])
+      )
+      expect(formAgreement!.err).toBeUndefined()
+      // ...and the census channel survives it too, for the same reason.
+      expect(registryForms!.err).toBeUndefined()
+    }
+  )
+})
+
+describe('registry form census', () => {
+  it('registers REAL node definitions, not the six battery defs', () => {
+    const fixture = JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) as Record<
+      string,
+      unknown
+    >
+    const projection = loadShapeDefs()
+    // The projection itself has to be there and be large: the whole point of
+    // this census is that six hardcoded defs are not the registry.
+    expect(Object.keys(projection).length).toBeGreaterThan(3000)
+    // And the fixture has to be a faithful slice of it. A fixture that drifted
+    // would make every verdict measured through it a statement about nothing.
+    for (const [name, def] of Object.entries(fixture)) {
+      expect(projection[name], `${name} is not in the projection`).toBeDefined()
+      expect(JSON.stringify(def)).toBe(JSON.stringify(projection[name]))
+    }
+  })
+
+  it('fails loudly rather than falling back to six defs', () => {
+    vi.stubEnv('MATRIX_OBJECT_INFO', path.join(HERE, 'does-not-exist.json'))
+    // A census that quietly narrowed its population back to the hardcoded defs
+    // would publish a real-looking number against the wrong denominator, which
+    // is the exact defect this file repairs.
+    expect(() => loadShapeDefs()).toThrow(/unreadable/)
+    expect(shapeDefsPath()).toContain('does-not-exist.json')
+  })
+
+  it(
+    'gives every registered class a verdict, and rolls up by pack',
+    { timeout: 60_000 },
+    async () => {
+      const { registryForms } = await rowFor('census-clean')
+      const census = registryForms!
+
+      expect(census.err).toBeUndefined()
+      expect(census.classes).toBe(7)
+      expect(census.registered).toBe(7)
+      expect(census.registerErrors).toEqual([])
+      // Total, so a class cannot fall out of the denominator silently.
+      const verdicts = Object.values(census.histogram).reduce(
+        (a, b) => a + b,
+        0
+      )
+      expect(verdicts).toBe(census.classes)
+      expect(census.histogram.provable).toBeGreaterThan(0)
+      // VAEDecode has no widgets, so the "nothing to describe" bucket is real
+      // even in a seven-class slice.
+      expect(census.refusals.VAEDecode).toBe('widgets_not_serialized')
+      // Attribution: the rollup accounts for every class exactly once, and it
+      // splits them across the modules that define them rather than piling the
+      // lot into one bucket. Per-pack attribution is the whole reason
+      // `python_module` survives the projection.
+      const rollups = Object.values(census.byModule)
+      expect(rollups.reduce((a, [, n]) => a + n, 0)).toBe(census.classes)
+      expect(rollups.reduce((a, [p]) => a + p, 0)).toBe(
+        census.histogram.provable
+      )
+      expect(rollups.length).toBeGreaterThan(1)
+      expect(census.digest).toMatch(/^[0-9a-f]{64}$/)
+    }
+  )
+
+  it(
+    'refuses SubgraphNode on the precondition, and shows what assuming it costs',
+    { timeout: 60_000 },
+    async () => {
+      const { registryForms } = await rowFor('census-subgraph')
+      const probes = registryForms!.subgraph
+      expect(probes.map((p) => p.scenario)).toEqual([
+        'promoted-only',
+        'plus-custom-widget'
+      ])
+
+      for (const probe of probes) {
+        expect(probe.err).toBeUndefined()
+        // The host rewrites `widgets_values` after `super` returns, so core is
+        // not the last writer and the FIRST precondition refuses.
+        expect(probe.coreIsLastWriter).toBe(false)
+        expect(probe.verdict).toBe('class_may_rewrite_payload')
+        // Non-empty, or the refusal above would be true for the uninteresting
+        // reason that there were no widgets to describe.
+        expect(probe.widgets).toBeGreaterThan(0)
+        // The regression this guards. At the call site the predicate's own
+        // docstring prescribed, the values ARE still core's array, so assuming
+        // `coreIsLastWriter` yields an ACCEPTANCE - the one outcome the module
+        // exists to prevent.
+        expect(probe.ifAssumedFinalAtHookSite).toBe('provable')
+      }
+
+      // ...and with an extension widget present the accepted order and the
+      // payload disagree in length, which is the misplacement rather than
+      // merely the acceptance.
+      const [, withExtra] = probes
+      expect(withExtra.wrongOrder).toEqual(['text', 'EXTRA'])
+      expect(withExtra.finalValues).toHaveLength(1)
+    }
+  )
+
+  it(
+    'records a pack that reassigns the prototype serialization entry point',
+    { timeout: 60_000 },
+    async () => {
+      // The one blind spot in the predicate's prescribed `coreIsLastWriter`
+      // check: after this, every node is still `=== prototype.serialize`, so
+      // the check reads `true` while core is no longer the last writer. The
+      // census cannot fix that from here, so it measures it.
+      const { registryForms } = await rowFor('census-patcher', () => {
+        const base = LGraphNode.prototype.serialize
+        LGraphNode.prototype.serialize = function (this: LGraphNode) {
+          const serialised = base.call(this)
+          serialised.widgets_values = [...(serialised.widgets_values ?? [])]
+          return serialised
+        }
+      })
+
+      expect(registryForms!.prototypePatched.serialize).toBe(true)
+      // And the rewrite it performs is visible as a refusal, so the flag and
+      // the histogram agree rather than one of them hiding the other.
+      expect(Object.values(registryForms!.histogram)).not.toContain(
+        registryForms!.classes
+      )
+      expect(Object.values(registryForms!.refusals)).toContain(
+        'values_replaced'
+      )
     }
   )
 })
