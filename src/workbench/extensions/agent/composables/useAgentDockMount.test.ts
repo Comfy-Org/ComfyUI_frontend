@@ -6,11 +6,14 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { AuthUserInfo } from '@/types/authTypes'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useAgentDockMount } from './useAgentDockMount'
 
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 const billingContext = useBillingContext()
@@ -171,5 +174,65 @@ describe('useAgentDockMount', () => {
     expect(loadDockedAgentPanel).toHaveBeenCalledOnce()
     store.close('close_button')
     expect(docked.value).toBe(false)
+  })
+
+  describe('billing refresh after consent', () => {
+    function mountWithBilling() {
+      const fetchStatus = vi.fn(async () => {})
+      vi.mocked(useBillingContext).mockReturnValue({
+        ...billingContext,
+        fetchStatus
+      })
+      useAgentDockMount()
+      return { consent: useAgentConsentStore(), fetchStatus }
+    }
+
+    // First-load and top-bar consent resolve before the panel mounts, so the
+    // persistent host owns this refresh.
+    it('refreshes billing when consent is accepted while the panel is closed', async () => {
+      const { consent, fetchStatus } = mountWithBilling()
+      expect(useAgentPanelStore().isOpen).toBe(false)
+
+      consent.acceptances += 1
+      await nextTick()
+
+      expect(fetchStatus).toHaveBeenCalledOnce()
+    })
+
+    it('does not refresh billing when stored consent loads', async () => {
+      const { consent, fetchStatus } = mountWithBilling()
+
+      Object.assign(consent, { accepted: true })
+      await nextTick()
+
+      expect(fetchStatus).not.toHaveBeenCalled()
+    })
+
+    it('refreshes once per acceptance when both graph and linear hosts are mounted', async () => {
+      const { consent, fetchStatus } = mountWithBilling()
+      useAgentDockMount()
+
+      consent.acceptances += 1
+      await nextTick()
+      expect(fetchStatus).toHaveBeenCalledOnce()
+
+      consent.acceptances += 1
+      await nextTick()
+      expect(fetchStatus).toHaveBeenCalledTimes(2)
+    })
+
+    it('reports a failed refresh without rejecting', async () => {
+      const failure = new Error('status read failed')
+      const { consent, fetchStatus } = mountWithBilling()
+      fetchStatus.mockRejectedValueOnce(failure)
+
+      consent.acceptances += 1
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(failure, {
+          surface: 'agent',
+          errorType: 'error_refreshing_agent_billing_status'
+        })
+      )
+    })
   })
 })

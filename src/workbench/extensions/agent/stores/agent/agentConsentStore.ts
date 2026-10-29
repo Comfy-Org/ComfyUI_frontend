@@ -24,6 +24,9 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
   const loadedIdentity = ref<string | null>(null)
   const acceptedIdentity = ref<string | null>(null)
   const checkSettled = ref(false)
+  // Confirmed writes only. Loading a stored acceptance does not count, so
+  // consumers can react to a fresh Agree without firing on every reload.
+  const acceptances = ref(0)
   const isChecking = computed(
     () => Boolean(currentUserId()) && !checkSettled.value
   )
@@ -167,6 +170,7 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
       loadedIdentity.value = identity
       acceptedIdentity.value = identity
       checkSettled.value = true
+      acceptances.value += 1
       return true
     } catch (error) {
       if (!stillOwns(sessionId, identity)) return false
@@ -174,5 +178,13 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
     }
   }
 
-  return { accepted, identity, isChecking, ensureScope, load, accept }
+  return {
+    accepted,
+    acceptances,
+    identity,
+    isChecking,
+    ensureScope,
+    load,
+    accept
+  }
 })
