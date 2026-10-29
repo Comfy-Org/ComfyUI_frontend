@@ -27,7 +27,10 @@
       "entryPoints": [
         "**/.storybook/{main,preview}.ts",
         "packages/ingest-types/openapi-ts.config.ts",
-        "scripts/**/*.{js,ts}"
+        "scripts/**/*.{js,ts}",
+        // Standalone vitest configs, each invoked by name from CI or the
+        // registry-census README rather than imported by anything.
+        "vitest.*.config.mts"
       ],
       "entryPointRole": "support"
     },
