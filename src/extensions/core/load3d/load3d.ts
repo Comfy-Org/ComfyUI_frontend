@@ -34,8 +34,8 @@ import type {
   NodeExecutionOutput,
   NodeOutputWith
 } from '@/platform/remote/comfyui/execution/types'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 type Matrix = number[][]

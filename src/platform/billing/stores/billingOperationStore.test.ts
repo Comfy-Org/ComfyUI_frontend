@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
 import type { BillingOpStatusResponse } from '@comfyorg/billing-core'
@@ -25,7 +25,7 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 const mockReportError = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -35,7 +35,7 @@ vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 import { billingApi } from '@/platform/billing/api/billingApi'
 
@@ -2048,6 +2048,87 @@ describe('billingOperationStore', () => {
       })
       expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'timeout' })
+      )
+    })
+
+    const PARKED_DEADLINE_MS = 23 * 60 * 60_000
+
+    async function parkOnCardEntry() {
+      const response: BillingOpStatusResponse = {
+        id: 'op-parked',
+        status: 'pending',
+        phase: 'awaiting_payment_method',
+        started_at: new Date().toISOString()
+      }
+      vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(response)
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-parked', 'subscription')
+      await vi.advanceTimersByTimeAsync(6 * 60_000)
+      return { store, terminal, response }
+    }
+
+    it.for([
+      { phase: 'in_progress', intervalMs: 8_000 },
+      { phase: 'awaiting_invoice_payment', intervalMs: 30_000 }
+    ] as const)(
+      'keeps a checkout pending after leaving a six-minute card-entry park for $phase',
+      async ({ phase, intervalMs }) => {
+        const { store, terminal, response } = await parkOnCardEntry()
+        expect(store.getOperation('op-parked')).toMatchObject({
+          actionUrl: null,
+          authenticationState: null
+        })
+
+        vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue({
+          ...response,
+          phase
+        })
+        await vi.advanceTimersToNextTimerAsync()
+        expect(store.getOperation('op-parked')?.phase).toBe(phase)
+
+        vi.mocked(billingApi.getBillingOpStatus).mockClear()
+        await vi.advanceTimersByTimeAsync(intervalMs)
+        expect(billingApi.getBillingOpStatus).toHaveBeenCalledOnce()
+        expect(store.getOperation('op-parked')?.status).toBe('pending')
+        expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
+          expect.objectContaining({ stage: 'timeout' })
+        )
+
+        vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue({
+          ...response,
+          status: 'succeeded'
+        })
+        await vi.advanceTimersByTimeAsync(intervalMs)
+        expect((await terminal).status).toBe('succeeded')
+      }
+    )
+
+    it('keeps the original 23-hour deadline after leaving a card-entry park', async () => {
+      const adoptedAt = Date.now()
+      const { store, terminal, response } = await parkOnCardEntry()
+
+      vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue({
+        ...response,
+        phase: 'in_progress'
+      })
+      await vi.advanceTimersToNextTimerAsync()
+      expect(store.getOperation('op-parked')?.phase).toBe('in_progress')
+
+      vi.setSystemTime(adoptedAt + PARKED_DEADLINE_MS - 8_000)
+      await vi.advanceTimersByTimeAsync(8_000)
+      expect(store.getOperation('op-parked')?.status).toBe('pending')
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'timeout' })
+      )
+
+      await vi.advanceTimersByTimeAsync(8_000)
+      expect((await terminal).status).toBe('timeout')
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stage: 'timeout',
+          failure_category: 'poll_timeout',
+          duration_ms: PARKED_DEADLINE_MS + 8_000
+        })
       )
     })
 
