@@ -8,6 +8,7 @@ const declarations = readFileSync(bundle, 'utf8')
 const privateImports = [
   '@comfyorg/api-client',
   '@comfyorg/settings-core',
+  '@comfyorg/keybindings',
   '@comfyorg/shared-frontend-utils/geometry',
   '@comfyorg/telemetry'
 ].filter((specifier) => declarations.includes(specifier))

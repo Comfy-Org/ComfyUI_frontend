@@ -13,11 +13,11 @@ import { uploadFile } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { KeybindingImpl } from './keybinding'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingService } from './keybindingService'
-import { useKeybindingStore } from './keybindingStore'
-import type { KeybindingPreset } from '@comfyorg/settings-core/keybindingTypes'
-import { zKeybindingPreset } from '@comfyorg/settings-core/keybindingTypes'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import type { KeybindingPreset } from '@comfyorg/keybindings/types'
+import { zKeybindingPreset } from '@comfyorg/keybindings/types'
 
 const PRESETS_DIR = 'keybindings'
 

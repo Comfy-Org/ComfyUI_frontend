@@ -1,6 +1,6 @@
 import type { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
 import type { ColorPalettes } from './colorPaletteSchema'
-import type { Keybinding } from './keybindingTypes'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import type { NodeBadgeMode } from '@comfyorg/object-info-parser'
 import type { LinkReleaseTriggerAction } from './searchBoxTypes'
 

@@ -7,7 +7,7 @@ import type { WorkflowStore } from '@/platform/workflow/management/stores/workfl
 import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
 import type { NodeError } from '@comfyorg/api-client/types'
 import type { ExtensionDialogService } from '@/services/dialogServiceTypes'
-import type { ComfyCommand } from '@/stores/commandStore'
+import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
 
 export interface ExtensionProvenance {
   createdBy: 'comfy-agent'

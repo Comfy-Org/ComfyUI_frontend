@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import type { Keybinding } from '@comfyorg/settings-core/keybindingTypes'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { NodeBadgeMode } from '@/types/nodeSource'
 import type { LinkReleaseTriggerAction } from '@comfyorg/settings-core/searchBoxTypes'

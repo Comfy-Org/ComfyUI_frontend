@@ -1,4 +1,4 @@
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@comfyorg/telemetry'
 

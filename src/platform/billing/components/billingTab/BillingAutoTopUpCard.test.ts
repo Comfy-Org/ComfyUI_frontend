@@ -201,7 +201,7 @@ describe('BillingAutoTopUpCard', () => {
     },
     {
       status: 'paused_by_budget',
-      label: 'Paused',
+      label: 'Limit reached',
       lines: [RULE, 'Monthly limit reached. Resumes November 28.'],
       action: 'Manage',
       expectedIcon: 'icon-[lucide--arrow-up-right]'
@@ -413,7 +413,7 @@ describe('BillingAutoTopUpCard', () => {
     {
       reread: 'a different status',
       settings: { ...configured, status: 'paused_by_budget' as const },
-      label: 'Paused',
+      label: 'Limit reached',
       views: 2
     }
   ])(

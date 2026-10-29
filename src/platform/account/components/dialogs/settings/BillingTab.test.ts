@@ -86,6 +86,7 @@ interface Scenario {
   canTopUp?: boolean
   topUpDenial?: string
   isPaused?: boolean
+  billingStatus?: 'paid' | 'paused'
   hasParkedBillingOperation?: boolean
 }
 
@@ -122,7 +123,7 @@ function arrange(scenario: Scenario = {}) {
           : scenario.subscriptionStatus
       ),
       subscriptionState: computed(() => scenario.subscriptionState ?? null),
-      billingStatus: computed(() => 'paid'),
+      billingStatus: computed(() => scenario.billingStatus ?? 'paid'),
       manageSubscription,
       isTeamPlan: computed(() => false),
       plans: computed(() => [
@@ -455,6 +456,52 @@ describe('BillingTab', () => {
     }
   )
 
+  it.for([
+    {
+      case: 'a served renewal date',
+      renewalDate: '2027-10-28T00:00:00Z',
+      line: 'Billed by contract. Renews October 28, 2027.'
+    },
+    {
+      case: 'no renewal date',
+      renewalDate: null,
+      line: 'Billed by contract.'
+    }
+  ])(
+    'shows an active sales-managed plan as Enterprise with $case',
+    ({ renewalDate, line }) => {
+      arrange({
+        planKind: 'sales_managed',
+        canOpenPlans: false,
+        subscription: {
+          ...activeSubscription,
+          tier: 'ENTERPRISE',
+          duration: 'ANNUAL',
+          renewalDate
+        }
+      })
+
+      expect(
+        screen.getByRole('heading', { name: 'Enterprise' })
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+        line
+      )
+      expect(
+        screen.getByRole('link', { name: 'Contact sales' })
+      ).toHaveAttribute('href', 'https://comfy.org/contact/')
+    }
+  )
+
+  it('picks the contract-billing row by plan_kind and keeps the served plan name on a PRO tier', () => {
+    arrange({ planKind: 'sales_managed', canOpenPlans: false })
+
+    expect(screen.getByRole('heading', { name: 'Pro' })).toBeInTheDocument()
+    expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+      'Billed by contract. Renews November 15.'
+    )
+  })
+
   it('opens plan management on Cloud instead of a platform plans page', async () => {
     arrange()
 
@@ -613,14 +660,14 @@ describe('BillingTab', () => {
       return arranged
     }
 
-    it('confirms with the target and date the scheduled change carries, and no amount', async () => {
+    it('confirms that the current plan stays, with no amount', async () => {
       await openStay()
 
       const dialog = screen.getByRole('dialog', {
         name: 'Cancel your change to Creator?'
       })
       expect(dialog).toHaveTextContent(
-        "Your plan won't change to Creator on October 28, 2026. You can schedule a change again anytime."
+        "You'll stay on Pro. You can schedule a change again anytime."
       )
       expect(dialog).not.toHaveTextContent('$')
     })
@@ -846,6 +893,15 @@ describe('BillingTab', () => {
     })
   })
 
+  it('shows a paused plan by name with the paused line', () => {
+    arrange({ billingStatus: 'paused' })
+
+    expect(screen.getByRole('heading', { name: 'Pro' })).toBeInTheDocument()
+    expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
+      "Paused. The renewal payment didn't go through."
+    )
+  })
+
   it('renders an unrecognised plan as Your plan', () => {
     arrange({ subscription: { ...activeSubscription, tier: null } })
 
@@ -999,16 +1055,72 @@ describe('BillingTab', () => {
       ).toEqual(['inverted', 'inverted'])
     })
 
-    it('keeps Add credits grey at 0 while the payment is processing', async () => {
+    function addCreditsVariants() {
+      return screen
+        .getAllByRole('button', { name: 'Add credits' })
+        .map((button) => button.getAttribute('data-variant'))
+    }
+
+    it('turns Add credits white in the out-of-credits banner and the Credits card when auto top-up is off', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      arrange({
+        balance: zeroBalance,
+        subscription: { ...activeSubscription, hasFunds: false }
+      })
+
+      await screen.findByTestId('billing-auto-top-up-status')
+      expect(
+        within(screen.getByTestId('billing-local-credit-banner')).getByRole(
+          'button',
+          { name: 'Add credits' }
+        )
+      ).toHaveAttribute('data-variant', 'inverted')
+      expect(addCreditsVariants()).toEqual(['inverted', 'inverted'])
+    })
+
+    it('turns Add credits white at 0 while a top-up payment is processing and auto top-up is off', async () => {
       servedCheckouts(checkout('payment_processing'))
       arrange({ balance: zeroBalance })
 
       await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-auto-top-up-status')
       expect(
         within(screen.getByTestId('billing-credits-card')).getByRole('button', {
           name: 'Add credits'
         })
-      ).toHaveAttribute('data-variant', 'secondary')
+      ).toHaveAttribute('data-variant', 'inverted')
+    })
+
+    it('keeps Add credits grey at 0 when the served auto top-up status will refill', async () => {
+      const served = await billingApi.getBillingAutoReload()
+      vi.mocked(billingApi.getBillingAutoReload).mockResolvedValue({
+        ...served,
+        configured: true,
+        enabled: true,
+        status: 'on'
+      })
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      arrange({
+        balance: zeroBalance,
+        subscription: { ...activeSubscription, hasFunds: false }
+      })
+
+      await screen.findByTestId('billing-auto-top-up-status')
+      expect(addCreditsVariants()).toEqual(['secondary', 'secondary'])
+    })
+
+    it('keeps Subscribe the one white button with no plan at 0', () => {
+      arrange({
+        balance: zeroBalance,
+        subscription: null,
+        subscriptionStatus: null
+      })
+
+      expect(screen.getByRole('button', { name: 'Subscribe' })).toHaveAttribute(
+        'data-variant',
+        'inverted'
+      )
+      expect(addCreditsVariants()).toEqual(['secondary'])
     })
 
     it('offers no Add credits on a failed top-up when the server withholds can_top_up', async () => {

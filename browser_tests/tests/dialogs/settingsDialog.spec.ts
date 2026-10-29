@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { Keybinding } from '@comfyorg/settings-core/keybindingTypes'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { TestIds } from '@e2e/fixtures/selectors'

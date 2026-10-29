@@ -799,6 +799,7 @@
     "dialog-host",
     "error-reporting",
     "extension-runtime",
+    "keybindings",
     "workbench-shell",
     "workflow-management"
   ],

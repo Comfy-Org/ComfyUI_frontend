@@ -171,6 +171,7 @@
   "publicEntryPoints": [],
   "allowedDependencies": [
     "error-reporting",
+    "keybindings",
     "remote-config",
     "telemetry",
     "webcam-capture"

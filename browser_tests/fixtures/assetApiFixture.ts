@@ -63,8 +63,6 @@ export const assetApiFixture = base.extend<{
     if (folders) await new ModelLibraryHelper(page).mockModelFolders(folders)
 
     await use(assetApi)
-
-    await assetApi.clearMocks()
   }
 })
 

@@ -1,4 +1,4 @@
-import type { Keybinding } from '@comfyorg/settings-core/keybindingTypes'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 
 export const CORE_KEYBINDINGS: Keybinding[] = [
   {
