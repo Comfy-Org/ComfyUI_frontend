@@ -81,6 +81,15 @@ interface WorkflowStore {
   isSyncLoading: boolean
   reorderWorkflows: (from: number, to: number) => void
 
+  /**
+   * `true` once startup has finished restoring the previous session's open
+   * tabs, including unsaved drafts recreated from local storage. Until then,
+   * a workflow with no open tab may simply not have been restored yet.
+   */
+  tabsRestored: boolean
+  /** Called once startup tab restoration settles, including when startup fails first. */
+  markTabsRestored: () => void
+
   /** `true` if any subgraph is currently being viewed. */
   isSubgraphActive: boolean
   activeSubgraph: Subgraph | undefined
@@ -568,6 +577,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
+  const tabsRestored = ref(false)
+  const markTabsRestored = () => {
+    tabsRestored.value = true
+  }
+
   /** @see WorkflowStore.isSubgraphActive */
   const isSubgraphActive = ref(false)
 
@@ -761,6 +775,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isSyncLoading,
     loadWorkflows,
 
+    tabsRestored: computed(() => tabsRestored.value),
+    markTabsRestored,
     isSubgraphActive,
     activeSubgraph,
     updateActiveGraph,

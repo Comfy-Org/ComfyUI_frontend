@@ -299,6 +299,7 @@ function syncFakeSelection() {
 }
 
 beforeEach(() => {
+  useWorkflowStore().markTabsRestored()
   let clientMessageIds = 0
   nextClientMessageId.mockImplementation(
     () => `client-message-${++clientMessageIds}`
