@@ -165,6 +165,31 @@ describe('AudioPreviewPlayer', () => {
       expect(button).toHaveAttribute('aria-pressed', 'false')
     })
 
+    it('pauses the still-attached element when the default player hides on clear', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+      const connectedAtPause: boolean[] = []
+      vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(
+        function (this: HTMLMediaElement) {
+          connectedAtPause.push(this.isConnected)
+        }
+      )
+      const user = userEvent.setup()
+
+      const { rerender } = render(AudioPreviewPlayer, {
+        props: { modelValue: 'http://example.com/audio.mp3' },
+        global: { plugins: [i18n] }
+      })
+      await user.click(screen.getByRole('button', { name: 'g.playPause' }))
+      connectedAtPause.length = 0
+
+      await rerender({ modelValue: undefined })
+
+      expect(connectedAtPause).toEqual([true])
+      expect(
+        screen.queryByRole('button', { name: 'g.playPause' })
+      ).not.toBeInTheDocument()
+    })
+
     it('ignores a pending rejection after unmount', async () => {
       const attempts: Array<(reason: unknown) => void> = []
       vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(
