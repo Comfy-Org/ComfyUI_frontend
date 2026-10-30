@@ -2484,7 +2484,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         })
     } finally {
       clearTimeout(deadline)
-      if (recoveringTurns.get(key) === state) recoveringTurns.delete(key)
+      finishRecovery(key, recovery, state, turn)
       recoveryPendingAskObservations.delete(key)
       recoveryThreadMissingCounts.delete(key)
     }
