@@ -495,12 +495,6 @@ describe('Autogrow', () => {
       assert.exists(oldLink)
       const oldSource = graph.getNodeById(oldLink.origin_id)
 
-      //connectSlots (LGraphNode.ts) fires slot 1's disconnect (the swap's
-      //tail) and its matching connect synchronously, back to back, while
-      //replacing slot 1's link below. Chaining onto onConnectionsChange -
-      //the same public extension point real custom nodes use - lets a
-      //second, genuine connect land on a different slot in that exact
-      //window, without faking either connection.
       let sawSwapTail = false
       node.onConnectionsChange = useChainCallback(
         node.onConnectionsChange,
@@ -517,7 +511,10 @@ describe('Autogrow', () => {
       const newLink = replacement.connect(0, node, 1)
       assert.exists(newLink)
 
-      expect(sawSwapTail).toBe(true)
+      expect(
+        sawSwapTail,
+        'a connect on slot 2 lands between the disconnect and connect that connectSlots fires while replacing slot 1'
+      ).toBe(true)
       expect(node.getInputLink(1)).toBe(newLink)
       expect(oldSource?.isOutputConnected(0)).toBe(false)
 

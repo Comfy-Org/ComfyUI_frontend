@@ -23,10 +23,7 @@ import {
   zMatchTypeOptions
 } from '@/schemas/nodeDefSchema'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
-import {
-  addAutogrowGroupWidget,
-  addShimWidget
-} from '@/core/graph/widgets/inputWidgetShim'
+import { addShimWidget } from '@/core/graph/widgets/inputWidgetShim'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import {
@@ -85,7 +82,6 @@ function syncNodeWidgetOrder(node: LGraphNode) {
 
 function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
   const name = input.widget?.name ?? input.name
-  //A recreated input rebinds to the widget its predecessor left behind
   const existing = node.widgets?.find((w) => w.name === name)
   if (existing) {
     input.widget ??= { name }
@@ -94,8 +90,6 @@ function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
   }
   addShimWidget(node, input)
 
-  //Keep the group's rows contiguous behind its group widget. Saved widgets
-  //are never moved: that would reorder positional widgets_values.
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
   const widgets = node.widgets
   const shim = widgets?.pop()
@@ -644,12 +638,8 @@ export function growAutogrowInput(
 }
 
 function autogrowInputDisconnected(input: INodeInputSlot, node: AutogrowNode) {
-  //The slot may have moved or been removed before this deferred compaction ran
   const index = node.inputs.indexOf(input)
   if (index === -1) return
-  //The slot was reconnected before this deferred compaction ran (e.g. a
-  //connect/disconnect/reconnect sequence in immediate succession); the
-  //compaction is stale and must not run against the slot's new link.
   if (node.isInputConnected(index)) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
   const autogrowGroup = Object.hasOwn(node.comfyDynamic.autogrow, groupName)
@@ -813,7 +803,6 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
 
   const originalOnConnectInput = node.onConnectInput
   node.onConnectInput = function (slot: number, ...args) {
-    //A group is only promoted whole, from a subgraph input
     const groupInput = this.inputs.at(slot)
     if (
       groupInput &&
@@ -850,8 +839,6 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
       const input = this.inputs.at(slot)
       if (contype !== LiteGraph.INPUT || !input) return
       if (Object.hasOwn(this.comfyDynamic.autogrow, input.name)) {
-        //Links sit on stale slots until a configuring graph realigns them,
-        //so groups are synced once it has configured
         if (!useApp().configuringGraph) syncAutogrowGroup(this, input.name)
         return
       }
@@ -892,7 +879,7 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
       localized_name: inputSpecV2.display_name
     })
   if (!node.widgets?.some((w) => w.name === groupName))
-    addAutogrowGroupWidget(node, groupInput)
+    addShimWidget(node, groupInput, { autogrowGroup: true })
   withComfyAutogrow(node)
 
   const parseResult = zAutogrowOptions.safeParse(inputSpecV2)

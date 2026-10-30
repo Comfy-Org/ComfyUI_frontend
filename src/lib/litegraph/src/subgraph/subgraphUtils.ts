@@ -37,6 +37,7 @@ import type {
   SubgraphIO
 } from '@comfyorg/graph-model/serialisation'
 
+import { hostInputOf } from './hostInput'
 import { SubgraphInputNode } from './SubgraphInputNode'
 
 import { SubgraphOutputNode } from './SubgraphOutputNode'
@@ -586,7 +587,7 @@ export function reorderSubgraphInputs(
 
   const n = subgraph.inputs.length
   const hostInputs = subgraph.inputs.map((subgraphInput) =>
-    subgraphNode.inputs.find((input) => input._subgraphSlot === subgraphInput)
+    hostInputOf(subgraphNode, subgraphInput)
   )
   if (hostInputs.some((input) => !input)) {
     console.error('reorderSubgraphInputs: host and subgraph inputs differ', {
@@ -611,8 +612,6 @@ export function reorderSubgraphInputs(
   const oldOrder = subgraph.inputs.map((i) => i.id)
 
   const previousInputs = captureInputLayout(subgraphNode)
-  //Inputs the host owns under a subgraph input (e.g. autogrow children) move
-  //with it
   const orderedHostInputs = orderedIndices.flatMap((index) => {
     const hostInput = hostInputs[index]!
     const prefix = `${hostInput.name}.`

@@ -62,6 +62,7 @@ import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
+import { hostInputOf } from './hostInput'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
 import { createPromotedWidgetStoreProjection } from './promotedWidgetStoreProjection'
 
@@ -137,20 +138,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     Object.defineProperty(this, 'widgets', {
       get: () => {
-        //Widgets this node owns for an input (e.g. an autogrow group and its
-        //children) take that input's position
-        const owned = new Set<IBaseWidget>()
         const widgets = this.inputs.flatMap((input) => {
           const widget =
             this._projectPromotedWidget(input) ??
             this._extraWidgets.find((w) => w.name === input.widget?.name)
-          if (!widget) return []
-          owned.add(widget)
-          return [widget]
+          return widget ? [widget] : []
         })
         return [
           ...widgets,
-          ...this._extraWidgets.filter((widget) => !owned.has(widget))
+          ...this._extraWidgets.filter((widget) => !widgets.includes(widget))
         ]
       },
       set: () => {
@@ -208,9 +204,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = e.detail.input._widget
         if (widget) this.ensureWidgetRemoved(widget)
 
-        const input = this.inputs.find(
-          (input) => input._subgraphSlot === e.detail.input
-        )
+        const input = hostInputOf(this, e.detail.input)
         if (input) this.unbindDynamicInput(input)
         this.removeInput(input ? this.inputs.indexOf(input) : e.detail.index)
         this.invalidatePromotedViews()
@@ -241,9 +235,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       'renaming-input',
       (e) => {
         const { oldName, newName } = e.detail
-        const input = this.inputs.find(
-          (input) => input._subgraphSlot === e.detail.input
-        )
+        const input = hostInputOf(this, e.detail.input)
         if (!input) {
           console.error('Subgraph input not found')
           return
@@ -554,7 +546,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override _internalConfigureAfterSlots() {
     this._rebindInputSubgraphSlots()
 
-    //Keep the inputs a subgraph input's group owns, named under it
     const groupNames = this.inputs.flatMap((input) =>
       input._subgraphSlot ? [`${input.name}.`] : []
     )

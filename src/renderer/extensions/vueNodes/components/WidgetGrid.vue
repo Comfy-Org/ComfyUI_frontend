@@ -24,7 +24,7 @@
           :class="
             cn(
               'col-span-full flex h-5 items-center gap-2 rounded-r-lg border border-dashed border-node-foreground/40 pr-2',
-              isHoveredGroup(row.widget.simplified.name) &&
+              hoveredGroupName === row.widget.simplified.name &&
                 'border-solid border-primary bg-primary/10'
             )
           "
@@ -117,7 +117,10 @@ import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { AUTOGROW_GROUP_WIDGET_TYPE } from '@/core/graph/widgets/inputWidgetShim'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useAutogrowGroupDropState } from '@/renderer/core/canvas/links/autogrowGroupDropState'
+import {
+  autogrowIoInputDragActive,
+  hoveredAutogrowGroup
+} from '@/renderer/core/canvas/links/autogrowGroupDropState'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
@@ -149,30 +152,17 @@ const {
 
 useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')
 const canvasStore = useCanvasStore()
-const { ioInputDragActive, hoveredGroup } = useAutogrowGroupDropState()
-
-function isHoveredGroup(groupName: string) {
-  const hovered = hoveredGroup.value
-  return (
-    !!hovered && hovered.nodeId === nodeId && hovered.groupName === groupName
-  )
-}
-
-function inHoveredGroup(widgetName: string) {
-  const hovered = hoveredGroup.value
-  return (
-    !!hovered &&
-    hovered.nodeId === nodeId &&
-    widgetName.startsWith(`${hovered.groupName}.`)
-  )
-}
+const hoveredGroupName = computed(() => {
+  const hovered = hoveredAutogrowGroup.value
+  return hovered && hovered.nodeId === nodeId ? hovered.groupName : undefined
+})
 
 const renderedRows = computed(() =>
   processedWidgets.flatMap((widget) => {
     const isAutogrowGroup =
       widget.simplified.type === AUTOGROW_GROUP_WIDGET_TYPE
     if (isAutogrowGroup && !widget.slotMetadata?.linked) {
-      if (!ioInputDragActive.value) return []
+      if (!autogrowIoInputDragActive.value) return []
       return [
         {
           widget,
@@ -196,7 +186,9 @@ const renderedRows = computed(() =>
       ? !!widget.slotMetadata
       : widget.visible || (suppressedByConnection && !!widget.slotMetadata)
     if (!shouldRender) return []
-    const highlighted = inHoveredGroup(widget.simplified.name)
+    const highlighted =
+      !!hoveredGroupName.value &&
+      widget.simplified.name.startsWith(`${hoveredGroupName.value}.`)
 
     return [
       {

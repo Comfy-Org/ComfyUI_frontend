@@ -12,55 +12,39 @@ class ShimWidget extends BaseWidget {
   onClick(): void {}
 }
 
-/** Gives a socket-only input a label widget so it can take a widget row. */
-export function addShimWidget(
-  node: LGraphNode,
-  input: INodeInputSlot,
-  { advanced }: Pick<NonNullable<InputSpec[1]>, 'advanced'> = {}
-) {
-  node.addCustomWidget(
-    new ShimWidget(
-      {
-        name: input.name,
-        label: input.label ?? input.localized_name,
-        options: { advanced, hideInPanel: advanced },
-        serialize: false,
-        type: 'shim',
-        value: undefined,
-        y: 0
-      },
-      node
-    )
-  )
-  input.alwaysVisible = true
-  input.widget = { name: input.name }
-}
-
 export const AUTOGROW_GROUP_WIDGET_TYPE = 'autogrow_group'
 
 /**
- * Pairs an autogrow group's own input with a hidden, never serialized widget.
- * The row only renders while the group input is connected, or, in the Vue
- * widget grid, as a drop row while a subgraph input link is dragged.
+ * Gives a socket-only input a label widget so it can take a widget row. An
+ * autogrow group's widget is hidden and kept out of the API prompt.
  */
-export function addAutogrowGroupWidget(
+export function addShimWidget(
   node: LGraphNode,
-  input: INodeInputSlot
+  input: INodeInputSlot,
+  {
+    advanced,
+    autogrowGroup
+  }: Pick<NonNullable<InputSpec[1]>, 'advanced'> & {
+    autogrowGroup?: boolean
+  } = {}
 ) {
   node.addCustomWidget(
     new ShimWidget(
       {
         name: input.name,
         label: input.label ?? input.localized_name,
-        hidden: true,
-        options: { serialize: false },
+        hidden: autogrowGroup,
+        options: autogrowGroup
+          ? { serialize: false }
+          : { advanced, hideInPanel: advanced },
         serialize: false,
-        type: AUTOGROW_GROUP_WIDGET_TYPE,
+        type: autogrowGroup ? AUTOGROW_GROUP_WIDGET_TYPE : 'shim',
         value: undefined,
         y: 0
       },
       node
     )
   )
+  if (!autogrowGroup) input.alwaysVisible = true
   input.widget = { name: input.name }
 }

@@ -6,6 +6,7 @@ import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { hostInputOf } from '@/lib/litegraph/src/subgraph/hostInput'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
@@ -175,14 +176,10 @@ function applySubgraphInputOrder(
   subgraphNode: SubgraphNode,
   orderedIndices: readonly number[]
 ): void {
-  const hostInputOf = (index: number) => {
-    const subgraphInput = subgraphNode.subgraph.inputs[index]
-    return subgraphNode.inputs.find(
-      (input) => input._subgraphSlot === subgraphInput
-    )
-  }
+  const hostInputAt = (index: number) =>
+    hostInputOf(subgraphNode, subgraphNode.subgraph.inputs[index])
   const widgetValues = subgraphNode.subgraph.inputs.map((_, index) => {
-    const id = hostInputOf(index)?.widgetId
+    const id = hostInputAt(index)?.widgetId
     if (!id) return undefined
     return useWidgetValueStore().getWidget(id)?.value
   })
@@ -200,7 +197,7 @@ function applySubgraphInputOrder(
 
   for (const [newIndex, oldIndex] of orderedIndices.entries()) {
     const value = widgetValues[oldIndex]
-    const id = hostInputOf(newIndex)?.widgetId
+    const id = hostInputAt(newIndex)?.widgetId
     if (value === undefined || !id) continue
     useWidgetValueStore().setValue(id, value)
   }
@@ -212,9 +209,7 @@ function isSamePromotedInput(
   orderedWidget: Pick<IBaseWidget, 'widgetId'>
 ): boolean {
   const linkedInput = subgraphNode.subgraph.inputs.at(inputIndex)
-  const input = subgraphNode.inputs.find(
-    (input) => input._subgraphSlot === linkedInput
-  )
+  const input = hostInputOf(subgraphNode, linkedInput)
   if (!input || !linkedInput) return false
 
   for (const linkId of linkedInput.linkIds) {
