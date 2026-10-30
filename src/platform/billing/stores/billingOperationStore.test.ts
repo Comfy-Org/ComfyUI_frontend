@@ -1784,6 +1784,30 @@ describe('billingOperationStore', () => {
         detail: 'billingOperation.paymentDeclinedDetail'
       },
       {
+        type: 'subscription' as const,
+        errorMessage: 'lost_card',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'stolen_card',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'pickup_card',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'invalid_account',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
         type: 'topup' as const,
         errorMessage: 'card_velocity_exceeded',
         summary: 'billingOperation.topupFailed',

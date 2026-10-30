@@ -85,8 +85,6 @@ const FAILURE_DETAIL_CODES: [string, string[]][] = [
     'billingOperation.processingErrorDetail',
     ['processing_error', 'issuer_not_available', 'try_again_later']
   ],
-  // Stripe advises never telling the customer a payment was flagged as fraud
-  // or a card reported lost or stolen.
   [
     'billingOperation.paymentDeclinedDetail',
     [
