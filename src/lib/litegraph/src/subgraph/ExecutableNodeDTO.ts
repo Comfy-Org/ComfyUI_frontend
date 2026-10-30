@@ -227,7 +227,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         type
       )
 
-    // Nothing connected
     if (input.linkId == null) return
 
     const link = this.graph.getLink(input.linkId)
@@ -238,7 +237,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
     const { subgraphNode } = this
 
-    // Link goes up and out of this subgraph
     if (subgraphNode && link.originIsIoNode) {
       const subgraphNodeInput = hostInputOf(
         subgraphNode,
@@ -253,14 +251,12 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         throw new NullGraphError(
           `SubgraphNode ${subgraphNode.id} has no graph during input resolution`
         )
-      // Nothing connected
-      const linkId =
-        inputLinkId(
-          subgraphNode.graph,
-          subgraphNode.id,
-          subgraphNode.inputs.indexOf(subgraphNodeInput)
-        ) ?? null
-      if (linkId === null) {
+      const linkId = inputLinkId(
+        subgraphNode.graph,
+        subgraphNode.id,
+        subgraphNode.inputs.indexOf(subgraphNodeInput)
+      )
+      if (linkId === undefined) {
         const id = subgraphNodeInput.widgetId
         if (!id) return
 
@@ -291,7 +287,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       return subgraphNodeDto.resolveInput(outerLink.target_slot, visited)
     }
 
-    // Not part of a subgraph; use the original link
     const outputNode = this.graph.getNodeById(link.origin_id)
     if (!outputNode)
       throw new InvalidLinkError(

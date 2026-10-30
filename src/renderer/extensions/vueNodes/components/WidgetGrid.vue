@@ -3,10 +3,7 @@
     ref="grid"
     data-testid="node-widgets"
     class="lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3 text-xs text-node-foreground"
-    :style="{
-      'grid-template-rows': gridTemplateRows,
-      flex: gridTemplateRows.includes('auto') ? 1 : undefined
-    }"
+    :style="gridStyle"
   >
     <div
       v-for="section in sections"
@@ -18,29 +15,9 @@
     >
       <template v-for="row in section.rows" :key="row.widget.renderKey">
         <div
-          v-if="row.autogrowGroup"
-          data-testid="autogrow-group-drop-row"
-          :data-autogrow-group="row.widget.simplified.name"
-          :class="
-            cn(
-              'col-span-full flex h-5 items-center gap-2 rounded-r-lg border border-dashed border-node-foreground/40 pr-2',
-              hoveredGroupName === row.widget.simplified.name &&
-                'border-solid border-primary bg-primary/10'
-            )
-          "
-        >
-          <div
-            data-autogrow-group-dot
-            class="size-2 shrink-0 -translate-x-1/2 rounded-full border border-solid border-foreground/10 bg-ink-100"
-          />
-          <span class="truncate">
-            {{ row.widget.simplified.label || row.widget.simplified.name }}
-          </span>
-        </div>
-        <div
-          v-else
           :data-testid="row.testId"
           :data-widget-name="row.widget.simplified.name"
+          :data-autogrow-group="row.autogrowGroup"
           :class="
             cn(
               'group col-span-full grid grid-cols-subgrid items-stretch',
@@ -158,49 +135,39 @@ const hoveredGroupName = computed(() => {
   return hovered && hovered.nodeId === nodeId ? hovered.groupName : undefined
 })
 
+function revealedAutogrowGroup(widget: WidgetGridItem) {
+  const { type, name } = widget.simplified
+  const slot = widget.slotMetadata
+  if (type !== AUTOGROW_GROUP_WIDGET_TYPE || !slot) return undefined
+  const dragType = autogrowIoInputDragType.value
+  const accepts =
+    dragType !== undefined && LiteGraph.isValidConnection(dragType, slot.type)
+  return slot.linked || accepts ? name : undefined
+}
+
+function isInHoveredGroup(name: string) {
+  const group = hoveredGroupName.value
+  return !!group && (name === group || name.startsWith(`${group}.`))
+}
+
 const renderedRows = computed(() =>
   processedWidgets.flatMap((widget) => {
-    const isAutogrowGroup =
-      widget.simplified.type === AUTOGROW_GROUP_WIDGET_TYPE
-    if (isAutogrowGroup && !widget.slotMetadata?.linked) {
-      const dragType = autogrowIoInputDragType.value
-      if (
-        dragType === undefined ||
-        !widget.slotMetadata ||
-        !LiteGraph.isValidConnection(dragType, widget.slotMetadata.type)
-      )
-        return []
-      return [
-        {
-          widget,
-          autogrowGroup: true,
-          inHoveredGroup: false,
-          socketOnly: false,
-          showsControl: false,
-          slotClass: '',
-          standalone: false,
-          testId: undefined,
-          rowSize: 'min-content'
-        }
-      ]
-    }
+    const autogrowGroup = revealedAutogrowGroup(widget)
     const isConverted = isConvertedWidgetType(widget.simplified.type)
     const isSocketOnly = widget.simplified.type === 'shim'
     const showsControl = !isConverted && !isSocketOnly && widget.visible
     const suppressedByConnection =
-      !!widget.suppressedByConnection || isAutogrowGroup
+      !!widget.suppressedByConnection || !!autogrowGroup
     const shouldRender = isConverted
       ? !!widget.slotMetadata
       : widget.visible || (suppressedByConnection && !!widget.slotMetadata)
     if (!shouldRender) return []
-    const highlighted =
-      !!hoveredGroupName.value &&
-      widget.simplified.name.startsWith(`${hoveredGroupName.value}.`)
+    const highlighted = isInHoveredGroup(widget.simplified.name)
 
     return [
       {
         widget,
-        autogrowGroup: false,
+        autogrowGroup,
         inHoveredGroup: highlighted,
         socketOnly: isSocketOnly,
         showsControl,
@@ -295,9 +262,13 @@ async function restoreRowFocus(name: string) {
   }
 }
 
-const gridTemplateRows = computed(() =>
-  renderedRows.value.map((row) => row.rowSize).join(' ')
-)
+const gridStyle = computed(() => {
+  const rows = renderedRows.value.map((row) => row.rowSize).join(' ')
+  return {
+    'grid-template-rows': rows,
+    flex: rows.includes('auto') ? 1 : undefined
+  }
+})
 
 const layoutKey = computed(() =>
   renderedRows.value
