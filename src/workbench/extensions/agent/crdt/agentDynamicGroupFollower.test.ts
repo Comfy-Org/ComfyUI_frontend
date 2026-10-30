@@ -28,7 +28,7 @@ import {
   createTestSubgraphNode,
   enableSubgraphNodeCreation
 } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
-import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import type { ComfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

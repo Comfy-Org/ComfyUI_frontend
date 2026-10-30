@@ -1,7 +1,7 @@
 import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 import { zNodeId } from '@comfyorg/graph-model/workflowSchema'
-import type { TaskStatus } from '@/platform/tasks/services/taskSchema'
+import type { TaskStatus } from './taskSchema'
 import { zOutputs } from '@comfyorg/graph-model/nodeOutput'
 import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 

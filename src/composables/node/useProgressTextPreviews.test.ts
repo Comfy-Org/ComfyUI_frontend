@@ -4,7 +4,7 @@ import { effectScope } from 'vue'
 
 import { useProgressTextPreviews } from '@/composables/node/useProgressTextPreviews'
 import type { LGraphCanvas } from '@comfyorg/litegraph/LGraphCanvas'
-import type { ProgressTextWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ProgressTextWsMessage } from '@comfyorg/api-client/executionTypes'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

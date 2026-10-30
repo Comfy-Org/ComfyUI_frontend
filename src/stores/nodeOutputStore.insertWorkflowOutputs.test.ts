@@ -1,7 +1,7 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

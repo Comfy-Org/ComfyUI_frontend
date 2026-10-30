@@ -988,6 +988,8 @@ export default defineConfig({
           exclude: ISOLATED_STORE_TESTS,
           include: [
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            'packages/api-client/src/**/*.test.ts',
+            'packages/settings-core/src/**/*.test.ts',
             'packages/telemetry/src/**/*.test.ts',
             'packages/graph-model/src/**/*.test.ts',
             'packages/graph-state/src/**/*.test.ts',

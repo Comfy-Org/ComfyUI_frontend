@@ -23,7 +23,7 @@ import type { NodeProperty } from '@comfyorg/litegraph/LGraphNode'
 import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
-import type { Settings } from '@/platform/settings/types'
+import type { Settings } from '@comfyorg/settings-core/types'
 
 vi.mock(import('@/scripts/api'), () => ({
   api: fromPartial({ apiURL: (path: string) => path })

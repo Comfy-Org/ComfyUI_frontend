@@ -10,7 +10,7 @@ import type {
 } from '@comfyorg/litegraph/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import type { ResultItem } from '@comfyorg/graph-model/nodeOutput'
 import type { ResultItemType } from '@comfyorg/graph-model/resultItemTypeSchema'
 import { api } from '@/scripts/api'

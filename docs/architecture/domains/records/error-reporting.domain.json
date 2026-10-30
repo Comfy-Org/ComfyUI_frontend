@@ -1,7 +1,7 @@
 {
   "id": "error-reporting",
   "capability": "Error reporting and RUM diagnostics",
-  "description": "Application error-reporting adapters for the shared telemetry package, vendor initialization and filtering, assertions, asset-load reporting, and manual-refresh diagnostics. Product analytics and startup tracing are separate records.",
+  "description": "The reportError pipeline, RUM context, and URL redaction of @comfyorg/telemetry, their application adapters, vendor initialization and filtering, assertions, asset-load reporting, and manual-refresh diagnostics. Product analytics and startup tracing are separate records.",
   "modules": [
     {
       "path": "src/platform/telemetry/assertFailureReporter.ts",
@@ -58,6 +58,22 @@
     {
       "path": "src/utils/preloadErrorUtil.ts",
       "role": "domain"
+    },
+    {
+      "path": "packages/telemetry/src/__mocks__/reportError.ts",
+      "role": "application"
+    },
+    {
+      "path": "packages/telemetry/src/redactTelemetryUrls.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/telemetry/src/reportError.ts",
+      "role": "application"
+    },
+    {
+      "path": "packages/telemetry/src/rumContext.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],

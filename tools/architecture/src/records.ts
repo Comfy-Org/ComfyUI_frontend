@@ -5,16 +5,13 @@ import type { z } from 'zod'
 
 import { listDirectory, readJson } from './outcome'
 import type { Outcome } from './outcome'
-import {
-  SOURCE_ROOTS,
-  domainRecordSchema,
-  exceptionLedgerSchema
-} from './schema'
+import { domainRecordSchema, exceptionLedgerSchema } from './schema'
 import type { ArchitectureException, DomainRecord } from './schema'
 
 const DOMAINS_DIRECTORY = 'docs/architecture/domains'
 const RECORDS_DIRECTORY = `${DOMAINS_DIRECTORY}/records`
 const LEDGER_PATH = `${DOMAINS_DIRECTORY}/exceptions.json`
+const PACKAGES_DIRECTORY = 'packages'
 const SOURCE_FILE = /\.(ts|tsx|vue)$/
 
 export interface ArchitectureWarning {
@@ -31,21 +28,45 @@ export interface ArchitectureConfiguration {
   warnings: ArchitectureWarning[]
 }
 
-function listSourceFiles(repositoryRoot: string): Outcome<string[]> {
-  const files: string[] = []
-  for (const root of SOURCE_ROOTS) {
-    if (root !== 'src' && !existsSync(join(repositoryRoot, root))) continue
-    const entries = listDirectory(repositoryRoot, root, true)
-    if (!entries.ok) return entries
-    files.push(...entries.value.map((filename) => `${root}/${filename}`))
-  }
+function sourceRoots(repositoryRoot: string): Outcome<string[]> {
+  if (!existsSync(join(repositoryRoot, PACKAGES_DIRECTORY)))
+    return { ok: true, value: ['src'] }
+  const packages = listDirectory(repositoryRoot, PACKAGES_DIRECTORY, false)
+  if (!packages.ok) return packages
   return {
     ok: true,
-    value: files.filter((filename) => SOURCE_FILE.test(filename)).sort()
+    value: [
+      'src',
+      ...packages.value
+        .map((name) => `${PACKAGES_DIRECTORY}/${name}/src`)
+        .filter((root) => existsSync(join(repositoryRoot, root)))
+    ]
   }
 }
 
-export function matchesModulePath(filename: string, path: string): boolean {
+function listSourceFiles(repositoryRoot: string): Outcome<string[]> {
+  const roots = sourceRoots(repositoryRoot)
+  if (!roots.ok) return roots
+  const listed = roots.value.map((root) => ({
+    root,
+    entries: listDirectory(repositoryRoot, root, true)
+  }))
+  const errors = listed.flatMap(({ entries }) =>
+    entries.ok ? [] : entries.errors
+  )
+  if (errors.length) return { ok: false, errors }
+  return {
+    ok: true,
+    value: listed
+      .flatMap(({ root, entries }) =>
+        entries.ok ? entries.value.map((filename) => `${root}/${filename}`) : []
+      )
+      .filter((filename) => SOURCE_FILE.test(filename))
+      .sort()
+  }
+}
+
+function matchesModulePath(filename: string, path: string): boolean {
   return path.endsWith('/**')
     ? filename.startsWith(path.slice(0, -2))
     : filename === path

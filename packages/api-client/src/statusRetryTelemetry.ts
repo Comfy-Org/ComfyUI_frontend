@@ -4,8 +4,8 @@ import type {
   FetchStatusRetryOutcome
 } from '@comfyorg/telemetry/types'
 
-import { getFetchRouteTemplate } from '@/utils/fetchRouteTemplate'
-import type { RetryStopReason } from '@/utils/retryPolicy'
+import { getFetchRouteTemplate } from './fetchRouteTemplate'
+import type { RetryStopReason } from './retryPolicy'
 
 /** How a request's retry loop ended. */
 export type StatusRetryEnd =

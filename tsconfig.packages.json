@@ -57,6 +57,12 @@
     },
     {
       "path": "./packages/litegraph/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/settings-core/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/api-client/tsconfig.declarations.json"
     }
   ]
 }

@@ -20,6 +20,8 @@
       ],
       "@comfyorg/graph-model/*": ["./packages/graph-model/src/*"],
       "@comfyorg/keybindings/*": ["./packages/keybindings/src/*"],
+      "@comfyorg/api-client/*": ["./packages/api-client/src/*"],
+      "@comfyorg/settings-core/*": ["./packages/settings-core/src/*"],
       "@comfyorg/telemetry/*": ["./packages/telemetry/src/*"],
       "@comfyorg/shared-frontend-utils/geometry": [
         "./packages/shared-frontend-utils/src/geometry.ts"
@@ -33,6 +35,8 @@
     "packages/litegraph/src/**/*.ts",
     "packages/graph-model/src/**/*.ts",
     "packages/keybindings/src/**/*.ts",
+    "packages/api-client/src/**/*.ts",
+    "packages/settings-core/src/**/*.ts",
     "packages/telemetry/src/types.ts",
     "packages/shared-frontend-utils/src/geometry.ts",
     "global.d.ts"

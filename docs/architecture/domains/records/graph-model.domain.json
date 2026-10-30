@@ -166,6 +166,10 @@
     {
       "path": "src/types/slotId.test.ts",
       "role": "domain"
+    },
+    {
+      "path": "packages/graph-model/src/**",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
