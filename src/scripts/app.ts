@@ -212,6 +212,14 @@ import {
 
 export { ANIM_PREVIEW_WIDGET } from '@/composables/node/useNodeAnimatedImage'
 
+async function beginGraphLoad(suppressWorkflowReset: boolean) {
+  const replaceCanvas = useWorkflowService().beforeLoadNewGraph(
+    suppressWorkflowReset
+  )
+  await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+  replaceCanvas()
+}
+
 function isMeshModelFile(file: File): boolean {
   const name = file.name.toLowerCase()
   return SUPPORTED_MESH_EXTENSIONS.has(name.slice(name.lastIndexOf('.')))
@@ -1185,8 +1193,7 @@ export class ComfyApp implements IComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
-    useWorkflowService().beforeLoadNewGraph(clean)
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    await beginGraphLoad(clean)
 
     ChangeTracker.isLoadingGraph = true
     let reset_invalid_values = false
@@ -2167,10 +2174,7 @@ export class ComfyApp implements IComfyApp {
           async () => {
             try {
               // false: final destination; no later load republishes the hash.
-              useWorkflowService().beforeLoadNewGraph(false)
-              await useExtensionService().invokeExtensionsAsync(
-                'beforeLoadGraph'
-              )
+              await beginGraphLoad(false)
             } finally {
               useMissingNodesErrorStore().setMissingNodeTypes([])
             }
@@ -2354,8 +2358,7 @@ export class ComfyApp implements IComfyApp {
     options: { deferWarnings?: boolean }
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
-    useWorkflowService().beforeLoadNewGraph(false)
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    await beginGraphLoad(false)
     this.canvas.setGraph(this.rootGraph)
     withGraphIntentSource('load', () => this.clean())
 
