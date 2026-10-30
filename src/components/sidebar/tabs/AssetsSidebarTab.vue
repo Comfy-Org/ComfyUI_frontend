@@ -538,7 +538,6 @@ function handleAssetContextMenu(
       },
       {
         label: t('mediaAsset.selection.exportWorkflowAll'),
-        // fallow-ignore-next-line css-token-drift -- lucide glyphs are authored as icon-[...] arbitrary values repo-wide; there is no scale token to point at
         icon: 'icon-[lucide--file-output]',
         command: () => handleBulkExportWorkflow(selection)
       },
@@ -562,7 +561,6 @@ function handleAssetContextMenu(
     contextMenuItems.value = [
       {
         label: t('mediaAsset.actions.inspect'),
-        // fallow-ignore-next-line css-token-drift -- lucide glyphs are authored as icon-[...] arbitrary values repo-wide; there is no scale token to point at
         icon: 'icon-[lucide--zoom-in]',
         visible:
           !inViewer &&

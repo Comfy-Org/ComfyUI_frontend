@@ -315,12 +315,15 @@ watch(
     }
     const item = activeItem.value
     const url = item && resultItemUrl(item)
-    if (galleryVisible.value && url !== undefined && url === lastActiveUrl) {
+    const wasVisible = galleryVisible.value
+    if (wasVisible && url !== undefined && url === lastActiveUrl) {
       return
     }
     galleryVisible.value = true
     lastActiveUrl = url
-    previouslyFocusedElement = document.activeElement as HTMLElement | null
+    if (!wasVisible) {
+      previouslyFocusedElement = document.activeElement as HTMLElement | null
+    }
     mediaSeq += 1
     const seq = mediaSeq
     mediaReady.value = false

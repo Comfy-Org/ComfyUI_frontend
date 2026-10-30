@@ -452,8 +452,6 @@ describe('AssetsSidebarTab gallery selection', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Preview b.png' }))
     await userEvent.click(await screen.findByLabelText('Download'))
 
-    // Which rendition is saved is covered by MediaLightbox.test.ts; here the
-    // contract is that the viewer routes its Download through the composable.
     const [downloads] = downloadFiles.mock.calls[0]
     expect(downloads[0]).toMatchObject({ filename: 'b.png' })
     expect(downloads[0].url).toBeTruthy()

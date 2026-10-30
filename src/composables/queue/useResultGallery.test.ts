@@ -328,6 +328,52 @@ describe('useResultGallery', () => {
     expect(galleryActiveIndex.value).toBe(0)
   })
 
+  it('drops a refresh that predates a replacement task with no previews', async () => {
+    const first = createResultItem('first.png')
+    const stale = createResultItem('stale.png')
+    const openTask = new TaskItemImpl(createMockJob('empty-rerun-job', 1), {}, [
+      first
+    ])
+    let releaseStale!: (task: TaskItemImpl) => void
+    const reloadedTask = new TaskItemImpl(
+      createMockJob('empty-rerun-job', 2),
+      {},
+      [first]
+    )
+    reloadedTask.loadFullOutputs = () =>
+      new Promise((resolve) => {
+        releaseStale = resolve
+      })
+    const replacedTask = new TaskItemImpl(
+      createMockJob('empty-rerun-job', 2),
+      {},
+      []
+    )
+    replacedTask.loadFullOutputs = () =>
+      new Promise<TaskItemImpl>(() => undefined)
+
+    const sources = ref([openTask])
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => sources.value
+    )
+
+    await onViewItem(createJobViewItem('job-empty-rerun', openTask))
+    sources.value = [reloadedTask]
+    await nextTick()
+    sources.value = [replacedTask]
+    await nextTick()
+    await nextTick()
+
+    releaseStale(
+      new TaskItemImpl(createMockJob('empty-rerun-job', 2), {}, [stale])
+    )
+    await nextTick()
+    await nextTick()
+
+    expect(galleryItems.value).toEqual([first])
+    expect(galleryActiveIndex.value).toBe(0)
+  })
+
   it.for(['resolves', 'rejects'])(
     'does not open a slower gallery request that %s over a later HDR selection',
     async (outcome) => {

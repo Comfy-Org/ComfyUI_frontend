@@ -36,7 +36,6 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     return item ? resultItemUrl(item) : undefined
   }
 
-  /** True while the pending refresh still belongs to the gallery on screen. */
   function isLiveRefreshCurrent(refreshId: number, taskId: string): boolean {
     return (
       refreshId === openSequence &&
@@ -52,7 +51,6 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     )
   }
 
-  /** Live outputs, falling back to the rerun set, with HDR renditions dropped. */
   function nonHdrOutputs(
     outputs: readonly AugmentedResultItem[],
     fallback: readonly AugmentedResultItem[]
@@ -70,8 +68,8 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     if (!targetTask) return
     const activeUrl = urlAt(galleryItems.value, index)
     const rerun = resolveItems(targetTask, tasks)
+    openSequence += 1
     if (rerun.length) {
-      openSequence += 1
       galleryItems.value = rerun
       galleryActiveIndex.value = findActiveIndex(rerun, activeUrl)
     }

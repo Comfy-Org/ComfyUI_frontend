@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useAssetDownload } from '@/composables/useAssetDownload'
@@ -347,6 +347,43 @@ describe('MediaLightbox', () => {
     await nextTick()
 
     expect(download).toHaveFocus()
+  })
+
+  it('returns focus to the trigger after navigating and closing', async () => {
+    const GalleryHost = defineComponent({
+      components: { MediaLightbox },
+      setup: () => ({ activeIndex: ref(-1), items: mockGalleryItems }),
+      template: `
+        <button @click="activeIndex = 0">Open viewer</button>
+        <MediaLightbox
+          v-model:active-index="activeIndex"
+          :all-gallery-items="items"
+        />
+      `
+    })
+    const user = userEvent.setup()
+    render(GalleryHost, {
+      global: {
+        plugins: [i18n],
+        components: {
+          ComfyImage: mockComfyImage,
+          ResultVideo: mockResultVideo,
+          ResultAudio: mockResultAudio
+        }
+      }
+    })
+
+    const trigger = screen.getByRole('button', { name: 'Open viewer' })
+    await user.click(trigger)
+    await nextTick()
+
+    await user.click(screen.getByLabelText('Next'))
+    await nextTick()
+
+    await user.click(screen.getByLabelText('Close'))
+    await nextTick()
+
+    expect(trigger).toHaveFocus()
   })
 
   it('shows gallery when activeIndex changes from -1', async () => {
