@@ -80,8 +80,42 @@ function settingsRecordSeen(scopedKey: string): boolean {
   return onboardedScopes().includes(scopedKey)
 }
 
-const pendingScopeChanges = new Map<string, boolean>()
+interface PendingScopeChange {
+  seen: boolean
+  /** The owner generation this change was queued under. */
+  generation: number
+}
+
+const pendingScopeChanges = new Map<string, PendingScopeChange>()
 let settingsWrites: Promise<void> = Promise.resolve()
+let scopeOwner: string | null = null
+let scopeOwnerGeneration = 0
+
+/**
+ * The stored value is one whole array and `api.fetchApi` picks up whichever
+ * credentials are current when a request leaves, so a write queued for one
+ * account must never be sent — nor applied to the settings cache — once
+ * another account owns the session. The panel publishes the account and
+ * workspace scope in front of the user; changing it retires the work queued
+ * under the previous one.
+ */
+export function setOnboardingScopeOwner(scopedKey: string | null): void {
+  if (scopedKey === scopeOwner) return
+  scopeOwner = scopedKey
+  scopeOwnerGeneration += 1
+}
+
+function ownedScopeChanges(): Map<string, boolean> {
+  const owned = new Map<string, boolean>()
+  for (const [scope, change] of pendingScopeChanges) {
+    // A change left over from another account cannot be written under this one
+    // and is dropped; its local completion flag re-queues it on a later mount.
+    if (change.generation !== scopeOwnerGeneration)
+      pendingScopeChanges.delete(scope)
+    else owned.set(scope, change.seen)
+  }
+  return owned
+}
 
 const ONBOARDING_WRITE_FAILURE = {
   surface: 'agent',
@@ -111,23 +145,46 @@ async function readStoredOnboardedScopes(): Promise<StoredScopesRead> {
   return { ok: true, scopes: scopeList(await response.json()) }
 }
 
+/** The list to store, or null when the stored list could not be read. */
+function scopesToStore(
+  stored: StoredScopesRead,
+  changes: ReadonlyMap<string, boolean>
+): string[] | null {
+  if (stored.ok) return withScopeChanges(stored.scopes, changes)
+  reportError(
+    `Failed to read onboarded scopes (${stored.status})`,
+    ONBOARDING_WRITE_FAILURE
+  )
+  return null
+}
+
+function settleScopeChanges(
+  stored: readonly string[],
+  changes: ReadonlyMap<string, boolean>
+): void {
+  for (const [scope, seen] of changes) {
+    if (pendingScopeChanges.get(scope)?.seen === seen)
+      pendingScopeChanges.delete(scope)
+  }
+  useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID] =
+    withScopeChanges(stored, ownedScopeChanges())
+}
+
 async function writeOnboardedScopes(): Promise<void> {
-  if (pendingScopeChanges.size === 0) return
-  const changes = new Map(pendingScopeChanges)
+  const generation = scopeOwnerGeneration
+  const stillOwned = () => generation === scopeOwnerGeneration
+  const changes = ownedScopeChanges()
+  if (changes.size === 0) return
   try {
     const stored = await readStoredOnboardedScopes()
-    if (!stored.ok) {
-      reportError(
-        `Failed to read onboarded scopes (${stored.status})`,
-        ONBOARDING_WRITE_FAILURE
-      )
-      return
-    }
-    const merged = withScopeChanges(stored.scopes, changes)
+    if (!stillOwned()) return
+    const merged = scopesToStore(stored, changes)
+    if (!merged) return
     const response = await api.storeSetting(
       AGENT_ONBOARDED_SCOPES_SETTING_ID,
       merged
     )
+    if (!stillOwned()) return
     if (!response.ok) {
       reportError(
         `Failed to store onboarded scopes (${response.status})`,
@@ -135,12 +192,7 @@ async function writeOnboardedScopes(): Promise<void> {
       )
       return
     }
-    for (const [scope, seen] of changes) {
-      if (pendingScopeChanges.get(scope) === seen)
-        pendingScopeChanges.delete(scope)
-    }
-    useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID] =
-      withScopeChanges(merged, pendingScopeChanges)
+    settleScopeChanges(merged, changes)
   } catch (error) {
     reportError(error, ONBOARDING_WRITE_FAILURE)
   }
@@ -153,7 +205,10 @@ function persistSeenToSettings(scopedKey: string, seen: boolean): void {
     !pendingScopeChanges.has(scopedKey)
   )
     return
-  pendingScopeChanges.set(scopedKey, seen)
+  pendingScopeChanges.set(scopedKey, {
+    seen,
+    generation: scopeOwnerGeneration
+  })
   useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID] =
     withScopeChanges(onboardedScopes(), new Map([[scopedKey, seen]]))
   settingsWrites = settingsWrites.then(writeOnboardedScopes)
@@ -238,7 +293,6 @@ export function useOnboarding(
     index.value -= 1
   }
 
-  /** Replay from the first card, notifying every consumer of this tour. */
   function restart(): void {
     index.value = 0
     markSeen(false)

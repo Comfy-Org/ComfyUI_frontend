@@ -37,6 +37,17 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
+const onboardedScopesByPage = new WeakMap<Page, string[]>()
+
+/**
+ * The tour completion list the stubbed user-settings endpoint holds for this
+ * page. It survives a reload, like the real per-user setting, so a spec can
+ * clear localStorage and still prove the tour stays dismissed.
+ */
+export function storedOnboardedScopes(page: Page): readonly string[] {
+  return onboardedScopesByPage.get(page) ?? []
+}
+
 function agentFeatures(agentFlag: boolean): RemoteConfig {
   return {
     'agent-in-app-experience': agentFlag,
@@ -79,11 +90,16 @@ async function mockAgentBoot(
     billingStatus
   }: { agentFlag: boolean } & BootAgentAppOptions
 ): Promise<void> {
+  const onboardedScopes: string[] = []
+  onboardedScopesByPage.set(page, onboardedScopes)
   await mockCloudBoot(page, {
     features: { ...agentFeatures(agentFlag), ...features },
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
+      // The same array the per-setting route below writes, so a reload boots
+      // from whatever the tour last saved.
+      [AGENT_ONBOARDED_SCOPES_SETTING_ID]: onboardedScopes,
       ...settings,
       ...((vueNodes || cloudAppFixture.info().tags.includes('@vue-nodes')) && {
         'Comfy.VueNodes.Enabled': true
@@ -104,7 +120,17 @@ async function mockAgentBoot(
   )
   await page.route(
     `**/api/settings/${AGENT_ONBOARDED_SCOPES_SETTING_ID}`,
-    (route) => route.fulfill(jsonRoute({}))
+    (route) => {
+      const request = route.request()
+      if (request.method() === 'POST') {
+        const posted: unknown = request.postDataJSON()
+        const scopes = Array.isArray(posted)
+          ? posted.filter((scope): scope is string => typeof scope === 'string')
+          : []
+        onboardedScopes.splice(0, onboardedScopes.length, ...scopes)
+      }
+      return route.fulfill(jsonRoute(onboardedScopes))
+    }
   )
   const listedAssets: ListAssetsResponse = assets ?? {
     assets: [],

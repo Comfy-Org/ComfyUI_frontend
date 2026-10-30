@@ -7,7 +7,6 @@ import { i18n } from '@/i18n'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { api } from '@/scripts/api'
 import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 
 import OnboardingCoach from './OnboardingCoach.vue'
@@ -76,10 +75,8 @@ function mount(steps = STEPS) {
 
 beforeEach(() => {
   localStorage.clear()
-  vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
-  vi.spyOn(api, 'fetchApi').mockImplementation(
-    async () => new Response(JSON.stringify([]))
-  )
+  // The tour reads and writes its completion list through the settings API.
+  vi.mocked(fetch).mockImplementation(async () => Response.json([]))
   telemetry().trackAgentOnboardingShown.mockClear()
   telemetry().trackAgentOnboardingStep.mockClear()
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
