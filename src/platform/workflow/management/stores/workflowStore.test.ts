@@ -904,6 +904,37 @@ describe('useWorkflowStore', () => {
   })
 
   describe('renameWorkflow', () => {
+    it('keeps the active document and tracker through a real save and rename', async () => {
+      const workflow = store.createTemporary('active.json', defaultGraph)
+      await store.openWorkflow(workflow)
+      const loaded = store.activeWorkflow
+      assert(loaded)
+      const tracker = loaded.changeTracker
+      vi.mocked(api.storeUserData).mockResolvedValue(
+        Response.json({ path: 'active.json', modified: 1, size: 20 })
+      )
+      vi.mocked(api.moveUserData).mockResolvedValue(
+        Response.json({ path: 'renamed.json', modified: 2, size: 20 })
+      )
+
+      await store.saveWorkflow(loaded)
+      await store.renameWorkflow(loaded, 'workflows/renamed.json')
+
+      const replacement = new ComfyWorkflow({
+        path: loaded.path,
+        modified: 3,
+        size: 20
+      })
+      expect(store.activeWorkflow).toBe(loaded)
+      expect(store.getWorkflowByPath('workflows/active.json')).toBeNull()
+      expect(store.getWorkflowByPath('workflows/renamed.json')).toBe(loaded)
+      expect(store.openWorkflows).toEqual([loaded])
+      expect(loaded.changeTracker).toBe(tracker)
+      expect(loaded.isModified).toBe(false)
+      expect(store.isActive(workflow)).toBe(true)
+      expect(store.isActive(replacement)).toBe(false)
+    })
+
     it('should rename workflow and update bookmarks', async () => {
       const workflow = store.createTemporary('dir/test.json')
 

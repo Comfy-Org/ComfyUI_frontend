@@ -11,6 +11,7 @@ import enMessages from '@/locales/en/main.json'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { WorkflowExecutionStatus } from '@/stores/executionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -68,7 +69,9 @@ const i18n = createI18n({
   }
 })
 
-type WorkflowOption = WorkflowTabProps['workflowOption']
+type WorkflowOption = Omit<WorkflowTabProps['workflowOption'], 'workflow'> & {
+  workflow: LoadedComfyWorkflow
+}
 type Workflow = WorkflowOption['workflow']
 type WorkflowOverrides = Partial<Workflow>
 
@@ -80,11 +83,9 @@ function makeWorkflowOption(overrides: WorkflowOverrides = {}): WorkflowOption {
     isPersisted: true,
     isModified: false,
     activeMode: 'graph',
-    changeTracker: null,
+    isLoaded: true,
     ...overrides
   })
-  // markRaw keeps a stable identity through prop reactivity so the store's
-  // identity-based status lookup resolves against the same object.
   return { value: 'test-key', workflow: markRaw(workflow) }
 }
 
@@ -92,25 +93,33 @@ function renderTab({
   workflowOption = makeWorkflowOption(),
   activeWorkflowKey = 'other-key',
   activeWorkflowPath,
+  activeWorkflow,
   otherOpenWorkflows = [],
   compact = false
 }: {
   workflowOption?: WorkflowOption
   activeWorkflowKey?: string
   activeWorkflowPath?: string
+  activeWorkflow?: LoadedComfyWorkflow
   otherOpenWorkflows?: Workflow[]
   compact?: boolean
 } = {}) {
   const resolvedActiveWorkflowPath =
     activeWorkflowPath ??
+    activeWorkflow?.path ??
     (activeWorkflowKey === workflowOption.workflow.key
       ? workflowOption.workflow.path
       : '/workflows/other.json')
 
-  useWorkflowStore().activeWorkflow = fromPartial({
-    key: activeWorkflowKey,
-    path: resolvedActiveWorkflowPath
-  })
+  useWorkflowStore().activeWorkflow =
+    activeWorkflow ??
+    (activeWorkflowKey === workflowOption.workflow.key &&
+    resolvedActiveWorkflowPath === workflowOption.workflow.path
+      ? workflowOption.workflow
+      : fromPartial({
+          key: activeWorkflowKey,
+          path: resolvedActiveWorkflowPath
+        }))
   useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'off'
   const rendered = render(
     defineComponent(
@@ -202,6 +211,20 @@ describe('WorkflowTab - workflow status indicator', () => {
 
     renderTab({ workflowOption, activeWorkflowKey: 'test-key' })
     expect(screen.queryByRole('img')).toBeNull()
+  })
+
+  it('keeps a distinct same-path document inactive and displays its status', () => {
+    const workflowOption = makeWorkflowOption()
+    const activeWorkflow = makeWorkflowOption().workflow
+    vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue('running')
+
+    renderTab({ workflowOption, activeWorkflow })
+
+    expect(
+      screen.getByRole('img', { name: statusAriaLabels.running })
+    ).toBeVisible()
+    expect(useWorkflowStore().isActive(workflowOption.workflow)).toBe(false)
+    expect(useWorkflowStore().isActive(activeWorkflow)).toBe(true)
   })
 
   it('shows unsaved dot when no workflow status and workflow is unsaved', () => {
