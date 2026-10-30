@@ -1,6 +1,5 @@
 import { markRaw } from 'vue'
 
-import { assert } from '@/base/assert'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -97,10 +96,11 @@ export function registerWorkflowRuntime(runtime: WorkflowRuntime): void {
 }
 
 function workflowRuntime(): WorkflowRuntime {
-  assert(
-    registeredRuntime,
-    'Workflow runtime not registered; import the workflow store first'
-  )
+  if (!registeredRuntime)
+    throw new TypeError(
+      'Workflow runtime not registered; import the workflow store first'
+    )
+
   return registeredRuntime
 }
 

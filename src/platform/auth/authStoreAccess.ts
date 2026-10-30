@@ -1,6 +1,5 @@
 import type { User } from 'firebase/auth'
 
-import { assert } from '@/base/assert'
 import type { operations } from '@/types/comfyRegistryTypes'
 
 type CreateCustomerResponse =
@@ -24,6 +23,8 @@ export function provideAuthStore(useStore: () => AuthStoreAccess): void {
 
 /** `useAuthStore` for the modules `authStore` depends on, which cannot import it back. */
 export function useAuthStoreAccess(): AuthStoreAccess {
-  assert(providedUseAuthStore, 'authStore has not provided itself')
+  if (!providedUseAuthStore)
+    throw new TypeError('authStore has not provided itself')
+
   return providedUseAuthStore()
 }

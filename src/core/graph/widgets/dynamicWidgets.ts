@@ -1,7 +1,6 @@
 import { remove } from 'es-toolkit'
 import { shallowReactive } from 'vue'
 
-import { assert } from '@/base/assert'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
@@ -120,10 +119,9 @@ function dynamicComboWidget(
     appArg,
     widgetName
   )
-  assert(
-    result && 'widget' in result && result.widget,
-    'COMBO widget constructor returned no widget'
-  )
+  if (!result || !('widget' in result) || !result.widget)
+    throw new TypeError('COMBO widget constructor returned no widget')
+
   const { widget, minWidth, minHeight } = result
   const removedWidgetValues = new Map<
     string | undefined,
