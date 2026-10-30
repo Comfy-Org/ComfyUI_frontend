@@ -1,32 +1,46 @@
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+import { nextTick } from 'vue'
 
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyApp } from '@/scripts/app'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 
-const mockApp: {
-  rootGraph?: LGraph
-  nodeOutputs: Record<string, never>
-  nodePreviewImages: Record<string, never>
-  canvas: { setDirty: ReturnType<typeof vi.fn> }
-  dragOverNode: null
-} = vi.hoisted(() => ({
-  nodeOutputs: {},
-  nodePreviewImages: {},
-  canvas: { setDirty: vi.fn() },
-  dragOverNode: null
-}))
+const mockApp = vi.hoisted(() => {
+  let rootGraph: LGraph | undefined
+  return {
+    get rootGraph() {
+      return rootGraph
+    },
+    set rootGraph(graph: LGraph | undefined) {
+      rootGraph = graph
+    }
+  }
+})
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: mockApp
-}))
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return {
+    app: fromPartial<ComfyApp>({
+      get rootGraph() {
+        if (!mockApp.rootGraph) throw new Error('root graph is unset')
+        return mockApp.rootGraph
+      },
+      nodeOutputs: {},
+      nodePreviewImages: {},
+      canvas: { setDirty: vi.fn() },
+      dragOverNode: null
+    })
+  }
+})
 
 vi.mock(import('@/composables/useErrorHandling'))
 
@@ -37,6 +51,8 @@ const i18n = createI18n({
   missingWarn: false,
   fallbackWarn: false
 })
+
+const pointerY = 20
 
 function renderNode() {
   layoutStore.isDraggingVueNodes.value = false
@@ -62,29 +78,52 @@ function renderNode() {
   })
 }
 
-function pointerInit(x: number, buttons: number) {
-  return {
-    button: 0,
-    buttons,
-    clientX: x,
-    clientY: 20,
-    pointerId: 1
-  }
-}
-
-/* oxlint-disable testing-library/prefer-user-event */
 async function press(
+  user: ReturnType<typeof userEvent.setup>,
   header: HTMLElement,
   x: number,
   distance: number,
   move: boolean
 ) {
   const end = x + distance
-  await fireEvent.pointerDown(header, pointerInit(x, 1))
-  if (move) await fireEvent.pointerMove(header, pointerInit(end, 1))
-  await fireEvent.pointerUp(header, pointerInit(end, 0))
+  await user.pointer({
+    keys: '[MouseLeft>]',
+    target: header,
+    coords: { x, y: pointerY }
+  })
+  if (move) {
+    await user.pointer({
+      target: header,
+      coords: { x: end, y: pointerY }
+    })
+  }
+  await user.pointer({
+    keys: '[/MouseLeft]',
+    target: header,
+    coords: { x: end, y: pointerY }
+  })
 }
-/* oxlint-enable testing-library/prefer-user-event */
+
+async function doubleClickHeader(header: HTMLElement) {
+  header.dispatchEvent(
+    new MouseEvent('dblclick', { bubbles: true, cancelable: true })
+  )
+  await nextTick()
+}
+
+function cancelPointer(header: HTMLElement, x: number) {
+  header.dispatchEvent(
+    new PointerEvent('pointercancel', {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 1,
+      clientX: x,
+      clientY: pointerY,
+      button: 0,
+      buttons: 0
+    })
+  )
+}
 
 describe('NodeHeader title rename', () => {
   it.for([
@@ -115,11 +154,11 @@ describe('NodeHeader title rename', () => {
   ])('$name', async ({ distance, move, showsEditor }) => {
     renderNode()
     const header = screen.getByTestId('node-header-1')
+    const user = userEvent.setup()
 
-    await press(header, 10, 0, false)
-    await press(header, 12, distance(), move)
-    // oxlint-disable-next-line testing-library/prefer-user-event
-    await fireEvent.dblClick(header)
+    await press(user, header, 10, 0, false)
+    await press(user, header, 12, distance(), move)
+    await doubleClickHeader(header)
 
     expect(screen.queryByTestId('node-title-input') !== null).toBe(showsEditor)
   })
@@ -127,12 +166,12 @@ describe('NodeHeader title rename', () => {
   it('keeps the title editor closed when a drag is followed by a stationary click', async () => {
     renderNode()
     const header = screen.getByTestId('node-header-1')
+    const user = userEvent.setup()
     const past = CanvasPointer.maxClickDrift + 1
 
-    await press(header, 10, past, true)
-    await press(header, 12, 0, false)
-    // oxlint-disable-next-line testing-library/prefer-user-event
-    await fireEvent.dblClick(header)
+    await press(user, header, 10, past, true)
+    await press(user, header, 12, 0, false)
+    await doubleClickHeader(header)
 
     expect(screen.queryByTestId('node-title-input')).not.toBeInTheDocument()
   })
@@ -140,17 +179,22 @@ describe('NodeHeader title rename', () => {
   it('keeps the title editor closed when a click follows a cancelled drag', async () => {
     renderNode()
     const header = screen.getByTestId('node-header-1')
+    const user = userEvent.setup()
     const past = CanvasPointer.maxClickDrift + 1
+    const end = 10 + past
 
-    // oxlint-disable-next-line testing-library/prefer-user-event
-    await fireEvent.pointerDown(header, pointerInit(10, 1))
-    // oxlint-disable-next-line testing-library/prefer-user-event
-    await fireEvent.pointerMove(header, pointerInit(10 + past, 1))
-    // oxlint-disable-next-line testing-library/prefer-user-event
-    await fireEvent.pointerCancel(header, pointerInit(10 + past, 0))
-    await press(header, 12, 0, false)
-    // oxlint-disable-next-line testing-library/prefer-user-event
-    await fireEvent.dblClick(header)
+    await user.pointer({
+      keys: '[MouseLeft>]',
+      target: header,
+      coords: { x: 10, y: pointerY }
+    })
+    await user.pointer({
+      target: header,
+      coords: { x: end, y: pointerY }
+    })
+    cancelPointer(header, end)
+    await press(userEvent.setup(), header, 12, 0, false)
+    await doubleClickHeader(header)
 
     expect(screen.queryByTestId('node-title-input')).not.toBeInTheDocument()
   })
@@ -158,18 +202,17 @@ describe('NodeHeader title rename', () => {
   it('opens the title editor on a later double-click after a drag', async () => {
     renderNode()
     const header = screen.getByTestId('node-header-1')
+    const user = userEvent.setup()
     const past = CanvasPointer.maxClickDrift + 1
 
-    await press(header, 10, 0, false)
-    await press(header, 12, past, true)
-    // oxlint-disable-next-line testing-library/prefer-user-event
-    await fireEvent.dblClick(header)
+    await press(user, header, 10, 0, false)
+    await press(user, header, 12, past, true)
+    await doubleClickHeader(header)
     expect(screen.queryByTestId('node-title-input')).not.toBeInTheDocument()
 
-    await press(header, 10, 0, false)
-    await press(header, 12, 0, false)
-    // oxlint-disable-next-line testing-library/prefer-user-event
-    await fireEvent.dblClick(header)
+    await press(user, header, 10, 0, false)
+    await press(user, header, 12, 0, false)
+    await doubleClickHeader(header)
     expect(screen.getByTestId('node-title-input')).toBeInTheDocument()
   })
 })
