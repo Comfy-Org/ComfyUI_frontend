@@ -98,7 +98,10 @@ describe('PaymentMethodsView', () => {
     })
 
     expect(
-      await screen.findByRole('button', { name: 'Manage payment methods' })
+      await screen.findByText("We couldn't find that billing record.")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Manage payment methods' })
     ).toBeInTheDocument()
     expect(screen.queryByText('Opening your payment methods…')).toBeNull()
   })
