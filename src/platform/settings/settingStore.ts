@@ -29,7 +29,15 @@ interface SettingChange {
 interface AppliedSetting<TValue> {
   previousValue: TValue
   newValue: TValue
+  writeToken: number
 }
+
+type RevertibleSettingId = 'Comfy.Extension.DisabledPacks'
+
+type SettingWriteOutcome =
+  | { status: 'saved' | 'unchanged' }
+  | { status: 'refused'; statusCode: number; statusText: string }
+  | { status: 'unconfirmed'; cause: unknown }
 
 function resolveDefaultValue<T>(value: T | (() => T)): T {
   return typeof value === 'function' ? (value as () => T)() : value
@@ -191,8 +199,8 @@ export const useSettingStore = defineStore('setting', () => {
 
     const typedNewValue = newValue as Settings[K]
     settingValues.value[key] = typedNewValue
-    const write = (latestWrite.get(key) ?? 0) + 1
-    latestWrite.set(key, write)
+    const writeToken = (latestWrite.get(key) ?? 0) + 1
+    latestWrite.set(key, writeToken)
 
     await onChange(
       settingsById.value[key],
@@ -201,13 +209,57 @@ export const useSettingStore = defineStore('setting', () => {
       settingChanged.trigger
     )
 
-    // Handlers are awaited, so a slow one lets a later change to this key land
-    // first. That change owns the value now; persisting ours would revert it.
-    if (latestWrite.get(key) !== write) return undefined
+    if (latestWrite.get(key) !== writeToken) return undefined
     return {
       previousValue: oldValue,
-      newValue: typedNewValue
+      newValue: typedNewValue,
+      writeToken
     }
+  }
+
+  async function revertSettingLocally<K extends keyof Settings>(
+    key: K,
+    hadValue: boolean,
+    applied: AppliedSetting<Settings[K]>
+  ) {
+    if (latestWrite.get(key) !== applied.writeToken) return
+    if (hadValue) settingValues.value[key] = applied.previousValue
+    else delete settingValues.value[key]
+    await onChange(
+      settingsById.value[key],
+      applied.previousValue,
+      applied.newValue,
+      settingChanged.trigger
+    )
+  }
+
+  async function setWithOutcome<K extends RevertibleSettingId>(
+    key: K,
+    value: Settings[K]
+  ): Promise<SettingWriteOutcome> {
+    const hadValue = exists(key)
+    const applied = await applySettingLocally(key, value)
+    if (applied === undefined) return { status: 'unchanged' }
+
+    let response: Response
+    try {
+      response = await api.storeSetting(key, applied.newValue)
+    } catch (cause) {
+      return { status: 'unconfirmed', cause }
+    }
+
+    if (!response.ok) {
+      await revertSettingLocally(key, hadValue, applied)
+      return {
+        status: 'refused',
+        statusCode: response.status,
+        statusText: response.statusText
+      }
+    }
+
+    const event = settingChangedEvent(settingsById.value[key], key, applied)
+    if (event) useTelemetry()?.trackSettingChanged(event)
+    return { status: 'saved' }
   }
 
   /**
@@ -436,6 +488,7 @@ export const useSettingStore = defineStore('setting', () => {
     addSetting,
     applySettingLocally,
     set,
+    setWithOutcome,
     setMany,
     get,
     exists,
