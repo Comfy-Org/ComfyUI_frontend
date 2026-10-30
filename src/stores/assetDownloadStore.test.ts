@@ -293,6 +293,21 @@ describe('useAssetDownloadStore', () => {
       })
     })
 
+    it('keeps a file upload marked as one through its progress and completion', () => {
+      const store = useAssetDownloadStore()
+
+      store.trackDownload('task-123', 'loras', 'my_style_v2.safetensors', {
+        source: 'upload'
+      })
+      dispatch(createDownloadMessage({ status: 'running' }))
+      dispatch(createDownloadMessage({ status: 'completed', progress: 100 }))
+
+      expect(store.downloadList[0]).toMatchObject({
+        status: 'completed',
+        source: 'upload'
+      })
+    })
+
     it('handles out-of-order messages where completed arrives before progress', () => {
       const store = useAssetDownloadStore()
 

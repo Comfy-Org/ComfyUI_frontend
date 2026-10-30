@@ -4,10 +4,6 @@
   "description": "Shared technical module for app composition and startup: entrypoints, router, i18n, bootstrap state, GraphView, configuration, and desktop host wiring. Feature implementations remain in their own records.",
   "modules": [
     {
-      "path": "src/App.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/App.vue",
       "role": "presentation"
     },
@@ -20,24 +16,12 @@
       "role": "integration"
     },
     {
-      "path": "src/components/graph/GraphCanvas.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/components/graph/GraphCanvas.vue",
       "role": "integration"
     },
     {
-      "path": "src/composables/useExternalLink.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/composables/useExternalLink.ts",
       "role": "infrastructure"
-    },
-    {
-      "path": "src/composables/useUrlActionLoaders.test.ts",
-      "role": "integration"
     },
     {
       "path": "src/composables/useUrlActionLoaders.ts",
@@ -46,10 +30,6 @@
     {
       "path": "src/config.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/config/comfyApi.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/config/comfyApi.ts",
@@ -66,18 +46,6 @@
     {
       "path": "src/extensions/core/electronAdapter.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/i18n.catalog.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/i18n.safeTranslation.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/i18n.test.ts",
-      "role": "application"
     },
     {
       "path": "src/i18n.ts",
@@ -98,10 +66,6 @@
     {
       "path": "src/router.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/stores/bootstrapStore.test.ts",
-      "role": "application"
     },
     {
       "path": "src/stores/bootstrapStore.ts",
