@@ -219,25 +219,57 @@ Three predicates look interchangeable and are deliberately different:
 (`control_after_generate`) and every `LoadImage` serializes 2 (its upload button). A form built from `options.serialize` is one slot
 short on both.
 
-`widgetFormProof.test.ts` pins the _rule_ on a synthetic node — a two-widget case where the
-second is options-bag-flagged and still occupies a slot. It does **not** instantiate a real
-`KSampler` or `LoadImage`, so the 7 and the 2 above are measurements of production code, not
-assertions this file makes. Pinning them against the real widget lists needs the extension
-constructors and so lives in the stacked test PR; until that lands, treat those two numbers as
-evidence for the rule rather than as regression cover for it.
+`LGraphNode.widgetFormProof.test.ts` pins the _rule_ against the real serializer: the flag cases
+build an `LGraphNode` in a graph, add widgets through `addWidget`, and read `node.serialize()`, so
+the assertion is on production's own `widgets_values` rather than on a filter the test duplicates.
+Measured there: `addWidget('combo', …, { serialize: false, values: [...] })` leaves
+`widget.serialize` `undefined` with `widget.options.serialize === false`, and the widget still
+occupies a slot. It lives beside `LGraphNode` rather than in `widgets/` because importing
+`LGraphNode` is what the `node-widgets` → `litegraph-api` boundary below forbids;
+`widgetFormProof.test.ts` keeps the pure-predicate cases and stays inside that boundary.
+
+It does **not** instantiate a real `KSampler` or `LoadImage`, so the 7 and the 2 above remain
+measurements of production code rather than assertions this file makes. Pinning them against the
+real widget lists needs the extension constructors and so lives in the stacked test PR; until
+that lands, treat those two numbers as evidence for the rule rather than as regression cover for
+it.
 
 ### Refusals, each a measured shape
 
-`replayed_serialization` · `widgets_not_serialized` · `values_replaced` ·
-`values_not_positional` · `length_mismatch` · `duplicate_widget_name` · `unnameable_widget`
+`class_may_rewrite_payload` · `replayed_serialization` · `widgets_not_serialized` ·
+`values_missing` · `values_replaced` · `values_not_positional` · `length_mismatch` ·
+`duplicate_widget_name` · `unnameable_widget`
 
-Two are worth calling out. **`replayed_serialization`** covers an unregistered node type, whose
+Four are worth calling out. **`replayed_serialization`** covers an unregistered node type, whose
 payload is replayed verbatim and never reaches the hook, and whose widgets are _synthesised from
 the stored values_ with names `UNKNOWN`, `UNKNOWN_1`, … A form there would be syntactically
 valid, authoritative, and meaningless, so it is refused before any other check can accept it.
 **`duplicate_widget_name`** covers two serializing widgets sharing a name: the named projection
 collapses them via `defineProperty`, and the document rejects the second address outright, so
-listing both would promise an address that does not resolve.
+listing both would promise an address that does not resolve. Measured in the corpus: `RecordAudio`
+stores 2 values under 1 name and `LoadAudio` 3 under 2.
+
+**`values_missing`** and **`values_replaced`** are deliberately distinct, because they send a
+reader to different problems. `values_missing` is an absent `widgets_values` — the
+`delete serialized.widgets_values` branch a `SubgraphNode` takes when every promoted store value
+is `undefined`. `values_replaced` is an array core did not produce, which is the shape a pack's
+own `serialize` override leaves behind. `values_not_positional` is reserved for an
+object-shaped payload: the VHS family's `onSerialize` writes a dict keyed by every widget name,
+including widgets flagged `serialize === false`, so its keys and any derived order disagree.
+`widgets_not_serialized` covers `this.serialize_widgets = false`, which rgthree's group muters,
+was-node-suite's fast groups and Crystools' debugger all set.
+
+### What the proof does not guarantee
+
+Array identity proves the payload is still core's own array. It does not prove the array's
+_contents_ were untouched: a serialize hook can reorder `node.widgets`, or mutate the produced
+array in place, while preserving both identity and length. `proveWidgetForm` would then report
+`provable: true` with an order that does not match the values.
+
+That is a known limit, not an oversight, and it is why nothing calls this predicate yet. A
+producer must close it first — by snapshotting the pre-hook order, or by validating contents
+rather than identity — and that belongs in the change that adds the producer, where the pre-hook
+state is in scope.
 
 ### The call site is part of the rule, not an implementation detail
 
@@ -276,5 +308,15 @@ out loud, because it is the cheapest wrong fix available.
 
 This amendment adds the predicate and a diagnostic (`needsFormButHasNone`, which identifies
 object-shaped values with no form — the population a form would rescue and that nothing can
-currently count). **Nothing emits a form yet.** The producer is deliberately a later change, so
-the predicate can be landed, measured against the custom-node ecosystem, and trusted first.
+currently count). **Nothing emits a form through `proveWidgetForm` yet.** The producer is
+deliberately a later change, so the predicate can be landed, measured against the custom-node
+ecosystem, and trusted first.
+
+That is narrower than "no form is emitted anywhere", and the difference matters to whoever wires
+this up. The Agent wire already declares forms on its own `add_node` path:
+`docOpMinter.wireNodeSnapshot` attaches `widgets_values_form` from
+`provenWidgetValuesForm` (`src/workbench/extensions/agent/crdt/widgetValuesForm.ts`, per
+[ADR-WIDGET-SERIALIZATION-0047](WIDGET-SERIALIZATION-0047-agent-wire-widget-form-is-proven-not-derived.md)).
+That producer reads the post-hook payload and reaches the same conclusion by a different route;
+reconciling the two, so core serialization and the Agent wire share one predicate, is the
+follow-up this amendment makes possible rather than something it does.
