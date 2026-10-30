@@ -4,7 +4,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import { TelemetryRegistry } from './TelemetryRegistry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
@@ -22,10 +22,9 @@ import type {
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentStarterPromptClickedMetadata,
-  AgentStarterPromptExposureMetadata,
   AgentWorkflowAppliedMetadata,
   TelemetryProvider
-} from './types'
+} from '@comfyorg/telemetry/types'
 
 type AgentDispatchMethod = keyof TelemetryProvider & `trackAgent${string}`
 
@@ -338,9 +337,6 @@ describe('TelemetryRegistry', () => {
       click_id: 'click-1',
       draft_was_empty: true
     } satisfies AgentStarterPromptClickedMetadata
-    const starterPromptExposureMetadata = {
-      '$feature/agent-starter-prompt-set': 'test'
-    } satisfies AgentStarterPromptExposureMetadata
     const consentShownMetadata = {
       trigger: 'button_click'
     } satisfies AgentConsentShownMetadata
@@ -458,14 +454,6 @@ describe('TelemetryRegistry', () => {
         expected: { ...starterPromptClickedMetadata },
         invoke: (registry) =>
           registry.trackAgentStarterPromptClicked(starterPromptClickedMetadata)
-      },
-      {
-        method: 'trackAgentStarterPromptExposure',
-        expected: { ...starterPromptExposureMetadata },
-        invoke: (registry) =>
-          registry.trackAgentStarterPromptExposure(
-            starterPromptExposureMetadata
-          )
       },
       {
         method: 'trackAgentConsentShown',

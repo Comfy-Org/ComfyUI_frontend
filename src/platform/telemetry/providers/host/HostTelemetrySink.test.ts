@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { TelemetryEvents } from '@/platform/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 import { HostTelemetrySink } from './HostTelemetrySink'
 
@@ -362,14 +362,6 @@ describe('HostTelemetrySink', () => {
         click_id: 'click-1',
         draft_was_empty: false
       }
-    },
-    {
-      name: TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE,
-      track: (sink: HostTelemetrySink) =>
-        sink.trackAgentStarterPromptExposure({
-          '$feature/agent-starter-prompt-set': 'test'
-        }),
-      properties: { '$feature/agent-starter-prompt-set': 'test' }
     },
     {
       name: TelemetryEvents.AGENT_FREE_USE_NOTICE,

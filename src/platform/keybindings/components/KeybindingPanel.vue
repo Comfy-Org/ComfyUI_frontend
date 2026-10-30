@@ -124,12 +124,12 @@ import {
 } from '@comfyorg/design-system/lib/table/tableUtils'
 import type { TableSortDirection } from '@comfyorg/design-system/lib/table/tableUtils'
 import { useEditKeybindingDialog } from '@/platform/keybindings/composables/useEditKeybindingDialog'
-import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import type { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
@@ -404,6 +404,7 @@ function handleRemoveAllKeybindings(command: KeybindingCommand) {
     headerProps: { title: t('g.removeAllKeybindingsTitle') },
     props: { promptText: t('g.removeAllKeybindingsMessage') },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.removeAll'),
       confirmVariant: 'destructive',
       onCancel: () => dialogStore.closeDialog(dialog),
@@ -455,6 +456,7 @@ function resetAllKeybindings() {
       promptText: t('g.resetAllKeybindingsMessage')
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.resetAll'),
       confirmVariant: 'destructive',
       onCancel: () => {

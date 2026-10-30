@@ -2,7 +2,7 @@ import type { Point2D as Position2D } from '@comfyorg/shared-frontend-utils/geom
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import type {
   ExecutedWsMessage,
@@ -12,9 +12,9 @@ import type {
 import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import { api } from './api'
 import { ComfyDialog as _ComfyDialog } from './ui/dialog'

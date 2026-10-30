@@ -39,7 +39,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { useLitegraphService } from '@/services/litegraphService'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { DocChangeCollector } from '@/workbench/extensions/agent/crdt/docChangeCollector'
 
 import { followedDoc } from './__fixtures__/followedDoc'
@@ -494,8 +494,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
           op: 'set_widget',
           node_id: '1',
           widget: 'after',
-          value: 'human tail',
-          old: 'remote tail'
+          value: 'human tail'
         }
       ])
     )

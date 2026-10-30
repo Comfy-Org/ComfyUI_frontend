@@ -5863,7 +5863,6 @@
           "off": "Desactivada",
           "on": "Activada",
           "onHold": "En espera",
-          "paused": "En pausa",
           "turnedOff": "Desactivada"
         },
         "title": "Recarga automática",
@@ -5926,7 +5925,6 @@
         },
         "scheduledChange": "Cambia a {plan} el {date}.",
         "stayConfirm": {
-          "body": "Tu plan no cambiará a {plan} el {date}. Puedes programar un cambio de nuevo en cualquier momento.",
           "title": "¿Cancelar el cambio a {plan}?"
         },
         "unknown": {

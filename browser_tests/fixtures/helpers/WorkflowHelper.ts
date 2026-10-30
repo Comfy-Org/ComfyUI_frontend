@@ -3,7 +3,7 @@ import { readFileSync } from 'fs'
 import { expect } from '@playwright/test'
 import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationFixture'
 
-import type { AppMode } from '@/utils/appMode'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON

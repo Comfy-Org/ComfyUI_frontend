@@ -33,7 +33,7 @@ import { t } from '@/i18n'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesRead,
@@ -63,6 +63,7 @@ import { getCheckoutJourneyPaymentIntentSource } from '@/platform/billing/utils/
 import { useDialogStore } from '@/stores/dialogStore'
 import { fetchWithRetry } from '@/utils/fetchWithRetry'
 
+import { projectBillingBalance } from './billingBalanceView'
 import { projectBillingCapabilities } from './billingCapabilitiesView'
 import { projectBillingPlans } from './billingPlansView'
 import { projectBillingStatus } from './billingStatusView'
@@ -559,7 +560,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   async function readBalance(): Promise<BillingResult<BillingBalanceResponse>> {
     const result = await sdk.credits.read()
     return result.status === 'ok'
-      ? { status: 'ok', value: result.value.balance }
+      ? { status: 'ok', value: projectBillingBalance(result.value.balance) }
       : result
   }
 

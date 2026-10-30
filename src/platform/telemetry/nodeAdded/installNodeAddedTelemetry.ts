@@ -1,7 +1,7 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { isGraphLoading } from '@/core/graph/graphLoadState'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { getCurrentNodeAddSource } from './nodeAddSource'
 
 /**
