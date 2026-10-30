@@ -1768,7 +1768,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     expect(
       screen.getByText(
-        /^Your bank is waiting for you to confirm it\. Verify it by October \d{1,2}, \d{1,2}:\d\d\s[AP]M to finish this top-up\.$/
+        'Your bank is waiting for you to confirm it. Verify it by October 30, 3:40 PM to finish this top-up.'
       )
     ).toBeInTheDocument()
   })

@@ -142,8 +142,8 @@ describe('CheckoutPayAction', () => {
       }
     })
 
-    expect(footnote().textContent.trim()).toMatch(
-      /^Nothing has been charged yet\. Verify by October\s\d{1,2}, \d{1,2}:\d\d\s[AP]M\.$/
+    expect(footnote().textContent.trim()).toBe(
+      'Nothing has been charged yet. Verify by October 30, 3:40 PM.'
     )
   })
 
