@@ -6,6 +6,11 @@ import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixtu
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 test.describe.configure({ timeout: 120_000 })
+test.use({
+  workflowSelectionFeatures: {
+    'agent-credit-usage-summary': 'treatment'
+  }
+})
 
 test(
   'shows server-reported Agent credits when a turn completes',
