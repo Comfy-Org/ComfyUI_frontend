@@ -16,30 +16,37 @@ vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const fetchApi = vi.mocked(api.fetchApi)
 
+const PREFETCH_TIMEOUT_MS = 10_000
+
 const servedWorkflow: ComfyWorkflowJSON = {
   ...blankGraph,
   last_node_id: 42
 }
 
-const jsonResponse = (body: unknown) =>
-  new Response(JSON.stringify(body), {
+function jsonResponse(body: unknown): Response {
+  return new Response(JSON.stringify(body), {
     status: 200,
     headers: { 'Content-Type': 'application/json' }
   })
+}
 
-const errorResponse = (status: number) => new Response('', { status })
+function errorResponse(status: number): Response {
+  return new Response('', { status })
+}
 
-const notJsonResponse = () =>
-  new Response('<html>nope</html>', {
+function notJsonResponse(): Response {
+  return new Response('<html>nope</html>', {
     status: 200,
     headers: { 'Content-Type': 'text/html' }
   })
+}
 
-const stalledBodyResponse = () =>
-  new Response(new ReadableStream({ start() {} }), {
+function stalledBodyResponse(): Response {
+  return new Response(new ReadableStream({ start() {} }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' }
   })
+}
 
 describe('defaultWorkflowService', () => {
   beforeEach(() => {
@@ -51,7 +58,10 @@ describe('defaultWorkflowService', () => {
 
     await initDefaultWorkflow()
 
-    expect(fetchApi).toHaveBeenCalledWith('/default_workflow')
+    expect(fetchApi).toHaveBeenCalledWith(
+      '/default_workflow',
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    )
     expect(getDefaultWorkflow()).toEqual(servedWorkflow)
   })
 
@@ -88,7 +98,9 @@ describe('defaultWorkflowService', () => {
     expect(getDefaultWorkflow()).toEqual(defaultGraph)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
-      expect.objectContaining({ errorType: 'DefaultWorkflowRouteUnavailable' })
+      expect.objectContaining({
+        errorType: 'default_workflow_route_unavailable'
+      })
     )
   })
 
@@ -100,7 +112,7 @@ describe('defaultWorkflowService', () => {
     expect(getDefaultWorkflow()).toEqual(defaultGraph)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
-      expect.objectContaining({ errorType: 'DefaultWorkflowInvalid' })
+      expect.objectContaining({ errorType: 'default_workflow_invalid' })
     )
   })
 
@@ -112,7 +124,7 @@ describe('defaultWorkflowService', () => {
     expect(getDefaultWorkflow()).toEqual(defaultGraph)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
-      expect.objectContaining({ errorType: 'DefaultWorkflowFetchFailed' })
+      expect.objectContaining({ errorType: 'default_workflow_fetch_failed' })
     )
   })
 
@@ -141,13 +153,13 @@ describe('defaultWorkflowService', () => {
     fetchApi.mockReturnValue(new Promise<Response>(() => {}))
 
     const ready = initDefaultWorkflow()
-    await vi.advanceTimersByTimeAsync(10_000)
+    await vi.advanceTimersByTimeAsync(PREFETCH_TIMEOUT_MS)
     await ready
 
     expect(getDefaultWorkflow()).toEqual(defaultGraph)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
-      expect.objectContaining({ errorType: 'DefaultWorkflowTimedOut' })
+      expect.objectContaining({ errorType: 'default_workflow_timed_out' })
     )
     vi.useRealTimers()
   })
@@ -157,14 +169,27 @@ describe('defaultWorkflowService', () => {
     fetchApi.mockResolvedValue(stalledBodyResponse())
 
     const ready = initDefaultWorkflow()
-    await vi.advanceTimersByTimeAsync(10_000)
+    await vi.advanceTimersByTimeAsync(PREFETCH_TIMEOUT_MS)
     await ready
 
     expect(getDefaultWorkflow()).toEqual(defaultGraph)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
-      expect.objectContaining({ errorType: 'DefaultWorkflowTimedOut' })
+      expect.objectContaining({ errorType: 'default_workflow_timed_out' })
     )
+    vi.useRealTimers()
+  })
+
+  it('aborts a stalled request instead of leaving its body pending', async () => {
+    vi.useFakeTimers()
+    fetchApi.mockResolvedValue(stalledBodyResponse())
+
+    const ready = initDefaultWorkflow()
+    await vi.advanceTimersByTimeAsync(PREFETCH_TIMEOUT_MS)
+    await ready
+
+    const [, options] = fetchApi.mock.calls[0] ?? []
+    expect(options?.signal?.aborted).toBe(true)
     vi.useRealTimers()
   })
 

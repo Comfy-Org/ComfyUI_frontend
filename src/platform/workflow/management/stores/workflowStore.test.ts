@@ -1,4 +1,12 @@
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { nextTick, reactive } from 'vue'
 
@@ -273,26 +281,27 @@ describe('useWorkflowStore', () => {
 
     it('gives each default-created workflow its own root graph id', async () => {
       const servedId = '11111111-1111-4111-8111-111111111111'
+      onTestFinished(resetDefaultWorkflowForTesting)
       resetDefaultWorkflowForTesting()
       vi.mocked(api.fetchApi).mockResolvedValue(
-        new Response(JSON.stringify({ ...defaultGraph, id: servedId }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        })
+        new Response(
+          JSON.stringify({
+            ...defaultGraph,
+            id: servedId,
+            last_node_id: 4242
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
       )
       await initDefaultWorkflow()
 
-      const first = store.createTemporary()
-      const second = store.createTemporary()
+      const first = JSON.parse(store.createTemporary().content!)
+      const second = JSON.parse(store.createTemporary().content!)
 
-      const firstId = JSON.parse(first.content!).id
-      const secondId = JSON.parse(second.content!).id
-
-      expect(firstId).toBeTruthy()
-      expect(firstId).not.toBe(servedId)
-      expect(secondId).not.toBe(firstId)
-
-      resetDefaultWorkflowForTesting()
+      expect(first.last_node_id).toBe(4242)
+      expect(first.id).toBeTruthy()
+      expect(first.id).not.toBe(servedId)
+      expect(second.id).not.toBe(first.id)
     })
 
     it('assigns each workflow a stable unique session identity', async () => {

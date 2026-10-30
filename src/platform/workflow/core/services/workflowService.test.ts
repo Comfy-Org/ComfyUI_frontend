@@ -53,8 +53,9 @@ beforeEach(() => {
   stubFirebaseAuthHarness()
 })
 
-const isDefaultWorkflow = (data: unknown) =>
-  JSON.stringify(data) === JSON.stringify(getDefaultWorkflow())
+function isDefaultWorkflow(data: unknown): boolean {
+  return JSON.stringify(data) === JSON.stringify(getDefaultWorkflow())
+}
 
 function createModeTestWorkflow(
   options: {
