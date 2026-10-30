@@ -20,18 +20,6 @@ export class SavedFileIdentityError extends DOMException {
   }
 }
 
-let scopeProvider: () => UserFileScope | null = () => null
-
-export function registerUserFileScopeProvider(
-  provider: () => UserFileScope | null
-) {
-  scopeProvider = provider
-}
-
-export function currentUserFileScope(): UserFileScope | null {
-  return scopeProvider()
-}
-
 export function sameUserFileScope(
   left: UserFileScope | null | undefined,
   right: UserFileScope | null | undefined
@@ -53,9 +41,9 @@ export function sameUserFileIdentity(
   )
 }
 
-export function receivedUserFileIdentity(
+export function bindReceivedUserFileIdentity(
   id: unknown,
-  scope = currentUserFileScope()
+  scope: UserFileScope | null
 ): UserFileIdentity | undefined {
   return typeof id === 'string' &&
     isUuid(id) &&
@@ -63,10 +51,4 @@ export function receivedUserFileIdentity(
     scope
     ? { ...scope, id }
     : undefined
-}
-
-export function isUserFileIdentityCurrent(
-  identity: UserFileIdentity | undefined
-): boolean {
-  return !identity || sameUserFileScope(identity, currentUserFileScope())
 }

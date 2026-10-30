@@ -1,0 +1,43 @@
+{
+  "id": "workflow-file-identity",
+  "capability": "Saved workflow file identity",
+  "description": "Received userdata UUIDs bound to an authenticated owner and workspace. Pure identity comparison, validation and refusal classification live in the domain leaf; mutable observation of the current authenticated scope is an application API. Workflow documents and draft persistence consume this shared contract without importing remote API internals.",
+  "modules": [
+    {
+      "path": "src/platform/workflow/core/utils/userFileIdentity.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/core/services/userFileContext.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [
+    "src/platform/workflow/core/utils/userFileIdentity.ts",
+    "src/platform/workflow/core/services/userFileContext.ts"
+  ],
+  "allowedDependencies": [],
+  "allowedConsumers": ["workflow-management", "workflow-persistence"],
+  "characterizationScenarios": [
+    {
+      "name": "Identity includes the received canonical UUID, owner and workspace; expected refusals retain their DOMException contract",
+      "checks": ["src/platform/workflow/core/utils/userFileIdentity.test.ts"]
+    },
+    {
+      "name": "Scope observation keeps received identity separate from mutable authentication and preserves no-ID local compatibility",
+      "checks": ["src/platform/workflow/core/services/userFileContext.test.ts"]
+    },
+    {
+      "name": "Management and persistence consume only the role-correct public identity contract without granting access to unrelated internals",
+      "checks": ["tools/architecture/src/boundaries.test.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/WORKFLOW-LINKS-0049-authenticated-saved-document-handoff.md"
+  ],
+  "compatibilityPromises": [
+    "No server identity is inferred from a path or graph UUID; missing userdata identity keeps ordinary local workflows unbound.",
+    "Domain consumers can import only the pure identity API; mutable scope observation remains restricted to application-compatible roles."
+  ],
+  "deepImports": "enforced"
+}

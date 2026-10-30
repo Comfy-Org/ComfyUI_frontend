@@ -60,6 +60,14 @@
         "patterns": ["src/extensions/core/webcamCapture.ts"]
       },
       {
+        "name": "workflow-file-identity/domain/public",
+        "patterns": ["src/platform/workflow/core/utils/userFileIdentity.ts"]
+      },
+      {
+        "name": "workflow-file-identity/application/public",
+        "patterns": ["src/platform/workflow/core/services/userFileContext.ts"]
+      },
+      {
         "name": "account/presentation",
         "patterns": [
           "src/platform/account/auth/WorkspaceAuthGate.vue",
@@ -3359,6 +3367,20 @@
         ]
       },
       {
+        "name": "workflow-file-identity/domain",
+        "patterns": [
+          "src/platform/workflow/core/utils/userFileIdentity.ts",
+          "src/platform/workflow/core/utils/userFileIdentity.test.ts"
+        ]
+      },
+      {
+        "name": "workflow-file-identity/application",
+        "patterns": [
+          "src/platform/workflow/core/services/userFileContext.ts",
+          "src/platform/workflow/core/services/userFileContext.test.ts"
+        ]
+      },
+      {
         "name": "workflow-format/domain",
         "patterns": [
           "src/utils/jsonUtil.ts",
@@ -3398,7 +3420,6 @@
         "patterns": [
           "src/composables/useWorkflowActionsMenu.ts",
           "src/composables/useWorkflowActionsMenu.test.ts",
-          "src/platform/workflow/core/services/**",
           "src/platform/workflow/core/utils/pendingWarnings.ts",
           "src/platform/workflow/core/utils/pendingWarnings.test.ts",
           "src/platform/workflow/core/utils/restoreDynamicGroupInputs.ts",
@@ -3415,6 +3436,7 @@
         "patterns": [
           "src/platform/workflow/utils/**",
           "src/stores/userFileStore.ts",
+          "src/stores/userFileStore.identity.test.ts",
           "src/stores/userFileStore.test.ts"
         ]
       },
@@ -3898,6 +3920,10 @@
         "patterns": ["src/platform/workflowErrors/panel/**"]
       },
       {
+        "name": "workflow-management/application/outer-1",
+        "patterns": ["src/platform/workflow/core/services/**"]
+      },
+      {
         "name": "workflow-management/presentation/outer-1",
         "patterns": ["src/components/topbar/**"]
       },
@@ -4121,6 +4147,24 @@
         ]
       },
       {
+        "from": "workflow-file-identity/domain/public",
+        "allow": [
+          "workflow-file-identity/domain/public",
+          "workflow-file-identity/domain",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-file-identity/application/public",
+        "allow": [
+          "workflow-file-identity/domain/public",
+          "workflow-file-identity/application/public",
+          "workflow-file-identity/domain",
+          "workflow-file-identity/application",
+          "unclassified"
+        ]
+      },
+      {
         "from": "account/presentation",
         "allow": [
           "account/presentation/public",
@@ -4220,6 +4264,7 @@
           "design-system/domain/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "keybindings/application/outer-1",
+          "workflow-management/application/outer-1",
           "unclassified"
         ]
       },
@@ -4259,6 +4304,7 @@
           "design-system/domain/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "keybindings/application/outer-1",
+          "workflow-management/application/outer-1",
           "unclassified"
         ]
       },
@@ -4300,6 +4346,7 @@
           "dialog-host/presentation/outer-1",
           "extension-runtime/presentation/outer-1",
           "keybindings/application/outer-1",
+          "workflow-management/application/outer-1",
           "workflow-management/presentation/outer-1",
           "workbench-shell/presentation/outer-2",
           "unclassified"
@@ -4363,6 +4410,7 @@
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
           "keybindings/application/outer-1",
+          "workflow-management/application/outer-1",
           "workflow-management/presentation/outer-1",
           "workbench-shell/presentation/outer-2",
           "unclassified"
@@ -5310,6 +5358,7 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "workflow-management/application/outer-1",
           "unclassified"
         ]
       },
@@ -5322,6 +5371,7 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "workflow-management/application/outer-1",
           "unclassified"
         ]
       },
@@ -5334,6 +5384,7 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
+          "workflow-management/application/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
         ]
@@ -5351,6 +5402,7 @@
           "workflow-management/infrastructure",
           "workflow-management/presentation",
           "workflow-management/integration",
+          "workflow-management/application/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
         ]
@@ -7644,6 +7696,24 @@
         ]
       },
       {
+        "from": "workflow-file-identity/domain",
+        "allow": [
+          "workflow-file-identity/domain/public",
+          "workflow-file-identity/domain",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-file-identity/application",
+        "allow": [
+          "workflow-file-identity/domain/public",
+          "workflow-file-identity/application/public",
+          "workflow-file-identity/domain",
+          "workflow-file-identity/application",
+          "unclassified"
+        ]
+      },
+      {
         "from": "workflow-format/domain",
         "allow": [
           "workflow-format/domain",
@@ -7674,6 +7744,7 @@
       {
         "from": "workflow-management/domain",
         "allow": [
+          "workflow-file-identity/domain/public",
           "error-reporting/domain",
           "keybindings/domain",
           "workflow-management/domain",
@@ -7685,6 +7756,8 @@
         "from": "workflow-management/application",
         "allow": [
           "keybindings/application/public",
+          "workflow-file-identity/domain/public",
+          "workflow-file-identity/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -7696,6 +7769,7 @@
           "workflow-management/infrastructure",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "workflow-management/application/outer-1",
           "unclassified"
         ]
       },
@@ -7703,6 +7777,8 @@
         "from": "workflow-management/infrastructure",
         "allow": [
           "keybindings/application/public",
+          "workflow-file-identity/domain/public",
+          "workflow-file-identity/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -7714,6 +7790,7 @@
           "workflow-management/infrastructure",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "workflow-management/application/outer-1",
           "unclassified"
         ]
       },
@@ -7721,6 +7798,8 @@
         "from": "workflow-management/presentation",
         "allow": [
           "keybindings/application/public",
+          "workflow-file-identity/domain/public",
+          "workflow-file-identity/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "keybindings/domain",
@@ -7731,6 +7810,7 @@
           "workflow-management/presentation",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "workflow-management/application/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
         ]
@@ -7740,6 +7820,8 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/integration/public",
+          "workflow-file-identity/domain/public",
+          "workflow-file-identity/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -7757,6 +7839,7 @@
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
           "telemetry/integration/outer-1",
+          "workflow-management/application/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
         ]
@@ -7765,6 +7848,8 @@
         "from": "workflow-persistence/infrastructure",
         "allow": [
           "keybindings/application/public",
+          "workflow-file-identity/domain/public",
+          "workflow-file-identity/application/public",
           "keybindings/domain",
           "workflow-persistence/infrastructure",
           "keybindings/application/outer-1",
@@ -7778,6 +7863,8 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/integration/public",
+          "workflow-file-identity/domain/public",
+          "workflow-file-identity/application/public",
           "keybindings/domain",
           "keybindings/presentation",
           "keybindings/integration",
@@ -7974,6 +8061,7 @@
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
           "keybindings/application/outer-1",
+          "workflow-management/application/outer-1",
           "workflow-management/presentation/outer-1",
           "workbench-shell/presentation/outer-2",
           "unclassified"
@@ -8981,9 +9069,32 @@
         ]
       },
       {
+        "from": "workflow-management/application/outer-1",
+        "allow": [
+          "keybindings/application/public",
+          "workflow-file-identity/domain/public",
+          "workflow-file-identity/application/public",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "keybindings/domain",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "keybindings/application/outer-1",
+          "telemetry/domain/outer-1",
+          "workflow-management/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
         "from": "workflow-management/presentation/outer-1",
         "allow": [
           "keybindings/application/public",
+          "workflow-file-identity/domain/public",
+          "workflow-file-identity/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "keybindings/domain",
@@ -8994,6 +9105,7 @@
           "workflow-management/presentation",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "workflow-management/application/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
         ]
@@ -9001,6 +9113,7 @@
       {
         "from": "workflow-persistence/domain/outer-1",
         "allow": [
+          "workflow-file-identity/domain/public",
           "keybindings/domain",
           "workflow-persistence/domain/outer-1",
           "unclassified"
@@ -9194,6 +9307,8 @@
         "from": "workflow-persistence/application/outer-2",
         "allow": [
           "keybindings/application/public",
+          "workflow-file-identity/domain/public",
+          "workflow-file-identity/application/public",
           "keybindings/domain",
           "workflow-persistence/infrastructure",
           "keybindings/application/outer-1",
@@ -9243,6 +9358,8 @@
           "node-definition/domain/public",
           "server-facts/domain/public",
           "webcam-capture/integration/public",
+          "workflow-file-identity/domain/public",
+          "workflow-file-identity/application/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -9602,6 +9719,7 @@
           "workflow-deployment/domain/outer-1",
           "workflow-errors/application/outer-1",
           "workflow-errors/presentation/outer-1",
+          "workflow-management/application/outer-1",
           "workflow-management/presentation/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-sharing/application/outer-1",

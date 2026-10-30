@@ -15,7 +15,7 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { SavedFileSnapshot } from '@/services/savedWorkflowService'
-import { registerUserFileScopeProvider } from '@/platform/remote/comfyui/userFileIdentity'
+import { registerUserFileScopeProvider } from '@/platform/workflow/core/services/userFileContext'
 import { fetchSavedWorkflow } from '@/services/savedWorkflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { readSavedWorkflowLink } from '@/platform/navigation/savedWorkflowLink'
@@ -165,20 +165,38 @@ export function useSavedWorkflowUrlLoader() {
     return 'failed'
   }
 
+  async function rejectInvalidLink(
+    status: 'invalid' | 'legacy'
+  ): Promise<SavedWorkflowUrlLoadStatus> {
+    toast.error(
+      t(
+        status === 'legacy'
+          ? 'workflowService.privateLinkLegacy'
+          : 'workflowService.privateLinkInvalid'
+      )
+    )
+    await clearIntent()
+    return 'failed'
+  }
+
+  function watchLoadContext(controller: AbortController) {
+    return watch(
+      [
+        isLoggedIn,
+        () => resolvedUserInfo.value?.id,
+        () => workspaceStore.activeWorkspace?.id,
+        () => deploymentStore.bootDeployment?.deployment_id,
+        () => deploymentStore.isSwitching
+      ],
+      () => controller.abort(),
+      { flush: 'sync' }
+    )
+  }
+
   async function load(): Promise<SavedWorkflowUrlLoadStatus> {
     const link = readSavedWorkflowLink(linkQuery())
     if (link.status === 'absent') return 'not-present'
-    if (link.status === 'invalid' || link.status === 'legacy') {
-      toast.error(
-        t(
-          link.status === 'legacy'
-            ? 'workflowService.privateLinkLegacy'
-            : 'workflowService.privateLinkInvalid'
-        )
-      )
-      await clearIntent()
-      return 'failed'
-    }
+    if (link.status !== 'valid') return rejectInvalidLink(link.status)
     const context = readyContext()
     if (!context) return 'deferred'
     const bootDeploymentId =
@@ -206,17 +224,7 @@ export function useSavedWorkflowUrlLoader() {
       )
     }
     pendingController = controller
-    const stopContextWatcher = watch(
-      [
-        isLoggedIn,
-        () => resolvedUserInfo.value?.id,
-        () => workspaceStore.activeWorkspace?.id,
-        () => deploymentStore.bootDeployment?.deployment_id,
-        () => deploymentStore.isSwitching
-      ],
-      () => controller.abort(),
-      { flush: 'sync' }
-    )
+    const stopContextWatcher = watchLoadContext(controller)
     try {
       if (!isCurrent()) {
         toast.error(t('workflowService.privateLinkTargetMismatch'))

@@ -5,12 +5,14 @@ import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { api } from '@/scripts/api'
 import {
   SavedFileIdentityError,
-  currentUserFileScope,
-  receivedUserFileIdentity,
   sameUserFileIdentity,
   sameUserFileScope
-} from '@/platform/remote/comfyui/userFileIdentity'
-import type { UserFileIdentity } from '@/platform/remote/comfyui/userFileIdentity'
+} from '@/platform/workflow/core/utils/userFileIdentity'
+import {
+  currentUserFileScope,
+  receivedUserFileIdentity
+} from '@/platform/workflow/core/services/userFileContext'
+import type { UserFileIdentity } from '@/platform/workflow/core/utils/userFileIdentity'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'

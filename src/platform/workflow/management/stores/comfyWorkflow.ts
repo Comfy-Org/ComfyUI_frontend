@@ -2,12 +2,12 @@ import { markRaw } from 'vue'
 
 import { assert } from '@/base/assert'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
-import type { UserFileIdentity } from '@/platform/remote/comfyui/userFileIdentity'
+import type { UserFileIdentity } from '@/platform/workflow/core/utils/userFileIdentity'
 import {
   SavedFileIdentityError,
-  receivedUserFileIdentity,
   sameUserFileIdentity
-} from '@/platform/remote/comfyui/userFileIdentity'
+} from '@/platform/workflow/core/utils/userFileIdentity'
+import { receivedUserFileIdentity } from '@/platform/workflow/core/services/userFileContext'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'

@@ -20,13 +20,19 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
-import type { UserFileScope } from '@/platform/remote/comfyui/userFileIdentity'
+import type {
+  UserFileIdentity,
+  UserFileScope
+} from '@/platform/workflow/core/utils/userFileIdentity'
 import {
-  currentUserFileScope,
-  receivedUserFileIdentity,
   sameUserFileIdentity,
   sameUserFileScope
-} from '@/platform/remote/comfyui/userFileIdentity'
+} from '@/platform/workflow/core/utils/userFileIdentity'
+import {
+  currentUserFileScope,
+  receivedUserFileIdentity
+} from '@/platform/workflow/core/services/userFileContext'
+import type { SavedFileSnapshot } from '@/services/savedWorkflowService'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
@@ -247,62 +253,63 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
+  function hasSavedFileDestinationConflict(
+    path: string,
+    identity: UserFileIdentity,
+    existing: ComfyWorkflow | undefined
+  ) {
+    const draft = useWorkflowDraftStoreV2().getDraft(path)
+    if (draft && !sameUserFileIdentity(draft.savedFileIdentity, identity))
+      return true
+    const destination = getWorkflowByPath(path)
+    return (
+      !!destination &&
+      destination !== existing &&
+      (destination.isLoaded || destination.isModified || isOpen(destination))
+    )
+  }
+
+  function moveSavedFileDraft(identity: UserFileIdentity, path: string) {
+    const drafts = useWorkflowDraftStoreV2()
+    const oldPath = drafts.findDraftPath(identity)
+    return (
+      !oldPath ||
+      oldPath === path ||
+      drafts.moveDraft(oldPath, path, path.slice(ComfyWorkflow.basePath.length))
+    )
+  }
+
+  function moveSavedFileDocument(workflow: ComfyWorkflow, path: string) {
+    if (workflow.path === path) return
+    const oldPath = workflow.path
+    if (workflowLookup.value[oldPath] === workflow)
+      delete workflowLookup.value[oldPath]
+    workflow.updatePath(path)
+    openWorkflowPaths.value = openWorkflowPaths.value.map((opened) =>
+      opened === oldPath ? path : opened
+    )
+    tabActivationHistory.value = tabActivationHistory.value.map((opened) =>
+      opened === oldPath ? path : opened
+    )
+  }
+
   const hydrateSavedFile = (
-    snapshot: {
-      id: string
-      path: string
-      content: string
-      modified: number
-      size: number
-    },
+    snapshot: SavedFileSnapshot,
     scope: UserFileScope
   ): ComfyWorkflow | null => {
     if (!sameUserFileScope(scope, currentUserFileScope())) return null
     const identity = receivedUserFileIdentity(snapshot.id, scope)
     if (!identity) return null
-    const draftStore = useWorkflowDraftStoreV2()
-    const destinationDraft = draftStore.getDraft(snapshot.path)
-    if (
-      destinationDraft &&
-      !sameUserFileIdentity(destinationDraft.savedFileIdentity, identity)
-    )
-      return null
     const existing = workflows.value.find((workflow) =>
       sameUserFileIdentity(workflow.savedFileIdentity, identity)
     )
-    const destination = getWorkflowByPath(snapshot.path)
-    if (
-      destination &&
-      destination !== existing &&
-      (destination.isLoaded || destination.isModified || isOpen(destination))
-    )
+    if (hasSavedFileDestinationConflict(snapshot.path, identity, existing))
       return null
-    const oldDraftPath = draftStore.findDraftPath(identity)
-    if (
-      oldDraftPath &&
-      oldDraftPath !== snapshot.path &&
-      !draftStore.moveDraft(
-        oldDraftPath,
-        snapshot.path,
-        snapshot.path.slice(ComfyWorkflow.basePath.length)
-      )
-    )
-      return null
+    if (!moveSavedFileDraft(identity, snapshot.path)) return null
     const workflow =
       existing ??
       new ComfyWorkflow({ ...snapshot, savedFileIdentity: identity })
-    if (workflow.path !== snapshot.path) {
-      const oldPath = workflow.path
-      if (workflowLookup.value[oldPath] === workflow)
-        delete workflowLookup.value[oldPath]
-      workflow.updatePath(snapshot.path)
-      openWorkflowPaths.value = openWorkflowPaths.value.map((path) =>
-        path === oldPath ? snapshot.path : path
-      )
-      tabActivationHistory.value = tabActivationHistory.value.map((path) =>
-        path === oldPath ? snapshot.path : path
-      )
-    }
+    moveSavedFileDocument(workflow, snapshot.path)
     if (!workflow.isLoaded) {
       workflow.content = snapshot.content
       workflow.originalContent = snapshot.content
@@ -511,6 +518,55 @@ export const useWorkflowStore = defineStore('workflow', () => {
     )
   )
 
+  function updateSyncedWorkflow(
+    existingWorkflow: ComfyWorkflow,
+    file: Awaited<ReturnType<typeof api.listUserDataFullInfo>>[number]
+  ) {
+    const identity = receivedUserFileIdentity(file.id)
+    if (existingWorkflow.savedFileIdentity && !identity) return
+    if (!reconcileSyncedIdentity(existingWorkflow, identity)) return
+    updateSyncedMetadata(existingWorkflow, file)
+  }
+
+  function updateSyncedMetadata(
+    existingWorkflow: ComfyWorkflow,
+    file: Awaited<ReturnType<typeof api.listUserDataFullInfo>>[number]
+  ) {
+    const nextLastModified = Math.max(
+      existingWorkflow.lastModified,
+      file.modified
+    )
+    const isMetadataUnchanged =
+      nextLastModified === existingWorkflow.lastModified &&
+      file.size === existingWorkflow.size
+    if (!isMetadataUnchanged) {
+      existingWorkflow.lastModified = nextLastModified
+      existingWorkflow.size = file.size
+    }
+    if (
+      activeWorkflow.value?.path === existingWorkflow.path ||
+      existingWorkflow.isModified ||
+      isMetadataUnchanged
+    )
+      return
+    existingWorkflow.unload()
+  }
+
+  function reconcileSyncedIdentity(
+    workflow: ComfyWorkflow,
+    identity: UserFileIdentity | undefined
+  ) {
+    const changed =
+      !sameUserFileIdentity(workflow.savedFileIdentity, identity) &&
+      !!(workflow.savedFileIdentity || identity)
+    if (!changed) return true
+    if (workflow.isLoaded || workflow.isModified || isOpen(workflow))
+      return false
+    workflow.savedFileIdentity = identity
+    workflow.unload()
+    return true
+  }
+
   const {
     isReady: isSyncReady,
     isLoading: isSyncLoading,
@@ -528,55 +584,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
             size: file.size,
             id: file.id
           }),
-        (existingWorkflow, file) => {
-          const identity = receivedUserFileIdentity(file.id)
-          if (existingWorkflow.savedFileIdentity && !identity) return
-          const identityChanged =
-            !sameUserFileIdentity(
-              existingWorkflow.savedFileIdentity,
-              identity
-            ) && !!(existingWorkflow.savedFileIdentity || identity)
-          if (identityChanged) {
-            if (
-              existingWorkflow.isLoaded ||
-              existingWorkflow.isModified ||
-              isOpen(existingWorkflow)
-            )
-              return
-            existingWorkflow.savedFileIdentity = identity
-            existingWorkflow.unload()
-          }
-          const isActiveWorkflow =
-            activeWorkflow.value?.path === existingWorkflow.path
-
-          const nextLastModified = Math.max(
-            existingWorkflow.lastModified,
-            file.modified
-          )
-
-          const isMetadataUnchanged =
-            nextLastModified === existingWorkflow.lastModified &&
-            file.size === existingWorkflow.size
-
-          if (!isMetadataUnchanged) {
-            existingWorkflow.lastModified = nextLastModified
-            existingWorkflow.size = file.size
-          }
-
-          // Never unload the active workflow - it may contain unsaved in-memory edits.
-          if (isActiveWorkflow || existingWorkflow.isModified) {
-            return
-          }
-
-          // If nothing changed, keep any loaded content cached.
-          if (isMetadataUnchanged) {
-            return
-          }
-
-          existingWorkflow.unload()
-        },
-        /* exclude */ (workflow) => workflow.isTemporary,
-        /* beforeDelete */ (workflow, path) => {
+        updateSyncedWorkflow,
+        (workflow) => workflow.isTemporary,
+        (workflow, path) => {
           if (
             isActive(workflow) ||
             workflow.isModified ||

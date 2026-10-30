@@ -10,7 +10,7 @@
  * Metadata for a single draft entry stored in the index.
  * The actual workflow data is stored separately in a Draft payload key.
  */
-import type { UserFileIdentity } from '@/platform/remote/comfyui/userFileIdentity'
+import type { UserFileIdentity } from '@/platform/workflow/core/utils/userFileIdentity'
 
 export interface DraftEntryMeta {
   savedFileIdentity?: UserFileIdentity

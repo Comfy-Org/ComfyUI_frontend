@@ -94,3 +94,26 @@ workflow stores and persistence own identity-aware hydration and draft aliases.
 Cross-domain cancellation and baseline coverage remains in
 `src/integrationTests/workflowHandoffPersistence.test.ts`, alongside focused URL,
 API, store and draft suites and real-canvas browser handoff coverage.
+
+## Shared identity boundary
+
+The `workflow-file-identity` domain owns two exact public leaf APIs. The
+`core/utils/userFileIdentity.ts` domain leaf owns the received UUID, owner and
+workspace types, canonical UUID validation, comparisons, and typed scope/draft
+refusals. `core/services/userFileContext.ts` owns the mutable scope provider,
+current-scope observation and the compatibility wrapper that uses that scope
+when receiving an identity. Domain code cannot import the mutable context.
+The domain exports `UserFileScope`, `UserFileIdentity`, `SavedFileIdentityError`,
+`bindReceivedUserFileIdentity`, `sameUserFileScope` and `sameUserFileIdentity`.
+The context exports `registerUserFileScopeProvider`, `currentUserFileScope`,
+`receivedUserFileIdentity` and `isUserFileIdentityCurrent`.
+Only workflow management and workflow persistence are declared consumers;
+unclassified application adapters continue using the public entries under the
+catalog's existing rules. Existing domains retain their access modes.
+
+Placing this contract under the ComfyUI transport domain creates a reverse
+layer dependency from document persistence. Adding persistence as a consumer
+of the existing inventory-mode workflow-management domain would authorize
+unrelated internals; changing that whole domain to enforced would alter
+legacy policy outside this feature. A small enforced identity domain instead
+makes the two supported leaves explicit without widening either legacy domain.

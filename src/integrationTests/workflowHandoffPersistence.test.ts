@@ -16,7 +16,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { useSavedWorkflowUrlLoader } from '@/composables/useSavedWorkflowUrlLoader'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { registerUserFileScopeProvider } from '@/platform/remote/comfyui/userFileIdentity'
+import { registerUserFileScopeProvider } from '@/platform/workflow/core/services/userFileContext'
 import { useDialogService } from '@/services/dialogService'
 import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -42,6 +42,7 @@ import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
+import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
 import { ComfyApp, app as singletonApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { useExtensionService } from '@/platform/extensions/services/extensionService'
@@ -553,6 +554,108 @@ describe('saved workflow handoff persistence', () => {
         expect(
           useWorkflowStore().getWorkflowByPath('workflows/copy.json')
         ).toBeNull()
+      expect(useTelemetry()?.trackWorkflowSaved).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    { operation: 'create', transition: 'owner' },
+    { operation: 'create', transition: 'owner-return' },
+    { operation: 'delete', transition: 'owner' },
+    { operation: 'delete', transition: 'owner-return' },
+    { operation: 'create', transition: 'logout' }
+  ] as const)(
+    'actual persistence owner provider aborts $operation before transport after $transition in the same workspace',
+    async ({ operation, transition }) => {
+      vi.spyOn(distributionModule, 'isCloud', 'get').mockReturnValue(true)
+      const auth = useAuthStore()
+      auth.currentUser = fromPartial<User>({ uid: 'user-a' })
+      auth.isInitialized = true
+      const workspaces = useTeamWorkspaceStore()
+      workspaces.workspaces = [
+        {
+          id: 'workspace-a',
+          name: 'Workspace A',
+          type: 'team',
+          role: 'owner',
+          created_at: '2026-10-30T00:00:00Z',
+          joined_at: '2026-10-30T00:00:00Z',
+          members: [],
+          membersLoaded: false,
+          pendingInvites: [],
+          pendingInvitesLoaded: false
+        }
+      ]
+      workspaces.initState = 'ready'
+      const { service, retainedDocument } = await prepareRetainedHandoff()
+      retainedDocument.savedFileIdentity = {
+        ownerId: 'user-a',
+        workspaceId: 'workspace-a',
+        id: 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
+      }
+      useWorkflowDraftStoreV2().removeDraft(retainedDocument.path)
+      if (operation === 'delete') {
+        useWorkflowStore().attachWorkflow(
+          new ComfyWorkflow({
+            path: 'workflows/copy.json',
+            modified: 1,
+            size: 20
+          })
+        )
+        vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      }
+      let enter = () => {}
+      const entered = new Promise<void>((resolve) => {
+        enter = resolve
+      })
+      let release = () => {}
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      let sends = 0
+      let requestSignal: AbortSignal | null | undefined
+      const fetchApi = api.fetchApi.bind(api)
+      vi.spyOn(api, 'fetchApi').mockImplementation((route, options) => {
+        requestSignal = options?.signal
+        return fetchApi(route, options)
+      })
+      api.setAuthProvider({
+        ...anonymousApiAuthProvider,
+        waitForInitialization: async () => {
+          enter()
+          await gate
+        },
+        fetch: async (_url, init) => {
+          init.signal?.throwIfAborted()
+          sends++
+          return init.method === 'DELETE'
+            ? new Response(null, { status: 204 })
+            : Response.json({
+                id: '78ebcb5b-028d-45e8-9f9c-b20f433c364d',
+                modified: 2,
+                size: 20
+              })
+        }
+      })
+      onTestFinished(() => api.setAuthProvider(anonymousApiAuthProvider))
+      const saving = service.saveWorkflowAs(retainedDocument, {
+        filename: 'copy'
+      })
+      await entered
+      auth.currentUser =
+        transition === 'logout' ? null : fromPartial<User>({ uid: 'user-b' })
+      await nextTick()
+      if (transition === 'owner-return') {
+        auth.currentUser = fromPartial<User>({ uid: 'user-a' })
+        await nextTick()
+      }
+      const abortedBeforeSend = requestSignal?.aborted
+      release()
+      const saved = await saving
+      expect(workspaces.activeWorkspaceId).toBe('workspace-a')
+      expect(sends).toBe(0)
+      expect(abortedBeforeSend).toBe(true)
+      expect(saved).toBe(false)
       expect(useTelemetry()?.trackWorkflowSaved).not.toHaveBeenCalled()
     }
   )

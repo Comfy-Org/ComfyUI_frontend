@@ -1,7 +1,10 @@
+import { readFileSync } from 'node:fs'
+
 import { assert, describe, expect, it } from 'vitest'
 
 import { buildBoundaries } from './boundaries'
 import { claimFiles, matchesModulePath } from './records'
+import { domainRecordSchema } from './schema'
 import type { DomainRecord } from './schema'
 
 function domain(
@@ -190,6 +193,71 @@ describe('buildBoundaries', () => {
       allowed: false
     }
   ])('$name', ({ records, from, to, allowed }) => {
+    expect(fallowAllows(records, from, to)).toBe(allowed)
+  })
+})
+
+describe('saved-file identity public boundary', () => {
+  const records = [
+    'workflow-file-identity',
+    'workflow-management',
+    'workflow-persistence',
+    'comfyui-api'
+  ].map((name) =>
+    domainRecordSchema.parse(
+      JSON.parse(
+        readFileSync(
+          new URL(
+            `../../../docs/architecture/domains/records/${name}.domain.json`,
+            import.meta.url
+          ),
+          'utf8'
+        )
+      )
+    )
+  )
+  it.for([
+    {
+      from: 'src/platform/workflow/management/stores/workflowStore.ts',
+      to: 'src/platform/workflow/core/utils/userFileIdentity.ts',
+      allowed: true
+    },
+    {
+      from: 'src/platform/workflow/management/stores/workflowStore.ts',
+      to: 'src/platform/workflow/core/services/userFileContext.ts',
+      allowed: true
+    },
+    {
+      from: 'src/platform/workflow/core/utils/userFileIdentity.ts',
+      to: 'src/platform/workflow/core/services/userFileContext.ts',
+      allowed: false
+    },
+    {
+      from: 'src/platform/workflow/persistence/base/draftTypes.ts',
+      to: 'src/platform/workflow/core/utils/userFileIdentity.ts',
+      allowed: true
+    },
+    {
+      from: 'src/platform/workflow/persistence/base/draftTypes.ts',
+      to: 'src/platform/workflow/core/services/userFileContext.ts',
+      allowed: false
+    },
+    {
+      from: 'src/platform/workflow/persistence/stores/workflowDraftStoreV2.ts',
+      to: 'src/platform/workflow/core/services/userFileContext.ts',
+      allowed: true
+    },
+    {
+      from: 'src/platform/workflow/persistence/stores/workflowDraftStoreV2.ts',
+      to: 'src/platform/workflow/management/stores/workflowStore.ts',
+      allowed: false
+    },
+    {
+      from: 'src/platform/remote/comfyui/types.ts',
+      to: 'src/platform/workflow/core/utils/userFileIdentity.ts',
+      allowed: false
+    }
+  ])('enforces $from → $to: $allowed', ({ from, to, allowed }) => {
     expect(fallowAllows(records, from, to)).toBe(allowed)
   })
 })
