@@ -21,7 +21,8 @@ const workflowSchema = z.object({
             id: z.string().optional(),
             run: z.string().optional(),
             uses: z.string().optional(),
-            with: z.record(z.string(), z.unknown()).optional()
+            with: z.record(z.string(), z.unknown()).optional(),
+            env: z.record(z.string(), z.string()).optional()
           })
         )
         .optional()
@@ -156,6 +157,23 @@ describe('merge-reports Playwright version', () => {
       })
     )
   })
+
+  it.for(['html', 'json'])(
+    'merges the %s report with the locked version',
+    (reporter) => {
+      expect(pipeline.jobs['merge-reports'].steps).toContainEqual(
+        expect.objectContaining({
+          env: expect.objectContaining({
+            PLAYWRIGHT_VERSION:
+              '${{ steps.playwright-version.outputs.version }}'
+          }),
+          run: expect.stringContaining(
+            `pnpm dlx "@playwright/test@$PLAYWRIGHT_VERSION" merge-reports --reporter=${reporter} `
+          )
+        })
+      )
+    }
+  )
 
   it('matches the root importer in the repository lockfile', () => {
     const lockfile = readFileSync('pnpm-lock.yaml', 'utf8')
