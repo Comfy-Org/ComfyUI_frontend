@@ -3402,12 +3402,12 @@
           "src/platform/workflow/core/utils/pendingWarnings.ts",
           "src/platform/workflow/core/utils/pendingWarnings.test.ts",
           "src/platform/workflow/core/utils/restoreDynamicGroupInputs.ts",
-          "src/platform/workflow/core/canvasTrackerOwnership.ts",
           "src/platform/workflow/management/stores/**",
           "src/scripts/changeTracker.ts",
           "src/scripts/changeTracker.test.ts",
           "src/stores/workflowTabActivityStore.ts",
           "src/stores/workflowTabActivityStore.test.ts",
+          "src/platform/workflow/core/canvasTrackerOwnership.ts",
           "src/utils/syncUtil.ts"
         ]
       },
