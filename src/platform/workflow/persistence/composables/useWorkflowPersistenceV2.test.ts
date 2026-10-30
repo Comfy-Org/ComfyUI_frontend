@@ -1281,9 +1281,6 @@ describe('useWorkflowPersistenceV2', () => {
     const workflow = await workflowStore.createTemporary('AccountA.json').load()
     workflowStore.activeWorkflow = workflow
     workflowStore.openWorkflowsInBackground({ right: [workflow.path] })
-    const activeWorkflowBeforeTransition = workflowStore.activeWorkflow
-    const openWorkflowBeforeTransition = workflowStore.openWorkflows[0]
-    const catalogWorkflowBeforeTransition = workflowStore.workflows[0]
     const teamWorkspaceStore = useTeamWorkspaceStore()
     vi.spyOn(teamWorkspaceStore, 'initialize').mockResolvedValue()
     mountWorkflowPersistence()
@@ -1318,9 +1315,9 @@ describe('useWorkflowPersistenceV2', () => {
 
     await vi.waitFor(() => expect(loadBlankWorkflowMock).toHaveBeenCalledOnce())
     expect(mocks.state.currentGraph).toEqual({ marker: 'account-a' })
-    expect(workflowStore.activeWorkflow).toBe(activeWorkflowBeforeTransition)
-    expect(workflowStore.openWorkflows).toEqual([openWorkflowBeforeTransition])
-    expect(workflowStore.workflows).toEqual([catalogWorkflowBeforeTransition])
+    expect(workflowStore.activeWorkflow).toBeNull()
+    expect(workflowStore.openWorkflows).toEqual([])
+    expect(workflowStore.workflows).toEqual([])
 
     blankLoad.resolve()
     await vi.runAllTimersAsync()
@@ -1335,16 +1332,55 @@ describe('useWorkflowPersistenceV2', () => {
     expect(workflowStore.workflows).toEqual([])
     expect(localStorage.getItem(destinationPayloadKey)).toBeNull()
     expect(
-      JSON.parse(
-        localStorage.getItem(
-          StorageKeys.lastOpenPaths(scope('user-b:workspace-1'))
-        ) ?? ''
+      localStorage.getItem(
+        StorageKeys.lastOpenPaths(scope('user-b:workspace-1'))
       )
-    ).toEqual({
-      workspaceId: scope('user-b:workspace-1'),
-      paths: [],
-      activeIndex: -1
+    ).toBeNull()
+  })
+
+  it('clears the departing workflow state when replacement blanking fails', async () => {
+    distributionMocks.isCloud = true
+    loadBlankWorkflowMock.mockRejectedValue(new Error('blank load failed'))
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('AccountA.json').load()
+    workflowStore.activeWorkflow = workflow
+    workflowStore.openWorkflowsInBackground({ right: [workflow.path] })
+    const teamWorkspaceStore = useTeamWorkspaceStore()
+    vi.spyOn(teamWorkspaceStore, 'initialize').mockResolvedValue()
+    mountWorkflowPersistence()
+
+    resolveUser('user-a')
+    Object.assign(teamWorkspaceStore, {
+      activeWorkspaceId: 'workspace-1',
+      initState: 'ready'
     })
+    await nextTick()
+
+    mocks.state.currentGraph = { marker: 'account-a' }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    resolveUser('user-b')
+    Object.assign(teamWorkspaceStore, {
+      activeWorkspaceId: 'workspace-1',
+      initState: 'ready'
+    })
+    await nextTick()
+    await vi.waitFor(() => expect(loadBlankWorkflowMock).toHaveBeenCalledOnce())
+    await vi.runAllTimersAsync()
+
+    mocks.state.currentGraph = { marker: 'must-not-cross-owners' }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    expect(workflowStore.activeWorkflow).toBeNull()
+    expect(workflowStore.openWorkflows).toEqual([])
+    expect(workflowStore.workflows).toEqual([])
+    expect(
+      localStorage.getItem(
+        StorageKeys.draftPayload(workflow.path, scope('user-b:workspace-1'))
+      )
+    ).toBeNull()
   })
 
   it('drops edits made in a post-identity null gap before the next owner resolves', async () => {

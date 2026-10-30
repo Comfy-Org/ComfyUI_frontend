@@ -209,9 +209,9 @@ export function useWorkflowPersistenceV2() {
     identityTransition = identityTransition
       .then(async () => {
         if (transitionVersion !== identityTransitionVersion) return
+        workflowStore.resetForIdentityChange()
         await useWorkflowService().loadBlankWorkflow()
         if (transitionVersion !== identityTransitionVersion) return
-        workflowStore.resetForIdentityChange()
         if (
           transitionVersion !== identityTransitionVersion ||
           identity === null
