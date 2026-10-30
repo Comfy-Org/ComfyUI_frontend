@@ -338,6 +338,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       paymentMethodUrl,
       authenticationRequiredSeen: true
     }
+    generations.set(operation.opId, Symbol(operation.opId))
     operations.value = new Map(operations.value).set(operation.opId, updated)
     syncProgressToastAfterRead(operation, updated)
   }
@@ -465,7 +466,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const generation = generations.get(opId)
     try {
       const response = await billingApi.getBillingOpStatus(opId)
-      if (isStalePoll(opId, generation)) return
+      if (isStalePoll(opId, generation)) {
+        scheduleNextPoll(opId)
+        return
+      }
       if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
         if (stopIfTimedOut(opId, operation)) return
         scheduleNextPoll(opId)
@@ -497,7 +501,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       scheduleNextPoll(opId)
     } catch {
       const currentOperation = operations.value.get(opId)
-      if (!currentOperation || isStalePoll(opId, generation)) return
+      if (!currentOperation || isStalePoll(opId, generation)) {
+        scheduleNextPoll(opId)
+        return
+      }
       if (stopIfTimedOut(opId, currentOperation)) return
       scheduleNextPoll(opId)
     }

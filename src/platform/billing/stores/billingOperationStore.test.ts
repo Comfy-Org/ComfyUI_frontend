@@ -584,6 +584,54 @@ describe('billingOperationStore', () => {
           await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
         })
 
+        it.for([
+          ['no phase', { id: 'op-1', status: 'pending' }],
+          [
+            'in_progress',
+            { id: 'op-1', status: 'pending', phase: 'in_progress' }
+          ]
+        ] as const)(
+          'discards a read requested before adoption that reports %s',
+          async ([, staleRead]) => {
+            let resolveRead: (value: BillingOpStatusResponse) => void = () => {}
+            vi.mocked(billingApi.getBillingOpStatus)
+              .mockReturnValueOnce(
+                new Promise<BillingOpStatusResponse>((resolve) => {
+                  resolveRead = resolve
+                })
+              )
+              .mockResolvedValue(pendingPhase('awaiting_payment_method'))
+            const store = useBillingOperationStore()
+            const terminal = store.startOperation('op-1', 'subscription', {
+              resumed: true
+            })
+
+            void store.startOperation('op-1', 'subscription', {
+              paymentMethodUrl: checkoutUrl
+            })
+            resolveRead({
+              ...staleRead,
+              started_at: new Date().toISOString()
+            })
+            await vi.advanceTimersByTimeAsync(0)
+
+            expect(store.getOperation('op-1')?.actionUrl).toBe(checkoutUrl)
+
+            vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue({
+              id: 'op-1',
+              status: 'succeeded',
+              started_at: new Date().toISOString(),
+              completed_at: new Date().toISOString()
+            })
+            await vi.advanceTimersByTimeAsync(31_000)
+
+            expect(billingApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
+            await expect(terminal).resolves.toMatchObject({
+              status: 'succeeded'
+            })
+          }
+        )
+
         it('does not keep the link when the poll reports no phase', async () => {
           vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(
             pending('op-1', false)
