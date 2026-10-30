@@ -6,11 +6,13 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import * as graphTraversalUtil from '@/utils/graphTraversalUtil'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
@@ -277,6 +279,67 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     app.nodePreviewImages['5'] = ['blob:legacy']
 
     expect(store.getNodePreviews(node)).toEqual(['blob:canonical'])
+  })
+})
+
+describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved execution id', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    vi.mocked(reportError).mockClear()
+  })
+
+  it('reports the execution id and output filenames instead of dropping the output silently', () => {
+    vi.mocked(
+      graphTraversalUtil.executionIdToNodeLocatorId
+    ).mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+    const outputs = createMockOutputs([
+      { filename: 'contact_sheet_00001_.png' }
+    ])
+
+    store.setNodeOutputsByExecutionId(executionId, outputs)
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        surface: 'graph',
+        errorType: 'node_output_execution_id_unresolved',
+        context: {
+          executionId,
+          filenames: ['contact_sheet_00001_.png']
+        }
+      })
+    )
+  })
+
+  it('omits filenames when the output carries none', () => {
+    vi.mocked(
+      graphTraversalUtil.executionIdToNodeLocatorId
+    ).mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(executionId, createMockOutputs())
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: { executionId, filenames: undefined }
+      })
+    )
+  })
+
+  it('does not report when the execution id resolves to a node', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([{ filename: 'resolved.png' }])
+    )
+
+    expect(reportError).not.toHaveBeenCalled()
   })
 })
 

@@ -18,6 +18,7 @@ import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { clone } from '@/scripts/utils'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type {
   NodeExecutionId,
@@ -304,8 +305,35 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       useApp().rootGraph,
       executionId
     )
-    if (!nodeLocatorId) return
+    if (!nodeLocatorId) {
+      reportUnresolvedExecutionId(executionId, outputs)
+      return
+    }
     setOutputsByLocatorId(nodeLocatorId, outputs, options)
+  }
+
+  /**
+   * An `executed` output whose execution id resolves to no live node is
+   * dropped silently (PM-2354, BE-23369): the node may have been re-minted,
+   * replaced, or removed between the run starting and this output landing.
+   * Report it so a thin Sentry relay names which output and which id, instead
+   * of only "one Save Image node didn't render".
+   */
+  function reportUnresolvedExecutionId(
+    executionId: NodeExecutionId,
+    outputs: ExecutedWsMessage['output'] | ResultItem
+  ) {
+    const incomingImages = 'images' in outputs ? outputs.images : undefined
+    reportError(new Error(`No node resolves execution id '${executionId}'`), {
+      surface: 'graph',
+      errorType: 'node_output_execution_id_unresolved',
+      context: {
+        executionId,
+        filenames: incomingImages
+          ?.map((image) => image.filename)
+          .filter((filename): filename is string => !!filename)
+      }
+    })
   }
 
   function setNodePreviewsByExecutionId(
