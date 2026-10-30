@@ -1411,11 +1411,23 @@ export class LiveGraphApplier {
   }
 
   private reportMissingWidget(node: LGraphNode, name: string): void {
+    const overflowIndex = overflowWidgetIndex(name)
     this.reportOnce(
       `widget:${String(node.id)}:${name}`,
       `Node ${String(node.id)} (${node.type}) has no widget '${name}'`,
       'agent_graph_widget_missing',
-      { nodeId: node.id, type: node.type, name }
+      {
+        nodeId: node.id,
+        type: node.type,
+        name,
+        availableWidgetNames: node.widgets?.map((widget) => widget.name) ?? [],
+        ...(overflowIndex === null
+          ? {}
+          : {
+              overflowIndex,
+              serializableWidgetCount: serializableWidgets(node).length
+            })
+      }
     )
   }
 

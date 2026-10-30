@@ -483,7 +483,14 @@ describe('LiveGraphApplier', () => {
       expect.objectContaining({
         message: "Node 1 (TestPlainWidgets) has no widget '_extra_7'"
       }),
-      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      expect.objectContaining({
+        errorType: 'agent_graph_widget_missing',
+        context: expect.objectContaining({
+          availableWidgetNames: ['known', 'addedAfterCatalog'],
+          overflowIndex: 7,
+          serializableWidgetCount: 2
+        })
+      })
     )
   })
 
@@ -515,6 +522,50 @@ describe('LiveGraphApplier', () => {
       { name: 'after', value: 8 }
     ])
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it("reports the node's actual widget names for a non-positional missing widget", () => {
+    const { doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('totally_unknown_widget', 99)
+    })
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message:
+          "Node 1 (TestPlainWidgets) has no widget 'totally_unknown_widget'"
+      }),
+      expect.objectContaining({
+        errorType: 'agent_graph_widget_missing',
+        context: expect.objectContaining({
+          availableWidgetNames: ['known', 'addedAfterCatalog']
+        })
+      })
+    )
+    // Not an `_extra_N` alias, so there is no overflow reading to report.
+    expect(reportError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        context: expect.not.objectContaining({
+          overflowIndex: expect.anything()
+        })
+      })
+    )
   })
 
   /**
