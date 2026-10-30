@@ -30,7 +30,8 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { AssetKind } from '@/types/widgetTypes'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
-import { getMediaTypeFromFilename, parseFilePath } from '@/utils/formatUtil'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
 import type { PagedList } from '@/utils/pagedList'
 
 function getDisplayLabel(
@@ -65,26 +66,21 @@ function getMediaUrl(
 }
 
 function isPlainRelativePath(filepath: string): boolean {
-  return filepath
-    .split(/[\\/]/)
-    .every(
-      (segment) =>
-        segment !== '' &&
-        segment !== '.' &&
-        segment !== '..' &&
-        !segment.includes(':')
-    )
+  return (
+    !/^[^\\/]:/.test(filepath) &&
+    filepath
+      .split(/[\\/]/)
+      .every((segment) => segment !== '' && segment !== '.' && segment !== '..')
+  )
 }
 
 function getAnnotatedValueMediaUrl(
   value: string,
   assetKind: AssetKind | undefined
 ): string {
-  const { filepath, rootFolder } = parseAnnotatedPath(value)
-  if (!isPlainRelativePath(filepath))
-    return getMediaUrl(filepath, rootFolder, assetKind)
-  const { filename, subfolder } = parseFilePath(filepath)
-  return getMediaUrl(filename, rootFolder, assetKind, subfolder)
+  if (!isPlainRelativePath(parseAnnotatedPath(value).filepath)) return ''
+  const { filename, subfolder, type } = parseImageWidgetValue(value)
+  return getMediaUrl(filename, type, assetKind, subfolder)
 }
 
 export interface UseWidgetSelectItemsOptions {

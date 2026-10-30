@@ -111,6 +111,52 @@ describe('AppToaster', () => {
     )
   })
 
+  it('renders and runs multiple notification actions', async () => {
+    const user = userEvent.setup()
+    const manage = vi.fn()
+    const disable = vi.fn()
+    renderToaster()
+
+    useToast().info('Extension added', {
+      actions: [
+        { label: 'Manage', onClick: manage },
+        { label: 'Disable', onClick: disable }
+      ]
+    })
+    await nextTick()
+    expect(
+      screen.getByRole('status', { name: 'Notification' })
+    ).toHaveTextContent('Extension added. Manage. Disable')
+    await user.click(screen.getByRole('button', { name: 'Manage' }))
+    expect(manage).toHaveBeenCalledOnce()
+    expect(disable).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Disable' }))
+    expect(manage).toHaveBeenCalledOnce()
+    expect(disable).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the legacy action beside multiple actions with repeated labels', async () => {
+    const user = userEvent.setup()
+    const first = vi.fn()
+    const second = vi.fn()
+    renderToaster()
+
+    useToast().info('Extension added', {
+      action: { label: 'Open', onClick: first },
+      actions: [{ label: 'Open', onClick: second }]
+    })
+    await nextTick()
+    const actions = screen.getAllByRole('button', { name: 'Open' })
+    await user.click(actions[0])
+    expect(first).toHaveBeenCalledOnce()
+    expect(second).not.toHaveBeenCalled()
+
+    await user.click(actions[1])
+    expect(first).toHaveBeenCalledOnce()
+    expect(second).toHaveBeenCalledOnce()
+  })
+
   it('uses translated labels for notification regions and close buttons', async () => {
     renderToaster({
       g: { close: 'Fermer' },

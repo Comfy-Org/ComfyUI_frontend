@@ -12,10 +12,6 @@
       "role": "domain"
     },
     {
-      "path": "src/utils/createAnnotatedPath.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/createAnnotatedPath.ts",
       "role": "domain"
     }

@@ -2,6 +2,7 @@ import type {
   GetEmbeddingsResponse,
   GetExtensionsResponse,
   GetI18nResponse,
+  ModelDownloadData,
   PostAssetsFromWorkflowResponse
 } from '@comfyorg/ingest-types'
 import {
@@ -36,7 +37,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
+import type { components as ManagerComponents } from '@/platform/customNodes/manager/types/generatedManagerTypes'
 import type {
   AgentStatusWsMessage,
   AssetDownloadWsMessage,
@@ -231,6 +232,7 @@ interface BackendApiCalls {
   feature_flags: FeatureFlagsWsMessage
   agent_status: AgentStatusWsMessage
   asset_download: AssetDownloadWsMessage
+  model_download: ModelDownloadData
   asset_export: AssetExportWsMessage
   'assets.seed.completed': AssetSeedCompletedWsMessage
 }

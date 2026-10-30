@@ -20,16 +20,8 @@
       "role": "presentation"
     },
     {
-      "path": "src/renderer/extensions/linearMode/flattenNodeOutput.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/renderer/extensions/linearMode/flattenNodeOutput.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/getExecutionStatusMessage.test.ts",
-      "role": "application"
     },
     {
       "path": "src/renderer/extensions/linearMode/getExecutionStatusMessage.ts",
@@ -38,10 +30,6 @@
     {
       "path": "src/renderer/extensions/linearMode/linearModeTypes.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/linearOutputStore.test.ts",
-      "role": "application"
     },
     {
       "path": "src/renderer/extensions/linearMode/linearOutputStore.ts",
@@ -56,15 +44,7 @@
       "role": "application"
     },
     {
-      "path": "src/renderer/extensions/linearMode/useOutputHistory.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/renderer/extensions/linearMode/useOutputHistory.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/appModeStore.test.ts",
       "role": "application"
     },
     {
@@ -74,10 +54,6 @@
     {
       "path": "src/utils/appMode.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/views/LinearView.test.ts",
-      "role": "presentation"
     },
     {
       "path": "src/views/LinearView.vue",
