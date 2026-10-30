@@ -9,6 +9,7 @@ import { microUsdToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import type {
   AgentMessages,
+  AgentResolvedAsk,
   RenderedAskKind,
   TurnId
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -366,6 +367,26 @@ export function toAskPart(ask: AskInput): AskPart | undefined {
   return isRenderedAskKind(ask.kind)
     ? ASK_PART_BUILDERS[ask.kind](ask)
     : undefined
+}
+
+/**
+ * The read-only card of an ask that already ended, or `undefined` for a kind
+ * that keeps no card once it ends: `retireAskParts` drops those live too.
+ */
+export function toResolvedAskPart(
+  ask: AgentResolvedAsk
+): AskUserPart | DeleteApprovalPart | undefined {
+  const part = toAskPart(ask)
+  if (part?.type !== 'askUser' && part?.type !== 'deleteApproval')
+    return undefined
+  return {
+    ...part,
+    resolution: toAskResolution({
+      status: ask.status,
+      selected: ask.selected ?? undefined,
+      other_text: ask.other_text ?? undefined
+    })
+  }
 }
 
 export function toAskOrNoticePart(ask: AskInput): AskPart | AskUnavailablePart {

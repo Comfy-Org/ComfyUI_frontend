@@ -602,6 +602,171 @@ describe('normalizeAgentTranscript', () => {
     )
   })
 
+  describe('resolved_asks', () => {
+    const askUser = {
+      message_id: 'row-1',
+      ask_id: 'ask-1',
+      kind: 'ask_user',
+      prompt: 'Replace your canvas?',
+      options: [
+        { id: 'replace', label: 'Replace' },
+        { id: 'keep', label: 'Keep' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+    const toolCall = (id: string) => ({
+      id,
+      tool_call_id: id,
+      tool_name: 'edit_graph',
+      status: 'success'
+    })
+    const finished = (
+      resolvedAsks: unknown,
+      status = 'complete'
+    ): AgentMessages =>
+      zAgentMessages.parse([
+        {
+          ...row(1, 'assistant', 'turn-a', 'Done', 'row-1'),
+          status,
+          content: {
+            text: 'Done',
+            tool_calls: [toolCall('call-1'), toolCall('call-2')]
+          },
+          resolved_asks: resolvedAsks
+        }
+      ])
+    const shape = (history: AgentMessages) =>
+      normalizeAgentTranscript(history).messages[0].parts.map((part) =>
+        part.type === 'tool' ? part.callId : part.type
+      )
+
+    it('restores an answered card read-only where it sat live', () => {
+      const history = finished([
+        {
+          ...askUser,
+          status: 'answered',
+          selected: ['keep'],
+          after_tool_calls: 1
+        }
+      ])
+
+      expect(shape(history)).toEqual(['call-1', 'askUser', 'call-2', 'text'])
+      expect(
+        normalizeAgentTranscript(history).messages[0].parts[1]
+      ).toMatchObject({
+        askId: 'ask-1',
+        resolution: { status: 'answered', selected: ['keep'] }
+      })
+    })
+
+    it.for(['cancelled', 'expired'])(
+      'restores a %s card as closed, after the last tool without a position',
+      (status) => {
+        const history = finished([{ ...askUser, status, selected: null }])
+
+        expect(shape(history)).toEqual(['call-1', 'call-2', 'askUser', 'text'])
+        expect(
+          normalizeAgentTranscript(history).messages[0].parts[2]
+        ).toMatchObject({ resolution: { status: 'closed' } })
+      }
+    )
+
+    it('keeps the free-text answer of a card that offered Other', () => {
+      const history = finished([
+        {
+          ...askUser,
+          allow_other: true,
+          status: 'answered',
+          selected: [],
+          other_text: 'a red fox'
+        }
+      ])
+
+      expect(
+        normalizeAgentTranscript(history).messages[0].parts[2]
+      ).toMatchObject({
+        resolution: { status: 'answered', selected: [], otherText: 'a red fox' }
+      })
+    })
+
+    it('restores a delete card with its outcome', () => {
+      const history = finished([
+        {
+          ...askUser,
+          kind: 'delete_approval',
+          options: [
+            { id: 'delete', label: 'Delete' },
+            { id: 'keep', label: 'Keep' }
+          ],
+          context: { action: 'delete_nodes', nodes: [{ id: '4' }] },
+          status: 'answered',
+          selected: ['keep'],
+          after_tool_calls: 2
+        }
+      ])
+
+      expect(shape(history)).toEqual([
+        'call-1',
+        'call-2',
+        'deleteApproval',
+        'text'
+      ])
+    })
+
+    it('leaves out a run card, which keeps no card once answered', () => {
+      const history = finished([
+        {
+          ...askUser,
+          kind: 'run_approval',
+          status: 'answered',
+          selected: ['cancel']
+        }
+      ])
+
+      expect(shape(history)).toEqual(['call-1', 'call-2', 'text'])
+    })
+
+    it('drops a bad entry and keeps the rest of the history', () => {
+      const history = finished([
+        { ask_id: 'broken' },
+        { ...askUser, status: 'answered', selected: ['keep'] }
+      ])
+
+      expect(shape(history)).toEqual(['call-1', 'call-2', 'askUser', 'text'])
+      expect(shape(finished('not a list'))).toEqual([
+        'call-1',
+        'call-2',
+        'text'
+      ])
+    })
+
+    it('shows a finished card beside the open one on a live row', () => {
+      const [live] = finished(
+        [{ ...askUser, status: 'answered', selected: ['keep'] }],
+        'streaming'
+      )
+      live.pending_ask = zAgentMessages.parse([
+        {
+          ...row(1, 'assistant', 'turn-a', '', 'row-1'),
+          pending_ask: { ...askUser, ask_id: 'ask-2' }
+        }
+      ])[0].pending_ask
+
+      const { parts } = normalizeAgentTranscript([live]).messages[0]
+
+      expect(
+        parts.flatMap((part) =>
+          part.type === 'askUser' ? [[part.askId, part.resolution?.status]] : []
+        )
+      ).toEqual([
+        ['ask-1', 'answered'],
+        ['ask-2', undefined]
+      ])
+    })
+  })
+
   it('omits tool parts entirely when a message carries no tool_calls', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
 
