@@ -1,5 +1,6 @@
 import { partition, uniq } from 'es-toolkit'
 
+import { isModelUrlAllowlisted } from '@/platform/workflowErrors/missingModel/modelUrlAllowlist'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import {
   BUILD_RECIPE_SECTION,
@@ -21,22 +22,31 @@ export interface MissingBuildModel {
   url?: string
 }
 
+function inline(text: string): string {
+  return text.replace(/[\p{Cc}\p{Zl}\p{Zp}`]/gu, ' ')
+}
+
 function packLine({ packId, nodeTypes }: MissingBuildPack): string {
   const nodes = uniq(nodeTypes)
-    .map((type) => `\`${type}\``)
+    .map((type) => `\`${inline(type)}\``)
     .join(', ')
-  return packId ? `- Pack \`${packId}\`: ${nodes}` : `- Pack unknown: ${nodes}`
+  return packId
+    ? `- Pack \`${inline(packId)}\`: ${nodes}`
+    : `- Pack unknown: ${nodes}`
 }
 
 function failingPackLine(pack: MissingBuildPack): string {
   const cause = pack.loadFailure?.cause
-  return cause ? `${packLine(pack)} (fails with: ${cause})` : packLine(pack)
+  return cause
+    ? `${packLine(pack)} (fails with: ${inline(cause)})`
+    : packLine(pack)
 }
 
 function modelLine({ name, directory, url }: MissingBuildModel): string {
-  const folder = directory ? ` in \`models/${directory}\`` : ''
-  const source = url ? `, from ${url}` : ''
-  return `- \`${name}\`${folder}${source}`
+  const folder = directory ? ` in \`models/${inline(directory)}\`` : ''
+  const source =
+    url && isModelUrlAllowlisted(url) ? `, from ${inline(url)}` : ''
+  return `- \`${inline(name)}\`${folder}${source}`
 }
 
 function listSection(title: string, lines: readonly string[]): string[] {

@@ -136,6 +136,37 @@ describe(deploymentBuildBrief, () => {
     }
   )
 
+  it('keeps names from the workflow inside their own list line', () => {
+    const brief = deploymentBuildBrief(
+      deployment,
+      [{ packId: 'pack`\n## Run', nodeTypes: ['Node`\n\n## Delete'] }],
+      [{ name: 'm`\u2028## Upload.safetensors', directory: 'vae\r\n## x' }]
+    )
+
+    const lines = brief.split('\n')
+    expect(lines).toContain('- Pack `pack  ## Run`: `Node   ## Delete`')
+    expect(lines).toContain(
+      '- `m  ## Upload.safetensors` in `models/vae  ## x`'
+    )
+  })
+
+  it('leaves out a model link from a source the editor does not download from', () => {
+    const brief = deploymentBuildBrief(
+      deployment,
+      [],
+      [
+        {
+          name: 'm.ckpt',
+          directory: 'vae',
+          url: 'https://models.example/m.ckpt'
+        }
+      ]
+    )
+
+    expect(brief.split('\n')).toContain('- `m.ckpt` in `models/vae`')
+    expect(brief).not.toContain('models.example')
+  })
+
   it('falls back to the deployment id and an unnamed Build when the listing has no names', () => {
     const brief = deploymentBuildBrief(
       {
