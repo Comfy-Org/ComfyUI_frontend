@@ -543,11 +543,14 @@ describe('useWorkflowService', () => {
     })
 
     describe('keepSavedBaseline', () => {
-      const saved = makeWorkflowData({ saved: true })
-      let workflow: LoadedComfyWorkflow
-
-      beforeEach(() => {
-        workflow = createModeTestWorkflow()
+      /**
+       * Opens a workflow holding an unsaved edit over a saved baseline, and
+       * loads graph data the way a real load does: reset the tracker to it and
+       * call the workflow clean.
+       */
+      function openEditedWorkflow() {
+        const saved = makeWorkflowData({ saved: true })
+        const workflow = createModeTestWorkflow()
         workflow.changeTracker = new ChangeTracker(workflow, saved)
         workflow.changeTracker.activeState = makeWorkflowData({
           saved: true,
@@ -561,9 +564,11 @@ describe('useWorkflowService', () => {
           workflow.isModified = false
           return true
         })
-      })
+        return { workflow, saved }
+      }
 
       it('keeps unsaved edits and history after a reload', async () => {
+        const { workflow, saved } = openEditedWorkflow()
         const undo = makeWorkflowData({ previousEdit: true })
         workflow.changeTracker.undoQueue = [undo]
         vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
@@ -583,6 +588,7 @@ describe('useWorkflowService', () => {
       })
 
       it('keeps the saved baseline when the reload throws after resetting the tracker', async () => {
+        const { workflow, saved } = openEditedWorkflow()
         vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
           workflow.changeTracker.reset(data)
           throw new Error('afterLoadNewGraph failed')
@@ -600,6 +606,7 @@ describe('useWorkflowService', () => {
       })
 
       it('keeps a save made while the reload waited behind another load', async () => {
+        const { workflow } = openEditedWorkflow()
         const other = createModeTestWorkflow({ path: 'workflows/other.json' })
         let releaseOther = () => {}
         vi.mocked(app.loadGraphData).mockImplementationOnce(
@@ -627,6 +634,7 @@ describe('useWorkflowService', () => {
       })
 
       it('keeps a clean workflow clean when the reloaded graph serializes differently', async () => {
+        const { workflow } = openEditedWorkflow()
         workflow.isModified = false
 
         await useWorkflowService().reloadCurrentWorkflow()
@@ -638,6 +646,7 @@ describe('useWorkflowService', () => {
       })
 
       it('keeps a save made while the reload was loading', async () => {
+        const { workflow } = openEditedWorkflow()
         vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
           workflow.changeTracker.reset(data)
           workflow.originalContent = workflow.content = JSON.stringify(data)
@@ -654,6 +663,7 @@ describe('useWorkflowService', () => {
       })
 
       it('keeps the saved baseline when a save during the reload fails to write', async () => {
+        const { workflow, saved } = openEditedWorkflow()
         vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
           workflow.changeTracker.reset(data)
           workflow.content = JSON.stringify(data)
@@ -668,6 +678,8 @@ describe('useWorkflowService', () => {
       })
 
       it('resets the baseline to the reloaded state without the option', async () => {
+        const { workflow } = openEditedWorkflow()
+
         await useWorkflowService().openWorkflow(workflow, { force: true })
 
         expect(workflow.changeTracker.initialState).toEqual(
