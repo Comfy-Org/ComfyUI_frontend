@@ -24,10 +24,21 @@ const API_ORIGIN = 'http://localhost:8188'
 const CONTENT_ROUTE = '/api/assets/1/content'
 const CONTENT_URL = `${API_ORIGIN}${CONTENT_ROUTE}`
 
+function hideUrlParse() {
+  const descriptor = Object.getOwnPropertyDescriptor(URL, 'parse')
+  Object.defineProperty(URL, 'parse', {
+    configurable: true,
+    value: undefined
+  })
+  onTestFinished(() => {
+    if (descriptor) Object.defineProperty(URL, 'parse', descriptor)
+    else Reflect.deleteProperty(URL, 'parse')
+  })
+}
+
 beforeEach(() => {
   distribution.isCloud = false
   api.api_base = API_ORIGIN
-  vi.mocked(fetch).mockReset()
   vi.mocked(fetch).mockImplementation(async () => new Response())
   vi.spyOn(api, 'fetchApi').mockImplementation(async () => new Response())
 })
@@ -72,15 +83,7 @@ describe('createFileDownload', () => {
   )
 
   it('routes an API URL where the static URL.parse is missing', async () => {
-    const descriptor = Object.getOwnPropertyDescriptor(URL, 'parse')
-    Object.defineProperty(URL, 'parse', {
-      configurable: true,
-      value: undefined
-    })
-    onTestFinished(() => {
-      if (descriptor) Object.defineProperty(URL, 'parse', descriptor)
-      else Reflect.deleteProperty(URL, 'parse')
-    })
+    hideUrlParse()
     distribution.isCloud = true
 
     const download = createFileDownload(CONTENT_URL, 'a.png')
