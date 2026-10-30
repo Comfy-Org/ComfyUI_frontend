@@ -138,6 +138,7 @@ const DOWNGRADE_PREVIEW = {
 }
 
 const STATUS = {
+  ended_at: null,
   billing_rail: 'stripe',
   has_funds: true,
   is_active: true,
@@ -148,6 +149,7 @@ const STATUS = {
 }
 
 const CAPABILITIES = {
+  auto_top_up_enabled: false,
   capabilities: {
     can_cancel: true,
     can_change_seats: false,

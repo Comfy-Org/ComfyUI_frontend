@@ -354,7 +354,10 @@ export function useMembersPanel() {
   }
 
   function showTeamPlans() {
-    subscriptionDialog.show({ planMode: 'team', reason: 'team_members_panel' })
+    void subscriptionDialog.show({
+      planMode: 'team',
+      reason: 'team_members_panel'
+    })
   }
 
   return {

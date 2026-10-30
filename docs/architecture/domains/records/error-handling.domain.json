@@ -8,16 +8,8 @@
       "role": "application"
     },
     {
-      "path": "src/composables/useErrorHandling.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useErrorHandling.ts",
       "role": "application"
-    },
-    {
-      "path": "src/utils/errorUtil.test.ts",
-      "role": "domain"
     },
     {
       "path": "src/utils/errorUtil.ts",
@@ -26,7 +18,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["keybindings"],
   "characterizationScenarios": [
     {
       "name": "Error normalization and recovery preserves its existing behavior",

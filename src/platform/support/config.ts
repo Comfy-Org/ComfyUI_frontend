@@ -31,6 +31,7 @@ export type FeedbackSource =
   | 'action-bar'
   | 'help-center'
   | 'agent-panel'
+  | 'agent-consent'
 
 export const FEEDBACK_TYPEFORM_ID = 'q7azbWPi'
 

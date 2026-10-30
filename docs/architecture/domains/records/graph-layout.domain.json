@@ -16,16 +16,8 @@
       "role": "integration"
     },
     {
-      "path": "src/renderer/core/layout/operations/layoutMutations.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/renderer/core/layout/operations/layoutMutations.ts",
       "role": "application"
-    },
-    {
-      "path": "src/renderer/core/layout/slots/syncSlotOffsets.test.ts",
-      "role": "integration"
     },
     {
       "path": "src/renderer/core/layout/slots/syncSlotOffsets.ts",
@@ -40,24 +32,12 @@
       "role": "application"
     },
     {
-      "path": "src/renderer/core/layout/transform/TransformPane.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/renderer/core/layout/transform/TransformPane.vue",
       "role": "presentation"
     },
     {
-      "path": "src/renderer/core/layout/transform/graphRenderTransform.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/renderer/core/layout/transform/graphRenderTransform.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/renderer/core/layout/utils/mappers.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/renderer/core/layout/utils/mappers.ts",
@@ -73,10 +53,6 @@
     },
     {
       "path": "src/types/spatialIndex.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/positionBounds.test.ts",
       "role": "domain"
     },
     {

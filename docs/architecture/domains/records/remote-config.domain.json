@@ -8,20 +8,12 @@
       "role": "application"
     },
     {
-      "path": "src/composables/useFeatureFlags.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useFeatureFlags.ts",
       "role": "application"
     },
     {
       "path": "src/platform/remoteConfig/**",
       "role": "application"
-    },
-    {
-      "path": "src/platform/remoteConfig/refreshRemoteConfig.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/platform/remoteConfig/refreshRemoteConfig.ts",
@@ -40,15 +32,7 @@
       "role": "application"
     },
     {
-      "path": "src/utils/devFeatureFlagOverride.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/utils/devFeatureFlagOverride.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/utils/sessionFeatureFlagOverride.test.ts",
       "role": "infrastructure"
     },
     {

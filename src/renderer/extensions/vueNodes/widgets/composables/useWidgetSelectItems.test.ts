@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
@@ -207,6 +207,66 @@ describe('useWidgetSelectItems', () => {
         dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
+
+    it.for([
+      {
+        value: 'x.png [output]',
+        query: { filename: 'x.png', type: 'output' }
+      },
+      {
+        value: 'sub/x.png [output]',
+        query: { filename: 'x.png', type: 'output', subfolder: 'sub' }
+      },
+      {
+        value: 'a/b/x.png [temp]',
+        query: { filename: 'x.png', type: 'temp', subfolder: 'a/b' }
+      },
+      {
+        value: 'clipspace/x.png',
+        query: { filename: 'x.png', type: 'input', subfolder: 'clipspace' }
+      },
+      {
+        value: 'sub\\x.png [output]',
+        query: { filename: 'x.png', type: 'output', subfolder: 'sub' }
+      },
+      {
+        value: '/x.png [output]',
+        query: { filename: '/x.png', type: 'output' }
+      },
+      {
+        value: '\\x.png [output]',
+        query: { filename: '\\x.png', type: 'output' }
+      },
+      {
+        value: 'sub/x.png/ [output]',
+        query: { filename: 'sub/x.png/', type: 'output' }
+      },
+      {
+        value: 'D:\\x.png [output]',
+        query: { filename: 'D:\\x.png', type: 'output' }
+      },
+      {
+        value: '1:/x.png [output]',
+        query: { filename: '1:/x.png', type: 'output' }
+      },
+      {
+        value: 'sub/../x.png [output]',
+        query: { filename: 'sub/../x.png', type: 'output' }
+      }
+    ])(
+      'previews the fallback for $value from its root, subfolder and filename',
+      ({ value, query }) => {
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref(value) })
+        )
+
+        const previewUrl = dropdownItems.value[0].preview_url
+        assert(previewUrl)
+        const [path, search] = previewUrl.split('?')
+        expect(path).toBe('/api/view')
+        expect(Object.fromEntries(new URLSearchParams(search))).toEqual(query)
+      }
+    )
 
     it('no fallback when modelValue is undefined', () => {
       const { dropdownItems } = useWidgetSelectItems(
