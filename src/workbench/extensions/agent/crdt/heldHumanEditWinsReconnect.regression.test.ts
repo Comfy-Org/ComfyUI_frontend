@@ -48,7 +48,7 @@ function agentSetCfg(value: number, counter: number): Op {
     actor: AGENT,
     base_version: counter,
     stamp: [counter, AGENT]
-  } as Op
+  }
 }
 
 function cfgOf(doc: ReturnType<typeof mint>): unknown {
