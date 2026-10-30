@@ -2664,6 +2664,50 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
     })
 
+    it('initializes again when the host session is announced while a start that then fails is loading', async () => {
+      let resolveList: (value: unknown) => void = () => {}
+      mockWorkspaceApi.list
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveList = resolve
+          })
+        )
+        .mockResolvedValue({
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+        })
+      const store = useTeamWorkspaceStore()
+      const starting = store.initialize().catch((e: unknown) => e)
+      await vi.waitFor(() => expect(mockWorkspaceApi.list).toHaveBeenCalled())
+
+      pushHostState(hostOn(mockTeamWorkspace.id))
+      resolveList({ workspaces: [mockPersonalWorkspace] })
+
+      expect(await starting).toBeInstanceOf(Error)
+      await vi.waitFor(() => expect(store.initState).toBe('ready'))
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
+    it('reports an automatic retry that fails again', async () => {
+      vi.mocked(reportError).mockImplementation(() => undefined)
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace]
+      })
+      const store = useTeamWorkspaceStore()
+      await expect(store.initialize()).rejects.toThrow()
+
+      pushHostState(hostOn(mockTeamWorkspace.id))
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(NoWorkspaceAccessError),
+          expect.objectContaining({
+            errorType: 'error_reinitializing_workspaces_for_desktop_host'
+          })
+        )
+      )
+      expect(store.initState).toBe('error')
+    })
+
     it('switches through Desktop without a reload or token exchange', async () => {
       const store = useTeamWorkspaceStore()
       await store.initialize()

@@ -233,6 +233,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   )
   const identityGeneration = ref(0)
   let initializationPromise: Promise<void> | null = null
+  let hostChangedWhileLoading = false
   let pendingWorkspaceSwitch: Promise<void> | null = null
 
   function isStaleIdentity(generation: number): boolean {
@@ -529,9 +530,11 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     void promise.then(
       () => {
         if (initializationPromise === promise) initializationPromise = null
+        hostChangedWhileLoading = false
       },
       () => {
         if (initializationPromise === promise) initializationPromise = null
+        retryIfHostChangedWhileLoading()
       }
     )
     return promise
@@ -1111,10 +1114,26 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     if (isListed()) mutableActiveWorkspaceId.value = hostWorkspaceId
   }
 
+  function retryInitializationForHost(): void {
+    initialize().catch((error: unknown) =>
+      reportError(error, {
+        errorType: 'error_reinitializing_workspaces_for_desktop_host',
+        surface: 'workspace'
+      })
+    )
+  }
+
   watch(desktopHostUser, (hostUser) => {
-    if (hostUser && initState.value === 'error')
-      void initialize().catch(() => undefined)
+    if (!hostUser) return
+    if (initState.value === 'loading') hostChangedWhileLoading = true
+    if (initState.value === 'error') retryInitializationForHost()
   })
+
+  function retryIfHostChangedWhileLoading(): void {
+    const retry = hostChangedWhileLoading && desktopHostUser.value !== null
+    hostChangedWhileLoading = false
+    if (retry) retryInitializationForHost()
+  }
 
   watch(
     () => desktopHostUser.value?.workspaceId,
