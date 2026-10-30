@@ -368,9 +368,22 @@ describe('ComfyApp', () => {
   })
 
   describe('loadGraphData', () => {
-    it.for([false, true])(
-      'matches individual node loading with invalid-value reset %s',
-      async (resetInvalidValues) => {
+    it.for([
+      {
+        name: 'keeps invalid combo values',
+        resetInvalidValues: false,
+        loadInput: (workflow: ComfyWorkflowJSON) => workflow,
+        scheduler: 'invalid'
+      },
+      {
+        name: 'resets invalid combo values',
+        resetInvalidValues: true,
+        loadInput: () => undefined,
+        scheduler: 'normal'
+      }
+    ])(
+      'matches individual node loading: $name',
+      async ({ resetInvalidValues, loadInput, scheduler }) => {
         const alwaysSnapToGrid = LiteGraph.alwaysSnapToGrid
         LiteGraph.alwaysSnapToGrid = true
         onTestFinished(() => {
@@ -443,12 +456,7 @@ describe('ComfyApp', () => {
         app.canvasElRef.value = document.createElement('canvas')
         Reflect.set(app, 'rootGraphInternal', new LGraph())
 
-        await app.loadGraphData(
-          resetInvalidValues ? undefined : fixture,
-          false,
-          true,
-          null
-        )
+        await app.loadGraphData(loadInput(fixture), false, true, null)
         const graph = new LGraph()
         const individuallyLoaded = withGraphConfiguring(() =>
           fixture.nodes.map((info) =>
@@ -464,7 +472,7 @@ describe('ComfyApp', () => {
         expect(
           individuallyLoaded.map((node) => node.serialize().widgets_values)
         ).toEqual([
-          ['heun', 'randomize', resetInvalidValues ? 'normal' : 'invalid'],
+          ['heun', 'randomize', scheduler],
           ['euler', 'fixed', 'normal'],
           ['unknown']
         ])
