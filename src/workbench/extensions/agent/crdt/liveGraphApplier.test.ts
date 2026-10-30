@@ -396,7 +396,7 @@ describe('LiveGraphApplier', () => {
         context: expect.objectContaining({
           availableWidgetNames: ['known', 'addedAfterCatalog'],
           overflowIndex: 1,
-          serializableWidgetCount: 2
+          serializableWidgetNames: ['known', 'addedAfterCatalog']
         })
       })
     )
@@ -464,7 +464,7 @@ describe('LiveGraphApplier', () => {
       context: { availableWidgetNames: ['known', 'addedAfterCatalog'] }
     })
     expect(options?.context).not.toHaveProperty('overflowIndex')
-    expect(options?.context).not.toHaveProperty('serializableWidgetCount')
+    expect(options?.context).not.toHaveProperty('serializableWidgetNames')
   })
 
   /**
@@ -834,7 +834,17 @@ describe('LiveGraphApplier', () => {
       expect.objectContaining({
         message: `Node 1 (TestOverflowWidgets) has no widget '_extra_2'`
       }),
-      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      expect.objectContaining({
+        errorType: 'agent_graph_widget_missing',
+        // `transient` is `serialize: false`, so index 2 is in range of the
+        // all-widget list and out of range of the sequence the alias
+        // addresses. Reporting only the former cannot tell those apart.
+        context: expect.objectContaining({
+          availableWidgetNames: ['known', 'transient', 'overflow'],
+          overflowIndex: 2,
+          serializableWidgetNames: ['known', 'overflow']
+        })
+      })
     )
   })
 
