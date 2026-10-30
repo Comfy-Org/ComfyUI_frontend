@@ -15,6 +15,7 @@
   </DefineDocsLink>
 
   <DeploymentDialogFrame
+    wide
     data-testid="deploy-setup-card"
     @dismiss="emit('dismiss')"
   >
@@ -91,32 +92,14 @@
             aria-hidden="true"
           />
         </Button>
-        <Button
-          variant="inverted"
-          size="lg"
-          :class="cn('w-full @xl:w-auto', !copied && 'gap-3')"
-          data-testid="deploy-setup-agent"
-          :loading="isCopying"
-          @click="copyHandoff"
-        >
-          <template v-if="copied">
-            <i class="icon-[lucide--check]" aria-hidden="true" />
-            {{ $t('deployToComfyApi.copied') }}
-          </template>
-          <template v-else>
-            <AgentMarks />
-            {{ $t('deployToComfyApi.deployWithAgent') }}
-          </template>
-        </Button>
+        <DeploySetupAgentMenu />
       </footer>
     </section>
   </DeploymentDialogFrame>
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { createReusableTemplate } from '@vueuse/core'
-import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -124,9 +107,8 @@ import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import DeploySetupAgentMenu from '@/platform/openOnCloud/components/DeploySetupAgentMenu.vue'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
-import AgentMarks from '@/platform/workflow/deploy/components/AgentMarks.vue'
-import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 
 const { videoSources = [], posterSrc = '' } = defineProps<{
   titleId?: string
@@ -143,10 +125,7 @@ defineOptions({ inheritAttrs: false })
 
 const { t } = useI18n()
 const { buildDocsUrl } = useExternalLink()
-const { copyBrief } = useAgentHandoff()
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
-const isCopying = ref(false)
-const copied = ref(false)
 
 const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
 const platformUrl = getComfyPlatformBaseUrl()
@@ -155,15 +134,4 @@ const points = [
   t('openOnCloud.deploySetupDialog.pointApi'),
   t('openOnCloud.deploySetupDialog.pointNodes')
 ]
-
-async function copyHandoff() {
-  if (isCopying.value) return
-  isCopying.value = true
-  copied.value = false
-  try {
-    copied.value = await copyBrief()
-  } finally {
-    isCopying.value = false
-  }
-}
 </script>
