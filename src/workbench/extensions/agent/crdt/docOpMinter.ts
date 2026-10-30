@@ -803,7 +803,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     graphId: string,
     event: IntentOf<'set_widget'>
   ): void {
-    const key = `owner:${nodeKey(graphId, event.nodeId)}`
+    const key = `owner:${nodeKey(graphId, event.nodeId)}:${event.name}`
     if (reportedRefusals.has(key)) return
     reportedRefusals.add(key)
     reportLostEdit('mint_divergence', [{ op: 'set_widget' }], {
