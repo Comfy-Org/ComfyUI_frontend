@@ -10,10 +10,12 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   addWidget,
   ComponentWidgetImpl,
-  DOMWidgetImpl,
+  DOMWidgetImpl
+} from '@/scripts/domWidget'
+import {
   registerDomWidgets,
   unregisterDomWidgets
-} from '@/scripts/domWidget'
+} from '@/scripts/rootGraphDomWidgets'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
 

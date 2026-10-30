@@ -16,6 +16,7 @@ import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
 import { useApp } from '@/scripts/appInstance'
 import { provideExtensionService } from '@/platform/extensions/services/extensionServiceAccess'
+import { captureLegacyGraphPatches } from '@/services/legacyGraphPatchCompat'
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
   return (
@@ -46,16 +47,18 @@ function rejectNestedGraphLoad() {
   )
 }
 
-function createGraphLoadHookApp(app: ComfyApp) {
-  let dispatching = true
-  const hookApp = new Proxy(app, {
-    get(target, property) {
-      if (dispatching && graphLoadEntrypoints.has(property))
-        return rejectNestedGraphLoad
-      const value: unknown = Reflect.get(target, property, target)
-      return typeof value === 'function' ? value.bind(target) : value
-    }
-  })
+function createGraphLoadHookApp(app: ComfyApp, method: string) {
+  let dispatching = graphLoadLifecycleHooks.has(method)
+  const hookApp = dispatching
+    ? new Proxy(app, {
+        get(target, property) {
+          if (dispatching && graphLoadEntrypoints.has(property))
+            return rejectNestedGraphLoad
+          const value: unknown = Reflect.get(target, property, target)
+          return typeof value === 'function' ? value.bind(target) : value
+        }
+      })
+    : app
   return {
     hookApp,
     endDispatch: () => {
@@ -270,26 +273,12 @@ export const useExtensionService = () => {
     return results
   }
 
-  /**
-   * Invoke an async extension callback
-   * Each callback will be invoked concurrently, in extension order. Only
-   * extensions that define the callback do any work, and only promises that
-   * callbacks actually return are awaited (callbacks that return
-   * synchronously are never wrapped in a promise). The resolved array holds
-   * the results of the callbacks that ran, so it is not index-aligned with
-   * the extensions.
-   * @param {string} method The extension callback to execute
-   * @param  {...unknown} args Any arguments to pass to the callback
-   * @returns
-   */
   const invokeExtensionsAsync = async <T extends KnownExtensionMethods>(
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
-    const graphLoadHook = graphLoadLifecycleHooks.has(method)
-      ? createGraphLoadHookApp(useApp())
-      : undefined
-    const app = graphLoadHook?.hookApp ?? useApp()
+    const graphLoadHook = createGraphLoadHookApp(useApp(), method)
+    const app = graphLoadHook.hookApp
     const logError = (ext: ComfyExtension, error: unknown) =>
       console.error(
         `Error calling extension '${ext.name}' method '${method}'`,
@@ -298,26 +287,22 @@ export const useExtensionService = () => {
         { args }
       )
 
-    // This runs once per node def per extension, so avoid allocating promises
-    // or closures for extensions that do not define the hook.
     const pending: unknown[] = []
     for (const ext of extensionStore.enabledExtensions) {
-      // The property read is inside the try so a throwing getter or Proxy trap
-      // only affects its own extension.
       try {
         const fn = ext[method]
         if (typeof fn !== 'function') continue
 
         if (method === 'setup') {
-          // Track the current extension for legacy compatibility
           pending.push(
             (async () => {
               legacyMenuCompat.setCurrentExtension(ext.name)
               try {
-                return await fn.call(
+                return await captureLegacyGraphPatches(
+                  useApp(),
                   ext,
-                  ...args,
-                  createSetupHookApp(app, ext.name)
+                  method,
+                  () => fn.call(ext, ...args, createSetupHookApp(app, ext.name))
                 )
               } finally {
                 legacyMenuCompat.setCurrentExtension(null)
@@ -327,7 +312,12 @@ export const useExtensionService = () => {
           continue
         }
 
-        const result: unknown = fn.call(ext, ...args, app)
+        const result: unknown =
+          method === 'init'
+            ? captureLegacyGraphPatches(useApp(), ext, method, () =>
+                fn.call(ext, ...args, app)
+              )
+            : fn.call(ext, ...args, app)
         pending.push(
           isPromiseLike(result)
             ? Promise.resolve(result).catch((error) => logError(ext, error))
@@ -340,7 +330,7 @@ export const useExtensionService = () => {
     try {
       return await Promise.all(pending)
     } finally {
-      graphLoadHook?.endDispatch()
+      graphLoadHook.endDispatch()
     }
   }
 
