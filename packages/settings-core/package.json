@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./*": {
+      "@comfyorg/settings-core": "./src/*.ts",
       "types": "./dist-types/*.d.ts",
       "default": "./src/*.ts"
     }

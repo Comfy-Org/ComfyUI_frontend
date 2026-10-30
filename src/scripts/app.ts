@@ -62,6 +62,10 @@ import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restor
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
+  getDefaultWorkflow,
+  initDefaultWorkflow
+} from '@/platform/workflow/core/services/defaultWorkflowService'
+import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
@@ -184,7 +188,6 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
 import { api } from './api'
-import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
 import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
 import { syncPromotedComboHostOptions } from '@/core/graph/widgets/syncPromotedComboHostOptions'
@@ -864,6 +867,8 @@ export class ComfyApp implements IComfyApp {
 
     this.canvasElRef.value = canvasEl
 
+    const defaultWorkflowReady = initDefaultWorkflow()
+
     await bootstrapTracer.settle('bootstrap/sync-workflows', () =>
       useWorkspaceStore().workflow.syncWorkflows()
     )
@@ -971,6 +976,8 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
       useExtensionService().invokeExtensionsAsync('setup')
     )
+
+    await defaultWorkflowReady
 
     this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,
@@ -1226,7 +1233,7 @@ export class ComfyApp implements IComfyApp {
         typeof graphData !== 'object' ||
         Array.isArray(graphData)
       ) {
-        graphData = defaultGraph
+        graphData = getDefaultWorkflow()
         reset_invalid_values = true
       }
 

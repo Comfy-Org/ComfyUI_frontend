@@ -6,6 +6,7 @@
   "exports": {
     "./clientFeatureFlags.json": "./src/clientFeatureFlags.json",
     "./*": {
+      "@comfyorg/api-client": "./src/*.ts",
       "types": "./dist-types/*.d.ts",
       "default": "./src/*.ts"
     }

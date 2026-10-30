@@ -26,6 +26,14 @@
     {
       "path": "src/platform/workflow/templates/utils/**",
       "role": "domain"
+    },
+    {
+      "path": "packages/shared-frontend-utils/src/templateRanking.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/shared-frontend-utils/src/templateSearch.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

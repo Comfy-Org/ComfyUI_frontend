@@ -1,7 +1,7 @@
 {
   "id": "authentication",
   "capability": "Authentication",
-  "description": "Account identity and credentials: Firebase identity, the auth, API-key, and local multi-user stores, sign-in actions and dialogs, social and SSO sign-in, shared web session cookie and request authorization, unified re-mint retry, desktop-host sessions, partner-node token exchange and run gate, and workspace-scoped token minting with its auth gate. Cloud session store, cloud identity boot, and the cloud API auth adapter stay in the cloud record. Workspace membership and billing remain separate capabilities; the account packages outside src are not in this catalog.",
+  "description": "Account identity and credentials: Firebase identity, the auth, API-key, and local multi-user stores, sign-in actions and dialogs, social and SSO sign-in, shared web session cookie and request authorization, unified re-mint retry, desktop-host sessions, partner-node token exchange and run gate, and workspace-scoped token minting with its auth gate. Cloud session store, cloud identity boot, and the cloud API auth adapter stay in the cloud record. The identity and session core of @comfyorg/account-core and the sign-in pieces of @comfyorg/account-ui belong here. Workspace membership and billing remain separate capabilities, including the billing halves of both account packages.",
   "modules": [
     {
       "path": "src/components/actionbar/PartnerNodesRunCaption.vue",
@@ -230,6 +230,22 @@
     {
       "path": "src/views/UserSelectView.vue",
       "role": "presentation"
+    },
+    {
+      "path": "packages/account-core/src/**",
+      "role": "application"
+    },
+    {
+      "path": "packages/account-core/src/signInSchemas.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/account-ui/src/auth/**",
+      "role": "presentation"
+    },
+    {
+      "path": "packages/account-ui/src/auth/turnstileGate.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],

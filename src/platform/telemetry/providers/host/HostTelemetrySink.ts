@@ -15,6 +15,7 @@ import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentCreditTransitionNoticeMetadata,
+  AgentCreditUsageExposureMetadata,
   AgentEntryButtonClickedMetadata,
   AgentFreeUseExposureMetadata,
   AgentFreeUseNoticeMetadata,
@@ -397,6 +398,12 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
     this.capture(TelemetryEvents.AGENT_FREE_USE_EXPOSURE, metadata)
+  }
+
+  trackAgentCreditUsageExposure(
+    metadata: AgentCreditUsageExposureMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_CREDIT_USAGE_EXPOSURE, metadata)
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {

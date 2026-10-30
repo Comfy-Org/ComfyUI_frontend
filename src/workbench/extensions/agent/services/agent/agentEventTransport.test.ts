@@ -310,6 +310,24 @@ describe('agentEventTransport reply draft replay', () => {
   })
 })
 
+describe('agentEventTransport credit usage', () => {
+  it('keeps the server-reported turn charge on the settled message', () => {
+    const message = drive([
+      {
+        type: 'agent_message_done',
+        data: {
+          message_id: 'm',
+          thread_id: 't',
+          usage: { charge_micro_usd: 6038 }
+        }
+      }
+    ])
+
+    expect(message.streaming).toBe(false)
+    expect(message.creditsUsed).toBeCloseTo(1.274)
+  })
+})
+
 describe('agentEventTransport thinking chip', () => {
   it('thinking before any text opens a retained activity part', () => {
     const message = drive([thinking('planning')])
