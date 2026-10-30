@@ -642,12 +642,13 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   async function switchWorkspace(workspaceId: string): Promise<boolean> {
-    if (workspaceId === activeWorkspaceId.value) return true
     if (!isCloud && isSwitching.value) {
       console.error('Workspace switch already in progress')
       return false
     }
+    if (workspaceId === activeWorkspaceId.value) return true
 
+    const generation = identityGeneration.value
     const workspaceSwitch = executeWorkspaceSwitch(workspaceId)
     pendingWorkspaceSwitch = workspaceSwitch
     try {
@@ -657,7 +658,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         pendingWorkspaceSwitch = null
       }
     }
-    return true
+    return !isStaleIdentity(generation)
   }
 
   function waitForWorkspaceSwitch(): Promise<void> {

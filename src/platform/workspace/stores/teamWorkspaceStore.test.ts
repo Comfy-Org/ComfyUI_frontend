@@ -909,9 +909,13 @@ describe('useTeamWorkspaceStore', () => {
 
       const firstSwitch = store.switchWorkspace(mockTeamWorkspace.id)
       const refused = await store.switchWorkspace(mockMemberWorkspace.id)
+      const refusedActive = await store.switchWorkspace(
+        mockPersonalWorkspace.id
+      )
       finishSwitch()
 
       expect(refused).toBe(false)
+      expect(refusedActive).toBe(false)
       expect(await firstSwitch).toBe(true)
       expect(console.error).toHaveBeenCalledWith(
         'Workspace switch already in progress'
@@ -975,6 +979,26 @@ describe('useTeamWorkspaceStore', () => {
 
       finishSwitch()
       await previousIdentitySwitch
+    })
+
+    it('reports a workspace switch cancelled by an identity change as failed', async () => {
+      mockDistributionTypes.isCloud = false
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      let finishSwitch: () => void = () => {}
+      vi.mocked(useWorkspaceAuthStore().switchWorkspace).mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finishSwitch = resolve
+          })
+      )
+
+      const cancelledSwitch = store.switchWorkspace(mockTeamWorkspace.id)
+      store.resetForIdentityChange()
+      finishSwitch()
+
+      expect(await cancelledSwitch).toBe(false)
     })
 
     it('propagates a failed local workspace switch to waiters', async () => {

@@ -31,6 +31,21 @@ describe('useWorkspaceSwitch', () => {
       expect(useTeamWorkspaceStore().switchWorkspace).not.toHaveBeenCalled()
     })
 
+    it('defers to the store for the active workspace while a switch is in progress', async () => {
+      Object.assign(useTeamWorkspaceStore(), { isSwitching: true })
+      vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockResolvedValue(
+        false
+      )
+      const { switchWorkspace } = useWorkspaceSwitch()
+
+      const result = await switchWorkspace('workspace-1')
+
+      expect(result).toBe(false)
+      expect(useTeamWorkspaceStore().switchWorkspace).toHaveBeenCalledWith(
+        'workspace-1'
+      )
+    })
+
     it('switches directly to the new workspace', async () => {
       vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockResolvedValue(true)
       const { switchWorkspace } = useWorkspaceSwitch()
