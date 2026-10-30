@@ -686,7 +686,7 @@ describe('useSubscription', () => {
       expect(mockGetBillingStatus).toHaveBeenCalledTimes(1)
     })
 
-    it('starts a new read for a fresh caller and keeps its answer over the shared read', async () => {
+    it('reads again after the shared read when a caller asks for a fresh answer', async () => {
       let resolveStartup!: (status: BillingStatusResponse) => void
       mockGetBillingStatus.mockReturnValueOnce(
         new Promise((resolve) => {
@@ -700,14 +700,36 @@ describe('useSubscription', () => {
         useSubscriptionWithScope()
 
       const startup = fetchStatusDirect()
-      await fetchStatusDirect({ fresh: true })
+      const fresh = fetchStatusDirect({ fresh: true })
+      resolveStartup(
+        buildStatus({ is_active: true, renewal_date: 'before-consent' })
+      )
+      await Promise.all([startup, fresh])
+
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(2)
+      expect(subscriptionStatus.value?.renewal_date).toBe('after-consent')
+    })
+
+    it('keeps the shared answer when the fresh read after it fails', async () => {
+      let resolveStartup!: (status: BillingStatusResponse) => void
+      mockGetBillingStatus.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveStartup = resolve
+        })
+      )
+      mockGetBillingStatus.mockRejectedValueOnce(new Error('status down'))
+      const { fetchStatusDirect, subscriptionStatus } =
+        useSubscriptionWithScope()
+
+      const startup = fetchStatusDirect()
+      const fresh = fetchStatusDirect({ fresh: true })
       resolveStartup(
         buildStatus({ is_active: true, renewal_date: 'before-consent' })
       )
       await startup
+      await expect(fresh).rejects.toThrow('status down')
 
-      expect(mockGetBillingStatus).toHaveBeenCalledTimes(2)
-      expect(subscriptionStatus.value?.renewal_date).toBe('after-consent')
+      expect(subscriptionStatus.value?.renewal_date).toBe('before-consent')
     })
 
     it('does not downgrade known-good status on a failed fetch', async () => {

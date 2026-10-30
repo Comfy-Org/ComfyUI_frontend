@@ -37,7 +37,7 @@ export function useAgentDockMount(): AgentDockMount {
     (count) => {
       if (!count || count <= agentPanelStore.billingRefreshedAcceptances) return
       agentPanelStore.billingRefreshedAcceptances = count
-      // A startup read still in flight predates consent, so never join it.
+      // A startup read still in flight predates consent, so its answer is stale.
       void fetchStatus({ fresh: true }).catch((error: unknown) => {
         reportError(error, {
           surface: 'agent',

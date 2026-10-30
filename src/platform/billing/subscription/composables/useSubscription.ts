@@ -903,10 +903,14 @@ function useSubscriptionInternal() {
     const pendingAttemptId =
       getPendingSubscriptionCheckoutAttempt()?.attempt_id ?? null
     observeStatusScope(ownerId, workspaceId)
-    const shared = options?.fresh
-      ? null
-      : sharedStatusRead(ownerId, workspaceId, pendingAttemptId)
-    if (shared) return shared
+    const shared = sharedStatusRead(ownerId, workspaceId, pendingAttemptId)
+    if (shared) {
+      if (!options?.fresh) return shared
+      // Replacing the read would drop its answer, so let it land first.
+      return shared
+        .catch(() => null)
+        .then(() => fetchSubscriptionStatus(options))
+    }
 
     const sequence = ++nextStatusFetchSequence
     const scopeGeneration = statusScopeGeneration

@@ -119,7 +119,7 @@ export type BillingPortalOutcome =
     }
 
 export interface BillingStatusReadOptions {
-  /** Start a new read instead of joining one already in flight. */
+  /** Read after any read already in flight, instead of joining it. */
   fresh?: boolean
 }
 
