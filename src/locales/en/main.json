@@ -5976,6 +5976,7 @@
     "entryFailedReason": "ComfyUI could not start the agent: {reason}",
     "entryStartingReason": "ComfyUI is starting the agent: {reason}",
     "feedbackCaption": "Share feedback",
+    "creditsUsed": "Agent used {credits} credit | Agent used {credits} credits",
     "freeUseNoticeLabel": "Free use notice",
     "freeUseNotice": "Try your first chat for free!",
     "creditTransitionNotice": "You've used your free agent credits. Further agent activity uses your workspace credits, which may include paid credits.",

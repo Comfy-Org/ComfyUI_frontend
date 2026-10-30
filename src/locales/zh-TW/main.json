@@ -83,6 +83,7 @@
     "copyMarkdown": "複製為 Markdown",
     "copyUnavailable": "此版本僅能複製目前的對話",
     "creditTransitionNotice": "您已用完免費的代理程式點數。後續的代理程式活動會使用您的工作區點數，其中可能包含付費點數。",
+    "creditsUsed": "代理程式使用了 {credits} 點積分 | 代理程式使用了 {credits} 點積分",
     "currentTab": "目前分頁",
     "delete": "刪除",
     "deleteApproval": {
