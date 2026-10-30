@@ -6750,11 +6750,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "使用 FLUX 超分辨率将视频放大 1.5 至 3 倍，可精确保留源视频，或创造性地增强其细节。",
-    "display_name": "Flux 视频放大",
+    "display_name": "Flux 视频放大（旧版）",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "自动将面积大于 3840x2160 像素的源视频缩小，以适应输入限制。保持宽高比不变；较小的视频不受影响。"
+        "tooltip": "自动缩小面积大于 2560x1440 像素的源视频，以适应输入限制。会保留宽高比；较小的视频不受影响。"
       },
       "control_after_generate": {
         "name": "生成后控制"
@@ -6782,6 +6782,48 @@
       "video": {
         "name": "视频",
         "tooltip": "时长为 1 至 20 秒、宽高比介于 1:4 和 4:1 之间的源视频片段。输出以 24 fps 渲染，每帧上限约为 1440 万像素。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "使用 FLUX 超分辨率将视频放大至 1080p、2K 或 4K，或放大 1.5 至 3 倍；既可精确保留源视频，也可创造性地增强其细节。",
+    "display_name": "Flux 视频放大",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "对过大的源视频进行缩小，而非拒绝处理：面积超过 2560x1440 像素，或超过目标分辨率的三分之二时（最小倍率为 1.5x）。会保留宽高比。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "“creative”会还原并创造精细细节，最适合生成的视频、纹理和风景。“precise”会在不改变源视频的情况下锐化，适用于人脸、产品和实拍视频。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "可选的视频片段描述，用于引导增强细节。留空则进行中性放大。"
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "审核容忍度，0 最严格。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于确定节点是否应重新运行的种子；FLUX 会自行选择种子，因此无论此值为何，实际结果均不具确定性。"
+      },
+      "target_resolution": {
+        "name": "target_resolution",
+        "tooltip": "2K、4K 和 1080p 会将输出适配至 2560x1440、3840x2160 或 1920x1080 以内（竖屏片段会旋转尺寸）。如果源视频即使按最大 3 倍放大也无法填满目标尺寸，则会按 3 倍放大，输出尺寸会更小。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "时长为 1 至 20 秒、宽高比介于 1:4 和 4:1 之间的源片段。输出以 24 fps 渲染，每帧上限约为 1440 万像素。"
       }
     },
     "outputs": {
@@ -9039,7 +9081,7 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "使用 Ideogram 4.5 精确编辑根据文本提示词编辑图像：仅更改提示词所要求的内容，未触及的像素保持完全相同，输出将保留图像 1 的尺寸（超过约 4 MP 的图像会先缩小）。最多接受 4 张参考图像。",
+    "description": "使用 Ideogram 4.5 精确编辑功能，根据文本提示词编辑图像：仅更改提示词要求的内容，未触及的像素保持完全一致，输出保留图像 1 的尺寸（大于约 4 MP 的图像会先缩小）。还可编辑由 mask 或边界框指定的单个区域，并以完整尺寸返回图像。最多接受 4 张参考图像（使用 context_window_mask 时为 3 张）。",
     "display_name": "Ideogram 4.5 精确编辑",
     "inputs": {
       "control_after_generate": {
@@ -9048,6 +9090,9 @@
       "model": {
         "name": "模型",
         "tooltip": "要使用的模型。"
+      },
+      "model_context_window": {
+        "name": "context_window"
       },
       "model_prompt": {
         "name": "提示词"
@@ -15062,6 +15107,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "description": "为 MiniMax H3 设置上下文窗口。窗口从模型的 17 帧块开始，以保持视频和音频同步。",
+    "display_name": "MiniMax H3 上下文窗口",
+    "inputs": {
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "上下文窗口的实际帧长度。必须为 17*n + 5。"
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "上下文窗口以实际帧计的重叠长度。必须为 17*n + 5。"
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "是否应用 FreeNoise 噪声重排，可改善窗口混合效果。"
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "用于融合上下文窗口的方法。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "采样期间要应用上下文窗口的模型。"
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "是否根据区域索引，将多个条件（由 ConditionCombine 创建）拆分至各个窗口。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "采样期间已应用上下文窗口的模型。"
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "description": "将 MiniMax H3 Fun ControlNet 作为模型补丁应用于文生视频模型。",
     "display_name": "应用 MiniMax H3 Fun ControlNet",
@@ -15137,6 +15217,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "使用潜空间放大模型调整 MiniMax H3 潜空间视频的尺寸；音频保持不变。",
+    "display_name": "使用模型放大 MiniMax H3 潜空间",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "model": {
+        "name": "model"
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

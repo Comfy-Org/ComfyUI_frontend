@@ -5175,6 +5175,7 @@
     "pricingBlurbSeeDetails": "voir les détails",
     "reactivatePlan": "Reprendre l’abonnement",
     "reactivateToUseCredits": "Réactivez votre abonnement pour utiliser ces crédits",
+    "refillsAfterPayment": "Se recharge lorsque le paiement est effectué",
     "refillsDate": "Recharge le {date}",
     "refillsNextCycle": "Recharge au prochain cycle",
     "refreshCredits": "Actualiser les crédits",
@@ -5793,7 +5794,10 @@
         "title": "Votre forfait Team se termine le {date}"
       },
       "lowCredits": {
-        "localBody": "Il vous reste {credits} crédits. Ajoutez des crédits pour continuer à exécuter les nœuds partenaires.",
+        "localBody": "Il vous reste {credits} crédit. Ajoutez des crédits pour continuer à exécuter les nœuds partenaires. | Il vous reste {credits} crédits. Ajoutez des crédits pour continuer à exécuter les nœuds partenaires.",
+        "memberBody": "Il reste {credits} crédit à cet espace de travail. Demandez au propriétaire de l’espace de travail d’ajouter des crédits avant de les épuiser. | Il reste {credits} crédits à cet espace de travail. Demandez au propriétaire de l’espace de travail d’ajouter des crédits avant de les épuiser.",
+        "ownerBody": "Il reste {credits} crédit à cet espace de travail. Ajoutez des crédits avant de les épuiser. | Il reste {credits} crédits à cet espace de travail. Ajoutez des crédits avant de les épuiser.",
+        "personalBody": "Il vous reste {credits} crédit. Ajoutez des crédits avant de les épuiser. | Il vous reste {credits} crédits. Ajoutez des crédits avant de les épuiser.",
         "title": "Crédits bientôt épuisés"
       },
       "outOfCredits": {
@@ -5829,7 +5833,7 @@
           "title": "Paiement reçu"
         },
         "verifyPayment": {
-          "action": "Vérifier votre paiement",
+          "action": "Terminer la vérification",
           "body": "Votre banque exige une vérification supplémentaire pour finaliser ce paiement.",
           "title": "Vérifier votre paiement"
         }
@@ -5864,8 +5868,10 @@
         "onHold": "Aucun moyen de paiement par défaut. Définissez-en un pour reprendre le rechargement automatique.",
         "paused": "Limite mensuelle atteinte. Reprend le {date}.",
         "pausedNoDate": "Limite mensuelle atteinte.",
+        "rule": "Recharge jusqu’à {target} crédits lorsque le solde est inférieur à {threshold} crédits.",
         "status": {
           "failed": "Échec",
+          "limitReached": "Limite atteinte",
           "off": "Désactivé",
           "on": "Activé",
           "onHold": "En attente",
@@ -5878,17 +5884,23 @@
       "credits": {
         "addCredits": "Ajouter des crédits",
         "available": "Disponible",
+        "availableUntil": "Disponible jusqu’au {date}",
         "inUse": "Utilisés actuellement",
         "overdrawn": "Vos exécutions ont utilisé {count} crédit de plus que vous n’en aviez. | Vos exécutions ont utilisé {count} crédits de plus que vous n’en aviez.",
         "plan": "Forfait",
         "planOfPool": "{remaining} sur {total}",
         "planTooltip": "Crédits inclus dans votre forfait. Ils sont renouvelés à chaque période de facturation.",
+        "planUsed": "{percent} % utilisés",
         "rateInfo": "À propos des crédits",
         "rateTooltip": "Les crédits servent à payer les exécutions. {credits} crédits = 1 $",
         "title": "Crédits",
         "topUp": "Recharger",
         "topUpTooltip": "Crédits que vous avez ajoutés. Ils sont utilisés une fois les crédits du forfait épuisés.",
         "unavailable": "Impossible de charger votre solde."
+      },
+      "footer": {
+        "messageSupport": "Contacter l’assistance",
+        "partnerNodesPricing": "Tarification des nœuds partenaires"
       },
       "handoff": {
         "member": {
@@ -5897,7 +5909,9 @@
         },
         "owner": {
           "action": "Ouvrir la facturation",
-          "label": "Modes de paiement, factures et utilisation"
+          "label": "Modes de paiement, factures et utilisation",
+          "line": "Gérez tout le reste de la facturation sur {platform}",
+          "platform": "platform.comfy.org"
         }
       },
       "loadError": "Nous n’avons pas pu charger votre forfait.",
@@ -5925,12 +5939,19 @@
           "line": "Abonnez-vous pour exécuter des workflows sur le Cloud.",
           "title": "Cet espace de travail n’a aucun forfait actif"
         },
+        "paused": "En pause. Le paiement de renouvellement n’a pas été effectué.",
         "resumeConfirm": {
           "body": "Votre forfait sera renouvelé le {date}. Vous pouvez l’annuler à nouveau à tout moment.",
           "title": "Reprendre votre forfait {plan} ?"
         },
+        "salesManaged": {
+          "line": "Facturé par contrat.",
+          "renews": "Facturé par contrat. Renouvellement le {date}.",
+          "title": "Entreprise"
+        },
         "scheduledChange": "Passage à {plan} le {date}.",
         "stayConfirm": {
+          "bodyNoAmount": "Vous resterez sur {current}. Vous pouvez à nouveau planifier un changement à tout moment.",
           "title": "Annuler votre changement vers {plan} ?"
         },
         "unknown": {

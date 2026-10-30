@@ -6750,11 +6750,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "Skaliert ein Video mit FLUX-Super-Resolution um das 1,5- bis 3-Fache hoch und bewahrt dabei entweder die Quelle präzise oder verbessert ihre Details kreativ.",
-    "display_name": "Flux Video Upscale",
+    "display_name": "flux-Video-Upscale (Legacy)",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "Skaliert Quellen, deren Fläche größer als 3840x2160 Pixel ist, automatisch herunter, um die Eingabebeschränkung einzuhalten. Das Seitenverhältnis bleibt erhalten; kleinere Videos bleiben unverändert."
+        "tooltip": "Skaliert Quellen, deren Fläche größer als 2560x1440 Pixel ist, automatisch herunter, damit sie das Eingabelimit einhalten. Das Seitenverhältnis bleibt erhalten; kleinere Videos bleiben unverändert."
       },
       "control_after_generate": {
         "name": "Steuerung nach Generierung"
@@ -6778,6 +6778,48 @@
       "upscale_factor": {
         "name": "upscale_factor",
         "tooltip": "Ausgabegröße relativ zur Quelle. Sehr große Quellen werden aufgrund der Begrenzung pro Frame um weniger als den angeforderten Faktor hochskaliert."
+      },
+      "video": {
+        "name": "Video",
+        "tooltip": "Quellclip mit 1 bis 20 Sekunden Länge und einem Seitenverhältnis zwischen 1:4 und 4:1. Die Ausgabe wird mit 24 fps gerendert und auf etwa 14,4 Megapixel pro Frame begrenzt."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "Skaliert ein Video mit FLUX-Super-Resolution auf 1080p, 2K oder 4K beziehungsweise um das 1,5- bis 3-Fache hoch, wobei die Quelle entweder präzise erhalten oder deren Details kreativ verbessert werden.",
+    "display_name": "flux-Video-Upscale",
+    "inputs": {
+      "auto_downscale": {
+        "name": "Automatisch herunterskalieren",
+        "tooltip": "Skaliert zu große Quellen herunter, statt sie abzulehnen: bei einer Fläche von mehr als 2560x1440 Pixeln oder bei mehr als zwei Dritteln der Zielauflösung (der Mindestfaktor beträgt 1,5x). Das Seitenverhältnis bleibt erhalten."
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "mode": {
+        "name": "Modus",
+        "tooltip": "'creative' stellt feine Details wieder her und erfindet sie neu, ideal für generiertes Material, Texturen und Landschaften. 'precise' schärft die Quelle, ohne sie zu verändern, für Gesichter, Produkte und reales Material."
+      },
+      "prompt": {
+        "name": "Prompt",
+        "tooltip": "Optionale Beschreibung des Clips, die die verbesserten Details steuert. Für ein neutrales Upscale leer lassen."
+      },
+      "safety_tolerance": {
+        "name": "Sicherheitstoleranz",
+        "tooltip": "Moderationstoleranz; 0 ist am strengsten."
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Seed zur Bestimmung, ob der Node erneut ausgeführt werden soll; FLUX wählt seinen eigenen Seed, daher sind die tatsächlichen Ergebnisse unabhängig von diesem Wert nicht deterministisch."
+      },
+      "target_resolution": {
+        "name": "Zielauflösung",
+        "tooltip": "2K, 4K und 1080p passen die Ausgabe innerhalb von 2560x1440, 3840x2160 beziehungsweise 1920x1080 ein (bei Hochformatclips gedreht). Ist eine Quelle zu klein, um dies beim maximalen 3-fachen Upscale auszufüllen, wird sie 3-fach hochskaliert und bleibt kleiner."
       },
       "video": {
         "name": "Video",
@@ -9039,7 +9081,7 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Bearbeitet mithilfe der präzisen Bearbeitung von Ideogram 4.5 ein Bild anhand eines Text-Prompts: Nur das vom Prompt angeforderte Element wird geändert, unveränderte Pixel bleiben identisch und die Ausgabe behält die Größe von Bild 1 bei (Bilder über ~4 MP werden zuerst herunterskaliert). Akzeptiert bis zu 4 Referenzbilder.",
+    "description": "Bearbeitet ein Bild anhand eines Text-Prompts mit präziser Bearbeitung von Ideogram 4.5: Es ändert sich nur, was der Prompt anfordert, unveränderte Pixel bleiben identisch, und die Ausgabe behält die Größe von Bild 1 bei (Bilder über ~4 MP werden zuerst herunterskaliert). Es kann auch eine einzelne Region bearbeiten, die durch eine mask oder Bounding Boxes festgelegt wird, und das Bild in voller Größe zurückgeben. Akzeptiert bis zu 4 Referenzbilder (3 mit context_window_mask).",
     "display_name": "Ideogram 4.5 Präzises Bearbeiten",
     "inputs": {
       "control_after_generate": {
@@ -9048,6 +9090,9 @@
       "model": {
         "name": "Modell",
         "tooltip": "Zu verwendendes Modell."
+      },
+      "model_context_window": {
+        "name": "Kontextfenster"
       },
       "model_prompt": {
         "name": "Prompt"
@@ -15062,6 +15107,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "description": "Legt Kontextfenster für MiniMax H3 fest. Die Fenster beginnen an den 17-Frame-Blöcken des Modells, damit Video und Audio synchron bleiben.",
+    "display_name": "MiniMax H3-Kontextfenster",
+    "inputs": {
+      "context_length": {
+        "name": "Kontextlänge",
+        "tooltip": "Die Länge des Kontextfensters in tatsächlichen Frames. Muss 17*n + 5 sein."
+      },
+      "context_overlap": {
+        "name": "Kontextüberlappung",
+        "tooltip": "Die Überlappung des Kontextfensters in tatsächlichen Frames. Muss 17*n + 5 sein."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "Ob FreeNoise-Rauschmischung angewendet werden soll; verbessert das Überblenden der Fenster."
+      },
+      "fuse_method": {
+        "name": "Fusionsmethode",
+        "tooltip": "Die Methode zum Zusammenführen der Kontextfenster."
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Das Modell, auf das während des Sampling Kontextfenster angewendet werden."
+      },
+      "split_conds_to_windows": {
+        "name": "Konditionierungen auf Fenster aufteilen",
+        "tooltip": "Ob mehrere Konditionierungen (erstellt von ConditionCombine) anhand des Regionsindex auf jedes Fenster aufgeteilt werden sollen."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Das Modell, auf das während des Sampling Kontextfenster angewendet werden."
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "description": "Wendet ein MiniMax H3 Fun ControlNet als Modell-Patch auf ein Text-zu-Video-Modell an.",
     "display_name": "MiniMax H3 Fun ControlNet anwenden",
@@ -15137,6 +15217,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "Ändert die Größe des Videos eines MiniMax H3-latent mit einem Latent-Upscale-Modell; Audio wird unverändert durchgeleitet.",
+    "display_name": "MiniMax H3-Latent-Upscale mit Modell",
+    "inputs": {
+      "height": {
+        "name": "Höhe"
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "samples": {
+        "name": "Samples"
+      },
+      "width": {
+        "name": "Breite"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

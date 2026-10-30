@@ -6750,11 +6750,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "FLUX 슈퍼 해상도로 비디오를 1.5~3배 업스케일하며, 원본을 정밀하게 유지하거나 디테일을 창의적으로 향상합니다.",
-    "display_name": "Flux 비디오 업스케일",
+    "display_name": "Flux 비디오 업스케일(레거시)",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "입력 제한에 맞도록 면적이 3840x2160픽셀보다 큰 소스를 자동으로 축소합니다. 종횡비는 유지되며, 더 작은 비디오는 변경되지 않습니다."
+        "tooltip": "입력 제한에 맞도록 면적이 2560x1440픽셀보다 큰 소스를 자동으로 다운스케일합니다. 종횡비는 유지되며, 더 작은 비디오는 변경되지 않습니다."
       },
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -6782,6 +6782,48 @@
       "video": {
         "name": "video",
         "tooltip": "종횡비가 1:4~4:1인 1~20초 길이의 원본 clip입니다. 출력은 24fps로 렌더링되며 프레임당 약 1,440만 화소로 제한됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "FLUX 초해상도를 사용하여 비디오를 1080p, 2K 또는 4K, 혹은 1.5~3배로 업스케일합니다. 소스를 정확하게 유지하거나 세부 묘사를 창의적으로 향상할 수 있습니다.",
+    "display_name": "Flux 비디오 업스케일",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "너무 큰 소스를 거부하는 대신 다운스케일합니다. 면적이 2560x1440픽셀을 초과하거나 대상 해상도의 3분의 2를 초과하는 경우에 적용됩니다(최소 배율은 1.5x). 종횡비는 유지됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "mode": {
+        "name": "모드",
+        "tooltip": "'creative'는 미세한 디테일을 복원하고 만들어 내며, 생성된 영상, 텍스처 및 풍경에 가장 적합합니다. 'precise'는 소스를 변경하지 않고 선명하게 하며, 얼굴, 제품 및 실제 영상에 적합합니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "향상된 디테일을 유도하는 클립의 선택적 설명입니다. 중립적인 업스케일을 위해 비워 두세요."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "모더레이션 허용 수준입니다. 0이 가장 엄격합니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. FLUX는 자체 시드를 선택하므로 이 값과 관계없이 실제 결과는 비결정적입니다."
+      },
+      "target_resolution": {
+        "name": "target_resolution",
+        "tooltip": "2K, 4K 및 1080p는 출력이 2560x1440, 3840x2160 또는 1920x1080 안에 맞도록 합니다(세로 클립의 경우 가로세로가 바뀝니다). 최대 3배로도 이를 채우기에는 너무 작은 소스는 3배로 업스케일되며 더 작은 크기로 출력됩니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "종횡비가 1:4에서 4:1 사이인 1~20초 길이의 소스 클립입니다. 출력은 24fps로 렌더링되며 프레임당 약 14.4메가픽셀로 제한됩니다."
       }
     },
     "outputs": {
@@ -9039,7 +9081,7 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Ideogram 4.5 정밀 편집을 사용하여 텍스트 프롬프트의 안내에 따라 이미지를 편집합니다. 프롬프트에서 요청한 부분만 변경되고, 수정하지 않은 픽셀은 동일하게 유지되며 출력은 이미지 1의 크기를 유지합니다(약 4MP를 초과하는 이미지는 먼저 축소됨). 최대 4개의 참조 이미지를 허용합니다.",
+    "description": "Ideogram 4.5 정밀 편집을 사용하여 텍스트 프롬프트에 따라 이미지를 편집합니다. 프롬프트가 요청한 부분만 변경되고, 변경되지 않은 픽셀은 동일하게 유지되며, 출력은 이미지 1의 크기를 유지합니다(약 4MP를 초과하는 이미지는 먼저 축소됩니다). mask 또는 바운딩 박스로 지정한 단일 영역도 편집할 수 있으며, 이미지를 전체 크기로 반환할 수 있습니다. 최대 4개의 참조 이미지(context_window_mask 사용 시 3개)를 허용합니다.",
     "display_name": "Ideogram 4.5 정밀 편집",
     "inputs": {
       "control_after_generate": {
@@ -9048,6 +9090,9 @@
       "model": {
         "name": "모델",
         "tooltip": "사용할 모델입니다."
+      },
+      "model_context_window": {
+        "name": "context_window"
       },
       "model_prompt": {
         "name": "프롬프트"
@@ -15062,6 +15107,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "description": "MiniMax H3의 컨텍스트 창을 설정합니다. 비디오와 오디오를 동기화된 상태로 유지하기 위해 창은 모델의 17프레임 청크에서 시작합니다.",
+    "display_name": "MiniMax H3 컨텍스트 창",
+    "inputs": {
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "실제 프레임 단위의 컨텍스트 창 길이입니다. 17*n + 5여야 합니다."
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "실제 프레임 단위의 컨텍스트 창 겹침 길이입니다. 17*n + 5여야 합니다."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "FreeNoise 노이즈 셔플링 적용 여부입니다. 창 블렌딩이 개선됩니다."
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "컨텍스트 창을 융합하는 데 사용할 방법입니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "샘플링 중 컨텍스트 창을 적용할 모델입니다."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "ConditionCombine에서 생성한 여러 conditioning을 영역 인덱스에 따라 각 창으로 분할할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "샘플링 중 컨텍스트 창이 적용된 모델입니다."
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "description": "MiniMax H3 Fun ControlNet을 모델 패치로 텍스트-투-비디오 모델에 적용합니다.",
     "display_name": "MiniMax H3 Fun ControlNet 적용",
@@ -15137,6 +15217,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "잠재 공간 업스케일 모델로 MiniMax H3 잠재 공간 비디오의 크기를 조절하며, 오디오는 변경 없이 통과합니다.",
+    "display_name": "MiniMax H3 모델을 사용한 잠재 공간 업스케일",
+    "inputs": {
+      "height": {
+        "name": "높이"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "samples": {
+        "name": "샘플"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

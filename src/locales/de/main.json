@@ -5175,6 +5175,7 @@
     "pricingBlurbSeeDetails": "Details ansehen",
     "reactivatePlan": "Abonnement fortsetzen",
     "reactivateToUseCredits": "Reaktivieren Sie Ihren Tarif, um diese Credits zu nutzen",
+    "refillsAfterPayment": "Wird aufgefüllt, sobald die Zahlung durchgeht",
     "refillsDate": "Auffüllung {date}",
     "refillsNextCycle": "Auffüllung im nächsten Abrechnungszeitraum",
     "refreshCredits": "Credits aktualisieren",
@@ -5793,7 +5794,10 @@
         "title": "Ihr Team-Plan endet am {date}"
       },
       "lowCredits": {
-        "localBody": "Sie haben noch {credits} Credits. Fügen Sie Credits hinzu, um Partner Nodes weiterhin auszuführen.",
+        "localBody": "Sie haben noch {credits} Credit. Fügen Sie Credits hinzu, um Partner-Nodes weiterhin auszuführen. | Sie haben noch {credits} Credits. Fügen Sie Credits hinzu, um Partner-Nodes weiterhin auszuführen.",
+        "memberBody": "Dieser Workspace hat noch {credits} Credit. Bitten Sie den Workspace-Inhaber, Credits hinzuzufügen, bevor sie aufgebraucht sind. | Dieser Workspace hat noch {credits} Credits. Bitten Sie den Workspace-Inhaber, Credits hinzuzufügen, bevor sie aufgebraucht sind.",
+        "ownerBody": "Dieser Workspace hat noch {credits} Credit. Fügen Sie Credits hinzu, bevor sie aufgebraucht sind. | Dieser Workspace hat noch {credits} Credits. Fügen Sie Credits hinzu, bevor sie aufgebraucht sind.",
+        "personalBody": "Sie haben noch {credits} Credit. Fügen Sie Credits hinzu, bevor sie aufgebraucht sind. | Sie haben noch {credits} Credits. Fügen Sie Credits hinzu, bevor sie aufgebraucht sind.",
         "title": "Wenig Credits verfügbar"
       },
       "outOfCredits": {
@@ -5829,7 +5833,7 @@
           "title": "Zahlung erhalten"
         },
         "verifyPayment": {
-          "action": "Zahlung bestätigen",
+          "action": "Verifizierung abschließen",
           "body": "Ihre Bank erfordert eine zusätzliche Bestätigung, um diese Zahlung abzuschließen.",
           "title": "Zahlung bestätigen"
         }
@@ -5864,8 +5868,10 @@
         "onHold": "Keine Standardzahlungsmethode. Legen Sie eine fest, um die automatische Aufladung fortzusetzen.",
         "paused": "Monatliches Limit erreicht. Wird am {date} fortgesetzt.",
         "pausedNoDate": "Monatliches Limit erreicht.",
+        "rule": "Füllt auf {target} Credits auf, wenn weniger als {threshold} Credits vorhanden sind.",
         "status": {
           "failed": "Fehlgeschlagen",
+          "limitReached": "Limit erreicht",
           "off": "Aus",
           "on": "Ein",
           "onHold": "Ausgesetzt",
@@ -5878,17 +5884,23 @@
       "credits": {
         "addCredits": "Guthaben hinzufügen",
         "available": "Verfügbar",
+        "availableUntil": "Verfügbar bis {date}",
         "inUse": "Derzeit verwendet",
         "overdrawn": "Ihre Ausführungen haben {count} Guthaben mehr verbraucht, als Sie hatten. | Ihre Ausführungen haben {count} Guthaben mehr verbraucht, als Sie hatten.",
         "plan": "Plan",
         "planOfPool": "{remaining} von {total}",
         "planTooltip": "In Ihrem Plan enthaltenes Guthaben. Es wird in jedem Abrechnungszeitraum aufgefüllt.",
+        "planUsed": "{percent}% verwendet",
         "rateInfo": "Über Guthaben",
         "rateTooltip": "Guthaben bezahlt Ausführungen. {credits} Guthaben = 1 $.",
         "title": "Guthaben",
         "topUp": "Aufladen",
         "topUpTooltip": "Von Ihnen hinzugefügtes Guthaben. Es wird verwendet, sobald das Planguthaben aufgebraucht ist.",
         "unavailable": "Ihr Guthaben konnte nicht geladen werden."
+      },
+      "footer": {
+        "messageSupport": "Support kontaktieren",
+        "partnerNodesPricing": "Preisgestaltung für Partner-Nodes"
       },
       "handoff": {
         "member": {
@@ -5897,7 +5909,9 @@
         },
         "owner": {
           "action": "Abrechnung öffnen",
-          "label": "Zahlungsmethoden, Rechnungen und Nutzung"
+          "label": "Zahlungsmethoden, Rechnungen und Nutzung",
+          "line": "Verwalten Sie alles Weitere zur Abrechnung auf {platform}",
+          "platform": "platform.comfy.org"
         }
       },
       "loadError": "Ihr Plan konnte nicht geladen werden.",
@@ -5925,12 +5939,19 @@
           "line": "Abonnieren Sie, um Workflows in Cloud auszuführen.",
           "title": "Dieser Workspace hat keinen aktiven Plan"
         },
+        "paused": "Pausiert. Die Verlängerungszahlung ist nicht durchgegangen.",
         "resumeConfirm": {
           "body": "Ihr Plan wird am {date} verlängert. Sie können ihn jederzeit erneut kündigen.",
           "title": "Ihren {plan}-Plan fortsetzen?"
         },
+        "salesManaged": {
+          "line": "Abrechnung gemäß Vertrag.",
+          "renews": "Wird gemäß Vertrag abgerechnet. Verlängert sich am {date}.",
+          "title": "Enterprise"
+        },
         "scheduledChange": "Wechselt am {date} zu {plan}.",
         "stayConfirm": {
+          "bodyNoAmount": "Sie bleiben bei {current}. Sie können jederzeit erneut eine Änderung planen.",
           "title": "Änderung zu {plan} abbrechen?"
         },
         "unknown": {

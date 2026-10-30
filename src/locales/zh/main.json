@@ -5175,6 +5175,7 @@
     "pricingBlurbSeeDetails": "查看详情",
     "reactivatePlan": "恢复订阅",
     "reactivateToUseCredits": "请重新激活您的套餐以使用这些积分",
+    "refillsAfterPayment": "付款成功后补充额度",
     "refillsDate": "补充 {date}",
     "refillsNextCycle": "下个周期补充",
     "refreshCredits": "刷新额度",
@@ -5793,7 +5794,10 @@
         "title": "您的团队套餐将于 {date} 结束"
       },
       "lowCredits": {
-        "localBody": "你还剩 {credits} 积分。添加积分以继续运行合作伙伴节点。",
+        "localBody": "您剩余 {credits} 个额度。添加额度以继续运行合作伙伴节点。|您剩余 {credits} 个额度。添加额度以继续运行合作伙伴节点。",
+        "memberBody": "此工作区剩余 {credits} 个额度。请在用完前请工作区所有者添加额度。|此工作区剩余 {credits} 个额度。请在用完前请工作区所有者添加额度。",
+        "ownerBody": "此工作区剩余 {credits} 个额度。请在用完前添加额度。|此工作区剩余 {credits} 个额度。请在用完前添加额度。",
+        "personalBody": "您剩余 {credits} 个额度。请在用完前添加额度。|您剩余 {credits} 个额度。请在用完前添加额度。",
         "title": "积分不足"
       },
       "outOfCredits": {
@@ -5829,7 +5833,7 @@
           "title": "已收到付款"
         },
         "verifyPayment": {
-          "action": "验证你的付款",
+          "action": "完成验证",
           "body": "你的银行要求进行额外验证才能完成此付款。",
           "title": "验证你的付款"
         }
@@ -5864,8 +5868,10 @@
         "onHold": "没有默认付款方式。请设置一个以恢复自动充值。",
         "paused": "已达到每月限额。将于 {date} 恢复。",
         "pausedNoDate": "已达到每月限额。",
+        "rule": "当额度低于 {threshold} 时，补充至 {target} 额度。",
         "status": {
           "failed": "失败",
+          "limitReached": "已达到限额",
           "off": "关闭",
           "on": "开启",
           "onHold": "已暂停",
@@ -5878,17 +5884,23 @@
       "credits": {
         "addCredits": "添加积分",
         "available": "可用",
+        "availableUntil": "有效期至 {date}",
         "inUse": "当前使用中",
         "overdrawn": "你的运行次数比现有积分多用了 {count} 个。|你的运行次数比现有积分多用了 {count} 个。",
         "plan": "套餐",
         "planOfPool": "{total} 中的 {remaining}",
         "planTooltip": "套餐包含的积分。每个计费周期都会补充。",
+        "planUsed": "已使用 {percent}%",
         "rateInfo": "关于积分",
         "rateTooltip": "积分用于支付运行费用。{credits} 积分 = 1 美元。",
         "title": "积分",
         "topUp": "充值",
         "topUpTooltip": "你添加的积分。套餐积分用完后将使用这些积分。",
         "unavailable": "无法加载你的余额。"
+      },
+      "footer": {
+        "messageSupport": "联系支持团队",
+        "partnerNodesPricing": "合作伙伴节点定价"
       },
       "handoff": {
         "member": {
@@ -5897,7 +5909,9 @@
         },
         "owner": {
           "action": "打开账单",
-          "label": "付款方式、发票和使用情况"
+          "label": "付款方式、发票和使用情况",
+          "line": "在 {platform} 管理其他所有账单相关事项",
+          "platform": "platform.comfy.org"
         }
       },
       "loadError": "无法加载你的套餐。",
@@ -5925,12 +5939,19 @@
           "line": "订阅以在云端运行工作流。",
           "title": "此工作区没有有效套餐"
         },
+        "paused": "已暂停。续费付款未成功。",
         "resumeConfirm": {
           "body": "你的套餐将于 {date} 续订。你可以随时再次取消。",
           "title": "恢复你的 {plan} 套餐？"
         },
+        "salesManaged": {
+          "line": "按合同计费。",
+          "renews": "按合同计费。于 {date} 续费。",
+          "title": "企业版"
+        },
         "scheduledChange": "将于 {date} 更改为 {plan}。",
         "stayConfirm": {
+          "bodyNoAmount": "您将继续使用 {current}。您可以随时再次安排变更。",
           "title": "取消更改为 {plan}？"
         },
         "unknown": {
