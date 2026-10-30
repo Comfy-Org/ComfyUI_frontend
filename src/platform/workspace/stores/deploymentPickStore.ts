@@ -381,6 +381,10 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     return pickAndReload(id, deploymentId)
   }
 
+  /**
+   * Waits a bounded time for the first listing to avoid reloading an already selected target, reporting a pending-listing timeout; the server decides after listing failure or when the feature is invisible.
+   * `null` explicitly selects the standard environment even when this browser follows a workspace deployment default.
+   */
   async function pickFromLink(
     deploymentId: string | null
   ): Promise<LinkPickOutcome> {

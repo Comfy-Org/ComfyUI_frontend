@@ -99,7 +99,10 @@ function setSwitchTarget(workspaceId: string | null): boolean {
   }
 }
 
-/** Resolves workspace and browser environment links before reloading. */
+/**
+ * Resolves workspace and browser environment links: cross-workspace switches retain the link for the reload; target-workspace picks strip it first.
+ * `environment=standard` clears this browser's selection; API-key sessions strip environment targets, while signed-out intent is preserved by the query tracker until authentication.
+ */
 export function useDeploymentUrlLoader() {
   const route = useRoute()
   const router = useRouter()
@@ -154,6 +157,7 @@ export function useDeploymentUrlLoader() {
     workspaceId: string,
     switchedTo: string | null
   ): Promise<boolean> {
+    // A switch this link already made did not land: never reload again.
     if (switchedTo !== workspaceId && setSwitchTarget(workspaceId)) {
       if (await switchWorkspace(workspaceId)) return true
       setSwitchTarget(null)
