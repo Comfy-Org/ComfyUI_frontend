@@ -1329,17 +1329,19 @@ describe('BillingTab', () => {
         surface: 'Cloud',
         isCloud: true,
         choosePlan: 'inverted',
-        addCredits: 'secondary'
+        addCredits: 'secondary',
+        planEndedBanners: 1
       },
       {
         surface: 'local ComfyUI',
         isCloud: false,
         choosePlan: 'secondary',
-        addCredits: 'inverted'
+        addCredits: 'inverted',
+        planEndedBanners: 0
       }
     ])(
       'keeps one white button on $surface when an ended plan is out of credits',
-      async ({ isCloud, choosePlan, addCredits }) => {
+      async ({ isCloud, choosePlan, addCredits, planEndedBanners }) => {
         distribution.isCloud = isCloud
         onTestFinished(() => {
           distribution.isCloud = false
@@ -1355,6 +1357,15 @@ describe('BillingTab', () => {
           screen.getByRole('link', { name: 'Choose a plan' })
         ).toHaveAttribute('data-variant', choosePlan)
         expect(addCreditsVariants()).toEqual([addCredits])
+        expect(screen.queryAllByText(/^Your .*plan has ended$/)).toHaveLength(
+          planEndedBanners
+        )
+        expect(
+          [
+            ...screen.queryAllByRole('button'),
+            ...screen.queryAllByRole('link')
+          ].filter((el) => el.dataset.variant === 'inverted')
+        ).toHaveLength(1)
       }
     )
 
