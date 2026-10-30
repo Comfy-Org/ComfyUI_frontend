@@ -2535,7 +2535,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const recoverFromFailedFrame = (cause: unknown) => {
       failedFrames++
       reportFrameFailure(cause)
-      this.resetDrawingContexts()
+      const { dpr, overlayCanvas } = this
+      for (const canvas of new Set([
+        this.canvas,
+        this.bgcanvas,
+        overlayCanvas
+      ])) {
+        if (!canvas) continue
+        const { width } = canvas
+        canvas.width = width
+        const scale = canvas === overlayCanvas ? 1 : dpr
+        canvas.getContext('2d')?.setTransform(scale, 0, 0, scale, 0, 0)
+      }
       this.setDirty(true, true)
       if (failedFrames < MAX_FAILED_FRAMES) return
       this.is_rendering = false
@@ -2576,15 +2587,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } catch (cause) {
       this.is_rendering = false
       reportFrameFailure(cause)
-    }
-  }
-
-  private resetDrawingContexts(): void {
-    const { dpr } = this
-    for (const canvas of new Set([this.canvas, this.bgcanvas])) {
-      const { width } = canvas
-      canvas.width = width
-      canvas.getContext('2d')?.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
   }
 

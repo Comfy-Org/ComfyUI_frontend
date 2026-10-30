@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -20,7 +20,10 @@ function captureFrames() {
     if (!frame) throw new Error('No frame was scheduled')
     frame(0)
   }
-  return { requestAnimationFrame, runNextFrame, frames }
+  const runFrames = (count: number) => {
+    for (let i = 0; i < count; i++) runNextFrame()
+  }
+  return { requestAnimationFrame, runNextFrame, runFrames, frames }
 }
 
 function createCanvas() {
@@ -51,43 +54,75 @@ describe('LGraphCanvas.startRendering', () => {
     )
   })
 
-  it('recovers when a later frame draws successfully', () => {
-    const { runNextFrame, frames } = captureFrames()
+  it('restarts the failure budget after a frame draws successfully', () => {
+    const { runFrames, frames } = captureFrames()
+    let calls = 0
     const draw = vi
       .spyOn(LGraphCanvas.prototype, 'draw')
-      .mockImplementation(() => {})
-      .mockImplementationOnce(() => {
-        throw new TypeError('transient')
-      })
-      .mockImplementationOnce(() => {
-        throw new TypeError('transient')
+      .mockImplementation(() => {
+        calls++
+        if (calls !== 60) throw new TypeError('transient')
       })
 
     const canvas = createCanvas()
-    runNextFrame()
-    runNextFrame()
+    runFrames(118)
 
-    expect(draw).toHaveBeenCalledTimes(3)
+    expect(draw).toHaveBeenCalledTimes(119)
     expect(canvas.is_rendering).toBe(true)
     expect(frames).toHaveLength(1)
     expect(reportError).toHaveBeenCalledOnce()
   })
 
-  it('stops, reports once more, and can restart when every frame throws', () => {
-    const { runNextFrame, frames } = captureFrames()
+  it('reports each distinct drawing failure once', () => {
+    const { runFrames } = captureFrames()
+    const first = new TypeError('first')
+    const second = new RangeError('second')
+    vi.spyOn(LGraphCanvas.prototype, 'draw')
+      .mockImplementation(() => {})
+      .mockImplementationOnce(() => {
+        throw first
+      })
+      .mockImplementationOnce(() => {
+        throw first
+      })
+      .mockImplementationOnce(() => {
+        throw second
+      })
+
+    createCanvas()
+    runFrames(2)
+
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.map(([cause, options]) => [cause, options.errorType])
+    ).toEqual([
+      [first, 'error_rendering_canvas_initial_frame'],
+      [second, 'error_rendering_canvas_frame']
+    ])
+  })
+
+  it('stops after 60 consecutive failed frames, reports once more, and can restart', () => {
+    const { runFrames, frames } = captureFrames()
     vi.spyOn(LGraphCanvas.prototype, 'draw').mockImplementation(() => {
       throw new TypeError('drawImage is patched')
     })
 
     const canvas = createCanvas()
-    while (frames.length > 0) runNextFrame()
+    runFrames(58)
+
+    expect(canvas.is_rendering).toBe(true)
+    expect(frames).toHaveLength(1)
+
+    runFrames(1)
 
     expect(canvas.is_rendering).toBe(false)
+    expect(frames).toHaveLength(0)
     expect(
-      vi.mocked(reportError).mock.calls.map(([, o]) => o.errorType)
+      vi.mocked(reportError).mock.calls.map(([, o]) => [o.errorType, o.context])
     ).toEqual([
-      'error_rendering_canvas_initial_frame',
-      'error_rendering_canvas_stopped'
+      ['error_rendering_canvas_initial_frame', undefined],
+      ['error_rendering_canvas_stopped', { failedFrames: 60 }]
     ])
 
     vi.mocked(LGraphCanvas.prototype.draw).mockImplementation(() => {})
@@ -116,9 +151,11 @@ describe('LGraphCanvas.startRendering', () => {
     )
   })
 
-  it('resets the drawing context and redraws everything after a failed frame', () => {
+  it('resets every drawing context and redraws everything after a failed frame', () => {
     captureFrames()
     const ctx = createMockCanvasRenderingContext2D()
+    const bgctx = createMockCanvasRenderingContext2D()
+    const overlayCtx = createMockCanvasRenderingContext2D()
     vi.spyOn(LGraphCanvas.prototype, 'draw')
       .mockImplementation(() => {})
       .mockImplementationOnce(function (this: LGraphCanvas) {
@@ -128,16 +165,25 @@ describe('LGraphCanvas.startRendering', () => {
       })
 
     vi.stubGlobal('devicePixelRatio', 2)
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-    })
     const canvas = new LGraphCanvas(
       createTestCanvasElement({ ctx }),
       new LGraph(),
-      { skip_events: true }
+      { skip_events: true, skip_render: true }
     )
+    canvas.bgcanvas = createTestCanvasElement({ ctx: bgctx })
+    canvas.overlayCanvas = createTestCanvasElement({ ctx: overlayCtx })
+    const resetFront = vi.spyOn(canvas.canvas, 'width', 'set')
+    const resetBackground = vi.spyOn(canvas.bgcanvas, 'width', 'set')
+    const resetOverlay = vi.spyOn(canvas.overlayCanvas, 'width', 'set')
 
+    canvas.startRendering()
+
+    expect(resetFront).toHaveBeenCalledOnce()
+    expect(resetBackground).toHaveBeenCalledOnce()
+    expect(resetOverlay).toHaveBeenCalledOnce()
     expect(ctx.setTransform).toHaveBeenLastCalledWith(2, 0, 0, 2, 0, 0)
+    expect(bgctx.setTransform).toHaveBeenLastCalledWith(2, 0, 0, 2, 0, 0)
+    expect(overlayCtx.setTransform).toHaveBeenLastCalledWith(1, 0, 0, 1, 0, 0)
     expect([canvas.dirty_canvas, canvas.dirty_bgcanvas]).toEqual([true, true])
   })
 

@@ -14,32 +14,23 @@ type Viewport = Pick<
   'scale' | 'offset' | 'min_scale' | 'max_scale'
 >
 
-const { canvasEl, container, canvasAvailability, viewportState } = vi.hoisted(
-  () => {
-    const container = document.createElement('div')
-    const canvasEl = document.createElement('canvas')
-    container.append(canvasEl)
-    const viewportState: { ds?: Viewport } = {}
-    return {
-      container,
-      canvasEl,
-      canvasAvailability: { missing: false },
-      viewportState
-    }
-  }
-)
-
-const processMouseDown = vi.fn()
-const processMouseMove = vi.fn()
-
-vi.mock(import('@/scripts/app'), () => {
+const { canvasEl, container, canvasAvailability, ds } = vi.hoisted(() => {
+  const container = document.createElement('div')
+  const canvasEl = document.createElement('canvas')
+  container.append(canvasEl)
   const ds: Viewport = {
     scale: 1,
     offset: [0, 0],
     min_scale: 0.1,
     max_scale: 10
   }
-  viewportState.ds = ds
+  return { container, canvasEl, canvasAvailability: { missing: false }, ds }
+})
+
+const processMouseDown = vi.fn()
+const processMouseMove = vi.fn()
+
+vi.mock(import('@/scripts/app'), () => {
   const canvas = fromPartial<LGraphCanvas>({
     ds,
     pointer: { isDown: false },
@@ -185,74 +176,67 @@ describe('Comfy.SimpleTouchSupport', () => {
     expect(listenerErrors).not.toHaveBeenCalled()
     expect(processMouseDown).toHaveBeenCalledOnce()
   })
-})
 
-describe('Comfy.SimpleTouchSupport pinch zoom', () => {
-  beforeEach(() => {
-    document.body.append(container)
-    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
-    document.dispatchEvent(new Event('visibilitychange'))
-    hidden.mockRestore()
-  })
+  describe('pinch zoom', () => {
+    function resetViewport() {
+      ds.scale = 1
+      ds.offset[0] = 0
+      ds.offset[1] = 0
+    }
 
-  function viewport() {
-    const { ds } = viewportState
-    if (!ds) throw new Error('Expected the mocked viewport')
-    ds.scale = 1
-    ds.offset[0] = 0
-    ds.offset[1] = 0
-    return ds
-  }
+    it.for([
+      { name: 'start on the same point', start: 0, move: 100 },
+      { name: 'start and stay on the same point', start: 0, move: 0 },
+      { name: 'end on the same point', start: 100, move: 0 }
+    ])(
+      'leaves the viewport unchanged when two fingers $name',
+      ({ start, move }) => {
+        resetViewport()
 
-  it.for([
-    { name: 'start on the same point', start: 0, move: 100 },
-    { name: 'start and stay on the same point', start: 0, move: 0 },
-    { name: 'end on the same point', start: 100, move: 0 }
-  ])(
-    'leaves the viewport unchanged when two fingers $name',
-    ({ start, move }) => {
-      const ds = viewport()
+        dispatchTouch('touchstart', [
+          touchAt(canvasEl),
+          touchAt(canvasEl, start)
+        ])
+        dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, move)])
 
-      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl, start)])
-      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, move)])
+        expect({ scale: ds.scale, offset: [...ds.offset] }).toEqual({
+          scale: 1,
+          offset: [0, 0]
+        })
+      }
+    )
+
+    it('waits for a usable distance before measuring a pinch', () => {
+      resetViewport()
+
+      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 2)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 50)])
+
+      expect(ds.scale).toBe(1)
+    })
+
+    it('zooms once fingers that started on the same point move apart', () => {
+      resetViewport()
+
+      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 50)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 100)])
+
+      expect(ds.scale).toBe(2)
+    })
+
+    it('uses the minimum scale when converting pinch movement to an offset', () => {
+      resetViewport()
+      ds.scale = ds.min_scale
+
+      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl, 100)])
+      dispatchTouch('touchmove', [touchAt(canvasEl, 20), touchAt(canvasEl, 70)])
 
       expect({ scale: ds.scale, offset: [...ds.offset] }).toEqual({
-        scale: 1,
-        offset: [0, 0]
+        scale: 0.1,
+        offset: [-50, 0]
       })
-    }
-  )
-
-  it('waits for a usable distance before measuring a pinch', () => {
-    const ds = viewport()
-
-    dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl)])
-    dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 2)])
-    dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 50)])
-
-    expect(ds.scale).toBe(1)
-  })
-
-  it('zooms once fingers that started on the same point move apart', () => {
-    const ds = viewport()
-
-    dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl)])
-    dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 50)])
-    dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 100)])
-
-    expect(ds.scale).toBe(2)
-  })
-
-  it('uses the minimum scale when converting pinch movement to an offset', () => {
-    const ds = viewport()
-    ds.scale = ds.min_scale
-
-    dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl, 100)])
-    dispatchTouch('touchmove', [touchAt(canvasEl, 20), touchAt(canvasEl, 70)])
-
-    expect({ scale: ds.scale, offset: [...ds.offset] }).toEqual({
-      scale: 0.1,
-      offset: [-50, 0]
     })
   })
 })
