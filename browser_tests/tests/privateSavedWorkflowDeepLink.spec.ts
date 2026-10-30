@@ -97,6 +97,7 @@ async function mockPrivateWorkflow(page: Page, status = 200) {
           build_name: 'Test build',
           release_version: 1,
           status: 'ready',
+          can_start: false,
           created_at: '2026-10-24T00:00:00Z'
         }
       ]

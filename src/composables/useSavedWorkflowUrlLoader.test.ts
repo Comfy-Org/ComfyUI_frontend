@@ -119,6 +119,7 @@ async function loadLateDeployment() {
         build_name: 'Late deployment',
         release_version: 1,
         status: 'ready',
+        can_start: false,
         created_at: '2026-10-24T00:00:00Z'
       }
     ]

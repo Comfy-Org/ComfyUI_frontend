@@ -39,7 +39,7 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { ComfyApp, app as singletonApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import type { useExtensionService } from '@/services/extensionService'
+import type { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useAuthStore } from '@/stores/authStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
@@ -61,7 +61,7 @@ const mockExtensionService = vi.hoisted(() => ({
     vi.fn<ReturnType<typeof useExtensionService>['invokeExtensionsAsync']>()
 }))
 
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
   useExtensionService: () =>
     fromPartial<ReturnType<typeof useExtensionService>>(mockExtensionService)
 }))
