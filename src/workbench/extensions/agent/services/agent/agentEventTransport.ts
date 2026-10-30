@@ -10,6 +10,7 @@ import type {
 } from './agentMessageParts'
 import {
   askIdOf,
+  creditsFromChargeMicroUsd,
   retireAskParts,
   snapshotMessage,
   toAskOrNoticePart,
@@ -36,6 +37,10 @@ export type AgentChatEvent = Extract<
       | 'agent_ask'
       | 'agent_ask_resolved'
   }
+>
+type AgentNonTerminalEvent = Exclude<
+  AgentChatEvent,
+  { type: 'agent_message_done' }
 >
 
 type AgentToolCallEvent = Extract<AgentChatEvent, { type: 'agent_tool_call' }>
@@ -428,7 +433,7 @@ export function createAgentEventTransport(
     return part
   }
 
-  function applyChatEvent(event: AgentChatEvent): boolean {
+  function applyChatEvent(event: AgentNonTerminalEvent): boolean {
     switch (event.type) {
       case 'agent_thinking':
         handleThinkingEvent(event.data)
@@ -453,9 +458,6 @@ export function createAgentEventTransport(
       case 'agent_message_draft':
         handleMessageDraftEvent(event.data)
         return true
-      case 'agent_message_done':
-        settle()
-        return false
     }
   }
 
@@ -463,6 +465,13 @@ export function createAgentEventTransport(
     if (settled) {
       if (event.type === 'agent_ask')
         reportUndeliverableAsk(event.data, 'settled-turn')
+      return
+    }
+    if (event.type === 'agent_message_done') {
+      message.creditsUsed = creditsFromChargeMicroUsd(
+        event.data.usage?.charge_micro_usd
+      )
+      settle()
       return
     }
     if (applyChatEvent(event)) emit(snapshotMessage(message))

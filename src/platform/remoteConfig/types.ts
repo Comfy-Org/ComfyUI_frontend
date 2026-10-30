@@ -114,6 +114,8 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   partner_run_gate_enabled?: boolean
   /** Local prompts carry a renewable partner-node token instead of the workspace token. */
   partner_node_token?: boolean
+  /** Offers Start on a stopped deployment in the Run bar's deployment menu. */
+  deployment_start_enabled?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
   supports_model_type_tags?: boolean
@@ -125,6 +127,8 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   deployment_compatibility_marks_enabled?: boolean
   /** The editor opens after 2 s of custom node scripts and turns the late ones on when they arrive. */
   late_custom_nodes_enabled?: boolean
+  /** Model dropdowns on a picked deployment also list the workspace's own library models. */
+  runtime_library_models_enabled?: boolean
   // Raw, unvalidated wire value ('stripe' | 'billing_web' by contract). Always
   // funnel it through normalizeHostedBillingDestination before trusting it.
   hosted_billing_destination?: string

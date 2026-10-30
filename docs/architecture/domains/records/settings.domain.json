@@ -8,10 +8,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/common/FormColorPicker.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/common/FormColorPicker.vue",
       "role": "presentation"
     },
@@ -20,19 +16,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/common/FormItem.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/common/FormItem.vue",
       "role": "presentation"
     },
     {
       "path": "src/components/common/FormNumberField.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/common/FormRadioGroup.test.ts",
       "role": "presentation"
     },
     {
@@ -60,20 +48,8 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/settings/composables/useLitegraphSettings.reactiveEdge.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/settings/composables/useLitegraphSettings.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/platform/settings/composables/useLitegraphSettings.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/platform/settings/composables/useSettingUI.test.ts",
-      "role": "presentation"
     },
     {
       "path": "src/platform/settings/composables/useSettingUI.ts",
@@ -84,14 +60,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/settings/composables/useSettingsUrlLoader.integration.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/settings/composables/useSettingsUrlLoader.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/platform/settings/composables/useSettingsUrlLoader.ts",
       "role": "integration"
     },
@@ -100,16 +68,8 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/settings/constants/canvasNavigation.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/settings/constants/canvasNavigation.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/platform/settings/globalSettingsApi.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/platform/settings/globalSettingsApi.ts",
@@ -120,16 +80,8 @@
       "role": "domain"
     },
     {
-      "path": "src/scripts/ui/settings.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/scripts/ui/settings.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/stores/serverConfigStore.test.ts",
-      "role": "application"
     },
     {
       "path": "src/stores/serverConfigStore.ts",
@@ -176,7 +128,7 @@
         "src/platform/settings/composables/useSettingsUrlLoader.integration.test.ts",
         "src/platform/settings/components/SettingDialog.test.ts",
         "src/platform/settings/components/SettingItem.test.ts",
-        "src/platform/settings/components/ExtensionPanel.test.ts",
+        "src/platform/extensions/components/ExtensionPanel.test.ts",
         "src/components/dialog/content/setting/SettingItem.test.ts"
       ]
     },

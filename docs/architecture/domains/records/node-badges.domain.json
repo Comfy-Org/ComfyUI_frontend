@@ -8,16 +8,8 @@
       "role": "integration"
     },
     {
-      "path": "src/composables/node/useNodeBadge.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/composables/node/useNodeBadge.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useNodePricing.test.ts",
-      "role": "application"
     },
     {
       "path": "src/composables/node/useNodePricing.ts",
