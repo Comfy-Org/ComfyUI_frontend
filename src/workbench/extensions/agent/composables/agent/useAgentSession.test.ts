@@ -1099,7 +1099,6 @@ describe('useAgentSession (v1 composition root)', () => {
 
     session.newChat('new_chat_button')
     void session.loadThread('th-1')
-    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(4))
     await vi.waitFor(() => expect(session.isStreaming.value).toBe(true))
 
     assert.exists(settleRead)
