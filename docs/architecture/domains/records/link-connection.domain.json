@@ -68,10 +68,17 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/lib/litegraph/src/canvas/LinkConnector.ts"],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["vue-node-renderer"],
   "characterizationScenarios": [
+    {
+      "name": "LinkConnector drag-started and reset events retain and release Vue viewport link-drag source pins",
+      "checks": [
+        "src/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins.test.ts",
+        "browser_tests/tests/vueNodes/viewportKeepAlive.spec.ts"
+      ]
+    },
     {
       "name": "Dragging and dropping links connects compatible slots and rejects invalid targets",
       "checks": [

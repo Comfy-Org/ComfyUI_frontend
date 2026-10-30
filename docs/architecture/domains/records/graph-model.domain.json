@@ -190,8 +190,15 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": ["comfyui-api", "error-reporting", "node-definition"],
-  "allowedConsumers": ["bounding-boxes"],
+  "allowedConsumers": ["bounding-boxes", "vue-node-renderer"],
   "characterizationScenarios": [
+    {
+      "name": "Viewport keep-alive pins normalize DOM and link-drag source node ids to the graph-model identity type",
+      "checks": [
+        "src/types/nodeId.test.ts",
+        "src/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins.test.ts"
+      ]
+    },
     {
       "name": "Graph configure and serialise round-trips preserve nodes, links, groups, and reroutes",
       "checks": [

@@ -137,6 +137,7 @@ export type Settings = {
   'Comfy.Canvas.LeftMouseClickBehavior': string
   'Comfy.Canvas.MouseWheelScroll': string
   'Comfy.VueNodes.Enabled': boolean
+  'Comfy.VueNodes.ViewportKeepAlive': boolean
   'Comfy.AppBuilder.VueNodeSwitchDismissed': boolean
   'Comfy.PartnerNodesEducation.Dismissed': boolean
   'Comfy.ModelLibrary.UseAssetBrowser': boolean
