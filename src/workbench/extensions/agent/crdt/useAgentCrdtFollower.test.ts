@@ -2479,6 +2479,7 @@ describe('useAgentCrdtFollower', () => {
     it('arms a lineage replacement on a doc_reset and rebinds the replacement document', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
       const replacementDoc = {
+        share: new Map(),
         getMap: () => ({ toJSON: () => ({}), get: () => undefined })
       }
 
