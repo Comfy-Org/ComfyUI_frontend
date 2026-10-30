@@ -1,7 +1,7 @@
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 /** What Comfy Cloud lacks to run a workflow. */
-export interface CloudWorkflowGaps {
+interface CloudWorkflowGaps {
   nodePacks: string[]
   models: string[]
 }
