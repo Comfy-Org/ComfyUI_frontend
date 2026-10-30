@@ -44,6 +44,7 @@ import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composab
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { fetchSavedWorkflow } from '@/services/savedWorkflowService'
 import {
+  SavedFileIdentityError,
   currentUserFileScope,
   sameUserFileScope,
   registerUserFileScopeProvider
@@ -531,7 +532,20 @@ export function useWorkflowPersistenceV2() {
       ? workflowStore.getWorkflowByPath(activePath)
       : null
     if (workflow) {
-      await useWorkflowService().openWorkflow(workflow)
+      try {
+        await useWorkflowService().openWorkflow(workflow, {
+          isCurrent: isRestoreCurrent
+        })
+      } catch (error) {
+        if (!(error instanceof SavedFileIdentityError)) throw error
+        toast.error(
+          t(
+            error.reason === 'draft'
+              ? 'workflowService.privateLinkFileMismatch'
+              : 'workflowService.privateLinkUnavailable'
+          )
+        )
+      }
     }
   }
 

@@ -435,7 +435,9 @@ describe('useWorkflowPersistenceV2', () => {
       gate.resolve()
       await pending
 
-      expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
+      expect(openWorkflowMock).toHaveBeenCalledWith(workflowB, {
+        isCurrent: expect.any(Function)
+      })
       expect(workflowStore.tabsRestored).toBe(true)
     })
 
@@ -514,7 +516,9 @@ describe('useWorkflowPersistenceV2', () => {
       const { restoreWorkflowTabsState } = mountWorkflowPersistence()
       await restoreWorkflowTabsState()
 
-      expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
+      expect(openWorkflowMock).toHaveBeenCalledWith(workflowB, {
+        isCurrent: expect.any(Function)
+      })
     })
 
     it('activates first tab when storedActiveIndex is 0', async () => {
@@ -539,7 +543,9 @@ describe('useWorkflowPersistenceV2', () => {
       const { restoreWorkflowTabsState } = mountWorkflowPersistence()
       await restoreWorkflowTabsState()
 
-      expect(openWorkflowMock).toHaveBeenCalledWith(workflowA)
+      expect(openWorkflowMock).toHaveBeenCalledWith(workflowA, {
+        isCurrent: expect.any(Function)
+      })
     })
 
     it('does not call openWorkflow when no restorable state', async () => {

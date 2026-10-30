@@ -329,6 +329,9 @@ describe('useWorkflowStore', () => {
       assert(workflow)
       await store.openWorkflow(workflow)
       registerUserFileScopeProvider(() => ({ ...scope, ownerId: 'other-user' }))
+      expect(() => store.saveAs(workflow, 'workflows/clone.json')).toThrow(
+        'another authenticated scope'
+      )
       await expect(workflow.load()).rejects.toThrow()
       await expect(workflow.save()).rejects.toThrow()
       await expect(workflow.saveAs('workflows/copy.json')).rejects.toThrow(

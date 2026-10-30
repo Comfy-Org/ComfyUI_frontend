@@ -9,6 +9,17 @@ export interface UserFileIdentity extends UserFileScope {
   id: string
 }
 
+export class SavedFileIdentityError extends DOMException {
+  constructor(public readonly reason: 'scope' | 'draft') {
+    super(
+      reason === 'scope'
+        ? 'Saved file belongs to another authenticated scope'
+        : 'Saved workflow draft identity does not match this document',
+      reason === 'scope' ? 'SecurityError' : 'InvalidStateError'
+    )
+  }
+}
+
 let scopeProvider: () => UserFileScope | null = () => null
 
 export function registerUserFileScopeProvider(

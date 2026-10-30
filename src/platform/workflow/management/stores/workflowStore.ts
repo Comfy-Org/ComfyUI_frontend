@@ -323,10 +323,22 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
     return newPath
   }
+  const discardTemporaryWorkflow = (workflow: ComfyWorkflow): void => {
+    if (
+      !workflow.isTemporary ||
+      toRaw(getWorkflowByPath(workflow.path)) !== toRaw(workflow)
+    )
+      return
+    if (isActive(workflow)) activeWorkflow.value = null
+    detachWorkflow(workflow)
+    workflow.unload()
+  }
+
   const saveAs = (
     existingWorkflow: ComfyWorkflow,
     path: string
   ): ComfyWorkflow => {
+    existingWorkflow.assertIdentityScope()
     const id = generateUUID()
     const state = JSON.parse(
       JSON.stringify(existingWorkflow.activeState)
@@ -661,15 +673,21 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
-  const deleteWorkflow = async (workflow: ComfyWorkflow) => {
+  const deleteWorkflow = async (
+    workflow: ComfyWorkflow,
+    options: { signal?: AbortSignal } = {}
+  ) => {
     isBusy.value = true
     try {
-      await workflow.delete()
+      options.signal?.throwIfAborted()
+      await (options.signal
+        ? workflow.delete({ signal: options.signal })
+        : workflow.delete())
+      options.signal?.throwIfAborted()
       useWorkflowDraftStoreV2().removeDraft(workflow.path)
       if (bookmarkStore.isBookmarked(workflow.path)) {
         await bookmarkStore.setBookmarked(workflow.path, false)
       }
-      // Clear thumbnail when workflow is deleted
       clearThumbnail(workflow.key)
       detachWorkflow(workflow)
     } finally {
@@ -681,12 +699,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * Save a workflow.
    * @param workflow The workflow to save.
    */
-  const saveWorkflow = async (workflow: ComfyWorkflow) => {
+  const saveWorkflow = async (
+    workflow: ComfyWorkflow,
+    options: { signal?: AbortSignal } = {}
+  ) => {
     isBusy.value = true
     try {
-      await workflow.save()
-      // Synchronously detach and re-attach to force refresh the tree objects
-      // without an async gap that would cause the tab to disappear.
+      options.signal?.throwIfAborted()
+      await (options.signal
+        ? workflow.save({ signal: options.signal })
+        : workflow.save())
+      options.signal?.throwIfAborted()
       const openIndex = detachWorkflow(workflow)
       attachWorkflow(workflow, openIndex)
     } finally {
@@ -891,6 +914,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       void userActivation.trigger(workflow),
     deleteWorkflow,
     saveAs,
+    discardTemporaryWorkflow,
     saveWorkflow,
     reorderWorkflows,
 

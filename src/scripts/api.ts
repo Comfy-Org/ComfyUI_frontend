@@ -1798,13 +1798,17 @@ export class ComfyApi extends EventTarget {
    * Deletes a user data file for the current user
    * @param { string } file The name of the userdata file to delete
    */
-  async deleteUserData(file: string, options: { expected_id?: string } = {}) {
+  async deleteUserData(
+    file: string,
+    options: { expected_id?: string; signal?: AbortSignal } = {}
+  ) {
     const route =
       options.expected_id !== undefined
         ? `/userdata-files/${encodeURIComponent(options.expected_id)}/path/${encodeURIComponent(file)}`
         : `/userdata/${encodeURIComponent(file)}`
     const resp = await this.fetchApi(route, {
-      method: 'DELETE'
+      method: 'DELETE',
+      ...(options.signal && { signal: options.signal })
     })
     return resp
   }

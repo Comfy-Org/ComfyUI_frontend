@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { api } from '@/scripts/api'
 import {
+  SavedFileIdentityError,
   currentUserFileScope,
   receivedUserFileIdentity,
   sameUserFileIdentity,
@@ -81,10 +82,7 @@ export class UserFile {
 
   assertIdentityScope(): void {
     if (!this.isIdentityScopeCurrent())
-      throw new DOMException(
-        'Saved file belongs to another authenticated scope',
-        'SecurityError'
-      )
+      throw new SavedFileIdentityError('scope')
   }
 
   updatePath(newPath: string) {
@@ -173,38 +171,66 @@ export class UserFile {
    * Saves the file to the remote storage.
    * @param force Whether to force the save even if the file is not modified.
    */
-  async save({ force = false }: { force?: boolean } = {}): Promise<UserFile> {
+  async save({
+    force = false,
+    signal
+  }: { force?: boolean; signal?: AbortSignal } = {}): Promise<UserFile> {
+    signal?.throwIfAborted()
     this.assertIdentityScope()
+    const scope = currentUserFileScope()
+    const requestScope = scope && { ...scope }
+    const assertRequestScope = () => {
+      const current = currentUserFileScope()
+      if (
+        requestScope === null
+          ? current !== null
+          : !sameUserFileScope(requestScope, current)
+      )
+        throw new SavedFileIdentityError('scope')
+    }
     if (this.isPersisted && !this.isModified && !force) return this
 
     const resp = await api.storeUserData(this.path, this.content, {
       overwrite: this.isPersisted,
       throwOnError: true,
       full_info: true,
+      ...(signal && { signal }),
       ...(this.savedFileIdentity && { expected_id: this.savedFileIdentity.id })
     })
 
+    signal?.throwIfAborted()
+    assertRequestScope()
     const updatedFile = (await resp.json()) as string | UserDataFullInfo
     this.assertIdentityScope()
+    signal?.throwIfAborted()
+    assertRequestScope()
     if (typeof updatedFile === 'object') {
       this.lastModified = normalizeTimestamp(updatedFile.modified)
       this.size = updatedFile.size
-      this.savedFileIdentity ??= receivedUserFileIdentity(updatedFile.id)
+      this.savedFileIdentity ??= receivedUserFileIdentity(
+        updatedFile.id,
+        requestScope
+      )
     }
     this.originalContent = this.content
     return this
   }
 
-  async delete(): Promise<void> {
+  async delete(options: { signal?: AbortSignal } = {}): Promise<void> {
+    options.signal?.throwIfAborted()
     this.assertIdentityScope()
     if (this.isTemporary) return
 
-    const resp = await (this.savedFileIdentity
+    const resp = await (this.savedFileIdentity || options.signal
       ? api.deleteUserData(this.path, {
-          expected_id: this.savedFileIdentity.id
+          ...(this.savedFileIdentity && {
+            expected_id: this.savedFileIdentity.id
+          }),
+          ...(options.signal && { signal: options.signal })
         })
       : api.deleteUserData(this.path))
     this.assertIdentityScope()
+    options.signal?.throwIfAborted()
     if (resp.status !== 204) {
       throw new DOMException(
         `Failed to delete file '${this.path}': ${resp.status} ${resp.statusText}`,

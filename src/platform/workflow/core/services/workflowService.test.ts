@@ -3498,7 +3498,9 @@ describe('useWorkflowService', () => {
         workflow,
         'workflows/my-workflow.json'
       )
-      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow, {
+        signal: expect.any(AbortSignal)
+      })
     })
 
     it('should return false when no filename is provided', async () => {
@@ -3638,7 +3640,9 @@ describe('useWorkflowService', () => {
         source,
         'workflows/test.app.json'
       )
-      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy, {
+        signal: expect.any(AbortSignal)
+      })
       expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledTimes(1)
       expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledWith({
         is_app: true,
@@ -3661,7 +3665,9 @@ describe('useWorkflowService', () => {
 
       // Same path → self-overwrite: saves in place via saveWorkflow, no copy
       expect(workflowStore.saveAs).not.toHaveBeenCalled()
-      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(source)
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(source, {
+        signal: expect.any(AbortSignal)
+      })
     })
 
     it('emits a single is_new:true telemetry event on self-overwrite', async () => {
@@ -3723,7 +3729,9 @@ describe('useWorkflowService', () => {
         source,
         'workflows/copy.app.json'
       )
-      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy, {
+        signal: expect.any(AbortSignal)
+      })
     })
 
     it('does not modify source workflow mode when saving app as graph', async () => {
@@ -3749,7 +3757,9 @@ describe('useWorkflowService', () => {
         source,
         'workflows/copy.json'
       )
-      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy, {
+        signal: expect.any(AbortSignal)
+      })
     })
 
     function captureLinearModeAtSaveTime() {

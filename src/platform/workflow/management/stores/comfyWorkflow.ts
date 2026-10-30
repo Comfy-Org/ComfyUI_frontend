@@ -4,6 +4,7 @@ import { assert } from '@/base/assert'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { UserFileIdentity } from '@/platform/remote/comfyui/userFileIdentity'
 import {
+  SavedFileIdentityError,
   receivedUserFileIdentity,
   sameUserFileIdentity
 } from '@/platform/remote/comfyui/userFileIdentity'
@@ -216,10 +217,7 @@ function requireMatchingDraftIdentity(
     (draft.savedFileIdentity || workflow.savedFileIdentity) &&
     !sameUserFileIdentity(draft.savedFileIdentity, workflow.savedFileIdentity)
   ) {
-    throw new DOMException(
-      'Saved workflow draft identity does not match this document',
-      'InvalidStateError'
-    )
+    throw new SavedFileIdentityError('draft')
   }
 }
 
@@ -419,12 +417,17 @@ export class ComfyWorkflow extends UserFile {
     super.unload()
   }
 
-  override async save() {
+  override async save(options: { signal?: AbortSignal } = {}) {
+    options.signal?.throwIfAborted()
     requireMatchingDraftIdentity(workflowRuntime(), this)
     this.content = JSON.stringify(
       requireActiveStateForSave(this, 'ComfyWorkflow.save')
     )
-    const ret = await super.save({ force: true })
+    const ret = await super.save({
+      force: true,
+      ...(options.signal && { signal: options.signal })
+    })
+    options.signal?.throwIfAborted()
     this.changeTracker?.reset()
     this.isModified = false
     workflowRuntime().removeDraft(this.path)

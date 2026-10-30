@@ -13,6 +13,11 @@ import { createApp, defineComponent, markRaw, nextTick, ref, toRaw } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { useSavedWorkflowUrlLoader } from '@/composables/useSavedWorkflowUrlLoader'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { registerUserFileScopeProvider } from '@/platform/remote/comfyui/userFileIdentity'
+import { useDialogService } from '@/services/dialogService'
 import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -34,6 +39,7 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { resetStorageAvailable } from '@/platform/workflow/persistence/base/storageIO'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
@@ -46,6 +52,8 @@ import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/services/dialogService'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/workflowErrors/missingModel/missingModelPipeline'), {
   spy: true
 })
@@ -128,7 +136,10 @@ describe('saved workflow handoff persistence', () => {
     )
   })
 
-  async function prepareRetainedHandoff() {
+  async function prepareRetainedHandoff({
+    withUrlLoader = false,
+    restoreTabs = true
+  }: { withUrlLoader?: boolean; restoreTabs?: boolean } = {}) {
     app.canvasElRef.value = document.createElement('canvas')
     const graph = new LGraph()
     graph.extra = { marker: 'dirty retained document' }
@@ -191,11 +202,15 @@ describe('saved workflow handoff persistence', () => {
       extra: { marker: 'superseded incoming document' }
     }
     useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
+    let savedFileLoader:
+      | ReturnType<typeof useSavedWorkflowUrlLoader>
+      | undefined
     let persistence: ReturnType<typeof useWorkflowPersistenceV2> | undefined
     const host = createApp(
       defineComponent({
         setup() {
           persistence = useWorkflowPersistenceV2()
+          if (withUrlLoader) savedFileLoader = useSavedWorkflowUrlLoader()
           return () => null
         }
       })
@@ -221,7 +236,7 @@ describe('saved workflow handoff persistence', () => {
     host.mount(container)
     assert.exists(persistence)
     vi.mocked(useWorkflowStore().loadWorkflows).mockResolvedValue()
-    await persistence.restoreWorkflowTabsState()
+    if (restoreTabs) await persistence.restoreWorkflowTabsState()
     const other = await markLoaded(
       new ComfyWorkflow({
         path: 'workflows/other.json',
@@ -231,8 +246,476 @@ describe('saved workflow handoff persistence', () => {
     )
     useWorkflowStore().attachWorkflow(other, 1)
     await nextTick()
-    return { graph, service, retained, retainedDocument, incoming, saved }
+    return {
+      graph,
+      service,
+      retained,
+      retainedDocument,
+      incoming,
+      saved,
+      persistence,
+      savedFileLoader,
+      router
+    }
   }
+
+  it.for(['revoked', 'prompt', 'overwrite'] as const)(
+    'refuses UI Save As before destructive effects after source revocation at %s',
+    async (boundary) => {
+      const { service, retainedDocument } = await prepareRetainedHandoff()
+      const scope = ref({ ownerId: 'user-a', workspaceId: 'workspace-a' })
+      registerUserFileScopeProvider(() => scope.value)
+      const identity = {
+        ...scope.value,
+        id: 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
+      }
+      retainedDocument.savedFileIdentity = identity
+      const drafts = useWorkflowDraftStoreV2()
+      drafts.removeDraft(retainedDocument.path)
+      drafts.saveDraft(
+        retainedDocument.path,
+        JSON.stringify(retainedDocument.activeState),
+        {
+          name: retainedDocument.key,
+          isTemporary: false,
+          savedFileIdentity: identity
+        }
+      )
+      const before = drafts.getDraft(retainedDocument.path)
+      const destination = new ComfyWorkflow({
+        path: 'workflows/copy.json',
+        modified: 1,
+        size: 10
+      })
+      useWorkflowStore().attachWorkflow(destination)
+      const revoke = () => {
+        scope.value = { ownerId: 'user-b', workspaceId: 'workspace-b' }
+      }
+      vi.mocked(useDialogService().prompt).mockImplementation(async () => {
+        if (boundary === 'prompt') revoke()
+        return 'copy'
+      })
+      vi.mocked(useDialogService().confirm).mockImplementation(async () => {
+        if (boundary === 'overwrite') revoke()
+        return true
+      })
+      vi.spyOn(api, 'deleteUserData').mockResolvedValue(
+        new Response(null, { status: 204 })
+      )
+      vi.spyOn(api, 'storeUserData').mockImplementation(async () =>
+        Response.json({
+          id: '78ebcb5b-028d-45e8-9f9c-b20f433c364d',
+          modified: 2,
+          size: 20
+        })
+      )
+      if (boundary === 'revoked') revoke()
+      await expect(
+        service.saveWorkflowAs(
+          retainedDocument,
+          boundary === 'prompt' ? {} : { filename: 'copy' }
+        )
+      ).resolves.toBe(false)
+      expect(api.deleteUserData).not.toHaveBeenCalled()
+      expect(api.storeUserData).not.toHaveBeenCalled()
+      expect(
+        toRaw(useWorkflowStore().getWorkflowByPath(destination.path))
+      ).toBe(toRaw(destination))
+      expect(drafts.getDraft(retainedDocument.path)).toEqual(before)
+      expect(useTelemetry()?.trackWorkflowSaved).not.toHaveBeenCalled()
+    }
+  )
+
+  it('preserves an open overwrite destination and its draft when scope leaves and returns while its close waits', async () => {
+    const { service, retainedDocument } = await prepareRetainedHandoff()
+    const originalScope = { ownerId: 'user-a', workspaceId: 'workspace-a' }
+    const scope = ref(originalScope)
+    registerUserFileScopeProvider(() => scope.value)
+    retainedDocument.savedFileIdentity = {
+      ...originalScope,
+      id: 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
+    }
+    const drafts = useWorkflowDraftStoreV2()
+    drafts.removeDraft(retainedDocument.path)
+    const destination = new ComfyWorkflow({
+      path: 'workflows/copy.json',
+      modified: 1,
+      size: 20
+    })
+    const destinationState = {
+      ...createWorkflowGraphData(),
+      extra: { marker: 'keep destination draft' }
+    }
+    destination.content = destination.originalContent =
+      JSON.stringify(destinationState)
+    destination.changeTracker = markRaw(
+      new ChangeTracker(destination, destinationState)
+    )
+    useWorkflowStore().attachWorkflow(destination)
+    expect(await service.openWorkflow(destination)).toBe(true)
+    destination.changeTracker.captureCanvasState()
+    drafts.saveDraft(
+      destination.path,
+      JSON.stringify(destination.activeState),
+      { name: destination.key, isTemporary: false }
+    )
+    const before = drafts.getDraft(destination.path)
+    let enter = () => {}
+    const entered = new Promise<void>((resolve) => {
+      enter = resolve
+    })
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    mockExtensionService.invokeExtensionsAsync.mockImplementation(
+      async (hook) => {
+        if (hook === 'afterConfigureGraph') {
+          enter()
+          await gate
+        }
+        return []
+      }
+    )
+    vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+    vi.spyOn(api, 'deleteUserData').mockResolvedValue(
+      new Response(null, { status: 204 })
+    )
+    vi.spyOn(api, 'storeUserData').mockImplementation(async () =>
+      Response.json({
+        id: '78ebcb5b-028d-45e8-9f9c-b20f433c364d',
+        modified: 2,
+        size: 20
+      })
+    )
+    const saving = service.saveWorkflowAs(retainedDocument, {
+      filename: 'copy'
+    })
+    await entered
+    scope.value = { ...originalScope, workspaceId: 'workspace-b' }
+    scope.value = originalScope
+    release()
+    await expect(saving).resolves.toBe(false)
+    expect(api.deleteUserData).not.toHaveBeenCalled()
+    expect(api.storeUserData).not.toHaveBeenCalled()
+    expect(toRaw(useWorkflowStore().getWorkflowByPath(destination.path))).toBe(
+      toRaw(destination)
+    )
+    expect(useWorkflowStore().isOpen(destination)).toBe(true)
+    expect(drafts.getDraft(destination.path)).toEqual(before)
+    expect(useTelemetry()?.trackWorkflowSaved).not.toHaveBeenCalled()
+  })
+
+  it.for(['workspace', 'owner', 'leave-return'] as const)(
+    'cancels UI Save As clone graph loading after %s scope revocation',
+    async (change) => {
+      const { service, retainedDocument, graph } =
+        await prepareRetainedHandoff()
+      const originalScope = { ownerId: 'user-a', workspaceId: 'workspace-a' }
+      const scope = ref(originalScope)
+      registerUserFileScopeProvider(() => scope.value)
+      retainedDocument.savedFileIdentity = {
+        ...originalScope,
+        id: 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
+      }
+      const drafts = useWorkflowDraftStoreV2()
+      drafts.removeDraft(retainedDocument.path)
+      retainedDocument.changeTracker.activeState = zComfyWorkflow.parse(
+        graph.serialize()
+      )
+      drafts.saveDraft(
+        retainedDocument.path,
+        JSON.stringify(retainedDocument.activeState),
+        {
+          name: retainedDocument.key,
+          isTemporary: false,
+          savedFileIdentity: retainedDocument.savedFileIdentity
+        }
+      )
+      const sourceDraft = drafts.getDraft(retainedDocument.path)
+      let enter = () => {}
+      const entered = new Promise<void>((resolve) => {
+        enter = resolve
+      })
+      let release = () => {}
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'afterConfigureGraph') {
+            enter()
+            await gate
+          }
+          return []
+        }
+      )
+      vi.spyOn(api, 'storeUserData').mockImplementation(async () =>
+        Response.json({
+          id: '78ebcb5b-028d-45e8-9f9c-b20f433c364d',
+          modified: 2,
+          size: 20
+        })
+      )
+      const saving = service.saveWorkflowAs(retainedDocument, {
+        filename: 'copy'
+      })
+      await entered
+      scope.value =
+        change === 'owner'
+          ? { ...originalScope, ownerId: 'user-b' }
+          : { ...originalScope, workspaceId: 'workspace-b' }
+      if (change === 'leave-return') scope.value = originalScope
+      release()
+      await expect(saving).resolves.toBe(false)
+      expect(api.storeUserData).not.toHaveBeenCalled()
+      expect(useWorkflowStore().activeWorkflow?.path).not.toBe(
+        'workflows/copy.json'
+      )
+      expect(
+        useWorkflowStore().getWorkflowByPath('workflows/copy.json')
+      ).toBeNull()
+      expect(retainedDocument.savedFileIdentity).toMatchObject(originalScope)
+      expect(drafts.getDraft(retainedDocument.path)?.data).toBe(
+        sourceDraft?.data
+      )
+      expect(retainedDocument.isModified).toBe(true)
+      expect(useTelemetry()?.trackWorkflowSaved).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for(['create', 'delete'] as const)(
+    'aborts Save As before actual %s send when scope changes during HTTP authentication preparation',
+    async (operation) => {
+      const { service, retainedDocument } = await prepareRetainedHandoff()
+      const originalScope = { ownerId: 'user-a', workspaceId: 'workspace-a' }
+      const scope = ref(originalScope)
+      registerUserFileScopeProvider(() => scope.value)
+      retainedDocument.savedFileIdentity = {
+        ...originalScope,
+        id: 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
+      }
+      const drafts = useWorkflowDraftStoreV2()
+      drafts.removeDraft(retainedDocument.path)
+      let destination: ComfyWorkflow | undefined
+      if (operation === 'delete') {
+        destination = new ComfyWorkflow({
+          path: 'workflows/copy.json',
+          modified: 1,
+          size: 20
+        })
+        useWorkflowStore().attachWorkflow(destination)
+        vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      }
+      let enter = () => {}
+      const entered = new Promise<void>((resolve) => {
+        enter = resolve
+      })
+      let release = () => {}
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      let sends = 0
+      if (operation === 'create') {
+        vi.spyOn(api, 'storeUserData').mockImplementation(
+          async (_path, _data, options) => {
+            enter()
+            await gate
+            options?.signal?.throwIfAborted()
+            sends++
+            return Response.json({
+              id: '78ebcb5b-028d-45e8-9f9c-b20f433c364d',
+              modified: 2,
+              size: 20
+            })
+          }
+        )
+      } else {
+        vi.spyOn(api, 'deleteUserData').mockImplementation(
+          async (_path, options) => {
+            enter()
+            await gate
+            options?.signal?.throwIfAborted()
+            sends++
+            return new Response(null, { status: 204 })
+          }
+        )
+      }
+      const saving = service.saveWorkflowAs(retainedDocument, {
+        filename: 'copy'
+      })
+      await entered
+      scope.value = { ownerId: 'user-b', workspaceId: 'workspace-b' }
+      release()
+      await expect(saving).resolves.toBe(false)
+      expect(sends).toBe(0)
+      if (destination)
+        expect(
+          toRaw(useWorkflowStore().getWorkflowByPath(destination.path))
+        ).toBe(toRaw(destination))
+      else
+        expect(
+          useWorkflowStore().getWorkflowByPath('workflows/copy.json')
+        ).toBeNull()
+      expect(useTelemetry()?.trackWorkflowSaved).not.toHaveBeenCalled()
+    }
+  )
+
+  it('UI Save As keeps a valid source identity and receives a fresh identity for the saved copy', async () => {
+    const { service, retainedDocument } = await prepareRetainedHandoff()
+    const scope = { ownerId: 'user-a', workspaceId: 'workspace-a' }
+    registerUserFileScopeProvider(() => scope)
+    const identity = { ...scope, id: 'c327cae8-2acf-4bfa-bb88-97948a3c008b' }
+    retainedDocument.savedFileIdentity = identity
+    useWorkflowDraftStoreV2().removeDraft(retainedDocument.path)
+    const copyId = '78ebcb5b-028d-45e8-9f9c-b20f433c364d'
+    vi.spyOn(api, 'storeUserData').mockImplementation(async () =>
+      Response.json({ id: copyId, modified: 2, size: 20 })
+    )
+    expect(
+      await service.saveWorkflowAs(retainedDocument, { filename: 'copy' })
+    ).toBe(true)
+    expect(retainedDocument.savedFileIdentity).toEqual(identity)
+    expect(useWorkflowStore().activeWorkflow?.savedFileIdentity).toEqual({
+      ...scope,
+      id: copyId
+    })
+    expect(api.storeUserData).toHaveBeenCalledExactlyOnceWith(
+      'workflows/copy.json',
+      expect.any(String),
+      {
+        overwrite: false,
+        throwOnError: true,
+        full_info: true,
+        signal: expect.any(AbortSignal)
+      }
+    )
+    expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledExactlyOnceWith({
+      is_app: false,
+      is_new: true
+    })
+  })
+
+  it.for([undefined, '78ebcb5b-028d-45e8-9f9c-b20f433c364d'])(
+    'settles real tab bootstrap after draft identity %s refuses and then opens a valid unrelated saved-file URL',
+    async (draftId) => {
+      useAuthStore().currentUser = fromPartial<User>({ uid: 'user-a' })
+      useAuthStore().isInitialized = true
+      const workspace = {
+        id: 'workspace-a',
+        name: 'Workspace A',
+        type: 'team' as const,
+        role: 'owner' as const,
+        created_at: '2026-10-30T00:00:00Z',
+        joined_at: '2026-10-30T00:00:00Z',
+        members: [],
+        membersLoaded: false,
+        pendingInvites: [],
+        pendingInvitesLoaded: false
+      }
+      Object.assign(useTeamWorkspaceStore(), {
+        workspaces: [workspace],
+        activeWorkspaceId: workspace.id,
+        initState: 'ready'
+      })
+      const { persistence, savedFileLoader, router, retainedDocument } =
+        await prepareRetainedHandoff({
+          withUrlLoader: true,
+          restoreTabs: false
+        })
+      assert.exists(savedFileLoader)
+      const path = 'workflows/legacy-collision.json'
+      const incomingId = 'd1358d40-fc80-4577-9b3a-265d8b8600dd'
+      const scope = { ownerId: 'user-a', workspaceId: workspace.id }
+      const drafts = useWorkflowDraftStoreV2()
+      drafts.saveDraft(path, JSON.stringify(createWorkflowGraphData()), {
+        name: 'legacy-collision.json',
+        isTemporary: false,
+        ...(draftId && { savedFileIdentity: { ...scope, id: draftId } })
+      })
+      const before = drafts.getDraft(path)
+      vi.mocked(useWorkflowStore().loadWorkflows).mockRestore()
+      vi.spyOn(api, 'listUserDataFullInfo').mockResolvedValue([
+        {
+          id: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+          path: 'legacy-collision.json',
+          modified: 1,
+          size: 20
+        }
+      ])
+      const incoming = {
+        ...createWorkflowGraphData(),
+        extra: { marker: 'valid unrelated saved file' }
+      }
+      vi.spyOn(api, 'fetchApi').mockResolvedValue(
+        Response.json({
+          id: incomingId,
+          path: 'workflows/valid-incoming.json',
+          modified: 1,
+          size: 20,
+          content: JSON.stringify(incoming)
+        })
+      )
+      await router.push(`/?savedFile=${incomingId}`)
+      sessionStorage.setItem(
+        StorageKeys.openPaths('handoff-client'),
+        JSON.stringify({
+          workspaceId: 'personal',
+          paths: [path],
+          activeIndex: 0
+        })
+      )
+      expect(await persistence.initializeWorkflow()).toBe('restored')
+      await expect(
+        persistence.restoreWorkflowTabsState()
+      ).resolves.toBeUndefined()
+      expect(drafts.getDraft(path)).toEqual(before)
+      expect(toRaw(useWorkflowStore().activeWorkflow)).toBe(
+        toRaw(retainedDocument)
+      )
+      expect(useWorkflowStore().tabsRestored).toBe(true)
+      expect(singletonApp.rootGraph.extra.marker).toBe(
+        'dirty retained document'
+      )
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'workflow_load_failure' })
+      )
+      expect(await savedFileLoader.openSavedWorkflowFromUrl()).toBe('loaded')
+      expect(useWorkflowStore().activeWorkflow?.path).toBe(
+        'workflows/valid-incoming.json'
+      )
+      expect(singletonApp.rootGraph.extra.marker).toBe(
+        'valid unrelated saved file'
+      )
+      expect(drafts.getDraft(path)).toEqual(before)
+    }
+  )
+
+  it('tab restore propagates an unrelated invalid-state error instead of treating it as an identity refusal', async () => {
+    const { persistence } = await prepareRetainedHandoff({ restoreTabs: false })
+    const faulty = new ComfyWorkflow({
+      path: 'workflows/faulty.json',
+      modified: 1,
+      size: 10
+    })
+    useWorkflowStore().attachWorkflow(faulty)
+    sessionStorage.setItem(
+      StorageKeys.openPaths('handoff-client'),
+      JSON.stringify({
+        workspaceId: 'personal',
+        paths: [faulty.path],
+        activeIndex: 0
+      })
+    )
+    const error = new DOMException(
+      'Unrelated invalid state',
+      'InvalidStateError'
+    )
+    vi.spyOn(faulty, 'load').mockRejectedValue(error)
+    await expect(persistence.restoreWorkflowTabsState()).rejects.toBe(error)
+    expect(useWorkflowStore().tabsRestored).toBe(true)
+  })
 
   it.for([false, true])(
     'preserves and refuses an unknown-ID startup draft colliding with a known saved file (temporary=%s)',

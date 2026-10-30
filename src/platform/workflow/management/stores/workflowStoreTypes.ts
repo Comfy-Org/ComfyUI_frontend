@@ -43,9 +43,16 @@ export interface WorkflowStore {
     workflowData?: ComfyWorkflowJSON
   ) => ComfyWorkflow
   renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
-  deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+  deleteWorkflow: (
+    workflow: ComfyWorkflow,
+    options?: { signal?: AbortSignal }
+  ) => Promise<void>
   saveAs: (existingWorkflow: ComfyWorkflow, path: string) => ComfyWorkflow
-  saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+  discardTemporaryWorkflow: (workflow: ComfyWorkflow) => void
+  saveWorkflow: (
+    workflow: ComfyWorkflow,
+    options?: { signal?: AbortSignal }
+  ) => Promise<void>
 
   workflows: ComfyWorkflow[]
   bookmarkedWorkflows: ComfyWorkflow[]

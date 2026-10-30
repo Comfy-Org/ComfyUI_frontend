@@ -120,4 +120,23 @@ describe('identity-conditional userdata operations', () => {
       expect(file.content).toBe('local edits')
     }
   )
+  it('does not certify a new save response under a changed scope after an authorized request was sent', async () => {
+    let scope = { ownerId: identity.ownerId, workspaceId: identity.workspaceId }
+    registerUserFileScopeProvider(() => scope)
+    const request = vi.spyOn(api, 'fetchApi').mockImplementation(async () => {
+      scope = { ownerId: 'new-owner', workspaceId: 'new-workspace' }
+      return Response.json({
+        id: '78ebcb5b-028d-45e8-9f9c-b20f433c364d',
+        modified: 2,
+        size: 10
+      })
+    })
+    const file = UserFile.createTemporary('workflows/copy.json')
+    file.content = 'saved in original scope'
+    await expect(file.save()).rejects.toThrow('another authenticated scope')
+    expect(request).toHaveBeenCalledOnce()
+    expect(file.savedFileIdentity).toBeUndefined()
+    expect(file.isTemporary).toBe(true)
+    expect(file.originalContent).toBeNull()
+  })
 })
