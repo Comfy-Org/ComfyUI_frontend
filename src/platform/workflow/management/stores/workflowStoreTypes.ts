@@ -1,4 +1,4 @@
-import type { UserFileScope } from '@/stores/userFileIdentity'
+import type { UserFileScope } from '@/platform/remote/comfyui/userFileIdentity'
 import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type {

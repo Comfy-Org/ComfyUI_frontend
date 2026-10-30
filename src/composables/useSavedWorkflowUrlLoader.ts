@@ -15,7 +15,7 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { SavedFileSnapshot } from '@/services/savedWorkflowService'
-import { registerUserFileScopeProvider } from '@/stores/userFileIdentity'
+import { registerUserFileScopeProvider } from '@/platform/remote/comfyui/userFileIdentity'
 import { fetchSavedWorkflow } from '@/services/savedWorkflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { readSavedWorkflowLink } from '@/platform/navigation/savedWorkflowLink'

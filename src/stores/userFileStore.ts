@@ -8,8 +8,8 @@ import {
   receivedUserFileIdentity,
   sameUserFileIdentity,
   sameUserFileScope
-} from '@/stores/userFileIdentity'
-import type { UserFileIdentity } from '@/stores/userFileIdentity'
+} from '@/platform/remote/comfyui/userFileIdentity'
+import type { UserFileIdentity } from '@/platform/remote/comfyui/userFileIdentity'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
@@ -162,6 +162,7 @@ export class UserFile {
   }
 
   async saveAs(newPath: string): Promise<UserFile> {
+    this.assertIdentityScope()
     const tempFile = this.isTemporary ? this : UserFile.createTemporary(newPath)
     tempFile.content = this.content
     await tempFile.save()

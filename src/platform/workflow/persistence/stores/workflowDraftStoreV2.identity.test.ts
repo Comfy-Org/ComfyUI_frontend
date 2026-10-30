@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { registerUserFileScopeProvider } from '@/stores/userFileIdentity'
+import { registerUserFileScopeProvider } from '@/platform/remote/comfyui/userFileIdentity'
 
 import { resetStorageAvailable } from '@/platform/workflow/persistence/base/storageIO'
 

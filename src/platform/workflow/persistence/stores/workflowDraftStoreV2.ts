@@ -42,8 +42,8 @@ import {
   writePayload
 } from '@/platform/workflow/persistence/base/storageIO'
 
-import type { UserFileIdentity } from '@/stores/userFileIdentity'
-import { sameUserFileIdentity } from '@/stores/userFileIdentity'
+import type { UserFileIdentity } from '@/platform/remote/comfyui/userFileIdentity'
+import { sameUserFileIdentity } from '@/platform/remote/comfyui/userFileIdentity'
 
 interface DraftMeta {
   savedFileIdentity?: UserFileIdentity

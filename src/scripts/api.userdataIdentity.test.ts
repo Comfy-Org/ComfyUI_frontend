@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 import { UserFile } from '@/stores/userFileStore'
-import { registerUserFileScopeProvider } from '@/stores/userFileIdentity'
+import { registerUserFileScopeProvider } from '@/platform/remote/comfyui/userFileIdentity'
 
 const identity = {
   id: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',

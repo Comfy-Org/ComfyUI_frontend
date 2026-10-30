@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
-import { registerUserFileScopeProvider } from '@/stores/userFileIdentity'
+import { registerUserFileScopeProvider } from '@/platform/remote/comfyui/userFileIdentity'
 import { UserFile, useUserFileStore } from '@/stores/userFileStore'
 
 vi.mock(import('@/scripts/api'))

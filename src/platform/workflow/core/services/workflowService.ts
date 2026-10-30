@@ -30,7 +30,7 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
-import { isUserFileIdentityCurrent } from '@/stores/userFileIdentity'
+import { isUserFileIdentityCurrent } from '@/platform/remote/comfyui/userFileIdentity'
 import { useDialogService } from '@/services/dialogService'
 import { nodeTypesMayStillArrive } from '@/platform/customNodes/lateLoading/lateNodeTypes'
 import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/waitingNodes'

@@ -2,11 +2,11 @@ import { markRaw } from 'vue'
 
 import { assert } from '@/base/assert'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
-import type { UserFileIdentity } from '@/stores/userFileIdentity'
+import type { UserFileIdentity } from '@/platform/remote/comfyui/userFileIdentity'
 import {
   receivedUserFileIdentity,
   sameUserFileIdentity
-} from '@/stores/userFileIdentity'
+} from '@/platform/remote/comfyui/userFileIdentity'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
@@ -432,6 +432,7 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override async saveAs(path: string) {
+    this.assertIdentityScope()
     this.content = JSON.stringify(
       requireActiveStateForSave(this, 'ComfyWorkflow.saveAs')
     )

@@ -20,13 +20,13 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
-import type { UserFileScope } from '@/stores/userFileIdentity'
+import type { UserFileScope } from '@/platform/remote/comfyui/userFileIdentity'
 import {
   currentUserFileScope,
   receivedUserFileIdentity,
   sameUserFileIdentity,
   sameUserFileScope
-} from '@/stores/userFileIdentity'
+} from '@/platform/remote/comfyui/userFileIdentity'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'

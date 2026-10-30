@@ -16,7 +16,7 @@ import {
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { api } from '@/scripts/api'
-import { registerUserFileScopeProvider } from '@/stores/userFileIdentity'
+import { registerUserFileScopeProvider } from '@/platform/remote/comfyui/userFileIdentity'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 import '@/scripts/changeTracker'
@@ -331,6 +331,9 @@ describe('useWorkflowStore', () => {
       registerUserFileScopeProvider(() => ({ ...scope, ownerId: 'other-user' }))
       await expect(workflow.load()).rejects.toThrow()
       await expect(workflow.save()).rejects.toThrow()
+      await expect(workflow.saveAs('workflows/copy.json')).rejects.toThrow(
+        'another authenticated scope'
+      )
       await expect(workflow.delete()).rejects.toThrow()
       await expect(workflow.rename('workflows/other.json')).rejects.toThrow()
       expect(api.storeUserData).not.toHaveBeenCalled()

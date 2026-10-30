@@ -47,7 +47,7 @@ import {
   currentUserFileScope,
   sameUserFileScope,
   registerUserFileScopeProvider
-} from '@/stores/userFileIdentity'
+} from '@/platform/remote/comfyui/userFileIdentity'
 import { api } from '@/scripts/api'
 import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
 import { app as comfyApp } from '@/scripts/app'
