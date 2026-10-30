@@ -1779,6 +1779,36 @@ describe('billingOperationStore', () => {
       },
       {
         type: 'subscription' as const,
+        errorMessage: 'fraudulent',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
+        type: 'topup' as const,
+        errorMessage: 'card_velocity_exceeded',
+        summary: 'billingOperation.topupFailed',
+        detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'incorrect_number',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.incorrectNumberDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'reset_now_no_payment_method',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.noPaymentMethodDetail'
+      },
+      {
+        type: 'topup' as const,
+        errorMessage: 'topup_currency_incompatible',
+        summary: 'billingOperation.topupFailed',
+        detail: 'billingOperation.topupMethodIncompatibleDetail'
+      },
+      {
+        type: 'subscription' as const,
         errorMessage: 'authentication_failed',
         summary: 'billingOperation.subscriptionFailed',
         detail: 'billingOperation.authenticationFailedDetail'
