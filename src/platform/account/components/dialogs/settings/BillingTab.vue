@@ -103,7 +103,7 @@
                 :href="handoffHref"
                 target="_blank"
                 rel="noopener"
-                class="text-muted-foreground underline"
+                class="text-muted-foreground underline hover:text-foreground"
                 @click="trackHandoff"
               >
                 {{ $t('workspacePanel.billingTab.handoff.owner.platform') }}

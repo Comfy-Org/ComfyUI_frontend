@@ -8,7 +8,11 @@
       v-if="state.kind === 'loading'"
       class="rounded-xl border border-card px-5 py-4"
     >
-      <Skeleton class="h-16 w-full" />
+      <div class="flex flex-col gap-2.5">
+        <Skeleton class="h-4 w-1/5" />
+        <Skeleton class="h-4 w-1/2" />
+        <Skeleton class="h-4 w-1/3" />
+      </div>
     </div>
     <p
       v-else-if="state.kind === 'unavailable'"
@@ -138,7 +142,7 @@ const STATUS = {
   turnedOff: {
     ...DANGER,
     label: 'workspacePanel.billingTab.autoTopUp.status.turnedOff',
-    dot: 'bg-destructive-background',
+    dot: 'bg-destructive',
     action: UPDATE_PAYMENT
   },
   off: {
@@ -155,19 +159,19 @@ const STATUS = {
   on_hold: {
     ...NEUTRAL,
     label: 'workspacePanel.billingTab.autoTopUp.status.onHold',
-    dot: 'bg-warning-background',
+    dot: 'bg-warning',
     action: UPDATE_PAYMENT
   },
   paused_by_budget: {
     ...NEUTRAL,
     label: 'workspacePanel.billingTab.autoTopUp.status.limitReached',
-    dot: 'bg-warning-background',
+    dot: 'bg-warning',
     action: MANAGE
   },
   on: {
     ...NEUTRAL,
     label: 'workspacePanel.billingTab.autoTopUp.status.on',
-    dot: 'bg-success-background',
+    dot: 'bg-success',
     action: MANAGE
   }
 } as const satisfies Record<
