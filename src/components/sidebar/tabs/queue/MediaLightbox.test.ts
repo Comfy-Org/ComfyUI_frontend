@@ -1,15 +1,21 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { downloadFile } from '@/base/common/downloadUtil'
+import { useAssetDownload } from '@/composables/useAssetDownload'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 import MediaLightbox from './MediaLightbox.vue'
 
-vi.mock(import('@/base/common/downloadUtil'))
+const downloadFiles = vi.fn()
+
+vi.mock(import('@/composables/useAssetDownload'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(useAssetDownload).mockReturnValue({ downloadFiles })
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -166,10 +172,10 @@ describe('MediaLightbox', () => {
 
     await user.click(screen.getByLabelText('Download'))
 
-    expect(downloadFile).toHaveBeenCalledWith(
-      '/api/assets/2/preview',
-      'image2.jpg'
-    )
+    expect(downloadFiles.mock.calls[0][0][0]).toMatchObject({
+      url: '/api/assets/2/preview',
+      filename: 'image2.jpg'
+    })
   })
 
   it('downloads the item file rather than the preview it renders', async () => {
@@ -186,10 +192,10 @@ describe('MediaLightbox', () => {
 
     await user.click(screen.getByLabelText('Download'))
 
-    expect(downloadFile).toHaveBeenCalledWith(
-      '/api/assets/1/content',
-      'image1.jpg'
-    )
+    expect(downloadFiles.mock.calls[0][0][0]).toMatchObject({
+      url: '/api/assets/1/content',
+      filename: 'image1.jpg'
+    })
   })
 
   describe('more options menu', () => {

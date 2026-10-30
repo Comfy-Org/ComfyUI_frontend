@@ -36,6 +36,32 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     return item ? resultItemUrl(item) : undefined
   }
 
+  /** True while the pending refresh still belongs to the gallery on screen. */
+  function isLiveRefreshCurrent(refreshId: number, taskId: string): boolean {
+    return (
+      refreshId === openSequence &&
+      galleryTaskId.value === taskId &&
+      galleryActiveIndex.value !== -1
+    )
+  }
+
+  function hasHdrPreview(task: TaskItemImpl): boolean {
+    return (
+      task.previewOutput !== undefined &&
+      isHdrImageFilename(task.previewOutput.filename)
+    )
+  }
+
+  /** Live outputs, falling back to the rerun set, with HDR renditions dropped. */
+  function nonHdrOutputs(
+    outputs: readonly AugmentedResultItem[],
+    fallback: readonly AugmentedResultItem[]
+  ): AugmentedResultItem[] {
+    return (outputs.length ? outputs : fallback).filter(
+      (output) => !isHdrImageFilename(output.filename)
+    )
+  }
+
   watch(getFilteredTasks, (tasks) => {
     const taskId = galleryTaskId.value
     const index = galleryActiveIndex.value
@@ -51,15 +77,10 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     if (!targetTask) return
     const refreshId = openSequence
     void getOutputsForTask(targetTask).then((targetOutputs) => {
-      if (refreshId !== openSequence) return
-      if (galleryTaskId.value !== taskId) return
-      if (galleryActiveIndex.value === -1) return
-      if (targetOutputs === null) return
-      const previewOutput = targetTask.previewOutput
-      if (previewOutput && isHdrImageFilename(previewOutput.filename)) return
-      const items = (targetOutputs.length ? targetOutputs : rerun).filter(
-        (o) => !isHdrImageFilename(o.filename)
-      )
+      if (targetOutputs === null || !isLiveRefreshCurrent(refreshId, taskId))
+        return
+      if (hasHdrPreview(targetTask)) return
+      const items = nonHdrOutputs(targetOutputs, rerun)
       if (!items.length) return
       const currentUrl =
         urlAt(galleryItems.value, galleryActiveIndex.value) ?? activeUrl

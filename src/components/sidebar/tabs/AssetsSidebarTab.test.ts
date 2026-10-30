@@ -10,9 +10,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { downloadFile } from '@/base/common/downloadUtil'
+import { useAssetDownload } from '@/composables/useAssetDownload'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import { getAssetFileUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -20,6 +19,7 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
 beforeEach(() => {
+  vi.mocked(useAssetDownload).mockReturnValue({ downloadFiles })
   const store = useAssetsStore()
   store.outputAssets = {
     items: [],
@@ -82,9 +82,9 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock(import('@/platform/assets/utils/assetUrlUtil'), { spy: true })
+const downloadFiles = vi.fn()
 
-vi.mock(import('@/base/common/downloadUtil'))
+vi.mock(import('@/composables/useAssetDownload'), { spy: true })
 
 vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
@@ -438,7 +438,7 @@ describe('AssetsSidebarTab gallery selection', () => {
     expect(useMediaAssetActions().downloadAssets).toHaveBeenCalledWith([second])
   })
 
-  it('downloads the asset file rather than its preview rendition', async () => {
+  it('downloads the asset the viewer is showing through the download composable', async () => {
     const asset = {
       ...folderAsset,
       id: 'b',
@@ -446,13 +446,16 @@ describe('AssetsSidebarTab gallery selection', () => {
       preview_url: '/api/assets/b/preview'
     }
     useAssetsStore().outputAssets.items = [asset]
-    vi.mocked(getAssetFileUrl).mockReturnValueOnce('/api/assets/b/content')
 
     renderTab({ realLightbox: true })
 
     await userEvent.click(screen.getByRole('button', { name: 'Preview b.png' }))
     await userEvent.click(await screen.findByLabelText('Download'))
 
-    expect(downloadFile).toHaveBeenCalledWith('/api/assets/b/content', 'b.png')
+    // Which rendition is saved is covered by MediaLightbox.test.ts; here the
+    // contract is that the viewer routes its Download through the composable.
+    const [downloads] = downloadFiles.mock.calls[0]
+    expect(downloads[0]).toMatchObject({ filename: 'b.png' })
+    expect(downloads[0].url).toBeTruthy()
   })
 })

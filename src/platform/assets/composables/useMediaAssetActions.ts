@@ -44,9 +44,12 @@ import { isResultItemType } from '@/utils/typeGuardUtil'
 import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
-import { createFileDownload, useAssetDownload } from './useAssetDownload'
+import {
+  createFileDownload,
+  useAssetDownload
+} from '@/composables/useAssetDownload'
 import { useAssetZipExport } from './useAssetZipExport'
-import type { AssetDownload } from './useAssetDownload'
+import type { AssetDownload } from '@/composables/useAssetDownload'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
