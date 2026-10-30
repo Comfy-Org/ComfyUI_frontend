@@ -305,3 +305,19 @@ export const PlanEndedPersonal: Story = story(
   }),
   personalOwner
 )
+
+/** On the Billing tab the plan banners keep their action but never Dismiss. */
+export const BillingTabEndingOwner: Story = {
+  ...EndingOwner,
+  args: { section: 'billing' }
+}
+
+export const BillingTabPlanEndedOwner: Story = {
+  ...PlanEndedOwner,
+  args: { section: 'billing' }
+}
+
+export const BillingTabPlanChangeOwner: Story = {
+  ...PlanChangeOwner,
+  args: { section: 'billing' }
+}

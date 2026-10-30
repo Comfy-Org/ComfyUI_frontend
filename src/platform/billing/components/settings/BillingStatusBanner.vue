@@ -369,9 +369,7 @@ const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
 const banner = computed<BannerView | null>(() => {
   if (!kind.value || isHiddenOnSection.value) return null
   const view = bannerViews[kind.value]()
-  return view && section === 'billing'
-    ? { ...view, action: null, dismissible: false }
-    : view
+  return view && section === 'billing' ? { ...view, dismissible: false } : view
 })
 
 function handleAddCredits() {

@@ -74,6 +74,9 @@ export function useBillingCapabilities() {
     canDowngradeToPersonal: computed(
       () => capabilityState.canDowngradeToPersonal
     ),
+    topUpDenial: computed<string | undefined>(() => undefined),
+    canManageBilling: computed(() => capabilityState.canManageSubscription),
+    runDeniedPaymentPastDue: computed(() => false),
     isReady: computed(() => true),
     snapshotAuthoritative: computed(() => true),
     initialize: () => undefined,
