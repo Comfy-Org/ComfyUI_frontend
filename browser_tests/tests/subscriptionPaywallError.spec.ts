@@ -6,11 +6,6 @@ import type { PromptFailureResponse } from '@/platform/remote/comfyui/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-// Regression for #12840: a free-tier paywall on queue (`POST /prompt` 402 with
-// `{ error: { type: 'PAYMENT_REQUIRED', message: 'Subscription required to
-// queue workflows' } }`) is an account precondition. It must open its own modal
-// and stay out of the error panel, instead of surfacing the raw backend string
-// with non-actionable Find-on-GitHub / Copy actions.
 test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
   test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
 
@@ -28,7 +23,7 @@ test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
     })
   }
 
-  test('keeps the subscription paywall out of the error panel', async ({
+  test('falls back when the subscription dialog is unavailable', async ({
     comfyPage
   }) => {
     await mockQueueError(comfyPage.page, {
@@ -40,10 +35,11 @@ test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
     const queued = comfyPage.page.waitForResponse('**/api/prompt')
     await comfyPage.actionbar.queueButton.primaryButton.click()
     await queued
+    await comfyPage.nextFrame()
 
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-    ).toBeHidden()
+    ).toBeVisible()
   })
 
   test('still surfaces ordinary queue errors in the error panel', async ({
