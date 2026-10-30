@@ -148,6 +148,9 @@ function createWrapper({
         },
         deployToComfyApi: {
           buttonLabel: 'Deploy to Comfy API'
+        },
+        openOnCloud: {
+          cloudButton: { tooltip: 'Run on Comfy Cloud' }
         }
       }
     }
@@ -733,6 +736,51 @@ describe('TopMenuSection', () => {
         screen.queryAllByRole('button', { name: 'Deploy to Comfy API' })
       ).toHaveLength(count)
     })
+
+    it.for([
+      {
+        where: 'on local with Open on Cloud on',
+        isCloud: false,
+        openOnCloudEnabled: true,
+        cloud: 1,
+        deploy: 0
+      },
+      {
+        where: 'on local with Open on Cloud off',
+        isCloud: false,
+        openOnCloudEnabled: false,
+        cloud: 0,
+        deploy: 1
+      },
+      {
+        where: 'on Comfy Cloud',
+        isCloud: true,
+        openOnCloudEnabled: true,
+        cloud: 0,
+        deploy: 1
+      }
+    ])(
+      '$where, renders $cloud Comfy Cloud and $deploy deploy buttons',
+      ({ isCloud, openOnCloudEnabled, cloud, deploy }) => {
+        distribution.isCloud = isCloud
+        onTestFinished(() => {
+          distribution.isCloud = false
+        })
+        Object.assign(useFeatureFlags().flags, {
+          deployToCloud: true,
+          openOnCloudEnabled
+        })
+
+        createWrapper({ stubs: { FreeTierQuota: true } })
+
+        expect(
+          screen.queryAllByRole('button', { name: 'Run on Comfy Cloud' })
+        ).toHaveLength(cloud)
+        expect(
+          screen.queryAllByRole('button', { name: 'Deploy to Comfy API' })
+        ).toHaveLength(deploy)
+      }
+    )
 
     it('sits left of the panel toggle and opens the dialog for the installation', async () => {
       enableDeployButton()
