@@ -11,7 +11,7 @@
     </h3>
 
     <div
-      class="flex flex-col rounded-xl border border-card"
+      class="flex flex-col rounded-xl border border-border"
       data-testid="billing-credits-surface"
     >
       <div class="flex items-start justify-between gap-4 px-5 py-4">
@@ -73,7 +73,7 @@
         </Button>
       </div>
 
-      <div v-if="state.kind === 'plan'" class="flex border-t border-card">
+      <div v-if="state.kind === 'plan'" class="flex border-t border-border">
         <BillingCreditsPlanCell :plan="state" />
         <div class="flex flex-1 flex-col gap-2 px-5 py-4">
           <div class="flex items-center justify-between gap-4">

@@ -1,6 +1,6 @@
 <template>
   <section
-    class="flex items-center justify-between gap-4 rounded-xl border border-card px-5 py-4"
+    class="flex items-center justify-between gap-4 rounded-xl border border-border px-5 py-4"
     data-testid="billing-plan-row"
   >
     <div class="flex min-w-0 flex-col gap-1">

@@ -32,7 +32,7 @@
       </h2>
       <div
         v-if="load === 'loading'"
-        class="rounded-xl border border-card px-5 py-4"
+        class="rounded-xl border border-border px-5 py-4"
         data-testid="billing-plan-skeleton"
         aria-busy="true"
       >
@@ -43,7 +43,7 @@
       </div>
       <div
         v-else-if="load === 'error'"
-        class="flex items-center justify-between gap-4 rounded-xl border border-card px-5 py-4"
+        class="flex items-center justify-between gap-4 rounded-xl border border-border px-5 py-4"
         role="alert"
         data-testid="billing-load-error"
       >
@@ -89,7 +89,7 @@
           {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.label`) }}
         </h2>
         <div
-          class="flex items-center gap-4 rounded-xl border border-card px-5 py-4"
+          class="flex items-center gap-4 rounded-xl border border-border px-5 py-4"
           data-testid="billing-handoff-card"
         >
           <i18n-t

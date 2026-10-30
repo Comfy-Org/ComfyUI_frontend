@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-1 flex-col gap-2 border-r border-card px-5 py-4">
+  <div class="flex flex-1 flex-col gap-2 border-r border-border px-5 py-4">
     <span class="flex items-center gap-1 text-sm text-muted-foreground">
       {{ $t('workspacePanel.billingTab.credits.plan') }}
       <BillingInfoTip

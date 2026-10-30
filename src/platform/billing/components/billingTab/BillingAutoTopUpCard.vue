@@ -6,7 +6,7 @@
   >
     <div
       v-if="state.kind === 'loading'"
-      class="rounded-xl border border-card px-5 py-4"
+      class="rounded-xl border border-border px-5 py-4"
     >
       <div class="flex flex-col gap-2.5">
         <Skeleton class="h-4 w-1/5" />
@@ -16,7 +16,7 @@
     </div>
     <p
       v-else-if="state.kind === 'unavailable'"
-      class="m-0 flex items-center gap-1 rounded-xl border border-card px-5 py-4 text-sm text-muted-foreground"
+      class="m-0 flex items-center gap-1 rounded-xl border border-border px-5 py-4 text-sm text-muted-foreground"
       role="alert"
     >
       {{ $t('workspacePanel.billingTab.autoTopUp.unavailable') }}
@@ -107,7 +107,7 @@ interface Line {
 }
 
 const NEUTRAL = {
-  border: 'border-card',
+  border: 'border-border',
   text: 'text-muted-foreground'
 } as const
 
