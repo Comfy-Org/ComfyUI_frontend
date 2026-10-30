@@ -63,6 +63,14 @@
         class="icon-[comfy--pin]"
         data-testid="node-pin-indicator"
       />
+      <i
+        v-if="showMissingWarning"
+        role="img"
+        :aria-label="
+          st('rightSidePanel.missingResourcesWarning', 'Missing resources')
+        "
+        class="icon-[lucide--triangle-alert]"
+      />
     </div>
   </div>
 </template>
@@ -91,9 +99,11 @@ interface NodeHeaderProps {
   nodeData?: NodeState
   collapsed?: boolean
   priceBadges?: { required: string; rest?: string }[]
+  showMissingWarning?: boolean
 }
 
-const { nodeData, collapsed } = defineProps<NodeHeaderProps>()
+const { nodeData, collapsed, showMissingWarning } =
+  defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []

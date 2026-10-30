@@ -187,6 +187,19 @@ describe('NodeHeader.vue', () => {
     expect(collapsedIcon.classList).toContain('-rotate-90')
   })
 
+  it.for([
+    { showMissingWarning: true, shown: true },
+    { showMissingWarning: false, shown: false }
+  ])(
+    'shows the missing resources icon when showMissingWarning is $showMissingWarning',
+    ({ showMissingWarning, shown }) => {
+      renderHeader({ showMissingWarning })
+      expect(
+        screen.queryByRole('img', { name: 'Missing resources' }) !== null
+      ).toBe(shown)
+    }
+  )
+
   describe('Tooltips', () => {
     it('shows the node description for its title', async () => {
       const { user } = renderHeader({

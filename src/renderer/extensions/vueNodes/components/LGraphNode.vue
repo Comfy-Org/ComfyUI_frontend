@@ -113,6 +113,9 @@
           :node-data
           :collapsed="isCollapsed"
           :price-badges="badges.pricing"
+          :show-missing-warning="
+            errorSeverity === 'missing' && !showErrorsTabEnabled
+          "
           @collapse="handleCollapse"
           @update:title="handleHeaderTitleUpdate"
         />
