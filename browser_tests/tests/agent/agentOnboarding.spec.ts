@@ -52,6 +52,40 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       .toBe('false')
   })
 
+  test('points the user at the card when they click the highlighted panel', async ({
+    page,
+    agentFlagEnabled
+  }) => {
+    // PM-2276: the panel is spotlit but inert while a card is up, and users
+    // clicked it for a minute without noticing the card beside it.
+    await bootAgentApp(page, agentFlagEnabled, {
+      onboardingCompleted: false
+    })
+    const panel = new AgentPanel(page)
+    await panel.open()
+
+    const firstCard = page.getByRole('dialog', {
+      name: enMessages.agent.coachTitle
+    })
+    await expect(firstCard).toBeVisible()
+    await expect(page.getByTestId('agent-coach-arrow')).toBeVisible()
+
+    const spotlight = await page
+      .getByTestId('agent-coach-spotlight')
+      .boundingBox()
+    if (!spotlight) throw new Error('spotlight has no box')
+    await page.mouse.click(
+      spotlight.x + spotlight.width / 2,
+      spotlight.y + spotlight.height / 2
+    )
+
+    await expect(firstCard).toHaveAttribute('data-nudged', '')
+    await expect(
+      firstCard.getByRole('button', { name: enMessages.g.next })
+    ).toBeFocused()
+    await expect(firstCard).toBeVisible()
+  })
+
   test('replays the tour from the header after it has been completed', async ({
     page,
     agentFlagEnabled

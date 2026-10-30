@@ -230,6 +230,65 @@ describe('OnboardingCoach', () => {
     }
   })
 
+  it('points an arrow from each side-placed card at the middle of its target', async () => {
+    const user = userEvent.setup()
+    mount()
+    for (const [index, step] of STEPS.entries()) {
+      const dialog = await screen.findByRole('dialog', { name: step.title })
+      if (step.placement === 'graph-bottom') {
+        expect(screen.queryByTestId('agent-coach-arrow')).toBeNull()
+      } else {
+        const targetRect = rectangles[step.target.slice(1)]
+        const arrow = screen.getByTestId('agent-coach-arrow')
+        expect(dialog).toContainElement(arrow)
+        await waitFor(() => {
+          const arrowCenter =
+            parseFloat(dialog.style.top) + parseFloat(arrow.style.top)
+          expect(arrowCenter).toBeCloseTo(
+            targetRect.top + targetRect.height / 2,
+            0
+          )
+        })
+      }
+      if (index < 3)
+        await user.click(screen.getByRole('button', { name: 'Next' }))
+    }
+  })
+
+  it('draws attention to the card when the user clicks the dimmed screen or the highlighted area', async () => {
+    const user = userEvent.setup()
+    mount()
+    const dialog = await screen.findByRole('dialog', { name: STEPS[0].title })
+    expect(dialog).not.toHaveAttribute('data-nudged')
+
+    await user.click(screen.getByTestId('agent-coach-scrim'))
+
+    expect(dialog).toHaveAttribute('data-nudged')
+    expect(screen.getByRole('button', { name: 'Next' })).toHaveFocus()
+    expect(screen.getByRole('dialog', { name: STEPS[0].title })).toBe(dialog)
+    expect(localStorage.getItem(KEY)).toBe('false')
+    expect(telemetry().trackAgentOnboardingStep).not.toHaveBeenCalled()
+  })
+
+  it('stops drawing attention to the card shortly after the click', async () => {
+    vi.useFakeTimers()
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      mount()
+      const dialog = await screen.findByRole('dialog', {
+        name: STEPS[0].title
+      })
+      await user.click(screen.getByTestId('agent-coach-scrim'))
+      expect(dialog).toHaveAttribute('data-nudged')
+
+      await vi.advanceTimersByTimeAsync(2_000)
+
+      expect(dialog).not.toHaveAttribute('data-nudged')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('shows the target in its hover state with its tooltip inside the spotlight', async () => {
     const user = userEvent.setup()
     const steps = STEPS.map((step, index) =>
