@@ -1,44 +1,49 @@
 #!/usr/bin/env bash
-# Decide whether the weekly ComfyUI release may overwrite the shared bump PR.
-#
-# Usage: comfyui-bump-guard.sh <target-version> [<pending-version>]
-#
-# Prints "skip" when the open bump PR already pins a newer frontend than
-# <target-version> (a patch on an older line must not downgrade it), and
-# "proceed" otherwise, including when no PR is pending.
 set -euo pipefail
 
-target="${1:-}"
-pending="${2:-}"
-version_re='^[0-9]+\.[0-9]+\.[0-9]+([.-]?[0-9A-Za-z.]+)?$'
+readonly VERSION_RE='^([0-9]+\.[0-9]+\.[0-9]+)(\.dev([0-9]+))?$'
 
-if [[ ! "$target" =~ $version_re ]]; then
-  echo "invalid target version: '${target}'" >&2
+die() {
+  echo "comfyui-bump-guard: $*" >&2
+  echo "usage: $0 <target-version> [<requirements.txt>...]" >&2
   exit 2
-fi
+}
 
-if [[ -z "$pending" || "$pending" == "$target" ]]; then
-  echo proceed
-  exit 0
-fi
+sort_key() {
+  [[ "$1" =~ $VERSION_RE ]] || die "unsupported version '$1' (want X.Y.Z or X.Y.Z.devN)"
+  local release="${BASH_REMATCH[1]}" dev="${BASH_REMATCH[3]}"
+  if [[ -n "$dev" ]]; then
+    printf '%s.0.%s\n' "$release" "$dev"
+  else
+    printf '%s.1.0\n' "$release"
+  fi
+}
 
-# Compare X.Y.Z first; on a tie, a pre-release (1.59.0.dev2) is older than
-# the release (1.59.0). sort -V alone orders those the other way round.
-base() { [[ "$1" =~ ^([0-9]+\.[0-9]+\.[0-9]+) ]] && echo "${BASH_REMATCH[1]}"; }
-target_base=$(base "$target")
-pending_base=$(base "$pending" || true)
+pinned_version() {
+  local pin
+  pin=$(sed -n 's/^comfyui-frontend-package==\([^[:space:];#]*\).*/\1/p' "$1" | head -n1)
+  [[ -n "$pin" ]] || die "no exact comfyui-frontend-package== pin in $1"
+  printf '%s\n' "$pin"
+}
 
-if [[ -z "$pending_base" ]]; then
-  echo proceed
-elif [[ "$target_base" != "$pending_base" ]]; then
-  newest=$(printf '%s\n%s\n' "$target_base" "$pending_base" | sort -V | tail -n1)
-  [[ "$newest" == "$pending_base" ]] && echo skip || echo proceed
-elif [[ "$pending" == "$pending_base" ]]; then
-  # Same base: pending is the release, target a pre-release of it.
-  echo skip
-elif [[ "$target" == "$target_base" ]]; then
-  echo proceed
-else
-  newest=$(printf '%s\n%s\n' "$target" "$pending" | sort -V | tail -n1)
-  [[ "$newest" == "$pending" ]] && echo skip || echo proceed
-fi
+newer_than() {
+  local candidate target
+  candidate=$(sort_key "$1") || exit 2
+  target=$(sort_key "$2") || exit 2
+  [[ "$candidate" != "$target" ]] &&
+    [[ "$(printf '%s\n%s\n' "$candidate" "$target" | sort -V | tail -n1)" == "$candidate" ]]
+}
+
+target="${1:-}"
+[[ -n "$target" ]] || die "missing target version"
+sort_key "$target" >/dev/null
+shift
+
+for requirements in "$@"; do
+  pin=$(pinned_version "$requirements")
+  if newer_than "$pin" "$target"; then
+    echo skip
+    exit 0
+  fi
+done
+echo proceed

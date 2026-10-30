@@ -419,6 +419,7 @@ jobs:
           cat pr-body.txt
 
       - name: Create PR to ComfyUI
+        id: create-pr
         working-directory: comfyui
         env:
           GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
@@ -443,17 +444,23 @@ jobs:
           fi
 
           TARGET_VERSION="${{ needs.resolve-version.outputs.target_version }}"
-          PENDING_VERSION=""
-          OPEN_PR=$(gh pr list --repo Comfy-Org/ComfyUI --head "$HEAD_BRANCH" --state open --json number --jq '.[0].number // empty')
-          if [ -n "$OPEN_PR" ]; then
-            PENDING_VERSION=$(gh api "repos/${COMFYUI_FORK}/contents/requirements.txt?ref=${BRANCH}" --jq '.content' \
-              | base64 -d | sed -n 's/^comfyui-frontend-package==\([0-9A-Za-z.]*\).*/\1/p')
+          git show HEAD:requirements.txt > ../master-requirements.txt
+          PINNED_FILES=(../master-requirements.txt)
+          OPEN_PR=""
+          OPEN_HEAD=$(gh api "repos/Comfy-Org/ComfyUI/pulls?state=open&head=${FORK_OWNER}:${BRANCH}" \
+            --jq '.[0] | select(. != null) | "\(.number) \(.head.repo.full_name) \(.head.sha)"')
+          if [ -n "$OPEN_HEAD" ]; then
+            read -r OPEN_PR OPEN_REPO OPEN_SHA <<< "$OPEN_HEAD"
+            gh api "repos/${OPEN_REPO}/contents/requirements.txt?ref=${OPEN_SHA}" --jq '.content' \
+              | base64 -d > ../pending-requirements.txt
+            PINNED_FILES+=(../pending-requirements.txt)
           fi
-          DECISION=$(../frontend-scripts/scripts/cicd/comfyui-bump-guard.sh "$TARGET_VERSION" "$PENDING_VERSION")
+          DECISION=$(../frontend-scripts/scripts/cicd/comfyui-bump-guard.sh "$TARGET_VERSION" "${PINNED_FILES[@]}")
           if [ "$DECISION" = "skip" ]; then
-            MSG="Open ComfyUI PR #${OPEN_PR} already pins ${PENDING_VERSION}, newer than ${TARGET_VERSION}; leaving it unchanged."
+            MSG="ComfyUI master or open PR #${OPEN_PR:-none} already pins a frontend newer than ${TARGET_VERSION}; not replacing it."
             echo "::warning title=ComfyUI bump not replaced::${MSG}"
             echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -511,6 +518,7 @@ jobs:
           fi
 
       - name: Summary
+        if: steps.create-pr.outputs.skipped != 'true'
         run: |
           echo "## ComfyUI PR Created" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
