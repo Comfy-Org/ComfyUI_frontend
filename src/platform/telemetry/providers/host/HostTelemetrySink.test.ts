@@ -385,6 +385,18 @@ describe('HostTelemetrySink', () => {
       }
     },
     {
+      name: TelemetryEvents.AGENT_CREDIT_USAGE_EXPOSURE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentCreditUsageExposure({
+          variant: 'control',
+          '$feature/agent-credit-usage-summary': 'control'
+        }),
+      properties: {
+        variant: 'control',
+        '$feature/agent-credit-usage-summary': 'control'
+      }
+    },
+    {
       name: TelemetryEvents.AGENT_CONSENT_SHOWN,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentConsentShown({ trigger: 'first_load' }),

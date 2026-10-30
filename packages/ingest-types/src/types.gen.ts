@@ -474,6 +474,35 @@ export type ValidationResult = {
 }
 
 /**
+ * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
+ */
+export type ModelUploadStarted = {
+  /**
+   * Names this upload in `POST /api/assets/uploads/{upload_id}/complete`.
+   */
+  upload_id: string
+  /**
+   * Signed URL for exactly one staged object; works until `expires_at`.
+   */
+  upload_url: string
+  method: 'PUT'
+  /**
+   * Every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
+   */
+  headers: {
+    [key: string]: string
+  }
+  /**
+   * When `upload_url` stops working (15 minutes after the answer).
+   */
+  expires_at: string
+  /**
+   * The largest file an upload accepts, 2147483648 (2 GiB).
+   */
+  max_size_bytes: number
+}
+
+/**
  * Details of a single validation error encountered during asset operations.
  */
 export type ValidationError = {
@@ -7486,6 +7515,36 @@ export type AgentViewableAttachmentExtension =
   | '.heif'
 
 /**
+ * Usage of a completed turn, as carried on agent_message_done. Mirrors `$defs.agent_message_done.data.usage` in services/agent/api/agent_events.schema.json; TestMessageDoneFrameMatchesContract holds the two definitions to the same fields and constraints. charge_micro_usd appears only when the server durably captured priced billing for at least one round. It is the exact charge in millionths of a US dollar; clients convert that denomination to catalog credits for display and must not read its absence as a zero charge.
+ */
+export type AgentTurnUsage = {
+  cache_creation_input_tokens: number
+  cache_read_input_tokens: number
+  charge_micro_usd?: number
+  input_tokens: number
+  output_tokens: number
+  total_tokens: number
+}
+
+/**
+ * Present on agent_message_done only when the model service refused the turn. Mirrors `$defs.agent_message_done.data.refusal` in services/agent/api/agent_events.schema.json, which states the full rendering rules. Absence must not be read as the account having credit.
+ */
+export type AgentTurnRefusal = {
+  /**
+   * Whether adding credit to the account clears this refusal. True only for no_funds.
+   */
+  can_add_credit: boolean
+  /**
+   * What refused the turn. Clients must treat an unknown kind like payment_required (show the text) rather than fail.
+   */
+  kind: 'no_funds' | 'manual_block' | 'payment_required' | 'auth' | 'rate_limit'
+  /**
+   * Ingest's error.reason from the refused 402, verbatim, for logging and analytics. Render from kind and can_add_credit, not from this field.
+   */
+  reason?: string
+}
+
+/**
  * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, agent_message_done); canvas edits arrive as doc_update frames.
  */
 export type AgentTurnAccepted = {
@@ -8039,6 +8098,27 @@ export type AgentPendingAsk =
   | ({
       kind: 'delete_approval'
     } & AgentPendingDeleteApproval)
+
+/**
+ * Server-to-client agent_message_done frame on /ws. Closed, like the canonical envelope.
+ */
+export type AgentMessageDoneFrame = {
+  data: AgentMessageDoneData
+  type: 'agent_message_done'
+}
+
+/**
+ * The `data` of an agent_message_done WebSocket event: the assistant message is complete. Mirrors `$defs.agent_message_done.data` in services/agent/api/agent_events.schema.json.
+ */
+export type AgentMessageDoneData = {
+  message_id: string
+  refusal?: AgentTurnRefusal
+  thread_id: string
+  /**
+   * Null on a turn that failed or was refused; its rounds were billed as they ran, and the failed round has no usage.
+   */
+  usage: AgentTurnUsage | null
+}
 
 /**
  * A persisted message in an agent thread.
@@ -10285,6 +10365,123 @@ export type CreateAssetDownloadResponses = {
 
 export type CreateAssetDownloadResponse =
   CreateAssetDownloadResponses[keyof CreateAssetDownloadResponses]
+
+export type StartModelUploadData = {
+  body: {
+    /**
+     * A bare file name ending in `.safetensors` (any case), at most 255 bytes, no path, no leading dot.
+     */
+    filename: string
+    /**
+     * The file's size, 1 to 2147483648 (2 GiB).
+     */
+    size_bytes: number
+    /**
+     * Exactly `models` plus one model folder from `model_upload_folders` in GET /api/features (`loras`, `checkpoints`, `vae`, `embeddings`, ...); another folder is `400 UNSUPPORTED_MODEL_TYPE`.
+     */
+    tags: Array<string>
+  }
+  path?: never
+  query?: never
+  url: '/api/assets/uploads'
+}
+
+export type StartModelUploadErrors = {
+  /**
+   * `INVALID_BODY` (bad filename, size or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`: a pickle format such as `.ckpt`, `.pt` or `.bin` can run code when loaded), `UNSUPPORTED_MODEL_TYPE` (`models` plus a folder not in `model_upload_folders` of GET /api/features) or `FILE_TOO_LARGE` (over 2 GiB; the message is "Files can be up to 2 GB.")
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), or a refused session write (see `SessionWriteForbidden`)
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * Private-model eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
+}
+
+export type StartModelUploadError =
+  StartModelUploadErrors[keyof StartModelUploadErrors]
+
+export type StartModelUploadResponses = {
+  /**
+   * Signed upload URL for one staged object
+   */
+  201: ModelUploadStarted
+}
+
+export type StartModelUploadResponse =
+  StartModelUploadResponses[keyof StartModelUploadResponses]
+
+export type CompleteModelUploadData = {
+  body: {
+    /**
+     * The `filename` sent to start the upload.
+     */
+    filename: string
+    /**
+     * The `tags` sent to start the upload.
+     */
+    tags: Array<string>
+  }
+  path: {
+    /**
+     * The `upload_id` from `POST /api/assets/uploads`.
+     */
+    upload_id: string
+  }
+  query?: never
+  url: '/api/assets/uploads/{upload_id}/complete'
+}
+
+export type CompleteModelUploadErrors = {
+  /**
+   * `INVALID_BODY` (bad filename or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`), `UNSUPPORTED_MODEL_TYPE` (a folder not in `model_upload_folders`) or `FILE_TOO_LARGE` (the stored object is over 2 GiB; the message is "Files can be up to 2 GB.")
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), or a refused session write (see `SessionWriteForbidden`)
+   */
+  403: ErrorResponse
+  /**
+   * `UPLOAD_NOT_FOUND`: no uploaded object for this `upload_id` under this caller and workspace (not uploaded yet, cleaned up, or someone else's)
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * Private-model eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
+}
+
+export type CompleteModelUploadError =
+  CompleteModelUploadErrors[keyof CompleteModelUploadErrors]
+
+export type CompleteModelUploadResponses = {
+  /**
+   * Accepted; a task stores the file as an asset
+   */
+  202: AssetDownloadResponse
+}
+
+export type CompleteModelUploadResponse =
+  CompleteModelUploadResponses[keyof CompleteModelUploadResponses]
 
 export type CreateAssetExportData = {
   body: {
@@ -13188,6 +13385,10 @@ export type GetFeaturesResponses = {
       | 'above-input'
       | 'inside-input'
     /**
+     * Authenticated assignment for the Agent per-turn credit usage experiment. Control renders no usage line; treatment renders the authoritative server-reported charge beneath completed replies. It remains optional so older environments and partial fixtures fail closed. Reading this field is not exposure; the frontend records exposure only when a charged reply is rendered.
+     */
+    'agent-credit-usage-summary'?: 'control' | 'treatment'
+    /**
      * Authenticated assignment for the Agent starter-prompt experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract so older environments and partial feature fixtures fail closed. Reading this field does not constitute experiment exposure; the frontend emits the custom exposure event only after rendering the starter prompt surface.
      */
     'agent-starter-prompt-set'?: 'control' | 'test'
@@ -13243,6 +13444,10 @@ export type GetFeaturesResponses = {
      * Maximum upload size in bytes
      */
     max_upload_size?: number
+    /**
+     * The model types (folder names, sorted) a model file uploaded from disk may be: the list POST /api/assets/uploads checks, which answers any other with 400 UNSUPPORTED_MODEL_TYPE. Present only while runtime_library_models_enabled is on for the caller.
+     */
+    model_upload_folders?: Array<string>
     /**
      * Whether new free-tier subscriptions are enabled for this caller. Current servers always emit a boolean; clients should tolerate absence when talking to older servers that predate this declared field.
      */
