@@ -314,7 +314,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   /**
    * An `executed` output whose execution id resolves to no live node is
-   * dropped silently (PM-2354, BE-23369): the node may have been re-minted,
+   * dropped silently (BE-23369, PM-2275): the node may have been re-minted,
    * replaced, or removed between the run starting and this output landing.
    * Report it so a thin Sentry relay names which output and which id, instead
    * of only "one Save Image node didn't render".
