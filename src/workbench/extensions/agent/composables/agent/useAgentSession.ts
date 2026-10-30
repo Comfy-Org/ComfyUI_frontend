@@ -2446,7 +2446,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       TURN_RECOVERY_DEADLINE_MS
     )
     try {
-      const outcome = await fetchTurnOutcome(turn, recovery.signal)
+      let outcome = await fetchTurnOutcome(turn, recovery.signal)
+      for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
+        if (outcome.kind !== 'streaming' || generation !== sessionGeneration)
+          break
+        await delay(ms, { signal: recovery.signal })
+        outcome = await fetchTurnOutcome(turn, recovery.signal)
+      }
       if (generation !== sessionGeneration) return
       if (outcome.kind === 'error') {
         reportError(outcome.cause, {
@@ -2466,6 +2472,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     } finally {
       clearTimeout(deadline)
       if (recoveringTurns.get(key) === state) recoveringTurns.delete(key)
+      recoveryPendingAskObservations.delete(key)
+      recoveryThreadMissingCounts.delete(key)
     }
   }
 

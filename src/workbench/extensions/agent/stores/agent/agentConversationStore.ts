@@ -241,46 +241,95 @@ const FINAL_ROUND = Symbol('final round')
 type RoundKey = string | typeof FINAL_ROUND
 const MIN_ROUND_OVERLAP = 16
 
+interface IndexedThinking {
+  index: number
+  part: ThinkingPart
+}
+
 function thinkingByRound(
-  parts: AssistantMessage['parts']
-): Map<RoundKey, { index: number; part: ThinkingPart }[]> {
-  const rounds = new Map<RoundKey, { index: number; part: ThinkingPart }[]>()
-  let pending: { index: number; part: ThinkingPart }[] = []
+  parts: AssistantMessage['parts'],
+  keyOf: (callId: string) => string = (callId) => callId
+): Map<RoundKey, IndexedThinking[]> {
+  const rounds = new Map<RoundKey, IndexedThinking[]>()
+  let pending: IndexedThinking[] = []
   for (const [index, part] of parts.entries()) {
     if (part.type === 'thinking') pending.push({ index, part })
     if (part.type !== 'tool' || pending.length === 0) continue
-    rounds.set(part.callId, [...(rounds.get(part.callId) ?? []), ...pending])
+    const round = keyOf(part.callId)
+    rounds.set(round, [...(rounds.get(round) ?? []), ...pending])
     pending = []
   }
   if (pending.length > 0) rounds.set(FINAL_ROUND, pending)
   return rounds
 }
 
+function roundOverlap(stored: string, live: string): number {
+  const probe = live.slice(0, MIN_ROUND_OVERLAP)
+  for (
+    let at = stored.indexOf(probe, Math.max(0, stored.length - live.length));
+    at >= 0;
+    at = stored.indexOf(probe, at + 1)
+  )
+    if (live.startsWith(stored.slice(at))) return stored.length - at
+  return 0
+}
+
 function joinRound(stored: string, live: string): string[] {
   if (live.startsWith(stored)) return [live]
   if (stored.includes(live)) return [stored]
-  for (
-    let overlap = Math.min(stored.length, live.length);
-    overlap >= MIN_ROUND_OVERLAP;
-    overlap -= 1
-  )
-    if (stored.endsWith(live.slice(0, overlap)))
-      return [stored + live.slice(overlap)]
-  return [stored, live]
+  const overlap =
+    live.length >= MIN_ROUND_OVERLAP ? roundOverlap(stored, live) : 0
+  return overlap > 0 ? [stored + live.slice(overlap)] : [stored, live]
+}
+
+function toolCallIdsOf(parts: AssistantMessage['parts']): string[] {
+  return parts.flatMap((part) => (part.type === 'tool' ? [part.callId] : []))
+}
+
+function liveToolOffset(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts']
+): number {
+  const live = toolCallIdsOf(liveParts)
+  const persisted = toolCallIdsOf(persistedParts)
+  if (live.length === 0) return persisted.length
+  for (const [index, callId] of live.entries()) {
+    const at = persisted.indexOf(callId)
+    if (at >= index) return at - index
+  }
+  return Math.max(0, persisted.length - live.length)
+}
+
+function storedCallIdOf(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts'],
+  offset: number
+): (callId: string) => string {
+  const liveCallIds = toolCallIdsOf(liveParts)
+  const persistedCallIds = toolCallIdsOf(persistedParts)
+  const persisted = new Set(persistedCallIds)
+  const live = new Set(liveCallIds)
+  return (callId) => {
+    if (persisted.has(callId)) return callId
+    const position = liveCallIds.indexOf(callId) + offset
+    const atPosition =
+      position < persistedCallIds.length
+        ? persistedCallIds.at(position)
+        : undefined
+    return atPosition !== undefined && !live.has(atPosition)
+      ? atPosition
+      : callId
+  }
 }
 
 function mergeSnapshotThinking(
   liveParts: AssistantMessage['parts'],
   persistedParts: AssistantMessage['parts'],
-  offset: number
+  offset: number,
+  storedCallId: (callId: string) => string
 ): AssistantMessage['parts'] {
   const stored = thinkingByRound(persistedParts)
-  const live = storedRoundKeys(
-    thinkingByRound(liveParts),
-    toolCallIdsOf(liveParts),
-    toolCallIdsOf(persistedParts),
-    offset
-  )
+  const live = thinkingByRound(liveParts, storedCallId)
   const persistedCallIds = new Set(toolCallIdsOf(persistedParts))
   const unplaced = new Set<ThinkingPart>()
   const replaced = new Map<number, ThinkingPart[]>()
@@ -290,14 +339,15 @@ function mergeSnapshotThinking(
     const storedRound = stored.get(round)
     const liveText = liveRound.map(({ part }) => part.text).join('')
     if (storedRound !== undefined) {
-      const last = storedRound[storedRound.length - 1]
+      const storedText = storedRound.map(({ part }) => part.text).join('')
+      const joined = joinRound(storedText, liveText)
+      if (joined.length === 1 && joined[0] === storedText) continue
+      const [first, ...rest] = storedRound
       replaced.set(
-        last.index,
-        joinRound(last.part.text, liveText).map((text) => ({
-          ...last.part,
-          text
-        }))
+        first.index,
+        joined.map((text) => ({ ...first.part, text }))
       )
+      for (const { index } of rest) replaced.set(index, [])
       continue
     }
     const parts = liveRound.map(({ part }) => part)
@@ -322,58 +372,16 @@ function mergeSnapshotThinking(
   )
 }
 
-function storedRoundKeys<T>(
-  liveRounds: Map<RoundKey, T>,
-  liveCallIds: string[],
-  persistedCallIds: string[],
-  offset: number
-): Map<RoundKey, T> {
-  const persisted = new Set(persistedCallIds)
-  const live = new Set(liveCallIds)
-  const keyed = new Map<RoundKey, T>()
-  for (const [round, value] of liveRounds) {
-    if (round === FINAL_ROUND || persisted.has(round)) {
-      keyed.set(round, value)
-      continue
-    }
-    const position = liveCallIds.indexOf(round) + offset
-    const atPosition =
-      position < persistedCallIds.length
-        ? persistedCallIds.at(position)
-        : undefined
-    keyed.set(
-      atPosition !== undefined && !live.has(atPosition) ? atPosition : round,
-      value
-    )
-  }
-  return keyed
-}
-
-function toolCallIdsOf(parts: AssistantMessage['parts']): string[] {
-  return parts.flatMap((part) => (part.type === 'tool' ? [part.callId] : []))
-}
-
-function liveToolOffset(
-  liveParts: AssistantMessage['parts'],
-  persistedParts: AssistantMessage['parts']
-): number {
-  const live = toolCallIdsOf(liveParts)
-  const persisted = toolCallIdsOf(persistedParts)
-  if (live.length === 0) return persisted.length
-  for (const [index, callId] of live.entries()) {
-    const at = persisted.indexOf(callId)
-    if (at >= index) return at - index
-  }
-  return Math.max(0, persisted.length - live.length)
-}
-
 function preserveCanvasConfirmation(
   liveParts: AssistantMessage['parts'],
-  persistedParts: AssistantMessage['parts']
+  persistedParts: AssistantMessage['parts'],
+  storedCallId: (callId: string) => string
 ): AssistantMessage['parts'] {
   const confirmedCallIds = new Set(
     liveParts.flatMap((part) =>
-      part.type === 'tool' && part.canvasConfirmed === true ? [part.callId] : []
+      part.type === 'tool' && part.canvasConfirmed === true
+        ? [storedCallId(part.callId)]
+        : []
     )
   )
   return persistedParts.map((part) =>
@@ -385,14 +393,21 @@ function preserveCanvasConfirmation(
   )
 }
 
-function reconcileSnapshotParts(
-  liveParts: AssistantMessage['parts'],
-  persistedParts: AssistantMessage['parts'],
-  offset: number
-): AssistantMessage['parts'] {
-  return preserveCanvasConfirmation(
-    liveParts,
-    mergeSnapshotThinking(liveParts, persistedParts, offset)
+function finishSnapshotTurn(
+  message: AssistantMessage,
+  persistedParts: AssistantMessage['parts']
+): void {
+  const liveParts = message.parts
+  const offset = liveToolOffset(liveParts, persistedParts)
+  const storedCallId = storedCallIdOf(liveParts, persistedParts, offset)
+  finishWithPersistedParts(
+    message,
+    preserveCanvasConfirmation(
+      liveParts,
+      mergeSnapshotThinking(liveParts, persistedParts, offset, storedCallId),
+      storedCallId
+    ),
+    offset
   )
 }
 
@@ -1043,13 +1058,7 @@ export const useAgentConversationStore = defineStore(
       )
       if (index < 0) return
       const reconciled = { ...messages.value[index] }
-      const liveParts = reconciled.parts
-      const offset = liveToolOffset(liveParts, persistedParts)
-      finishWithPersistedParts(
-        reconciled,
-        reconcileSnapshotParts(liveParts, persistedParts, offset),
-        offset
-      )
+      finishSnapshotTurn(reconciled, persistedParts)
       messages.value[index] = reconciled
     }
 
@@ -1425,7 +1434,9 @@ export const useAgentConversationStore = defineStore(
         turn.messageId === slot.turnId
       if (isActive) {
         clearSettledAskState(turn.threadId)
-        finishWithPersistedParts(slot.message, persistedParts)
+        if (slot.origin === 'snapshot' && persistedParts !== undefined)
+          finishSnapshotTurn(slot.message, persistedParts)
+        else finishWithPersistedParts(slot.message, persistedParts)
         rememberDepartedActiveTurn('settled-turn')
         slot.transport.settle()
         slot.transport.dispose()

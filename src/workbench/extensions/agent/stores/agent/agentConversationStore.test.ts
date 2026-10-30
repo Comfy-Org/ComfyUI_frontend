@@ -2473,6 +2473,79 @@ describe('useAgentConversationStore', () => {
       ])
     })
 
+    it('keeps a stored round split across two parts when the live copy matches it', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'Wiring it. Then saving.'))
+      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      const persisted: AssistantMessage['parts'] = [
+        { type: 'thinking', text: 'Wiring it.', state: 'done' },
+        { type: 'thinking', text: ' Then saving.', state: 'done' },
+        storedTool(),
+        { type: 'text', text: 'Added it.', state: 'done' }
+      ]
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        persisted
+      )
+
+      expect(reconciledParts(store)).toEqual(persisted)
+    })
+
+    it('keeps a live canvas confirmation for a call the stored row keys by row id', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        [
+          {
+            type: 'tool',
+            callId: 'row-fallback-id',
+            name: 'add_node',
+            state: 'done',
+            ok: true,
+            canvasConfirmed: false
+          },
+          { type: 'text', text: 'Added it.', state: 'done' }
+        ]
+      )
+
+      expect(
+        reconciledParts(store)?.find((part) => part.type === 'tool')
+      ).toMatchObject({ callId: 'row-fallback-id', canvasConfirmed: true })
+    })
+
+    it('merges live thinking the same way when the recovery read settles the turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload'))
+
+      store.settleTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts().filter(
+          (part) => part.type !== 'thinking' || part.text !== 'after the reload'
+        )
+      )
+
+      expect(reconciledParts(store)).toEqual(storedParts())
+    })
+
     it('waits for a held tool call to clear before announcing the turn', () => {
       const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
       const store = useAgentConversationStore()

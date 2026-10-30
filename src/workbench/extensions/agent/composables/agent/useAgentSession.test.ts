@@ -996,6 +996,61 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('reads a settled snapshot turn again while its row still reads as streaming', async () => {
+    const streamingRow = {
+      ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+      content: {},
+      status: 'streaming' as const
+    }
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        streamingRow
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        streamingRow
+      ])
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', 'Added it.', 'msg-1'),
+          content: {
+            text: 'Added it.',
+            thinking: [{ text: 'before the reload' }]
+          }
+        }
+      ])
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    emit(thinking('msg-1', 'live after reload'))
+    emit(done('msg-1'))
+
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(4), {
+      timeout: 5000
+    })
+    await vi.waitFor(() => {
+      const last = session.entries.value.at(-1)
+      expect(
+        last?.role === 'assistant'
+          ? last.parts.flatMap((part) =>
+              part.type === 'thinking' ? [part.text] : []
+            )
+          : []
+      ).toContain('before the reload')
+    })
+  })
+
   it('re-attaches to the running turn when a send is refused with TURN_IN_PROGRESS', async () => {
     const conversation = useAgentConversationStore()
     const postMessage = vi
