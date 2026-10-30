@@ -1083,16 +1083,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   ) {
     const detailKey = errorMessage && FAILURE_DETAIL_KEYS.get(errorMessage)
     if (detailKey) return t(detailKey)
-    // `recovery` is withheld from operations that never charge a card.
     if (
       errorMessage === 'subscribe_method_not_chargeable_off_session' &&
       recovery
     ) {
       return t('billingOperation.methodNotChargeableOffSessionDetail')
     }
-    // Reached only when no coded reason named something more actionable. A
-    // terminal operation is served no action_url, so this copy must promise no
-    // button — and no retry unless the server says another attempt can work.
     if (recovery?.action === 'authenticate_payment') {
       return t(
         recovery.retryable === false
