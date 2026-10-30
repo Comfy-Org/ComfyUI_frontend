@@ -44,7 +44,6 @@ function sourceRoots(repositoryRoot: string): Outcome<string[]> {
   }
 }
 
-/** Lists the code files of `src` and of every `packages/<name>/src`. */
 function listSourceFiles(repositoryRoot: string): Outcome<string[]> {
   const roots = sourceRoots(repositoryRoot)
   if (!roots.ok) return roots
