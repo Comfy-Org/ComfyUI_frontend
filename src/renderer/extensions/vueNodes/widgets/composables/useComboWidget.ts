@@ -89,25 +89,62 @@ function syncPromotedHostsOnce(rootGraph: LGraph) {
   rootGraphsToSync.add(rootGraph)
 }
 
+interface LibraryWatch {
+  folder: string
+  stop?: () => void
+}
+
+const libraryWatchesByNode = new WeakMap<LGraphNode, Set<LibraryWatch>>()
+
+function startLibraryWatch(node: LGraphNode, libraryWatch: LibraryWatch) {
+  libraryWatch.stop ??= useDeploymentLibraryModelsStore().watchFolder(
+    libraryWatch.folder,
+    () => {
+      if (node.graph) syncPromotedHostsOnce(node.graph.rootGraph)
+      else stopLibraryWatch(libraryWatch)
+    }
+  )
+}
+
+function stopLibraryWatch(libraryWatch: LibraryWatch) {
+  libraryWatch.stop?.()
+  libraryWatch.stop = undefined
+}
+
+function libraryWatchesOf(node: LGraphNode): Set<LibraryWatch> {
+  const existing = libraryWatchesByNode.get(node)
+  if (existing) return existing
+  const libraryWatches = new Set<LibraryWatch>()
+  libraryWatchesByNode.set(node, libraryWatches)
+  const { onAdded, onRemoved } = node
+  node.onAdded = function (graph) {
+    onAdded?.call(this, graph)
+    for (const libraryWatch of libraryWatches) {
+      startLibraryWatch(node, libraryWatch)
+    }
+  }
+  node.onRemoved = function () {
+    onRemoved?.call(this)
+    for (const libraryWatch of libraryWatches) stopLibraryWatch(libraryWatch)
+  }
+  return libraryWatches
+}
+
 function addLibraryModelOptions(
   node: LGraphNode,
   widget: IComboWidget,
   folder: string
 ) {
   const library = useDeploymentLibraryModelsStore()
-  const stopWatching = library.watchFolder(folder, () => {
-    if (node.graph) syncPromotedHostsOnce(node.graph.rootGraph)
-    else stopWatching()
-  })
-  const { onRemoved } = node
-  node.onRemoved = function () {
-    onRemoved?.call(this)
-    stopWatching()
-  }
+  const libraryWatch: LibraryWatch = { folder }
+  const libraryWatches = libraryWatchesOf(node)
+  libraryWatches.add(libraryWatch)
+  startLibraryWatch(node, libraryWatch)
   const { onRemove } = widget
   widget.onRemove = function () {
     onRemove?.call(this)
-    stopWatching()
+    libraryWatches.delete(libraryWatch)
+    stopLibraryWatch(libraryWatch)
   }
   registerComboWidgetInventory(widget, {
     getStatus: () => library.statusOf(folder),

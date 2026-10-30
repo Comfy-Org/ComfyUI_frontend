@@ -323,6 +323,60 @@ describe('model widgets on a deployment', () => {
       }
     )
 
+    it.for([
+      {
+        change: 'an upload into its folder completes',
+        apply: () => {
+          useAssetDownloadStore().lastCompletedDownload = {
+            taskId: 'task-1',
+            modelType: 'loras',
+            timestamp: 1
+          }
+        }
+      },
+      {
+        change: 'the workspace changes',
+        apply: () => onWorkspace('ws-2')
+      }
+    ])(
+      'keeps a loader deleted and added back in step with the library when $change',
+      async ({ apply }) => {
+        const graph = new LGraph()
+        const node = loaderNode('LoraLoader', 'lora_name')
+        graph.add(node)
+        await libraryAnswered()
+        graph.remove(node)
+        graph.add(node)
+        vi.mocked(syncPromotedComboHostOptions).mockClear()
+
+        library.set('loras', ['uploaded.safetensors'])
+        apply()
+        await nextTick()
+        await libraryAnswered()
+
+        expect(syncPromotedComboHostOptions).toHaveBeenLastCalledWith(
+          graph.rootGraph
+        )
+      }
+    )
+
+    it('adds one removal handler to a node however many library dropdowns come and go', () => {
+      const node = loaderNode('LoraLoader', 'lora_name')
+      const { onRemoved } = node
+
+      for (let row = 0; row < 3; row++) {
+        const { widget } = ComfyWidgets.COMBO(
+          node,
+          'lora_name',
+          [['release.safetensors'], {}],
+          app
+        )
+        node.removeWidget(widget)
+      }
+
+      expect(node.onRemoved).toBe(onRemoved)
+    })
+
     it('holds the missing-model check until the library answers', async () => {
       let answer: (names: string[]) => void = () => {}
       vi.mocked(assetService.getWorkspaceLibraryModels).mockReturnValueOnce(
