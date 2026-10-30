@@ -568,9 +568,6 @@ describe('useMediaAssetActions', () => {
       )
     })
 
-    // Both public commands regressed here: single open reported success over the
-    // graph-load dialog, and bulk open added its own "no workflows" warning on
-    // top of it. Require neither toast from either entrypoint.
     it.for([
       {
         name: 'single',
@@ -587,7 +584,7 @@ describe('useMediaAssetActions', () => {
         ) => actions.openMultipleWorkflows([asset])
       }
     ])(
-      'does not show another toast for a handled $name failure',
+      'does not show another toast for a handled $name API-prompt failure',
       async ({ open }) => {
         mockExtractWorkflowFromAsset.mockResolvedValue({
           workflow: null,
@@ -604,6 +601,41 @@ describe('useMediaAssetActions', () => {
         expect(useToast().warning).not.toHaveBeenCalled()
         expect(useToast().success).not.toHaveBeenCalled()
         expect(mockReportError).toHaveBeenCalledOnce()
+      }
+    )
+
+    it.for([
+      {
+        name: 'single',
+        open: (
+          actions: ReturnType<typeof useMediaAssetActions>,
+          asset: AssetItem
+        ) => actions.openWorkflow(asset)
+      },
+      {
+        name: 'bulk',
+        open: (
+          actions: ReturnType<typeof useMediaAssetActions>,
+          asset: AssetItem
+        ) => actions.openMultipleWorkflows([asset])
+      }
+    ])(
+      'does not show another toast for a handled $name full-workflow failure',
+      async ({ open }) => {
+        mockExtractWorkflowFromAsset.mockResolvedValue({
+          workflow: { version: 0.4 },
+          filename: 'open.json'
+        })
+        mockOpenWorkflowAction.mockResolvedValue({
+          success: false,
+          errorPresentation: 'handled'
+        })
+        const actions = useMediaAssetActions()
+
+        await open(actions, createMockAsset())
+
+        expect(useToast().warning).not.toHaveBeenCalled()
+        expect(useToast().success).not.toHaveBeenCalled()
       }
     )
 

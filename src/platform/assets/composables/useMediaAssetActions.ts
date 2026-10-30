@@ -19,6 +19,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { isGraphLoadFailurePresented } from '@/services/graphLoadFailure'
+import type { WorkflowOpenResult } from '@/platform/workflow/core/services/workflowActionsService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
@@ -311,11 +312,7 @@ export function useMediaAssetActions() {
   const openApiPromptAsWorkflow = async (
     asset: AssetItem,
     filename: string
-  ): Promise<{
-    success: boolean
-    error?: string
-    errorPresentation?: 'handled'
-  }> => {
+  ): Promise<WorkflowOpenResult> => {
     try {
       const apiPrompt = await extractApiPromptFromAsset(asset)
       if (!app.isApiJson(apiPrompt)) return { success: false }
@@ -342,6 +339,9 @@ export function useMediaAssetActions() {
    * Open an asset's workflow in a new tab, falling back to the stored API
    * graph for assets whose job embeds no workflow (API submissions)
    */
+  const isAlreadyPresented = (result: WorkflowOpenResult) =>
+    result.errorPresentation === 'handled'
+
   const openAssetWorkflow = async (asset: AssetItem) => {
     const { workflow, filename } = await extractWorkflowFromAsset(asset)
 
@@ -368,10 +368,7 @@ export function useMediaAssetActions() {
       return
     }
 
-    // The graph loader already showed this failure; a second toast would
-    // contradict the dialog the user is looking at.
-    if ('errorPresentation' in result && result.errorPresentation === 'handled')
-      return
+    if (isAlreadyPresented(result)) return
 
     toast.warning(t('g.warning'), {
       description: result.error || t('mediaAsset.noWorkflowDataFound'),
@@ -497,11 +494,7 @@ export function useMediaAssetActions() {
           succeeded++
         } else {
           failed++
-          if (
-            'errorPresentation' in result &&
-            result.errorPresentation === 'handled'
-          )
-            alreadyPresented++
+          if (isAlreadyPresented(result)) alreadyPresented++
         }
       } catch {
         failed++
@@ -516,9 +509,8 @@ export function useMediaAssetActions() {
         duration: 2000
       })
     } else if (succeeded === 0) {
-      // Every failure already showed its own graph-load error, so
-      // "no workflows found" would be both duplicate and wrong.
-      if (alreadyPresented < failed)
+      const everyFailureAlreadyPresented = alreadyPresented === failed
+      if (!everyFailureAlreadyPresented)
         toast.warning(t('g.warning'), {
           description: t('mediaAsset.selection.noWorkflowsFound'),
           duration: 3000
