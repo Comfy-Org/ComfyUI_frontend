@@ -21,7 +21,6 @@ interface AutogrowGroupDropTarget {
 interface AutogrowGroupDropRow extends AutogrowGroupDropTarget {
   /** Client position of the row's connection dot. */
   clientPos: [number, number]
-  rowClientTop: number
 }
 
 /** Type of the link dragged from a subgraph input node, if any. */
@@ -64,8 +63,7 @@ export function findAutogrowGroupDropRow(
   return {
     nodeId: toNodeId(nodeIdAttr),
     groupName,
-    clientPos: [rect.left + rect.width / 2, rect.top + rect.height / 2],
-    rowClientTop: row.getBoundingClientRect().top
+    clientPos: [rect.left + rect.width / 2, rect.top + rect.height / 2]
   }
 }
 
