@@ -2282,6 +2282,40 @@ describe('useAgentConversationStore', () => {
       expect(reconciledParts(store)).toEqual(persisted)
     })
 
+    it('keeps a live round whose tool call the stored row keys differently', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload'))
+      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'save', 'success'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      const storedSave: AssistantMessage['parts'][number] = {
+        type: 'tool',
+        callId: 'row-fallback-id',
+        name: 'save',
+        state: 'done',
+        ok: true
+      }
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        [
+          { type: 'thinking', text: 'before the reload', state: 'done' },
+          storedTool(),
+          storedSave,
+          { type: 'text', text: 'Saved it.', state: 'done' }
+        ]
+      )
+
+      expect(reconciledParts(store)).toEqual([
+        { type: 'thinking', text: 'before the reload', state: 'done' },
+        storedTool(),
+        { type: 'thinking', text: 'after the reload', state: 'done' },
+        storedSave,
+        { type: 'text', text: 'Saved it.', state: 'done' }
+      ])
+    })
+
     it.for([
       {
         reloadedAt: 'inside the stored head',

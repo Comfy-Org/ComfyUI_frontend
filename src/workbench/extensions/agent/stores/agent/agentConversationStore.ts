@@ -271,10 +271,13 @@ function joinRound(stored: string, live: string): string[] {
 
 function mergeSnapshotThinking(
   liveParts: AssistantMessage['parts'],
-  persistedParts: AssistantMessage['parts']
+  persistedParts: AssistantMessage['parts'],
+  offset: number
 ): AssistantMessage['parts'] {
   const stored = thinkingByRound(persistedParts)
   const live = thinkingByRound(liveParts)
+  const persistedCallIds = new Set(toolCallIdsOf(persistedParts))
+  const unplaced = new Set<ThinkingPart>()
   const replaced = new Map<number, ThinkingPart[]>()
   const insertBefore = new Map<string, ThinkingPart[]>()
   let finalLive: ThinkingPart[] = []
@@ -294,16 +297,24 @@ function mergeSnapshotThinking(
     }
     const parts = liveRound.map(({ part }) => part)
     if (round === FINAL_ROUND) finalLive = parts
-    else insertBefore.set(round, parts)
+    else if (persistedCallIds.has(round)) insertBefore.set(round, parts)
+    else for (const part of parts) unplaced.add(part)
   }
   const merged = persistedParts.flatMap((part, index) => [
     ...(part.type === 'tool' ? (insertBefore.get(part.callId) ?? []) : []),
     ...(replaced.get(index) ?? [part])
   ])
-  if (finalLive.length === 0) return merged
-  const lastTool = merged.findLastIndex((part) => part.type === 'tool')
-  merged.splice(lastTool + 1, 0, ...finalLive)
-  return merged
+  if (finalLive.length > 0) {
+    const lastTool = merged.findLastIndex((part) => part.type === 'tool')
+    merged.splice(lastTool + 1, 0, ...finalLive)
+  }
+  if (unplaced.size === 0) return merged
+  return interleaveLocalParts(
+    merged,
+    anchorLocalParts(liveParts)
+      .filter(({ part }) => part.type === 'thinking' && unplaced.has(part))
+      .map((anchor) => ({ ...anchor, toolCount: anchor.toolCount + offset }))
+  )
 }
 
 function toolCallIdsOf(parts: AssistantMessage['parts']): string[] {
@@ -344,11 +355,12 @@ function preserveCanvasConfirmation(
 
 function reconcileSnapshotParts(
   liveParts: AssistantMessage['parts'],
-  persistedParts: AssistantMessage['parts']
+  persistedParts: AssistantMessage['parts'],
+  offset: number
 ): AssistantMessage['parts'] {
   return preserveCanvasConfirmation(
     liveParts,
-    mergeSnapshotThinking(liveParts, persistedParts)
+    mergeSnapshotThinking(liveParts, persistedParts, offset)
   )
 }
 
@@ -1003,7 +1015,7 @@ export const useAgentConversationStore = defineStore(
       const offset = liveToolOffset(liveParts, persistedParts)
       finishWithPersistedParts(
         reconciled,
-        reconcileSnapshotParts(liveParts, persistedParts),
+        reconcileSnapshotParts(liveParts, persistedParts, offset),
         offset
       )
       messages.value[index] = reconciled
