@@ -59,8 +59,7 @@ describe('AudioPreviewPlayer', () => {
   })
 
   describe('play/pause button', () => {
-    it('stays paused when the browser rejects playback', async () => {
-      // Safari rejects play() with this DOMException for unsupported sources
+    it('stays paused and shows a toast when Safari rejects playback with NotSupportedError', async () => {
       const play = vi
         .spyOn(HTMLMediaElement.prototype, 'play')
         .mockRejectedValue(
@@ -83,6 +82,71 @@ describe('AudioPreviewPlayer', () => {
 
       expect(play).toHaveBeenCalledTimes(2)
       expect(pause).not.toHaveBeenCalled()
+      expect(console.warn).toHaveBeenCalledWith(
+        'Audio playback failed:',
+        expect.any(DOMException)
+      )
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'error',
+          description: 'g.audioPlaybackFailed'
+        })
+      )
+      expect(useToast().toasts).toHaveLength(1)
+    })
+
+    it('stays silent when the current play attempt is aborted', async () => {
+      const play = vi
+        .spyOn(HTMLMediaElement.prototype, 'play')
+        .mockRejectedValue(new DOMException('Aborted', 'AbortError'))
+      const user = userEvent.setup()
+
+      renderPlayer('http://example.com/audio.mp3')
+      const button = screen.getByRole('button', { name: 'g.playPause' })
+
+      await user.click(button)
+      await user.click(button)
+
+      expect(play).toHaveBeenCalledTimes(2)
+      expect(console.warn).not.toHaveBeenCalledWith(
+        'Audio playback failed:',
+        expect.anything()
+      )
+      expect(useToast().toasts).toEqual([])
+    })
+
+    it('ignores a rejection from a superseded play attempt', async () => {
+      const attempts: Array<(reason: unknown) => void> = []
+      const play = vi
+        .spyOn(HTMLMediaElement.prototype, 'play')
+        .mockImplementation(
+          () =>
+            new Promise<void>((_resolve, reject) => {
+              attempts.push(reject)
+            })
+        )
+      const pause = vi
+        .spyOn(HTMLMediaElement.prototype, 'pause')
+        .mockImplementation(() => {})
+      const user = userEvent.setup()
+
+      renderPlayer('http://example.com/audio.mp3')
+      pause.mockClear()
+      const button = screen.getByRole('button', { name: 'g.playPause' })
+
+      await user.click(button)
+      await user.click(button)
+      await user.click(button)
+      attempts[0](new DOMException('Interrupted by pause', 'AbortError'))
+      await user.click(button)
+
+      expect(play).toHaveBeenCalledTimes(2)
+      expect(pause).toHaveBeenCalledTimes(2)
+      expect(console.warn).not.toHaveBeenCalledWith(
+        'Audio playback failed:',
+        expect.anything()
+      )
+      expect(useToast().toasts).toEqual([])
     })
   })
 

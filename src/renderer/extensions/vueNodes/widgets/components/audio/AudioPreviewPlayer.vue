@@ -127,6 +127,7 @@ import { useI18n } from 'vue-i18n'
 import { whenever } from '@vueuse/core'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { createToastId } from '@/types/toastId'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@comfyorg/design-system/button/Button'
@@ -164,12 +165,16 @@ const showVolumeTwo = computed(() => !isMuted.value && volume.value > 0.5)
 const showVolumeOne = computed(() => !isMuted.value && volume.value > 0)
 
 // Playback controls
+let playAttempt = 0
+const playbackErrorToastId = createToastId()
+
 const togglePlayPause = async () => {
   const audio = audioRef.value
   if (!audio || !audio.src) {
     return
   }
 
+  const attempt = ++playAttempt
   if (isPlaying.value) {
     audio.pause()
     isPlaying.value = false
@@ -180,8 +185,14 @@ const togglePlayPause = async () => {
   try {
     await audio.play()
   } catch (error) {
-    console.warn('Audio playback failed:', error)
+    if (attempt !== playAttempt) return
     isPlaying.value = false
+    if (error instanceof DOMException && error.name === 'AbortError') return
+    console.warn('Audio playback failed:', error)
+    toast.error(t('g.error'), {
+      id: playbackErrorToastId,
+      description: t('g.audioPlaybackFailed')
+    })
   }
 }
 
@@ -281,6 +292,7 @@ const menuItems = computed(() => [
 whenever(
   modelValue,
   () => {
+    playAttempt++
     isPlaying.value = false
     audioRef.value?.pause()
     void audioRef.value?.load()

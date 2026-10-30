@@ -59,6 +59,7 @@
     "errorLoadingVideo": "Error loading video",
     "failedToDownloadImage": "Failed to download image",
     "failedToDownloadFile": "Failed to download file",
+    "audioPlaybackFailed": "Couldn't play this audio. Try again, or download it to play in another app.",
     "failedToDownloadVideo": "Failed to download video",
     "calculatingDimensions": "Calculating dimensions",
     "import": "Import",
