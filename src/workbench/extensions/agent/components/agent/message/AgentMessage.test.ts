@@ -65,7 +65,7 @@ describe('AgentMessage credit usage', () => {
     })
 
     expect(screen.getByTestId('agent-credit-usage')).toHaveTextContent(
-      'Agent used 1.27 credits'
+      /^Agent used 1\.27 credits$/
     )
   })
 
@@ -83,8 +83,50 @@ describe('AgentMessage credit usage', () => {
     })
 
     expect(screen.getByTestId('agent-credit-usage')).toHaveTextContent(
-      'Agent used 1 credit'
+      /^Agent used 1 credit$/
     )
+  })
+
+  it('chooses the plural form from the displayed amount', () => {
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...createAssistantMessage(toTurnId('msg-rounded-credit')),
+          parts: [{ type: 'text', text: 'Done', state: 'done' }],
+          streaming: false,
+          creditsUsed: 1.001
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByTestId('agent-credit-usage')).toHaveTextContent(
+      /^Agent used 1 credit$/
+    )
+  })
+
+  it('localizes the below-minimum amount', () => {
+    const previousLocale = i18n.global.locale.value
+    i18n.global.locale.value = 'fr'
+    try {
+      render(AgentMessage, {
+        props: {
+          message: {
+            ...createAssistantMessage(toTurnId('msg-tiny-credit')),
+            parts: [{ type: 'text', text: 'Done', state: 'done' }],
+            streaming: false,
+            creditsUsed: 0.004
+          }
+        },
+        global: { plugins: [i18n] }
+      })
+
+      const usage = screen.getByTestId('agent-credit-usage')
+      expect(usage).toHaveTextContent('<0,01')
+      expect(usage).not.toHaveTextContent('<0.01')
+    } finally {
+      i18n.global.locale.value = previousLocale
+    }
   })
 
   it('hides unavailable usage', () => {

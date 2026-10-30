@@ -14,6 +14,7 @@ import {
   zAgentToolCallData as zGeneratedAgentToolCallData,
   zAgentThinkingEntry,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
+  zAgentTurnUsage as zGeneratedAgentTurnUsage,
   zToolCallSummary,
   zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
@@ -302,7 +303,9 @@ const zAgentUsage = z
     total_tokens: z.number().nullish(),
     cache_read_input_tokens: z.number().nullish(),
     cache_creation_input_tokens: z.number().nullish(),
-    charge_micro_usd: z.number().int().nonnegative().nullish()
+    // Server-owned charge: spelling, optionality and bounds come from the
+    // generated agent_message_done contract, so a producer change surfaces here.
+    charge_micro_usd: zGeneratedAgentTurnUsage.shape.charge_micro_usd
   })
   .passthrough()
 

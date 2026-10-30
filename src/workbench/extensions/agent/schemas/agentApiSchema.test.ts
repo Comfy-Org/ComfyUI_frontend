@@ -340,7 +340,10 @@ describe('agentApiSchema contract subtleties', () => {
       'nope',
       42,
       { input_tokens: '4493' },
-      { charge_micro_usd: -1 }
+      { charge_micro_usd: -1 },
+      // The producer's contract starts charges at one micro-USD.
+      { charge_micro_usd: 0 },
+      { charge_micro_usd: 1.5 }
     ]) {
       const parsed = zAgentWsEvent.parse({
         ...doneBase,

@@ -91,13 +91,18 @@ const creditUsage = computed(() => {
     creditsUsed === undefined
   )
     return null
-  const credits =
-    creditsUsed < 0.01
-      ? '<0.01'
-      : new Intl.NumberFormat(locale.value, {
-          maximumFractionDigits: 2
-        }).format(creditsUsed)
-  return t('agent.creditsUsed', { credits }, creditsUsed)
+  const format = new Intl.NumberFormat(locale.value, {
+    maximumFractionDigits: 2
+  }).format
+  const credits = creditsUsed < 0.01 ? `<${format(0.01)}` : format(creditsUsed)
+  // Choose the plural form from the amount as displayed, not the raw charge.
+  // Vue escapes the text interpolation below, so escaping the parameter here
+  // too would show `<` as a literal `&lt;`.
+  return t(
+    'agent.creditsUsed',
+    { credits },
+    { plural: Number(creditsUsed.toFixed(2)), escapeParameter: false }
+  )
 })
 
 const replyAssets = computed(() =>

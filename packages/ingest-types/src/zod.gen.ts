@@ -4435,6 +4435,33 @@ export const zAgentViewableAttachmentExtension = z.enum([
 ])
 
 /**
+ * Usage of a completed turn, as carried on agent_message_done. Mirrors `$defs.agent_message_done.data.usage` in services/agent/api/agent_events.schema.json; TestMessageDoneFrameMatchesContract holds the two definitions to the same fields and constraints. charge_micro_usd appears only when the server durably captured priced billing for at least one round. It is the exact charge in millionths of a US dollar; clients convert that denomination to catalog credits for display and must not read its absence as a zero charge.
+ */
+export const zAgentTurnUsage = z.object({
+  cache_creation_input_tokens: z.int().gte(0),
+  cache_read_input_tokens: z.int().gte(0),
+  charge_micro_usd: z.int().gte(1).optional(),
+  input_tokens: z.int().gte(0),
+  output_tokens: z.int().gte(0),
+  total_tokens: z.int().gte(0)
+})
+
+/**
+ * Present on agent_message_done only when the model service refused the turn. Mirrors `$defs.agent_message_done.data.refusal` in services/agent/api/agent_events.schema.json, which states the full rendering rules. Absence must not be read as the account having credit.
+ */
+export const zAgentTurnRefusal = z.object({
+  can_add_credit: z.boolean(),
+  kind: z.enum([
+    'no_funds',
+    'manual_block',
+    'payment_required',
+    'auth',
+    'rate_limit'
+  ]),
+  reason: z.string().optional()
+})
+
+/**
  * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, agent_message_done); canvas edits arrive as doc_update frames.
  */
 export const zAgentTurnAccepted = z.object({
@@ -4836,6 +4863,24 @@ export const zAgentPendingAsk = z.union([
     })
     .and(zAgentPendingDeleteApproval)
 ])
+
+/**
+ * The `data` of an agent_message_done WebSocket event: the assistant message is complete. Mirrors `$defs.agent_message_done.data` in services/agent/api/agent_events.schema.json.
+ */
+export const zAgentMessageDoneData = z.object({
+  message_id: z.string(),
+  refusal: zAgentTurnRefusal.optional(),
+  thread_id: z.string(),
+  usage: zAgentTurnUsage.nullable()
+})
+
+/**
+ * Server-to-client agent_message_done frame on /ws. Closed, like the canonical envelope.
+ */
+export const zAgentMessageDoneFrame = z.object({
+  data: zAgentMessageDoneData,
+  type: z.enum(['agent_message_done'])
+})
 
 /**
  * A persisted message in an agent thread.
