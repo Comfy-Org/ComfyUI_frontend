@@ -632,9 +632,10 @@ describe('BillingAutoTopUpCard', () => {
       )
     }
 
-    const TODAY = {
-      line: 'Refills credits when your balance runs low',
-      action: 'Turn on'
+    const NO_DEFAULT = {
+      line: 'Auto top-up needs a default payment method. Set one to turn it on.',
+      action: 'Update payment',
+      icon: 'icon-[lucide--arrow-up-right]'
     }
 
     it.for<{
@@ -643,40 +644,43 @@ describe('BillingAutoTopUpCard', () => {
       methods: Promise<BillingResult<SavedPaymentMethod[]>>
       line: string
       action: string
+      icon: string
     }>([
       {
         name: 'asks to add one when nothing is saved',
         setup: frozen,
         methods: Promise.resolve({ status: 'ok', value: [] }),
         line: 'Auto top-up needs a payment method. Add one to turn it on.',
-        action: 'Add payment method'
+        action: 'Add payment method',
+        icon: 'icon-[lucide--arrow-up-right]'
       },
       {
         name: 'asks to set a default when cards are saved',
         setup: frozen,
         methods: Promise.resolve({ status: 'ok', value: [savedCard] }),
-        line: 'Auto top-up needs a default payment method. Set one to turn it on.',
-        action: 'Update payment'
+        ...NO_DEFAULT
       },
       {
-        name: 'keeps the off card while the saved list is loading',
+        name: 'asks to set a default while the saved list is loading',
         setup: frozen,
         methods: new Promise(() => {}),
-        ...TODAY
+        ...NO_DEFAULT
       },
       {
-        name: 'keeps the off card when the saved list fails',
+        name: 'asks to set a default when the saved list fails',
         setup: frozen,
         methods: Promise.resolve({ status: 'error', code: 'REQUEST_FAILED' }),
-        ...TODAY
+        ...NO_DEFAULT
       },
       {
         name: 'keeps the off card when not frozen',
         setup: null,
         methods: Promise.resolve({ status: 'ok', value: [] }),
-        ...TODAY
+        line: 'Refills credits when your balance runs low',
+        action: 'Turn on',
+        icon: 'icon-[lucide--external-link]'
       }
-    ])('$name', async ({ setup, methods, line, action }) => {
+    ])('$name', async ({ setup, methods, line, action, icon }) => {
       serveSavedMethods(methods)
       renderCard(notConfigured, setup)
 
@@ -691,11 +695,7 @@ describe('BillingAutoTopUpCard', () => {
       expect(
         screen.getByTestId('billing-auto-top-up-status')
       ).toHaveTextContent('Off')
-      expect(link).toContainHTML(
-        action === TODAY.action
-          ? 'icon-[lucide--external-link]'
-          : 'icon-[lucide--arrow-up-right]'
-      )
+      expect(link).toContainHTML(icon)
       expect(useBillingSdkStore().readPaymentMethods).toHaveBeenCalledTimes(
         setup ? 1 : 0
       )

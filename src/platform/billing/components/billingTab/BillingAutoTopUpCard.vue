@@ -374,8 +374,8 @@ const savedPaymentMethods = computedAsync(async () => {
 
 function viewKey(settings: AutoReloadSettings): ViewKey {
   if (!isStatus(settings.status)) return 'off'
-  if (settings.status === 'off' && savedPaymentMethods.value) {
-    return savedPaymentMethods.value.length === 0
+  if (settings.status === 'off' && needsDefaultPaymentMethod.value) {
+    return savedPaymentMethods.value?.length === 0
       ? 'noPaymentMethod'
       : 'noDefaultPaymentMethod'
   }
