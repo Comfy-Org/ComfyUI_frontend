@@ -34,50 +34,62 @@
   },
   "exports": {
     "./billing": {
+      "@comfyorg/account-ui": "./src/billing/index.ts",
       "types": "./dist-types/billing/index.d.ts",
       "default": "./src/billing/index.ts"
     },
     "./billing/stripe": {
+      "@comfyorg/account-ui": "./src/billing/stripe/index.ts",
       "types": "./dist-types/billing/stripe/index.d.ts",
       "default": "./src/billing/stripe/index.ts"
     },
     "./billing/checkout": {
+      "@comfyorg/account-ui": "./src/billing/checkout/index.ts",
       "types": "./dist-types/billing/checkout/index.d.ts",
       "default": "./src/billing/checkout/index.ts"
     },
     "./billing/catalog": {
+      "@comfyorg/account-ui": "./src/billing/catalog.ts",
       "types": "./dist-types/billing/catalog.d.ts",
       "default": "./src/billing/catalog.ts"
     },
     "./auth/PasswordRules": {
+      "@comfyorg/account-ui": "./src/auth/PasswordRules.vue",
       "types": "./dist-types/auth/PasswordRules.vue.d.ts",
       "default": "./src/auth/PasswordRules.vue"
     },
     "./auth/SocialAuthButtons": {
+      "@comfyorg/account-ui": "./src/auth/SocialAuthButtons.vue",
       "types": "./dist-types/auth/SocialAuthButtons.vue.d.ts",
       "default": "./src/auth/SocialAuthButtons.vue"
     },
     "./auth/TurnstileWidget": {
+      "@comfyorg/account-ui": "./src/auth/TurnstileWidget.vue",
       "types": "./dist-types/auth/TurnstileWidget.vue.d.ts",
       "default": "./src/auth/TurnstileWidget.vue"
     },
     "./auth/regionGate": {
+      "@comfyorg/account-ui": "./src/auth/regionGate.ts",
       "types": "./dist-types/auth/regionGate.d.ts",
       "default": "./src/auth/regionGate.ts"
     },
     "./auth/regionProbe": {
+      "@comfyorg/account-ui": "./src/auth/regionProbe.ts",
       "types": "./dist-types/auth/regionProbe.d.ts",
       "default": "./src/auth/regionProbe.ts"
     },
     "./auth/turnstileGate": {
+      "@comfyorg/account-ui": "./src/auth/turnstileGate.ts",
       "types": "./dist-types/auth/turnstileGate.d.ts",
       "default": "./src/auth/turnstileGate.ts"
     },
     "./auth/lifecycleScope": {
+      "@comfyorg/account-ui": "./src/auth/lifecycleScope.ts",
       "types": "./dist-types/auth/lifecycleScope.d.ts",
       "default": "./src/auth/lifecycleScope.ts"
     },
     "./auth/useGenerationGuard": {
+      "@comfyorg/account-ui": "./src/auth/useGenerationGuard.ts",
       "types": "./dist-types/auth/useGenerationGuard.d.ts",
       "default": "./src/auth/useGenerationGuard.ts"
     },

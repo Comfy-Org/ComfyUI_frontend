@@ -4,7 +4,7 @@ import type { z } from 'zod'
 import type {
   RawJobListItem,
   zJobsListResponse
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+} from '@comfyorg/api-client/jobTypes'
 
 import {
   comfyExpect as expect,

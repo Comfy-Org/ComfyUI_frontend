@@ -8,7 +8,7 @@ import { useErrorOverlayState } from './useErrorOverlayState'
 import '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+import type { NodeError } from '@comfyorg/api-client/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   MissingPackGroup,

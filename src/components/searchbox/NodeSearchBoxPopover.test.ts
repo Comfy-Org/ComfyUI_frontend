@@ -8,7 +8,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Settings } from '@/platform/settings/types'
+import type { Settings } from '@comfyorg/settings-core/types'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'

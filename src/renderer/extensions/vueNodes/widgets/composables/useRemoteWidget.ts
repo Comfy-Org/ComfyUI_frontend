@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { shallowReactive } from 'vue'
 
-import { combineAbortSignals } from '@/base/common/abortSignal'
+import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
 import type { IWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'

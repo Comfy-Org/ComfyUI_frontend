@@ -74,7 +74,19 @@ describe('loadArchitectureConfiguration', () => {
     {
       name: 'a glob other than a trailing /**',
       overrides: { modules: [{ path: 'src/images/*.ts', role: 'domain' }] },
-      error: 'must be a src/ file or a src/ directory ending in /**'
+      error: 'must be a file or a directory ending in /** under src/'
+    },
+    {
+      name: 'a claim on all of src',
+      overrides: { modules: [{ path: 'src/**', role: 'domain' }] },
+      error: 'must be a file or a directory ending in /** under src/'
+    },
+    {
+      name: 'a package path outside the package src directory',
+      overrides: {
+        modules: [{ path: 'packages/widgets/vite.config.ts', role: 'domain' }]
+      },
+      error: 'must be a file or a directory ending in /** under src/'
     },
     {
       name: 'an unknown domain reference',
@@ -108,6 +120,40 @@ describe('loadArchitectureConfiguration', () => {
     expect(loadArchitectureConfiguration(root)).toEqual({
       ok: false,
       errors: [expect.stringContaining(error)]
+    })
+  })
+
+  it('gives each unlisted test the role of its sibling source file, or else of the longest file path its name extends', () => {
+    const root = createRepository(
+      {
+        modules: [
+          ...record.modules,
+          { path: 'src/imageView.compact.vue', role: 'application' }
+        ]
+      },
+      {
+        'src/imageView.test.ts': '',
+        'src/imageView.compact.vue': '<template />',
+        'src/imageView.compact.test.ts': '',
+        'src/imageView.compact.cloud.test.ts': '',
+        'src/imageView.unlisted.ts': '',
+        'src/imageView.unlisted.test.ts': '',
+        'src/imageViewer.test.ts': ''
+      }
+    )
+    const config = loadValidConfiguration(root)
+    expect(
+      Object.fromEntries(
+        [...config.claims].map(([file, { module }]) => [file, module.role])
+      )
+    ).toEqual({
+      'src/images/index.ts': 'domain',
+      'src/images/index.test.ts': 'domain',
+      'src/imageView.vue': 'presentation',
+      'src/imageView.test.ts': 'presentation',
+      'src/imageView.compact.vue': 'application',
+      'src/imageView.compact.test.ts': 'application',
+      'src/imageView.compact.cloud.test.ts': 'application'
     })
   })
 
@@ -166,10 +212,22 @@ describe('runArchitecture', () => {
           { path: 'src/gone/**', role: 'domain' },
           { path: 'src/images/index.ts', role: 'application' },
           { path: 'src/images/index.test.ts', role: 'application' },
-          { path: 'src/images/extra/**', role: 'domain' }
+          { path: 'src/images/extra/**', role: 'domain' },
+          { path: 'src/images/extra/b.ts', role: 'application' },
+          { path: 'src/images/extra/b.test.ts', role: 'domain' },
+          { path: 'src/images/view.ts', role: 'presentation' },
+          { path: 'src/images/view.wide.ts', role: 'domain' }
         ]
       },
-      { 'src/brandNew.ts': '', 'src/images/extra/a.ts': '' }
+      {
+        'src/images/view.ts': '',
+        'src/images/view.wide.ts': '',
+        'src/images/view.wide.cloud.test.ts': '',
+        'src/brandNew.ts': '',
+        'src/images/extra/a.ts': '',
+        'src/images/extra/b.ts': '',
+        'src/images/extra/b.test.ts': ''
+      }
     )
     runArchitecture(root, 'update')
     expect(runArchitecture(root, 'check')).toEqual({
@@ -190,6 +248,12 @@ describe('runArchitecture', () => {
         {
           message: expect.stringContaining(
             'images path repeats the role of the enclosing src/images/**: src/images/extra/**'
+          ),
+          file
+        },
+        {
+          message: expect.stringContaining(
+            'images path repeats the role of its subject src/images/index.ts: src/images/index.test.ts'
           ),
           file
         },
@@ -460,24 +524,36 @@ describe('buildCatalog', () => {
     ])
   })
 
-  it('reports source coverage from directory and exact module paths', () => {
+  it('reports coverage of src and package src code from directory and exact module paths', () => {
     const root = createRepository(
-      {},
+      {
+        modules: [
+          ...record.modules,
+          { path: 'packages/widgets/src/index.ts', role: 'domain' }
+        ]
+      },
       {
         'src/zeta.tsx': '',
-        'src/imageView.test.ts': '',
+        'src/imageViewer.test.ts': '',
         'src/images/nested/deep.vue': '<template />',
         'src/README.md': '',
-        'apps/desktop/main.ts': ''
+        'apps/desktop/main.ts': '',
+        'packages/widgets/src/index.ts': '',
+        'packages/widgets/src/legacy.ts': '',
+        'packages/widgets/vite.config.ts': ''
       }
     )
     const catalog = buildCatalog(loadValidConfiguration(root), [])
-    expect(catalog.domains[0].sourceFileCount).toBe(4)
+    expect(catalog.domains[0].sourceFileCount).toBe(5)
     expect(catalog.coverage).toEqual({
-      total: 6,
-      classified: 4,
-      unclassified: 2,
-      unclassifiedFiles: ['src/imageView.test.ts', 'src/zeta.tsx']
+      total: 8,
+      classified: 5,
+      unclassified: 3,
+      unclassifiedFiles: [
+        'packages/widgets/src/legacy.ts',
+        'src/imageViewer.test.ts',
+        'src/zeta.tsx'
+      ]
     })
   })
 })

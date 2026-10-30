@@ -8,9 +8,22 @@
     "conditions": [
       "@comfyorg/account-core",
       "@comfyorg/account-ui",
+      "@comfyorg/api-client",
+      "@comfyorg/billing-contract",
+      "@comfyorg/billing-core",
+      "@comfyorg/design-system",
+      "@comfyorg/graph-model",
+      "@comfyorg/ingest-types",
+      "@comfyorg/keybindings",
       "@comfyorg/layer-editor",
       "@comfyorg/mask-editor",
       "@comfyorg/object-info-parser",
+      "@comfyorg/registry-types",
+      "@comfyorg/settings-core",
+      "@comfyorg/shared-frontend-utils",
+      "@comfyorg/tailwind-utils",
+      "@comfyorg/telemetry",
+      "@comfyorg/test-utils",
       "@comfyorg/viewport3d"
     ]
   },
@@ -130,7 +143,7 @@
     },
     // Generated OpenAPI client types (mirrors knip ignore).
     {
-      "file": "src/platform/customNodes/manager/types/generatedManagerTypes.ts",
+      "file": "packages/api-client/src/generatedManagerTypes.ts",
       "exports": ["*"]
     },
     // Loaded dynamically: cloud onboarding routes, cloud telemetry provider, and

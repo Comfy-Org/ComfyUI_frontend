@@ -3,7 +3,7 @@ vi.mock(import('@/services/dialogService'))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
+import type { WebSessionSend } from '@comfyorg/api-client/webSessionFetch'
 import { api } from '@/scripts/api'
 
 import {

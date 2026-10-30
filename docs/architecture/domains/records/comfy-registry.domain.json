@@ -1,12 +1,8 @@
 {
   "id": "comfy-registry",
   "capability": "Comfy Registry client",
-  "description": "Access to the Comfy Registry of custom-node packs: the registry REST client, the cached registry store, and the node-pack search gateway that falls back between the Algolia and registry search providers. The extension manager and missing-node flows consume this record.",
+  "description": "Access to the Comfy Registry of custom-node packs: the generated @comfyorg/registry-types API types, the registry REST client, the cached registry store, and the node-pack search gateway that falls back between the Algolia and registry search providers. The extension manager and missing-node flows consume this record.",
   "modules": [
-    {
-      "path": "src/composables/useCachedRequest.test.ts",
-      "role": "infrastructure"
-    },
     {
       "path": "src/composables/useCachedRequest.ts",
       "role": "infrastructure"
@@ -14,10 +10,6 @@
     {
       "path": "src/constants/searchConstants.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/services/comfyRegistryService.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/services/comfyRegistryService.ts",
@@ -28,24 +20,12 @@
       "role": "application"
     },
     {
-      "path": "src/services/providers/algoliaSearchProvider.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/services/providers/algoliaSearchProvider.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/services/providers/registrySearchProvider.test.ts",
       "role": "infrastructure"
     },
     {
       "path": "src/services/providers/registrySearchProvider.ts",
       "role": "infrastructure"
-    },
-    {
-      "path": "src/stores/comfyRegistryStore.test.ts",
-      "role": "application"
     },
     {
       "path": "src/stores/comfyRegistryStore.ts",
@@ -65,6 +45,10 @@
     },
     {
       "path": "src/types/searchServiceTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/registry-types/src/**",
       "role": "domain"
     }
   ],

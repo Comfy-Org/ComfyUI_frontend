@@ -12,15 +12,25 @@ import { join } from 'node:path'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { parse } from 'yaml'
 
+interface WorkflowStep {
+  run?: string
+  env?: Record<string, string>
+}
+
+interface WorkflowJob {
+  env?: Record<string, string>
+  steps?: WorkflowStep[]
+}
+
 interface Workflow {
-  jobs?: Record<string, { steps?: Array<{ run?: string }> }>
+  jobs?: Partial<Record<string, WorkflowJob>>
 }
 
 const workflow = parse(
   readFileSync('.github/workflows/pr-backport.yaml', 'utf8')
 ) as Workflow
-const warnScript =
-  workflow.jobs?.['warn-missing-needs-backport']?.steps?.[0]?.run ?? ''
+const warnStep = workflow.jobs?.['warn-missing-needs-backport']?.steps?.[0]
+const warnScript = warnStep?.run ?? ''
 
 const fakeGh = `#!/usr/bin/env bash
 set -euo pipefail
@@ -35,6 +45,7 @@ while [ $# -gt 0 ]; do
     *) endpoint="$1"; shift ;;
   esac
 done
+[ -z "\${FAKE_CALLS:-}" ] || echo "$method $endpoint" >> "$FAKE_CALLS"
 case "$method $endpoint" in
   POST\\ *)
     [ -z "\${FAKE_LOCKED:-}" ] || { echo 'Issue is locked' >&2; exit 1; }
@@ -71,6 +82,8 @@ function createPr({
   const directory = mkdtempSync(join(tmpdir(), 'backport-missing-trigger-'))
   onTestFinished(() => rmSync(directory, { recursive: true, force: true }))
   const comments = join(directory, 'comments')
+  const calls = join(directory, 'calls')
+  writeFileSync(calls, '')
   writeFileSync(join(directory, 'gh'), fakeGh)
   chmodSync(join(directory, 'gh'), 0o755)
   writeFileSync(
@@ -109,6 +122,7 @@ function createPr({
         env: {
           ...process.env,
           FAKE_BACKPORTS: join(directory, 'backports'),
+          FAKE_CALLS: calls,
           FAKE_COMMENTS: comments,
           FAKE_LABELS: join(directory, 'labels.json'),
           FAKE_LOCKED: locked ? '1' : '',
@@ -117,6 +131,7 @@ function createPr({
           PR_NUMBER: '21241'
         }
       }),
+    apiCalls: () => readFileSync(calls, 'utf8').split('\n').filter(Boolean),
     postedComments: botComments,
     setLabels: (next: string[]) =>
       writeFileSync(
@@ -235,6 +250,17 @@ describe('backport warning for release labels without needs-backport', () => {
     expect(pr.postedComments()).toHaveLength(0)
   })
 
+  it('reads only the labels when no label names a release, so unlabeled merges spend one API call', () => {
+    const pr = createPr({ labels: ['bug', 'risk:medium', 'core/1.57-rc'] })
+
+    const result = pr.runWarning()
+
+    expect(result.status).toBe(0)
+    expect(pr.apiCalls()).toEqual([
+      'GET repos/Comfy-Org/ComfyUI_frontend/issues/21241/labels'
+    ])
+  })
+
   it('still warns when someone other than the workflow posted the marker', () => {
     const pr = createPr({
       labels: ['core/1.57'],
@@ -259,5 +285,9 @@ describe('backport warning for release labels without needs-backport', () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('::warning::')
     expect(result.stdout).toContain('core/1.57')
+  })
+
+  it('posts with the same token the backport job uses, since the auto-provided one is refused', () => {
+    expect(warnStep?.env?.GH_TOKEN).toBe(workflow.jobs?.backport?.env?.GH_TOKEN)
   })
 })

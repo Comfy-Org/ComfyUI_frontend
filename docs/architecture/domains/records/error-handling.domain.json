@@ -8,19 +8,15 @@
       "role": "application"
     },
     {
-      "path": "src/composables/useErrorHandling.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useErrorHandling.ts",
       "role": "application"
     },
     {
-      "path": "src/utils/errorUtil.test.ts",
+      "path": "src/utils/errorUtil.ts",
       "role": "domain"
     },
     {
-      "path": "src/utils/errorUtil.ts",
+      "path": "packages/shared-frontend-utils/src/errorUtil.ts",
       "role": "domain"
     }
   ],

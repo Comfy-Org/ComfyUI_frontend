@@ -1,22 +1,14 @@
 {
   "id": "authentication",
   "capability": "Authentication",
-  "description": "Account identity and credentials: Firebase identity, the auth, API-key, and local multi-user stores, sign-in actions and dialogs, social and SSO sign-in, shared web session cookie and request authorization, unified re-mint retry, desktop-host sessions, partner-node token exchange and run gate, and workspace-scoped token minting with its auth gate. Cloud session store, cloud identity boot, and the cloud API auth adapter stay in the cloud record. Workspace membership and billing remain separate capabilities; the account packages outside src are not in this catalog.",
+  "description": "Account identity and credentials: Firebase identity, the auth, API-key, and local multi-user stores, sign-in actions and dialogs, social and SSO sign-in, shared web session cookie and request authorization, unified re-mint retry, desktop-host sessions, partner-node token exchange and run gate, and workspace-scoped token minting with its auth gate. Cloud session store, cloud identity boot, and the cloud API auth adapter stay in the cloud record. The identity and session core of @comfyorg/account-core and the sign-in pieces of @comfyorg/account-ui belong here. Workspace membership and billing remain separate capabilities, including the billing halves of both account packages.",
   "modules": [
     {
       "path": "src/components/actionbar/PartnerNodesRunCaption.vue",
       "role": "presentation"
     },
     {
-      "path": "src/components/dialog/content/ApiNodesSignInContent.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/dialog/content/ApiNodesSignInContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/SignInContent.test.ts",
       "role": "presentation"
     },
     {
@@ -29,10 +21,6 @@
     },
     {
       "path": "src/components/dialog/content/setting/CurrentUserMessage.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/setting/UserPanel.test.ts",
       "role": "presentation"
     },
     {
@@ -52,15 +40,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/topbar/CurrentUserButton.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/topbar/CurrentUserButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/topbar/CurrentUserPopoverLegacy.test.ts",
       "role": "presentation"
     },
     {
@@ -76,19 +56,7 @@
       "role": "application"
     },
     {
-      "path": "src/platform/billing/composables/usePartnerNodesRunGate.cloud.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/billing/composables/usePartnerNodesRunGate.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/billing/composables/usePartnerNodesRunGate.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/node/usePartnerNodesInGraph.test.ts",
       "role": "application"
     },
     {
@@ -100,31 +68,11 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/auth/apiAuthProvider.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/auth/authCredential.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/auth/authCredential.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/auth/authRejection.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/auth/authRejection.ts",
       "role": "domain"
     },
     {
       "path": "src/platform/auth/desktopHost/**",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/auth/firebaseIdentity.test.ts",
       "role": "infrastructure"
     },
     {
@@ -152,10 +100,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/auth/partnerNode/partnerNodeQueueToken.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/auth/partnerNode/partnerNodeQueueToken.ts",
       "role": "application"
     },
@@ -168,24 +112,12 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/auth/session/sessionMediaUrl.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/auth/session/ssoReentryStorage.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/auth/session/useSessionCookie.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/auth/session/useSessionCookie.ts",
       "role": "application"
-    },
-    {
-      "path": "src/platform/auth/session/webSessionFetch.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/platform/auth/session/webSessionUser.ts",
@@ -200,16 +132,8 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/auth/sso/SsoRequiredDialogContent.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/auth/sso/SsoRequiredDialogContent.vue",
       "role": "presentation"
-    },
-    {
-      "path": "src/platform/auth/sso/ssoRequired.test.ts",
-      "role": "application"
     },
     {
       "path": "src/platform/auth/sso/ssoRequired.ts",
@@ -224,16 +148,8 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/auth/sso/ssoRequiredInline.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/auth/sso/ssoRequiredInline.ts",
       "role": "application"
-    },
-    {
-      "path": "src/platform/auth/sso/ssoReturnPath.test.ts",
-      "role": "domain"
     },
     {
       "path": "src/platform/auth/sso/ssoReturnPath.ts",
@@ -260,14 +176,6 @@
       "role": "integration"
     },
     {
-      "path": "src/platform/workspace/stores/legacyWorkspaceTokenRail.lifecycle.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/workspace/stores/legacyWorkspaceTokenRail.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/workspace/stores/legacyWorkspaceTokenRail.ts",
       "role": "infrastructure"
     },
@@ -292,23 +200,11 @@
       "role": "application"
     },
     {
-      "path": "src/stores/apiKeyAuthStore.integration.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/stores/apiKeyAuthStore.ts",
       "role": "application"
     },
     {
-      "path": "src/stores/authStore.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/stores/authStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/userStore.test.ts",
       "role": "application"
     },
     {
@@ -320,10 +216,6 @@
       "role": "application"
     },
     {
-      "path": "src/types/authTypes.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/types/axios-augmentation.d.ts",
       "role": "infrastructure"
     },
@@ -332,20 +224,48 @@
       "role": "integration"
     },
     {
-      "path": "src/utils/hostWhitelist.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/hostWhitelist.ts",
       "role": "domain"
     },
     {
-      "path": "src/views/UserSelectView.test.ts",
+      "path": "src/views/UserSelectView.vue",
       "role": "presentation"
     },
     {
-      "path": "src/views/UserSelectView.vue",
+      "path": "packages/account-core/src/**",
+      "role": "application"
+    },
+    {
+      "path": "packages/account-core/src/signInSchemas.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/account-ui/src/auth/**",
       "role": "presentation"
+    },
+    {
+      "path": "packages/account-ui/src/auth/turnstileGate.ts",
+      "role": "application"
+    },
+    {
+      "path": "packages/api-client/src/apiAuthProvider.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/authCredential.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/sessionMediaUrl.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/webSessionFetch.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "packages/api-client/src/authTypes.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -372,7 +292,7 @@
         "src/platform/workspace/stores/legacyWorkspaceTokenRail.lifecycle.test.ts",
         "src/platform/auth/unified/remintRetry.test.ts",
         "src/platform/auth/authRejection.test.ts",
-        "src/platform/auth/authCredential.test.ts",
+        "packages/api-client/src/authCredential.test.ts",
         "src/platform/account/auth/WorkspaceAuthGate.test.ts"
       ]
     },

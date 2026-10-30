@@ -16,10 +16,6 @@
       "role": "application"
     },
     {
-      "path": "src/platform/workflowErrors/overlay/ErrorOverlay.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/workflowErrors/overlay/ErrorOverlay.vue",
       "role": "presentation"
     },
@@ -48,10 +44,6 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/workflowErrors/panel/useErrorActions.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/workflowErrors/panel/useErrorActions.ts",
       "role": "application"
     },
@@ -60,15 +52,7 @@
       "role": "application"
     },
     {
-      "path": "src/platform/workflowErrors/panel/useErrorGroups.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/workflowErrors/panel/useErrorGroups.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflowErrors/panel/useErrorReport.test.ts",
       "role": "application"
     },
     {
@@ -78,10 +62,6 @@
     {
       "path": "src/platform/workflowErrors/panel/useHasBlockingError.ts",
       "role": "application"
-    },
-    {
-      "path": "src/utils/errorReportUtil.test.ts",
-      "role": "domain"
     },
     {
       "path": "src/utils/errorReportUtil.ts",

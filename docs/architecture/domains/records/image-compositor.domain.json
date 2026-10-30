@@ -4,10 +4,6 @@
   "description": "Layered image composition and layer editing: layer state, editing orchestration, rendering, PSD export, dialogs, extension registrations, Vue-node adaptation, and LiteGraph widget integration.",
   "modules": [
     {
-      "path": "src/extensions/core/imageCompositor.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/imageCompositor.ts",
       "role": "integration"
     },
@@ -22,10 +18,6 @@
     {
       "path": "src/renderer/extensions/compositor/**",
       "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
-      "role": "presentation"
     },
     {
       "path": "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
@@ -44,31 +36,15 @@
       "role": "application"
     },
     {
-      "path": "src/renderer/extensions/layerEditor/composables/layerEditorDialog.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/renderer/extensions/layerEditor/composables/layerEditorDialog.ts",
       "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/composables/layerPanelDnd.test.ts",
-      "role": "domain"
     },
     {
       "path": "src/renderer/extensions/layerEditor/composables/layerPanelDnd.ts",
       "role": "domain"
     },
     {
-      "path": "src/renderer/extensions/layerEditor/psdExport.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/renderer/extensions/layerEditor/psdExport.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/psdMapping.test.ts",
       "role": "infrastructure"
     },
     {
@@ -78,6 +54,10 @@
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
       "role": "integration"
+    },
+    {
+      "path": "packages/layer-editor/src/**",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

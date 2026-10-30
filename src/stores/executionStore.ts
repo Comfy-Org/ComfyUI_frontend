@@ -30,7 +30,7 @@ import type {
   NotificationWsMessage,
   ProgressStateWsMessage,
   ProgressWsMessage
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'

@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type {
   WebSessionRequests,
   WebSessionRequestScope
-} from '@/platform/auth/session/webSessionFetch'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
-import { DEFAULT_RETRY_POLICY } from '@/utils/retryPolicy'
+import { DEFAULT_RETRY_POLICY } from '@comfyorg/api-client/retryPolicy'
 
 import { workspaceApi } from './workspaceApi'
 import { installWorkspaceApiAuth } from './workspaceApiAuth'
@@ -87,11 +87,32 @@ describe('workspaceApi on the web session', () => {
   it('sends the deployment listing once, leaving retries to its boot loop', async () => {
     const send = provideSessionSending(unavailable())
 
-    await expect(workspaceApi.listDeployments('ws-1')).rejects.toMatchObject({
+    await expect(
+      workspaceApi.listDeployments('ws-1', [])
+    ).rejects.toMatchObject({
       status: 503
     })
     expect(send).toHaveBeenCalledTimes(1)
   })
+
+  it.for([
+    { started: [], url: '/api/workspaces/ws-1/deployments' },
+    {
+      started: ['dep-1', 'dep-2'],
+      url: '/api/workspaces/ws-1/deployments?started_deployment_id=dep-1&started_deployment_id=dep-2'
+    }
+  ])(
+    'asks for $url, naming each deployment this browser started',
+    async ({ started, url }) => {
+      const send = provideSessionSending(
+        new Response('{"items":[],"builds_visible":true}', { status: 200 })
+      )
+
+      await workspaceApi.listDeployments('ws-1', started)
+
+      expect(send.mock.calls.map(([sentUrl]) => sentUrl)).toEqual([url])
+    }
+  )
 
   it('does not retry a write that got a 503', async () => {
     const send = provideSessionSending(unavailable())
