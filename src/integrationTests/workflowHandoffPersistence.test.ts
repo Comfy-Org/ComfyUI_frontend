@@ -791,6 +791,219 @@ describe('saved workflow handoff persistence', () => {
     }
   )
 
+  async function prepareColdSavedTab(pathStatus = 412, snapshotStatus = 200) {
+    vi.spyOn(distributionModule, 'isCloud', 'get').mockReturnValue(true)
+    useAuthStore().currentUser = fromPartial<User>({ uid: 'user-a' })
+    useAuthStore().isInitialized = true
+    const workspace = {
+      id: 'workspace-a',
+      name: 'Workspace A',
+      type: 'team' as const,
+      role: 'owner' as const,
+      created_at: '2026-10-30T00:00:00Z',
+      joined_at: '2026-10-30T00:00:00Z',
+      members: [],
+      membersLoaded: false,
+      pendingInvites: [],
+      pendingInvitesLoaded: false
+    }
+    Object.assign(useTeamWorkspaceStore(), {
+      workspaces: [workspace],
+      activeWorkspaceId: workspace.id,
+      initState: 'ready'
+    })
+    const handoff = await prepareRetainedHandoff({
+      withUrlLoader: true,
+      restoreTabs: false
+    })
+    const identity = {
+      ownerId: 'user-a',
+      workspaceId: workspace.id,
+      id: 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
+    }
+    const oldPath = 'workflows/private-old.json'
+    const snapshot = {
+      id: identity.id,
+      path: 'workflows/private-renamed.json',
+      modified: 2,
+      size: 20,
+      content: JSON.stringify({
+        ...createWorkflowGraphData(),
+        extra: { marker: 'renamed server baseline' }
+      })
+    }
+    vi.mocked(useWorkflowStore().loadWorkflows).mockRestore()
+    vi.spyOn(api, 'listUserDataFullInfo').mockResolvedValue([
+      { id: identity.id, path: 'private-old.json', modified: 1, size: 20 }
+    ])
+    let pathReads = 0
+    vi.spyOn(api, 'fetchApi').mockImplementation(async (route) => {
+      if (route.startsWith(`/userdata-files/${identity.id}/path/`)) {
+        pathReads++
+        return new Response(null, { status: pathStatus })
+      }
+      return snapshotStatus === 200
+        ? Response.json(snapshot)
+        : new Response(null, { status: snapshotStatus })
+    })
+    await handoff.router.push(`/?savedFile=${identity.id}`)
+    sessionStorage.setItem(
+      StorageKeys.openPaths('handoff-client'),
+      JSON.stringify({
+        workspaceId: 'personal',
+        paths: [oldPath],
+        activeIndex: 0
+      })
+    )
+    return {
+      ...handoff,
+      identity,
+      oldPath,
+      snapshot,
+      pathReads: () => pathReads
+    }
+  }
+
+  it('cold saved-tab restore uses the matching UUID draft snapshot before a stale listed path and continues URL loading with exact dirty bytes', async () => {
+    const {
+      persistence,
+      savedFileLoader,
+      retainedDocument,
+      identity,
+      oldPath,
+      snapshot,
+      pathReads
+    } = await prepareColdSavedTab()
+    assert.exists(savedFileLoader)
+    retainedDocument.changeTracker.captureCanvasState()
+    const dirty = JSON.stringify({
+      ...retainedDocument.activeState,
+      extra: { marker: 'dirty saved draft' }
+    })
+    const drafts = useWorkflowDraftStoreV2()
+    drafts.saveDraft(oldPath, dirty, {
+      name: 'private-old.json',
+      isTemporary: false,
+      savedFileIdentity: identity
+    })
+    const before = drafts.getDraft(oldPath)
+    assert.exists(before)
+    expect(await persistence.initializeWorkflow()).toBe('restored')
+    await expect(
+      persistence.restoreWorkflowTabsState()
+    ).resolves.toBeUndefined()
+    expect(pathReads()).toBe(0)
+    const active = useWorkflowStore().activeWorkflow
+    assert.exists(active)
+    expect(active.path).toBe(snapshot.path)
+    expect(active.originalContent).toBe(snapshot.content)
+    expect(active.isModified).toBe(true)
+    const restoredDraft = drafts.getDraft(snapshot.path)
+    assert.exists(restoredDraft)
+    expect(restoredDraft.data).toBe(before.data)
+    expect(singletonApp.rootGraph.extra.marker).toBe('dirty saved draft')
+    expect(singletonApp.rootGraph.nodes[0]?.title).toBe('Keep my edits')
+    expect(await savedFileLoader.openSavedWorkflowFromUrl()).toBe('loaded')
+    expect(pathReads()).toBe(0)
+    const finalDraft = drafts.getDraft(snapshot.path)
+    assert.exists(finalDraft)
+    expect(finalDraft.data).toBe(before.data)
+    expect(toRaw(useWorkflowStore().activeWorkflow)).toBe(toRaw(active))
+    expect(active.isModified).toBe(true)
+  })
+
+  it.for([404, 412])(
+    'cold saved-tab restore recovers guarded HTTP%s without a draft and then resolves the same UUID URL',
+    async (status) => {
+      const {
+        persistence,
+        savedFileLoader,
+        retainedDocument,
+        oldPath,
+        snapshot,
+        pathReads
+      } = await prepareColdSavedTab(status)
+      assert.exists(savedFileLoader)
+      expect(await persistence.initializeWorkflow()).toBe('restored')
+      await expect(
+        persistence.restoreWorkflowTabsState()
+      ).resolves.toBeUndefined()
+      expect(pathReads()).toBe(1)
+      const stale = useWorkflowStore().getWorkflowByPath(oldPath)
+      expect(stale?.isLoading).toBe(false)
+      expect(stale?.content).toBeNull()
+      expect(toRaw(useWorkflowStore().activeWorkflow)).toBe(
+        toRaw(retainedDocument)
+      )
+      expect(await savedFileLoader.openSavedWorkflowFromUrl()).toBe('loaded')
+      expect(useWorkflowStore().activeWorkflow?.path).toBe(snapshot.path)
+      expect(singletonApp.rootGraph.extra.marker).toBe(
+        'renamed server baseline'
+      )
+      expect(pathReads()).toBe(1)
+    }
+  )
+
+  it('an unavailable matching UUID draft keeps exact draft bytes and the previous canvas without falling back to its stale path', async () => {
+    const {
+      persistence,
+      savedFileLoader,
+      retainedDocument,
+      identity,
+      oldPath,
+      pathReads
+    } = await prepareColdSavedTab(412, 404)
+    assert.exists(savedFileLoader)
+    const drafts = useWorkflowDraftStoreV2()
+    drafts.saveDraft(oldPath, JSON.stringify(createWorkflowGraphData()), {
+      name: 'private-old.json',
+      isTemporary: false,
+      savedFileIdentity: identity
+    })
+    const before = drafts.getDraft(oldPath)
+    expect(await persistence.initializeWorkflow()).toBe('restored')
+    await expect(
+      persistence.restoreWorkflowTabsState()
+    ).resolves.toBeUndefined()
+    expect(pathReads()).toBe(0)
+    expect(drafts.getDraft(oldPath)).toEqual(before)
+    expect(useWorkflowStore().getWorkflowByPath(oldPath)?.content).toBeNull()
+    expect(
+      useWorkflowStore().getWorkflowByPath(oldPath)?.savedFileIdentity
+    ).toEqual(identity)
+    expect(toRaw(useWorkflowStore().activeWorkflow)).toBe(
+      toRaw(retainedDocument)
+    )
+    expect(await savedFileLoader.openSavedWorkflowFromUrl()).toBe('failed')
+    expect(pathReads()).toBe(0)
+    expect(drafts.getDraft(oldPath)).toEqual(before)
+    expect(singletonApp.rootGraph.nodes[0]?.title).toBe('Keep my edits')
+  })
+
+  it.for([409, 500])(
+    'cold saved-tab restore propagates unexpected HTTP%s and retains the previous canvas',
+    async (status) => {
+      const { persistence, retainedDocument, oldPath, pathReads } =
+        await prepareColdSavedTab(status)
+      expect(await persistence.initializeWorkflow()).toBe('restored')
+      await expect(
+        persistence.restoreWorkflowTabsState()
+      ).rejects.toMatchObject({
+        name: 'InvalidStateError',
+        message: expect.stringContaining(String(status))
+      })
+      expect(pathReads()).toBe(1)
+      expect(useWorkflowStore().getWorkflowByPath(oldPath)?.isLoading).toBe(
+        false
+      )
+      expect(useWorkflowStore().getWorkflowByPath(oldPath)?.content).toBeNull()
+      expect(toRaw(useWorkflowStore().activeWorkflow)).toBe(
+        toRaw(retainedDocument)
+      )
+      expect(singletonApp.rootGraph.nodes[0]?.title).toBe('Keep my edits')
+    }
+  )
+
   it('tab restore propagates an unrelated invalid-state error instead of treating it as an identity refusal', async () => {
     const { persistence } = await prepareRetainedHandoff({ restoreTabs: false })
     const faulty = new ComfyWorkflow({

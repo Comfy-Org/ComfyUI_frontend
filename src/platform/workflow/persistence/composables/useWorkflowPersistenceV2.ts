@@ -45,6 +45,8 @@ import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/
 import { fetchSavedWorkflow } from '@/services/savedWorkflowService'
 import {
   SavedFileIdentityError,
+  SavedFilePathUnavailableError,
+  sameUserFileIdentity,
   sameUserFileScope
 } from '@/platform/workflow/core/utils/userFileIdentity'
 import {
@@ -502,8 +504,26 @@ export function useWorkflowPersistenceV2() {
     isCurrent: () => boolean
   ) {
     try {
+      if (
+        sameUserFileIdentity(
+          draftStore.getDraft(workflow.path)?.savedFileIdentity,
+          workflow.savedFileIdentity
+        )
+      ) {
+        const restored = await draftStore.loadPersistedWorkflow({
+          preferredPath: workflow.path,
+          isCurrent
+        })
+        if (!restored && isCurrent())
+          toast.error(t('workflowService.privateLinkUnavailable'))
+        return
+      }
       await useWorkflowService().openWorkflow(workflow, { isCurrent })
     } catch (error) {
+      if (error instanceof SavedFilePathUnavailableError) {
+        toast.error(t('workflowService.privateLinkUnavailable'))
+        return
+      }
       if (!(error instanceof SavedFileIdentityError)) throw error
       toast.error(
         t(

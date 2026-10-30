@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   SavedFileIdentityError,
+  SavedFilePathUnavailableError,
   bindReceivedUserFileIdentity,
   sameUserFileIdentity,
   sameUserFileScope
@@ -64,3 +65,23 @@ describe('identity refusal classification', () => {
     }
   )
 })
+
+it.for([
+  { status: 404, name: 'NotFoundError' },
+  { status: 412, name: 'InvalidStateError' }
+] as const)(
+  'retains the guarded path refusal HTTP$status contract',
+  ({ status, name }) => {
+    const error = new SavedFilePathUnavailableError(
+      'workflows/old.json',
+      status,
+      'status text'
+    )
+    expect(error).toBeInstanceOf(DOMException)
+    expect(error).toMatchObject({
+      status,
+      name,
+      message: `Failed to load file 'workflows/old.json': ${status} status text`
+    })
+  }
+)

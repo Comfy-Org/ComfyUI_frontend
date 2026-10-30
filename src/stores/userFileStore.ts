@@ -5,6 +5,7 @@ import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { api } from '@/scripts/api'
 import {
   SavedFileIdentityError,
+  SavedFilePathUnavailableError,
   sameUserFileIdentity,
   sameUserFileScope
 } from '@/platform/workflow/core/utils/userFileIdentity'
@@ -29,6 +30,23 @@ function normalizeTimestamp(value: number | string): number {
     return Number.isNaN(ms) ? Date.now() : ms
   }
   return value
+}
+
+function fileLoadFailure(
+  path: string,
+  response: Response,
+  identity: UserFileIdentity | undefined
+): DOMException {
+  if (identity && (response.status === 404 || response.status === 412))
+    return new SavedFilePathUnavailableError(
+      path,
+      response.status,
+      response.statusText
+    )
+  return new DOMException(
+    `Failed to load file '${path}': ${response.status} ${response.statusText}`,
+    response.status === 404 ? 'NotFoundError' : 'InvalidStateError'
+  )
 }
 
 /**
@@ -131,25 +149,24 @@ export class UserFile {
       return this as LoadedUserFile
 
     this.isLoading = true
-    const resp = await api.getUserData(
-      this.path,
-      this.savedFileIdentity
-        ? { expected_id: this.savedFileIdentity.id }
-        : undefined
-    )
-    this.assertIdentityScope()
-    if (resp.status !== 200) {
-      throw new DOMException(
-        `Failed to load file '${this.path}': ${resp.status} ${resp.statusText}`,
-        resp.status === 404 ? 'NotFoundError' : 'InvalidStateError'
+    try {
+      const resp = await api.getUserData(
+        this.path,
+        this.savedFileIdentity
+          ? { expected_id: this.savedFileIdentity.id }
+          : undefined
       )
+      this.assertIdentityScope()
+      if (resp.status !== 200)
+        throw fileLoadFailure(this.path, resp, this.savedFileIdentity)
+      const content = await resp.text()
+      this.assertIdentityScope()
+      this.content = content
+      this.originalContent = this.content
+      return this as LoadedUserFile
+    } finally {
+      this.isLoading = false
     }
-    const content = await resp.text()
-    this.assertIdentityScope()
-    this.content = content
-    this.originalContent = this.content
-    this.isLoading = false
-    return this as LoadedUserFile
   }
 
   /**

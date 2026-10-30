@@ -104,7 +104,8 @@ refusals. `core/services/userFileContext.ts` owns the mutable scope provider,
 current-scope observation and the compatibility wrapper that uses that scope
 when receiving an identity. Domain code cannot import the mutable context.
 The domain exports `UserFileScope`, `UserFileIdentity`, `SavedFileIdentityError`,
-`bindReceivedUserFileIdentity`, `sameUserFileScope` and `sameUserFileIdentity`.
+`bindReceivedUserFileIdentity`, `sameUserFileScope`, `sameUserFileIdentity` and
+`SavedFilePathUnavailableError` (confirmed bound GET404/412 only).
 The context exports `registerUserFileScopeProvider`, `currentUserFileScope`,
 `receivedUserFileIdentity` and `isUserFileIdentityCurrent`.
 Only workflow management and workflow persistence are declared consumers;
@@ -117,3 +118,12 @@ of the existing inventory-mode workflow-management domain would authorize
 unrelated internals; changing that whole domain to enforced would alter
 legacy policy outside this feature. A small enforced identity domain instead
 makes the two supported leaves explicit without widening either legacy domain.
+
+A matching identified draft restored from saved tabs uses the existing UUID
+snapshot loader before opening a path from a potentially stale listing. An
+unavailable snapshot preserves the draft and canvas without a path fallback.
+Without a matching draft, a guarded path GET may still refuse after a concurrent
+rename; only its contract-established 404/412 responses become a typed local
+startup refusal so the URL coordinator can continue. Other transport failures
+and unrelated DOM errors retain their propagation. Failed reads always clear
+the document's loading state while retaining content and identity.

@@ -20,6 +20,19 @@ export class SavedFileIdentityError extends DOMException {
   }
 }
 
+export class SavedFilePathUnavailableError extends DOMException {
+  constructor(
+    path: string,
+    public readonly status: 404 | 412,
+    statusText: string
+  ) {
+    super(
+      `Failed to load file '${path}': ${status} ${statusText}`,
+      status === 404 ? 'NotFoundError' : 'InvalidStateError'
+    )
+  }
+}
+
 export function sameUserFileScope(
   left: UserFileScope | null | undefined,
   right: UserFileScope | null | undefined

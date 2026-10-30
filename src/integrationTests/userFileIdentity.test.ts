@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 import { UserFile } from '@/stores/userFileStore'
+import {
+  SavedFileIdentityError,
+  SavedFilePathUnavailableError
+} from '@/platform/workflow/core/utils/userFileIdentity'
 import { registerUserFileScopeProvider } from '@/platform/workflow/core/services/userFileContext'
 
 const identity = {
@@ -55,6 +59,88 @@ describe('identity-conditional userdata operations', () => {
       expect(file.savedFileIdentity).toEqual(identity)
     }
   )
+
+  it.for([404, 412, 409, 500])(
+    'a guarded failed read preserves identity/content and clears loading for HTTP%s',
+    async (status) => {
+      vi.spyOn(api, 'fetchApi').mockResolvedValue(
+        new Response(null, { status })
+      )
+      const file = new UserFile(path, 1, 5, identity)
+      file.content = 'local edits'
+      file.originalContent = 'saved'
+      let failure: unknown
+      try {
+        await file.load({ force: true })
+      } catch (error) {
+        failure = error
+      }
+      expect(failure).toBeInstanceOf(DOMException)
+      expect(failure).toMatchObject({
+        message: expect.stringContaining(String(status))
+      })
+      expect(failure instanceof SavedFilePathUnavailableError).toBe(
+        status === 404 || status === 412
+      )
+      expect(file.isLoading).toBe(false)
+      expect(file.content).toBe('local edits')
+      expect(file.originalContent).toBe('saved')
+      expect(file.savedFileIdentity).toEqual(identity)
+    }
+  )
+
+  it('a scope revoked while a read awaits still clears loading and retains local content', async () => {
+    vi.spyOn(api, 'fetchApi').mockImplementation(async () => {
+      registerUserFileScopeProvider(() => ({
+        ownerId: 'owner-b',
+        workspaceId: identity.workspaceId
+      }))
+      return new Response('other owner response')
+    })
+    const file = new UserFile(path, 1, 5, identity)
+    file.content = 'local edits'
+    file.originalContent = 'saved'
+    await expect(file.load({ force: true })).rejects.toBeInstanceOf(
+      SavedFileIdentityError
+    )
+    expect(file.isLoading).toBe(false)
+    expect(file.content).toBe('local edits')
+    expect(file.originalContent).toBe('saved')
+  })
+
+  it('an unbound missing read remains an ordinary error rather than an identity refusal', async () => {
+    vi.spyOn(api, 'fetchApi').mockResolvedValue(
+      new Response(null, { status: 404 })
+    )
+    const file = new UserFile(path, 1, 5)
+    let failure: unknown
+    try {
+      await file.load()
+    } catch (error) {
+      failure = error
+    }
+    expect(failure).toBeInstanceOf(DOMException)
+    expect(failure).not.toBeInstanceOf(SavedFilePathUnavailableError)
+    expect(file.isLoading).toBe(false)
+  })
+
+  it('a read body failure clears loading while retaining local edits and saved baseline', async () => {
+    const body = new ReadableStream({
+      start(controller) {
+        controller.error(new Error('unreadable response body'))
+      }
+    })
+    vi.spyOn(api, 'fetchApi').mockResolvedValue(new Response(body))
+    const file = new UserFile(path, 1, 5, identity)
+    file.content = 'local edits'
+    file.originalContent = 'saved'
+    await expect(file.load({ force: true })).rejects.toThrow(
+      'unreadable response body'
+    )
+    expect(file.isLoading).toBe(false)
+    expect(file.content).toBe('local edits')
+    expect(file.originalContent).toBe('saved')
+  })
 
   it('retains UUID after save and rename and sends the guard on each mutation', async () => {
     const request = vi
