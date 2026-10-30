@@ -70,6 +70,8 @@ interface UseImageCropOptions {
 }
 
 function imageInputSlot(node: LGraphNode): number {
+  if (node.isSubgraphNode()) return 0
+
   const slot = node.inputs.findIndex((input) =>
     LiteGraph.isValidConnection('IMAGE', input.type)
   )

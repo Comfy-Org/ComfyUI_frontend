@@ -10,6 +10,10 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import WidgetImageCrop from '@/components/imagecrop/WidgetImageCrop.vue'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
@@ -477,6 +481,31 @@ describe('useImageCrop', () => {
       { name: 'image', type: 'IMAGE,MASK' },
       { name: 'reference', type: 'IMAGE' }
     ])
+    connectImageInput(0)
+
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('shows an empty preview on a subgraph host with a later image input', async () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'prompt', type: 'STRING' },
+        { name: 'image', type: 'IMAGE' }
+      ],
+      outputs: [{ name: 'out', type: 'IMAGE' }]
+    })
+    const host = createTestSubgraphNode(subgraph, { id: 2 })
+    mockResolveNode.mockReturnValue(host)
+
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBeNull()
+  })
+
+  it('shows the image connected to a custom input type through the slot-0 fallback', async () => {
+    useLinkedCropNode([{ name: 'image', type: 'CUSTOM_IMAGE' }])
     connectImageInput(0)
 
     const vm = await mountHarness()
