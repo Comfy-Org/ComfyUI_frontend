@@ -50,10 +50,13 @@
 /src/extensions/core/load3d/                      @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Manager
-/src/workbench/extensions/manager/                @christian-byrne @ltdrdata @Comfy-Org/comfy_frontend_devs
+/src/platform/customNodes/manager/                @christian-byrne @ltdrdata @Comfy-Org/comfy_frontend_devs
 
 # Model-to-node mappings (cloud team)
 /src/platform/assets/mappings/                    @deepme987 @Comfy-Org/comfy_frontend_devs
+
+# Assets
+/src/platform/assets/                             @austinmroz @synap5e @Comfy-Org/comfy_frontend_devs
 
 # Billing and account boundary - see ADR-AUTH-BILLING-0032.
 # The billing half only. The account layer's session and identity paths are
@@ -61,10 +64,6 @@
 # crossing that side of the boundary still has no required reviewer.
 /packages/account-core/src/core/billing/               @dante01yoon @Comfy-Org/comfy_frontend_devs
 /apps/billing-web/                                @dante01yoon @Comfy-Org/comfy_frontend_devs
-/apps/website/src/lib/workshop/                   @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver
-/apps/website/src/config/workshop-account.ts      @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver
-/apps/website/src/config/workshop-balance.ts      @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver
-/apps/website/src/config/workshop-credits.ts      @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver
 
 # Workspace members and billing gates - see ADR-API-SERVER-FACTS-0042.
 /src/platform/workspace/                          @dante01yoon @Comfy-Org/comfy_frontend_devs

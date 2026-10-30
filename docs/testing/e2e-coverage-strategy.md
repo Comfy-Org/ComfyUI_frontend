@@ -46,7 +46,7 @@ regenerated.
 | E2E merge   | `ci-tests-e2e-coverage-package.yaml`, `scripts/cicd/package-e2e-coverage.sh`                     | `lcov -a` merge, `genhtml` report, `e2e-coverage` + `e2e-coverage-html` artifacts                                       |
 | E2E publish | `ci-tests-e2e-coverage.yaml` (workflow_run)                                                      | Codecov flag `e2e`, GitHub Pages deploy on `main`                                                                       |
 | Reporting   | `coverage-slack-notify.yaml`, `scripts/coverage-slack-notify.ts`                                 | Slack post per merged PR with unit and E2E deltas against an 80% target                                                 |
-| Gating      | `codecov.yml`                                                                                    | Default project status disabled; website project and all patch statuses informational; unit and E2E flags carry forward |
+| Gating      | `codecov.yml`                                                                                    | Default project status disabled; billing-web project and patch statuses informational; unit and E2E flags carry forward |
 
 ### Current numbers (main, 2026-09-01)
 
@@ -204,7 +204,7 @@ directory from the vitest report.
 | `extensions/core` (built-ins)               | 50.4% (5,487)                                                                  | 54%                            | Group nodes, reroutes, uploads, 3D  | Mixed; see per-extension table                |
 | `extensions/core/cameraInfo`                | 6.8% (855)                                                                     | ~87%                           | 3D camera overlay                   | Unit-covered; low E2E priority                |
 | `composables/maskeditor`                    | 52.1% (1,869)                                                                  | ~94%                           | Mask editor tools                   | Three specs exist; tool coverage thin         |
-| `workbench/extensions/manager`              | 54.5% (1,858) + 2k absent                                                      | ~44% (components)              | Custom-node install/update          | Install, update, conflict dialogs untested    |
+| `platform/customNodes/manager`              | 54.5% (1,858) + 2k absent                                                      | ~44% (components)              | Custom-node install/update          | Install, update, conflict dialogs untested    |
 | `platform/assets` (browser)                 | 48.7% (2,234)                                                                  | mid                            | Media/model browsing                | Browse well covered by 37 specs               |
 | `platform/assets/components/UploadModel*`   | 14.1% (64) + dialogs absent                                                    | wizard and components tested   | Model upload                        | Browser integration gap                       |
 | `components/videoEdit`, `composables/video` | absent (2,296 raw)                                                             | ~78%                           | Video trim widget                   | Gap                                           |

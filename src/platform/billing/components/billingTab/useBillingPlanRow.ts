@@ -4,9 +4,10 @@ import { useI18n } from 'vue-i18n'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
-import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
+import type { SubscriptionTier } from '@comfyorg/billing-core'
 import { resolveSubscriptionTierKey } from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
 import { derivePlanRow } from '@/platform/billing/components/billingTab/planRow'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
 
 export function useBillingPlanRow() {
@@ -20,6 +21,7 @@ export function useBillingPlanRow() {
   } = useBillingContext()
   const { quotaEnabled, available, maxAvailable } = useFreeTierQuota()
   const scheduled = useScheduledPlanChange()
+  const { planKind } = useBillingCapabilities()
 
   function planNameFor(tier: SubscriptionTier | null): string | null {
     if (tier === null || isSalesManagedTier(tier)) return null
@@ -55,7 +57,8 @@ export function useBillingPlanRow() {
       subscriptionState: subscriptionState.value,
       billingStatus: billingStatus.value,
       scheduledChange: scheduledChange.value,
-      freeRuns: freeRuns.value
+      freeRuns: freeRuns.value,
+      planKind: planKind.value
     })
   )
 

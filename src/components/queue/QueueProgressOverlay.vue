@@ -1,8 +1,5 @@
 <template>
-  <div
-    v-show="isVisible"
-    :class="['flex', 'justify-end', 'w-full', 'pointer-events-none']"
-  >
+  <div v-show="isVisible" class="pointer-events-none flex w-full justify-end">
     <div
       data-testid="queue-progress-overlay"
       class="pointer-events-auto flex max-h-[60vh] w-[350px] min-w-[310px] flex-col overflow-hidden rounded-lg border transition-colors duration-200 ease-in-out"
@@ -68,7 +65,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { api } from '@/scripts/api'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useAssetsStore } from '@/stores/assetsStore'

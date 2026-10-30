@@ -1,10 +1,8 @@
 import { expect } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type {
-  BillingStatusResponse,
-  WorkspaceWithRole
-} from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
+import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
@@ -56,6 +54,7 @@ const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   subscription_status: 'canceled',

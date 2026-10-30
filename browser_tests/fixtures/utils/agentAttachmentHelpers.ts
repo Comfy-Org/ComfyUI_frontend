@@ -1,3 +1,4 @@
+import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
@@ -9,11 +10,9 @@ import type {
 
 type DraggedAssetInfo = NonNullable<ReturnType<typeof parseAssetInfo>>
 
-export interface ExpectedAssetPreview {
+export interface ExpectedAssetPreview extends Size2D {
   filename: string
   kind: Extract<MediaKind, 'image' | 'video'>
-  width: number
-  height: number
   visible: boolean
 }
 

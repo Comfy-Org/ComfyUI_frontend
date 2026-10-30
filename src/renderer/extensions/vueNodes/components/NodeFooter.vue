@@ -19,7 +19,7 @@
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ errorLabel }}</span>
-        <i class="icon-[lucide--info] size-4 shrink-0" />
+        <i class="icon-[lucide--info]" />
       </div>
     </Button>
 
@@ -39,7 +39,7 @@
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.enter') }}</span>
-        <i class="icon-[comfy--workflow] size-4 shrink-0" />
+        <i class="icon-[comfy--workflow]" />
       </div>
     </Button>
   </div>
@@ -69,7 +69,7 @@
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ errorLabel }}</span>
-        <i class="icon-[lucide--info] size-4 shrink-0" />
+        <i class="icon-[lucide--info]" />
       </div>
     </Button>
 
@@ -96,8 +96,8 @@
         <i
           :class="
             showAdvancedState
-              ? 'icon-[lucide--chevron-up] size-4 shrink-0'
-              : 'icon-[lucide--settings-2] size-4 shrink-0'
+              ? 'icon-[lucide--chevron-up]'
+              : 'icon-[lucide--settings-2]'
           "
         />
       </div>
@@ -124,7 +124,7 @@
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ errorLabel }}</span>
-        <i class="icon-[lucide--info] size-4 shrink-0" />
+        <i class="icon-[lucide--info]" />
       </div>
     </Button>
   </div>
@@ -156,7 +156,7 @@
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.enterSubgraph') }}</span>
-        <i class="icon-[comfy--workflow] size-4 shrink-0" />
+        <i class="icon-[comfy--workflow]" />
       </div>
     </Button>
   </div>
@@ -191,13 +191,13 @@
           <span class="truncate">{{
             t('rightSidePanel.hideAdvancedInputsButton')
           }}</span>
-          <i class="icon-[lucide--chevron-up] size-4 shrink-0" />
+          <i class="icon-[lucide--chevron-up]" />
         </template>
         <template v-else>
           <span class="truncate">{{
             t('rightSidePanel.showAdvancedInputsButton')
           }}</span>
-          <i class="icon-[lucide--settings-2] size-4 shrink-0" />
+          <i class="icon-[lucide--settings-2]" />
         </template>
       </div>
     </Button>
@@ -207,7 +207,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { cn } from '@comfyorg/tailwind-utils'

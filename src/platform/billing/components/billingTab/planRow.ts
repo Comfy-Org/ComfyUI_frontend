@@ -1,10 +1,13 @@
-import type { SubscriptionState } from '@comfyorg/ingest-types'
+import type {
+  BillingCapabilitiesResponse,
+  SubscriptionState
+} from '@comfyorg/ingest-types'
 
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
   SubscriptionDuration
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 type BillingCadence = 'monthly' | 'yearly'
 
@@ -18,10 +21,12 @@ export interface PlanRowFacts {
   endDate: string | null
   scheduledChange: { planName: string; effectiveAt: string } | null
   freeRuns: { remaining: number; total: number } | null
+  planKind: PlanKind | null
 }
 
 export type PlanRowState =
   | { kind: 'activating'; planName: string }
+  | { kind: 'paused'; planName: string }
   | {
       kind: 'active'
       planName: string
@@ -45,9 +50,23 @@ export type PlanRowState =
       kind: 'noPlan'
       freeRuns: { remaining: number; total: number } | null
     }
+  | {
+      kind: 'salesManaged'
+      planName: string | null
+      cadence: BillingCadence | null
+      renewsAt: string | null
+    }
   | { kind: 'unknown' }
 
-export type PlanRowAction = 'manage' | 'subscribe' | 'choosePlan'
+export type PlanRowAction =
+  | 'manage'
+  | 'subscribe'
+  | 'choosePlan'
+  | 'contactSales'
+
+export type PlanKind = NonNullable<BillingCapabilitiesResponse['plan_kind']>
+
+export const CONTACT_SALES_URL = 'https://comfy.org/contact/'
 
 type BillingTabLoad = 'loading' | 'error' | 'ready'
 
@@ -61,6 +80,25 @@ function toCadence(
   return null
 }
 
+function salesManagedRow(facts: PlanRowFacts): PlanRowState | null {
+  if (facts.planKind !== 'sales_managed') return null
+  switch (facts.billingStatus) {
+    case 'paused':
+      return null
+  }
+  switch (facts.subscriptionStatus) {
+    case 'active':
+      return {
+        kind: 'salesManaged',
+        planName: facts.planName,
+        cadence: toCadence(facts.duration),
+        renewsAt: facts.renewalDate
+      }
+    default:
+      return null
+  }
+}
+
 /** Maps the served status fields onto the plan row; whatever they cannot render is `unknown`. */
 export function derivePlanRow(facts: PlanRowFacts): PlanRowState {
   const { subscriptionStatus, planName, renewalDate, endDate } = facts
@@ -70,10 +108,12 @@ export function derivePlanRow(facts: PlanRowFacts): PlanRowState {
   if (subscriptionStatus === null) {
     return { kind: 'noPlan', freeRuns: facts.freeRuns }
   }
+  const salesManaged = salesManagedRow(facts)
+  if (salesManaged) return salesManaged
   if (planName === null) return UNKNOWN
   switch (facts.billingStatus) {
     case 'paused':
-      return UNKNOWN
+      return { kind: 'paused', planName }
   }
 
   const cadence = toCadence(facts.duration)
@@ -100,22 +140,28 @@ export function derivePlanRow(facts: PlanRowFacts): PlanRowState {
   }
 }
 
-/** The plan action for a state, shown only when the server grants `can_open_plans`. */
+/** Self-serve actions follow `can_open_plans`. `sales_managed` is Contact sales. */
 export function planRowAction(
   state: PlanRowState,
-  { canOpenPlans }: { canOpenPlans: boolean }
+  {
+    canOpenPlans,
+    planKind
+  }: { canOpenPlans: boolean; planKind: PlanKind | null }
 ): PlanRowAction | null {
+  if (planKind === 'sales_managed') return 'contactSales'
   if (!canOpenPlans) return null
   switch (state.kind) {
     case 'activating':
     case 'active':
+    case 'ending':
+    case 'paused':
     case 'unknown':
       return 'manage'
     case 'noPlan':
       return 'subscribe'
     case 'ended':
       return 'choosePlan'
-    case 'ending':
+    case 'salesManaged':
       return null
   }
 }

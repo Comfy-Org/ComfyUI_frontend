@@ -129,7 +129,6 @@ test.describe('App mode usage', () => {
   test('FormDropdown search Enter selects the top filtered item', async ({
     comfyPage
   }) => {
-    await comfyPage.appMode.enableLinearMode()
     const loadImageNode = await comfyPage.nodeOps.addNode('LoadImage')
     await comfyPage.nextFrame()
 
@@ -248,7 +247,6 @@ test.describe('App mode usage', () => {
     comfyPage
   }) => {
     const toggle = comfyPage.appMode.workflowActions.viewModeToggle
-    await comfyPage.appMode.enableLinearMode()
     await expect(toggle).toBeVisible()
 
     await comfyPage.appMode.enterBuilder()
