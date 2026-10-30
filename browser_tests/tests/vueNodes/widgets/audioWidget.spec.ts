@@ -9,8 +9,7 @@ test('@vue-nodes Audio Widget', async ({ comfyPage, comfyFiles }) => {
   const audioPreview = new AudioPreview(loadAudioNode)
 
   await test.step('Add node', async () => {
-    await comfyPage.menu.topbar.newWorkflowButton.click()
-    await comfyPage.nextFrame()
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
     await comfyPage.searchBoxV2.addNode('Load Audio')
     await expect(loadAudioNode).toBeVisible()
