@@ -26,6 +26,7 @@ const deployment: WorkspaceDeployment = {
   deployment_id: 'dep-1',
   release_id: 'release-1',
   status: 'ready',
+  can_start: false,
   created_at: '2026-10-01T00:00:00Z'
 }
 

@@ -5,6 +5,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { blankGraph } from '@/scripts/defaultGraph'
@@ -19,6 +20,7 @@ import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './useAgentWorkflowSelection'
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 function setup({ tabsRestored = true }: { tabsRestored?: boolean } = {}) {
   const workflows = useWorkflowStore()
@@ -367,6 +369,14 @@ describe('historical workflow restoration', () => {
     expect(panel.selectedWorkflow).toBeNull()
     expect(panel.targetUnavailable).toBe(false)
     expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(
+      new Error('No saved workflow resolves to the chat target'),
+      {
+        surface: 'agent',
+        errorType: 'agent_workflow_restore_failed',
+        context: { workflowId: 'wf-saved' }
+      }
+    )
   })
 
   it.for([
@@ -410,20 +420,23 @@ describe('historical workflow restoration', () => {
     }
   )
 
+  const openFailure = new Error('Cannot open')
   it.for([
     {
       opening: 'returns false',
-      open: async () => false
+      open: async () => false,
+      cause: new Error('The chat target workflow did not open')
     },
     {
       opening: 'throws',
       open: async (): Promise<never> => {
-        throw new Error('Cannot open')
-      }
+        throw openFailure
+      },
+      cause: openFailure
     }
   ])(
     'reports a failed restore when opening the saved workflow $opening',
-    async ({ open }) => {
+    async ({ open, cause }) => {
       const { selection, workflows, panel, current, warnRestoreFailed } =
         setup()
       workflows.attachWorkflow(
@@ -442,6 +455,11 @@ describe('historical workflow restoration', () => {
       expect(workflows.activeWorkflow?.path).toBe(current.path)
       expect(panel.targetUnavailable).toBe(false)
       expect(warnRestoreFailed).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledWith(cause, {
+        surface: 'agent',
+        errorType: 'agent_workflow_restore_failed',
+        context: { workflowId: 'wf-saved' }
+      })
     }
   )
 

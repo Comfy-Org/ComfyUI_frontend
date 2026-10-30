@@ -4,10 +4,6 @@
   "description": "Shared technical module for runtime narrowing of abort errors, nullable values, slots, and result-item variants. Graph entity guards live in litegraph.",
   "modules": [
     {
-      "path": "src/utils/typeGuardUtil.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/typeGuardUtil.ts",
       "role": "domain"
     }

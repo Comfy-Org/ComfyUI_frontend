@@ -8,10 +8,6 @@
       "role": "application"
     },
     {
-      "path": "packages/litegraph/src/utils/graphTraversalUtil.test.ts",
-      "role": "application"
-    },
-    {
       "path": "packages/litegraph/src/utils/graphTraversalUtil.ts",
       "role": "application"
     }

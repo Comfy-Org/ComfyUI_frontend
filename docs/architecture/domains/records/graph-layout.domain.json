@@ -20,10 +20,6 @@
       "role": "application"
     },
     {
-      "path": "src/renderer/core/layout/slots/syncSlotOffsets.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/renderer/core/layout/slots/syncSlotOffsets.ts",
       "role": "integration"
     },
@@ -36,16 +32,8 @@
       "role": "application"
     },
     {
-      "path": "src/renderer/core/layout/transform/TransformPane.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/renderer/core/layout/transform/TransformPane.vue",
       "role": "presentation"
-    },
-    {
-      "path": "src/renderer/core/layout/transform/graphRenderTransform.test.ts",
-      "role": "integration"
     },
     {
       "path": "src/renderer/core/layout/transform/graphRenderTransform.ts",
@@ -57,10 +45,6 @@
     },
     {
       "path": "src/renderer/core/spatial/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/positionBounds.test.ts",
       "role": "domain"
     },
     {

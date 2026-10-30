@@ -8,10 +8,6 @@
       "role": "application"
     },
     {
-      "path": "packages/litegraph/src/utils/cnrIdUtil.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "packages/litegraph/src/utils/cnrIdUtil.ts",
       "role": "domain"
     },
