@@ -562,6 +562,33 @@ describe('useConflictDetection', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('skips the registry lookup when cancelled while installed packs load', async () => {
+      installPacks(10)
+      let finishFetchInstalled: () => void = () => {}
+      vi.mocked(mockInstalledPacks.startFetchInstalled).mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finishFetchInstalled = resolve
+          })
+      )
+
+      const { runFullConflictAnalysis, cancelRequests } = useConflictDetection()
+      const analysis = runFullConflictAnalysis()
+      await vi.waitFor(() =>
+        expect(mockInstalledPacks.startFetchInstalled).toHaveBeenCalled()
+      )
+
+      cancelRequests()
+      finishFetchInstalled()
+      const result = await analysis
+
+      expect(result.success).toBe(false)
+      expect(bulkCalls()).toEqual([])
+      expect(
+        mockComfyManagerService.getImportFailInfoBulk
+      ).not.toHaveBeenCalled()
+    })
+
     it('sends a single request when the install fits in one chunk', async () => {
       installPacks(50)
 

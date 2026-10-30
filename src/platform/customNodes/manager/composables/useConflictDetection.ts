@@ -270,10 +270,13 @@ export function useConflictDetection() {
    *
    * @returns Promise that resolves to array of node pack requirements
    */
-  async function buildNodeRequirements(): Promise<NodeRequirements[]> {
+  async function buildNodeRequirements(
+    signal: AbortSignal
+  ): Promise<NodeRequirements[]> {
     try {
       // Step 1: Use installed packs composable instead of direct API calls
       await startFetchInstalled() // Ensure data is loaded
+      if (signal.aborted) return []
 
       if (!installedPacksReady.value || installedPacks.value.length === 0) {
         console.warn(
@@ -295,7 +298,7 @@ export function useConflictDetection() {
       const { versionDataMap, unverifiedNodeIds } = await fetchBulkNodeVersions(
         registryService,
         nodeVersions,
-        abortController.value?.signal
+        signal
       )
 
       // Step 4: Combine local installation data with Registry version data
@@ -412,8 +415,12 @@ export function useConflictDetection() {
    * Gets installed packages and checks each one for import failures using bulk API.
    * @returns Promise that resolves to import failure data
    */
-  async function fetchImportFailInfo(): Promise<ImportFailureMap> {
+  async function fetchImportFailInfo(
+    signal: AbortSignal
+  ): Promise<ImportFailureMap> {
     try {
+      if (signal.aborted) return {}
+
       const comfyManagerService = useComfyManagerService()
 
       // Use installedPacksWithVersions to match what versions bulk API uses
@@ -430,7 +437,7 @@ export function useConflictDetection() {
       // Use bulk API to get import failure info for all packages at once
       const bulkResult = await comfyManagerService.getImportFailInfoBulk(
         { cnr_ids: packageIds },
-        abortController.value?.signal
+        signal
       )
 
       if (bulkResult) {
@@ -545,7 +552,7 @@ export function useConflictDetection() {
       const systemEnvInfo = await collectSystemEnvironment()
 
       // 2. Collect installed node requirement information
-      const installedNodeRequirements = await buildNodeRequirements()
+      const installedNodeRequirements = await buildNodeRequirements(signal)
 
       const registryUnknownPackIds = new Set(
         installedNodeRequirements.flatMap((requirement) =>
@@ -580,7 +587,7 @@ export function useConflictDetection() {
         .filter((result): result is ConflictDetectionResult => result !== null)
 
       // 4. Detect Python import failures
-      const importFailInfo = await fetchImportFailInfo()
+      const importFailInfo = await fetchImportFailInfo(signal)
       const importFailResults = detectImportFailConflicts(importFailInfo)
 
       // 5. Combine all results
