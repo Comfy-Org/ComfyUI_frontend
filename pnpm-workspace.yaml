@@ -177,6 +177,7 @@ overrides:
   brace-expansion@^4.0.0: ^5.0.9
   brace-expansion@^5.0.0: ^5.0.9
   '@grpc/grpc-js@^1.9.0': ^1.14.6
+  tinypool@^2.0.0: 2.1.2
 
 # Transitional - drop each entry once that version is older than the release-age gate.
 minimumReleaseAgeExclude:
