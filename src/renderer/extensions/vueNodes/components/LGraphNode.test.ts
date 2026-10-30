@@ -651,9 +651,13 @@ describe('LGraphNode', () => {
     const missingResourcesIcon = () =>
       screen.queryByRole('img', { name: 'Missing resources' })
 
+    const issuesTabEnabled = ref(false)
+
     function setIssuesTabEnabled(enabled: boolean) {
+      issuesTabEnabled.value = enabled
       vi.mocked(useSettingStore().get).mockImplementation((key) => {
-        if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return enabled
+        if (key === 'Comfy.RightSidePanel.ShowErrorsTab')
+          return issuesTabEnabled.value
         if (key === 'Comfy.Node.AlwaysShowAdvancedWidgets') return false
         if (key === 'Comfy.Node.Opacity') return 1
       })
@@ -710,6 +714,18 @@ describe('LGraphNode', () => {
       setIssuesTabEnabled(true)
       markModelMissing()
       renderWithHeader()
+
+      expect(missingResourcesIcon()).not.toBeInTheDocument()
+    })
+
+    it('hides on a mounted node once the Issues tab is turned on', async () => {
+      setIssuesTabEnabled(false)
+      markModelMissing()
+      renderWithHeader()
+      expect(missingResourcesIcon()).toBeInTheDocument()
+
+      issuesTabEnabled.value = true
+      await nextTick()
 
       expect(missingResourcesIcon()).not.toBeInTheDocument()
     })
