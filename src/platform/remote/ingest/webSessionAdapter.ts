@@ -5,7 +5,7 @@ import type {
 } from 'axios'
 import axios, { AxiosError } from 'axios'
 
-import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
+import type { WebSessionSend } from '@comfyorg/api-client/webSessionFetch'
 
 function requestHeaders({ headers }: InternalAxiosRequestConfig): Headers {
   const result = new Headers()

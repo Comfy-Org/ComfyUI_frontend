@@ -10,7 +10,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'

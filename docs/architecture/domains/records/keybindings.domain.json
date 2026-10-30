@@ -30,6 +30,18 @@
     {
       "path": "src/utils/modalUtil.ts",
       "role": "domain"
+    },
+    {
+      "path": "packages/keybindings/src/**",
+      "role": "domain"
+    },
+    {
+      "path": "packages/keybindings/src/commandStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "packages/keybindings/src/keybindingStore.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [

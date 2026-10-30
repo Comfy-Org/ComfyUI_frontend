@@ -7,7 +7,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 

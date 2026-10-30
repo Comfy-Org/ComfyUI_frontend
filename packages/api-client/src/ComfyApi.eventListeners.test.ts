@@ -1,10 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { ComfyApi } from '@/scripts/api'
+import { ComfyApi } from './ComfyApi'
+import type { ComfyApiPorts } from './ComfyApi'
+
+const ports: ComfyApiPorts = {
+  isCloud: false,
+  featureFlagOverride: () => undefined,
+  onFreeMemory: () => {}
+}
 
 describe('ComfyApi event listener error isolation', () => {
   it('does not let a throwing listener abort dispatch to other listeners', () => {
-    const api = new ComfyApi()
+    const api = new ComfyApi(ports)
     const calls: string[] = []
 
     api.addEventListener('reconnected', () => {
@@ -27,7 +34,7 @@ describe('ComfyApi event listener error isolation', () => {
   })
 
   it('preserves the native `this` binding when invoking listeners', () => {
-    const api = new ComfyApi()
+    const api = new ComfyApi(ports)
     const listener = vi.fn()
     api.addEventListener('reconnected', listener)
     api.dispatchCustomEvent('reconnected')
@@ -36,7 +43,7 @@ describe('ComfyApi event listener error isolation', () => {
   })
 
   it('guards async listener rejections and logs the error object', async () => {
-    const api = new ComfyApi()
+    const api = new ComfyApi(ports)
     const err = new Error('async boom')
 
     api.addEventListener('reconnected', () => Promise.reject(err))
@@ -47,7 +54,7 @@ describe('ComfyApi event listener error isolation', () => {
   })
 
   it('guards bare PromiseLike thenables (no .catch method) without throwing', async () => {
-    const api = new ComfyApi()
+    const api = new ComfyApi(ports)
     const err = new Error('thenable boom')
 
     api.addEventListener('reconnected', () => ({
@@ -63,7 +70,7 @@ describe('ComfyApi event listener error isolation', () => {
   })
 
   it('supports EventListenerObject ({ handleEvent }) listeners', () => {
-    const api = new ComfyApi()
+    const api = new ComfyApi(ports)
     const handleEvent = vi.fn()
 
     api.addEventListener('reconnected', {
@@ -75,7 +82,7 @@ describe('ComfyApi event listener error isolation', () => {
   })
 
   it('logs at warn, not error (RUM collects console.error by default)', () => {
-    const api = new ComfyApi()
+    const api = new ComfyApi(ports)
 
     api.addEventListener('reconnected', () => {
       throw new Error('boom')
@@ -86,7 +93,7 @@ describe('ComfyApi event listener error isolation', () => {
   })
 
   it('removeEventListener still removes a guarded listener', () => {
-    const api = new ComfyApi()
+    const api = new ComfyApi(ports)
     const handler = vi.fn()
 
     api.addEventListener('reconnected', handler)

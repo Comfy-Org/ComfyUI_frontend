@@ -366,7 +366,10 @@ beforeEach(() => {
     reset: vi.fn(),
     stop: () => {}
   })
-  useAuthStore().currentUser = fromPartial<User>({ uid: 'account-a' })
+  useAuthStore().currentUser = fromPartial<User>({
+    uid: 'account-a',
+    getIdToken: async () => 'id-token'
+  })
   vi.spyOn(useAuthStore(), 'getUserAuthHeader').mockResolvedValue({
     Authorization: 'Bearer id-token'
   })
