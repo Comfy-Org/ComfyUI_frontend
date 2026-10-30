@@ -83,6 +83,11 @@ class TestPlainWidgets extends LGraphNode {
   }
 }
 
+function addWideDiagnosticWidgets(node: LGraphNode): void {
+  for (let index = 0; index < 20; index++)
+    node.addWidget('number', `wide_${index}`, index, () => {})
+}
+
 /** Restores its name-keyed widget record in `onConfigure`, as VHS `useKVState` does. */
 class TestRecordRestore extends LGraphNode {
   videopreview: unknown
@@ -396,6 +401,7 @@ describe('LiveGraphApplier', () => {
         context: expect.objectContaining({
           availableWidgetNames: ['known', 'addedAfterCatalog'],
           overflowIndex: 1,
+          supportsDynamicWidgetOverflow: false,
           serializableWidgetNames: ['known', 'addedAfterCatalog']
         })
       })
@@ -465,6 +471,46 @@ describe('LiveGraphApplier', () => {
     })
     expect(options?.context).not.toHaveProperty('overflowIndex')
     expect(options?.context).not.toHaveProperty('serializableWidgetNames')
+  })
+
+  it("caps the node's widget names in missing-widget diagnostics", () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    if (!node) throw new Error('missing live node')
+    addWideDiagnosticWidgets(node)
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('totally_unknown_widget', 99)
+    })
+
+    const [, options] = vi
+      .mocked(reportError)
+      .mock.calls.find(
+        ([error]) =>
+          error instanceof Error &&
+          error.message ===
+            "Node 1 (TestPlainWidgets) has no widget 'totally_unknown_widget'"
+      ) ?? [undefined, undefined]
+    expect(options?.context?.availableWidgetNames).toEqual([
+      'known',
+      'addedAfterCatalog',
+      ...Array.from({ length: 14 }, (_, index) => `wide_${index}`),
+      '+6'
+    ])
   })
 
   /**
@@ -839,6 +885,7 @@ describe('LiveGraphApplier', () => {
         context: expect.objectContaining({
           availableWidgetNames: ['known', 'transient', 'overflow'],
           overflowIndex: 2,
+          supportsDynamicWidgetOverflow: true,
           serializableWidgetNames: ['known', 'overflow']
         })
       })
