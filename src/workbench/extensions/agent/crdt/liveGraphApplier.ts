@@ -1422,10 +1422,6 @@ export class LiveGraphApplier {
           ? {}
           : {
               overflowIndex,
-              // The sequence the index actually addresses. `serialize: false`
-              // widgets occupy a slot in `availableWidgetNames` and none here,
-              // so without this list an in-range-looking index cannot be told
-              // from an out-of-range one.
               serializableWidgetNames: serializableWidgets(node).map(
                 (widget) => widget.name
               )
