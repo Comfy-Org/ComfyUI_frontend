@@ -58,7 +58,6 @@ import type {
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
   AgentStarterPromptClickedMetadata,
-  AgentStarterPromptExposureMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -173,6 +172,14 @@ function stampPlatformAxes(event: CaptureResult | null): CaptureResult | null {
   return event
 }
 
+function stripRetiredStarterPromptFlag(
+  event: CaptureResult | null
+): CaptureResult | null {
+  if (!event) return null
+  delete event.properties['$feature/agent-starter-prompt-set']
+  return event
+}
+
 function readDesktopEntryAttribution(
   posthog: PostHog
 ): DesktopEntryAttribution | null {
@@ -241,7 +248,11 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               // automatically when persistence includes 'cookie' (the default).
               // Explicit override interacts badly with posthog-js#3578 where reset() fails
               // to clear localStorage on other subdomains, causing identity bleed on logout.
-              before_send: [stampPlatformAxes, createPostHogBeforeSend()]
+              before_send: [
+                stampPlatformAxes,
+                stripRetiredStarterPromptFlag,
+                createPostHogBeforeSend()
+              ]
             })
             this.isInitialized = true
             this.desktopEntryAttribution = readDesktopEntryAttribution(
@@ -882,12 +893,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     metadata: AgentStarterPromptClickedMetadata
   ): void {
     this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
-  }
-
-  trackAgentStarterPromptExposure(
-    metadata: AgentStarterPromptExposureMetadata
-  ): void {
-    this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE, metadata)
   }
 
   trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {

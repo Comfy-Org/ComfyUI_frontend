@@ -9094,7 +9094,7 @@ describe('AgentPanelRoot workflow binding', () => {
     vi.mocked(useTelemetry())!.trackAgentStarterPromptClicked.mockClear()
     renderWithSelectedTarget()
 
-    const prompt = i18n.global.t('agent.suggestedPrompts.cloud.1')
+    const prompt = i18n.global.t('agent.suggestedPrompts.treatment.cloud.1')
     await userEvent.click(await screen.findByRole('button', { name: prompt }))
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
