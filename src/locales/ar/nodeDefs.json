@@ -18946,6 +18946,288 @@
       }
     }
   },
+  "PatinaMaterialExtractNode": {
+    "description": "استخرج مادة PBR قابلة للتبليط بسلاسة (صورة نسيج + خرائط PBR) من منطقة في صورة إدخال، استنادًا إلى موجّه.",
+    "display_name": "استخراج مادة الباتينا",
+    "inputs": {
+      "basecolor": {
+        "name": "basecolor",
+        "tooltip": "أنشئ خريطة اللون الأساسي (albedo)."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "أنشئ خريطة الارتفاع/الإزاحة."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "الصورة التي سيُستخرج منها نسيج."
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "حجم نسيج الإخراج. اختر 'custom' لعرض/ارتفاع بين 512 و2048 (تنتج نتيجة 8K من ترقية الخرائط بمقدار 4x)."
+      },
+      "metalness": {
+        "name": "metalness",
+        "tooltip": "أنشئ خريطة المعدنية."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "أنشئ خريطة الاتجاهات."
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "خطوات إزالة الضوضاء لتوليد النسيج."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "صِف النسيج المطلوب استخراجه من الصورة (مثلًا: \"الجدار\")."
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "وسّع الموجّه باستخدام LLM للحصول على تفاصيل نسيج أغنى. يكون معطّلًا افتراضيًا: تعيد التوسعة صياغة الموجّه على هيئة صورة فوتوغرافية وتميل إلى إبهات خريطة المعدنية."
+      },
+      "roughness": {
+        "name": "roughness",
+        "tooltip": "أنشئ خريطة الخشونة."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذرة لتوليد قابل لإعادة الإنتاج."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "مقدار تحويل صورة الإدخال."
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "حجم البلاطة في الفضاء الكامن (64 = 512px، 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "خطوة البلاطة في الفضاء الكامن."
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "اتجاه التبليط: جميع الاتجاهات، أو أفقي، أو عمودي."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "ترقية بلا فواصل باستخدام SeedVR لخرائط PBR (لا يُرقّى النسيج الأساسي)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texture",
+        "tooltip": null
+      },
+      "1": {
+        "name": "basecolor",
+        "tooltip": null
+      },
+      "2": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "3": {
+        "name": "roughness",
+        "tooltip": null
+      },
+      "4": {
+        "name": "metalness",
+        "tooltip": null
+      },
+      "5": {
+        "name": "height",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "أنشئ مادة PBR كاملة قابلة للتكرار بسلاسة (صورة نسيج + خرائط PBR) من موجّه نصي، بدقة تصل إلى 8K. ويمكن اختياريًا توجيهها باستخدام صورة إدخال (img2img) أو صورة + mask (inpaint).",
+    "display_name": "مادة باتينا",
+    "inputs": {
+      "basecolor": {
+        "name": "basecolor",
+        "tooltip": "أنشئ خريطة basecolor (albedo)."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "أنشئ خريطة الارتفاع/الإزاحة."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "صورة مصدر اختيارية. عند توفيرها وحدها = img2img؛ ومع mask = inpaint."
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "حجم النسيج الناتج. اختر 'custom' لعرض/ارتفاع بين 512 و2048 (تأتي نتيجة 8K من رفع دقة الخرائط بمقدار 4x)."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "mask اختياري لـ inpaint (يتطلب image). الأبيض = إعادة الإنشاء، الأسود = الاحتفاظ."
+      },
+      "metalness": {
+        "name": "metalness",
+        "tooltip": "أنشئ خريطة metalness."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "أنشئ خريطة normal."
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "خطوات إزالة الضوضاء لإنشاء النسيج."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "صف المادة/النسيج المراد إنشاؤه."
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "وسّع الموجّه باستخدام LLM للحصول على تفاصيل نسيج أغنى. يكون معطّلًا افتراضيًا: تعيد التوسعة صياغة الموجّه كصورة فوتوغرافية وتميل إلى إضعاف خريطة metalness."
+      },
+      "roughness": {
+        "name": "roughness",
+        "tooltip": "أنشئ خريطة roughness."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذرة لإنشاء قابل لإعادة الإنتاج."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "مقدار تحويل صورة الإدخال. يُستخدم فقط عند توفير صورة."
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "حجم البلاطة في فضاء latent (64 = 512px، 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "خطوة البلاطة في فضاء latent."
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "اتجاه التكرار: متعدد الاتجاهات، أو أفقي، أو عمودي."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "رفع دقة سلس لخرائط PBR باستخدام SeedVR (لا يتم رفع دقة النسيج الأساسي)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "النسيج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "اللون الأساسي",
+        "tooltip": null
+      },
+      "2": {
+        "name": "طبيعي",
+        "tooltip": null
+      },
+      "3": {
+        "name": "الخشونة",
+        "tooltip": null
+      },
+      "4": {
+        "name": "المعدنية",
+        "tooltip": null
+      },
+      "5": {
+        "name": "الارتفاع",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "أنشئ خرائط مواد PBR (اللون الأساسي، والطبيعي، والخشونة، والمعدنية، والارتفاع) من صورة نسيج.",
+    "display_name": "خرائط مواد Patina PBR",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "خفّض دقة الصورة المُدخلة تلقائيًا إذا تجاوز أطول أضلاعها 2048px (حد إدخال النموذج)، مع الحفاظ على نسبة العرض إلى الارتفاع؛ وتُترك الصور الأصغر كما هي. عطّل هذا الخيار لإظهار خطأ للصور كبيرة الحجم بدلًا من ذلك."
+      },
+      "basecolor": {
+        "name": "اللون الأساسي",
+        "tooltip": "أنشئ خريطة اللون الأساسي (ألبيدو)."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "height": {
+        "name": "الارتفاع",
+        "tooltip": "أنشئ خريطة الارتفاع/الإزاحة."
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "صورة فوتوغرافية أو تصيير مُدخل لاشتقاق خرائط PBR منه."
+      },
+      "metalness": {
+        "name": "المعدنية",
+        "tooltip": "أنشئ خريطة المعدنية."
+      },
+      "normal": {
+        "name": "طبيعي",
+        "tooltip": "أنشئ الخريطة الطبيعية."
+      },
+      "roughness": {
+        "name": "الخشونة",
+        "tooltip": "أنشئ خريطة الخشونة."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لإزالة ضوضاء قابلة لإعادة الإنتاج."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "اللون الأساسي",
+        "tooltip": null
+      },
+      "1": {
+        "name": "طبيعي",
+        "tooltip": null
+      },
+      "2": {
+        "name": "الخشونة",
+        "tooltip": null
+      },
+      "3": {
+        "name": "المعدنية",
+        "tooltip": null
+      },
+      "4": {
+        "name": "الارتفاع",
+        "tooltip": null
+      }
+    }
+  },
   "PerpNeg": {
     "display_name": "Perp-Neg (تم إهماله بواسطة PerpNegGuider)",
     "inputs": {
@@ -28551,6 +28833,33 @@
       "video": {
         "name": "الفيديو",
         "tooltip": "فيديو بمسار صوتي للكلام، أقصر من 30 دقيقة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "ترجم الكلام في فيديو إلى لغة أخرى باستخدام VEED. يُستنسخ صوت كل متحدث وتُزامَن حركة شفتيه مع الترجمة.",
+    "display_name": "دبلجة VEED",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "standard: سعر أقل، صوت أحادي؛ الإسبانية هي إسبانية أمريكا اللاتينية والبرتغالية برازيلية. pro: لهجات إقليمية وصوت ستيريو."
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_source_language": {
+        "name": "source_language"
+      },
+      "model_target_language": {
+        "name": "لغة_الهدف"
       }
     },
     "outputs": {

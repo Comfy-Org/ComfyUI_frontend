@@ -18946,6 +18946,288 @@
       }
     }
   },
+  "PatinaMaterialExtractNode": {
+    "description": "Extrait un matériau PBR raccordable sans joint (image de texture + cartes PBR) d’une région d’une image d’entrée, guidé par une invite.",
+    "display_name": "Extraction de matériau Patina",
+    "inputs": {
+      "basecolor": {
+        "name": "basecolor",
+        "tooltip": "Générer la carte de couleur de base (albédo)."
+      },
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Générer la carte de hauteur/déplacement."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image dont extraire une texture."
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "Taille de la texture de sortie. Choisissez « custom » pour une largeur/hauteur comprise entre 512 et 2048 (un résultat 8K provient d’un agrandissement 4x des cartes)."
+      },
+      "metalness": {
+        "name": "metalness",
+        "tooltip": "Générer la carte de métallicité."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "Générer la carte des normales."
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "Étapes de débruitage pour la génération de texture."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Décrivez la texture à extraire de l’image (p. ex. « le mur »)."
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "Développer l’invite avec un LLM pour obtenir des détails de texture plus riches. Désactivée par défaut : l’expansion reformule l’invite comme une photo et tend à délaver la carte de métallicité."
+      },
+      "roughness": {
+        "name": "roughness",
+        "tooltip": "Générer la carte de rugosité."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour une génération reproductible."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Degré de transformation de l’image d’entrée."
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "Taille des tuiles dans l’espace latent (64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "Pas des tuiles dans l’espace latent."
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "Direction de répétition : omnidirectionnelle, horizontale ou verticale."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "Agrandissement SeedVR sans joint des cartes PBR (la texture de base n’est pas agrandie)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texture",
+        "tooltip": null
+      },
+      "1": {
+        "name": "basecolor",
+        "tooltip": null
+      },
+      "2": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "3": {
+        "name": "roughness",
+        "tooltip": null
+      },
+      "4": {
+        "name": "métallicité",
+        "tooltip": null
+      },
+      "5": {
+        "name": "hauteur",
+        "tooltip": null
+      },
+      "6": {
+        "name": "prompt_expanded",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "Génère un matériau PBR complet raccordable sans jointure (image de texture + cartes PBR) à partir d’un prompt textuel, jusqu’en 8K. Utilisez facultativement une image d’entrée (img2img) ou une image + un mask (inpaint) pour le guider.",
+    "display_name": "Matériau à patine",
+    "inputs": {
+      "basecolor": {
+        "name": "couleur de base",
+        "tooltip": "Génère la carte de couleur de base (albédo)."
+      },
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "height": {
+        "name": "hauteur",
+        "tooltip": "Génère la carte de hauteur/déplacement."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image source facultative. Fournie seule = img2img ; avec un mask = inpaint."
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "Taille de la texture de sortie. Choisissez « custom » pour une largeur/hauteur comprise entre 512 et 2048 (un résultat 8K provient d’une mise à l’échelle 4x des cartes)."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "mask d’inpaint facultatif (nécessite une image). Blanc = régénérer, noir = conserver."
+      },
+      "metalness": {
+        "name": "métallicité",
+        "tooltip": "Génère la carte de métallicité."
+      },
+      "normal": {
+        "name": "normale",
+        "tooltip": "Génère la carte de normales."
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "Étapes de débruitage pour la génération de textures."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Décrivez le matériau/la texture à générer."
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "Développe le prompt avec un LLM pour obtenir des détails de texture plus riches. Désactivé par défaut : l’expansion reformule le prompt comme une photo et tend à atténuer la carte de métallicité."
+      },
+      "roughness": {
+        "name": "rugosité",
+        "tooltip": "Génère la carte de rugosité."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour une génération reproductible."
+      },
+      "strength": {
+        "name": "force",
+        "tooltip": "Degré de transformation de l’image d’entrée. Utilisé uniquement lorsqu’une image est fournie."
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "Taille de tuile dans l’espace latent (64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "Pas des tuiles dans l’espace latent."
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "Direction de raccordement : omnidirectionnelle, horizontale ou verticale."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "Mise à l’échelle SeedVR sans jointure des cartes PBR (la texture de base n’est pas mise à l’échelle)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texture",
+        "tooltip": null
+      },
+      "1": {
+        "name": "couleur de base",
+        "tooltip": null
+      },
+      "2": {
+        "name": "normale",
+        "tooltip": null
+      },
+      "3": {
+        "name": "rugosité",
+        "tooltip": null
+      },
+      "4": {
+        "name": "métallicité",
+        "tooltip": null
+      },
+      "5": {
+        "name": "hauteur",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "Génère des cartes de matériau PBR (couleur de base, normale, rugosité, métallicité, hauteur) à partir d’une image de texture.",
+    "display_name": "Cartes de matériau PBR Patina",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Réduit automatiquement la taille d’une image d’entrée dont le côté le plus long dépasse 2048 px (la limite d’entrée du modèle), tout en préservant le rapport hauteur/largeur ; les images plus petites sont laissées telles quelles. Désactivez cette option pour générer plutôt une erreur pour les images trop grandes."
+      },
+      "basecolor": {
+        "name": "couleur de base",
+        "tooltip": "Générer la carte de couleur de base (albédo)."
+      },
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "height": {
+        "name": "hauteur",
+        "tooltip": "Générer la carte de hauteur/déplacement."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Photographie ou rendu d’entrée à partir duquel dériver les cartes PBR."
+      },
+      "metalness": {
+        "name": "métallicité",
+        "tooltip": "Générer la carte de métallicité."
+      },
+      "normal": {
+        "name": "normale",
+        "tooltip": "Générer la carte normale."
+      },
+      "roughness": {
+        "name": "rugosité",
+        "tooltip": "Générer la carte de rugosité."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour un débruitage reproductible."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "couleur de base",
+        "tooltip": null
+      },
+      "1": {
+        "name": "normale",
+        "tooltip": null
+      },
+      "2": {
+        "name": "rugosité",
+        "tooltip": null
+      },
+      "3": {
+        "name": "métallicité",
+        "tooltip": null
+      },
+      "4": {
+        "name": "hauteur",
+        "tooltip": null
+      }
+    }
+  },
   "PerpNeg": {
     "display_name": "Perp-Neg (OBSOLÈTE par PerpNegGuider)",
     "inputs": {
@@ -28551,6 +28833,33 @@
       "video": {
         "name": "vidéo",
         "tooltip": "Vidéo avec une piste audio parlée de moins de 30 minutes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "Traduit la parole d’une vidéo dans une autre langue avec VEED. La voix de chaque locuteur est clonée et ses lèvres sont synchronisées avec la traduction.",
+    "display_name": "Doublage VEED",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "standard : prix inférieur, audio mono ; l’espagnol est latino-américain et le portugais est brésilien. pro : accents régionaux et audio stéréo."
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_source_language": {
+        "name": "source_language"
+      },
+      "model_target_language": {
+        "name": "langue_cible"
       }
     },
     "outputs": {

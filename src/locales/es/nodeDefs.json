@@ -18946,6 +18946,288 @@
       }
     }
   },
+  "PatinaMaterialExtractNode": {
+    "description": "Extrae un material PBR en mosaico sin uniones (imagen de textura + mapas PBR) de una región de una imagen de entrada, guiado por un prompt.",
+    "display_name": "Extracción de material Patina",
+    "inputs": {
+      "basecolor": {
+        "name": "color_base",
+        "tooltip": "Genera el mapa de color base (albedo)."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "height": {
+        "name": "altura",
+        "tooltip": "Genera el mapa de altura/desplazamiento."
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Imagen de la que extraer una textura."
+      },
+      "image_size": {
+        "name": "tamaño_de_imagen",
+        "tooltip": "Tamaño de la textura de salida. Elige «personalizado» para un ancho/alto entre 512 y 2048 (un resultado en 8K procede de escalar los mapas 4 veces)."
+      },
+      "metalness": {
+        "name": "metalidad",
+        "tooltip": "Genera el mapa de metalidad."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "Genera el mapa de normales."
+      },
+      "num_inference_steps": {
+        "name": "número_de_pasos_de_inferencia",
+        "tooltip": "Pasos de eliminación de ruido para la generación de texturas."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describe qué textura extraer de la imagen (p. ej., \"la pared\")."
+      },
+      "prompt_expansion": {
+        "name": "expansión_del_prompt",
+        "tooltip": "Amplía el prompt con un LLM para obtener detalles de textura más ricos. Desactivado de forma predeterminada: la expansión replantea el prompt como una foto y tiende a deslavar el mapa de metalidad."
+      },
+      "roughness": {
+        "name": "rugosidad",
+        "tooltip": "Genera el mapa de rugosidad."
+      },
+      "safety_checker": {
+        "name": "verificador_de_seguridad"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para una generación reproducible."
+      },
+      "strength": {
+        "name": "intensidad",
+        "tooltip": "Cuánto transformar la imagen de entrada."
+      },
+      "tile_size": {
+        "name": "tamaño_de_mosaico",
+        "tooltip": "Tamaño de mosaico en el espacio latent (64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "salto_de_mosaico",
+        "tooltip": "Salto de mosaico en el espacio latent."
+      },
+      "tiling_mode": {
+        "name": "modo_de_mosaico",
+        "tooltip": "Dirección del mosaico: omnidireccional, horizontal o vertical."
+      },
+      "upscale_factor": {
+        "name": "factor_de_escalado",
+        "tooltip": "Escalado SeedVR sin uniones de los mapas PBR (la textura base no se escala)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "textura",
+        "tooltip": null
+      },
+      "1": {
+        "name": "color_base",
+        "tooltip": null
+      },
+      "2": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "3": {
+        "name": "rugosidad",
+        "tooltip": null
+      },
+      "4": {
+        "name": "metalidad",
+        "tooltip": null
+      },
+      "5": {
+        "name": "altura",
+        "tooltip": null
+      },
+      "6": {
+        "name": "prompt_expandido",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "Genera un material PBR completo y perfectamente repetible en mosaico (imagen de textura + mapas PBR) a partir de un prompt de texto, de hasta 8K. Opcionalmente, contrólalo con una imagen de entrada (img2img) o con una imagen + mask (inpaint).",
+    "display_name": "Material de pátina",
+    "inputs": {
+      "basecolor": {
+        "name": "color_base",
+        "tooltip": "Genera el mapa de color base (albedo)."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "height": {
+        "name": "altura",
+        "tooltip": "Genera el mapa de altura/desplazamiento."
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Imagen de origen opcional. Proporcionada sola = img2img; con mask = inpaint."
+      },
+      "image_size": {
+        "name": "tamaño_de_imagen",
+        "tooltip": "Tamaño de la textura de salida. Elige «personalizado» para una anchura/altura entre 512 y 2048 (un resultado de 8K procede de escalar los mapas 4x)."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "mask de inpaint opcional (requiere una imagen). Blanco = regenerar, negro = conservar."
+      },
+      "metalness": {
+        "name": "metalidad",
+        "tooltip": "Genera el mapa de metalidad."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "Genera el mapa normal."
+      },
+      "num_inference_steps": {
+        "name": "núm_pasos_de_inferencia",
+        "tooltip": "Pasos de eliminación de ruido para la generación de texturas."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describe el material/la textura que se generará."
+      },
+      "prompt_expansion": {
+        "name": "expansión_de_prompt",
+        "tooltip": "Expande el prompt con un LLM para obtener detalles de textura más ricos. Desactivado de forma predeterminada: la expansión reformula el prompt como una foto y tiende a atenuar el mapa de metalidad."
+      },
+      "roughness": {
+        "name": "rugosidad",
+        "tooltip": "Genera el mapa de rugosidad."
+      },
+      "safety_checker": {
+        "name": "verificador_de_seguridad"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para una generación reproducible."
+      },
+      "strength": {
+        "name": "intensidad",
+        "tooltip": "Cuánto transformar la imagen de entrada. Solo se utiliza cuando se proporciona una imagen."
+      },
+      "tile_size": {
+        "name": "tamaño_de_mosaico",
+        "tooltip": "Tamaño del mosaico en espacio latent (64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "salto_de_mosaico",
+        "tooltip": "Salto del mosaico en espacio latent."
+      },
+      "tiling_mode": {
+        "name": "modo_de_mosaico",
+        "tooltip": "Dirección de repetición en mosaico: omnidireccional, horizontal o vertical."
+      },
+      "upscale_factor": {
+        "name": "factor_de_escalado",
+        "tooltip": "Escalado sin uniones con SeedVR de los mapas PBR (la textura base no se escala)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "textura",
+        "tooltip": null
+      },
+      "1": {
+        "name": "color base",
+        "tooltip": null
+      },
+      "2": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "3": {
+        "name": "rugosidad",
+        "tooltip": null
+      },
+      "4": {
+        "name": "metalidad",
+        "tooltip": null
+      },
+      "5": {
+        "name": "altura",
+        "tooltip": null
+      },
+      "6": {
+        "name": "prompt_expandido",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "Genera mapas de material PBR (color base, normal, rugosidad, metalidad, altura) a partir de una imagen de textura.",
+    "display_name": "Mapas de material PBR de Patina",
+    "inputs": {
+      "auto_downscale": {
+        "name": "reducción_automática_de_escala",
+        "tooltip": "Reduce automáticamente la escala de una imagen de entrada cuyo lado más largo supere los 2048 px (el límite de entrada del modelo), manteniendo la relación de aspecto; las imágenes más pequeñas se dejan tal cual. Desactívalo para generar un error con imágenes demasiado grandes."
+      },
+      "basecolor": {
+        "name": "color base",
+        "tooltip": "Genera el mapa de color base (albedo)."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "height": {
+        "name": "altura",
+        "tooltip": "Genera el mapa de altura/desplazamiento."
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Fotografía o renderizado de entrada del que se derivarán los mapas PBR."
+      },
+      "metalness": {
+        "name": "metalidad",
+        "tooltip": "Genera el mapa de metalidad."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "Genera el mapa normal."
+      },
+      "roughness": {
+        "name": "rugosidad",
+        "tooltip": "Genera el mapa de rugosidad."
+      },
+      "safety_checker": {
+        "name": "verificador_de_seguridad"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para una eliminación de ruido reproducible."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "color base",
+        "tooltip": null
+      },
+      "1": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "2": {
+        "name": "rugosidad",
+        "tooltip": null
+      },
+      "3": {
+        "name": "metalidad",
+        "tooltip": null
+      },
+      "4": {
+        "name": "altura",
+        "tooltip": null
+      }
+    }
+  },
   "PerpNeg": {
     "display_name": "Perp-Neg (obsoleto; usar la guía Perp-Neg)",
     "inputs": {
@@ -28551,6 +28833,33 @@
       "video": {
         "name": "vídeo",
         "tooltip": "Vídeo con una pista de audio de voz de menos de 30 minutos."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "Traduce el habla de un vídeo a otro idioma con VEED. La voz de cada hablante se clona y sus labios se sincronizan con la traducción.",
+    "display_name": "Doblaje de VEED",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "standard: menor precio, audio mono; el español es latinoamericano y el portugués es brasileño. pro: acentos regionales y audio estéreo."
+      },
+      "model_seed": {
+        "name": "semilla"
+      },
+      "model_source_language": {
+        "name": "idioma_origen"
+      },
+      "model_target_language": {
+        "name": "idioma_destino"
       }
     },
     "outputs": {

@@ -3666,6 +3666,7 @@
     "debug": "debug",
     "detection": "detection",
     "experimental": "experimental",
+    "fal": "fal",
     "fibo": "fibo",
     "filters": "filters",
     "flux": "flux",

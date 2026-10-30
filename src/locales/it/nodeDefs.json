@@ -18946,6 +18946,288 @@
       }
     }
   },
+  "PatinaMaterialExtractNode": {
+    "description": "Estrae un materiale PBR perfettamente ripetibile (immagine texture + mappe PBR) da una regione di un'immagine di input, guidato da un prompt.",
+    "display_name": "Estrazione materiale Patina",
+    "inputs": {
+      "basecolor": {
+        "name": "basecolor",
+        "tooltip": "Genera la mappa basecolor (albedo)."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Genera la mappa height/displacement."
+      },
+      "image": {
+        "name": "immagine",
+        "tooltip": "Immagine da cui estrarre una texture."
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "Dimensione della texture di output. Scegli 'custom' per una larghezza/altezza compresa tra 512 e 2048 (un risultato 8K deriva dall'upscaling 4x delle mappe)."
+      },
+      "metalness": {
+        "name": "metalness",
+        "tooltip": "Genera la mappa metalness."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "Genera la mappa normal."
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "Passaggi di denoising per la generazione della texture."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrivi quale texture estrarre dall'immagine (ad es. \"il muro\")."
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "Espande il prompt con un LLM per dettagli della texture più ricchi. Disattivato per impostazione predefinita: l'espansione riformula il prompt come una foto e tende a sbiadire la mappa metalness."
+      },
+      "roughness": {
+        "name": "roughness",
+        "tooltip": "Genera la mappa roughness."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed per una generazione riproducibile."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Quanto trasformare l'immagine di input."
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "Dimensione del tile nello spazio latent (64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "Passo del tile nello spazio latent."
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "Direzione di ripetizione: omnidirezionale, orizzontale o verticale."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "Upscaling SeedVR senza giunzioni delle mappe PBR (la texture di base non viene sottoposta a upscaling)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texture",
+        "tooltip": null
+      },
+      "1": {
+        "name": "basecolor",
+        "tooltip": null
+      },
+      "2": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "3": {
+        "name": "roughness",
+        "tooltip": null
+      },
+      "4": {
+        "name": "metallizzazione",
+        "tooltip": null
+      },
+      "5": {
+        "name": "altezza",
+        "tooltip": null
+      },
+      "6": {
+        "name": "prompt_espanso",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "Genera un materiale PBR completo e perfettamente ripetibile (immagine della texture + mappe PBR) da un prompt di testo, fino a 8K. Facoltativamente, usa un'immagine di input (img2img) o un'immagine + mask (inpaint).",
+    "display_name": "Materiale patina",
+    "inputs": {
+      "basecolor": {
+        "name": "colore_base",
+        "tooltip": "Genera la mappa del colore di base (albedo)."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "height": {
+        "name": "altezza",
+        "tooltip": "Genera la mappa di altezza/spostamento."
+      },
+      "image": {
+        "name": "immagine",
+        "tooltip": "Immagine sorgente facoltativa. Fornita da sola = img2img; con mask = inpaint."
+      },
+      "image_size": {
+        "name": "dimensione_immagine",
+        "tooltip": "Dimensione della texture di output. Scegli 'custom' per una larghezza/altezza compresa tra 512 e 2048 (un risultato 8K deriva dall'upscaling 4x delle mappe)."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "mask di inpaint facoltativa (richiede un'immagine). Bianco = rigenera, nero = mantieni."
+      },
+      "metalness": {
+        "name": "metallizzazione",
+        "tooltip": "Genera la mappa di metallizzazione."
+      },
+      "normal": {
+        "name": "normale",
+        "tooltip": "Genera la mappa delle normali."
+      },
+      "num_inference_steps": {
+        "name": "numero_passaggi_inferenza",
+        "tooltip": "Passaggi di denoising per la generazione della texture."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrivi il materiale/la texture da generare."
+      },
+      "prompt_expansion": {
+        "name": "espansione_prompt",
+        "tooltip": "Espandi il prompt con un LLM per ottenere dettagli della texture più ricchi. Disattivato per impostazione predefinita: l'espansione riformula il prompt come una foto e tende ad attenuare la mappa di metallizzazione."
+      },
+      "roughness": {
+        "name": "ruvidità",
+        "tooltip": "Genera la mappa della ruvidità."
+      },
+      "safety_checker": {
+        "name": "controllo_sicurezza"
+      },
+      "seed": {
+        "name": "seme",
+        "tooltip": "Seme per una generazione riproducibile."
+      },
+      "strength": {
+        "name": "intensità",
+        "tooltip": "Quanto trasformare l'immagine di input. Usato solo quando viene fornita un'immagine."
+      },
+      "tile_size": {
+        "name": "dimensione_tile",
+        "tooltip": "Dimensione del tile nello spazio latent (64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "passo_tile",
+        "tooltip": "Passo del tile nello spazio latent."
+      },
+      "tiling_mode": {
+        "name": "modalità_ripetizione",
+        "tooltip": "Direzione di ripetizione: omnidirezionale, orizzontale o verticale."
+      },
+      "upscale_factor": {
+        "name": "fattore_upscaling",
+        "tooltip": "Upscaling SeedVR senza giunzioni delle mappe PBR (la texture di base non viene sottoposta a upscaling)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texture",
+        "tooltip": null
+      },
+      "1": {
+        "name": "colore di base",
+        "tooltip": null
+      },
+      "2": {
+        "name": "normale",
+        "tooltip": null
+      },
+      "3": {
+        "name": "ruvidità",
+        "tooltip": null
+      },
+      "4": {
+        "name": "metallicità",
+        "tooltip": null
+      },
+      "5": {
+        "name": "altezza",
+        "tooltip": null
+      },
+      "6": {
+        "name": "prompt espanso",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "Genera mappe di materiale PBR (colore di base, normale, ruvidità, metallicità, altezza) da un'immagine di texture.",
+    "display_name": "Mappe del materiale PBR Patina",
+    "inputs": {
+      "auto_downscale": {
+        "name": "riduzione_scalatura_automatica",
+        "tooltip": "Riduce automaticamente la scalatura di un'immagine di input il cui lato più lungo supera 2048 px (il limite di input del modello), preservando le proporzioni; le immagini più piccole restano invariate. Disabilita questa opzione per generare invece un errore per le immagini troppo grandi."
+      },
+      "basecolor": {
+        "name": "colore di base",
+        "tooltip": "Genera la mappa del colore di base (albedo)."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "height": {
+        "name": "altezza",
+        "tooltip": "Genera la mappa di altezza/spostamento."
+      },
+      "image": {
+        "name": "immagine",
+        "tooltip": "Fotografia o render di input da cui ricavare le mappe PBR."
+      },
+      "metalness": {
+        "name": "metallicità",
+        "tooltip": "Genera la mappa di metallicità."
+      },
+      "normal": {
+        "name": "normale",
+        "tooltip": "Genera la mappa normale."
+      },
+      "roughness": {
+        "name": "ruvidità",
+        "tooltip": "Genera la mappa di ruvidità."
+      },
+      "safety_checker": {
+        "name": "controllo_sicurezza"
+      },
+      "seed": {
+        "name": "seme",
+        "tooltip": "Seme per un denoising riproducibile."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "colore di base",
+        "tooltip": null
+      },
+      "1": {
+        "name": "normale",
+        "tooltip": null
+      },
+      "2": {
+        "name": "ruvidità",
+        "tooltip": null
+      },
+      "3": {
+        "name": "metallicità",
+        "tooltip": null
+      },
+      "4": {
+        "name": "altezza",
+        "tooltip": null
+      }
+    }
+  },
   "PerpNeg": {
     "display_name": "Perp-Neg (DEPRECATO da Perp-Neg Guider)",
     "inputs": {
@@ -28551,6 +28833,33 @@
       "video": {
         "name": "video",
         "tooltip": "Video con una traccia audio parlata, di durata inferiore a 30 minuti."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "Traduci il parlato in un video in un'altra lingua con VEED. La voce di ogni interlocutore viene clonata e le sue labbra vengono sincronizzate con la traduzione.",
+    "display_name": "Doppiaggio VEED",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "standard: prezzo inferiore, audio mono; lo spagnolo è latinoamericano e il portoghese è brasiliano. pro: accenti regionali e audio stereo."
+      },
+      "model_seed": {
+        "name": "seme"
+      },
+      "model_source_language": {
+        "name": "lingua_di_origine"
+      },
+      "model_target_language": {
+        "name": "lingua_di_destinazione"
       }
     },
     "outputs": {

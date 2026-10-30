@@ -18946,6 +18946,288 @@
       }
     }
   },
+  "PatinaMaterialExtractNode": {
+    "description": "Extrahieren Sie mithilfe eines Prompts ein nahtlos kachelbares PBR-Material (Texturbild + PBR-Maps) aus einem Bereich eines Eingabebilds.",
+    "display_name": "Patina-Material extrahieren",
+    "inputs": {
+      "basecolor": {
+        "name": "Base Color",
+        "tooltip": "Base-Color-Map (Albedo) generieren."
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "height": {
+        "name": "Height",
+        "tooltip": "Height-/Displacement-Map generieren."
+      },
+      "image": {
+        "name": "Bild",
+        "tooltip": "Bild, aus dem eine Textur extrahiert werden soll."
+      },
+      "image_size": {
+        "name": "Bildgröße",
+        "tooltip": "Größe der Ausgabetextur. Wählen Sie „custom“ für eine Breite/Höhe zwischen 512 und 2048 (ein 8K-Ergebnis entsteht durch 4-faches Upscaling der Maps)."
+      },
+      "metalness": {
+        "name": "Metalness",
+        "tooltip": "Metalness-Map generieren."
+      },
+      "normal": {
+        "name": "Normal",
+        "tooltip": "Normal-Map generieren."
+      },
+      "num_inference_steps": {
+        "name": "Anzahl der Inferenzschritte",
+        "tooltip": "Denoising-Schritte für die Texturgenerierung."
+      },
+      "prompt": {
+        "name": "Prompt",
+        "tooltip": "Beschreiben Sie, welche Textur aus dem Bild extrahiert werden soll (z. B. „die Wand“)."
+      },
+      "prompt_expansion": {
+        "name": "Prompt-Erweiterung",
+        "tooltip": "Erweitern Sie den Prompt mit einem LLM für detailliertere Texturen. Standardmäßig deaktiviert: Die Erweiterung formuliert den Prompt als Foto um und führt häufig zu einer ausgewaschenen Metalness-Map."
+      },
+      "roughness": {
+        "name": "Roughness",
+        "tooltip": "Roughness-Map generieren."
+      },
+      "safety_checker": {
+        "name": "Sicherheitsprüfung"
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Seed für reproduzierbare Generierung."
+      },
+      "strength": {
+        "name": "Stärke",
+        "tooltip": "Wie stark das Eingabebild transformiert werden soll."
+      },
+      "tile_size": {
+        "name": "Kachelgröße",
+        "tooltip": "Kachelgröße im latent space (64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "Kachelschrittweite",
+        "tooltip": "Kachelschrittweite im latent space."
+      },
+      "tiling_mode": {
+        "name": "Kachelmodus",
+        "tooltip": "Kachelrichtung: multidirektional, horizontal oder vertikal."
+      },
+      "upscale_factor": {
+        "name": "Upscale-Faktor",
+        "tooltip": "Nahtloses SeedVR-Upscaling der PBR-Maps (die Basistextur wird nicht hochskaliert)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Textur",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Base Color",
+        "tooltip": null
+      },
+      "2": {
+        "name": "Normal",
+        "tooltip": null
+      },
+      "3": {
+        "name": "Roughness",
+        "tooltip": null
+      },
+      "4": {
+        "name": "Metallisch",
+        "tooltip": null
+      },
+      "5": {
+        "name": "Höhe",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "Erstellen Sie aus einem Text-Prompt ein vollständiges nahtlos kachelbares PBR-Material (Texturbild + PBR-Maps) mit bis zu 8K. Optional können Sie es mit einem Eingabebild (img2img) oder einem Bild + mask (inpaint) steuern.",
+    "display_name": "Patina-Material",
+    "inputs": {
+      "basecolor": {
+        "name": "Grundfarbe",
+        "tooltip": "Generieren Sie die Grundfarben-Map (Albedo)."
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "height": {
+        "name": "Höhe",
+        "tooltip": "Generieren Sie die Höhen-/Displacement-Map."
+      },
+      "image": {
+        "name": "Bild",
+        "tooltip": "Optionales Quellbild. Allein bereitgestellt = img2img; mit mask = inpaint."
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "Ausgabegröße der Textur. Wählen Sie „custom“ für eine Breite/Höhe zwischen 512 und 2048 (ein 8K-Ergebnis entsteht durch 4-faches Upscaling der Maps)."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Optionale inpaint mask (erfordert image). Weiß = neu generieren, Schwarz = beibehalten."
+      },
+      "metalness": {
+        "name": "Metallisch",
+        "tooltip": "Generieren Sie die Metallisch-Map."
+      },
+      "normal": {
+        "name": "Normal",
+        "tooltip": "Generieren Sie die Normal-Map."
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "Entrauschungsschritte für die Texturgenerierung."
+      },
+      "prompt": {
+        "name": "Prompt",
+        "tooltip": "Beschreiben Sie das zu generierende Material/die zu generierende Textur."
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "Erweitern Sie den Prompt mit einem LLM für mehr Texturdetails. Standardmäßig deaktiviert: Die Erweiterung formuliert den Prompt als Foto um und neigt dazu, die Metallisch-Map abzuschwächen."
+      },
+      "roughness": {
+        "name": "Rauheit",
+        "tooltip": "Generieren Sie die Rauheits-Map."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Seed für eine reproduzierbare Generierung."
+      },
+      "strength": {
+        "name": "Stärke",
+        "tooltip": "Wie stark das Eingabebild transformiert wird. Wird nur verwendet, wenn ein Bild bereitgestellt wird."
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "Tile-Größe im latent space (64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "Tile-Schrittweite im latent space."
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "Kachelrichtung: omnidirektional, horizontal oder vertikal."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "Nahtloses SeedVR-Upscaling der PBR-Maps (die Basistexur wird nicht hochskaliert)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Textur",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Basisfarbe",
+        "tooltip": null
+      },
+      "2": {
+        "name": "Normalen",
+        "tooltip": null
+      },
+      "3": {
+        "name": "Rauheit",
+        "tooltip": null
+      },
+      "4": {
+        "name": "Metallizität",
+        "tooltip": null
+      },
+      "5": {
+        "name": "Höhe",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "PBR-Material-Maps (Basisfarbe, Normalen, Rauheit, Metallizität, Höhe) aus einem Texturbild generieren.",
+    "display_name": "Patina-PBR-Material-Maps",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Ein Eingabebild, dessen längste Seite 2048 px (das Eingabelimit des Modells) überschreitet, automatisch unter Beibehaltung des Seitenverhältnisses herunterskalieren; kleinere Bilder bleiben unverändert. Deaktivieren Sie diese Option, um bei übergroßen Bildern stattdessen einen Fehler auszulösen."
+      },
+      "basecolor": {
+        "name": "Basisfarbe",
+        "tooltip": "Die Basisfarben-Map (Albedo) generieren."
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "height": {
+        "name": "Höhe",
+        "tooltip": "Die Höhen-/Displacement-Map generieren."
+      },
+      "image": {
+        "name": "Bild",
+        "tooltip": "Eingabefotografie oder -Render, aus dem PBR-Maps abgeleitet werden."
+      },
+      "metalness": {
+        "name": "Metallizität",
+        "tooltip": "Die Metallizitäts-Map generieren."
+      },
+      "normal": {
+        "name": "Normalen",
+        "tooltip": "Die Normalen-Map generieren."
+      },
+      "roughness": {
+        "name": "Rauheit",
+        "tooltip": "Die Rauheits-Map generieren."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Seed für reproduzierbares Denoising."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Basisfarbe",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Normalen",
+        "tooltip": null
+      },
+      "2": {
+        "name": "Rauheit",
+        "tooltip": null
+      },
+      "3": {
+        "name": "Metallizität",
+        "tooltip": null
+      },
+      "4": {
+        "name": "Höhe",
+        "tooltip": null
+      }
+    }
+  },
   "PerpNeg": {
     "display_name": "Perp-Neg (VERALTET – durch Perp-Neg Guider ersetzt)",
     "inputs": {
@@ -28551,6 +28833,33 @@
       "video": {
         "name": "Video",
         "tooltip": "Video mit einer Sprachtonspur mit einer Dauer von weniger als 30 Minuten."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "Die Sprache in einem Video mit VEED in eine andere Sprache übersetzen. Die Stimme jedes Sprechers wird geklont und die Lippen werden mit der Übersetzung synchronisiert.",
+    "display_name": "VEED-Synchronisation",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "standard: niedrigerer Preis, Mono-Audio; Spanisch ist lateinamerikanisch und Portugiesisch brasilianisch. pro: regionale Akzente und Stereo-Audio."
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_source_language": {
+        "name": "Quellsprache"
+      },
+      "model_target_language": {
+        "name": "Zielsprache"
       }
     },
     "outputs": {

@@ -18946,6 +18946,288 @@
       }
     }
   },
+  "PatinaMaterialExtractNode": {
+    "display_name": "Patina Material Extract",
+    "description": "Extract a seamlessly tiling PBR material (texture image + PBR maps) from a region of an input image, guided by a prompt.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Image to extract a texture from."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describe which texture to extract from the image (e.g. \"the wall\")."
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "Output texture size. Choose 'custom' for a width/height between 512 and 2048 (an 8K result comes from 4x upscaling the maps)."
+      },
+      "basecolor": {
+        "name": "basecolor",
+        "tooltip": "Generate the basecolor (albedo) map."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "Generate the normal map."
+      },
+      "roughness": {
+        "name": "roughness",
+        "tooltip": "Generate the roughness map."
+      },
+      "metalness": {
+        "name": "metalness",
+        "tooltip": "Generate the metalness map."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Generate the height/displacement map."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "Seamless SeedVR upscaling of the PBR maps (the base texture is not upscaled)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for reproducible generation."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "How much to transform the input image."
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "Tiling direction: omnidirectional, horizontal, or vertical."
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "Denoising steps for texture generation."
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "Tile size in latent space (64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "Tile stride in latent space."
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "Expand the prompt with an LLM for richer texture detail. Off by default: expansion reframes the prompt as a photo and tends to wash out the metalness map."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texture",
+        "tooltip": null
+      },
+      "1": {
+        "name": "basecolor",
+        "tooltip": null
+      },
+      "2": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "3": {
+        "name": "roughness",
+        "tooltip": null
+      },
+      "4": {
+        "name": "metalness",
+        "tooltip": null
+      },
+      "5": {
+        "name": "height",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "display_name": "Patina Material",
+    "description": "Generate a complete seamlessly tiling PBR material (texture image + PBR maps) from a text prompt, up to 8K. Optionally drive it with an input image (img2img) or an image + mask (inpaint).",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describe the material/texture to generate."
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "Output texture size. Choose 'custom' for a width/height between 512 and 2048 (an 8K result comes from 4x upscaling the maps)."
+      },
+      "basecolor": {
+        "name": "basecolor",
+        "tooltip": "Generate the basecolor (albedo) map."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "Generate the normal map."
+      },
+      "roughness": {
+        "name": "roughness",
+        "tooltip": "Generate the roughness map."
+      },
+      "metalness": {
+        "name": "metalness",
+        "tooltip": "Generate the metalness map."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Generate the height/displacement map."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "Seamless SeedVR upscaling of the PBR maps (the base texture is not upscaled)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for reproducible generation."
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "Tiling direction: omnidirectional, horizontal, or vertical."
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "Denoising steps for texture generation."
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "Tile size in latent space (64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "Tile stride in latent space."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "How much to transform the input image. Only used when an image is provided."
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "Expand the prompt with an LLM for richer texture detail. Off by default: expansion reframes the prompt as a photo and tends to wash out the metalness map."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Optional source image. Provided alone = img2img; with mask = inpaint."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Optional inpaint mask (requires image). White = regenerate, black = keep."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texture",
+        "tooltip": null
+      },
+      "1": {
+        "name": "basecolor",
+        "tooltip": null
+      },
+      "2": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "3": {
+        "name": "roughness",
+        "tooltip": null
+      },
+      "4": {
+        "name": "metalness",
+        "tooltip": null
+      },
+      "5": {
+        "name": "height",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "display_name": "Patina PBR Material Maps",
+    "description": "Generate PBR material maps (basecolor, normal, roughness, metalness, height) from a texture image.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Input photograph or render to derive PBR maps from."
+      },
+      "basecolor": {
+        "name": "basecolor",
+        "tooltip": "Generate the basecolor (albedo) map."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "Generate the normal map."
+      },
+      "roughness": {
+        "name": "roughness",
+        "tooltip": "Generate the roughness map."
+      },
+      "metalness": {
+        "name": "metalness",
+        "tooltip": "Generate the metalness map."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Generate the height/displacement map."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for reproducible denoising."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Automatically downscale an input image whose longest side exceeds 2048px (the model's input limit), preserving aspect ratio; smaller images are left as-is. Disable to raise an error on oversized images instead."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "basecolor",
+        "tooltip": null
+      },
+      "1": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "2": {
+        "name": "roughness",
+        "tooltip": null
+      },
+      "3": {
+        "name": "metalness",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PerpNeg": {
     "display_name": "Perp-Neg (DEPRECATED by Perp-Neg Guider)",
     "inputs": {
@@ -28433,6 +28715,33 @@
       },
       "loudness_target_lufs": {
         "name": "target_lufs"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "display_name": "VEED Dubbing",
+    "description": "Translate the speech in a video into another language with VEED. Each speaker's voice is cloned and their lips are synced to the translation.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "standard: lower price, mono audio; Spanish is Latin American and Portuguese is Brazilian. pro: regional accents and stereo audio."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_source_language": {
+        "name": "source_language"
+      },
+      "model_target_language": {
+        "name": "target_language"
       }
     },
     "outputs": {

@@ -18946,6 +18946,288 @@
       }
     }
   },
+  "PatinaMaterialExtractNode": {
+    "description": "חלץ חומר PBR הניתן לריצוף רציף (תמונת מרקם + מפות PBR) מאזור בתמונת קלט, בהכוונת פרומפט.",
+    "display_name": "חילוץ חומר Patina",
+    "inputs": {
+      "basecolor": {
+        "name": "צבע בסיס",
+        "tooltip": "צור את מפת צבע הבסיס (albedo)."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "height": {
+        "name": "גובה",
+        "tooltip": "צור את מפת הגובה/ההסטה."
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "התמונה שממנה יש לחלץ מרקם."
+      },
+      "image_size": {
+        "name": "גודל תמונה",
+        "tooltip": "גודל מרקם הפלט. בחרו ב-'custom' עבור רוחב/גובה בין 512 ל-2048 (תוצאת 8K מתקבלת משינוי קנה מידה של המפות פי 4x)."
+      },
+      "metalness": {
+        "name": "מתכתיות",
+        "tooltip": "צור את מפת המתכתיות."
+      },
+      "normal": {
+        "name": "נורמלים",
+        "tooltip": "צור את מפת הנורמלים."
+      },
+      "num_inference_steps": {
+        "name": "מספר שלבי הסקה",
+        "tooltip": "שלבי הסרת רעש ליצירת מרקם."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "תארו איזה מרקם לחלץ מהתמונה (לדוגמה, \"הקיר\")."
+      },
+      "prompt_expansion": {
+        "name": "הרחבת פרומפט",
+        "tooltip": "הרחב את הפרומפט באמצעות LLM לקבלת פרטי מרקם עשירים יותר. כבוי כברירת מחדל: ההרחבה ממסגרת מחדש את הפרומפט כתמונה ונוטה לדהות את מפת המתכתיות."
+      },
+      "roughness": {
+        "name": "חספוס",
+        "tooltip": "צור את מפת החספוס."
+      },
+      "safety_checker": {
+        "name": "בודק בטיחות"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע ליצירה הניתנת לשחזור."
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "מידת השינוי של תמונת הקלט."
+      },
+      "tile_size": {
+        "name": "גודל אריח",
+        "tooltip": "גודל האריח במרחב latent ‏(64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "צעד אריח",
+        "tooltip": "צעד האריח במרחב latent."
+      },
+      "tiling_mode": {
+        "name": "מצב ריצוף",
+        "tooltip": "כיוון הריצוף: רב-כיווני, אופקי או אנכי."
+      },
+      "upscale_factor": {
+        "name": "גורם שינוי קנה מידה",
+        "tooltip": "שינוי קנה מידה רציף באמצעות SeedVR למפות PBR (מרקם הבסיס אינו מוגדל)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מרקם",
+        "tooltip": null
+      },
+      "1": {
+        "name": "צבע בסיס",
+        "tooltip": null
+      },
+      "2": {
+        "name": "נורמלים",
+        "tooltip": null
+      },
+      "3": {
+        "name": "חספוס",
+        "tooltip": null
+      },
+      "4": {
+        "name": "מתכתיות",
+        "tooltip": null
+      },
+      "5": {
+        "name": "גובה",
+        "tooltip": null
+      },
+      "6": {
+        "name": "פרומפט_מורחב",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "יצירת חומר PBR מלא הניתן לריצוף חלק (תמונת מרקם + מפות PBR) מפרומפט טקסט, עד 8K. אפשר להזין גם תמונת קלט (img2img) או תמונה + מסכה (inpaint).",
+    "display_name": "חומר פטינה",
+    "inputs": {
+      "basecolor": {
+        "name": "צבע_בסיס",
+        "tooltip": "יצירת מפת צבע הבסיס (albedo)."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "height": {
+        "name": "גובה",
+        "tooltip": "יצירת מפת גובה/היסט."
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "תמונת מקור אופציונלית. תמונה בלבד = img2img; עם מסכה = inpaint."
+      },
+      "image_size": {
+        "name": "גודל_תמונה",
+        "tooltip": "גודל מרקם הפלט. יש לבחור ב-'custom' עבור רוחב/גובה בין 512 ל-2048 (תוצאת 8K מתקבלת מהגדלה פי 4 של המפות)."
+      },
+      "mask": {
+        "name": "מסכה",
+        "tooltip": "מסכת inpaint אופציונלית (דורשת תמונה). לבן = יצירה מחדש, שחור = שמירה."
+      },
+      "metalness": {
+        "name": "מתכתיות",
+        "tooltip": "יצירת מפת מתכתיות."
+      },
+      "normal": {
+        "name": "נורמל",
+        "tooltip": "יצירת מפת נורמל."
+      },
+      "num_inference_steps": {
+        "name": "מספר_צעדי_הסקה",
+        "tooltip": "צעדי הסרת רעש ליצירת מרקם."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "תיאור החומר/המרקם ליצירה."
+      },
+      "prompt_expansion": {
+        "name": "הרחבת_פרומפט",
+        "tooltip": "הרחבת הפרומפט באמצעות LLM לקבלת פרטי מרקם עשירים יותר. כבוי כברירת מחדל: ההרחבה ממסגרת את הפרומפט כתמונה ונוטה להפחית את עוצמת מפת המתכתיות."
+      },
+      "roughness": {
+        "name": "חספוס",
+        "tooltip": "יצירת מפת חספוס."
+      },
+      "safety_checker": {
+        "name": "בודק_בטיחות"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע ליצירה שניתן לשחזר."
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "מידת השינוי של תמונת הקלט. בשימוש רק כאשר מסופקת תמונה."
+      },
+      "tile_size": {
+        "name": "גודל_אריח",
+        "tooltip": "גודל האריח במרחב latent‏ (64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "צעד_אריח",
+        "tooltip": "צעד האריח במרחב latent‏."
+      },
+      "tiling_mode": {
+        "name": "מצב_ריצוף",
+        "tooltip": "כיוון הריצוף: לכל הכיוונים, אופקי או אנכי."
+      },
+      "upscale_factor": {
+        "name": "מקדם_הגדלה",
+        "tooltip": "הגדלת SeedVR חלקה של מפות ה-PBR (מרקם הבסיס אינו מוגדל)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מרקם",
+        "tooltip": null
+      },
+      "1": {
+        "name": "צבע בסיס",
+        "tooltip": null
+      },
+      "2": {
+        "name": "נורמל",
+        "tooltip": null
+      },
+      "3": {
+        "name": "חספוס",
+        "tooltip": null
+      },
+      "4": {
+        "name": "מתכתיות",
+        "tooltip": null
+      },
+      "5": {
+        "name": "גובה",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "יצירת מפות חומר PBR ‏(צבע בסיס, נורמל, חספוס, מתכתיות, גובה) מתמונת מרקם.",
+    "display_name": "מפות חומר PBR של Patina",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "הקטנה אוטומטית של תמונת קלט שהצלע הארוכה ביותר שלה עולה על 2048px (מגבלת הקלט של המודל), תוך שמירה על יחס הממדים; תמונות קטנות יותר נותרות ללא שינוי. השבתה תגרום להצגת שגיאה עבור תמונות גדולות מדי."
+      },
+      "basecolor": {
+        "name": "צבע בסיס",
+        "tooltip": "יצירת מפת צבע הבסיס (albedo)."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "height": {
+        "name": "גובה",
+        "tooltip": "יצירת מפת הגובה/ההיסט."
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "תצלום או רינדור קלט שמהם ייגזרו מפות PBR."
+      },
+      "metalness": {
+        "name": "מתכתיות",
+        "tooltip": "יצירת מפת המתכתיות."
+      },
+      "normal": {
+        "name": "נורמל",
+        "tooltip": "יצירת מפת הנורמל."
+      },
+      "roughness": {
+        "name": "חספוס",
+        "tooltip": "יצירת מפת החספוס."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע להפחתת רעש הניתנת לשחזור."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "צבע בסיס",
+        "tooltip": null
+      },
+      "1": {
+        "name": "נורמל",
+        "tooltip": null
+      },
+      "2": {
+        "name": "חספוס",
+        "tooltip": null
+      },
+      "3": {
+        "name": "מתכתיות",
+        "tooltip": null
+      },
+      "4": {
+        "name": "גובה",
+        "tooltip": null
+      }
+    }
+  },
   "PerpNeg": {
     "display_name": "Perp-Neg (הוצא משימוש על ידי Perp-Neg Guider)",
     "inputs": {
@@ -28551,6 +28833,33 @@
       "video": {
         "name": "וידאו",
         "tooltip": "וידאו עם פסקול דיבור, שאורכו פחות מ-30 דקות."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "תרגום הדיבור בסרטון לשפה אחרת באמצעות VEED. קולו של כל דובר משוכפל, ותנועות שפתיו מסונכרנות לתרגום.",
+    "display_name": "דיבוב VEED",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "standard: מחיר נמוך יותר, שמע מונו; ספרדית היא ספרדית לטינו-אמריקאית ופורטוגזית היא פורטוגזית ברזילאית. pro: מבטאים אזוריים ושמע סטריאו."
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_source_language": {
+        "name": "source_language"
+      },
+      "model_target_language": {
+        "name": "שפת היעד"
       }
     },
     "outputs": {
