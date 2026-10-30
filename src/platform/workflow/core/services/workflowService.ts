@@ -2,7 +2,8 @@ import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
@@ -21,15 +22,17 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { reportWorkflowStateAnomaly } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { useTelemetry } from '@/platform/telemetry'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useApp } from '@/scripts/appInstance'
-import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
+import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
+import { ChangeTracker } from '@/scripts/changeTracker'
+import { blankGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
-import { nodeTypesMayStillArrive } from '@/platform/lateCustomNodes/lateNodeTypes'
-import { showPlaceholdersAsWaiting } from '@/platform/lateCustomNodes/waitingNodes'
+import { nodeTypesMayStillArrive } from '@/platform/customNodes/lateLoading/lateNodeTypes'
+import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/waitingNodes'
 import { useAppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -39,7 +42,7 @@ import {
   provideWorkflowService,
   useSubgraphNavigationStore
 } from '@/stores/subgraphNavigationStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
@@ -49,7 +52,7 @@ import {
   appendWorkflowJsonExt,
   generateUUID
 } from '@/utils/formatUtil'
-import type { AppMode } from '@/utils/appMode'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type { UUID } from '@/utils/uuid'
 import { ensureNonZeroUuid, zeroUuid } from '@/utils/uuid'
 
@@ -147,6 +150,26 @@ function resetAndRestoreTracker(
   tracker.reset(ensureWorkflowId(workflowData, activeStateFallbackId(workflow)))
   tracker.restore()
   return true
+}
+
+async function keepingSavedBaseline<T>(
+  workflow: ComfyWorkflow,
+  load: () => Promise<T>
+): Promise<T> {
+  const savedState = workflow.changeTracker?.initialState
+  const savedContent = workflow.originalContent
+  try {
+    return await load()
+  } finally {
+    const tracker = workflow.changeTracker
+    if (tracker && savedState && workflow.originalContent === savedContent) {
+      tracker.initialState = savedState
+      workflow.isModified = !ChangeTracker.graphEqual(
+        savedState,
+        tracker.activeState
+      )
+    }
+  }
 }
 
 /** @internal Test-only: clears the module-level load queue between tests. */
@@ -399,7 +422,7 @@ export const useWorkflowService = () => {
    * Load the default workflow
    */
   const loadDefaultWorkflow = () =>
-    queueWorkflowLoad(() => useApp().loadGraphData(defaultGraph))
+    queueWorkflowLoad(() => useApp().loadGraphData(getDefaultWorkflow()))
 
   /**
    * Load a blank workflow
@@ -417,7 +440,8 @@ export const useWorkflowService = () => {
     if (workflow) {
       await openWorkflow(workflow, {
         force: true,
-        isCurrent: () => workflowStore.activeWorkflow === workflow
+        isCurrent: () => workflowStore.activeWorkflow === workflow,
+        keepSavedBaseline: true
       })
     }
   }
@@ -479,6 +503,7 @@ export const useWorkflowService = () => {
       navigationIntentId?: number
       isCurrent?: () => boolean
       initiator?: 'user'
+      keepSavedBaseline?: boolean
     } = {}
   ): Promise<boolean> => {
     if (options.isCurrent?.() === false) return Promise.resolve(false)
@@ -513,18 +538,23 @@ export const useWorkflowService = () => {
         }
 
         workflow.changeTracker?.prepareForSave()
-        const loaded = await useApp().loadGraphData(
-          toRaw(workflow.activeState) as ComfyWorkflowJSON,
-          /* clean=*/ true,
-          /* restore_view=*/ true,
-          workflow,
-          {
-            checkForRerouteMigration: false,
-            deferWarnings: true,
-            skipAssetScans: !loadFromRemote && !options.force,
-            workflowNavigationId: navigationIntentId
-          }
-        )
+        const load = () =>
+          useApp().loadGraphData(
+            toRaw(workflow.activeState) as ComfyWorkflowJSON,
+            true,
+            true,
+            workflow,
+            {
+              checkForRerouteMigration: false,
+              deferWarnings: true,
+              skipAssetScans: !loadFromRemote && !options.force,
+              workflowNavigationId: navigationIntentId
+            }
+          )
+        const loaded =
+          options.keepSavedBaseline && workflow.isModified
+            ? await keepingSavedBaseline(workflow, load)
+            : await load()
         if (loaded === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           await restoreRetainedWorkflow(workflow)

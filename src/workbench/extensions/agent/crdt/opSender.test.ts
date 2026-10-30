@@ -10,7 +10,7 @@ import {
 } from 'vitest'
 import type { Mock } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 import type { DocOp } from './docFrameClient'
@@ -210,7 +210,7 @@ describe('createOpSender', () => {
   })
 
   it.for([
-    ['undeliverable', false, WORKFLOW, 3_000, 'transport_exhausted'],
+    ['undeliverable', false, WORKFLOW, 3_000, 'detached'],
     ['undeliverable', true, null, 0, 'unbound'],
     ['unconfirmed', true, WORKFLOW, 0, 'detached'],
     ['unacknowledged', true, WORKFLOW, 20_000, 'result_timeout']
@@ -592,11 +592,56 @@ describe('createOpSender', () => {
     expect(settled[0].state).toBe('unconfirmed')
   })
 
-  it('settles undeliverable after the transport retry budget', () => {
+  it('holds a batch the transport retry budget could not carry', () => {
     transportUp = false
     sender.enqueue([addNode(1)])
 
     vi.advanceTimersByTime(500 * 6)
+
+    expect(sent).toHaveLength(0)
+    expect(settled).toEqual([])
+    expect(sender.pending()).toBe(1)
+  })
+
+  it('resends the held batch unchanged when the transport returns', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(500 * 6)
+    sender.enqueue([addNode(2)])
+    vi.advanceTimersByTime(500 * 6)
+
+    transportUp = true
+    sender.retryTransport()
+    expect(sent.map((frame) => frame.ops.map((op) => op.op))).toEqual([
+      ['add_node']
+    ])
+    const [firstOpId] = sent[0].ops.map((op) => op.op_id)
+    resultListener?.({
+      ok: true,
+      seq: 42,
+      applied: [firstOpId],
+      skipped: [],
+      workflowId: WORKFLOW
+    })
+
+    expect(settled).toEqual([
+      {
+        state: 'acknowledged',
+        ops: expect.any(Array),
+        result: expect.any(Object)
+      }
+    ])
+    expect(sent).toHaveLength(2)
+    expect(sent[1].ops[0].op_id).not.toBe(firstOpId)
+  })
+
+  it('settles a held batch undeliverable when its doc is unbound', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(500 * 6)
+
+    boundWorkflow = null
+    sender.abortIfUnbound()
 
     expect(settled).toEqual([
       { state: 'undeliverable', ops: expect.any(Array) }

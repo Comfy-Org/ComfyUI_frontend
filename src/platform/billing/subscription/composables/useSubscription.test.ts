@@ -10,7 +10,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import type { BillingStatusResponse } from '@comfyorg/billing-core'
 import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
@@ -118,11 +118,11 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: vi.fn(() => mockCurrentUser)
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+vi.mock<unknown>(import('@comfyorg/telemetry'), () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+vi.mock<unknown>(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportTelemetryError
 }))
 
@@ -169,6 +169,7 @@ const mockReadStatus = vi.fn<BillingReadRail['readStatus']>()
 const buildStatus = (
   overrides: Partial<BillingStatusResponse> = {}
 ): BillingStatusResponse => ({
+  ended_at: null,
   is_active: true,
   has_funds: true,
   max_seats: 1,
@@ -1272,6 +1273,7 @@ describe('useSubscription', () => {
     })
 
     it('reports at the deadline without another lifecycle event', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({

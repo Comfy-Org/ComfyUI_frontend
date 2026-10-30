@@ -27,9 +27,9 @@ import {
   useAgentConsent
 } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import type { ConsentOfferHooks } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
-import { useTelemetry } from '@/platform/telemetry'
-import type { AgentConsentTrigger } from '@/platform/telemetry/types'
-import type { useExtensionService } from '@/services/extensionService'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AgentConsentTrigger } from '@comfyorg/telemetry/types'
+import type { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -43,8 +43,8 @@ import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
 } from '@/utils/__tests__/canvasTestUtils'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 let agentStore: Mocked<ReturnType<typeof useAgentPanelStore>>
 let workflowStore: ReturnType<typeof useWorkflowStore>
@@ -79,7 +79,7 @@ function beginFirstRunScreenHandoff(): void {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(
   import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
@@ -133,7 +133,7 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
   useExtensionService: () =>
     fromPartial<ReturnType<typeof useExtensionService>>({
       registerExtension: (ext: ComfyExtension) => {
@@ -182,13 +182,13 @@ const flush = (): Promise<void> =>
 
 const notOffered = async () =>
   vi.mocked(
-    (await import('@/platform/telemetry')).useTelemetry()!
+    (await import('@comfyorg/telemetry')).useTelemetry()!
       .trackAgentConsentNotOffered
   )
 
 const offerExited = async () =>
   vi.mocked(
-    (await import('@/platform/telemetry')).useTelemetry()!
+    (await import('@comfyorg/telemetry')).useTelemetry()!
       .trackAgentConsentOfferExited
   )
 

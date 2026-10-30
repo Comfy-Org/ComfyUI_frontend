@@ -34,6 +34,8 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
 
   test('dismisses without consent and persists acceptance before reopening', async ({
     comfyPage,
+    agentBilling,
+    agentPanel,
     agentConsentSave,
     agentConsentWrites
   }) => {
@@ -81,6 +83,14 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     })
 
     await test.step('Accept saves consent before opening Agent', async () => {
+      await agentBilling.waitForInitialStatusResponse()
+      const billingRequestsBeforeAccept = agentBilling.statusRequestCount
+      agentBilling.setFundingState('exhausted')
+      const billingRefresh = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'GET' &&
+          new URL(response.url()).pathname === '/api/billing/status'
+      )
       let releaseSave = () => {}
       agentConsentSave.pending = new Promise<void>((resolve) => {
         releaseSave = resolve
@@ -95,11 +105,25 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         await expect(dialog).toBeVisible()
         await expect(accept).toBeDisabled()
         await expect(panel).toHaveCount(0)
+        expect(agentBilling.statusRequestCount).toBe(
+          billingRequestsBeforeAccept
+        )
       } finally {
         releaseSave()
       }
+      await billingRefresh
+      expect(agentBilling.statusRequestCount).toBe(
+        billingRequestsBeforeAccept + 1
+      )
       await expect(dialog).toHaveCount(0)
       await expect(panel).toBeVisible()
+
+      await agentPanel.selectWorkflow()
+      await agentPanel.sendMessage('Build a workflow after accepting consent')
+      await expect(agentPanel.userMessageBubbles).toHaveText([
+        'Build a workflow after accepting consent'
+      ])
+      await expect(agentPanel.creditsExhaustedPaywall).toBeVisible()
     })
 
     await test.step('Agent button closes and reopens the panel without another consent prompt', async () => {
@@ -173,16 +197,22 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         await accept.click()
 
         await expect.poll(() => agentConsentWrites).toEqual([true])
-        await expect(dialog.getByRole('alert')).toHaveText(
-          enMessages.agent.consent.saveError
+        await expect(dialog.getByRole('alert')).toContainText(
+          enMessages.agent.consent.errorTitle
         )
-        await expect(accept).toBeEnabled()
+        await expect(
+          dialog.getByRole('button', {
+            name: enMessages.agent.consent.tryAgain
+          })
+        ).toBeEnabled()
         await expect(panel).toHaveCount(0)
       })
 
       await test.step('Retry sends another save and opens the panel after recovery', async () => {
         agentConsentSave.status = 200
-        await accept.click()
+        await dialog
+          .getByRole('button', { name: enMessages.agent.consent.tryAgain })
+          .click()
         await expect.poll(() => agentConsentWrites).toEqual([true, true])
         await expect(dialog).toHaveCount(0)
         await expect(panel).toBeVisible()
@@ -241,7 +271,7 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         name: enMessages.agent.consent.reject
       })
 
-      await test.step('Narrow layout keeps media widescreen and actions in visual order', async () => {
+      await test.step('Narrow layout keeps media widescreen and stacks Start above Skip', async () => {
         await requestConsentFromOpenPanel(page)
         await expect
           .poll(async () => {
@@ -256,20 +286,19 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
               reject.boundingBox()
             ])
             return acceptBox && rejectBox
-              ? rejectBox.x + rejectBox.width <= acceptBox.x &&
-                  rejectBox.y === acceptBox.y
+              ? acceptBox.y + acceptBox.height <= rejectBox.y
               : false
           })
           .toBe(true)
       })
 
-      await test.step('Keyboard order follows docs, Skip, then Start', async () => {
+      await test.step('Keyboard order follows docs, Start, then Skip', async () => {
         await docs.focus()
         await expect(docs).toBeFocused()
         await page.keyboard.press('Tab')
-        await expect(reject).toBeFocused()
-        await page.keyboard.press('Tab')
         await expect(accept).toBeFocused()
+        await page.keyboard.press('Tab')
+        await expect(reject).toBeFocused()
       })
     })
   })

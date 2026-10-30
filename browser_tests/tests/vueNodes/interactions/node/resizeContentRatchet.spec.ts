@@ -5,7 +5,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 /**
  * PM-1304 / PM-1312: a Flux2ImageNode (or any node using the autogrow

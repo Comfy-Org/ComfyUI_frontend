@@ -64,8 +64,8 @@ import {
   provideWebSessionRequests,
   WebSessionTokenError
 } from '@/platform/auth/session/webSessionFetch'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -298,8 +298,9 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   /** Decides the flag for this page load; true when the session is on. */
   function start(): boolean {
     if (decided) return identity !== null
+    const enabled = useFeatureFlags().flags.unifiedWebSessionEnabled
     decided = true
-    if (!useFeatureFlags().flags.unifiedWebSessionEnabled) return false
+    if (!enabled) return false
     const session = createCloudIdentity((change) => {
       resetForAccountChange(change)
       if (change.reason === 'signed_out' && !signingOut) {

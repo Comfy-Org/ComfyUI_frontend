@@ -18,15 +18,15 @@ import { cloudReleaseModelOptions } from '@/platform/workflowErrors/missingModel
 import type {
   ComfyWorkflowJSON,
   ModelFile
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
 } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { t } from '@/i18n'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   createTestSubgraph,
   createTestSubgraphNode

@@ -8,14 +8,14 @@ import type { UUID } from '@/utils/uuid'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { isCurveData } from '@/components/curve/curveUtils'
-import type { CurveData } from '@/components/curve/types'
+import type { CurveData } from '@comfyorg/graph-model/curve'
 import { createPromotedHostWidgetIdLookup } from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
-import { hexToInt } from '@/utils/colorUtil'
-import type { NodeId } from '@/types/nodeId'
-import type { WidgetId } from '@/types/widgetId'
-import { widgetId } from '@/types/widgetId'
+import { hexToInt } from '@comfyorg/shared-frontend-utils/colorUtil'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 interface AutogrowGroup {
   max: number

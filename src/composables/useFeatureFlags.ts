@@ -12,7 +12,7 @@ import {
   useRemoteConfigCache
 } from '@/platform/remoteConfig/remoteConfig'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
@@ -185,6 +185,12 @@ export function useFeatureFlags() {
         true
       )
     },
+    get deploymentStartEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.DEPLOYMENT_START_ENABLED,
+        remoteConfig.value.deployment_start_enabled
+      )
+    },
     get partnerNodeTokenEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.PARTNER_NODE_TOKEN,
@@ -230,6 +236,21 @@ export function useFeatureFlags() {
         ServerFeatureFlag.DEPLOYMENT_COMPATIBILITY_MARKS_ENABLED,
         remoteConfig.value.deployment_compatibility_marks_enabled,
         false
+      )
+    },
+    get runtimeLibraryModelsEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.RUNTIME_LIBRARY_MODELS_ENABLED,
+        remoteConfig.value.runtime_library_models_enabled,
+        false
+      )
+    },
+    /** The model folders an uploaded model file may go into; empty when uploads are off. */
+    get modelUploadFolders(): readonly string[] {
+      return resolveFlag<readonly string[]>(
+        ServerFeatureFlag.MODEL_UPLOAD_FOLDERS,
+        remoteConfig.value.model_upload_folders,
+        []
       )
     },
     get lateCustomNodesEnabled() {

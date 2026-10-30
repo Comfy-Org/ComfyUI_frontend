@@ -24,7 +24,7 @@ import {
   hideSelectedLinks,
   showSelectedLinks
 } from '@/lib/litegraph/src/canvas/linkSelection'
-import type { Point } from '@/lib/litegraph/src/litegraph'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
@@ -34,9 +34,9 @@ import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/mis
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildSupportUrl } from '@/platform/support/config'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { ExecutionTriggerSource } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { ExecutionTriggerSource } from '@comfyorg/telemetry/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -52,7 +52,7 @@ import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useAssetsStore } from '@/stores/assetsStore'
-import type { ComfyCommand } from '@/stores/commandStore'
+import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
@@ -74,9 +74,9 @@ import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
   ManagerUIState,
   useManagerState
-} from '@/workbench/extensions/manager/composables/useManagerState'
-import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+} from '@/platform/customNodes/manager/composables/useManagerState'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerDialog'
+import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 
 import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 

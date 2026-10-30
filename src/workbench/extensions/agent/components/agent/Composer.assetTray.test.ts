@@ -18,7 +18,7 @@ import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSet
 setupInlinePromptEditorDom()
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const asset = {
   id: 'source',

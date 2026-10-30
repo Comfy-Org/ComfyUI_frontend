@@ -3,7 +3,7 @@ import { storeToRefs } from 'pinia'
 import { computed, getCurrentScope, onScopeDispose } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
@@ -67,10 +67,7 @@ export function useComposer(options: UseComposerOptions) {
     const clickId = uuidv4()
     store.markSuggestedPrompt({
       id: starterPrompt.promptId,
-      clickId,
-      ...(starterPrompt.assignment
-        ? { assignment: starterPrompt.assignment }
-        : {})
+      clickId
     })
     useTelemetry()?.trackAgentStarterPromptClicked({
       prompt_id: starterPrompt.promptId,
@@ -80,12 +77,7 @@ export function useComposer(options: UseComposerOptions) {
       prompt_text_hash: starterPrompt.promptTextHash,
       locale: starterPrompt.locale,
       click_id: clickId,
-      draft_was_empty: draftWasEmpty,
-      ...(starterPrompt.assignment
-        ? {
-            '$feature/agent-starter-prompt-set': starterPrompt.assignment
-          }
-        : {})
+      draft_was_empty: draftWasEmpty
     })
   }
 

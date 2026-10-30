@@ -1,6 +1,6 @@
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'

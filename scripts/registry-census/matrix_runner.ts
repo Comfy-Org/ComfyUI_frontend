@@ -14,11 +14,11 @@ import type {
   ISerialisedNode,
   LGraph,
   LGraphCanvas,
-  LGraphNode,
-  Point
+  LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type * as WidgetValuesForm from '@/workbench/extensions/agent/crdt/widgetValuesForm'
@@ -433,7 +433,8 @@ export async function runPack(
 
   // ---- registerCustomNodes (frontend-only pack node types) --------------
   try {
-    const { useExtensionService } = await import('@/services/extensionService')
+    const { useExtensionService } =
+      await import('@/platform/extensions/services/extensionService')
     await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     row.registerCustomNodes = 'OK'
   } catch (e) {
@@ -444,7 +445,8 @@ export async function runPack(
     .sort()
   row.newTypes = newTypes
   try {
-    const { useExtensionStore } = await import('@/stores/extensionStore')
+    const { useExtensionStore } =
+      await import('@/platform/extensions/stores/extensionStore')
     const st = useExtensionStore()
     row.extTotal = st.extensions.length
     row.extEnabled = st.enabledExtensions.length
