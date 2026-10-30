@@ -22,8 +22,15 @@ const AUDIO_WORKFLOW_FORMATS = {
  * All supported video formats that can contain workflow data
  */
 const VIDEO_WORKFLOW_FORMATS = {
-  extensions: ['.mp4', '.mov', '.m4v', '.webm'],
-  mimeTypes: ['video/mp4', 'video/quicktime', 'video/x-m4v', 'video/webm']
+  extensions: ['.mp4', '.mov', '.m4v', '.webm', '.mkv'],
+  mimeTypes: [
+    'video/mp4',
+    'video/quicktime',
+    'video/x-m4v',
+    'video/webm',
+    'video/x-matroska',
+    'video/matroska'
+  ]
 }
 
 /**

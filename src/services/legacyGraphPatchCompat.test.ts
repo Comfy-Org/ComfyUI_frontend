@@ -6,14 +6,14 @@ import {
   createTestRootGraph,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {
   applyLegacyGraphPatches,
   captureLegacyGraphPatches
 } from './legacyGraphPatchCompat'
 
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 describe('legacy graph patch compatibility', () => {
   it('uses each graph predecessor and keeps later graph-local wrappers local', () => {

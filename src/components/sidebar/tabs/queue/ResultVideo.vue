@@ -1,15 +1,20 @@
 <template>
-  <video controls class="max-h-[90vh] max-w-[90vw]">
+  <video
+    ref="video"
+    controls
+    :autoplay="autoplay"
+    class="max-h-[90vh] max-w-[90vw]"
+  >
     <source :src="url" :type="htmlVideoType" />
     {{ $t('g.videoFailedToLoad') }}
   </video>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onActivated, useTemplateRef } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import {
   resultItemUrl,
@@ -23,7 +28,14 @@ defineOptions({ name: 'ResultVideo' })
 
 const props = defineProps<{
   result: AugmentedResultItem
+  autoplay?: boolean
 }>()
+
+const videoElement = useTemplateRef<HTMLVideoElement>('video')
+
+onActivated(() => {
+  if (props.autoplay) void videoElement.value?.play().catch(() => {})
+})
 
 const settingStore = useSettingStore()
 const { isExtensionInstalled, isExtensionEnabled } = useExtensionStore()

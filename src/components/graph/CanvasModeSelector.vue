@@ -1,5 +1,5 @@
 <template>
-  <Popover v-model:open="isOpen">
+  <PopoverRoot v-model:open="isOpen">
     <PopoverTrigger as-child>
       <Button
         ref="buttonRef"
@@ -12,14 +12,10 @@
       >
         <div class="flex items-center gap-1 pr-0.5">
           <div class="rounded-lg bg-muted p-2 group-hover:bg-accent">
-            <i
-              :class="currentModeIcon"
-              class="block size-4"
-              aria-hidden="true"
-            />
+            <i :class="currentModeIcon" class="block" aria-hidden="true" />
           </div>
           <i
-            class="icon-[lucide--chevron-down] block size-4 pr-1.5"
+            class="icon-[lucide--chevron-down] block pr-1.5"
             aria-hidden="true"
           />
         </div>
@@ -29,11 +25,10 @@
     <PopoverContent
       side="top"
       :side-offset="8"
-      :collision-padding="8"
       :class="
         cn(
           menuContentClass,
-          'max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) min-w-39 select-none data-[state=closed]:animate-none data-[state=open]:animate-none'
+          'w-auto min-w-39 select-none data-[state=closed]:animate-none data-[state=open]:animate-none'
         )
       "
       @open-auto-focus.prevent="onPopoverShow"
@@ -57,10 +52,7 @@
           @keydown.escape.prevent="closeAndRestoreFocus"
         >
           <div class="flex items-center gap-2">
-            <i
-              class="icon-[lucide--mouse-pointer-2] size-4"
-              aria-hidden="true"
-            />
+            <i class="icon-[lucide--mouse-pointer-2]" aria-hidden="true" />
             <span>{{ $t('graphCanvasMenu.select') }}</span>
           </div>
           <span
@@ -83,7 +75,7 @@
           @keydown.escape.prevent="closeAndRestoreFocus"
         >
           <div class="flex items-center gap-2">
-            <i class="icon-[lucide--hand] size-4" aria-hidden="true" />
+            <i class="icon-[lucide--hand]" aria-hidden="true" />
             <span>{{ $t('graphCanvasMenu.hand') }}</span>
           </div>
           <span
@@ -94,25 +86,24 @@
         </button>
       </div>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 </template>
 
 <script setup lang="ts">
 import { unrefElement } from '@vueuse/core'
-import { PopoverTrigger } from 'reka-ui'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import type { ComponentPublicInstance } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
+import Button from '@comfyorg/design-system/button/Button'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import {
   menuButtonClass,
   menuContentClass
-} from '@/components/ui/menu/menuStyles'
+} from '@comfyorg/design-system/lib/menu/menuStyles'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 interface Props {

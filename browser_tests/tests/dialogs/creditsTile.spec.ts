@@ -6,7 +6,7 @@ import type {
   BillingOpStatusResponse,
   BillingStatusResponse,
   CreateTopupResponse
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
@@ -65,6 +65,7 @@ const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   subscription_tier: 'PRO',
@@ -77,6 +78,7 @@ const freeBillingStatus: BillingStatusResponse = {
   is_active: false,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   subscription_tier: 'FREE',
@@ -87,6 +89,7 @@ const endedPersonalBillingStatus: BillingStatusResponse = {
   is_active: false,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   subscription_status: 'ended',

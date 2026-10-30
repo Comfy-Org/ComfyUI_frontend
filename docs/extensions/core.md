@@ -167,6 +167,24 @@ afterConfigureGraph
 afterLoadGraph
 ```
 
+#### Late Extension (deployments with late custom nodes on)
+
+When a custom node script takes longer than 2 s, the editor opens without it.
+Once every script has arrived, the extensions registered late run, after
+every other extension's `setup`:
+
+```
+getCustomWidgets         [late extensions only]
+init                     [late extensions only]
+addCustomNodeDefs        [every extension]
+registerCustomNodes      [late extensions only]
+beforeRegisterNodeDef    [repeated multiple times, every extension]
+setup                    [late extensions only]
+```
+
+The open workflow is then loaded again (see Loading Workflow below), so every
+extension's per-node hooks run on its nodes.
+
 #### Loading Workflow
 
 ```
@@ -189,9 +207,38 @@ afterLoadGraph
 Each open workflow keeps its own `LGraph`, so switching to a tab whose graph
 is already loaded shows that instance without rebuilding its nodes. The
 `configure`-phase hooks above (`beforeConfigureGraph`, `nodeCreated`,
-`loadedGraphNode`, `afterConfigureGraph`) do not run. Extensions that refresh
+`loadedGraphNode`, `afterConfigureGraph`) do not run. The first switch to a
+background tab retained across late custom node registration also runs the
+configure-phase hooks to rebuild its nodes. Extensions that refresh
 per-graph DOM or Vue state when the visible graph changes should do so in
 `afterLoadGraph`, which runs on both the first load and every later switch.
+
+#### Restoring history in a background workflow
+
+An undo or redo queued before a tab switch can restore the inactive workflow.
+That restore runs these hooks:
+
+```
+beforeConfigureGraph
+nodeCreated             [repeated multiple times]
+loadedGraphNode         [repeated multiple times]
+afterConfigureGraph
+```
+
+`beforeLoadGraph` and `afterLoadGraph` do not run because the visible workflow
+does not change. Throughout the restore, `app.graph` and `app.rootGraph` refer
+to the visible workflow, not the graph being configured. `loadedGraphNode`
+can use `node.graph` instead. In `nodeCreated`, ordinary nodes are not yet
+attached to a graph, and subgraph nodes may temporarily reference the visible
+root graph. Reserve visible-graph subscriptions and DOM updates for
+`afterLoadGraph`.
+
+A failed background restore can call `onGraphLoadError` without a preceding
+`beforeLoadGraph`. Error handlers must tolerate that sequence.
+
+Load hooks must not await another graph load or workflow switch. Loads and
+switches share a serial queue. Awaiting a nested operation from a load hook
+deadlocks that queue.
 
 Because each workflow owns a separate `LGraph`, an `app.graph` reference
 captured in `setup` points at the first workflow loaded after startup. Read
@@ -199,12 +246,11 @@ captured in `setup` points at the first workflow loaded after startup. Read
 one instance (`onNodeAdded`, `onConfigure`, `add`) reaches only that
 instance, and the app wraps `onConfigure` per instance when it creates the
 graph, so an `LGraph.prototype.onConfigure` patch applied in `setup` misses
-the boot graph. Prefer the `afterConfigureGraph` and `afterLoadGraph` hooks
-or the graph's `events` target. If you must patch `LGraph.prototype`, do it
-at module top level; the patch then applies to every root graph and every
-subgraph. If you re-apply an instance patch in `afterLoadGraph`, track the
-instances you have already patched in a `WeakSet`: graphs are reused across
-tab switches, so the hook runs more than once per instance.
+the boot graph. Prefer the `afterConfigureGraph` and `afterLoadGraph` hooks.
+Install graph event subscriptions and instance patches in `afterLoadGraph`,
+tracking handled instances in a `WeakSet` to avoid duplicates when tabs return.
+If you must patch `LGraph.prototype`, do it at module top level. The patch
+then applies to every root graph and subgraph.
 
 #### Adding New Node
 

@@ -4,11 +4,14 @@ import type {
   PaymentProjection,
   PaymentReasonKey,
   SubscriptionCommandResult,
-  TopupResult
+  TopupResult,
+  BillingServerCode
 } from '@comfyorg/account-core/billing'
 import {
+  isPurchaseRefusal,
   matchesServerCode,
-  projectPaymentStep
+  projectPaymentStep,
+  unwrapServerCode
 } from '@comfyorg/account-core/billing'
 
 import type {
@@ -68,6 +71,7 @@ export function payVerdictOf(result: SubscriptionCommandResult): PayVerdict {
  */
 function refusalVerdict(result: {
   readonly code: string
+  readonly serverCode?: BillingServerCode
   readonly serverMessage?: string
 }): PayVerdict {
   if (result.code === 'OPERATION_ALREADY_PENDING' || result.code === 'CONFLICT')
@@ -76,7 +80,10 @@ function refusalVerdict(result: {
     kind: 'outcome',
     outcome: {
       kind: 'processing_error',
-      code: result.code,
+      code:
+        result.serverCode !== undefined && isPurchaseRefusal(result)
+          ? unwrapServerCode(result.serverCode)
+          : result.code,
       ...(result.serverMessage === undefined
         ? {}
         : { serverMessage: result.serverMessage })
@@ -108,12 +115,7 @@ export function topupVerdictOf(result: TopupResult): PayVerdict {
   }
 }
 
-/**
- * The card an operation's own verdict earns, through the shared projection.
- * Nothing for one still pending or succeeded, and nothing for a poll budget
- * that ran out or an operation parked for a human: an unknown outcome never
- * gets the card (rule 12).
- */
+/** The card an operation's own verdict earns, or none when its outcome is unknown. */
 export function operationOutcomeOf(
   operation: BillingOperationState
 ): OperationOutcome | undefined {
@@ -125,7 +127,10 @@ export function operationOutcomeOf(
     return undefined
   const projection = projectPaymentStep(operation, 'preview')
   const operationId = operation.id
-  if (isNotCompleted(projection)) return { kind: 'not_completed', operationId }
+  if (isNotCompleted(projection))
+    return operation.phase === 'pending'
+      ? { kind: 'not_verified', operationId }
+      : { kind: 'not_completed', operationId }
   if (projection.step === 'processing_error')
     return { kind: 'processing_error', operationId }
   if (projection.step !== 'declined') return undefined

@@ -33,7 +33,6 @@ import type {
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
   AgentStarterPromptClickedMetadata,
-  AgentStarterPromptExposureMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -77,11 +76,11 @@ import type {
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import {
   CANCELLATION_STAGE_EVENTS,
   TelemetryEvents
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<
@@ -390,12 +389,6 @@ export class HostTelemetrySink implements TelemetryProvider {
     metadata: AgentStarterPromptClickedMetadata
   ): void {
     this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
-  }
-
-  trackAgentStarterPromptExposure(
-    metadata: AgentStarterPromptExposureMetadata
-  ): void {
-    this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE, metadata)
   }
 
   trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {

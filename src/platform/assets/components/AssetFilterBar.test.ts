@@ -25,7 +25,7 @@ const i18n = createI18n({
 
 // Mock components with minimal functionality for business logic testing
 vi.mock<unknown>(
-  import('@/components/ui/multi-select/MultiSelect.vue'),
+  import('@comfyorg/design-system/multi-select/MultiSelect'),
   () => ({
     default: {
       name: 'MultiSelect',
@@ -50,7 +50,7 @@ vi.mock<unknown>(
 )
 
 vi.mock<unknown>(
-  import('@/components/ui/single-select/SingleSelect.vue'),
+  import('@comfyorg/design-system/single-select/SingleSelect'),
   () => ({
     default: {
       name: 'SingleSelect',

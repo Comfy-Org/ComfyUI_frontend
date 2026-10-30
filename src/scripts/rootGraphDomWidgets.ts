@@ -1,7 +1,4 @@
-import type {
-  LGraph,
-  LGraphNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import type { BaseDOMWidget } from '@/types/domWidget'

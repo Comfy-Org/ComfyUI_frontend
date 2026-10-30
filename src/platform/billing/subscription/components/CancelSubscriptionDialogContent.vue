@@ -31,10 +31,7 @@
           :key="feature.key"
           class="flex flex-col gap-1.5 rounded-[10px] border border-border/50 bg-secondary/50 p-3"
         >
-          <i
-            :class="cn(feature.icon, 'size-4 text-foreground')"
-            aria-hidden="true"
-          />
+          <i :class="cn(feature.icon, 'text-foreground')" aria-hidden="true" />
           <span class="text-sm">{{ feature.title }}</span>
           <span class="text-xs text-muted-foreground">
             {{ feature.description }}
@@ -91,7 +88,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { CancelRail } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
@@ -102,13 +99,13 @@ import {
   getSubscriptionCancellationMetadata
 } from '@/platform/billing/subscription/utils/subscriptionCancellationTelemetry'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const {
   cancelAt,
@@ -129,7 +126,7 @@ const { cancelSubscription, fetchStatus, subscription, tier } =
   useBillingContext()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 const { canCancel } = useBillingCapabilities()
-const { permissions } = useWorkspaceUI()
+const { permissions } = useBillingUI()
 const { planName, creditGrant } = useCancellationPlan()
 const telemetry = useTelemetry()
 

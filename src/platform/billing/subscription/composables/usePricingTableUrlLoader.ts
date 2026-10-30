@@ -8,10 +8,10 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
+import type { TeamCreditStops } from '@comfyorg/billing-core'
 import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.PRICING
 
@@ -93,25 +93,14 @@ export function getPricingCheckoutSelection(
   }
 }
 
-/**
- * Opens the pricing table from a `?pricing=` deep link, to send pilot users
- * straight to subscribe. Values: `1` (default tab), `team`, `personal`, or a
- * selected personal tier or Team credit stop with a billing cycle to open its
- * confirmation.
- *
- * Gated to workspace owners (`canManageSubscription`); a member is a silent
- * no-op with the param stripped. Survives the login redirect via the
- * preserved-query system, like the invite URL loader.
- */
 export function usePricingTableUrlLoader() {
   const route = useRoute()
   const router = useRouter()
   const subscriptionDialog = useSubscriptionDialog()
   const { teamCreditStops, fetchPlans } = useBillingContext()
-  const { permissions, canOpenPricingSurface } = useWorkspaceUI()
+  const { permissions, canOpenPricingSurface } = useBillingUI()
   const { initialize: initializeCapabilities } = useBillingCapabilities()
 
-  /** Reads `?pricing=`, strips it, and opens the table when the gate allows. */
   async function loadPricingTableFromUrl() {
     hydratePreservedQuery(NAMESPACE)
     const query =
@@ -163,7 +152,7 @@ export function usePricingTableUrlLoader() {
       if (canManageSubscription !== true) return
       const availableTeamCreditStops: unknown = teamCreditStops.value
       if (!availableTeamCreditStops) {
-        subscriptionDialog.showPricingTable({
+        await subscriptionDialog.showPricingTable({
           reason: 'deep_link',
           planMode: 'team'
         })
@@ -179,7 +168,7 @@ export function usePricingTableUrlLoader() {
     )
     if (isCheckoutTier(param) && !initialCheckout) return
     if (teamCheckoutRequest && !initialCheckout) {
-      subscriptionDialog.showPricingTable({
+      await subscriptionDialog.showPricingTable({
         reason: 'deep_link',
         planMode: 'team'
       })
@@ -203,7 +192,7 @@ export function usePricingTableUrlLoader() {
       permissions.value.canManageSubscription
     if (canManageSubscription !== true) return
 
-    subscriptionDialog.showPricingTable({
+    await subscriptionDialog.showPricingTable({
       reason: 'deep_link',
       planMode,
       initialCheckout

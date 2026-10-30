@@ -21,7 +21,7 @@
             :aria-label="$t('sideToolbar.backToAssets')"
             @click="exitFolderView"
           >
-            <i class="icon-[lucide--arrow-left] size-4" />
+            <i class="icon-[lucide--arrow-left]" />
           </Button>
           <span class="shrink-0 font-bold">
             {{ $t('assetBrowser.jobId') }}:
@@ -37,7 +37,7 @@
             :aria-label="$t('g.copyJobId')"
             @click="copyFolderJobId"
           >
-            <i class="icon-[lucide--copy] size-4" />
+            <i class="icon-[lucide--copy]" />
           </Button>
         </div>
         <div class="shrink-0">
@@ -82,7 +82,7 @@
         </div>
         <div v-else-if="showEmptyState">
           <NoResultsPlaceholder
-            icon="pi pi-info-circle"
+            icon="icon-[lucide--info]"
             :title="
               $t(
                 activeTab === 'input'
@@ -175,19 +175,19 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
 import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
-import Tab from '@/components/tab/Tab.vue'
-import TabList from '@/components/tab/TabList.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import { usePointMenu } from '@/components/ui/menu/usePointMenu'
-import type { MenuItem } from '@/components/ui/menu/types'
+import Tab from '@comfyorg/design-system/tab/Tab'
+import TabList from '@comfyorg/design-system/tab/TabList'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
@@ -212,6 +212,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import {
   getAssetFileUrl,
+  getAssetInlineMediaUrl,
   getAssetSubfolder,
   getAssetViewUrl
 } from '@/platform/assets/utils/assetUrlUtil'
@@ -469,7 +470,7 @@ const galleryItems = computed<AugmentedResultItem[]>(() => {
       type: 'output',
       nodeId: '0',
       mediaType: mediaType === 'image' ? 'images' : mediaType,
-      url: asset.preview_url || ''
+      url: getAssetInlineMediaUrl(asset)
     }
   })
 })

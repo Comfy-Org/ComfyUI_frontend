@@ -39,6 +39,18 @@
     },
     {
       "path": "./packages/test-utils/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/billing-core/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/graph-model/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/telemetry/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/keybindings/tsconfig.declarations.json"
     }
   ]
 }

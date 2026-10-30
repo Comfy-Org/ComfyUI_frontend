@@ -1,0 +1,6 @@
+@import '../packages/design-system/src/css/theme.css';
+
+@source '../packages/design-system/src/components';
+@source not '../packages/design-system/src/components/**/*.test.ts';
+@source not '../packages/design-system/src/components/**/*.md';
+@source '../src/**/*.stories.ts';

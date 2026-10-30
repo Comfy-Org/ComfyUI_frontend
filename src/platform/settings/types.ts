@@ -1,6 +1,6 @@
-import type { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
+import type { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
-import type { Keybinding } from '@/platform/keybindings/types'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import type { NodeBadgeMode } from '@/types/nodeSource'
 import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
@@ -12,7 +12,6 @@ export type BookmarkCustomization = {
 export type PreviewMethod = 'default' | 'none' | 'auto' | 'latent2rgb' | 'taesd'
 
 export type Settings = {
-  'Comfy.AgentPanel.ConsentOfferDeclined': boolean
   'Comfy.ColorPalette': string
   'Comfy.CustomColorPalettes': ColorPalettes
   'Comfy.Canvas.BackgroundImage'?: string
@@ -26,6 +25,7 @@ export type Settings = {
   'Comfy.Workflow.ShowMissingMediaWarning': boolean
   'Comfy.Workflow.WarnBlueprintOverwrite': boolean
   'Comfy.Desktop.CloudNotificationShown': boolean
+  'Comfy.DeploymentSwitcher.Seen': boolean
   'Comfy.DisableFloatRounding': boolean
   'Comfy.DisableSliders': boolean
   'Comfy.DOMClippingEnabled': boolean

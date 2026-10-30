@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { TelemetryEvents } from '@/platform/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 import { HostTelemetrySink } from './HostTelemetrySink'
 
@@ -364,14 +364,6 @@ describe('HostTelemetrySink', () => {
       }
     },
     {
-      name: TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE,
-      track: (sink: HostTelemetrySink) =>
-        sink.trackAgentStarterPromptExposure({
-          '$feature/agent-starter-prompt-set': 'test'
-        }),
-      properties: { '$feature/agent-starter-prompt-set': 'test' }
-    },
-    {
       name: TelemetryEvents.AGENT_FREE_USE_NOTICE,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentFreeUseNotice({
@@ -512,12 +504,12 @@ describe('HostTelemetrySink', () => {
       name: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentConsentOfferExited({
-          exit: 'workspace_switching',
+          exit: 'consent_unresolved',
           stage: 'offer',
           retry_armed: true
         }),
       properties: {
-        exit: 'workspace_switching',
+        exit: 'consent_unresolved',
         stage: 'offer',
         retry_armed: true
       }

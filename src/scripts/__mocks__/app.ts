@@ -78,6 +78,8 @@ const actions = vi.mockObject<
   Pick<
     RealComfyApp,
     | 'clean'
+    | 'fetchNodeDefs'
+    | 'getNodeDefs'
     | 'getPreviewFormatParam'
     | 'getRandParam'
     | 'graphToPrompt'
@@ -89,6 +91,7 @@ const actions = vi.mockObject<
     | 'refreshMissingModels'
     | 'registerExtension'
     | 'registerNodeDef'
+    | 'reloadNodeDefs'
     | 'setup'
     | 'showErrorOnFileLoad'
   >
@@ -105,7 +108,16 @@ const actions = vi.mockObject<
       assert.fail('Configure app.graphToPrompt for this test')
     },
     registerExtension() {},
+    async getNodeDefs() {
+      return {}
+    },
+    async fetchNodeDefs() {
+      return { ok: true, defs: {} }
+    },
     async registerNodeDef() {},
+    async reloadNodeDefs() {
+      return true
+    },
     async refreshMissingModels() {
       assert.fail('Configure app.refreshMissingModels for this test')
     },

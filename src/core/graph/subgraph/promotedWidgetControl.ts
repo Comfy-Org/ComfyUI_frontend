@@ -5,7 +5,7 @@ import {
   nextValueForLinkedTarget
 } from '@/core/graph/widgets/valueControl'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 /**

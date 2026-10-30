@@ -1,5 +1,5 @@
 <template>
-  <Popover v-if="isOriginalMaterial" v-model:open="intensityOpen">
+  <PopoverRoot v-if="isOriginalMaterial" v-model:open="intensityOpen">
     <PopoverTrigger as-child>
       <Button
         variant="textonly"
@@ -10,12 +10,11 @@
         type="button"
         :aria-label="compact ? t('load3d.menuBar.intensity') : undefined"
       >
-        <i class="icon-[lucide--sun] size-4" />
+        <i class="icon-[lucide--sun]" />
         <span v-if="!compact">{{ t('load3d.menuBar.intensity') }}</span>
       </Button>
     </PopoverTrigger>
     <PopoverContent
-      side="bottom"
       align="start"
       :side-offset="8"
       :class="cn(formPanelClass, 'w-56')"
@@ -33,7 +32,7 @@
         />
       </div>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
   <span v-else class="px-2 text-sm text-muted-foreground">{{
     t('load3d.menuBar.originalMaterialOnly')
   }}</span>
@@ -48,14 +47,13 @@ import {
   formPanelClass
 } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/extensions/core/load3d/components/menubar/usePopoverExclusivity'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
-import Button from '@/components/ui/button/Button.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import Slider from '@comfyorg/design-system/slider/Slider'
+import Button from '@comfyorg/design-system/button/Button'
 import type { LightConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 
 const { compact = false, isOriginalMaterial = false } = defineProps<{
   compact?: boolean

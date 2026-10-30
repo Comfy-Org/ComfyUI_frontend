@@ -38,20 +38,18 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { ISerialisedGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  TWidgetValue
-} from '@/lib/litegraph/src/types/widgets'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { graphsAwaitingNodeTypes } from '@/platform/customNodes/lateLoading/lateNodeTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { normalizeExecutionTriggerSource } from '@comfyorg/telemetry/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
 import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
@@ -61,7 +59,7 @@ import type {
   WorkflowExecutionIntent,
   WorkflowOpenSource,
   WorkflowQueueIntent
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
@@ -76,10 +74,10 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON,
   WorkflowJSON04
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import { toNodeId } from '@/types/nodeId'
-import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/workflowSchema'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { zNodePackMetadata } from '@comfyorg/graph-model/workflowSchema'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   buildSubgraphExecutionPaths,
   collectSubgraphDefinitions,
@@ -103,26 +101,26 @@ import { useAccountPreconditionDialog } from '@/platform/billing/subscription/co
 import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { applyLegacyGraphPatches } from '@/services/legacyGraphPatchCompat'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId
-} from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
@@ -138,11 +136,12 @@ import type {
   ComfyWidgetConstructor,
   CustomComfyWidgetConstructor,
   LoadGraphDataOptions,
+  NodeDefsFetch,
   QueuePromptOptions
 } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { getErrorMessage } from '@/utils/errorUtil'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
@@ -162,7 +161,7 @@ import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMed
 import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 
-import { getWorkflowMode } from '@/utils/appMode'
+import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
@@ -313,6 +312,39 @@ function createNodeOutputsMutationView(
       return deleted
     }
   })
+}
+
+function toNodeDefs(response: unknown): Record<string, ComfyNodeDefV1> {
+  const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
+    return {
+      ...def,
+      category: (typeof def.category === 'string' ? def.category : '')
+        .split('/')
+        .map((category: string) =>
+          st(`nodeCategories.${normalizeI18nKey(category)}`, category)
+        )
+        .join('/')
+    }
+  }
+
+  const isNodeDef = (value: unknown): value is ComfyNodeDefV1 =>
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { name?: unknown }).name === 'string'
+
+  const entries =
+    typeof response === 'object' &&
+    response !== null &&
+    !Array.isArray(response)
+      ? Object.entries(response)
+      : []
+  const defs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
+    entries.filter((entry): entry is [string, ComfyNodeDefV1] =>
+      isNodeDef(entry[1])
+    )
+  )
+  setBackendNodeText(Object.values(defs))
+  return _.mapValues(defs, (def) => translateNodeDef(def))
 }
 
 export class ComfyApp implements IComfyApp {
@@ -765,25 +797,36 @@ export class ComfyApp implements IComfyApp {
     })
 
     api.addEventListener('executed', ({ detail }) => {
-      if (!useExecutionStore().belongsToActiveWorkflow(detail.prompt_id)) return
-      const nodeOutputStore = useNodeOutputStore()
+      const executionStore = useExecutionStore()
+      const isActive = executionStore.belongsToActiveWorkflow(detail.prompt_id)
+      const workflow = executionStore.queuedJobs[detail.prompt_id]?.workflow
+      const graph = workflow ? workflow.graph : isActive ? this.rootGraph : null
       const executionId = tryNormalizeNodeExecutionId(
         detail.display_node || detail.node
       )
       if (!executionId) return
 
-      nodeOutputStore.setNodeOutputsByExecutionId(executionId, detail.output, {
-        merge: detail.merge
-      })
+      if (isActive) {
+        useNodeOutputStore().setNodeOutputsByExecutionId(
+          executionId,
+          detail.output,
+          { merge: detail.merge }
+        )
+      }
 
-      const node = getNodeByExecutionId(this.rootGraph, executionId)
+      if (!graph) return
+      const node = getNodeByExecutionId(graph, executionId)
       if (node && node.onExecuted) {
         node.onExecuted(detail.output)
       }
     })
 
-    api.addEventListener('execution_start', () => {
-      triggerCallbackOnAllNodes(this.rootGraph, 'onExecutionStart')
+    api.addEventListener('execution_start', ({ detail }) => {
+      const executionStore = useExecutionStore()
+      const isActive = executionStore.belongsToActiveWorkflow(detail.prompt_id)
+      const workflow = executionStore.queuedJobs[detail.prompt_id]?.workflow
+      const graph = workflow ? workflow.graph : isActive ? this.rootGraph : null
+      if (graph) triggerCallbackOnAllNodes(graph, 'onExecutionStart')
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
@@ -792,7 +835,7 @@ export class ComfyApp implements IComfyApp {
         exceptionMessage: detail.exception_message
       })
       if (precondition) {
-        useAccountPreconditionDialog().open(precondition, {
+        void useAccountPreconditionDialog().open(precondition, {
           nodeType: detail.node_type
         })
       }
@@ -878,12 +921,17 @@ export class ComfyApp implements IComfyApp {
     return graph
   }
 
-  /** Make `graph` the root graph shown on the canvas. */
   activateRootGraph(graph: LGraph): void {
     const previous = this.rootGraphInternal
     if (previous === graph) {
       this.canvas.setGraph(graph)
       return
+    }
+    for (const subgraph of graph.subgraphs.values()) {
+      useSubgraphService().registerNewSubgraph(
+        subgraph,
+        subgraph.asSerialisable()
+      )
     }
     if (previous) unregisterDomWidgets(previous)
     this.rootGraphInternal = graph
@@ -1063,37 +1111,14 @@ export class ComfyApp implements IComfyApp {
   }
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
-    const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
-      return {
-        ...def,
-        category: (typeof def.category === 'string' ? def.category : '')
-          .split('/')
-          .map((category: string) =>
-            st(`nodeCategories.${normalizeI18nKey(category)}`, category)
-          )
-          .join('/')
-      }
-    }
+    return toNodeDefs(await api.getNodeDefs())
+  }
 
-    const isNodeDef = (value: unknown): value is ComfyNodeDefV1 =>
-      typeof value === 'object' &&
-      value !== null &&
-      typeof (value as { name?: unknown }).name === 'string'
-
-    const response: unknown = await api.getNodeDefs()
-    const entries =
-      typeof response === 'object' &&
-      response !== null &&
-      !Array.isArray(response)
-        ? Object.entries(response)
-        : []
-    const defs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
-      entries.filter((entry): entry is [string, ComfyNodeDefV1] =>
-        isNodeDef(entry[1])
-      )
-    )
-    setBackendNodeText(Object.values(defs))
-    return _.mapValues(defs, (def) => translateNodeDef(def))
+  /** Fetches the node definitions, or the HTTP status when the server refused, instead of reading the refusal as definitions. */
+  async fetchNodeDefs(): Promise<NodeDefsFetch> {
+    const response = await api.fetchNodeDefs()
+    if (!response.ok) return { ok: false, status: response.status }
+    return { ok: true, defs: toNodeDefs(await response.json()) }
   }
 
   /**
@@ -1197,13 +1222,6 @@ export class ComfyApp implements IComfyApp {
     }
   }
 
-  /**
-   * Shared failure reporting for a graph load that cannot proceed: shows the
-   * load-error dialog, logs it, and notifies `onGraphLoadError` so any
-   * loading-state a `beforeLoadGraph` listener opened for this same load is
-   * closed out, exactly as if `rootGraph.configure` itself had thrown.
-   * Callers still decide what to return/rethrow.
-   */
   private async reportGraphLoadFailure(error: unknown): Promise<void> {
     useDialogService().showErrorDialog(error, {
       title: t('errorDialog.loadWorkflowTitle'),
@@ -1257,431 +1275,467 @@ export class ComfyApp implements IComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
-    useWorkflowService().beforeLoadNewGraph(clean)
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    const backgroundRestore =
+      !clean &&
+      workflow instanceof ComfyWorkflow &&
+      workflow.graph !== this.rootGraph
+    if (!backgroundRestore) {
+      useWorkflowService().beforeLoadNewGraph(clean)
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    }
 
-    ChangeTracker.isLoadingGraph = true
-    let reset_invalid_values = false
-    const missingNodeTypes: MissingNodeType[] = []
+    if (!clean && workflow instanceof ComfyWorkflow && !workflow.graph) {
+      await useExtensionService().invokeExtensionsAsync(
+        'onGraphLoadError',
+        new Error('The workflow graph was released while preparing the load')
+      )
+      return false
+    }
     const graph = this.rootGraphForLoad(
       workflow instanceof ComfyWorkflow ? workflow : null,
       clean
     )
     try {
-      useExecutionErrorStore().setActiveGraph(null)
-
-      if (skipAssetScans) {
-        useMissingModelStore().createVerificationAbortController().abort()
-        useMissingMediaStore().createVerificationAbortController().abort()
-        useMissingModelStore().setMissingModels([])
-        useMissingMediaStore().setMissingMedia([])
-      } else {
-        useMissingModelStore().clearMissingModels()
-        useMissingMediaStore().clearMissingMedia()
-      }
-
-      if (clean) {
-        useSubgraphNavigationStore().suppressRootGraphHash(graph)
-        this.activateRootGraph(graph)
-        withGraphIntentSource('load', () => this.clean())
-      }
-
-      if (
-        !graphData ||
-        typeof graphData !== 'object' ||
-        Array.isArray(graphData)
-      ) {
-        graphData = defaultGraph
-        reset_invalid_values = true
-      }
-
-      graphData = clone(graphData)
-
-      if (useSettingStore().get('Comfy.Validation.Workflows')) {
-        const { graphData: validatedGraphData } =
-          await useWorkflowValidation().validateWorkflow(graphData)
-
-        // If the validation failed, use the original graph data.
-        // Ideally we should not block users from loading the workflow.
-        graphData = validatedGraphData ?? graphData
-      }
-      // Only show the reroute migration warning if the workflow does not have native
-      // reroutes. Merging reroute network has great complexity, and it is not supported
-      // for now.
-      // See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/3317
-      if (
-        checkForRerouteMigration &&
-        graphData.version === 0.4 &&
-        findLegacyRerouteNodes(graphData).length &&
-        noNativeReroutes(graphData)
-      ) {
-        const toast = useToast()
-        const migrationToastId = toast.warning(
-          t('toastMessages.migrateToLitegraphReroute'),
-          {
-            action: {
-              label: t('g.migrate'),
-              onClick: async () => {
-                await this.loadGraphData(
-                  migrateLegacyRerouteNodes(
-                    this.rootGraph.serialize() as unknown as WorkflowJSON04
-                  ),
-                  false,
-                  false,
-                  useWorkflowStore().activeWorkflow
-                )
-                toast.dismiss(migrationToastId)
-              }
-            }
-          }
-        )
-      }
-
-      useSubgraphService().loadSubgraphs(graphData, graph)
-
-      await useExtensionService().invokeExtensionsAsync(
-        'beforeConfigureGraph',
-        graphData,
-        missingNodeTypes
-      )
-
-      const nodeReplacementStore = useNodeReplacementStore()
-      await nodeReplacementStore.load()
-
-      // Collect missing node types from all nodes (root + subgraphs)
-      const collectMissingNodes = (
-        nodes: readonly FlattenableWorkflowNode[],
-        pathPrefix: string = '',
-        displayName: string = ''
-      ) => {
-        if (!Array.isArray(nodes)) {
-          console.warn(
-            'Workflow nodes data is missing or invalid, skipping node processing',
-            { nodes, pathPrefix }
-          )
-          return
-        }
-        for (const n of nodes) {
-          if (!(n.type in LiteGraph.registered_node_types)) {
-            // Always sanitize so configure() can handle unregistered types,
-            // but only report as missing if the node is active.
-            const isMuted =
-              n.mode === LGraphEventMode.NEVER ||
-              n.mode === LGraphEventMode.BYPASS
-            if (!isMuted) {
-              const replacement = nodeReplacementStore.getReplacementFor(n.type)
-              const cnrId = getCnrIdFromProperties(
-                n.properties as Record<string, unknown> | undefined
-              )
-              const executionId = pathPrefix
-                ? `${pathPrefix}:${n.id}`
-                : String(n.id)
-
-              missingNodeTypes.push({
-                type: n.type,
-                nodeId: executionId,
-                cnrId,
-                ...(displayName && {
-                  hint: t('g.inSubgraph', { name: displayName })
-                }),
-                isReplaceable: replacement !== null,
-                replacement: replacement ?? undefined
-              })
-            }
-
-            n.type = sanitizeNodeName(n.type)
-          }
-        }
-      }
-
-      collectMissingNodes(graphData.nodes)
-      const subgraphDefs = collectSubgraphDefinitions(
-        parseFlattenableSubgraphDefinitions(
-          graphData.definitions?.subgraphs ?? []
-        )
-      )
-      const subgraphContainerIdMap = buildSubgraphExecutionPaths(
-        graphData.nodes,
-        subgraphDefs
-      )
-      for (const subgraph of subgraphDefs) {
-        const paths = subgraphContainerIdMap.get(subgraph.id) ?? []
-        for (const pathPrefix of paths) {
-          collectMissingNodes(
-            subgraph.nodes,
-            pathPrefix,
-            subgraph.name || subgraph.id
-          )
-        }
-      }
-    } catch (error) {
+      ChangeTracker.isLoadingGraph = true
+      let reset_invalid_values = false
+      const missingNodeTypes: MissingNodeType[] = []
       try {
-        await this.reportGraphLoadFailure(error)
-        if (clean) this.disownFailedLoadGraph(workflow)
-      } finally {
-        ChangeTracker.isLoadingGraph = false
-      }
-      void useSubgraphNavigationStore().updateHash(
-        'workflow-load',
-        workflowNavigationId
-      )
-      return false
-    }
+        if (clean || graph === this.rootGraph) {
+          useExecutionErrorStore().setActiveGraph(null)
 
-    const fitView = () => {
-      const savedCameraState = normalizeCameraState(graphData.extra?.ds, {
-        minScale: this.canvas.ds.min_scale,
-        maxScale: this.canvas.ds.max_scale
-      })
-      if (
-        restore_view &&
-        useSettingStore().get('Comfy.EnableWorkflowViewRestore')
-      ) {
-        // Always fit view for templates to ensure they're visible on load
-        if (openSource === 'template') {
-          useLitegraphService().fitView()
-        } else if (savedCameraState) {
-          this.canvas.ds.offset = savedCameraState.offset
-          this.canvas.ds.scale = savedCameraState.scale
-
-          // Fit view if no nodes visible in restored viewport
-          this.canvas.ds.computeVisibleArea(this.canvas.viewport)
-          if (
-            this.canvas.visible_area.width &&
-            this.canvas.visible_area.height &&
-            !anyItemOverlapsRect(graph._nodes, this.canvas.visible_area)
-          ) {
-            useLitegraphService().fitView()
+          if (skipAssetScans) {
+            useMissingModelStore().createVerificationAbortController().abort()
+            useMissingMediaStore().createVerificationAbortController().abort()
+            useMissingModelStore().setMissingModels([])
+            useMissingMediaStore().setMissingMedia([])
+          } else {
+            useMissingModelStore().clearMissingModels()
+            useMissingMediaStore().clearMissingMedia()
           }
-        } else {
-          useLitegraphService().fitView()
-        }
-      }
-    }
-
-    let activatedWorkflow: LoadedComfyWorkflow | undefined
-    let reconcileResourceErrors: (() => void) | undefined
-    let resourceScanLoadCompleted = false
-    try {
-      try {
-        graph.configure(graphData as ISerialisedGraph)
-
-        // Save original renderer version before scaling (it gets modified during scaling)
-        const originalMainGraphRenderer = graph.extra.workflowRendererVersion
-
-        // Scale main graph
-        ensureCorrectLayoutScale(originalMainGraphRenderer, graph)
-
-        // Scale all subgraphs that were loaded with the workflow
-        // Use original main graph renderer as fallback (not the modified one)
-        for (const subgraph of graph.subgraphs.values()) {
-          ensureCorrectLayoutScale(
-            subgraph.extra.workflowRendererVersion || originalMainGraphRenderer,
-            subgraph
-          )
         }
 
-        const preservesPendingCamera =
-          !restore_view &&
-          workflow !== null &&
-          workflow === this.pendingCamera?.workflow
-        if (!preservesPendingCamera) {
-          canvasScheduler.cancel('graph-load-camera')
-          this.pendingCamera = restore_view
-            ? { id: loadId, workflow }
-            : undefined
-          if (restore_view) {
-            canvasScheduler.schedule({
-              key: 'graph-load-camera',
-              element: this.canvasEl,
-              isCurrent: () => this.pendingCamera?.id === loadId,
-              run: () => {
-                const viewport = measureViewportFromElement(this.canvasEl)
-                applyViewport(
-                  viewport,
-                  this.canvasEl,
-                  this.canvas.bgcanvas,
-                  this.canvas
-                )
-                fitView()
-                this.canvas.draw(true, true)
-                if (this.pendingCamera?.id === loadId) {
-                  this.pendingCamera = undefined
+        if (clean) {
+          useSubgraphNavigationStore().suppressRootGraphHash(graph)
+          this.activateRootGraph(graph)
+          withGraphIntentSource('load', () => this.clean())
+        }
+
+        if (
+          !graphData ||
+          typeof graphData !== 'object' ||
+          Array.isArray(graphData)
+        ) {
+          graphData = defaultGraph
+          reset_invalid_values = true
+        }
+
+        graphData = clone(graphData)
+
+        if (useSettingStore().get('Comfy.Validation.Workflows')) {
+          const { graphData: validatedGraphData } =
+            await useWorkflowValidation().validateWorkflow(graphData)
+
+          graphData = validatedGraphData ?? graphData
+        }
+        if (
+          checkForRerouteMigration &&
+          graphData.version === 0.4 &&
+          findLegacyRerouteNodes(graphData).length &&
+          noNativeReroutes(graphData)
+        ) {
+          const toast = useToast()
+          const migrationToastId = toast.warning(
+            t('toastMessages.migrateToLitegraphReroute'),
+            {
+              action: {
+                label: t('g.migrate'),
+                onClick: async () => {
+                  await this.loadGraphData(
+                    migrateLegacyRerouteNodes(
+                      this.rootGraph.serialize() as unknown as WorkflowJSON04
+                    ),
+                    false,
+                    false,
+                    useWorkflowStore().activeWorkflow
+                  )
+                  toast.dismiss(migrationToastId)
                 }
               }
-            })
+            }
+          )
+        }
+
+        useSubgraphService().loadSubgraphs(graphData, graph)
+
+        await useExtensionService().invokeExtensionsAsync(
+          'beforeConfigureGraph',
+          graphData,
+          missingNodeTypes
+        )
+
+        const nodeReplacementStore = useNodeReplacementStore()
+        await nodeReplacementStore.load()
+
+        const collectMissingNodes = (
+          nodes: readonly FlattenableWorkflowNode[],
+          pathPrefix: string = '',
+          displayName: string = ''
+        ) => {
+          if (!Array.isArray(nodes)) {
+            console.warn(
+              'Workflow nodes data is missing or invalid, skipping node processing',
+              { nodes, pathPrefix }
+            )
+            return
+          }
+          for (const n of nodes) {
+            if (!(n.type in LiteGraph.registered_node_types)) {
+              const isMuted =
+                n.mode === LGraphEventMode.NEVER ||
+                n.mode === LGraphEventMode.BYPASS
+              if (!isMuted) {
+                const replacement = nodeReplacementStore.getReplacementFor(
+                  n.type
+                )
+                const cnrId = getCnrIdFromProperties(
+                  n.properties as Record<string, unknown> | undefined
+                )
+                const executionId = pathPrefix
+                  ? `${pathPrefix}:${n.id}`
+                  : String(n.id)
+
+                missingNodeTypes.push({
+                  type: n.type,
+                  nodeId: executionId,
+                  cnrId,
+                  ...(displayName && {
+                    hint: t('g.inSubgraph', { name: displayName })
+                  }),
+                  isReplaceable: replacement !== null,
+                  replacement: replacement ?? undefined
+                })
+              }
+
+              n.type = sanitizeNodeName(n.type)
+            }
+          }
+        }
+
+        collectMissingNodes(graphData.nodes)
+        const subgraphDefs = collectSubgraphDefinitions(
+          parseFlattenableSubgraphDefinitions(
+            graphData.definitions?.subgraphs ?? []
+          )
+        )
+        const subgraphContainerIdMap = buildSubgraphExecutionPaths(
+          graphData.nodes,
+          subgraphDefs
+        )
+        for (const subgraph of subgraphDefs) {
+          const paths = subgraphContainerIdMap.get(subgraph.id) ?? []
+          for (const pathPrefix of paths) {
+            collectMissingNodes(
+              subgraph.nodes,
+              pathPrefix,
+              subgraph.name || subgraph.id
+            )
           }
         }
       } catch (error) {
-        await this.reportGraphLoadFailure(error)
-        if (clean) this.disownFailedLoadGraph(workflow)
+        try {
+          await this.reportGraphLoadFailure(error)
+          if (clean) this.disownFailedLoadGraph(workflow)
+        } finally {
+          ChangeTracker.isLoadingGraph = false
+        }
+        void useSubgraphNavigationStore().updateHash(
+          'workflow-load',
+          workflowNavigationId
+        )
         return false
       }
-      const snapTo = LiteGraph.alwaysSnapToGrid ? graph.getSnapToGridSize() : 0
-      withGraphIntentSource('load', () =>
-        forEachNode(graph, (node) => {
-          const size = node.computeSize()
-          size[0] = Math.max(node.size[0], size[0])
-          size[1] = Math.max(node.size[1], size[1])
-          snapPoint(size, snapTo, 'ceil')
-          node.setSize(size)
-          if (node.widgets) {
-            // If you break something in the backend and want to patch workflows in the frontend
-            // This is the place to do this
-            for (const widget of node.widgets) {
-              if (node.type == 'KSampler' || node.type == 'KSamplerAdvanced') {
-                if (widget.name == 'sampler_name') {
-                  if (
-                    typeof widget.value === 'string' &&
-                    widget.value.startsWith('sample_')
-                  ) {
-                    widget.value = widget.value.slice(7)
+
+      const workflowCameraState = graphData.extra?.ds
+      const fitView = () => {
+        const savedCameraState = normalizeCameraState(workflowCameraState, {
+          minScale: this.canvas.ds.min_scale,
+          maxScale: this.canvas.ds.max_scale
+        })
+        if (
+          restore_view &&
+          useSettingStore().get('Comfy.EnableWorkflowViewRestore')
+        ) {
+          if (openSource === 'template') {
+            useLitegraphService().fitView()
+          } else if (savedCameraState) {
+            this.canvas.ds.offset = savedCameraState.offset
+            this.canvas.ds.scale = savedCameraState.scale
+
+            this.canvas.ds.computeVisibleArea(this.canvas.viewport)
+            if (
+              this.canvas.visible_area.width &&
+              this.canvas.visible_area.height &&
+              !anyItemOverlapsRect(graph._nodes, this.canvas.visible_area)
+            ) {
+              useLitegraphService().fitView()
+            }
+          } else {
+            useLitegraphService().fitView()
+          }
+        }
+      }
+
+      let activatedWorkflow: LoadedComfyWorkflow | undefined
+      let reconcileResourceErrors: (() => void) | undefined
+      let resourceScanLoadCompleted = false
+      try {
+        if (
+          !clean &&
+          workflow instanceof ComfyWorkflow &&
+          workflow.graph !== graph
+        ) {
+          await useExtensionService().invokeExtensionsAsync(
+            'onGraphLoadError',
+            new Error(
+              'The workflow graph was released while preparing the load'
+            )
+          )
+          return false
+        }
+        try {
+          graph.configure(graphData as ISerialisedGraph)
+
+          const originalMainGraphRenderer = graph.extra.workflowRendererVersion
+
+          ensureCorrectLayoutScale(originalMainGraphRenderer, graph)
+
+          for (const subgraph of graph.subgraphs.values()) {
+            ensureCorrectLayoutScale(
+              subgraph.extra.workflowRendererVersion ||
+                originalMainGraphRenderer,
+              subgraph
+            )
+          }
+
+          const preservesPendingCamera =
+            !restore_view &&
+            workflow !== null &&
+            workflow === this.pendingCamera?.workflow
+          if (!backgroundRestore && !preservesPendingCamera) {
+            canvasScheduler.cancel('graph-load-camera')
+            this.pendingCamera = restore_view
+              ? { id: loadId, workflow }
+              : undefined
+            if (restore_view) {
+              canvasScheduler.schedule({
+                key: 'graph-load-camera',
+                element: this.canvasEl,
+                isCurrent: () => this.pendingCamera?.id === loadId,
+                run: () => {
+                  const viewport = measureViewportFromElement(this.canvasEl)
+                  applyViewport(
+                    viewport,
+                    this.canvasEl,
+                    this.canvas.bgcanvas,
+                    this.canvas
+                  )
+                  fitView()
+                  this.canvas.draw(true, true)
+                  if (this.pendingCamera?.id === loadId) {
+                    this.pendingCamera = undefined
                   }
                 }
-              }
-              if (
-                node.type == 'KSampler' ||
-                node.type == 'KSamplerAdvanced' ||
-                node.type == 'PrimitiveNode'
-              ) {
-                if (widget.name == 'control_after_generate') {
-                  if (widget.value === true) {
-                    widget.value = 'randomize'
-                  } else if (widget.value === false) {
-                    widget.value = 'fixed'
-                  }
-                }
-              }
-              if (widget.type == 'combo') {
-                const values = widget.options.values as
-                  | (string | number | boolean)[]
-                  | undefined
+              })
+            }
+          }
+        } catch (error) {
+          await this.reportGraphLoadFailure(error)
+          if (clean) this.disownFailedLoadGraph(workflow)
+          return false
+        }
+        const snapTo = LiteGraph.alwaysSnapToGrid
+          ? graph.getSnapToGridSize()
+          : 0
+        withGraphIntentSource('load', () =>
+          forEachNode(graph, (node) => {
+            const size = node.computeSize()
+            size[0] = Math.max(node.size[0], size[0])
+            size[1] = Math.max(node.size[1], size[1])
+            snapPoint(size, snapTo, 'ceil')
+            node.setSize(size)
+            if (node.widgets) {
+              for (const widget of node.widgets) {
                 if (
-                  values &&
-                  values.length > 0 &&
-                  (widget.value == null ||
-                    (reset_invalid_values &&
-                      !values.includes(
-                        widget.value as string | number | boolean
-                      )))
+                  node.type == 'KSampler' ||
+                  node.type == 'KSamplerAdvanced'
                 ) {
-                  widget.value = values[0]
+                  if (widget.name == 'sampler_name') {
+                    if (
+                      typeof widget.value === 'string' &&
+                      widget.value.startsWith('sample_')
+                    ) {
+                      widget.value = widget.value.slice(7)
+                    }
+                  }
+                }
+                if (
+                  node.type == 'KSampler' ||
+                  node.type == 'KSamplerAdvanced' ||
+                  node.type == 'PrimitiveNode'
+                ) {
+                  if (widget.name == 'control_after_generate') {
+                    if (widget.value === true) {
+                      widget.value = 'randomize'
+                    } else if (widget.value === false) {
+                      widget.value = 'fixed'
+                    }
+                  }
+                }
+                if (widget.type == 'combo') {
+                  const values = widget.options.values as
+                    | (string | number | boolean)[]
+                    | undefined
+                  if (
+                    values &&
+                    values.length > 0 &&
+                    (widget.value == null ||
+                      (reset_invalid_values &&
+                        !values.includes(
+                          widget.value as string | number | boolean
+                        )))
+                  ) {
+                    widget.value = values[0]
+                  }
                 }
               }
             }
-          }
 
-          useExtensionService().invokeExtensions('loadedGraphNode', node)
-        })
-      )
-
-      await useExtensionService().invokeExtensionsAsync(
-        'afterConfigureGraph',
-        missingNodeTypes
-      )
-
-      const effectiveShareId =
-        shareId ??
-        (workflow instanceof ComfyWorkflow ? workflow.shareId : undefined)
-      const telemetryPayload = {
-        missing_node_count: missingNodeTypes.length,
-        missing_node_types: missingNodeTypes.map((node) =>
-          typeof node === 'string' ? node : node.type
-        ),
-        missing_node_packs: groupMissingNodesByPack(missingNodeTypes),
-        open_source: openSource ?? 'unknown',
-        ...(effectiveShareId ? { share_id: effectiveShareId } : {})
-      }
-      useTelemetry()?.trackWorkflowOpened(telemetryPayload)
-      useTelemetry()?.trackWorkflowImported(telemetryPayload)
-      try {
-        await useWorkflowService().afterLoadNewGraph(
-          workflow,
-          graph.serialize() as unknown as ComfyWorkflowJSON,
-          graph,
-          effectiveShareId
+            useExtensionService().invokeExtensions('loadedGraphNode', node)
+          })
         )
-      } catch (error) {
-        if (this.rootGraph === graph) throw error
+
         await useExtensionService().invokeExtensionsAsync(
-          'onGraphLoadError',
-          error
+          'afterConfigureGraph',
+          missingNodeTypes
         )
-        return undefined
+        const configuredGraphData =
+          graph.serialize() as unknown as ComfyWorkflowJSON
+
+        if (
+          !clean &&
+          workflow instanceof ComfyWorkflow &&
+          graph !== this.rootGraph
+        ) {
+          workflow.changeTracker?.reset(configuredGraphData)
+          graphsAwaitingNodeTypes.delete(graph)
+          return true
+        }
+
+        const effectiveShareId =
+          shareId ??
+          (workflow instanceof ComfyWorkflow ? workflow.shareId : undefined)
+        const telemetryPayload = {
+          missing_node_count: missingNodeTypes.length,
+          missing_node_types: missingNodeTypes.map((node) =>
+            typeof node === 'string' ? node : node.type
+          ),
+          missing_node_packs: groupMissingNodesByPack(missingNodeTypes),
+          open_source: openSource ?? 'unknown',
+          ...(effectiveShareId ? { share_id: effectiveShareId } : {})
+        }
+        useTelemetry()?.trackWorkflowOpened(telemetryPayload)
+        useTelemetry()?.trackWorkflowImported(telemetryPayload)
+        try {
+          await useWorkflowService().afterLoadNewGraph(
+            workflow,
+            configuredGraphData,
+            graph,
+            effectiveShareId
+          )
+        } catch (error) {
+          if (this.rootGraph === graph) throw error
+          await useExtensionService().invokeExtensionsAsync(
+            'onGraphLoadError',
+            error
+          )
+          return undefined
+        }
+        await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+        ChangeTracker.isLoadingGraph = false
+        activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
+
+        const activeMissingNodeTypes = missingNodeTypes.filter(
+          (n) =>
+            typeof n === 'string' ||
+            n.nodeId == null ||
+            isAncestorPathActive(graph, String(n.nodeId))
+        )
+
+        if (!skipAssetScans) {
+          const errorStore = useExecutionErrorStore()
+          const resourceScanKey = errorStore.captureRunErrorKey()
+          let models: MissingModelCandidate[] | undefined
+          let media: MissingMediaCandidate[] | undefined
+          const reconcile = () => {
+            if (!resourceScanLoadCompleted || (!models && !media)) return
+            errorStore.retireResolvedMissingResourceErrors(
+              { models, media },
+              resourceScanKey
+            )
+          }
+          reconcileResourceErrors = reconcile
+          await runMissingModelPipeline({
+            graph,
+            graphData,
+            missingModelStore: useMissingModelStore(),
+            missingNodeTypes: activeMissingNodeTypes,
+            silent: silentAssetErrors,
+            onVerified: (candidates) => {
+              models = candidates
+              reconcile()
+            }
+          })
+
+          await runMissingMediaPipeline({
+            rootGraph: graph,
+            silent: silentAssetErrors,
+            onVerified: (candidates) => {
+              media = candidates
+              reconcile()
+            }
+          })
+        }
+
+        if (!deferWarnings) {
+          useWorkflowService().showPendingWarnings(undefined, {
+            silent: silentAssetErrors
+          })
+        }
+        resourceScanLoadCompleted = true
+
+        requestAnimationFrame(() => {
+          this.canvas.setDirty(true, true)
+        })
+        graphsAwaitingNodeTypes.delete(graph)
+        return activatedWorkflow ?? true
+      } finally {
+        void useSubgraphNavigationStore().updateHash(
+          'workflow-load',
+          workflowNavigationId
+        )
+        ChangeTracker.isLoadingGraph = false
+        useExecutionErrorStore().retireResolvedMissingNodePromptError()
+        reconcileResourceErrors?.()
       }
-      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-      ChangeTracker.isLoadingGraph = false
-      // Capture the workflow this load activated before the asset-scan awaits
-      // below can hand control back and let the user switch to another one.
-      activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
-
-      // Drop missing-node entries whose enclosing subgraph is
-      // muted/bypassed. The initial JSON scan only checks each node's
-      // own mode; the cascade from an inactive container is applied here
-      // using the now-configured live graph.
-      const activeMissingNodeTypes = missingNodeTypes.filter(
-        (n) =>
-          typeof n === 'string' ||
-          n.nodeId == null ||
-          isAncestorPathActive(graph, String(n.nodeId))
-      )
-
-      if (!skipAssetScans) {
-        const errorStore = useExecutionErrorStore()
-        const resourceScanKey = errorStore.captureRunErrorKey()
-        let models: MissingModelCandidate[] | undefined
-        let media: MissingMediaCandidate[] | undefined
-        const reconcile = () => {
-          if (!resourceScanLoadCompleted || (!models && !media)) return
-          errorStore.retireResolvedMissingResourceErrors(
-            { models, media },
-            resourceScanKey
+    } finally {
+      if (graph !== this.rootGraph) {
+        for (const subgraph of this.rootGraph.subgraphs.values()) {
+          useSubgraphService().registerNewSubgraph(
+            subgraph,
+            subgraph.asSerialisable()
           )
         }
-        reconcileResourceErrors = reconcile
-        await runMissingModelPipeline({
-          graph,
-          graphData,
-          missingModelStore: useMissingModelStore(),
-          missingNodeTypes: activeMissingNodeTypes,
-          silent: silentAssetErrors,
-          onVerified: (candidates) => {
-            models = candidates
-            reconcile()
-          }
-        })
-
-        await runMissingMediaPipeline({
-          rootGraph: graph,
-          silent: silentAssetErrors,
-          onVerified: (candidates) => {
-            media = candidates
-            reconcile()
-          }
-        })
       }
-
-      if (!deferWarnings) {
-        useWorkflowService().showPendingWarnings(undefined, {
-          silent: silentAssetErrors
-        })
-      }
-      resourceScanLoadCompleted = true
-
-      requestAnimationFrame(() => {
-        this.canvas.setDirty(true, true)
-      })
-      return activatedWorkflow ?? true
-    } finally {
-      // Finally: a throwing load still repairs the URL.
-      void useSubgraphNavigationStore().updateHash(
-        'workflow-load',
-        workflowNavigationId
-      )
-      ChangeTracker.isLoadingGraph = false
-      // The retirement watcher skips transitions made during the load.
-      useExecutionErrorStore().retireResolvedMissingNodePromptError()
-      reconcileResourceErrors?.()
     }
   }
 
@@ -1691,7 +1745,11 @@ export class ComfyApp implements IComfyApp {
     return refreshMissingModelPipeline({
       graph: this.rootGraph,
       reloadNodeDefs:
-        options.reloadDefs === false ? undefined : () => this.reloadNodeDefs(),
+        options.reloadDefs === false
+          ? undefined
+          : async () => {
+              await this.reloadNodeDefs()
+            },
       missingModelStore: useMissingModelStore(),
       silent: options.silent ?? true
     })
@@ -1741,7 +1799,6 @@ export class ComfyApp implements IComfyApp {
       batchCount
     })
 
-    // Only have one action process the items so each one gets a unique seed correctly
     if (this.processingQueue) {
       return false
     }
@@ -1753,7 +1810,6 @@ export class ComfyApp implements IComfyApp {
     executionErrorStore.clearRunErrors()
     let queueResultOverride: boolean | null = null
 
-    // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
     const teamWorkspaceStore = useTeamWorkspaceStore()
     try {
       await teamWorkspaceStore.waitForWorkspaceSwitch()
@@ -1782,17 +1838,10 @@ export class ComfyApp implements IComfyApp {
         workspaceGenerationBeforeAuthentication !==
           executionWorkspaceGeneration) &&
       (isCloud || workspaceIdBeforeAuthentication !== null)
-    // Desktop host auth is the only credential while active: a stored
-    // personal key may belong to another account and never rides along.
     const desktopHostAuth = isDesktopHostSignedIn()
     const comfyOrgApiKey = desktopHostAuth
       ? null
       : useApiKeyAuthStore().getApiKey()
-    // An API-key session mints no workspace JWT: the key itself is the
-    // execution credential and the server resolves its bound workspace. Only a
-    // key-authenticated session may pass without a token — a Firebase session
-    // whose token mint failed must still fail closed rather than fall back to
-    // a stored key and charge the key's workspace.
     const isApiKeySessionExecution =
       !desktopHostAuth &&
       !useAuthStore().currentUser &&
@@ -1848,8 +1897,6 @@ export class ComfyApp implements IComfyApp {
             }
           }
 
-          // Allow widgets to run callbacks before a prompt has been queued
-          // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
@@ -1857,9 +1904,6 @@ export class ComfyApp implements IComfyApp {
             applyPromotedWidgetControl(node, 'beforeQueued')
           })
 
-          // Capture workflow and mode before await — both may change if the
-          // user switches tabs or toggles app/graph mode while the request is
-          // in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
           const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
@@ -1965,6 +2009,9 @@ export class ComfyApp implements IComfyApp {
               ...workflowExecutionIntent,
               ...(workflowContext && { workflowContext })
             })
+            if (error instanceof PromptExecutionError) {
+              queueResultOverride = !error.response.node_errors
+            }
             const hasPromptNodeErrors =
               error instanceof PromptExecutionError &&
               Object.keys(error.response.node_errors ?? {}).length > 0
@@ -1978,28 +2025,24 @@ export class ComfyApp implements IComfyApp {
                   exceptionMessage: promptError.message
                 })
               : undefined
-            // Account preconditions (sign-in, subscription, credits) open their
-            // own modal and must stay out of the error panel and error count.
             if (promptPrecondition) {
-              useAccountPreconditionDialog().open(promptPrecondition)
-              console.error(error)
-              break
+              const opened =
+                await useAccountPreconditionDialog().open(promptPrecondition)
+              if (opened) {
+                console.error(error)
+                break
+              }
             }
             if (
               error instanceof PromptExecutionError &&
               promptError?.type === 'missing_node_type'
             ) {
-              // Re-scan the full graph instead of using the server's single-node response.
               rescanAndSurfaceMissingNodes(this.rootGraph)
             } else if (
               error instanceof PromptExecutionError &&
               error.status === 403 &&
               !hasPromptNodeErrors
             ) {
-              // User is authenticated but not authorized (e.g. not whitelisted).
-              // Show a clear message instead of a generic error or sign-in prompt.
-              // The response may be middleware JSON {"message": "..."} or the
-              // standard {"error": {"message": "..."}} shape, so check both.
               const raw: Record<string, unknown> = error.response
               const rawError =
                 raw.error && typeof raw.error === 'object'
@@ -2029,17 +2072,12 @@ export class ComfyApp implements IComfyApp {
             console.error(error)
 
             if (error instanceof PromptExecutionError) {
-              // Keep the legacy result before empty node errors are normalized.
               const nodeErrors = error.response.node_errors
-              queueResultOverride = !nodeErrors
               executionErrorStore.recordNodeErrors(
                 nodeErrors ?? null,
                 queuedRunErrorKey
               )
 
-              // Store prompt-level error separately only when no node-specific errors exist,
-              // because node errors already carry the full context. Prompt-level errors
-              // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
               if (
                 (!nodeErrors || Object.keys(nodeErrors).length === 0) &&
                 promptError
@@ -2060,8 +2098,6 @@ export class ComfyApp implements IComfyApp {
 
           queuedCount++
 
-          // Allow widgets to run callbacks after a prompt has been queued
-          // e.g. random seed after every gen
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
           })
@@ -2069,11 +2105,16 @@ export class ComfyApp implements IComfyApp {
             applyPromotedWidgetControl(node, 'afterQueued')
           }
           useFreeTierQuota().trackRun()
-          this.canvas.draw(true, true)
-          await this.ui.queue.update()
         }
 
         if (queuedCount > 0) {
+          this.canvas.draw(true, true)
+          void this.ui.queue.update().catch((error) => {
+            reportError(error, {
+              surface: 'graph',
+              errorType: 'queue_ui_update_failure'
+            })
+          })
           api.dispatchCustomEvent('promptQueued', {
             number,
             batchCount: queuedCount,
@@ -2648,10 +2689,19 @@ export class ComfyApp implements IComfyApp {
   }
 
   /**
-   * Reload node definitions and refresh combo lists on all nodes.
+   * Reload node definitions, or register `given` ones, and refresh combo lists on all nodes; definitions owed to `addCustomNodeDefs` go through it first.
+   * Resolves false, changing nothing, when the server refuses the definitions while they are owed.
    */
-  async reloadNodeDefs() {
-    const defs = await this.getNodeDefs()
+  async reloadNodeDefs(
+    given?: Record<string, ComfyNodeDefV1>
+  ): Promise<boolean> {
+    const defs = given ?? (await this.fetchReloadedNodeDefs())
+    if (!defs) return false
+    if (useExtensionStore().takeOwedNodeDefHooks())
+      await useExtensionService().invokeExtensionsAsync(
+        'addCustomNodeDefs',
+        defs
+      )
     for (const nodeId in defs) {
       await this.registerNodeDef(nodeId, defs[nodeId])
     }
@@ -2701,6 +2751,23 @@ export class ComfyApp implements IComfyApp {
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
     }
+    return true
+  }
+
+  private async fetchReloadedNodeDefs(): Promise<
+    Record<string, ComfyNodeDefV1> | undefined
+  > {
+    if (!useExtensionStore().areNodeDefHooksOwed())
+      return await this.getNodeDefs()
+    const fetched = await this.fetchNodeDefs()
+    if (fetched.ok) return fetched.defs
+    reportError(new Error(`GET /object_info answered ${fetched.status}`), {
+      errorType: 'late_extension_failed',
+      surface: 'platform',
+      level: 'warning',
+      tags: { step: 'reloadNodeDefs' }
+    })
+    return undefined
   }
 
   /**
@@ -2714,12 +2781,16 @@ export class ComfyApp implements IComfyApp {
       : undefined
 
     try {
-      await this.reloadNodeDefs()
+      const reloaded = await this.reloadNodeDefs()
 
-      if (this.vueAppReady) {
+      if (this.vueAppReady && reloaded) {
         useToast().success(t('g.updated'), {
           description: t('toastMessages.nodeDefinitionsUpdated'),
           duration: 1000
+        })
+      } else if (this.vueAppReady) {
+        useToast().error(t('g.error'), {
+          description: t('toastMessages.nodeDefinitionsUpdateFailed')
         })
       }
     } catch (error) {

@@ -5,8 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import SubscribeToRun from './SubscribeToRun.vue'
 
@@ -15,13 +16,13 @@ const mockIsMdOrLarger = ref(true)
 
 vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock<unknown>(import('@vueuse/core'), () => ({
   breakpointsTailwind: { md: 768 },
@@ -51,10 +52,13 @@ const i18n = createI18n({
 })
 
 function renderButton() {
-  const defaultPermissions = useWorkspaceUI().permissions.value
-  useWorkspaceUI().permissions = computed(() => ({
+  const defaultPermissions = useBillingUI().permissions.value
+  useBillingUI().permissions = computed(() => ({
     ...defaultPermissions,
-    canManageSubscription: mockCanManageSubscription.value
+    canManageSubscription: receiveServerFact(
+      'can_manage_subscription',
+      mockCanManageSubscription.value
+    )
   }))
   vi.mocked(useTelemetry).mockReturnValue(null)
   const user = userEvent.setup()
@@ -68,7 +72,7 @@ function renderButton() {
 
 describe('SubscribeToRun', () => {
   beforeEach(() => {
-    useWorkspaceUI()
+    useBillingUI()
     mockCanManageSubscription.value = true
     mockIsMdOrLarger.value = true
   })

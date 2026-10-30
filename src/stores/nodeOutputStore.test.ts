@@ -4,13 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
@@ -145,6 +146,36 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     expect(previewUrl.searchParams.get('type')).toBe('output')
   })
 
+  it('skips null image entries when building view URLs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([node.id]),
+      createMockOutputs(
+        fromAny([null, { filename: 'kept.png', type: 'output' }, null])
+      )
+    )
+
+    const urls = store.getNodeImageUrls(node) ?? []
+
+    expect(urls).toHaveLength(1)
+    const viewUrl = new URL(urls[0], window.location.origin)
+    expect(viewUrl.searchParams.get('filename')).toBe('kept.png')
+  })
+
+  it('returns no view URLs when every image entry is null', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    const executionId = createNodeExecutionId([node.id])
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs(fromAny([null]))
+    )
+
+    expect(store.getNodeImageUrls(node)).toEqual([])
+    expect(store.getNodeImageUrlsByExecutionId(executionId, node)).toEqual([])
+  })
+
   it('carries preview_id on the view URL', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 1 })
@@ -247,6 +278,58 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     app.nodePreviewImages['5'] = ['blob:legacy']
 
     expect(store.getNodePreviews(node)).toEqual(['blob:canonical'])
+  })
+})
+
+describe('nodeOutputStore preview stash replacement', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [{ path: 'workflows/preview.json' }]
+    })
+  })
+
+  it('preserves previews and their URLs across repeated empty stashes', () => {
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL')
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    store.setNodePreviewsByNodeId(node.id, ['blob:repeated-empty-stash'])
+
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.resetAllOutputsAndPreviews()
+    store.restorePreviewsForWorkflow('workflows/preview.json')
+
+    expect(store.getNodePreviews(node)).toEqual(['blob:repeated-empty-stash'])
+    expect(app.nodePreviewImages['5']).toEqual(['blob:repeated-empty-stash'])
+    expect(revokeObjectURL).not.toHaveBeenCalled()
+
+    store.resetAllOutputsAndPreviews()
+    expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith(
+      'blob:repeated-empty-stash'
+    )
+  })
+
+  it('releases the previous URLs when replacing a nonempty stash', () => {
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL')
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    store.setNodePreviewsByNodeId(node.id, ['blob:replaced-stash'])
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+
+    store.setNodePreviewsByNodeId(node.id, ['blob:replacement-stash'])
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.restorePreviewsForWorkflow('workflows/preview.json')
+
+    expect(store.getNodePreviews(node)).toEqual(['blob:replacement-stash'])
+    expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith(
+      'blob:replaced-stash'
+    )
+
+    store.resetAllOutputsAndPreviews()
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:replacement-stash')
   })
 })
 

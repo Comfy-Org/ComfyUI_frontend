@@ -1,5 +1,5 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 
 type GraphPatchMember =

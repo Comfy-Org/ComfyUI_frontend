@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -26,15 +26,18 @@ import {
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
-import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
+import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
 import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
@@ -1940,6 +1943,95 @@ describe('ChangeTracker', () => {
     })
   })
 
+  describe('graphEqual', () => {
+    beforeEach(() => {
+      resetReportedWorkflowStateAnomaliesForTests()
+    })
+
+    it.for([
+      ['first', null, createState(), { hasFirst: false, hasSecond: true }],
+      ['second', createState(), undefined, { hasFirst: true, hasSecond: false }]
+    ] as const)(
+      'reports and returns false when the %s state is missing',
+      ([, a, b, context]) => {
+        expect(ChangeTracker.graphEqual(a, b)).toBe(false)
+
+        expect(mockAssert).toHaveBeenCalledWith(
+          false,
+          'ChangeTracker.graphEqual() called with a missing state',
+          { method: 'ChangeTracker.graphEqual', ...context }
+        )
+      }
+    )
+
+    it('does not report when both states are present', () => {
+      const state = createState(1)
+
+      expect(ChangeTracker.graphEqual(state, structuredClone(state))).toBe(true)
+      expect(ChangeTracker.graphEqual(state, createState(2))).toBe(false)
+
+      expect(mockAssert).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('updateModified', () => {
+    beforeEach(() => {
+      resetReportedWorkflowStateAnomaliesForTests()
+    })
+
+    function storeWorkflowFor(tracker: ChangeTracker) {
+      const workflow = fromPartial<ComfyWorkflow>({
+        path: tracker.workflow.path,
+        isLoaded: false,
+        isPersisted: true,
+        isTemporary: false,
+        changeTracker: null,
+        initialState: null,
+        activeState: null,
+        originalContent: null,
+        isModified: false
+      })
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      return workflow
+    }
+
+    it('marks the workflow modified when its state differs from the initial state', () => {
+      const tracker = createTracker(createState(1))
+      const workflow = storeWorkflowFor(tracker)
+      tracker.activeState = createState(2)
+
+      tracker.updateModified()
+
+      expect(workflow.isModified).toBe(true)
+      expect(mockAssert).not.toHaveBeenCalled()
+    })
+
+    it('leaves isModified alone and reports when the tracker has no initial state', () => {
+      const tracker = createTracker(createState(1))
+      const workflow = storeWorkflowFor(tracker)
+      tracker.initialState = fromAny<ComfyWorkflowJSON, null>(null)
+
+      expect(() => tracker.updateModified()).not.toThrow()
+
+      expect(workflow.isModified).toBe(false)
+      expect(mockAssert).toHaveBeenCalledWith(
+        false,
+        'ChangeTracker has no initial state',
+        {
+          method: 'ChangeTracker.updateModified',
+          isLoaded: false,
+          hasChangeTracker: false,
+          hasInitialState: false,
+          hasActiveState: false,
+          isPersisted: true,
+          isTemporary: false,
+          originalContentKind: 'unavailable',
+          isActive: true
+        }
+      )
+    })
+  })
+
   describe('deactivate', () => {
     it('captures canvas state then stores viewport/outputs', () => {
       const tracker = createTracker(createState(1))
@@ -2256,6 +2348,68 @@ describe('ChangeTracker', () => {
         stateWith(id, { width: 512, bboxes: [regionA] })
       )
       expect(tracker.redoQueue).toEqual([movedAndEdited])
+    })
+
+    it('preserves live values and prunes only the restored background workflow histories', async () => {
+      const { id } = addBoundingBoxesNode()
+      const visibleHistory = recordNodeHistory(id)
+      const visible = stateWith(id, { width: 512, bboxes: [regionB] })
+      const activeTracker = createTracker(visible)
+      mockCanvasState(visible)
+      const graph = new LGraph()
+      const node = new LGraphNode('CreateBoundingBoxes')
+      node.id = id
+      node.serialize_widgets = true
+      node.pos = [50, 50]
+      const backgroundRegion = {
+        ...regionA,
+        metadata: { type: 'obj', text: '', desc: '', palette: [] }
+      } satisfies BoundingBox
+      node.addWidget('number', 'width', 512, null)
+      node.addWidget('boundingboxes', 'bboxes', [backgroundRegion], null)
+      graph.add(node)
+      const initial = stateWith(id, { width: 512, bboxes: [] })
+      const current = stateWith(
+        id,
+        { width: 512, bboxes: [backgroundRegion] },
+        [50, 50]
+      )
+      const tracker = new ChangeTracker(
+        fromPartial({ path: '/test/background.json', graph }),
+        current
+      )
+      tracker.undoQueue.push(initial)
+      const liveScope = {
+        rootGraphId: graph.id,
+        widgetId: widgetId(graph.id, id, 'bboxes')
+      }
+      const removedScope = {
+        rootGraphId: graph.id,
+        widgetId: widgetId(graph.id, toNodeId(99), 'bboxes')
+      }
+      const histories = useWidgetHistoryStore()
+      histories.record(liveScope, [])
+      histories.record(removedScope, [])
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async (state) => {
+        assert.exists(state)
+        tracker.reset(state)
+        return true
+      })
+      vi.mocked(api.dispatchCustomEvent).mockClear()
+
+      await tracker.undo()
+
+      expect(dispatchedEventNames()).not.toContain('graphChanged')
+      expectAutoQueueGraphChangedNotDispatched()
+      expect(tracker.activeState).toEqual(
+        stateWith(id, { width: 512, bboxes: [backgroundRegion] })
+      )
+      expect([
+        histories.canUndo(liveScope),
+        histories.canUndo(removedScope),
+        visibleHistory()
+      ]).toEqual([true, false, true])
+      expect(activeTracker.activeState).toEqual(visible)
     })
 
     it('forgets the node history of a deleted node', () => {

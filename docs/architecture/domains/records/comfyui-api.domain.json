@@ -4,15 +4,11 @@
   "description": "Shared wire contracts for the ComfyUI backend: prompt, node-error, system-stats, and user-data response types, websocket message and execution-output schemas (result items, task outputs, progress, logs, asset download and export events), and HTTP error payload parsing used by API clients. Job list and detail schemas and the jobs client belong to the job queue; client execution state belongs to execution.",
   "modules": [
     {
-      "path": "src/platform/remote/**",
+      "path": "src/platform/remote/comfyui/**",
       "role": "domain"
     },
     {
       "path": "src/schemas/resultItemTypeSchema.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/createAnnotatedPath.test.ts",
       "role": "domain"
     },
     {

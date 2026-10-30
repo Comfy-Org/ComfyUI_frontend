@@ -1,4 +1,48 @@
 <template>
+  <div class="absolute inset-0 isolate">
+    <canvas
+      id="graph-canvas"
+      ref="canvasRef"
+      tabindex="1"
+      class="absolute inset-0 size-full touch-none"
+    />
+    <TransformPane
+      v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+      ref="transformPaneRef"
+      :canvas="comfyApp.canvas"
+      :inert="canvasStore.isPickingNodes"
+      @wheel.capture="canvasInteractions.forwardEventToCanvas"
+      @pointerdown.capture="forwardPointerDownPanEvent"
+      @pointerup.capture="forwardPointerUpPanEvent"
+      @pointermove.capture="forwardPointerMovePanEvent"
+      @keydown.space="forwardSpaceKeyEvent"
+    >
+      <LGraphNode
+        v-for="nodeData in allNodes"
+        :key="nodeData.id"
+        :node-data
+        :data-node-id="nodeData.id"
+      />
+    </TransformPane>
+    <LinkOverlayCanvas
+      v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+      :canvas="comfyApp.canvas"
+      @ready="onLinkOverlayReady"
+      @dispose="onLinkOverlayDispose"
+    />
+    <SelectionRectangle v-if="comfyAppReady" />
+    <NodeTooltip v-if="tooltipEnabled" />
+    <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
+    <NodeDragPreview />
+    <VueNodeSwitchPopup />
+    <template v-if="comfyAppReady">
+      <TitleEditor />
+      <SelectionToolbox v-if="selectionToolboxEnabled" />
+      <NodeContextMenu />
+      <DomWidgets v-if="!shouldRenderVueNodes" />
+    </template>
+    <slot name="legacy-menu" />
+  </div>
   <!-- Load splitter overlay only after comfyApp is ready. -->
   <!-- If load immediately, the top-level splitter stateKey won't be correctly
   synced with the stateStorage (localStorage). -->
@@ -42,14 +86,6 @@
       />
     </template>
     <template #graph-canvas-panel>
-      <div
-        ref="canvasPanelBoundsRef"
-        class="pointer-events-none absolute inset-0"
-      />
-      <GraphCanvasMenu
-        v-if="canvasMenuEnabled && !isBuilderMode"
-        class="pointer-events-auto"
-      />
       <MiniMap
         v-if="
           comfyAppReady &&
@@ -60,64 +96,13 @@
         "
         class="pointer-events-auto"
       />
+      <GraphCanvasMenu
+        v-if="canvasMenuEnabled && !isBuilderMode"
+        class="pointer-events-auto"
+      />
       <NodeSelectionModeBanner />
     </template>
   </LiteGraphCanvasSplitterOverlay>
-  <canvas
-    id="graph-canvas"
-    ref="canvasRef"
-    tabindex="1"
-    class="absolute inset-0 size-full touch-none"
-  />
-
-  <!-- TransformPane for Vue node rendering -->
-  <TransformPane
-    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
-    ref="transformPaneRef"
-    :canvas="comfyApp.canvas"
-    :inert="canvasStore.isPickingNodes"
-    @wheel.capture="canvasInteractions.forwardEventToCanvas"
-    @pointerdown.capture="forwardPointerDownPanEvent"
-    @pointerup.capture="forwardPointerUpPanEvent"
-    @pointermove.capture="forwardPointerMovePanEvent"
-    @keydown.space="forwardSpaceKeyEvent"
-  >
-    <!-- Vue nodes rendered based on graph nodes -->
-    <LGraphNode
-      v-for="nodeData in allNodes"
-      :key="nodeData.id"
-      :node-data
-      :data-node-id="nodeData.id"
-    />
-  </TransformPane>
-
-  <LinkOverlayCanvas
-    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
-    :canvas="comfyApp.canvas"
-    @ready="onLinkOverlayReady"
-    @dispose="onLinkOverlayDispose"
-  />
-
-  <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
-  <SelectionRectangle
-    v-if="comfyAppReady"
-    :panel-el="canvasPanelBoundsRef ?? undefined"
-  />
-
-  <NodeTooltip v-if="tooltipEnabled" />
-  <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
-  <NodeDragPreview />
-  <VueNodeSwitchPopup />
-
-  <!-- Initialize components after comfyApp is ready. useAbsolutePosition requires
-  canvasStore.canvas to be initialized. -->
-  <template v-if="comfyAppReady">
-    <TitleEditor />
-    <SelectionToolbox v-if="selectionToolboxEnabled" />
-    <NodeContextMenu />
-    <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
-    <DomWidgets v-if="!shouldRenderVueNodes" />
-  </template>
 </template>
 
 <script lang="ts">
@@ -168,7 +153,7 @@ import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useNodeEmphasis } from '@/systems/nodeEmphasisSystem'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -206,7 +191,7 @@ import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
-import { loadExtensions } from '@/services/extensionLoader'
+import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import {
@@ -216,7 +201,7 @@ import {
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -240,7 +225,6 @@ const vueNodeDropTarget = computed(() => {
   const element: unknown = transformPaneRef.value?.$el
   return element instanceof HTMLElement ? element : null
 })
-const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)
@@ -405,7 +389,10 @@ watchEffect(() => {
 })
 
 watch(
-  () => settingStore.get('Comfy.WidgetControlMode'),
+  [
+    () => settingStore.get('Comfy.WidgetControlMode'),
+    () => comfyApp.rootGraphOrUndefined
+  ],
   () => {
     if (!canvasStore.canvas) return
 
@@ -551,6 +538,7 @@ useEventListener(
 )
 
 let disposed = false
+const lateCustomNodeWork = new AbortController()
 const startupOwner = Symbol()
 
 function finishStartup(outcome: 'completed' | 'failed') {
@@ -611,7 +599,9 @@ onMounted(async () => {
       )
     }
 
-    await bootstrapTracer.settle('bootstrap/extensions-load', loadExtensions)
+    await bootstrapTracer.settle('bootstrap/extensions-load', () =>
+      loadExtensions(lateCustomNodeWork.signal)
+    )
 
     const canvas = canvasRef.value
     if (!canvas) throw new TypeError('GraphCanvas mounted without a canvas')
@@ -655,6 +645,7 @@ onMounted(async () => {
     bootstrapOutcome = 'completed'
   } finally {
     if (!disposed) {
+      workflowStore.markTabsRestored()
       finishStartup(bootstrapOutcome)
     }
   }
@@ -687,6 +678,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   disposed = true
+  lateCustomNodeWork.abort()
   void nextTick(() => {
     if (activeStartup !== startupOwner) return
     activeStartup = undefined

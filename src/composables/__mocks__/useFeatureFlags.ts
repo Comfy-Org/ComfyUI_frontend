@@ -16,10 +16,10 @@ const defaultFlags: FeatureFlags = {
   assetDeletionEnabled: false,
   privateModelsEnabled: false,
   onboardingSurveyEnabled: false,
-  linearToggleEnabled: false,
   partnerNodeGovernanceEnabled: false,
   partnerRunGateEnabled: false,
   partnerNodeTokenEnabled: false,
+  deploymentStartEnabled: false,
   userSecretsEnabled: false,
   nodeReplacementsEnabled: false,
   deployToCloud: false,
@@ -27,6 +27,7 @@ const defaultFlags: FeatureFlags = {
   comfyHubUploadEnabled: false,
   comfyHubProfileGateEnabled: false,
   deploymentCompatibilityMarksEnabled: false,
+  lateCustomNodesEnabled: false,
   hostedBillingDestination: 'stripe',
   hostedBillingWebEnabled: false,
   showSignInButton: undefined,
@@ -45,7 +46,6 @@ const defaultFlags: FeatureFlags = {
   v1PaymentRecovery: false,
   signupTurnstileMode: 'off',
   supportsModelTypeTags: false,
-  onboardingTourEnabled: false,
   assetsEnabled: false,
   agentInAppExperienceEnabled: false
 }
