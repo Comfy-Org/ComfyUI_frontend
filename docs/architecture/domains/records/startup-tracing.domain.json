@@ -8,10 +8,6 @@
       "role": "application"
     },
     {
-      "path": "src/platform/telemetry/perf/perfMark.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/telemetry/perf/perfMark.ts",
       "role": "infrastructure"
     }

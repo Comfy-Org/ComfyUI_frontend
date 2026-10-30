@@ -1,9 +1,15 @@
 import type { RetryPolicy } from '@/utils/retryPolicy'
 import {
   canRetryMethod,
-  retryDelayMs,
+  nextRetry,
   sleep as sleepFor
 } from '@/utils/retryPolicy'
+import type { StatusRetryEnd } from '@/utils/statusRetryTelemetry'
+import {
+  abortEnd,
+  endForStop,
+  trackStatusRetry
+} from '@/utils/statusRetryTelemetry'
 
 type FetchLike = (
   input: RequestInfo | URL,
@@ -51,9 +57,27 @@ export async function fetchWithRetry(
   const template =
     input instanceof Request && input.body !== null ? input.clone() : undefined
 
+  let lastRetryStatus: number | undefined
+  const settle = (end: StatusRetryEnd, attempts: number, status?: number) =>
+    trackStatusRetry({
+      transport: 'fetch',
+      method,
+      url: () => (input instanceof Request ? input.url : String(input)),
+      end,
+      attempts,
+      finalStatus: status ?? lastRetryStatus,
+      retryScheduled: lastRetryStatus !== undefined
+    })
+
   for (let attempt = 1; ; attempt++) {
-    const response = await fetchImpl(template?.clone() ?? input, init)
-    const delay = retryDelayMs({
+    let response: Response
+    try {
+      response = await fetchImpl(template?.clone() ?? input, init)
+    } catch (error) {
+      settle(abortEnd(signal), attempt)
+      throw error
+    }
+    const decision = nextRetry({
       method,
       status: response.status,
       readRetryAfter: () => response.headers.get('Retry-After'),
@@ -61,9 +85,18 @@ export async function fetchWithRetry(
       policy,
       random
     })
-    if (delay === undefined) return response
-    await sleep(delay, signal)
-    await response.body?.cancel()
+    if (!decision.retry) {
+      settle(endForStop(decision.reason), attempt, response.status)
+      return response
+    }
+    lastRetryStatus = response.status
+    await response.body?.cancel().catch(() => undefined)
+    try {
+      await sleep(decision.delayMs, signal)
+    } catch (error) {
+      settle(abortEnd(signal), attempt)
+      throw error
+    }
   }
 }
 

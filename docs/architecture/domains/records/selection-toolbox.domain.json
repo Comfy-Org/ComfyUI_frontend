@@ -4,16 +4,8 @@
   "description": "Canvas selection actions and their context menus: toolbox state and placement, node and group actions, arrangement, framing, deletion, and subgraph conversion. The selection store and graph mutations remain separate.",
   "modules": [
     {
-      "path": "src/components/graph/NodeContextMenu.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/graph/NodeContextMenu.vue",
       "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/SelectionToolbox.test.ts",
-      "role": "integration"
     },
     {
       "path": "src/components/graph/SelectionToolbox.vue",
@@ -24,15 +16,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/graph/selectionToolbox/ColorPickerButton.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/graph/selectionToolbox/ColorPickerButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/selectionToolbox/ExecuteButton.test.ts",
       "role": "presentation"
     },
     {
@@ -48,23 +32,11 @@
       "role": "integration"
     },
     {
-      "path": "src/composables/graph/contextMenuConverter.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/composables/graph/contextMenuConverter.ts",
       "role": "domain"
     },
     {
-      "path": "src/composables/graph/useArrangeNodes.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/composables/graph/useArrangeNodes.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/graph/useArrangeSession.test.ts",
       "role": "integration"
     },
     {
@@ -80,23 +52,11 @@
       "role": "integration"
     },
     {
-      "path": "src/composables/graph/useGroupContextMenu.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/composables/graph/useGroupContextMenu.ts",
       "role": "integration"
     },
     {
-      "path": "src/composables/graph/useGroupMenuOptions.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/composables/graph/useGroupMenuOptions.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/graph/useImageMenuOptions.test.ts",
       "role": "integration"
     },
     {
@@ -116,10 +76,6 @@
       "role": "integration"
     },
     {
-      "path": "src/composables/graph/useNodeMenuOptions.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/composables/graph/useNodeMenuOptions.ts",
       "role": "integration"
     },
@@ -128,15 +84,7 @@
       "role": "integration"
     },
     {
-      "path": "src/composables/graph/useSelectionMenuOptions.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/composables/graph/useSelectionMenuOptions.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/graph/useSelectionOperations.deleteGuard.test.ts",
       "role": "integration"
     },
     {
@@ -144,23 +92,11 @@
       "role": "integration"
     },
     {
-      "path": "src/composables/graph/useSelectionState.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/composables/graph/useSelectionState.ts",
       "role": "integration"
     },
     {
-      "path": "src/composables/graph/useSubgraphOperations.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/composables/graph/useSubgraphOperations.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/useContextMenuTranslation.test.ts",
       "role": "integration"
     },
     {
@@ -172,15 +108,7 @@
       "role": "integration"
     },
     {
-      "path": "src/utils/coreMediaMenuActionUtils.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/coreMediaMenuActionUtils.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/nodeFilterUtil.test.ts",
       "role": "domain"
     },
     {

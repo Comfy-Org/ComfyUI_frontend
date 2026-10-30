@@ -12,15 +12,7 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/workflow/persistence/base/storageIO.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/workflow/persistence/base/storageIO.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/workflow/persistence/base/storageKeys.test.ts",
       "role": "infrastructure"
     },
     {
@@ -28,16 +20,8 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workflow/persistence/composables/useWorkflowPersistenceV2.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/platform/workflow/persistence/composables/useWorkflowPersistenceV2.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/platform/workflow/persistence/composables/useWorkflowTabState.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/platform/workflow/persistence/composables/useWorkflowTabState.ts",
