@@ -249,13 +249,7 @@ export const useExtensionStore = defineStore('extension', () => {
     return coreExtensionNames.value.includes(name)
   }
 
-  /**
-   * Whether a registered extension's commands, keybindings, menu entries,
-   * panels, buttons, badges and auth hooks apply. Core extensions always
-   * contribute, because core UI calls their commands even when the user has
-   * turned them off; a third-party extension contributes only while enabled.
-   * Every extension registered before the core set is captured is core.
-   */
+  /** Whether a registered extension's commands, keybindings and UI contributions apply. */
   function contributes(name: string) {
     if (!coreExtensionsCaptured.value || isCoreExtension(name)) return true
     return isExtensionEnabled(name)
