@@ -315,6 +315,37 @@ describe('reduceBillingOperation', () => {
     )
   })
 
+  it.for([
+    { served: '2026-10-30T16:10:00Z', expected: '2026-10-30T16:10:00Z' },
+    { served: undefined, expected: undefined }
+  ])(
+    'takes the deadline the server serves when it re-serves a failed challenge ($served)',
+    ({ served, expected }) => {
+      const failed = reduceBillingOperation(
+        reduceBillingOperation(
+          polled(pending({ kind: 'topup' }), {
+            authentication_state: 'requires_action',
+            authentication_deadline: '2026-10-30T15:40:00Z',
+            payment_intent_client_secret: 'pi_secret'
+          }),
+          { type: 'challenge_started' }
+        ),
+        { type: 'challenge_settled', outcome: 'failed' }
+      )
+
+      const reserved = polled(failed, {
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret',
+        ...(served === undefined ? {} : { authentication_deadline: served })
+      })
+
+      expect(reserved).toMatchObject({
+        phase: 'pending',
+        authenticationDeadline: expected
+      })
+    }
+  )
+
   it('clears the deadline when a hosted flow moves past a failed challenge and the server later omits both secret and deadline', () => {
     const hosted = reduceBillingOperation(
       reduceBillingOperation(

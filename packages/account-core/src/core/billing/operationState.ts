@@ -405,6 +405,19 @@ function nextDeclineReason(
   return 'generic'
 }
 
+function nextAuthenticationDeadline(
+  state: PendingBillingOperation,
+  status: BillingOpStatus
+): string | undefined {
+  if (
+    state.challenge?.status === 'completed' &&
+    echoesSettledChallenge(state, status)
+  ) {
+    return state.authenticationDeadline
+  }
+  return status.authentication_deadline
+}
+
 function reducePending(
   state: PendingBillingOperation,
   status: BillingOpStatus
@@ -417,9 +430,7 @@ function reducePending(
   const authenticationState = echoed
     ? state.authenticationState
     : status.authentication_state
-  const authenticationDeadline = echoed
-    ? state.authenticationDeadline
-    : status.authentication_deadline
+  const authenticationDeadline = nextAuthenticationDeadline(state, status)
   const actionUrl = nextActionUrl(state, status, authenticationState)
   const declineReason = nextDeclineReason(state, status, authenticationState)
   const { plan: _previousPlan, ...rest } = state
