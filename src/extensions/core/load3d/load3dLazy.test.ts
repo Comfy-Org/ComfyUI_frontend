@@ -2,6 +2,8 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 const lazyModules = vi.hoisted(() => {
@@ -11,7 +13,10 @@ const lazyModules = vi.hoisted(() => {
   })
   return {
     load3d: {
-      load3dExtension: defineExtension('Comfy.Load3D'),
+      load3dExtension: {
+        ...defineExtension('Comfy.Load3D'),
+        commands: [{ id: 'test.lazy3d.command', function: vi.fn() }]
+      },
       preview3DExtension: defineExtension('Comfy.Preview3D'),
       preview3DAdvancedExtension: defineExtension('Comfy.Preview3DAdvanced'),
       save3DAdvancedExtension: defineExtension('Comfy.Save3DAdvanced')
@@ -348,6 +353,32 @@ describe('load3dLazy', () => {
     expect(
       lazyModules.load3d.load3dExtension.nodeCreated
     ).toHaveBeenCalledOnce()
+  })
+
+  it('keeps disabled lazy core commands after startup without exempting third-party extensions', async () => {
+    const { extensionStore, configureGraph } = await loadLazyExtensionFresh()
+    extensionStore.registerExtension({ name: 'Comfy.StartupCore' })
+    extensionStore.captureCoreExtensions()
+    extensionStore.loadDisabledExtensionNames([
+      'Comfy.Load3D',
+      'Comfy.ThirdParty'
+    ])
+
+    await configureGraph(makeWorkflow(['Load3D']))
+
+    expect(useCommandStore().isRegistered('test.lazy3d.command')).toBe(true)
+    expect(extensionStore.isCoreExtension('Comfy.StartupCore')).toBe(true)
+    expect(extensionStore.hasThirdPartyExtensions).toBe(false)
+
+    useExtensionService().registerExtension({
+      name: 'Comfy.ThirdParty',
+      commands: [{ id: 'test.thirdParty.command', function: vi.fn() }]
+    })
+
+    expect(useCommandStore().isRegistered('test.thirdParty.command')).toBe(
+      false
+    )
+    expect(extensionStore.hasThirdPartyExtensions).toBe(true)
   })
 
   it('rolls back a partial registration when a lazy 3D extension name is taken, then retries once it is free', async () => {

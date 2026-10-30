@@ -730,7 +730,7 @@ describe('a disabled extension', () => {
 
   it('keeps its setting definitions and widget types, which saved workflows and core code read', async () => {
     afterCore(['off'])
-    const widget = () => ({ widget: undefined }) as never
+    const widget = () => undefined
 
     useExtensionService().registerExtension({
       ...extension('off').ext,
