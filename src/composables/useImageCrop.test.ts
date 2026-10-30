@@ -304,7 +304,7 @@ describe('useImageCrop', () => {
     mockResolveNode.mockReturnValue(cropNode)
   }
 
-  function connectImageInput(targetSlot = 0) {
+  function connectImageInput(targetSlot = 0, type = 'IMAGE') {
     useLinkStore().registerLink(GRAPH_SCOPE, {
       id: toLinkId(1),
       graphId: GRAPH_SCOPE.owningGraphId,
@@ -312,7 +312,7 @@ describe('useImageCrop', () => {
       originSlot: 0,
       targetNodeId: CROP_NODE_ID,
       targetSlot,
-      type: 'IMAGE'
+      type
     })
   }
 
@@ -505,8 +505,13 @@ describe('useImageCrop', () => {
   })
 
   it('shows the image connected to a custom input type through the slot-0 fallback', async () => {
+    sourceNode = createMockLGraphNode({
+      id: 99,
+      isSubgraphNode: () => false,
+      outputs: [{ name: 'image', type: 'CUSTOM_IMAGE' }]
+    })
     useLinkedCropNode([{ name: 'image', type: 'CUSTOM_IMAGE' }])
-    connectImageInput(0)
+    connectImageInput(0, 'CUSTOM_IMAGE')
 
     const vm = await mountHarness()
 
