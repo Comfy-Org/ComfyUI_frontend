@@ -83,9 +83,7 @@ describe('useWorkspaceUrlLoader', () => {
   beforeEach(() => {
     mockRouteQuery.value = {}
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
-    vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockResolvedValue(
-      undefined
-    )
+    vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockResolvedValue(true)
     Object.assign(useTeamWorkspaceStore(), { activeWorkspace })
   })
 
@@ -124,6 +122,7 @@ describe('useWorkspaceUrlLoader', () => {
     vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockImplementationOnce(
       async () => {
         callOrder.push('switch')
+        return true
       }
     )
 

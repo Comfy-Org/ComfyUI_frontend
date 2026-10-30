@@ -908,10 +908,11 @@ describe('useTeamWorkspaceStore', () => {
       )
 
       const firstSwitch = store.switchWorkspace(mockTeamWorkspace.id)
-      await store.switchWorkspace(mockMemberWorkspace.id)
+      const refused = await store.switchWorkspace(mockMemberWorkspace.id)
       finishSwitch()
-      await firstSwitch
 
+      expect(refused).toBe(false)
+      expect(await firstSwitch).toBe(true)
       expect(console.error).toHaveBeenCalledWith(
         'Workspace switch already in progress'
       )

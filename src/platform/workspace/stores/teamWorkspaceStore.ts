@@ -641,11 +641,11 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     }
   }
 
-  async function switchWorkspace(workspaceId: string): Promise<void> {
-    if (workspaceId === activeWorkspaceId.value) return
+  async function switchWorkspace(workspaceId: string): Promise<boolean> {
+    if (workspaceId === activeWorkspaceId.value) return true
     if (!isCloud && isSwitching.value) {
       console.error('Workspace switch already in progress')
-      return
+      return false
     }
 
     const workspaceSwitch = executeWorkspaceSwitch(workspaceId)
@@ -657,6 +657,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         pendingWorkspaceSwitch = null
       }
     }
+    return true
   }
 
   function waitForWorkspaceSwitch(): Promise<void> {

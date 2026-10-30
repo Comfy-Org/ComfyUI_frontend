@@ -12,8 +12,7 @@ export function useWorkspaceSwitch() {
     }
 
     try {
-      await workspaceStore.switchWorkspace(workspaceId)
-      return true
+      return await workspaceStore.switchWorkspace(workspaceId)
     } catch {
       return false
     }
