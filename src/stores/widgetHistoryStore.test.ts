@@ -5,6 +5,7 @@ import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import {
   WIDGET_HISTORY_LIMIT,
+  asHistoryReference,
   ownsNodeHistory,
   useWidgetHistoryStore
 } from './widgetHistoryStore'
@@ -83,12 +84,21 @@ describe(useWidgetHistoryStore, () => {
   })
 
   it.for([
-    { case: 'a frozen value by reference', freeze: true, same: true },
-    { case: 'a mutable value as a copy', freeze: false, same: false }
-  ])('stores $case', ({ freeze, same }) => {
+    {
+      case: 'a value marked as a history reference by reference',
+      mark: asHistoryReference,
+      same: true
+    },
+    { case: 'a frozen value as a copy', mark: Object.freeze, same: false },
+    {
+      case: 'a plain value as a copy',
+      mark: <T>(value: T) => value,
+      same: false
+    }
+  ])('stores $case', ({ mark, same }) => {
     const store = useWidgetHistoryStore()
-    const value = { pixels: [1, 2, 3] }
-    store.record(scope, freeze ? Object.freeze(value) : value)
+    const value = mark({ pixels: [1, 2, 3] })
+    store.record(scope, value)
 
     const step = store.undo(scope, 'after')
 

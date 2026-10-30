@@ -1,6 +1,9 @@
 import { computed } from 'vue'
 
-import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
+import {
+  asHistoryReference,
+  useWidgetHistoryStore
+} from '@/stores/widgetHistoryStore'
 import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 
 const PAINTER_HISTORY_BUDGET_BYTES = 512 * 1024 * 1024
@@ -53,7 +56,7 @@ export function captureCanvasRegion(
   const target = blankCanvas(width, height)
   if (!target) return null
   target.ctx.drawImage(source, x, y, width, height, 0, 0, width, height)
-  return Object.freeze({
+  return asHistoryReference({
     x,
     y,
     width,

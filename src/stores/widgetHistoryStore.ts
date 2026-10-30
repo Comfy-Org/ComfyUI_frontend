@@ -38,8 +38,20 @@ interface HistoryStep {
   readonly value: unknown
 }
 
+const storedByReference = new WeakSet<object>()
+
+/** Marks a value that widget history keeps by reference instead of copying. */
+export function asHistoryReference<T extends object>(value: T): T {
+  storedByReference.add(value)
+  return value
+}
+
 function snapshot<T>(value: T): T {
-  return Object.isFrozen(value) ? value : cloneDeep(value)
+  return typeof value === 'object' &&
+    value !== null &&
+    storedByReference.has(value)
+    ? value
+    : cloneDeep(value)
 }
 
 const EMPTY_HISTORY: WidgetHistory = { past: [], future: [] }
