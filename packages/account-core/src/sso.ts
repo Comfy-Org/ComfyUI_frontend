@@ -11,20 +11,26 @@ import {
   zErrorResponse
 } from '@comfyorg/ingest-types/zod'
 
-import { timedSignal } from './core/requestTimeout.js'
-import { safeInternalPath } from './redirect.js'
+import { timedSignal } from './core/requestTimeout'
+import { safeInternalPath } from './redirect'
 
 export {
+  isAccountOutsideOrganizationRefusal,
   isSsoRequiredRefusal,
   ssoRequiredOrganizationId
-} from './core/ssoRequired.js'
+} from './core/ssoRequired'
 
 const SSO_DISCOVER_PATH = '/api/auth/sso/discover'
 const SSO_START_PATH = '/api/auth/sso/start'
 const DEFAULT_DISCOVER_TIMEOUT_MS = 5000
 
 export type SsoDiscovery =
-  | { readonly kind: 'sso'; readonly organizationName?: string }
+  | {
+      readonly kind: 'sso'
+      /** False for an organization in optional mode, which only offers SSO. */
+      readonly required: boolean
+      readonly organizationName?: string
+    }
   | { readonly kind: 'not-sso' }
   | { readonly kind: 'invalid-email' }
   | { readonly kind: 'unavailable' }
@@ -40,9 +46,25 @@ export interface DiscoverSsoOptions {
 
 function fromResponse(body: SsoDiscoverResponse): SsoDiscovery {
   if (!body.sso) return { kind: 'not-sso' }
+  const required = body.required ?? true
   return body.organization_name === undefined
-    ? { kind: 'sso' }
-    : { kind: 'sso', organizationName: body.organization_name }
+    ? { kind: 'sso', required }
+    : { kind: 'sso', required, organizationName: body.organization_name }
+}
+
+/** How the person reached discover: the SSO entry, or an email sign-in or sign-up. */
+export type SsoSignInVia = 'sso-entry' | 'email-sign-in'
+
+/**
+ * Whether a sign-in goes to SSO. An organization in optional mode keeps its
+ * people's other sign-ins, so only the SSO entry sends them there.
+ */
+export function sendsToSso(
+  discovery: SsoDiscovery,
+  via: SsoSignInVia
+): boolean {
+  if (discovery.kind !== 'sso') return false
+  return via === 'sso-entry' || discovery.required
 }
 
 async function readJson(response: Response): Promise<unknown> {
@@ -174,6 +196,7 @@ const SSO_ERROR_CODES = [
   'SSO_ORG_DISABLED',
   'SSO_ORG_MISMATCH',
   'SSO_ORG_NOT_ATTACHED',
+  'SSO_SEAT_LIMIT_REACHED',
   'SSO_SIGN_IN_FAILED',
   'SSO_UNAVAILABLE',
   'SSO_USER_SUSPENDED'

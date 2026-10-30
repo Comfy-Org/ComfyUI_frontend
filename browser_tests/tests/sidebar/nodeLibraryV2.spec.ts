@@ -75,9 +75,7 @@ test.describe('Node library sidebar V2', () => {
       targetPosition
     })
 
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(initialCount + 1)
+    await comfyPage.expectNodeCount(initialCount + 1)
   })
 
   test('Right-click node shows context menu with bookmark option', async ({
@@ -95,9 +93,7 @@ test.describe('Node library sidebar V2', () => {
     await menu.hoverItem('Bookmark Node', 'content')
 
     const hoverStyle = await menu.getItemStyle('Bookmark Node')
-    const expectedBackground = await menu.resolveBackgroundToken(
-      '--secondary-background-hover'
-    )
+    const expectedBackground = await menu.resolveBackgroundToken('--accent')
     expect.soft(hoverStyle).toEqual({
       backgroundColor: expectedBackground,
       borderRadius: '6px',
@@ -170,7 +166,7 @@ test.describe('Node library sidebar V2', () => {
     await tab.getNode('KSampler (Advanced)').click()
     await comfyPage.canvas.click({ position: target })
 
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await comfyPage.expectNodeCount(1)
     await expect
       .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
       .toBe(1)

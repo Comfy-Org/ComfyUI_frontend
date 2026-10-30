@@ -4,7 +4,7 @@
       v-if="isPositioned && ringStyle"
       aria-hidden="true"
       data-testid="first-run-nudge-ring"
-      class="pointer-events-none fixed z-1000 rounded-lg outline-2 -outline-offset-2 outline-coach-ring"
+      class="pointer-events-none fixed rounded-lg outline-2 -outline-offset-2 outline-white"
       :style="ringStyle"
     />
     <div
@@ -14,7 +14,7 @@
       data-testid="first-run-nudge"
       :class="
         cn(
-          'fixed z-1000 w-80 animate-in animation-duration-500 fade-in-0',
+          'fixed w-80 animate-in animation-duration-500 fade-in-0',
           !isPositioned && 'invisible'
         )
       "
@@ -24,16 +24,16 @@
         data-testid="first-run-nudge-cursor"
         :class="
           cn(
-            'absolute icon-[lucide--mouse-pointer-2] size-4 text-base-foreground drop-shadow-md',
+            'absolute icon-[lucide--mouse-pointer-2] text-foreground drop-shadow-md',
             cursorEdgeClass(placement)
           )
         "
         aria-hidden="true"
       />
       <div
-        class="flex flex-col overflow-hidden rounded-xl border border-border-default/50 bg-base-background shadow-lg"
+        class="flex flex-col overflow-hidden rounded-xl border border-border/50 bg-background shadow-lg"
       >
-        <div class="relative h-50 w-full bg-secondary-background">
+        <div class="relative h-50 w-full bg-secondary">
           <img :src="NUDGE_IMAGE" alt="" class="size-full object-cover" />
           <Button
             class="absolute top-2 right-2 opacity-50 hover:opacity-100"
@@ -42,14 +42,12 @@
             :aria-label="t('g.close')"
             @click="dismissNudge"
           >
-            <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+            <i class="icon-[lucide--x]" aria-hidden="true" />
           </Button>
         </div>
 
-        <div
-          class="flex flex-col gap-2 border-t border-border-default px-4 pt-6 pb-4"
-        >
-          <p :id="titleId" class="m-0 text-sm/5 font-bold text-base-foreground">
+        <div class="flex flex-col gap-2 border-t px-4 pt-6 pb-4">
+          <p :id="titleId" class="m-0 text-sm/5 font-bold text-foreground">
             {{ t(`${copyKey}.title`) }}
           </p>
           <p class="m-0 text-sm text-muted-foreground">
@@ -61,7 +59,7 @@
           <Button
             variant="link"
             size="unset"
-            class="h-6 text-sm font-normal"
+            class="h-6 font-normal"
             @click="dismissNudge"
           >
             {{ t('onboardingCoachmarks.firstRun.nudge.dismiss') }}
@@ -93,20 +91,20 @@ import {
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import Button from '@comfyorg/design-system/button/Button'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { cursorEdgeClass } from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import type { SpotlightStep } from '@/platform/onboarding/onboardingTours'
 import { useCoachmarkTarget } from '@/platform/onboarding/useCoachmarkTarget'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-import { useFirstRunTourController } from '../tour/useFirstRunTourController'
+import { useFirstRunTourController } from '@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'
 
 const NUDGE_IMAGE = '/assets/images/og-image.png'
 

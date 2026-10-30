@@ -1,5 +1,9 @@
 # Cloud workflow test strategy
 
+The website and its tests now live in
+[Comfy-Org/comfy-website](https://github.com/Comfy-Org/comfy-website).
+Run the checks below from that repository; its paths retain `apps/website`.
+
 The current scope is catalog-driven pages using existing Cloud endpoints, as
 recorded in [WORKSHOP-CATALOG-0037](../adr/WORKSHOP-CATALOG-0037-shared-pages-and-authored-execution-catalogs.md).
 Tests for the earlier publication compiler, backend run store and immutable

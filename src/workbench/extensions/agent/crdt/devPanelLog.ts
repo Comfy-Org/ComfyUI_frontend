@@ -1,6 +1,6 @@
 import { shallowRef, triggerRef } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { isCrdtDebugEnabled } from './crdtDebugGate'
 import type { CrdtLogLevel } from './crdtDebugGate'
@@ -28,7 +28,10 @@ export const DEV_EVENT_KINDS = [
   'doc_subscribed',
   'doc_update',
   'doc_ops_result',
+  'doc_ops_result_dropped',
   'human_ops_settled',
+  'mint_divergence',
+  'host_rejected',
   'doc_reset',
   'doc_nodes_changed',
   'schema_error',
@@ -95,6 +98,7 @@ const STRUCTURAL_STRING_KEYS = new Set([
   'doc_id',
   'failed',
   'frame_type',
+  'graph_id',
   'id',
   'kind',
   'level',
@@ -103,9 +107,11 @@ const STRUCTURAL_STRING_KEYS = new Set([
   'op',
   'op_id',
   'op_ids',
+  'operations',
   'outcome',
   'phase',
   'prompt_id',
+  'reason',
   'removed',
   'scope',
   'seq',
@@ -114,6 +120,7 @@ const STRUCTURAL_STRING_KEYS = new Set([
   'source',
   'state',
   'status',
+  'subscribed_workflow_id',
   'tab',
   'tab_id',
   'target',

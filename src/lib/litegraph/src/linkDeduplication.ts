@@ -1,22 +1,27 @@
-import { useTelemetry } from '@/platform/telemetry'
+import type {
+  LGraph,
+  LGraphNode,
+  LLink,
+  SerialisedLLinkArray
+} from '@comfyorg/graph-model/entityRegistry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { EndpointUpdate } from '@/stores/linkStore'
-import { parseLinkId, toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
-import type { LGraph } from './LGraph'
-import type { LGraphNode } from './LGraphNode'
-import type { LinkId, LLink, SerialisedLLinkArray } from './LLink'
+
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type {
   ExportedSubgraph,
   ISerialisedGraph,
   ISerialisedNode,
   SerialisableGraph,
   SerialisableLLink
-} from './types/serialisation'
-import { NodeSlotType } from './types/globalEnums'
+} from '@comfyorg/graph-model/serialisation'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 
 type ConfiguredGraph = (ISerialisedGraph | SerialisableGraph) &
   Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs' | 'reroutes'>>

@@ -2,14 +2,20 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { AuthUserInfo } from '@/types/authTypes'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useAgentDockMount } from './useAgentDockMount'
 
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 const billingContext = useBillingContext()
 const { loadDockedAgentPanel } = vi.hoisted(() => ({
   loadDockedAgentPanel: vi.fn(() => ({ name: 'DockedAgentPanel' }))
@@ -66,17 +72,88 @@ describe('useAgentDockMount', () => {
     expect(store.reportedExhaustionIdentity).toBeNull()
   })
 
-  it('returns an inert mount on non-cloud distributions', () => {
-    vi.stubGlobal('__DISTRIBUTION__', 'localhost')
+  it('re-arms the credit-transition notice after scoped funds refill while closed', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const subscription = ref({
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    })
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>(subscription.value)
+      )
+    })
+    const store = useAgentPanelStore()
 
-    const { docked, DockedAgentPanel } = useAgentDockMount()
+    useAgentDockMount()
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false
+    }
+    await nextTick()
 
-    expect(docked.value).toBe(false)
-    expect(DockedAgentPanel).toBeNull()
+    expect(store.claimCreditTransitionNoticeImpression('anonymous:none')).toBe(
+      true
+    )
+
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    }
+    await nextTick()
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false
+    }
+    await nextTick()
+
+    expect(store.claimCreditTransitionNoticeImpression('anonymous:none')).toBe(
+      true
+    )
   })
 
-  it('docks only once the gate enables and the panel opens on cloud', async () => {
+  it('observes the scoped balance again after the billing identity changes', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const accountId = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      fromPartial<AuthUserInfo>({ id: accountId.value })
+    )
+    const subscription = ref({
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    })
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>(subscription.value)
+      )
+    })
+    const store = useAgentPanelStore()
+
+    useAgentDockMount()
+
+    accountId.value = 'account-b'
+    await nextTick()
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false
+    }
+    await nextTick()
+
+    expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
+      true
+    )
+  })
+
+  it('docks only once the gate enables and the panel opens, off cloud too', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'localhost')
     const store = useAgentPanelStore()
 
     const { docked, DockedAgentPanel } = useAgentDockMount()
@@ -97,5 +174,71 @@ describe('useAgentDockMount', () => {
     expect(loadDockedAgentPanel).toHaveBeenCalledOnce()
     store.close('close_button')
     expect(docked.value).toBe(false)
+  })
+
+  describe('billing refresh after consent', () => {
+    function mountWithBilling() {
+      const fetchStatus = vi.fn(async () => {})
+      vi.mocked(useBillingContext).mockReturnValue({
+        ...billingContext,
+        fetchStatus
+      })
+      useAgentDockMount()
+      return { consent: useAgentConsentStore(), fetchStatus }
+    }
+
+    it('refreshes billing when consent is accepted while the panel is closed', async () => {
+      const { consent, fetchStatus } = mountWithBilling()
+      expect(useAgentPanelStore().isOpen).toBe(false)
+
+      consent.confirmedAcceptances += 1
+      await nextTick()
+
+      expect(fetchStatus).toHaveBeenCalledOnce()
+    })
+
+    it('refreshes billing for an acceptance recorded before any host mounted', async () => {
+      useAgentConsentStore().confirmedAcceptances += 1
+
+      const { fetchStatus } = mountWithBilling()
+
+      expect(fetchStatus).toHaveBeenCalledOnce()
+    })
+
+    it('does not refresh billing when stored consent loads', async () => {
+      const { consent, fetchStatus } = mountWithBilling()
+
+      Object.assign(consent, { accepted: true })
+      await nextTick()
+
+      expect(fetchStatus).not.toHaveBeenCalled()
+    })
+
+    it('refreshes once per acceptance when both graph and linear hosts are mounted', async () => {
+      const { consent, fetchStatus } = mountWithBilling()
+      useAgentDockMount()
+
+      consent.confirmedAcceptances += 1
+      await nextTick()
+      expect(fetchStatus).toHaveBeenCalledOnce()
+
+      consent.confirmedAcceptances += 1
+      await nextTick()
+      expect(fetchStatus).toHaveBeenCalledTimes(2)
+    })
+
+    it('reports a failed refresh without rejecting', async () => {
+      const failure = new Error('status read failed')
+      const { consent, fetchStatus } = mountWithBilling()
+      fetchStatus.mockRejectedValueOnce(failure)
+
+      consent.confirmedAcceptances += 1
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(failure, {
+          surface: 'agent',
+          errorType: 'error_refreshing_agent_billing_status'
+        })
+      )
+    })
   })
 })

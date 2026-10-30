@@ -9,18 +9,21 @@ import {
 } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
 import { useLinkStore } from '@/stores/linkStore'
-import { adjustColor } from '@/utils/colorUtil'
+import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 import {
   createMockLGraph,
   createMockLGraphNode,
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-vi.mock(import('@/utils/colorUtil'), () => ({
+vi.mock(import('@comfyorg/shared-frontend-utils/colorUtil'), () => ({
   adjustColor: vi.fn((color: string) => color + '_adjusted')
 }))
 

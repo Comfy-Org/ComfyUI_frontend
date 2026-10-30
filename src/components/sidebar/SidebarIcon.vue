@@ -10,14 +10,16 @@
     "
     variant="muted-textonly"
     size="unset"
-    :aria-label="computedTooltip"
+    :aria-label="accessibleName"
     @click="emit('click', $event)"
+    @contextmenu="emit('contextmenu', $event)"
   >
     <div class="side-bar-button-content flex flex-col items-center gap-2">
       <slot name="icon">
         <div class="sidebar-icon-wrapper relative">
           <i
             v-if="typeof icon === 'string'"
+            class="size-5"
             :class="icon + ' side-bar-button-icon'"
           />
           <component
@@ -29,12 +31,18 @@
             v-if="shouldShowBadge"
             :class="
               cn(
-                'sidebar-icon-badge absolute min-w-[16px] rounded-full bg-primary-background py-0.25 text-2xs leading-[14px] font-medium text-base-foreground',
+                'sidebar-icon-badge absolute min-w-[16px] rounded-full bg-primary py-0.25 text-2xs leading-[14px] font-medium text-foreground',
                 badgeClass || '-top-1 -right-1'
               )
             "
           >
             {{ overlayValue }}
+          </span>
+          <span
+            v-if="provenanceBadge"
+            class="sidebar-icon-provenance-badge absolute -bottom-1 -left-1 min-w-[16px] rounded-full bg-secondary py-0.25 text-2xs leading-[14px] font-medium text-foreground"
+          >
+            {{ provenanceBadge }}
           </span>
         </div>
       </slot>
@@ -53,7 +61,7 @@
 import { computed } from 'vue'
 import type { Component } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { st } from '@/i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -64,6 +72,8 @@ const {
   tooltipSuffix = '',
   iconBadge = '',
   badgeClass = '',
+  provenanceBadge = '',
+  provenanceLabel = '',
   label = '',
   isSmall = false
 } = defineProps<{
@@ -73,12 +83,15 @@ const {
   tooltipSuffix?: string
   iconBadge?: string | (() => string | null)
   badgeClass?: string
+  provenanceBadge?: string
+  provenanceLabel?: string
   label?: string
   isSmall?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'click', event: MouseEvent): void
+  (e: 'contextmenu', event: MouseEvent): void
 }>()
 const overlayValue = computed(() =>
   typeof iconBadge === 'function' ? (iconBadge() ?? '') : iconBadge
@@ -92,6 +105,11 @@ const computedTooltip = computed(() => {
   const text = tooltip || label
   return st(text, text) + tooltipSuffix
 })
+const accessibleName = computed(() =>
+  provenanceLabel
+    ? `${computedTooltip.value} (${provenanceLabel})`
+    : computedTooltip.value
+)
 </script>
 
 <style>
@@ -100,11 +118,11 @@ const computedTooltip = computed(() => {
 }
 
 .side-bar-button-selected {
-  background-color: var(--interface-panel-selected-surface);
-  color: var(--content-hover-fg);
+  background-color: var(--muted);
+  color: var(--foreground);
 }
 .side-bar-button:hover {
-  background-color: var(--interface-panel-hover-surface);
-  color: var(--content-hover-fg);
+  background-color: var(--accent);
+  color: var(--foreground);
 }
 </style>

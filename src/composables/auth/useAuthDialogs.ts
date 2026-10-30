@@ -1,7 +1,3 @@
-import {
-  HUG_CONTENT_CLASS,
-  SELF_STYLED_PANEL_CONTENT_CLASS
-} from '@/components/ui/dialog/dialog.variants'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const lazyApiNodesSignInContent = () =>
@@ -33,14 +29,11 @@ export function useAuthDialogs() {
         component: ApiNodesSignInContent,
         props: {
           apiNodeNames,
-          titleId: key,
           onLogin: () => showSignInDialog().then((result) => resolve(result)),
           onCancel: () => resolve(false)
         },
         dialogComponentProps: {
-          renderer: 'reka',
           headless: true,
-          contentClass: `${SELF_STYLED_PANEL_CONTENT_CLASS} p-0`,
           closable: true,
           onRemoved: () => resolve(false)
         }
@@ -64,10 +57,7 @@ export function useAuthDialogs() {
           onSuccess: () => resolve(true)
         },
         dialogComponentProps: {
-          renderer: 'reka',
-          // SignInContent is a fixed w-96 — size 'sm' (max-w-sm) leaves only
-          // 352px after the body padding; hug the intrinsic width instead.
-          contentClass: HUG_CONTENT_CLASS,
+          size: 'fit',
           closable: true,
           onRemoved: () => resolve(false)
         }
@@ -90,12 +80,12 @@ export function useAuthDialogs() {
       component: UpdatePasswordContent,
       headerComponent: ComfyOrgHeader,
       props: {
+        requestSignIn: showSignInDialog,
         onSuccess: () =>
           dialogStore.closeDialog({ key: 'global-update-password' })
       },
       dialogComponentProps: {
-        renderer: 'reka',
-        contentClass: HUG_CONTENT_CLASS
+        size: 'fit'
       }
     })
   }

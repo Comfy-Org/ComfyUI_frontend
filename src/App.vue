@@ -6,27 +6,19 @@
   </TooltipProvider>
   <div
     v-show="isLoading"
-    ref="loadingOverlay"
     data-testid="app-loading-overlay"
-    class="fixed inset-0 bg-black/10"
+    class="fixed inset-0 z-blocking bg-black/10"
     :aria-busy="isLoading"
   />
 </template>
 
 <script setup lang="ts">
-import { ZIndex } from '@primeuix/utils/zindex'
-import {
-  computed,
-  onMounted,
-  useTemplateRef,
-  watch,
-  watchPostEffect
-} from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
+import { useAgentExtensionNotices } from '@/composables/useAgentExtensionNotices'
 import config from '@/config'
-import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
@@ -38,23 +30,15 @@ import { registerExtensionDialogService } from '@/services/dialogService'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
-import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 
 registerExtensionDialogService(createExtensionDialogService())
 const workspaceStore = useWorkspaceStore()
 app.extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
+useAgentExtensionNotices()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
-const loadingOverlay = useTemplateRef<HTMLDivElement>('loadingOverlay')
-
-watchPostEffect((onCleanup) => {
-  const overlay = loadingOverlay.value
-  if (!isLoading.value || !overlay) return
-
-  ZIndex.set(MODAL_Z_KEY, overlay, MODAL_Z_BASE)
-  onCleanup(() => ZIndex.clear(overlay))
-})
 
 watch(
   isLoading,

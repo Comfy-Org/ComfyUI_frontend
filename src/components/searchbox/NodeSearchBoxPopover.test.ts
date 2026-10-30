@@ -1,15 +1,17 @@
 import { getActivePinia } from 'pinia'
-import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 
@@ -49,15 +51,24 @@ describe('NodeSearchBoxPopover', () => {
       props: {
         filters: { type: Array, default: () => [] }
       },
-      emits: ['addFilter', 'addNode'],
+      emits: ['addFilter', 'removeFilter', 'addNode'],
       setup(props, { emit }) {
         emitAddFilter = (filter) => emit('addFilter', filter)
         emitAddNodeV1 = (nodeDef, dragEvent) =>
           emit('addNode', nodeDef, dragEvent)
         const filterCount = computed(() => props.filters.length)
-        return { filterCount }
+        return {
+          filterCount,
+          addTestFilter: () =>
+            emit('addFilter', createFilter('outputType', 'IMAGE')),
+          addTestNode: () => emit('addNode', { name: 'KSampler' })
+        }
       },
-      template: '<output aria-label="filter count">{{ filterCount }}</output>'
+      template: `
+        <output aria-label="filter count">{{ filterCount }}</output>
+        <button @click="addTestFilter">Add filter</button>
+        <button @click="addTestNode">Add node</button>
+      `
     })
 
     const NodeSearchContentStub = defineComponent({
@@ -77,20 +88,23 @@ describe('NodeSearchBoxPopover', () => {
     const pinia = getActivePinia()!
     const settingStore = useSettingStore()
     settingStore.settingValues = settings
-    settingStore.settingsById = coreSettingsById
-    useSearchBoxStore().visible = false
 
     const result = render(NodeSearchBoxPopover, {
       global: {
-        plugins: [i18n, PrimeVue, pinia],
+        plugins: [i18n, pinia],
         stubs: {
           NodeSearchBox: NodeSearchBoxStub,
           NodeSearchContent: NodeSearchContentStub,
           NodePreviewCard: true,
-          Dialog: {
-            template: '<div><slot name="container" /></div>',
-            props: ['visible', 'modal', 'dismissableMask', 'pt']
-          }
+          Dialog: { template: '<div><slot /></div>' },
+          DialogPortal: { template: '<div><slot /></div>' },
+          DialogOverlay: {
+            template: '<div data-testid="search-overlay" />'
+          },
+          DialogContent: {
+            template: '<div data-testid="search-content"><slot /></div>'
+          },
+          DialogTitle: { template: '<h2><slot /></h2>' }
         }
       }
     })
@@ -109,12 +123,22 @@ describe('NodeSearchBoxPopover', () => {
         if (!emitAddNodeV2)
           throw new Error('NodeSearchContent stub did not mount')
         return emitAddNodeV2
-      }
+      },
+      pinia
     }
   }
 
   beforeEach(() => {
     vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(null)
+    useSettingStore().settingsById = coreSettingsById
+    useSearchBoxStore().visible = false
+    useCanvasStore().canvas = fromPartial({
+      linkConnector: {
+        events: new EventTarget(),
+        reset: vi.fn()
+      },
+      setDirty: vi.fn()
+    })
   })
 
   describe('addFilter duplicate prevention', () => {
@@ -156,6 +180,71 @@ describe('NodeSearchBoxPopover', () => {
 
       expect(screen.getByLabelText('filter count')).toHaveTextContent('2')
     })
+  })
+
+  it.for([
+    {
+      closedBy: 'adding a node',
+      close: (user: ReturnType<typeof userEvent.setup>) =>
+        user.click(screen.getByRole('button', { name: 'Add node' }))
+    },
+    {
+      closedBy: 'the toggle command',
+      close: () => useSearchBoxStore().toggleVisible()
+    }
+  ])('clears filters after $closedBy closes the search', async ({ close }) => {
+    const user = userEvent.setup()
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      callback(0)
+      return 0
+    })
+    vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
+      fromPartial({})
+    )
+    const { pinia } = renderComponent({
+      'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+    })
+    const searchBoxStore = useSearchBoxStore(pinia)
+
+    searchBoxStore.visible = true
+    await user.click(screen.getByRole('button', { name: 'Add filter' }))
+    expect(screen.getByLabelText('filter count')).toHaveTextContent('1')
+
+    await close(user)
+    expect(searchBoxStore.visible).toBe(false)
+    searchBoxStore.visible = true
+    await nextTick()
+
+    expect(screen.getByLabelText('filter count')).toHaveTextContent('0')
+  })
+
+  it('reopens above a later overlay using the dialog portal', async () => {
+    render(NodeSearchBoxPopover, {
+      global: {
+        plugins: [i18n, getActivePinia()!],
+        stubs: {
+          NodeSearchBox: true,
+          NodeSearchContent: true,
+          NodePreviewCard: true
+        }
+      }
+    })
+    const searchBoxStore = useSearchBoxStore()
+    searchBoxStore.visible = true
+    await screen.findByRole('dialog')
+    searchBoxStore.visible = false
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const dialog = screen.getByTestId('existing-overlay')
+    searchBoxStore.visible = true
+    const searchDialog = await screen.findByRole('dialog')
+    expect(dialog.compareDocumentPosition(searchDialog)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
   })
 
   describe('addNode ghost flag (FollowCursor setting)', () => {

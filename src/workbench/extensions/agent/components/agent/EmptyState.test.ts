@@ -36,11 +36,11 @@ const LOCAL_PROMPTS = [
 ] as const
 
 const CLOUD_PROMPTS = [
-  { id: 'slot_1', text: 'Generate a character sheet of an astronaut' },
-  { id: 'slot_2', text: 'Turn the product image into a short ad' },
-  { id: 'slot_3', text: 'Explain the selected nodes' },
-  { id: 'slot_4', text: 'Best image upscale workflow for 4K' },
-  { id: 'slot_5', text: 'Fix the errors in this workflow' }
+  { id: 'slot_1', text: 'Create a product image from a text prompt' },
+  { id: 'slot_2', text: 'Build an image-to-video workflow' },
+  { id: 'slot_3', text: 'Explain how a ComfyUI workflow works' },
+  { id: 'slot_4', text: 'Find the best workflow for a specific task' },
+  { id: 'slot_5', text: 'Diagnose and fix errors in a workflow' }
 ] as const
 
 describe('EmptyState', () => {
@@ -67,6 +67,7 @@ describe('EmptyState', () => {
           promptId: 'slot_5',
           promptIndex: 4,
           promptCount: 5,
+          visiblePromptCount: 5,
           promptTextHash: '2f8b1ba4',
           locale: 'en'
         }
@@ -74,87 +75,35 @@ describe('EmptyState', () => {
     ])
   })
 
-  it.for([
-    {
-      locale: 'en',
-      assignment: 'control',
-      key: 'agent.suggestedPrompts.cloud.0',
-      reported: 'control'
-    },
-    {
-      locale: 'en',
-      assignment: 'test',
-      key: 'agent.suggestedPrompts.treatment.cloud.0',
-      reported: 'test'
-    }
-  ] as const)(
-    'renders and reports $assignment for an eligible $locale locale',
-    async ({ locale, assignment, key, reported }) => {
-      const previousLocale = i18n.global.locale.value
-      i18n.global.locale.value = locale
-      distribution.isCloud = true
-      try {
-        const user = userEvent.setup()
-        const { emitted } = render(EmptyState, {
-          props: { assignment, attributeExperiment: true },
-          global: { plugins: [i18n] }
+  it('separates the visible count from the set size in a narrow panel', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(EmptyState, {
+      global: { plugins: [i18n] }
+    })
+    const buttons = screen.getAllByRole('button')
+    // happy-dom does not evaluate container queries; hide the overflow as the
+    // compact breakpoint does.
+    buttons.slice(3).forEach((button) => (button.style.display = 'none'))
+
+    await user.click(buttons[0])
+
+    expect(emitted().insert).toEqual([
+      [
+        LOCAL_PROMPTS[0].text,
+        expect.objectContaining({
+          promptId: 'slot_1',
+          // The set did not shrink, so the set-size field must not move.
+          promptCount: 5,
+          visiblePromptCount: 3
         })
-        const text = i18n.global.t(key)
+      ]
+    ])
+  })
 
-        await user.click(screen.getByRole('button', { name: text }))
-
-        expect(emitted().rendered).toEqual([[reported]])
-        expect(emitted().insert).toEqual([
-          [text, expect.objectContaining({ assignment: reported })]
-        ])
-      } finally {
-        i18n.global.locale.value = previousLocale
-      }
-    }
-  )
-
-  it.for([
-    {
-      locale: 'zh',
-      assignment: 'control',
-      key: 'agent.suggestedPrompts.cloud.0'
-    },
-    {
-      locale: 'zh',
-      assignment: 'test',
-      key: 'agent.suggestedPrompts.cloud.0'
-    }
-  ] as const)(
-    'renders control without reporting $assignment for an ineligible $locale locale',
-    async ({ locale, assignment, key }) => {
-      const previousLocale = i18n.global.locale.value
-      i18n.global.locale.value = locale
-      distribution.isCloud = true
-      try {
-        const user = userEvent.setup()
-        const { emitted } = render(EmptyState, {
-          props: { assignment, attributeExperiment: true },
-          global: { plugins: [i18n] }
-        })
-        const text = i18n.global.t(key)
-
-        await user.click(screen.getByRole('button', { name: text }))
-
-        expect(emitted()).not.toHaveProperty('rendered')
-        expect(emitted().insert).toEqual([
-          [text, expect.not.objectContaining({ assignment: expect.anything() })]
-        ])
-      } finally {
-        i18n.global.locale.value = previousLocale
-      }
-    }
-  )
-
-  it('omits experiment attribution for a QA-rendered treatment', async () => {
+  it('renders the winning static Cloud prompts without experiment attribution', async () => {
     distribution.isCloud = true
     const user = userEvent.setup()
     const { emitted } = render(EmptyState, {
-      props: { assignment: 'test', attributeExperiment: false },
       global: { plugins: [i18n] }
     })
 
@@ -166,45 +115,21 @@ describe('EmptyState', () => {
     ])
   })
 
-  it('keeps attributing the arm it rendered when the assignment changes', async () => {
+  it('falls back to the existing Cloud copy until a locale has winning copy', async () => {
+    const previousLocale = i18n.global.locale.value
+    i18n.global.locale.value = 'zh'
     distribution.isCloud = true
-    const user = userEvent.setup()
-    const { emitted, rerender } = render(EmptyState, {
-      props: { assignment: 'test', attributeExperiment: true },
-      global: { plugins: [i18n] }
-    })
+    try {
+      render(EmptyState, { global: { plugins: [i18n] } })
 
-    await rerender({ assignment: 'control', attributeExperiment: false })
-    const text = i18n.global.t('agent.suggestedPrompts.treatment.cloud.0')
-    await user.click(screen.getByRole('button', { name: text }))
-
-    expect(emitted().insert).toEqual([
-      [text, expect.objectContaining({ assignment: 'test' })]
-    ])
-  })
-
-  it('does not attribute a surface that mounted before experiment config loaded', async () => {
-    distribution.isCloud = true
-    const user = userEvent.setup()
-    const { emitted, rerender } = render(EmptyState, {
-      props: {
-        assignment: 'control',
-        attributeExperiment: false
-      },
-      global: { plugins: [i18n] }
-    })
-
-    await rerender({
-      assignment: 'test',
-      attributeExperiment: true
-    })
-    const text = i18n.global.t('agent.suggestedPrompts.cloud.0')
-    await user.click(screen.getByRole('button', { name: text }))
-
-    expect(emitted()).not.toHaveProperty('rendered')
-    expect(emitted().insert).toEqual([
-      [text, expect.not.objectContaining({ assignment: expect.anything() })]
-    ])
+      expect(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.suggestedPrompts.cloud.0')
+        })
+      ).toBeVisible()
+    } finally {
+      i18n.global.locale.value = previousLocale
+    }
   })
 
   it.for([
@@ -331,7 +256,7 @@ describe('EmptyState', () => {
     }
   })
 
-  it('enrolls a locale after treatment translations land', async () => {
+  it('uses the winning static prompts after their translations land', async () => {
     const previousLocale = i18n.global.locale.value
     const previousMessages = structuredClone(
       toRaw(i18n.global.getLocaleMessage('zh'))
@@ -348,21 +273,14 @@ describe('EmptyState', () => {
     distribution.isCloud = true
     try {
       const user = userEvent.setup()
-      const { emitted } = render(EmptyState, {
-        props: { assignment: 'test', attributeExperiment: true },
-        global: { plugins: [i18n] }
-      })
+      const { emitted } = render(EmptyState, { global: { plugins: [i18n] } })
 
       await user.click(
         screen.getByRole('button', { name: translatedPrompts[0] })
       )
 
-      expect(emitted().rendered).toEqual([['test']])
       expect(emitted().insert).toEqual([
-        [
-          translatedPrompts[0],
-          expect.objectContaining({ assignment: 'test', locale: 'zh' })
-        ]
+        [translatedPrompts[0], expect.objectContaining({ locale: 'zh' })]
       ])
     } finally {
       i18n.global.locale.value = previousLocale

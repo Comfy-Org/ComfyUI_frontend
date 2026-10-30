@@ -9,7 +9,12 @@
       {{ t('actionbar.dockToTop') }}
     </div>
 
-    <div ref="panelRef" :style :class="panelClass">
+    <div
+      ref="panelRef"
+      :style
+      :class="panelClass"
+      data-testid="actionbar-panel"
+    >
       <div class="relative flex items-center gap-2 select-none">
         <span
           ref="dragHandleRef"
@@ -20,6 +25,7 @@
             )
           "
         />
+        <DeploymentSwitcher />
         <div v-coachmark="FIRST_RUN_COACH_IDS.runButton" class="inline-flex">
           <Suspense @resolve="comfyRunButtonResolved">
             <ComfyRunButton />
@@ -28,47 +34,53 @@
         <Button
           :tooltip="t('menu.interrupt')"
           tooltip-side="bottom"
-          :variant="isExecutionIdle ? 'secondary' : 'destructive'"
+          :variant="canInterrupt ? 'destructive' : 'secondary'"
           size="icon"
-          :disabled="isExecutionIdle"
+          :disabled="!canInterrupt"
           :aria-label="t('menu.interrupt')"
           @click="cancelCurrentJob"
         >
-          <i class="icon-[lucide--x] size-4" />
+          <i class="icon-[lucide--x]" />
         </Button>
-        <Button
-          :tooltip="queueToggleLabel"
-          tooltip-side="bottom"
-          variant="secondary"
-          size="md"
-          :aria-pressed="
-            isQueuePanelV2Enabled
-              ? activeSidebarTabId === 'job-history'
-              : queueOverlayExpanded
-          "
-          class="relative px-3"
-          data-testid="queue-overlay-toggle"
-          @click="toggleQueueOverlay"
-          @contextmenu.stop.prevent="showQueueContextMenu"
-        >
-          <span class="text-sm font-normal tabular-nums">
-            {{ activeJobsLabel }}
-          </span>
-          <StatusBadge
-            v-if="activeJobsCount > 0"
-            data-testid="active-jobs-indicator"
-            variant="dot"
-            class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
-          />
-          <span class="sr-only">{{ queueToggleLabel }}</span>
-        </Button>
-        <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
+        <ContextMenu :model="queueContextMenuItems">
+          <Button
+            :tooltip="queueToggleLabel"
+            tooltip-side="bottom"
+            variant="secondary"
+            size="md"
+            :aria-pressed="
+              isQueuePanelV2Enabled
+                ? activeSidebarTabId === 'job-history'
+                : queueOverlayExpanded
+            "
+            class="px-3"
+            data-testid="queue-overlay-toggle"
+            @click="toggleQueueOverlay"
+            @contextmenu.stop
+          >
+            <span class="text-sm font-normal tabular-nums">
+              {{ activeJobsLabel }}
+            </span>
+            <Badge
+              v-if="activeJobsCount > 0"
+              data-testid="active-jobs-indicator"
+              variant="dot"
+              severity="default"
+              class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
+            />
+            <span class="sr-only">{{ queueToggleLabel }}</span>
+          </Button>
+        </ContextMenu>
       </div>
       <FreeTierQuota v-if="!isDocked" />
       <PartnerNodesRunCaption v-if="!isDocked" />
     </div>
 
-    <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
+    <Teleport
+      v-if="inlineProgressTarget"
+      :key="isDocked ? 'docked' : 'floating'"
+      :to="inlineProgressTarget"
+    >
       <QueueInlineProgress
         :hidden="shouldHideInlineProgress"
         radius-class="rounded-xl"
@@ -83,6 +95,7 @@ import {
   useDraggable,
   useEventListener,
   useLocalStorage,
+  useResizeObserver,
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
@@ -91,16 +104,18 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaption.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
-import Button from '@/components/ui/button/Button.vue'
-import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import Button from '@comfyorg/design-system/button/Button'
+import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import { useInterruptibleJob } from '@/components/queue/useInterruptibleJob'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
-import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
+import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
@@ -108,7 +123,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import ComfyRunButton from './ComfyRunButton'
+import ComfyRunButton from './ComfyRunButton/ComfyRunButton.vue'
 
 const { dockedProgressContainer, queueOverlayExpanded = false } = defineProps<{
   /**
@@ -130,7 +145,7 @@ const executionStore = useExecutionStore()
 const queueStore = useQueueStore()
 const sidebarTabStore = useSidebarTabStore()
 const { t, n } = useI18n()
-const { isIdle: isExecutionIdle } = storeToRefs(executionStore)
+const { interruptibleJobId, canInterrupt } = useInterruptibleJob()
 const { activeJobsCount } = storeToRefs(queueStore)
 const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
 
@@ -301,6 +316,15 @@ const adjustMenuPosition = () => {
 
 useEventListener(window, 'resize', adjustMenuPosition)
 
+function keepFloatingPanelOnScreen() {
+  const panel = panelRef.value
+  if (!panel || isDocked.value) return
+  x.value = clamp(x.value, 0, window.innerWidth - panel.offsetWidth)
+  y.value = clamp(y.value, 0, window.innerHeight - panel.offsetHeight)
+}
+
+useResizeObserver(panelRef, keepFloatingPanelOnScreen)
+
 // Drop zone state
 const isMouseOverDropZone = ref(false)
 
@@ -371,12 +395,11 @@ const activeJobsLabel = computed(() => {
     count
   )
 })
-const queueContextMenu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const queueContextMenuItems = computed<MenuItem[]>(() => [
   {
     label: t('sideToolbar.queueProgressOverlay.clearQueueTooltip'),
-    icon: 'icon-[lucide--list-x] text-destructive-background',
-    class: '*:text-destructive-background',
+    icon: 'icon-[lucide--list-x] text-destructive',
+    class: '*:text-destructive',
     disabled: queueStore.pendingTasks.length === 0,
     command: () => {
       void handleClearQueue()
@@ -385,8 +408,9 @@ const queueContextMenuItems = computed<MenuItem[]>(() => [
 ])
 
 const cancelCurrentJob = async () => {
-  if (isExecutionIdle.value) return
-  await commandStore.execute('Comfy.Interrupt')
+  const jobId = interruptibleJobId.value
+  if (!jobId) return
+  await commandStore.execute('Comfy.Interrupt', { metadata: { jobId } })
 }
 const toggleQueueOverlay = () => {
   if (isQueuePanelV2Enabled.value) {
@@ -394,9 +418,6 @@ const toggleQueueOverlay = () => {
     return
   }
   commandStore.execute('Comfy.Queue.ToggleOverlay')
-}
-const showQueueContextMenu = (event: MouseEvent) => {
-  queueContextMenu.value?.show(event)
 }
 const handleClearQueue = async () => {
   const pendingJobIds = queueStore.pendingTasks
@@ -421,7 +442,7 @@ const panelClass = computed(() =>
   cn(
     'actionbar pointer-events-auto',
     isDragging.value && 'pointer-events-none select-none',
-    !isDocked.value && 'fixed z-1300 floating-panel'
+    !isDocked.value && 'fixed z-1 floating-panel'
   )
 )
 </script>

@@ -16,11 +16,12 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 import type { ComfyApp } from '@/types/comfy'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionServiceAccess } from '@/platform/extensions/services/extensionServiceAccess'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
+import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
@@ -247,7 +248,7 @@ export class TaskItemImpl {
         rawOutputs[rawNodeExecutionId]
       )
     }
-    useExtensionService().invokeExtensions(
+    useExtensionServiceAccess().invokeExtensions(
       'onNodeOutputsUpdated',
       app.nodeOutputs
     )
@@ -316,12 +317,26 @@ export const useQueueStore = defineStore('queue', () => {
     () => pendingTasks.value.length + runningTasks.value.length
   )
 
+  let currentUpdate: Promise<void> = Promise.resolve()
+
   const update = async () => {
     if (updateState.inFlight) {
       updateState.dirty = true
       return
     }
+    currentUpdate = fetchQueueAndHistory()
+    await currentUpdate
+  }
 
+  /** Like `update()`, but a coalesced call also waits for the trailing re-fetch. */
+  async function updateFresh() {
+    if (!updateState.inFlight) return update()
+    updateState.dirty = true
+    await currentUpdate
+    await currentUpdate
+  }
+
+  async function fetchQueueAndHistory() {
     updateState.inFlight = true
     updateState.dirty = false
     isLoading.value = true
@@ -354,6 +369,7 @@ export const useQueueStore = defineStore('queue', () => {
           ...queue.Pending.map((j) => j.id)
         ])
         executionStore.reconcileInitializingJobs(activeJobIds)
+        useJobModelDownloadStore().reconcileActiveJobs(activeJobIds)
       } else if (!isAbortError(queueResult.reason)) {
         console.error('Failed to fetch queue:', queueResult.reason)
       }
@@ -439,6 +455,7 @@ export const useQueueStore = defineStore('queue', () => {
     activeJobsCount,
 
     update,
+    updateFresh,
     clear,
     delete: deleteTask
   }

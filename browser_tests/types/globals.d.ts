@@ -1,7 +1,6 @@
 import '@/types'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphBadge as LGraphBadgeClass } from '@/lib/litegraph/src/LGraphBadge'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { ComfyApp } from '@/scripts/app'
@@ -28,8 +27,8 @@ export interface TabSwitchLens {
 }
 
 interface CapturedMessages {
-  clientFeatureFlags: unknown
-  serverFeatureFlags: unknown
+  clientFeatureFlags: { type: string; data: Record<string, unknown> } | null
+  serverFeatureFlags: Record<string, unknown> | null
 }
 
 interface PerfFrameState {
@@ -52,7 +51,6 @@ declare global {
     app?: ComfyApp
     graph?: LGraph
     LiteGraph?: LiteGraphGlobal
-    LGraphBadge?: typeof LGraphBadge
 
     // Test-specific globals used for assertions
     foo?: boolean
@@ -60,11 +58,20 @@ declare global {
     changeCount?: number
     widgetValue?: unknown
     __commandExecutionCounts?: Record<string, number>
-    __autoShownReads?: number
     __perfFrameState?: PerfFrameState
     __perfLongtaskState?: PerfLongtaskState
     __captureHostTelemetry?: (captured: {
       event: string
+      properties: Record<string, unknown>
+    }) => Promise<void>
+    /**
+     * Pushes a host auth state change through the mocked Desktop bridge.
+     * @see browser_tests/fixtures/hostSessionPartnerNodeFixture.ts
+     */
+    __pushHostAuthState?: (next: { status: 'signed_out' }) => unknown
+    __captureHostErrorReport?: (captured: {
+      message: string
+      stack?: string
       properties: Record<string, unknown>
     }) => Promise<void>
 
@@ -100,7 +107,6 @@ declare global {
   const app: ComfyApp | undefined
   const graph: LGraph | undefined
   const LiteGraph: LiteGraphGlobal | undefined
-  const LGraphBadge: typeof LGraphBadgeClass | undefined
 }
 
 /**

@@ -67,8 +67,22 @@ describe('starter prompt identity', () => {
       promptId: 'slot_4',
       promptIndex: 3,
       promptCount: 5,
+      visiblePromptCount: 5,
       promptTextHash: '3849a858',
       locale: 'zh'
     })
+  })
+
+  it('keeps the visible count separate from the set size', () => {
+    const compact = starterPromptAttribution(
+      'Explain the selected node',
+      3,
+      5,
+      'en',
+      3
+    )
+
+    expect(compact.promptCount).toBe(5)
+    expect(compact.visiblePromptCount).toBe(3)
   })
 })

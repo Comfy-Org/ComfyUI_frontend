@@ -1,0 +1,64 @@
+<template>
+  <div class="space-y-4">
+    <div class="flex items-center justify-between">
+      <label>{{ $t('load3d.gizmo.toggle') }}</label>
+      <ToggleGroup
+        type="single"
+        :model-value="gizmoEnabled ? 'on' : 'off'"
+        @update:model-value="(v) => (gizmoEnabled = v === 'on')"
+      >
+        <ToggleGroupItem value="off" size="sm" class="flex-1">
+          {{ $t('g.off') }}
+        </ToggleGroupItem>
+        <ToggleGroupItem value="on" size="sm" class="flex-1">
+          {{ $t('g.on') }}
+        </ToggleGroupItem>
+      </ToggleGroup>
+    </div>
+
+    <template v-if="gizmoEnabled">
+      <div>
+        <ToggleGroup
+          type="single"
+          :model-value="gizmoMode"
+          @update:model-value="
+            (v) => {
+              if (v) gizmoMode = v as GizmoMode
+            }
+          "
+        >
+          <ToggleGroupItem value="translate" class="flex-1">
+            {{ $t('load3d.gizmo.translate') }}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="rotate" class="flex-1">
+            {{ $t('load3d.gizmo.rotate') }}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="scale" class="flex-1">
+            {{ $t('load3d.gizmo.scale') }}
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+
+      <div>
+        <Button variant="secondary" @click="$emit('reset-transform')">
+          <i class="icon-[lucide--rotate-cw]" />
+          {{ $t('load3d.gizmo.reset') }}
+        </Button>
+      </div>
+    </template>
+  </div>
+</template>
+
+<script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import type { GizmoMode } from '@comfyorg/viewport3d/load3d/interfaces'
+
+const gizmoEnabled = defineModel<boolean>('gizmoEnabled')
+const gizmoMode = defineModel<GizmoMode>('gizmoMode')
+
+defineEmits<{
+  (e: 'reset-transform'): void
+}>()
+</script>

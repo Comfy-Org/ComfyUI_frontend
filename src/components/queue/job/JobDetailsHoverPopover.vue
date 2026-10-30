@@ -1,5 +1,5 @@
 <template>
-  <Popover :open="isOpen" @update:open="onOpenChange">
+  <PopoverRoot :open="isOpen" @update:open="onOpenChange">
     <PopoverContent
       v-if="hasReference"
       :reference="referenceElement ?? undefined"
@@ -7,13 +7,12 @@
       side="right"
       align="start"
       :side-offset="8"
-      :collision-padding="8"
       :avoid-collisions="true"
       :side-flip="true"
       :hide-when-detached="true"
       position-strategy="fixed"
       sticky="always"
-      class="job-details-popover z-1700 max-h-(--reka-popover-content-available-height) w-auto overflow-y-auto border-0 bg-transparent p-0 shadow-none will-change-transform"
+      class="job-details-popover w-auto border-0 bg-transparent p-0 shadow-none will-change-transform"
       @mouseenter="$emit('content-enter')"
       @mouseleave="$emit('content-leave')"
       @open-auto-focus.prevent
@@ -25,15 +24,15 @@
         :workflow-id="workflowId"
       />
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 </template>
 
 <script setup lang="ts">
+import { PopoverRoot } from 'reka-ui'
 import { computed } from 'vue'
 
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 
 const {
   open,

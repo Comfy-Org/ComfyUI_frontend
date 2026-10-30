@@ -10,27 +10,32 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
-import type { AgentStopMethod } from '@/platform/telemetry/types'
+import type { AgentStopMethod } from '@comfyorg/telemetry/types'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import { useNodeEmphasisSource } from '@/systems/nodeEmphasisSystem'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
-import { composerPromptForSubmission } from '../../utils/composerPrompt'
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
-import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
-import { useSkillMenuDescription } from '../../composables/agent/useSkillMenuDescription'
-import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
-import type { ComposerAttachment } from '../../types/composerAttachment'
-import type { MentionSection } from '../../composables/agent/mentionPickerState'
-import { useComposer } from '../../composables/agent/useComposer'
-import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
+import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+import { useAgentMentionPicker } from '@/workbench/extensions/agent/composables/agent/useAgentMentionPicker'
+import { useSkillMenuDescription } from '@/workbench/extensions/agent/composables/agent/useSkillMenuDescription'
+import { useWorkflowReferencePicker } from '@/workbench/extensions/agent/composables/agent/useWorkflowReferencePicker'
+import type {
+  AttachmentValidationError,
+  ComposerAttachment
+} from '@/workbench/extensions/agent/types/composerAttachment'
+import type { MentionSection } from '@/workbench/extensions/agent/composables/agent/mentionPickerState'
+import { useComposer } from '@/workbench/extensions/agent/composables/agent/useComposer'
+import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import type {
   PromptSnapshot,
   WorkflowReference,
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
-} from '../../types/workflowReference'
+} from '@/workbench/extensions/agent/types/workflowReference'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AssetTray from './composer/AssetTray.vue'
@@ -52,6 +57,7 @@ const {
   editableWorkflowId,
   hasWorkflowTarget = false,
   workflowSelecting = false,
+  openingChat = false,
   getMentionNodes = () => []
 } = defineProps<{
   streaming?: boolean
@@ -67,6 +73,7 @@ const {
   editableWorkflowId?: string
   hasWorkflowTarget?: boolean
   workflowSelecting?: boolean
+  openingChat?: boolean
   getMentionNodes?: () => SelectedNode[]
 }>()
 const emit = defineEmits<{
@@ -78,6 +85,7 @@ const emit = defineEmits<{
   stop: [method: AgentStopMethod]
   attach: []
   attachFiles: [files: File[]]
+  removeAttachment: [id: string]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -135,7 +143,13 @@ watch(
 )
 const { workflowReferences } = composer
 const placeholderLabel = computed(() =>
-  t(skills.enabled ? 'agent.placeholder' : 'agent.placeholderWithoutSkills')
+  t(
+    openingChat
+      ? 'agent.openingChat'
+      : skills.enabled
+        ? 'agent.placeholder'
+        : 'agent.placeholderWithoutSkills'
+  )
 )
 const showPlaceholderHint = computed(
   () => !composer.draft.value && !composer.prompt.value.references.length
@@ -160,6 +174,7 @@ const {
   mentionActive,
   mentionMatches,
   mentionVisible,
+  mentionActiveNode,
   mentionHasResults,
   skillQueryEmpty,
   graphDupes,
@@ -177,7 +192,8 @@ const {
   workflows: () => eligibleWorkflows.value,
   skills: () => skills.packs,
   skillsEnabled: () => skills.enabled,
-  assets: () => composer.attachments.value,
+  assets: () =>
+    composer.attachments.value.filter((item) => !item.validationError),
   nodeReferenceDisabledReason: () => nodeReferenceDisabledReason,
   workflowSelecting: () => workflowSelecting,
   getMentionNodes: () => getMentionNodes(),
@@ -185,6 +201,10 @@ const {
   pickNode: (node) => emit('mentionPick', node),
   pickAsset: (asset) => composer.referenceAttachment(asset.id),
   requestWorkflows: () => emit('requestWorkflowReferences')
+})
+useNodeEmphasisSource(() => {
+  const node = mentionActiveNode.value
+  return node && toNodeId(node.id)
 })
 
 function onSelectNodes(event: Event): void {
@@ -240,6 +260,7 @@ function onEditorSelectionChange(): void {
 }
 
 const SKILL_DESCRIPTION_ID = 'agent-skill-description'
+const REFERENCE_MENU_ID = 'agent-reference-menu'
 const {
   describedSkill,
   requestDescription,
@@ -307,6 +328,10 @@ function stopRunOnEscape(event: KeyboardEvent): void {
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
+  if (openingChat) {
+    event.preventDefault()
+    return
+  }
   requestKeyboardDescription(event)
   if (handleMentionKeydown(event)) return
   if (event.key === 'Enter') onEnter(event)
@@ -347,21 +372,60 @@ const emptyMentionLabel = computed(() =>
       )
 )
 
+function openReferenceMenu(): void {
+  const editor = editorRef.value
+  if (!editor) return
+  const { start } = editor.selection()
+  const needsSeparator =
+    start > 0 && !/\s/.test(composer.draft.value[start - 1] ?? '')
+  editor.insertText(needsSeparator ? ' @' : '@')
+  editor.focus()
+  syncMention()
+}
+
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
   if (running.value) return
-  composer.submit()
+  composer.submit('keyboard')
 }
 
-const primaryActionTooltip = computed(() =>
+const primaryActionLabel = computed(() =>
   running.value ? t('agent.stop') : t('agent.send')
 )
 const primaryActionVariant = computed(() =>
   running.value ? 'secondary' : 'inverted'
 )
+const SEND_BLOCKED_MESSAGES = {
+  'invalid-video': 'agent.sendBlockedByInvalidVideo',
+  'unsupported-type': 'agent.sendBlockedByUnsupportedType'
+} as const satisfies Record<AttachmentValidationError, string>
+
+const sendBlockedReason = computed(() => {
+  const invalid = composer.attachments.value.flatMap(
+    ({ name, validationError }) =>
+      validationError ? [{ name, validationError }] : []
+  )
+  if (running.value || invalid.length === 0) return undefined
+  if (invalid.length > 1)
+    return t('agent.sendBlockedByInvalidAttachments', {
+      count: invalid.length
+    })
+  const [{ name, validationError }] = invalid
+  return t(SEND_BLOCKED_MESSAGES[validationError], { name })
+})
+const primaryActionTooltip = computed(
+  () => sendBlockedReason.value ?? primaryActionLabel.value
+)
+const primaryActionAriaDisabled = computed(() =>
+  sendBlockedReason.value ? true : undefined
+)
 const primaryActionDisabled = computed(
-  () => !running.value && (workflowSelecting || !composer.canSend.value)
+  () =>
+    openingChat ||
+    (!running.value &&
+      !sendBlockedReason.value &&
+      (workflowSelecting || !composer.canSend.value))
 )
 const skillSearchHint = computed(() =>
   skillQueryEmpty.value ? t('agent.typeToSearch') : undefined
@@ -376,13 +440,23 @@ const primaryActionShortcut = computed(() =>
 )
 
 function onPrimaryAction(): void {
+  if (openingChat) return
   if (running.value) emit('stop', 'button')
-  else composer.submit()
+  else composer.submit('explicit')
 }
 
 const composerContainerRef = useTemplateRef<HTMLDivElement>(
   'composerContainerRef'
 )
+
+function focusAllowsComposerStop(): boolean {
+  const active = document.activeElement
+  return (
+    active === null ||
+    active === document.body ||
+    composerContainerRef.value?.contains(active) === true
+  )
+}
 
 // The prompt editor only forwards `keydown` while it (the ProseMirror
 // contenteditable) itself has focus, so pressing Escape after submitting via
@@ -415,16 +489,16 @@ const composerContainerRef = useTemplateRef<HTMLDivElement>(
 // full-screen overlay pre-empt everything else. This handler only ever runs
 // when none of those more specific handlers claimed the event first.
 function handleEscapeOverride(event: KeyboardEvent): boolean {
-  if (event.key !== 'Escape' || !running.value || event.isComposing)
+  if (
+    openingChat ||
+    event.key !== 'Escape' ||
+    !running.value ||
+    event.isComposing
+  )
     return false
   if (event.defaultPrevented) return false
 
-  const active = document.activeElement
-  const focusedElsewhere =
-    active !== null &&
-    active !== document.body &&
-    !composerContainerRef.value?.contains(active)
-  if (focusedElsewhere) return false
+  if (!focusAllowsComposerStop()) return false
 
   event.preventDefault()
   if (!event.repeat) emit('stop', 'escape')
@@ -453,6 +527,11 @@ function replaceDraft(prompt: PromptSnapshot): void {
   editorRef.value?.focus()
 }
 
+function removeAttachment(id: string): void {
+  composer.removeAttachment(id)
+  emit('removeAttachment', id)
+}
+
 defineExpose({
   insert,
   replaceDraft,
@@ -467,16 +546,16 @@ defineExpose({
     id="agent-composer"
     ref="composerContainerRef"
     data-testid="agent-composer"
-    class="relative flex min-w-0 flex-col rounded-lg border border-border-subtle bg-base-background"
+    class="relative flex min-w-0 flex-col rounded-lg border border-border/50 bg-background"
   >
     <div
       v-if="mentionVisible"
-      id="agent-reference-menu"
+      :id="REFERENCE_MENU_ID"
       ref="mentionListRef"
       data-testid="agent-reference-menu"
       role="menu"
       :aria-label="mentionMenuLabel"
-      class="absolute inset-x-0 bottom-full z-1100 -mb-8.75 max-h-64 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-md"
+      class="absolute inset-x-0 bottom-full z-1 -mb-8.75 max-h-64 overflow-y-auto rounded-lg border border-border/50 bg-secondary p-1 font-inter shadow-md"
       @mousedown.prevent
       @mouseleave="leaveDescription"
     >
@@ -515,7 +594,7 @@ defineExpose({
 
     <div
       v-if="$slots.header"
-      class="flex h-11 shrink-0 items-center rounded-t-lg bg-base-background px-2"
+      class="flex h-11 shrink-0 items-center rounded-t-lg bg-background px-2"
     >
       <slot name="header" />
     </div>
@@ -524,14 +603,14 @@ defineExpose({
 
     <div
       data-testid="composer-input-box"
-      class="relative -m-px flex max-h-[50dvh] min-h-28 min-w-0 flex-col rounded-lg border border-border-subtle bg-secondary-background transition-colors focus-within:border-muted-foreground"
+      class="relative -m-px flex max-h-[50dvh] min-h-28 min-w-0 flex-col rounded-lg border border-border/50 bg-secondary transition-colors focus-within:border-muted-foreground"
     >
       <slot name="insideInput" />
       <AssetTray
         v-if="composer.attachments.value.length"
         :attachments="composer.attachments.value"
         :highlighted-ids="highlightedAssetIds"
-        @remove="composer.removeAttachment"
+        @remove="removeAttachment"
       />
 
       <div
@@ -546,7 +625,7 @@ defineExpose({
         "
       >
         <template v-if="uploadingAttachmentCount > 0">
-          <span
+          <i
             aria-hidden="true"
             class="icon-[lucide--loader-circle] size-3 animate-spin"
           />
@@ -563,7 +642,10 @@ defineExpose({
           role="status"
           class="-mb-2 flex items-center gap-1 px-3 pt-3 text-xs text-muted-foreground"
         >
-          <span class="icon-[lucide--loader-circle] size-3 animate-spin" />
+          <i
+            aria-hidden="true"
+            class="icon-[lucide--loader-circle] size-3 animate-spin"
+          />
           {{ t('agent.savingWorkflow') }}
         </div>
         <div class="grid flex-1">
@@ -576,6 +658,7 @@ defineExpose({
               :model-value="composer.prompt.value"
               :label="placeholderLabel"
               :expanded="mentionVisible"
+              :reference-menu-id="REFERENCE_MENU_ID"
               :active-descendant="activeMentionDescendant"
               :search-hint="skillSearchHint"
               :history-epoch="composer.promptEpoch.value"
@@ -611,18 +694,30 @@ defineExpose({
       </div>
 
       <div class="flex shrink-0 items-center justify-between px-3 py-2">
-        <ComposerAddMenu
-          :can-attach
-          :can-open-assets
-          :node-reference-disabled-reason
-          :workflows="eligibleWorkflows"
-          :workflow-selecting
-          :select-workflow="selectWorkflow"
-          @select-nodes="onSelectNodes"
-          @attach="emit('attach')"
-          @open-assets="emit('openAssets')"
-          @request-workflow-references="emit('requestWorkflowReferences')"
-        />
+        <div class="flex items-center gap-1">
+          <ComposerAddMenu
+            :can-attach
+            :can-open-assets
+            :node-reference-disabled-reason
+            :workflows="eligibleWorkflows"
+            :workflow-selecting
+            :select-workflow="selectWorkflow"
+            @select-nodes="onSelectNodes"
+            @attach="emit('attach')"
+            @open-assets="emit('openAssets')"
+            @request-workflow-references="emit('requestWorkflowReferences')"
+          />
+          <Button
+            :tooltip="t('agent.reference')"
+            type="button"
+            variant="muted-textonly"
+            size="icon"
+            :aria-label="t('agent.reference')"
+            @click="openReferenceMenu"
+          >
+            <span class="text-base/4 font-medium">@</span>
+          </Button>
+        </div>
 
         <div class="flex items-center gap-1">
           <RunModePopover />
@@ -631,8 +726,11 @@ defineExpose({
             type="button"
             :variant="primaryActionVariant"
             size="icon"
-            :aria-label="primaryActionTooltip"
+            :aria-label="primaryActionLabel"
+            :aria-disabled="primaryActionAriaDisabled"
+            :aria-description="sendBlockedReason"
             :disabled="primaryActionDisabled"
+            class="aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-foreground"
             @click="onPrimaryAction"
           >
             <i-lucide:square v-if="running" class="size-4" />

@@ -3,8 +3,9 @@ import { markRaw } from 'vue'
 import ModelLibrarySidebarTab from '@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
-import { isDesktop } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
@@ -18,6 +19,8 @@ export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
     component: markRaw(ModelLibrarySidebarTab),
     type: 'vue',
     onToggle: async () => {
+      if (isCloud && useDeploymentPickStore().bootDeployment) return false
+
       const useAssetBrowser =
         useSettingStore().get('Comfy.ModelLibrary.UseAssetBrowser') &&
         useFeatureFlags().flags.assetsEnabled
