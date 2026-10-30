@@ -10,7 +10,8 @@ const deployment: WorkspaceDeployment = {
   build_name: 'video-minimax-h3 copy',
   release_id: 'rel-3',
   status: 'ready',
-  created_at: '2026-10-01T00:00:00Z'
+  created_at: '2026-10-01T00:00:00Z',
+  can_start: false
 }
 
 function section(brief: string, title: string): string {
@@ -111,18 +112,21 @@ describe(deploymentBuildBrief, () => {
   )
 
   it.for([
-    { lacks: 'only models', packs: [], section: '## Custom nodes' },
+    {
+      lacks: 'only models',
+      packs: [],
+      models: [{ name: 'm.safetensors', directory: 'vae' }],
+      section: '## Custom nodes'
+    },
     {
       lacks: 'only custom nodes',
       packs: [{ packId: null, nodeTypes: ['A'] }],
+      models: [],
       section: '## Models'
     }
   ])(
     'leaves out an empty list when the deployment lacks $lacks',
-    ({ packs, section }) => {
-      const models =
-        packs.length === 0 ? [{ name: 'm.safetensors', directory: 'vae' }] : []
-
+    ({ packs, models, section }) => {
       expect(deploymentBuildBrief(deployment, packs, models)).not.toContain(
         section
       )
@@ -135,7 +139,8 @@ describe(deploymentBuildBrief, () => {
         deployment_id: 'dep-1',
         release_id: 'rel-3',
         status: 'ready',
-        created_at: '2026-10-01T00:00:00Z'
+        created_at: '2026-10-01T00:00:00Z',
+        can_start: false
       },
       [],
       [{ name: 'm.safetensors', directory: 'vae' }]

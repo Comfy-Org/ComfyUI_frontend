@@ -1,15 +1,21 @@
-import type { ReleaseUnsupportedPack } from '@comfyorg/ingest-types'
-import { render, screen } from '@testing-library/vue'
+import type {
+  ReleaseUnsupportedPack,
+  WorkspaceDeploymentList
+} from '@comfyorg/ingest-types'
+import { render, screen, waitFor } from '@testing-library/vue'
 import type { UserEvent } from '@testing-library/user-event'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
 import { groupMissingModelCandidates } from '@/platform/workflowErrors/missingModel/missingModelGrouping'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
+import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { testI18n } from '@/utils/__tests__/testI18n'
 
 import DeploymentBuildActions from './DeploymentBuildActions.vue'
@@ -19,6 +25,15 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard })
 }))
 
+const mockWorkspaceApi = vi.hoisted(() => ({
+  listDeployments: vi.fn(),
+  getReleaseUnsupportedPacks: vi.fn()
+}))
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
+  workspaceApi: mockWorkspaceApi
+}))
+vi.mock(import('@/platform/workspace/deploymentSwitchReload'))
+
 const deployment: WorkspaceDeployment = {
   deployment_id: 'dep-1',
   deployment_name: 'production',
@@ -26,7 +41,8 @@ const deployment: WorkspaceDeployment = {
   build_name: 'video-minimax-h3 copy',
   release_id: 'rel-3',
   status: 'ready',
-  created_at: '2026-10-01T00:00:00Z'
+  created_at: '2026-10-01T00:00:00Z',
+  can_start: false
 }
 
 const missingPackGroups: MissingPackGroup[] = [
@@ -172,5 +188,87 @@ describe('DeploymentBuildActions', () => {
     expect((await copiedBrief(user)).split('\n')).toContain(
       '- Pack `comfyui-nvidia-vfx`: `NVVFXSuperRes` (fails with: needs a GPU)'
     )
+  })
+
+  describe('once the deployment changed after the page loaded', () => {
+    function listingOn(running: WorkspaceDeployment): WorkspaceDeploymentList {
+      return {
+        builds_visible: true,
+        picked_deployment_id: running.deployment_id,
+        pick_source: 'browser',
+        items: [running]
+      }
+    }
+
+    async function bootOn(running: WorkspaceDeployment) {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listingOn(running))
+      await useDeploymentPickStore().loadOnce()
+    }
+
+    function returnToTheEditor() {
+      window.dispatchEvent(new Event('focus'))
+    }
+
+    beforeEach(() => {
+      mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+        release_id: null,
+        packs: []
+      })
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    })
+
+    it.for([
+      {
+        change: 'a new release',
+        now: { ...deployment, release_id: 'rel-4' },
+        message:
+          'This deployment now runs a different Release. Reload to get its nodes.'
+      },
+      {
+        change: 'on another deployment',
+        now: {
+          ...deployment,
+          deployment_id: 'dep-2',
+          deployment_name: 'staging',
+          release_id: 'rel-9'
+        },
+        message: /This browser now runs on .*staging.*Reload to get its nodes\./
+      }
+    ])(
+      'offers a reload instead of the Build when it runs $change',
+      async ({ now, message }) => {
+        await bootOn(deployment)
+        const user = renderActions()
+        mockWorkspaceApi.listDeployments.mockResolvedValue(listingOn(now))
+
+        returnToTheEditor()
+
+        expect(await screen.findByText(message)).toBeInTheDocument()
+        expect(
+          screen.queryByRole('link', { name: /on Platform/ })
+        ).not.toBeInTheDocument()
+        expect(
+          screen.queryByRole('button', { name: /Build with your agent/ })
+        ).not.toBeInTheDocument()
+        await user.click(screen.getByRole('button', { name: 'Reload' }))
+        await waitFor(() =>
+          expect(reloadForDeploymentSwitch).toHaveBeenCalledOnce()
+        )
+      }
+    )
+
+    it('checks for a change at most once a minute as the user returns', async () => {
+      await bootOn(deployment)
+      renderActions()
+      mockWorkspaceApi.listDeployments.mockClear()
+
+      returnToTheEditor()
+      returnToTheEditor()
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+
+      vi.advanceTimersByTime(DEPLOYMENT_LISTING_FOCUS_RETRY_MS)
+      returnToTheEditor()
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(2)
+    })
   })
 })

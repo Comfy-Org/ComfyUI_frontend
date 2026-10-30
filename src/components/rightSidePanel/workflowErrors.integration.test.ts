@@ -339,7 +339,8 @@ describe('ErrorGroupList selection emphasis', () => {
     build_name: 'video-minimax-h3 copy',
     release_id: 'rel-3',
     status: 'ready',
-    created_at: '2026-10-01T00:00:00Z'
+    created_at: '2026-10-01T00:00:00Z',
+    can_start: false
   }
 
   function showMissingModelOn(bootDeployment: WorkspaceDeployment | null) {
@@ -403,6 +404,26 @@ describe('ErrorGroupList selection emphasis', () => {
       ).toBe(offersImport)
     }
   )
+
+  it('asks for a reload instead of the Build once the deployment runs a newer release', () => {
+    Object.assign(useDeploymentPickStore(getActivePinia()), {
+      changeSinceBoot: 'release'
+    })
+
+    const hero = showMissingModelOn(production)
+
+    expect(
+      within(hero).getByText('Finish setup before running the workflow')
+    ).toBeInTheDocument()
+    expect(
+      within(hero).getByText(
+        'This deployment now runs a different Release. Reload to get its nodes.'
+      )
+    ).toBeInTheDocument()
+    expect(
+      within(hero).queryByRole('button', { name: /Build with your agent/ })
+    ).not.toBeInTheDocument()
+  })
 
   it('names the deployment in the summary as its owner wrote it', () => {
     const hero = showMissingModelOn({

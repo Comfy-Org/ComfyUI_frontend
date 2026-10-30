@@ -588,7 +588,9 @@ const BUILD_FIXABLE_TYPES: ReadonlySet<ErrorGroup['type']> = new Set([
   'missing_node',
   'missing_model'
 ])
-const { bootDeployment } = storeToRefs(useDeploymentPickStore())
+const { bootDeployment, changeSinceBoot } = storeToRefs(
+  useDeploymentPickStore()
+)
 const bootDeploymentLabel = useBootDeploymentLabel()
 const runsOnDeployment = computed(() => isCloud && !!bootDeployment.value)
 const buildDeployment = computed(() => {
@@ -601,6 +603,7 @@ const buildDeployment = computed(() => {
 const buildFixesAllSetup = computed(
   () =>
     buildDeployment.value !== undefined &&
+    changeSinceBoot.value === null &&
     filteredGroups.value.every(
       (group) =>
         group.severity !== 'missing' || BUILD_FIXABLE_TYPES.has(group.type)
