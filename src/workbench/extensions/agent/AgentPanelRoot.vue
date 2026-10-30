@@ -2066,7 +2066,8 @@ function onNewChat(
   retireFollow()
   if (source === 'history_back') {
     newChat()
-    agentPanelStore.startFollowingVisibleWorkflow()
+    if (selectionTags.value.length) agentPanelStore.retainWorkflowTarget()
+    else agentPanelStore.startFollowingVisibleWorkflow()
     return
   }
   provisionalTitle.value = undefined
