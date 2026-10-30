@@ -17,6 +17,9 @@ vi.mock<unknown>(import('@/components/dialog/GlobalDialog.vue'), () => ({
 }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
 vi.mock(import('@/platform/telemetry/assetLoadErrorReporting'))
+vi.mock<unknown>(import('@/composables/useAgentExtensionNotices'), () => ({
+  useAgentExtensionNotices: vi.fn()
+}))
 vi.mock<unknown>(
   import('@/platform/customNodes/manager/composables/useConflictDetection'),
   () => ({

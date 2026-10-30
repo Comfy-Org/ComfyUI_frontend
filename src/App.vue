@@ -17,6 +17,7 @@ import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { useAgentExtensionNotices } from '@/composables/useAgentExtensionNotices'
 import config from '@/config'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
@@ -39,6 +40,7 @@ const workspaceStore = useWorkspaceStore()
 app.extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
+useAgentExtensionNotices()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
 
 watch(

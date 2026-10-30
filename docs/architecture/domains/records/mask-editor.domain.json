@@ -8,10 +8,6 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/maskeditor.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/maskeditor.ts",
       "role": "integration"
     },
@@ -28,19 +24,11 @@
       "role": "application"
     },
     {
-      "path": "src/scripts/clipspace.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/scripts/clipspace.ts",
       "role": "application"
     },
     {
       "path": "src/utils/__fixtures__/**",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/utils/pngEncodeUtil.test.ts",
       "role": "infrastructure"
     },
     {

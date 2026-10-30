@@ -5,7 +5,7 @@ import type { useComfyManagerStore } from '@/platform/customNodes/manager/stores
 import {
   getPackUpdateStatus,
   isNightlyVersion
-} from '@/platform/customNodes/manager/utils/packUpdateStatus'
+} from '@/platform/customNodes/manager/composables/nodePack/packUpdateStatus'
 
 type NodePack = components['schemas']['Node']
 type ComfyManagerStore = ReturnType<typeof useComfyManagerStore>
