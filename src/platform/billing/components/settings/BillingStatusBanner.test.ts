@@ -63,16 +63,18 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/ports/workspaceIdentity'),
-  () => ({
-    useWorkspaceIdentity: () => ({
-      get activeWorkspaceId() {
-        return state.activeWorkspaceId
-      }
-    })
+vi.mock(import('@/platform/workspace/ports/workspaceIdentity'), () => ({
+  useWorkspaceIdentity: () => ({
+    workspaces: [],
+    activeWorkspace: null,
+    get activeWorkspaceId() {
+      return state.activeWorkspaceId
+    },
+    isInPersonalWorkspace: false,
+    workspaceTransitionGeneration: 0,
+    identityGeneration: 0
   })
-)
+}))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -368,6 +370,19 @@ describe('BillingStatusBanner', () => {
       expect(
         screen.queryByRole('button', { name: "Don't show again" })
       ).not.toBeInTheDocument()
+    })
+
+    it('still shows a member the notice an owner hid in the same browser', async () => {
+      endingOn('2026-08-01T00:00:00Z')
+      const { unmount } = renderBanner('planCredits')
+      await hideEnding()
+      unmount()
+
+      state.canManageSubscription = false
+      renderBanner('planCredits')
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'You can run workflows until then.'
+      )
     })
 
     it('keeps the notice on the Billing tab after it is hidden', async () => {

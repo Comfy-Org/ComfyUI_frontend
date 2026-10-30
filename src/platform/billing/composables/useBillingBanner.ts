@@ -223,6 +223,7 @@ function useBillingBannerInternal() {
   })
   const planEndingHidden = computed(
     () =>
+      permissions.value.canManageSubscription &&
       planEndingKey.value !== null &&
       hiddenPlanEndings.value.includes(planEndingKey.value)
   )
