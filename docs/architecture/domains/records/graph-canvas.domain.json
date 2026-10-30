@@ -8,15 +8,7 @@
       "role": "domain"
     },
     {
-      "path": "src/composables/useCopy.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/composables/useCopy.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/usePaste.test.ts",
       "role": "integration"
     },
     {
@@ -24,23 +16,7 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/contextMenuFilter.name.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/contextMenuFilter.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/contextMenuFilter.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/contextMenuFilter.wrap.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/groupOptions.test.ts",
       "role": "integration"
     },
     {
@@ -52,16 +28,8 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/simpleTouchSupport.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/simpleTouchSupport.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/CanvasPointer.deviceDetection.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/lib/litegraph/src/CanvasPointer.ts",
@@ -72,15 +40,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/DragAndScale.animateToBounds.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/lib/litegraph/src/DragAndScale.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/lib/litegraph/src/DragAndScale.viewportSize.test.ts",
       "role": "application"
     },
     {
@@ -88,95 +48,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/LGraphButton.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/lib/litegraph/src/LGraphButton.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.clipboard.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.cloneZIndex.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.deprecated.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.drawConnections.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.gesture.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.ghost.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.groupSelection.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.interactionMode.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.invalidation.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.linkDragAutoPan.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.linkVisibility.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.onMenuAdd.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.prompt.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.renderInfo.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.resize.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.selectOnly.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.selection.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.setGraph.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.slotHitDetection.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.subgraphPasteDelete.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraphCanvas.titleButtons.test.ts",
       "role": "presentation"
     },
     {
@@ -196,16 +68,8 @@
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/CanvasInteractionMode.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/lib/litegraph/src/canvas/InputIndicators.ts",
       "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/canvas/captureGesture.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/lib/litegraph/src/canvas/captureGesture.ts",
@@ -214,10 +78,6 @@
     {
       "path": "src/lib/litegraph/src/canvas/clipboardStorage.ts",
       "role": "infrastructure"
-    },
-    {
-      "path": "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.test.ts",
-      "role": "application"
     },
     {
       "path": "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.ts",
@@ -232,10 +92,6 @@
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/reduceGesture.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/lib/litegraph/src/canvas/reduceGesture.ts",
       "role": "domain"
     },
@@ -244,16 +100,8 @@
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/contextMenuCompat.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/lib/litegraph/src/contextMenuCompat.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/cursorCache.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/lib/litegraph/src/cursorCache.ts",
@@ -268,19 +116,15 @@
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/nodeBadgeDraw.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/lib/litegraph/src/nodeBadgeDraw.ts",
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/types/contextMenu.ts",
-      "role": "domain"
+      "path": "src/lib/litegraph/src/nodeEmphasis.ts",
+      "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/types/events.ts",
+      "path": "src/lib/litegraph/src/types/contextMenu.ts",
       "role": "domain"
     },
     {
@@ -292,15 +136,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/utils/textMeasureCache.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/lib/litegraph/src/utils/textMeasureCache.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/utils/textUtils.test.ts",
       "role": "presentation"
     },
     {
@@ -318,10 +154,6 @@
     {
       "path": "src/utils/vintageClipboard.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/workbench/eventHelpers.test.ts",
-      "role": "application"
     },
     {
       "path": "src/workbench/eventHelpers.ts",
@@ -383,6 +215,13 @@
         "src/systems/badgeSystem.test.ts",
         "src/systems/badgeSystem.pricing.test.ts",
         "src/systems/badgeSystem.subgraph.test.ts"
+      ]
+    },
+    {
+      "name": "Node emphasis outlines selected and referenced nodes without changing selection",
+      "checks": [
+        "src/systems/nodeEmphasisSystem.test.ts",
+        "browser_tests/tests/agent/agentNodeMentionHighlight.spec.ts"
       ]
     },
     {

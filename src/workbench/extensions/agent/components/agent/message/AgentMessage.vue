@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -13,7 +14,6 @@ import {
   isOpenAskPart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import { htmlReplyAssets } from '@/workbench/extensions/agent/utils/replyAssets'
-import { cn } from '@comfyorg/tailwind-utils'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import AgentMessageGroup from './AgentMessageGroup.vue'
@@ -42,7 +42,7 @@ const emit = defineEmits<{
   answerAsk: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
-  paywallAction: [action: AgentPaywallAction]
+  paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
 }>()
 
 // Every thinking and tool part of the turn reads as one trace, wherever they fall
@@ -125,7 +125,9 @@ const status = computed(() => {
           (askId, workflowId, workflowName) =>
             emit('openWorkflow', askId, workflowId, workflowName)
         "
-        @paywall-action="emit('paywallAction', $event)"
+        @paywall-action="
+          (action, surface) => emit('paywallAction', action, surface)
+        "
       />
     </template>
 
@@ -133,7 +135,7 @@ const status = computed(() => {
       v-if="status"
       class="flex h-8 items-center gap-2 rounded-lg px-2 text-sm/5 font-normal text-muted-foreground"
     >
-      <span :class="cn('size-4 shrink-0', status.icon)" />
+      <i aria-hidden="true" :class="status.icon" />
       <span class="agent-shimmer-text min-w-0 truncate">{{ status.text }}</span>
     </div>
 

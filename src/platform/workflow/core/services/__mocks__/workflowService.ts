@@ -11,6 +11,7 @@ const workflowService: ReturnType<typeof realUseWorkflowService> = {
   reloadCurrentWorkflow: vi.fn(async () => {}),
   openWorkflow: vi.fn(async () => true),
   closeWorkflow: vi.fn(async () => true),
+  closeWorkflows: vi.fn(async () => {}),
   renameWorkflow: vi.fn(async () => {}),
   deleteWorkflow: vi.fn(async () => true),
   insertWorkflow: vi.fn(async () => {}),
@@ -23,6 +24,9 @@ const workflowService: ReturnType<typeof realUseWorkflowService> = {
 }
 
 export const useWorkflowService = vi.fn(() => workflowService)
+
+export const readWorkflowDraftLineage = vi.fn(() => null)
+export const writeWorkflowDraftLineage = vi.fn()
 
 export const resetWorkflowLoadQueueForTests = vi.fn(() => ({
   pendingLoads: 0,

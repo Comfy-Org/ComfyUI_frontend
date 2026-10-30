@@ -4,10 +4,10 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import TagRemoveButton from '@/components/chip/TagRemoveButton.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import TagRemoveButton from '@comfyorg/design-system/chip/TagRemoveButton'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 
@@ -46,6 +46,9 @@ const VALIDATION_MESSAGES = {
   'unsupported-type': 'agent.attachmentUnsupportedType'
 } as const satisfies Record<AttachmentValidationError, string>
 
+const outlined = computed(
+  () => !!validationError || (kind.value === 'image' && !previewUrl)
+)
 const invalidThumbnailKind = computed(() =>
   validationError === 'unsupported-type' ? 'other' : mediaKind
 )
@@ -64,7 +67,7 @@ const validationMessage = computed(
     :class="
       cn(
         'group/attachment relative flex size-20 shrink-0 items-center justify-center rounded-lg p-1 data-highlighted:ring-2 data-highlighted:ring-foreground data-highlighted:ring-inset',
-        validationError && 'ring-1 ring-border ring-inset'
+        outlined && 'ring-1 ring-border ring-inset'
       )
     "
   >
@@ -86,7 +89,8 @@ const validationMessage = computed(
             aria-hidden="true"
             class="pointer-events-none absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-background/80"
           >
-            <span
+            <i
+              aria-hidden="true"
               class="icon-[lucide--triangle-alert] size-3 text-destructive"
             />
           </span>
@@ -116,7 +120,7 @@ const validationMessage = computed(
         aria-hidden="true"
         class="pointer-events-none absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-background/80"
       >
-        <span class="icon-[lucide--play] size-3" />
+        <i aria-hidden="true" class="icon-[lucide--play] size-3" />
       </span>
       <span
         v-if="uploading"
@@ -124,7 +128,8 @@ const validationMessage = computed(
         :aria-label="$t('agent.uploading')"
         class="absolute inset-0 flex items-center justify-center bg-background/60"
       >
-        <span
+        <i
+          aria-hidden="true"
           class="icon-[lucide--loader-circle] size-5 animate-spin text-muted-foreground"
         />
       </span>

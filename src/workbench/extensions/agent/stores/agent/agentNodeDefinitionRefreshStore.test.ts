@@ -1,14 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { api } from '@/scripts/api'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentNodeDefinitionRefreshStore } from './agentNodeDefinitionRefreshStore'
 
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 function toolCall(
@@ -28,6 +27,8 @@ function toolCall(
 }
 
 const restartSucceeded = toolCall('restart_comfyui', 'success')
+const catalogRefreshSucceeded = toolCall('refresh_catalog', 'success')
+const RESTART_WINDOW_MS = 10 * 60_000
 
 function registerRefreshCommand(
   refresh = vi.fn<() => Promise<void>>(async () => {})
@@ -40,7 +41,19 @@ function registerRefreshCommand(
 }
 
 describe('agentNodeDefinitionRefreshStore', () => {
-  it('refreshes node definitions before reloading the open workflow after a restart succeeds', async () => {
+  it('refreshes node definitions without reloading the workflow after the agent refreshes its catalog', async () => {
+    const refresh = registerRefreshCommand()
+
+    useAgentNodeDefinitionRefreshStore().observeAgentEvent(
+      catalogRefreshSucceeded
+    )
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('waits for ComfyUI to reconnect after a restart, then refreshes node definitions before reloading the open workflow', async () => {
     const order: string[] = []
     registerRefreshCommand(
       vi.fn(async () => {
@@ -55,6 +68,10 @@ describe('agentNodeDefinitionRefreshStore', () => {
     )
 
     useAgentNodeDefinitionRefreshStore().observeAgentEvent(restartSucceeded)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(order).toEqual([])
+
+    api.dispatchCustomEvent('reconnected')
     await vi.advanceTimersByTimeAsync(100)
 
     expect(order).toEqual(['refresh', 'reload'])
@@ -81,6 +98,7 @@ describe('agentNodeDefinitionRefreshStore', () => {
     const refresh = registerRefreshCommand()
 
     useAgentNodeDefinitionRefreshStore().observeAgentEvent(event)
+    api.dispatchCustomEvent('reconnected')
     await vi.advanceTimersByTimeAsync(0)
 
     expect(refresh).not.toHaveBeenCalled()
@@ -101,6 +119,7 @@ describe('agentNodeDefinitionRefreshStore', () => {
       arrange()
 
       useAgentNodeDefinitionRefreshStore().observeAgentEvent(restartSucceeded)
+      api.dispatchCustomEvent('reconnected')
       await vi.advanceTimersByTimeAsync(0)
 
       expect(reportError).toHaveBeenCalledExactlyOnceWith(
@@ -121,6 +140,7 @@ describe('agentNodeDefinitionRefreshStore', () => {
         .mockResolvedValue(undefined)
     )
     useAgentNodeDefinitionRefreshStore().observeAgentEvent(restartSucceeded)
+    api.dispatchCustomEvent('reconnected')
     await vi.advanceTimersByTimeAsync(0)
 
     api.dispatchCustomEvent('reconnected')
@@ -140,10 +160,35 @@ describe('agentNodeDefinitionRefreshStore', () => {
     expect(refresh).not.toHaveBeenCalled()
   })
 
-  it('does not refresh on a ComfyUI reconnect once the last restart refreshed', async () => {
+  it('refreshes when ComfyUI reconnected before the restart report arrived on the agent socket', async () => {
+    const refresh = registerRefreshCommand()
+    const store = useAgentNodeDefinitionRefreshStore()
+    api.dispatchCustomEvent('reconnected')
+    await vi.advanceTimersByTimeAsync(2_000)
+
+    store.observeAgentEvent(restartSucceeded)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(useWorkflowService().reloadCurrentWorkflow).toHaveBeenCalledOnce()
+  })
+
+  it('refreshes again on the restart reconnect after an unrelated reconnect earlier in the turn', async () => {
     const refresh = registerRefreshCommand()
     useAgentNodeDefinitionRefreshStore().observeAgentEvent(restartSucceeded)
+    api.dispatchCustomEvent('reconnected')
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    api.dispatchCustomEvent('reconnected')
     await vi.advanceTimersByTimeAsync(0)
+
+    expect(refresh).toHaveBeenCalledTimes(2)
+  })
+
+  it('refreshes on a reconnect 10 minutes after the restart', async () => {
+    const refresh = registerRefreshCommand()
+    useAgentNodeDefinitionRefreshStore().observeAgentEvent(restartSucceeded)
+    await vi.advanceTimersByTimeAsync(RESTART_WINDOW_MS)
 
     api.dispatchCustomEvent('reconnected')
     await vi.advanceTimersByTimeAsync(0)
@@ -151,7 +196,21 @@ describe('agentNodeDefinitionRefreshStore', () => {
     expect(refresh).toHaveBeenCalledOnce()
   })
 
-  it('runs one more refresh for restarts that arrive while a refresh is in flight', async () => {
+  it('ignores reconnects more than 10 minutes before or after the restart', async () => {
+    const refresh = registerRefreshCommand()
+    const store = useAgentNodeDefinitionRefreshStore()
+    api.dispatchCustomEvent('reconnected')
+    await vi.advanceTimersByTimeAsync(RESTART_WINDOW_MS + 1)
+
+    store.observeAgentEvent(restartSucceeded)
+    await vi.advanceTimersByTimeAsync(RESTART_WINDOW_MS + 1)
+    api.dispatchCustomEvent('reconnected')
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refresh).not.toHaveBeenCalled()
+  })
+
+  it('runs one more refresh for reconnects that arrive while a refresh is in flight', async () => {
     let finishFirstRefresh: () => void = () => undefined
     const refresh = registerRefreshCommand(
       vi
@@ -165,10 +224,11 @@ describe('agentNodeDefinitionRefreshStore', () => {
     )
     const store = useAgentNodeDefinitionRefreshStore()
     store.observeAgentEvent(restartSucceeded)
+    api.dispatchCustomEvent('reconnected')
     await vi.advanceTimersByTimeAsync(0)
 
-    store.observeAgentEvent(restartSucceeded)
-    store.observeAgentEvent(restartSucceeded)
+    api.dispatchCustomEvent('reconnected')
+    api.dispatchCustomEvent('reconnected')
     finishFirstRefresh()
     await vi.advanceTimersByTimeAsync(0)
 
@@ -182,9 +242,11 @@ describe('agentNodeDefinitionRefreshStore', () => {
     )
     const store = useAgentNodeDefinitionRefreshStore()
     store.observeAgentEvent(restartSucceeded)
+    api.dispatchCustomEvent('reconnected')
     await vi.advanceTimersByTimeAsync(0)
 
     store.observeAgentEvent(restartSucceeded)
+    api.dispatchCustomEvent('reconnected')
     await vi.advanceTimersByTimeAsync(0)
 
     expect(refresh).toHaveBeenCalledTimes(2)
@@ -198,9 +260,11 @@ describe('agentNodeDefinitionRefreshStore', () => {
     })
     const store = useAgentNodeDefinitionRefreshStore()
     store.observeAgentEvent(restartSucceeded)
+    api.dispatchCustomEvent('reconnected')
     await vi.advanceTimersByTimeAsync(0)
 
     store.observeAgentEvent(restartSucceeded)
+    api.dispatchCustomEvent('reconnected')
     await vi.advanceTimersByTimeAsync(0)
 
     expect(refresh).toHaveBeenCalledTimes(2)

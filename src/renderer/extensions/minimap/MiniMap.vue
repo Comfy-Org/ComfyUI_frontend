@@ -4,7 +4,7 @@
     ref="minimapRef"
     :class="
       cn(
-        'minimap-main-container absolute right-0 bottom-[54px] z-1000 flex',
+        'minimap-main-container absolute right-0 bottom-[54px] isolate flex',
         isMobile ? 'flex-col' : 'flex-row'
       )
     "
@@ -87,9 +87,9 @@
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import MiniMapPanel from './MiniMapPanel.vue'

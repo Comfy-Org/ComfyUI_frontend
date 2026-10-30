@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { truncate } from 'es-toolkit/compat'
 
 import type { BadgeData, CoreBadgeData } from '@/types/badgeData'

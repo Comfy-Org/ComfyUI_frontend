@@ -1,6 +1,6 @@
 <template>
   <div
-    class="pointer-events-none absolute top-0 left-0 z-999 flex size-full flex-col"
+    class="pointer-events-none absolute top-0 left-0 isolate flex size-full flex-col"
   >
     <slot name="workflow-tabs" />
 
@@ -207,9 +207,9 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SplitterGroup from '@/components/ui/splitter/SplitterGroup.vue'
-import SplitterPanel from '@/components/ui/splitter/SplitterPanel.vue'
-import SplitterResizeHandle from '@/components/ui/splitter/SplitterResizeHandle.vue'
+import SplitterGroup from '@comfyorg/design-system/splitter/SplitterGroup'
+import SplitterPanel from '@comfyorg/design-system/splitter/SplitterPanel'
+import SplitterResizeHandle from '@comfyorg/design-system/splitter/SplitterResizeHandle'
 import { useAppMode } from '@/composables/useAppMode'
 import { usePanelSizing } from '@/composables/usePanelSizing'
 import {

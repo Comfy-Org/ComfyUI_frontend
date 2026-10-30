@@ -27,7 +27,7 @@ const { t } = useI18n()
   >
     <template v-if="offer === 'canceling'">
       <i
-        class="icon-[lucide--loader-circle] size-4 motion-safe:animate-spin"
+        class="icon-[lucide--loader-circle] motion-safe:animate-spin"
         aria-hidden="true"
       />
       {{ t('checkout.fullPage.phase.canceling') }}

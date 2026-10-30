@@ -1,3 +1,5 @@
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
@@ -8,8 +10,6 @@ import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeState } from '@/types/nodeState'
 
 const mockApp: {
   rootGraph?: LGraph

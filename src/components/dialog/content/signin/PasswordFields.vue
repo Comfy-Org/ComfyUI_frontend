@@ -50,9 +50,9 @@ import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
-import Field from '@/components/ui/field/Field.vue'
-import FieldError from '@/components/ui/field/FieldError.vue'
-import FieldLabel from '@/components/ui/field/FieldLabel.vue'
+import Field from '@comfyorg/design-system/field/Field'
+import FieldError from '@comfyorg/design-system/field/FieldError'
+import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
 import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
 
 const { fieldClass } = defineProps<{

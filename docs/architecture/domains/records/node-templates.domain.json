@@ -4,10 +4,6 @@
   "description": "Saving canvas selections as reusable node templates, inserting them from the canvas menu, and managing, importing, and exporting them through the legacy dialog. Workflow templates are a separate capability.",
   "modules": [
     {
-      "path": "src/extensions/core/nodeTemplates.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/nodeTemplates.ts",
       "role": "integration"
     }

@@ -2,11 +2,11 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import CanvasBanner from '@/components/graph/CanvasBanner.vue'
-import Button from '@/components/ui/button/Button.vue'
+import CanvasBanner from '@comfyorg/design-system/common/CanvasBanner'
+import Button from '@comfyorg/design-system/button/Button'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { createPositionBounds } from '@/utils/positionBounds'
 
@@ -75,7 +75,7 @@ function viewNodes(): void {
   <Teleport v-if="teleportTarget" :to="teleportTarget">
     <div
       v-if="visibleState"
-      class="pointer-events-none absolute inset-x-2 bottom-8 z-1100 flex justify-center"
+      class="pointer-events-none absolute inset-x-2 bottom-8 flex justify-center"
     >
       <CanvasBanner
         :data-testid="presentation.testId"
@@ -84,11 +84,7 @@ function viewNodes(): void {
         class="max-w-full flex-wrap gap-3"
       >
         <template #icon>
-          <i
-            :class="presentation.iconClass"
-            class="size-4 shrink-0"
-            aria-hidden="true"
-          />
+          <i :class="presentation.iconClass" aria-hidden="true" />
         </template>
         <template #title>
           {{ presentation.title }}
@@ -114,7 +110,7 @@ function viewNodes(): void {
               :aria-label="t('agent.close')"
               @click="activity.dismiss()"
             >
-              <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+              <i class="icon-[lucide--x]" aria-hidden="true" />
             </Button>
           </div>
         </template>

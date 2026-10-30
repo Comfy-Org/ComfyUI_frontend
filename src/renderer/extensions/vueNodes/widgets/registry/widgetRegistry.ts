@@ -65,19 +65,20 @@ const AudioPreviewPlayer = defineAsyncComponent(
     import('@/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue')
 )
 const Load3D = defineAsyncComponent(
-  () => import('@/components/load3d/Load3D.vue')
+  () => import('@/extensions/core/load3d/components/Load3D.vue')
 )
 const Load3DAdvanced = defineAsyncComponent(
-  () => import('@/components/load3d/Load3DAdvanced.vue')
+  () => import('@/extensions/core/load3d/components/Load3DAdvanced.vue')
 )
 const CameraInfo = defineAsyncComponent(
-  () => import('@/components/cameraInfo/CameraInfo.vue')
+  () => import('@/extensions/core/load3d/components/cameraInfo/CameraInfo.vue')
 )
 const CameraAngle = defineAsyncComponent(
-  () => import('@/components/cameraAngle/CameraAngle.vue')
+  () =>
+    import('@/extensions/core/load3d/components/cameraAngle/CameraAngle.vue')
 )
 const LightInfo = defineAsyncComponent(
-  () => import('@/components/lightInfo/LightInfo.vue')
+  () => import('@/extensions/core/load3d/components/lightInfo/LightInfo.vue')
 )
 const WidgetImageCrop = defineAsyncComponent(
   () => import('@/components/imagecrop/WidgetImageCrop.vue')
@@ -89,7 +90,7 @@ const WidgetCurve = defineAsyncComponent(
   () => import('@/components/curve/WidgetCurve.vue')
 )
 const WidgetPainter = defineAsyncComponent(
-  () => import('@/components/painter/WidgetPainter.vue')
+  () => import('@/renderer/extensions/painter/components/WidgetPainter.vue')
 )
 const WidgetCompositor = defineAsyncComponent(
   () =>
@@ -103,6 +104,9 @@ const WidgetBoundingBoxes = defineAsyncComponent(
 )
 const WidgetVideoEdit = defineAsyncComponent(
   () => import('@/components/videoEdit/WidgetVideoEdit.vue')
+)
+const WidgetVideoConcat = defineAsyncComponent(
+  () => import('@/components/videoConcat/WidgetVideoConcat.vue')
 )
 const WidgetColors = defineAsyncComponent(
   () => import('@/components/palette/WidgetColors.vue')
@@ -330,6 +334,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   [
+    'videoconcat',
+    {
+      component: WidgetVideoConcat,
+      aliases: ['VIDEO_CONCAT'],
+      essential: false
+    }
+  ],
+  [
     'colors',
     {
       component: WidgetColors,
@@ -386,7 +398,8 @@ const EXPANDING_TYPES = [
   'imagecompare',
   'range',
   'boundingboxes',
-  'videoedit'
+  'videoedit',
+  'videoconcat'
 ] as const
 
 export function shouldExpand(type: string): boolean {

@@ -1,16 +1,15 @@
 import { expect } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type {
-  BillingStatusResponse,
-  WorkspaceWithRole
-} from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
+import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 type CustomerBalanceResponse = NonNullable<
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
@@ -37,6 +36,7 @@ const mockListWorkspacesResponse: { workspaces: WorkspaceWithRole[] } = {
 const mockTokenResponse: WorkspaceTokenResponse = {
   token: 'mock-workspace-token',
   expires_at: FUTURE_DATE,
+  user_id: 'uid-1',
   workspace: {
     id: 'ws-personal',
     name: PERSONAL_WORKSPACE_NAME,
@@ -54,6 +54,7 @@ const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   subscription_status: 'canceled',
@@ -243,19 +244,21 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
 
       const workspaceSelector = page.getByTestId('workspace-switcher-trigger')
       await expect(workspaceSelector).toBeVisible()
-      await expect(workspaceSelector).toHaveScreenshot(
+      await expectElementScreenshot(
+        workspaceSelector,
         'workspace-selector-menu-item.png'
       )
 
       const managePlan = page.getByRole('button', { name: 'Manage plan' })
       await expect(managePlan).toBeVisible()
-      await expect(managePlan).toHaveScreenshot('manage-plan-menu-item.png')
+      await expectElementScreenshot(managePlan, 'manage-plan-menu-item.png')
 
       await managePlan.focus()
       await page.keyboard.press('Shift+Tab')
       await page.keyboard.press('Tab')
       await expect(managePlan).toBeFocused()
-      await expect(managePlan).toHaveScreenshot(
+      await expectElementScreenshot(
+        managePlan,
         'manage-plan-menu-item-focused.png'
       )
     }
