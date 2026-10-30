@@ -448,7 +448,8 @@ jobs:
           PINNED_FILES=(../master-requirements.txt)
           OPEN_PR=""
           OPEN_HEAD=$(gh api "repos/Comfy-Org/ComfyUI/pulls?state=open&head=${FORK_OWNER}:${BRANCH}" \
-            --jq '.[0] | select(. != null) | "\(.number) \(.head.repo.full_name) \(.head.sha)"')
+            --jq '[.[] | select(.head.repo == null or .head.repo.full_name == env.COMFYUI_FORK)][0]
+              | select(. != null) | "\(.number) \(.head.repo.full_name) \(.head.sha)"')
           if [ -n "$OPEN_HEAD" ]; then
             read -r OPEN_PR OPEN_REPO OPEN_SHA <<< "$OPEN_HEAD"
             if [ "$OPEN_REPO" = "null" ]; then
