@@ -2953,7 +2953,7 @@ describe('useWorkflowService', () => {
       await useWorkflowService().afterLoadNewGraph(
         'shared',
         makeWorkflowData(),
-        'share-1'
+        { shareId: 'share-1' }
       )
 
       expect(tempWorkflow.shareId).toBe('share-1')
@@ -3053,7 +3053,7 @@ describe('useWorkflowService', () => {
       await useWorkflowService().afterLoadNewGraph(
         'repeat',
         makeWorkflowData(),
-        'share-2'
+        { shareId: 'share-2' }
       )
 
       expect(existingWorkflow.shareId).toBe('share-2')
@@ -3065,7 +3065,7 @@ describe('useWorkflowService', () => {
       await useWorkflowService().afterLoadNewGraph(
         existingWorkflow,
         makeWorkflowData(),
-        'share-2'
+        { shareId: 'share-2' }
       )
 
       expect(existingWorkflow.shareId).toBe('share-2')

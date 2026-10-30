@@ -1562,12 +1562,14 @@ export class ComfyApp implements IComfyApp {
         await useWorkflowService().afterLoadNewGraph(
           workflow,
           this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-          effectiveShareId,
-          isCurrent,
-          (activationOwner) => {
-            graphOwner = {
-              state: configuredGraphState,
-              workflow: activationOwner
+          {
+            shareId: effectiveShareId,
+            isCurrent,
+            onActivated: (activationOwner) => {
+              graphOwner = {
+                state: configuredGraphState,
+                workflow: activationOwner
+              }
             }
           }
         )

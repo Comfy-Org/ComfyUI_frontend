@@ -56,6 +56,12 @@ import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type { UUID } from '@/utils/uuid'
 import { ensureNonZeroUuid, zeroUuid } from '@/utils/uuid'
 
+type WorkflowActivationOptions = {
+  shareId?: string
+  isCurrent?: () => boolean
+  onActivated?: (workflow: LoadedComfyWorkflow) => void
+}
+
 export function readWorkflowDraftLineage(path: string) {
   return useWorkflowDraftStoreV2().getDraft(path)?.lineage ?? null
 }
@@ -820,19 +826,12 @@ export const useWorkflowService = () => {
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
-    shareId?: string,
-    isCurrent?: () => boolean,
-    onActivated?: (workflow: LoadedComfyWorkflow) => void
+    options: WorkflowActivationOptions = {}
   ) => {
+    const { isCurrent } = options
     if (isCurrent?.() === false) return
     const graphState = useApp().rootGraphOrUndefined?.state
-    await activateLoadedWorkflow(
-      value,
-      workflowData,
-      shareId,
-      isCurrent,
-      onActivated
-    )
+    await activateLoadedWorkflow(value, workflowData, options)
     if (
       graphState !== useApp().rootGraphOrUndefined?.state ||
       isCurrent?.() === false
@@ -863,9 +862,7 @@ export const useWorkflowService = () => {
   const activateLoadedWorkflow = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
-    shareId?: string,
-    isCurrent?: () => boolean,
-    onActivated?: (workflow: LoadedComfyWorkflow) => void
+    { shareId, isCurrent, onActivated }: WorkflowActivationOptions = {}
   ) => {
     const graphState = useApp().rootGraphOrUndefined?.state
     const workflowStore = useWorkspaceStore().workflow
