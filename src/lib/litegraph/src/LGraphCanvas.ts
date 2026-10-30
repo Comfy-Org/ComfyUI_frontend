@@ -3781,11 +3781,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                   clientX - rect.left,
                   clientY - rect.top
                 ])
-                const [, rowTop] = this.convertCanvasToOffset([
-                  clientX - rect.left,
-                  autogrowDropRow.rowClientTop - rect.top
-                ])
-                autogrowGroupWidget.y = rowTop - node.pos[1]
                 linkConnector.overWidget = autogrowGroupWidget
               } else if (overWidget) {
                 // Check widgets first - inputId is only valid if over the input socket
@@ -5524,9 +5519,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Reroute highlight
     overReroute?.drawHighlight(ctx, '#ffcc00aa')
 
-    // Ensure we're mousing over a node and connecting a link
     const node = this.node_over
-    if (!node) return
+    if (!node || LiteGraph.vueNodesMode) return
 
     const { strokeStyle, lineWidth } = ctx
 
