@@ -473,7 +473,10 @@ describe('useQueueStore', () => {
       vi.mocked(api.getHistory).mockResolvedValue([])
       await store.update()
 
-      vi.mocked(api.getQueue).mockRejectedValue(new Error('API error'))
+      vi.mocked(api.getQueue).mockImplementation(async (options) => {
+        if (options?.throwOnError) throw new Error('API error')
+        return { Running: [], Pending: [] }
+      })
       await store.update()
 
       expect(store.runningTasks).toHaveLength(1)
@@ -488,7 +491,10 @@ describe('useQueueStore', () => {
       ])
       await store.update()
 
-      vi.mocked(api.getHistory).mockRejectedValue(new Error('API error'))
+      vi.mocked(api.getHistory).mockImplementation(async (_max, options) => {
+        if (options?.throwOnError) throw new Error('API error')
+        return []
+      })
       await store.update()
 
       expect(store.historyTasks).toHaveLength(1)

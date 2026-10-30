@@ -341,8 +341,6 @@ export const useQueueStore = defineStore('queue', () => {
     updateState.dirty = false
     isLoading.value = true
     try {
-      // Each snapshot is replaced only when its fetch succeeds; a rejected
-      // fetch leaves the last known good tasks in place.
       const [queueResult, historyResult] = await Promise.allSettled([
         api.getQueue({ throwOnError: true }),
         api.getHistory(maxHistoryItems.value, { throwOnError: true })

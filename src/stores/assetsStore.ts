@@ -163,9 +163,6 @@ export const useAssetsStore = defineStore('assets', () => {
       loadMore = false
     ): Promise<AssetItem[]> => {
       const offset = loadMore ? historyOffset.value : 0
-
-      // Fetch before touching accumulated state so a failed refresh leaves the
-      // last known good page set intact for the next load-more.
       const history = await api.getHistory(BATCH_SIZE, {
         offset,
         throwOnError: true
