@@ -108,14 +108,8 @@ function challengeFootnote(operation: PendingBillingOperation): string {
   if (Number.isNaN(deadline.getTime()))
     return t('checkout.fullPage.phase.challenge')
   return t('checkout.fullPage.phase.challengeVerifyBy', {
-    time: unbrokenDate(
-      d(deadline, {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit'
-      })
-    )
+    date: unbrokenDate(d(deadline, { month: 'long', day: 'numeric' })),
+    time: unbrokenDate(d(deadline, { hour: 'numeric', minute: '2-digit' }))
   })
 }
 

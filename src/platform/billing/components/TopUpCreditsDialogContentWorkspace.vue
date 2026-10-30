@@ -529,12 +529,8 @@ const verifyingBody = computed(() => {
   const deadline = new Date(topupOperation.value?.authenticationDeadline ?? '')
   if (Number.isNaN(deadline.getTime())) return t('credits.topUp.verifyBody')
   return t('credits.topUp.verifyByBody', {
-    time: d(deadline, {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
-    })
+    date: d(deadline, { month: 'long', day: 'numeric' }),
+    time: d(deadline, { hour: 'numeric', minute: '2-digit' })
   })
 })
 
