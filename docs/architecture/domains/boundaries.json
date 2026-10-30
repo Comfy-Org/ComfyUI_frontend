@@ -25,7 +25,11 @@
       },
       {
         "name": "ingest-api/domain/public",
-        "patterns": ["src/platform/remote/ingest/ingestApiError.ts"]
+        "patterns": [
+          "src/platform/remote/ingest/ingestApiError.ts",
+          "packages/ingest-types/src/index.ts",
+          "packages/ingest-types/src/zod.gen.ts"
+        ]
       },
       {
         "name": "ingest-api/infrastructure/public",
@@ -1843,7 +1847,8 @@
         "name": "ingest-api/domain",
         "patterns": [
           "src/platform/remote/ingest/ingestApiError.ts",
-          "packages/ingest-types/src/**"
+          "packages/ingest-types/src/**",
+          "src/platform/remote/ingest/ingestTypesContract.test.ts"
         ]
       },
       {
