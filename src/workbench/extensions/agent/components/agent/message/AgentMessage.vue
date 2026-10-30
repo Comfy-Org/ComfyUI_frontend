@@ -95,9 +95,6 @@ const creditUsage = computed(() => {
     maximumFractionDigits: 2
   }).format
   const credits = creditsUsed < 0.01 ? `<${format(0.01)}` : format(creditsUsed)
-  // Choose the plural form from the amount as displayed, not the raw charge.
-  // Vue escapes the text interpolation below, so escaping the parameter here
-  // too would show `<` as a literal `&lt;`.
   return t(
     'agent.creditsUsed',
     { credits },
