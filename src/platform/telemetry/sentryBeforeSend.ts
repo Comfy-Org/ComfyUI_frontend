@@ -4,7 +4,7 @@ import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import {
   sentryThirdPartyErrorFilter,
-  tagSentryExtensionOrigin
+  tagSentryNonFirstPartyOrigin
 } from './thirdPartyErrorNoise'
 import { tagSentryStaleChunkCause } from './sentryStaleChunkCause'
 import { addVueDirectiveDiagnostics } from './vueDirectiveErrorDiagnostics'
@@ -46,7 +46,7 @@ export function sentryBeforeSend(
   return (
     kept &&
     groupWorkspaceApiError(
-      tagSentryExtensionOrigin(
+      tagSentryNonFirstPartyOrigin(
         tagSentryStaleChunkCause(addVueDirectiveDiagnostics(kept, hint))
       ),
       hint

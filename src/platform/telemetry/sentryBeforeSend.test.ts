@@ -161,6 +161,31 @@ describe('sentryBeforeSend', () => {
     })
   })
 
+  it('tags a third-party script when it owns the top stack frame', () => {
+    const event = {
+      type: undefined,
+      exception: {
+        values: [
+          {
+            value: 'Unexpected end of script',
+            stacktrace: {
+              frames: [
+                {
+                  abs_path:
+                    'https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js'
+                }
+              ]
+            }
+          }
+        ]
+      }
+    } satisfies ErrorEvent
+
+    expect(sentryBeforeSend(event, {})).toMatchObject({
+      tags: { error_origin: 'third_party' }
+    })
+  })
+
   it('keeps a first-party top frame actionable when an extension appears below it', () => {
     const event = {
       type: undefined,

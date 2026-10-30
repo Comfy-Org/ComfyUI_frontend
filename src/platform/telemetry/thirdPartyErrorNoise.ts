@@ -74,19 +74,23 @@ export function sentryThirdPartyErrorFilter(
   }
 }
 
-export function tagSentryExtensionOrigin(event: ErrorEvent): ErrorEvent {
+export function tagSentryNonFirstPartyOrigin(event: ErrorEvent): ErrorEvent {
   try {
     const frame = event.exception?.values?.at(-1)?.stacktrace?.frames?.at(-1)
     const path = frame?.abs_path ?? frame?.filename
+    if (!path) return event
+
     const origin = classifyTelemetryErrorOrigin(path)
-    if (origin.origin !== 'extension') return event
+    if (origin.origin === 'first_party') return event
 
     return {
       ...event,
       tags: {
         ...event.tags,
         error_origin: origin.origin,
-        extension: origin.extension
+        ...(origin.origin === 'extension' && {
+          extension: origin.extension
+        })
       }
     }
   } catch {
