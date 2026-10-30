@@ -33,3 +33,14 @@ export function normalizePackKeys<T>(
 ): Record<string, T> {
   return mapKeys(packs, (_value, key) => normalizePackId(key))
 }
+
+/** Returns the normalized pack id from a `custom_nodes.<pack>` Python module path, or null for any other module. */
+export function extractCustomNodeName(
+  pythonModule: string | undefined
+): string | null {
+  const modules = pythonModule?.split('.') || []
+  if (modules.length >= 2 && modules[0] === 'custom_nodes') {
+    return normalizePackId(modules[1])
+  }
+  return null
+}
