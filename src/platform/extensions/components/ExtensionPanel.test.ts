@@ -330,7 +330,7 @@ describe('ExtensionPanel', () => {
       expect.objectContaining({
         kind: 'warning',
         description:
-          'The extension change may have been saved. Reload to confirm the current state.'
+          'The extension change could not be confirmed. Reload the page before trying again.'
       })
     )
   })

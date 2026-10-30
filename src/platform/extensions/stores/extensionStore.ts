@@ -218,10 +218,7 @@ export const useExtensionStore = defineStore('extension', () => {
         'Comfy.Extension.DisabledPacks',
         nextDisabledPaths
       )
-      if (
-        result.status === 'refused' ||
-        result.status === 'indeterminate'
-      ) {
+      if (result.status === 'refused' || result.status === 'indeterminate') {
         const reason = result.statusText || 'Request failed'
         reportError(
           new Error(

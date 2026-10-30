@@ -537,13 +537,13 @@ describe('useSettingStore', () => {
         new Response(null, { status: 500, statusText: 'Server Error' })
       )
 
-      expect(
-        await store.setWithOutcome(key, ['/extensions/pending/'])
-      ).toEqual({
-        status: 'indeterminate',
-        statusCode: 500,
-        statusText: 'Server Error'
-      })
+      expect(await store.setWithOutcome(key, ['/extensions/pending/'])).toEqual(
+        {
+          status: 'indeterminate',
+          statusCode: 500,
+          statusText: 'Server Error'
+        }
+      )
       expect(store.get(key)).toEqual(['/extensions/pending/'])
     })
 
