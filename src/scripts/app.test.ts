@@ -33,7 +33,7 @@ vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import type { CurveData } from '@comfyorg/graph-model/curve'
 import type { useExtensionService } from '@/platform/extensions/services/extensionService'
-import { consumeGraphLoadHookOrigin } from '@/platform/extensions/services/extensionService'
+import { isGraphLoadHookOrigin } from '@/platform/extensions/services/extensionService'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
@@ -197,7 +197,7 @@ vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
 }))
 
 vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
-  consumeGraphLoadHookOrigin: vi.fn(() => false),
+  isGraphLoadHookOrigin: vi.fn(() => false),
   useExtensionService: vi.fn(() =>
     fromPartial<ReturnType<typeof useExtensionService>>(mockExtensionService)
   )
@@ -3836,7 +3836,7 @@ describe('ComfyApp', () => {
     })
 
     it('allows a non-graph media file from a graph lifecycle hook', async () => {
-      vi.mocked(consumeGraphLoadHookOrigin).mockReturnValueOnce(true)
+      vi.mocked(isGraphLoadHookOrigin).mockReturnValueOnce(true)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
 
       await expect(
@@ -3863,7 +3863,7 @@ describe('ComfyApp', () => {
     ])(
       'refuses $name metadata from a graph lifecycle hook',
       async ({ metadata }) => {
-        vi.mocked(consumeGraphLoadHookOrigin).mockReturnValueOnce(true)
+        vi.mocked(isGraphLoadHookOrigin).mockReturnValueOnce(true)
         vi.mocked(getWorkflowDataFromFile).mockResolvedValue(metadata)
 
         await expect(

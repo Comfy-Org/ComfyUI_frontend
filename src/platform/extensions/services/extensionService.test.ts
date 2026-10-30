@@ -8,10 +8,7 @@ import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
 
-import {
-  consumeGraphLoadHookOrigin,
-  useExtensionService
-} from './extensionService'
+import { isGraphLoadHookOrigin, useExtensionService } from './extensionService'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('firebase/auth'))
@@ -231,10 +228,17 @@ describe('invokeExtensionsAsync', () => {
         { type: 'application/json' }
       )
       const app = useApp()
-      const handleFile = vi.fn(async (handled: File) =>
-        consumeGraphLoadHookOrigin(handled) ? false : void 0
+      const handleFile = vi.fn(
+        async (
+          _handled: File,
+          _openSource?: unknown,
+          options?: unknown
+        ): Promise<false | undefined> =>
+          isGraphLoadHookOrigin(options) ? false : void 0
       )
-      vi.spyOn(app, 'handleFile').mockImplementation(wrap(handleFile))
+      vi.spyOn(app, 'handleFile').mockImplementation(
+        wrap(handleFile)
+      )
       let nested: Promise<unknown> | undefined
       register({
         name: 'hook-file-loader',
@@ -248,57 +252,78 @@ describe('invokeExtensionsAsync', () => {
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
       await expect(nested).resolves.toBe(false)
-      expect(handleFile).toHaveBeenCalledWith(file)
+      expect(handleFile.mock.calls[0][0]).toBe(file)
     }
   )
 
-  it('clears the mark when a wrapper never delegates the hook file', async () => {
-    const file = new File([], 'swallowed.json', { type: 'application/json' })
+  it('keeps the options a hook passed to handleFile', async () => {
+    const file = new File([], 'hook.json', { type: 'application/json' })
+    const onNodeCreated = () => {}
     const app = useApp()
-    vi.spyOn(app, 'handleFile').mockImplementation(async () => void 0)
+    const handleFile = vi.spyOn(app, 'handleFile').mockResolvedValue(undefined)
     register({
-      name: 'swallowing-extension',
-      beforeLoadGraph: async (hookApp: HookApp) => {
-        await hookApp.handleFile(file)
-      }
+      name: 'options-passing-extension',
+      beforeLoadGraph: (hookApp: HookApp) =>
+        hookApp.handleFile(file, 'file_drop', {
+          deferWarnings: true,
+          onNodeCreated
+        })
     })
 
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-    expect(consumeGraphLoadHookOrigin(file)).toBe(false)
+    expect(handleFile.mock.calls[0][1]).toBe('file_drop')
+    expect(handleFile.mock.calls[0][2]).toMatchObject({
+      deferWarnings: true,
+      onNodeCreated
+    })
   })
 
-  it('does not treat an independent caller as hook-originated while a hook awaits', async () => {
-    const hookFile = new File([], 'hook.json', { type: 'application/json' })
-    const independentFile = new File([], 'independent.json', {
-      type: 'application/json'
-    })
-    const app = useApp()
-    let release!: () => void
-    const held = new Promise<void>((resolve) => {
-      release = resolve
-    })
-    let originForIndependentFile: boolean | undefined
-    let originForHookFileAfterAwait: boolean | undefined
-    vi.spyOn(app, 'handleFile').mockImplementation(async () => {
-      originForIndependentFile = consumeGraphLoadHookOrigin(independentFile)
-      await held
-      originForHookFileAfterAwait = consumeGraphLoadHookOrigin(hookFile)
-    })
-    register({
-      name: 'awaiting-extension',
-      beforeLoadGraph: (hookApp: HookApp) => hookApp.handleFile(hookFile)
-    })
+  it.for([
+    { variant: 'a distinct file', shared: false },
+    { variant: 'the same file object', shared: true }
+  ])(
+    'gives each overlapping call its own origin for $variant',
+    async ({ shared }) => {
+      const hookFile = new File([], 'hook.json', { type: 'application/json' })
+      const independentFile = shared
+        ? hookFile
+        : new File([], 'independent.json', { type: 'application/json' })
+      const app = useApp()
+      let forward!: () => void
+      const heldForwarding = new Promise<void>((resolve) => {
+        forward = resolve
+      })
+      const origins: Record<string, boolean> = {}
+      const entry = (who: string, file: File, options?: unknown) => {
+        expect(file).toBeInstanceOf(File)
+        origins[who] = isGraphLoadHookOrigin(options)
+      }
+      // An extension wrapper already on app.handleFile delays delegation, so
+      // the independent call reaches the real entry first.
+      vi.spyOn(app, 'handleFile').mockImplementation(async (
+        file: File,
+        _openSource?: unknown,
+        options?: unknown
+      ) => {
+        await heldForwarding
+        entry('hook', file, options)
+      })
+      register({
+        name: 'awaiting-extension',
+        beforeLoadGraph: (hookApp: HookApp) => hookApp.handleFile(hookFile)
+      })
 
-    const dispatch =
-      useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-    await Promise.resolve()
-    release()
-    await dispatch
+      const dispatch =
+        useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+      await Promise.resolve()
+      entry('independent', independentFile)
+      forward()
+      await dispatch
 
-    expect(originForIndependentFile).toBe(false)
-    expect(originForHookFileAfterAwait).toBe(true)
-  })
+      expect(origins).toEqual({ independent: false, hook: true })
+    }
+  )
 
   it('lets a retained hook app load once the hook dispatch has finished', async () => {
     const handleFile = vi

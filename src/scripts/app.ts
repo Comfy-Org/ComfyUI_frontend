@@ -96,7 +96,7 @@ import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import {
-  consumeGraphLoadHookOrigin,
+  isGraphLoadHookOrigin,
   useExtensionService
 } from '@/platform/extensions/services/extensionService'
 import { beginChangeCaptureSuppression } from '@/services/changeCaptureSuppression'
@@ -2067,7 +2067,7 @@ export class ComfyApp implements IComfyApp {
       onNodeCreated?: (node: LGraphNode) => void
     }
   ) {
-    const fromGraphLoadHook = consumeGraphLoadHookOrigin(file)
+    const fromGraphLoadHook = isGraphLoadHookOrigin(options)
     const previousDiscovery = this.fileLoadDiscoveryQueue
     let releaseDiscovery!: () => void
     this.fileLoadDiscoveryQueue = new Promise<void>((resolve) => {

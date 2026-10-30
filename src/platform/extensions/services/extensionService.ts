@@ -39,28 +39,21 @@ const graphLoadEntrypoints = [
   'loadApiJson'
 ] satisfies (keyof ComfyApp)[]
 
-const hookOriginTokensByFile = new WeakMap<File, Set<object>>()
+const graphLoadHookOrigin = Symbol('graphLoadHookOrigin')
 
-/** Returns true once per hook-originated `handleFile` call for this file. */
-export function consumeGraphLoadHookOrigin(file: File): boolean {
-  const pending = hookOriginTokensByFile.get(file)
-  const token: object | undefined = pending?.values().next().value
-  if (!pending || token === undefined) return false
-  pending.delete(token)
-  if (pending.size === 0) hookOriginTokensByFile.delete(file)
-  return true
+/** True when this `handleFile` call came through a graph-load hook's app. */
+export function isGraphLoadHookOrigin(options: unknown): boolean {
+  return (
+    typeof options === 'object' &&
+    options !== null &&
+    (options as Record<symbol, unknown>)[graphLoadHookOrigin] === true
+  )
 }
 
-function markGraphLoadHookOrigin(file: File): () => void {
-  const token = {}
-  const pending = hookOriginTokensByFile.get(file) ?? new Set<object>()
-  pending.add(token)
-  hookOriginTokensByFile.set(file, pending)
-  return () => {
-    const current = hookOriginTokensByFile.get(file)
-    if (!current?.delete(token)) return
-    if (current.size === 0) hookOriginTokensByFile.delete(file)
-  }
+function withGraphLoadHookOrigin(options: unknown): object {
+  return typeof options === 'object' && options !== null
+    ? { ...options, [graphLoadHookOrigin]: true }
+    : { [graphLoadHookOrigin]: true }
 }
 
 function createGraphLoadHookDispatch(app: ComfyApp) {
@@ -74,16 +67,14 @@ function createGraphLoadHookDispatch(app: ComfyApp) {
   }
   {
     const original = app.handleFile
-    overrides.set('handleFile', async (...args: unknown[]) => {
-      const [file] = args
-      if (!dispatching || !(file instanceof File))
-        return Reflect.apply(original, app, args)
-      const release = markGraphLoadHookOrigin(file)
-      try {
-        return await Reflect.apply(original, app, args)
-      } finally {
-        release()
-      }
+    overrides.set('handleFile', (...args: unknown[]) => {
+      if (!dispatching) return Reflect.apply(original, app, args)
+      const [file, openSource, options] = args
+      return Reflect.apply(original, app, [
+        file,
+        openSource,
+        withGraphLoadHookOrigin(options)
+      ])
     })
   }
   const hookApp = new Proxy(app, {
