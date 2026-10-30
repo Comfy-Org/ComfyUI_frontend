@@ -542,6 +542,7 @@ function addAutogrowGroup(
   node.inputs.splice(insertionIndex, 0, ...newInputs)
   const result = commitMutatedInputs(node, previous, inputLinks)
   if (!result.ok) return
+  syncNodeWidgetOrder(node)
   node.graph?.setDirtyCanvas(true, true)
 }
 
