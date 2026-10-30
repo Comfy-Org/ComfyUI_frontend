@@ -2,7 +2,11 @@ import type { ErrorEvent, EventHint } from '@sentry/vue'
 
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
-import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
+import {
+  sentryThirdPartyErrorFilter,
+  tagSentryExtensionOrigin
+} from './thirdPartyErrorNoise'
+import { tagSentryStaleChunkCause } from './sentryStaleChunkCause'
 import { addVueDirectiveDiagnostics } from './vueDirectiveErrorDiagnostics'
 
 /**
@@ -40,6 +44,12 @@ export function sentryBeforeSend(
 ): ErrorEvent | null {
   const kept = sentryThirdPartyErrorFilter(event, hint)
   return (
-    kept && groupWorkspaceApiError(addVueDirectiveDiagnostics(kept, hint), hint)
+    kept &&
+    groupWorkspaceApiError(
+      tagSentryExtensionOrigin(
+        tagSentryStaleChunkCause(addVueDirectiveDiagnostics(kept, hint))
+      ),
+      hint
+    )
   )
 }
