@@ -45,11 +45,6 @@ export interface FetchHistoryPageResult {
 
 /**
  * Fetches raw jobs from /jobs endpoint
- *
- * Rejects on any failure (network fault, non-ok response, parse error) so
- * callers can preserve their last-known-good snapshot instead of treating a
- * transient failure as an authoritative empty result. Logging is left to the
- * caller, which knows whether the failure is user-visible.
  * @internal
  */
 async function fetchJobsRaw(
