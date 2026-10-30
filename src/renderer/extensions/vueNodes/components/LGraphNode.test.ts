@@ -647,40 +647,43 @@ describe('LGraphNode', () => {
     ).not.toBeInTheDocument()
   })
 
-  it.for([
-    { severity: 'missing', issuesTab: false, shown: true },
-    { severity: 'missing', issuesTab: true, shown: false },
-    { severity: 'error', issuesTab: false, shown: false }
-  ] as const)(
-    'shows the header missing-resources icon: $shown for $severity severity with the Issues tab enabled: $issuesTab',
-    ({ severity, issuesTab, shown }) => {
+  describe('header missing-resources icon', () => {
+    const missingResourcesIcon = () =>
+      screen.queryByRole('img', { name: 'Missing resources' })
+
+    function setIssuesTabEnabled(enabled: boolean) {
       vi.mocked(useSettingStore().get).mockImplementation((key) => {
-        if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return issuesTab
+        if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return enabled
         if (key === 'Comfy.Node.AlwaysShowAdvancedWidgets') return false
         if (key === 'Comfy.Node.Opacity') return 1
       })
-      if (severity === 'missing') {
-        useSettingStore().settingValues['Comfy.ErrorSystem.ShowMissingModels'] =
-          true
-        useMissingModelStore().setMissingModels([
-          {
-            nodeId: createNodeExecutionId([mockNodeData.id]),
-            nodeType: 'TestNode',
-            widgetName: 'ckpt_name',
-            name: 'missing.safetensors',
-            directory: 'checkpoints',
-            isAssetSupported: false,
-            isMissing: true
-          }
-        ])
-      } else {
-        useExecutionErrorStore().recordNodeErrors({
-          [mockNodeData.id]: nodeError([
-            validationError('required_input_missing', 'positive')
-          ])
-        })
-      }
+    }
 
+    function markModelMissing() {
+      useSettingStore().settingValues['Comfy.ErrorSystem.ShowMissingModels'] =
+        true
+      useMissingModelStore().setMissingModels([
+        {
+          nodeId: createNodeExecutionId([mockNodeData.id]),
+          nodeType: 'TestNode',
+          widgetName: 'ckpt_name',
+          name: 'missing.safetensors',
+          directory: 'checkpoints',
+          isAssetSupported: false,
+          isMissing: true
+        }
+      ])
+    }
+
+    function recordValidationError() {
+      useExecutionErrorStore().recordNodeErrors({
+        [mockNodeData.id]: nodeError([
+          validationError('required_input_missing', 'positive')
+        ])
+      })
+    }
+
+    function renderWithHeader() {
       render(LGraphNode, {
         props: { nodeData: mockNodeData },
         global: {
@@ -693,12 +696,39 @@ describe('LGraphNode', () => {
           }
         }
       })
-
-      expect(
-        screen.queryByRole('img', { name: 'Missing resources' }) !== null
-      ).toBe(shown)
     }
-  )
+
+    it('shows for a node with a missing model while the Issues tab is off', () => {
+      setIssuesTabEnabled(false)
+      markModelMissing()
+      renderWithHeader()
+
+      expect(missingResourcesIcon()).toBeInTheDocument()
+    })
+
+    it('hides for a node with a missing model while the Issues tab is on', () => {
+      setIssuesTabEnabled(true)
+      markModelMissing()
+      renderWithHeader()
+
+      expect(missingResourcesIcon()).not.toBeInTheDocument()
+    })
+
+    it('hides for a node with an execution error while the Issues tab is off', () => {
+      setIssuesTabEnabled(false)
+      recordValidationError()
+      renderWithHeader()
+
+      expect(missingResourcesIcon()).not.toBeInTheDocument()
+    })
+
+    it('hides for a node without issues while the Issues tab is off', () => {
+      setIssuesTabEnabled(false)
+      renderWithHeader()
+
+      expect(missingResourcesIcon()).not.toBeInTheDocument()
+    })
+  })
 
   it('should widen the selection outline rounding when the node has an error', () => {
     selectMockNode()
