@@ -5,6 +5,7 @@ import {
   canManageBillingFact,
   runDeniedPaymentPastDueFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -47,8 +48,7 @@ const state = vi.hoisted(() => ({
   manageSubscription: vi.fn(
     async (): Promise<BillingPortalOutcome> => ({ ok: true })
   ),
-  handleResubscribe: vi.fn(),
-  showSubscriptionDialog: vi.fn()
+  handleResubscribe: vi.fn()
 }))
 
 vi.mock<unknown>(
@@ -110,12 +110,30 @@ vi.mock(import('@/platform/billing/composables/useResubscribe'), () => ({
 
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
-vi.mock<unknown>(
-  import('@/platform/billing/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ show: state.showSubscriptionDialog })
+vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
+  platformLink: (path: string, correlationId?: string) =>
+    `https://platform.test${path}?correlation_id=${correlationId}`
+}))
+
+function grantOpenPlans(granted: boolean) {
+  useBillingCapabilities().canOpenPlans = computed(() =>
+    receiveServerFact('can_open_plans', granted)
+  )
+}
+
+function expectChoosePlanLink() {
+  const link = within(screen.getByRole('status')).getByRole('link', {
+    name: 'Choose a plan'
   })
-)
+  expect(link).toHaveAttribute(
+    'href',
+    expect.stringMatching(
+      /^https:\/\/platform\.test\/profile\/billing\/plans\?correlation_id=.+$/
+    )
+  )
+  expect(link).toHaveAttribute('target', '_blank')
+  expect(link).toHaveAttribute('data-variant', 'inverted')
+}
 
 const i18n = createI18n({
   legacy: false,
@@ -123,8 +141,8 @@ const i18n = createI18n({
   messages: {
     en: {
       workspacePanel: {
+        billingTab: { plan: { actions: { choosePlan: 'Choose a plan' } } },
         members: {
-          resubscribe: 'Resubscribe',
           endedTeamTitle: 'Your Team plan has ended',
           endedEnterpriseTitle: 'Your Enterprise plan has ended',
           endedPlanTitle: 'Your plan has ended'
@@ -855,18 +873,33 @@ describe('BillingStatusBanner', () => {
       }
     }
 
-    it('lets a team owner resubscribe through the pricing table', async () => {
-      endedPlan()
-      renderBanner()
+    it.for(['members', 'billing'] as const)(
+      'offers Choose a plan on the %s tab when the server grants can_open_plans',
+      (section) => {
+        endedPlan()
+        grantOpenPlans(true)
+        renderBanner(section)
 
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Your Team plan ended on September 12, 2026'
-      )
-      await userEvent.click(screen.getByRole('button', { name: 'Resubscribe' }))
-      expect(state.showSubscriptionDialog).toHaveBeenCalledWith(
-        expect.objectContaining({ planMode: 'team' })
-      )
-    })
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'Your Team plan ended on September 12, 2026'
+        )
+        expectChoosePlanLink()
+      }
+    )
+
+    it.for(['members', 'billing'] as const)(
+      'offers no Choose a plan on the %s tab when the server withholds can_open_plans',
+      (section) => {
+        endedPlan()
+        grantOpenPlans(false)
+        renderBanner(section)
+
+        expect(screen.getByRole('status')).toBeInTheDocument()
+        expect(
+          screen.queryByRole('link', { name: 'Choose a plan' })
+        ).not.toBeInTheDocument()
+      }
+    )
 
     it('points a team member to the owner', () => {
       endedPlan()
@@ -877,7 +910,7 @@ describe('BillingStatusBanner', () => {
         'Ask your workspace owner to resubscribe.'
       )
       expect(
-        screen.queryByRole('button', { name: 'Resubscribe' })
+        screen.queryByRole('link', { name: 'Choose a plan' })
       ).not.toBeInTheDocument()
     })
 
@@ -1097,22 +1130,18 @@ describe('BillingStatusBanner', () => {
       },
       { endDate: null, title: 'Your Creator plan has ended' }
     ])(
-      'tells an ended personal plan "$title" and resubscribes on Personal plans',
-      async ({ endDate, title }) => {
+      'tells an ended personal plan "$title" and offers Choose a plan',
+      ({ endDate, title }) => {
         personalPlan('CREATOR')
         endedPlan(endDate)
+        grantOpenPlans(true)
         renderBanner()
 
         expect(screen.getByRole('status')).toHaveTextContent(title)
         expect(screen.getByRole('status')).toHaveTextContent(
           'Resubscribe to run workflows and get monthly credits again.'
         )
-        await userEvent.click(
-          screen.getByRole('button', { name: 'Resubscribe' })
-        )
-        expect(state.showSubscriptionDialog).toHaveBeenCalledWith(
-          expect.objectContaining({ planMode: 'personal' })
-        )
+        expectChoosePlanLink()
       }
     )
 

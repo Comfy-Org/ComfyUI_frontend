@@ -76,6 +76,7 @@ export function useBillingCapabilities() {
     ),
     topUpDenial: computed<string | undefined>(() => undefined),
     canManageBilling: computed(() => capabilityState.canManageSubscription),
+    canOpenPlans: computed(() => capabilityState.canManageSubscription),
     runDeniedPaymentPastDue: computed(() => false),
     isReady: computed(() => true),
     snapshotAuthoritative: computed(() => true),
