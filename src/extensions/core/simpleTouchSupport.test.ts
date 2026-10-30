@@ -242,6 +242,19 @@ describe('Comfy.SimpleTouchSupport pinch zoom', () => {
 
     expect(ds.scale).toBe(2)
   })
+
+  it('uses the minimum scale when converting pinch movement to an offset', () => {
+    const ds = viewport()
+    ds.scale = ds.min_scale
+
+    dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl, 100)])
+    dispatchTouch('touchmove', [touchAt(canvasEl, 20), touchAt(canvasEl, 70)])
+
+    expect({ scale: ds.scale, offset: [...ds.offset] }).toEqual({
+      scale: 0.1,
+      offset: [-50, 0]
+    })
+  })
 })
 
 describe('touch pointer guards', () => {

@@ -18,8 +18,6 @@ function zoomCanvasAroundPinch(
   lastTouch: TouchPoint
 ) {
   let scale = requestedScale
-  const newX = (center.clientX - lastTouch.clientX) / requestedScale
-  const newY = (center.clientY - lastTouch.clientY) / requestedScale
 
   if (scale < canvas.ds.min_scale) {
     scale = canvas.ds.min_scale
@@ -27,6 +25,8 @@ function zoomCanvasAroundPinch(
     scale = canvas.ds.max_scale
   }
 
+  const newX = (center.clientX - lastTouch.clientX) / scale
+  const newY = (center.clientY - lastTouch.clientY) / scale
   const oldScale = canvas.ds.scale
 
   canvas.ds.scale = scale
