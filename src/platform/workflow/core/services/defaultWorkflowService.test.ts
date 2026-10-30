@@ -48,6 +48,28 @@ function stalledBodyResponse(): Response {
   })
 }
 
+/** A stalled body that errors once the request is aborted, as fetch does. */
+function abortingBodyResponse(signal: AbortSignal): Response {
+  return new Response(
+    new ReadableStream({
+      start(controller) {
+        signal.addEventListener('abort', () => {
+          controller.error(
+            new DOMException('The operation was aborted.', 'AbortError')
+          )
+        })
+      }
+    }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } }
+  )
+}
+
+function reportedErrorTypes(): unknown[] {
+  return vi
+    .mocked(reportError)
+    .mock.calls.map(([, context]) => context.errorType)
+}
+
 describe('defaultWorkflowService', () => {
   beforeEach(() => {
     resetDefaultWorkflowForTesting()
@@ -190,6 +212,22 @@ describe('defaultWorkflowService', () => {
 
     const [, options] = fetchApi.mock.calls[0] ?? []
     expect(options?.signal?.aborted).toBe(true)
+    vi.useRealTimers()
+  })
+
+  it('reports the timeout once when the abort makes the body reject', async () => {
+    vi.useFakeTimers()
+    fetchApi.mockImplementation((_route, options) =>
+      Promise.resolve(abortingBodyResponse(options!.signal!))
+    )
+
+    const ready = initDefaultWorkflow()
+    await vi.advanceTimersByTimeAsync(PREFETCH_TIMEOUT_MS)
+    await ready
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(getDefaultWorkflow()).toEqual(defaultGraph)
+    expect(reportedErrorTypes()).toEqual(['default_workflow_timed_out'])
     vi.useRealTimers()
   })
 
