@@ -58,6 +58,7 @@
     "coachGraphTitle": "編集しながらエージェントを実行",
     "coachHistoryBody": "以前のチャットはここに保存されます。開いて確認するか、エージェントとの作業を続けられます。",
     "coachHistoryTitle": "前回の続きから再開",
+    "coachHoldNotice": "ツアーを完了するかスキップすると、メッセージが送信されます。",
     "coachProgress": "{total}件中{current}件",
     "coachTitle": "Comfy Agentの紹介",
     "coachWorkflowBody": "メッセージを送信するか、ワークフローを選択するか、ノード参照を追加するまで、タブの切り替えに合わせて切り替わります。",
@@ -540,6 +541,7 @@
     },
     "desktopHost": {
       "continueInBrowser": "ブラウザでサインインを完了してください",
+      "popupBlocked": "サインインするには、このページのポップアップを許可してください。",
       "signInFailed": "サインインが完了しませんでした。もう一度お試しください。",
       "signOutFailed": "Comfy Desktopはまだサインイン中です。実行中のインストールを完了またはキャンセルしてから、もう一度サインアウトしてください。"
     },
@@ -3606,6 +3608,7 @@
     "debug": "デバッグ",
     "detection": "検出",
     "experimental": "実験的",
+    "fal": "fal",
     "fibo": "fibo",
     "filters": "フィルター",
     "flux": "flux",

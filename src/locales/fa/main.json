@@ -58,6 +58,7 @@
     "coachGraphTitle": "اجازه دهید agent هنگام ویرایش شما اجرا شود",
     "coachHistoryBody": "گفت‌وگوهای قبلی اینجا ذخیره می‌شوند. یکی را باز کنید تا آن را مرور کنید یا کار با agent را ادامه دهید.",
     "coachHistoryTitle": "از همان‌جا که رها کردید ادامه دهید",
+    "coachHoldNotice": "پیام شما پس از پایان دادن یا رد کردن تور ارسال می‌شود.",
     "coachProgress": "{current} از {total}",
     "coachTitle": "با Comfy Agent خود آشنا شوید",
     "coachWorkflowBody": "تا زمانی که پیامی ارسال کنید، یک workflow انتخاب کنید یا ارجاعی به node اضافه کنید، همراه با تب‌های شما جابه‌جا می‌شود.",
@@ -540,6 +541,7 @@
     },
     "desktopHost": {
       "continueInBrowser": "ورود را در مرورگر خود تکمیل کنید",
+      "popupBlocked": "برای ورود، پنجره‌های بازشو را برای این صفحه مجاز کنید.",
       "signInFailed": "ورود تکمیل نشد. دوباره تلاش کنید.",
       "signOutFailed": "هنوز از Comfy Desktop خارج نشده‌اید. هر نصب در حال اجرا را تکمیل یا لغو کنید، سپس دوباره خارج شوید."
     },
@@ -3606,6 +3608,7 @@
     "debug": "اشکال‌زدایی",
     "detection": "شناسایی",
     "experimental": "آزمایشی",
+    "fal": "fal",
     "fibo": "fibo",
     "filters": "فیلترها",
     "flux": "flux",

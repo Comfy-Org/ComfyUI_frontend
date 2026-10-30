@@ -58,6 +58,7 @@
     "coachGraphTitle": "编辑时让智能体继续运行",
     "coachHistoryBody": "之前的聊天记录会保存在这里。打开一条记录以查看，或继续与智能体协作。",
     "coachHistoryTitle": "从上次中断处继续",
+    "coachHoldNotice": "当您完成或跳过导览后，您的消息将发送。",
     "coachProgress": "{current} / {total}",
     "coachTitle": "认识你的 Comfy Agent",
     "coachWorkflowBody": "在你发送消息、选择工作流或添加节点引用之前，它会随你的标签页切换。",
@@ -540,6 +541,7 @@
     },
     "desktopHost": {
       "continueInBrowser": "请在浏览器中完成登录",
+      "popupBlocked": "允许此页面弹出窗口以登录。",
       "signInFailed": "登录未完成。请重试。",
       "signOutFailed": "Comfy Desktop 仍处于登录状态。请完成或取消所有正在进行的安装，然后再次退出登录。"
     },
@@ -3606,6 +3608,7 @@
     "debug": "调试",
     "detection": "检测",
     "experimental": "实验性",
+    "fal": "fal",
     "fibo": "fibo",
     "filters": "滤镜",
     "flux": "Flux",

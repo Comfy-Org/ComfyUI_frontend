@@ -58,6 +58,7 @@
     "coachGraphTitle": "Siz düzenlerken aracın çalışmasına izin verin",
     "coachHistoryBody": "Önceki sohbetler burada kaydedilir. İncelemek veya araçla çalışmaya devam etmek için birini açın.",
     "coachHistoryTitle": "Kaldığınız yerden devam edin",
+    "coachHoldNotice": "Tur tamamlandığında veya atlandığında mesajınız gönderilecektir.",
     "coachProgress": "{current} / {total}",
     "coachTitle": "Comfy Agent'inizle tanışın",
     "coachWorkflowBody": "Bir mesaj gönderene, bir iş akışı seçene veya düğüm referansı ekleyene kadar sekmelerinizle birlikte geçiş yapar.",
@@ -540,6 +541,7 @@
     },
     "desktopHost": {
       "continueInBrowser": "Oturum açmayı tarayıcınızda tamamlayın",
+      "popupBlocked": "Oturum açmak için bu sayfada açılır pencerelere izin verin.",
       "signInFailed": "Oturum açma tamamlanmadı. Tekrar deneyin.",
       "signOutFailed": "Comfy Desktop oturumu hâlâ açık. Devam eden yüklemeleri tamamlayın veya iptal edin, ardından tekrar oturumu kapatın."
     },
@@ -3606,6 +3608,7 @@
     "debug": "hata ayıklama",
     "detection": "tespit",
     "experimental": "deneysel",
+    "fal": "fal",
     "fibo": "fibo",
     "filters": "filtreler",
     "flux": "flux",

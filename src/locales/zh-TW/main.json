@@ -58,6 +58,7 @@
     "coachGraphTitle": "讓 Agent 在您編輯時執行",
     "coachHistoryBody": "先前的對話會儲存在這裡。開啟其中一個以檢視，或繼續與 Agent 協作。",
     "coachHistoryTitle": "從上次中斷處繼續",
+    "coachHoldNotice": "當您完成或略過導覽後，系統將傳送您的訊息。",
     "coachProgress": "{current} / {total}",
     "coachTitle": "認識您的 Comfy Agent",
     "coachWorkflowBody": "在您傳送訊息、選擇工作流程或新增節點參照之前，它會隨著您的分頁切換。",
@@ -540,6 +541,7 @@
     },
     "desktopHost": {
       "continueInBrowser": "請在瀏覽器中完成登入",
+      "popupBlocked": "請允許此頁面的彈出式視窗以登入。",
       "signInFailed": "登入未完成。請再試一次。",
       "signOutFailed": "Comfy Desktop 仍處於登入狀態。請完成或取消任何正在執行的安裝作業，然後再次登出。"
     },
@@ -3606,6 +3608,7 @@
     "debug": "除錯",
     "detection": "偵測",
     "experimental": "實驗性",
+    "fal": "fal",
     "fibo": "fibo",
     "filters": "濾鏡",
     "flux": "Flux",
