@@ -529,11 +529,13 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     initializationPromise = promise
     void promise.then(
       () => {
-        if (initializationPromise === promise) initializationPromise = null
+        if (initializationPromise !== promise) return
+        initializationPromise = null
         hostChangedWhileLoading = false
       },
       () => {
-        if (initializationPromise === promise) initializationPromise = null
+        if (initializationPromise !== promise) return
+        initializationPromise = null
         retryIfHostChangedWhileLoading()
       }
     )
@@ -1154,6 +1156,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     mutableWorkspaceTransitionGeneration.value++
     pendingWorkspaceSwitch = null
     initializationPromise = null
+    hostChangedWhileLoading = false
     initState.value = 'uninitialized'
     workspaces.value = []
     serverRefusesCreation.value = false

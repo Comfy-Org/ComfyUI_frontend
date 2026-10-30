@@ -180,6 +180,11 @@ describe('desktopHostSession', () => {
         name: 'drops it when the session moves to another workspace',
         next: { ...SIGNED_IN, workspaceId: 'ws-2' },
         expected: undefined
+      },
+      {
+        name: 'drops it when another account signs in to the same workspace',
+        next: { ...SIGNED_IN, userId: 'user-2' },
+        expected: undefined
       }
     ] satisfies {
       name: string
