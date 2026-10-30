@@ -31,6 +31,7 @@ import type { DeployEnv } from '@comfyorg/shared-frontend-utils/telemetry'
 import type { HostedBillingDestination } from '@/platform/billing/billingWeb'
 import { getBillingWebUrl } from '@/platform/billing/billingWeb'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import { isCloud } from '@/platform/distribution/types'
 import { resolveDeployEnv } from '@comfyorg/telemetry/rumContext'
 
 export type HostedBillingRoute =
@@ -46,7 +47,6 @@ export type HostedBillingRouteFields = Pick<
 const PROVIDER: HostedBillingRoute = { kind: 'provider' }
 
 const PRODUCT = 'comfyui'
-const RETURN_TO: ReturnTarget = 'comfyui_workspace'
 
 const BILLING_ENVIRONMENT_BY_DEPLOY_ENV: Readonly<
   Record<DeployEnv, BillingEnvironment>
@@ -83,6 +83,16 @@ export function hostBillingEnvironment(
     : BILLING_ENVIRONMENT_BY_DEPLOY_ENV[deployEnv]
 }
 
+/** Cloud web in a browser tab; Desktop 2 hosts the cloud app but billing opens in the system browser. */
+export function servesCloudWeb(): boolean {
+  return isCloud && window.__comfyDesktop2 === undefined
+}
+
+/** Cloud web goes back to the workspace; local and Desktop have no URL billing can reach. */
+export function hostReturnTarget(cloudWeb = servesCloudWeb()): ReturnTarget {
+  return cloudWeb ? 'comfyui_workspace' : 'comfyui_local'
+}
+
 /**
  * Re-bases a contract route under the configured billing-web path, which the
  * builder drops because an entry URL is only ever routing input. A prefixed
@@ -99,10 +109,11 @@ export function hostedBillingRoute(
   intent: BillingIntent,
   fields: HostedBillingRouteFields = {},
   billingWebBase: URL | null = getBillingWebUrl(),
-  environment: BillingEnvironment | undefined = hostBillingEnvironment()
+  environment: BillingEnvironment | undefined = hostBillingEnvironment(),
+  returnTo: ReturnTarget = hostReturnTarget()
 ): HostedBillingRoute {
   if (destination !== 'billing_web' || !billingWebBase) return PROVIDER
-  if (!environment || !resolveReturnTarget(RETURN_TO, environment)) {
+  if (!environment || !resolveReturnTarget(returnTo, environment)) {
     return PROVIDER
   }
 
@@ -111,7 +122,7 @@ export function hostedBillingRoute(
     billingOrigin: billingWebBase,
     intent,
     product: PRODUCT,
-    returnTo: RETURN_TO
+    returnTo
   })
   return entry.status === 'ok'
     ? { kind: 'billing_web', url: underBase(billingWebBase, entry.url) }

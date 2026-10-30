@@ -5,7 +5,15 @@ import type {
 
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
-import { hostedBillingRoute } from './hostedBillingRoutes'
+import { hostedBillingRoute, hostReturnTarget } from './hostedBillingRoutes'
+
+const distribution = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
 
 const cloudBaseUrl = vi.hoisted(() => ({
   value: 'https://testcloud.comfy.org'
@@ -30,6 +38,8 @@ describe('hostedBillingRoute', () => {
   beforeEach(() => {
     cloudBaseUrl.value = 'https://testcloud.comfy.org'
     remoteConfig.value = {}
+    distribution.isCloud = true
+    window.__comfyDesktop2 = undefined
   })
 
   it.for([
@@ -164,6 +174,42 @@ describe('hostedBillingRoute', () => {
       kind: 'billing_web',
       url: new URL(
         'https://stagingbilling.comfy.org/v1/pricing?product=comfyui&return_to=comfyui_workspace'
+      )
+    })
+  })
+})
+
+describe('hostReturnTarget', () => {
+  beforeEach(() => {
+    remoteConfig.value = {}
+    distribution.isCloud = true
+    window.__comfyDesktop2 = undefined
+  })
+
+  it('returns cloud web to the workspace', () => {
+    expect(hostReturnTarget()).toBe('comfyui_workspace')
+  })
+
+  it('returns a local build to the billing-web return page', () => {
+    distribution.isCloud = false
+
+    expect(hostReturnTarget()).toBe('comfyui_local')
+  })
+
+  it('returns Desktop 2, whose billing opens in the system browser, to the billing-web return page', () => {
+    window.__comfyDesktop2 = {}
+
+    expect(hostReturnTarget()).toBe('comfyui_local')
+  })
+
+  it('mints the local return into the entry a local build opens', () => {
+    distribution.isCloud = false
+    vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
+
+    expect(hostedBillingRoute('billing_web', 'top-up')).toEqual({
+      kind: 'billing_web',
+      url: new URL(
+        'https://billing.comfy.org/v1/top-up?product=comfyui&return_to=comfyui_local'
       )
     })
   })

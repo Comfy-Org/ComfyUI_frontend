@@ -1,8 +1,10 @@
 import type { BillingEnvironment } from '@comfyorg/billing-contract'
 
 import { getBillingWebUrl } from '@/platform/billing/billingWeb'
-import { isCloud } from '@/platform/distribution/types'
-import { hostBillingEnvironment } from '@/platform/billing/hostedBillingRoutes'
+import {
+  hostBillingEnvironment,
+  servesCloudWeb
+} from '@/platform/billing/hostedBillingRoutes'
 
 const TOPUP_RETURN_PATH = '/return/topup'
 
@@ -21,7 +23,7 @@ interface TopupCheckoutReturnContext {
 
 function currentContext(): TopupCheckoutReturnContext {
   return {
-    servesCloudWeb: isCloud && window.__comfyDesktop2 === undefined,
+    servesCloudWeb: servesCloudWeb(),
     currentUrl: window.location.href,
     billingWebBase: getBillingWebUrl(),
     environment: hostBillingEnvironment()

@@ -22,6 +22,13 @@ describe('resolveReturnTarget', () => {
       'test',
       'https://testcloud.comfy.org/?settings=plan-credits'
     ],
+    ['comfyui_local', 'production', 'https://billing.comfy.org/return/comfyui'],
+    [
+      'comfyui_local',
+      'staging',
+      'https://stagingbilling.comfy.org/return/comfyui'
+    ],
+    ['comfyui_local', 'test', 'https://testbilling.comfy.org/return/comfyui'],
     ['platform_account', 'production', 'https://platform.comfy.org/'],
     ['platform_account', 'staging', 'https://stagingplatform.comfy.org/'],
     [

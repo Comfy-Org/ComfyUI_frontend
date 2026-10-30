@@ -9,7 +9,11 @@ import App from '@/App.vue'
 import { safeReturnTo } from '@/auth/returnTo'
 import { recordBillingEntry, useBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
-import { createBillingRouter, TOPUP_RETURN_PATH } from '@/router'
+import {
+  COMFYUI_RETURN_PATH,
+  createBillingRouter,
+  TOPUP_RETURN_PATH
+} from '@/router'
 import type { BillingWebSessionPhase } from '@/router'
 import { createFakeBillingClient } from '@/test/fakeBillingClient'
 
@@ -233,6 +237,39 @@ describe('the top-up return page', () => {
       await screen.findByRole('heading', { name: 'Return to ComfyUI' })
     ).toBeInTheDocument()
     expect(useBillingEntry().error.value).toBeUndefined()
+  })
+})
+
+describe('the comfyui_local return page', () => {
+  it.for(['pending', 'signed-out', 'minting', 'error'] as const)(
+    'opens for a %s visitor without asking for a session',
+    async (phase) => {
+      const readPhase = vi.fn(() => phase)
+      const router = createBillingRouter(createMemoryHistory(), readPhase)
+
+      await router.push(COMFYUI_RETURN_PATH)
+
+      expect(router.currentRoute.value.fullPath).toBe(COMFYUI_RETURN_PATH)
+      expect(readPhase).not.toHaveBeenCalled()
+    }
+  )
+
+  it('sends the customer back to the app with nothing to click', async () => {
+    await arriveAt(
+      `${COMFYUI_RETURN_PATH}?billing_result=success`,
+      routerAt('signed-out')
+    )
+
+    expect(
+      await screen.findByRole('heading', { name: 'Return to ComfyUI' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Go back to the ComfyUI app to keep working. It shows the change when you return to it.'
+      )
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 })
 
