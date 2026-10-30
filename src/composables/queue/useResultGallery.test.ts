@@ -7,7 +7,7 @@ vi.mock(import('@/services/hdrViewerService'))
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 

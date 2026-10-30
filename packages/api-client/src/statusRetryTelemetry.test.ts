@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { StatusRetrySettlement } from '@/utils/statusRetryTelemetry'
-import { abortEnd, classifyStatusRetry } from '@/utils/statusRetryTelemetry'
+import type { StatusRetrySettlement } from './statusRetryTelemetry'
+import { abortEnd, classifyStatusRetry } from './statusRetryTelemetry'
 
 describe('classifyStatusRetry', () => {
   it.for<[string, StatusRetrySettlement, string | undefined]>([

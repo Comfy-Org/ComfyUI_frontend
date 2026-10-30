@@ -8,11 +8,8 @@ import {
   fetchJobAssets,
   fetchJobDetail,
   fetchQueue
-} from '@/platform/remote/comfyui/jobs/fetchJobs'
-import type {
-  RawJobListItem,
-  zJobsListResponse
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+} from './fetchJobs'
+import type { RawJobListItem, zJobsListResponse } from './jobTypes'
 import type { z } from 'zod'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>

@@ -709,6 +709,15 @@ jobs:
             exit 0
           fi
 
+          RELEASE_LABEL='^(core|cloud)/[0-9]+\.[0-9]+$'
+
+          # Most merges carry no release label. Stop before the comment
+          # lookup so they cost one call against the shared token's limit.
+          if ! grep -qE -- "${RELEASE_LABEL}" <<<"${LABELS}"; then
+            echo "PR #${PR_NUMBER} has no release labels."
+            exit 0
+          fi
+
           WARNED=$(gh api --paginate \
             "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" --jq '.[]
               | select(.user.login == "github-actions[bot]")
@@ -718,7 +727,7 @@ jobs:
 
           PENDING=()
           while IFS= read -r label; do
-            if [[ ! "${label}" =~ ^(core|cloud)/[0-9]+\.[0-9]+$ ]] ||
+            if [[ ! "${label}" =~ ${RELEASE_LABEL} ]] ||
               grep -qxF -- "${label}" <<<"${WARNED}"; then
               continue
             fi

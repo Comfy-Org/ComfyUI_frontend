@@ -8,16 +8,13 @@
 
 import QuickLRU from '@alloc/quick-lru'
 
-import type {
-  JobDetail,
-  JobOutputAsset
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobDetail, JobOutputAsset } from '@comfyorg/api-client/jobTypes'
 import {
   extractApiPrompt,
   extractWorkflow
-} from '@/platform/remote/comfyui/jobs/fetchJobs'
+} from '@comfyorg/api-client/fetchJobs'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
+import type { TaskOutput } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { findResultIndexByUrl } from '@/utils/resultItemUrl'
