@@ -9,6 +9,7 @@
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import type { JobId } from '@/platform/remote/comfyui/execution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type {
   JobAssetsResult,
@@ -75,7 +76,11 @@ async function fetchJobsRaw(
     }
   } catch (error) {
     if (options?.throwOnError) throw error
-    console.error('[Jobs API] Error fetching jobs:', error)
+    reportError(error, {
+      errorType: 'failure_fetching_jobs',
+      surface: 'platform',
+      context: { statuses: statusParam }
+    })
     return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
   }
 }
