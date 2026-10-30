@@ -140,7 +140,11 @@ panel, composer, graph and chat history. **Next** advances through the cards;
 **Done** on the last card, **Skip** on any card and Escape once a card is on
 screen all dismiss the tour and mark it complete.
 
-Cards placed beside their target carry an arrow pointing at it. The rest of the
+A card placed beside its target carries an arrow pointing at it; cards placed
+anywhere else never do. The arrow is also hidden when it would not actually
+point at the target: when a narrow viewport has shifted the card onto its
+target, or when the target's center lies outside the span the arrow can reach
+along the card's edge. The rest of the
 screen, the highlighted area included, does not respond while a card is up; a
 click there briefly outlines the card and moves focus to it
 so the user finds the controls instead of clicking the highlight.
