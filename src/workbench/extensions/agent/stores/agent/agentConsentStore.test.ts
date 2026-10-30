@@ -20,9 +20,12 @@ const accountApi = vi.hoisted(() => ({
 }))
 vi.mock(import('@/platform/settings/globalSettingsApi'), () => ({
   getGlobalSetting: accountApi.get,
-  setGlobalSetting: accountApi.set,
-  getGlobalSettingsAuthHeader: accountApi.header
+  setGlobalSetting: accountApi.set
 }))
+vi.mock(
+  import('@/workbench/extensions/agent/services/agent/agentAuth'),
+  () => ({ agentSettingsAuthHeader: accountApi.header })
+)
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 const stored: GlobalSetting = {
@@ -115,6 +118,38 @@ describe('agentConsentStore', () => {
       { key: 'Comfy.AgentPanel.ConsentAccepted', value: true },
       { Authorization: 'Bearer account-a-token' }
     )
+  })
+
+  it('counts confirmed acceptances but not loads of stored consent', async () => {
+    accountApi.get.mockResolvedValueOnce(stored)
+    const store = useAgentConsentStore()
+
+    await store.load()
+    expect(store.confirmedAcceptances).toBe(0)
+
+    await store.accept()
+    expect(store.confirmedAcceptances).toBe(1)
+  })
+
+  it('does not count a write that resolves after the account changes', async () => {
+    const identity = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
+    let finishSave = (_value: GlobalSetting): void => {}
+    accountApi.set.mockImplementationOnce(
+      () =>
+        new Promise<GlobalSetting>((resolve) => {
+          finishSave = resolve
+        })
+    )
+    const store = useAgentConsentStore()
+
+    const request = store.accept()
+    await vi.waitFor(() => expect(accountApi.set).toHaveBeenCalledOnce())
+    identity.value = 'account-b'
+    finishSave(stored)
+    await request
+
+    expect(store.confirmedAcceptances).toBe(0)
   })
 
   it('sends on the web session in place of a workspace auth header', async () => {

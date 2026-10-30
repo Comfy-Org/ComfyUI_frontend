@@ -26,9 +26,9 @@ import {
   webSessionRequests
 } from '@/platform/auth/session/webSessionFetch'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { UnifiedAuthRefreshOutcome } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { UnifiedAuthRefreshOutcome } from '@comfyorg/telemetry/types'
 import { prepareWorkflowWorkspaceTransition } from '@/platform/workflow/persistence/base/storageIO'
 import {
   MAX_SCHEDULED_REFRESH_RETRIES,
@@ -48,7 +48,7 @@ import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
-import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 
 export { WorkspaceAuthError }
 // The e2e fixtures import this type from the store path.
@@ -271,7 +271,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (currentWorkspace.value?.id !== workspaceId)
       currentWorkspace.value = null
     const response = await requests.send(
-      workspaceApiUrl('/workspaces/current'),
+      ingestApiUrl('/workspaces/current'),
       { method: 'GET', cache: 'no-store' },
       { ...scope, workspaceId }
     )
@@ -440,7 +440,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   const unifiedSessionClient = createSessionClient<User>(
     {
-      exchangeUrl: workspaceApiUrl('/auth/token'),
+      exchangeUrl: ingestApiUrl('/auth/token'),
       autoMint: false,
       // In-memory only: a persisted JWT can outlive its server expiry, so a
       // reload re-mints instead of rehydrating.

@@ -4,12 +4,12 @@ import type {
   BillingPlansResponse,
   Plan,
   TeamCreditStops
-} from '@/platform/workspace/api/workspaceApi'
-import { reportError } from '@/platform/telemetry/reportError'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { t } from '@/i18n'
 
@@ -27,7 +27,7 @@ const MAX_SCOPE_REISSUES = 4
 
 function billingScopeKey(): string {
   const identity = useCurrentUser().resolvedUserInfo.value?.id ?? 'anonymous'
-  const workspace = useTeamWorkspaceStore().activeWorkspaceId ?? 'personal'
+  const workspace = useWorkspaceIdentity().activeWorkspaceId ?? 'personal'
   return `${identity}:${workspace}`
 }
 
@@ -142,7 +142,7 @@ export function useBillingPlans() {
     const request: Promise<void> = (
       rail
         ? readOnRail(rail.readPlans, 'getBillingPlans')
-        : workspaceApi.getBillingPlans()
+        : billingApi.getBillingPlans()
     )
       .then((response) => {
         if (fetchPromise !== request) return fetchPromise ?? undefined

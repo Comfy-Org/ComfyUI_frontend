@@ -2,16 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { reportError } from '@/platform/telemetry/reportError'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 
 import { useRetentionOffer } from './useRetentionOffer'
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
-vi.mock(import('@/platform/workspace/api/workspaceApi'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@/platform/billing/api/billingApi'))
 
 type TerminalOperation = Awaited<
   ReturnType<ReturnType<typeof useBillingOperationStore>['startOperation']>
@@ -51,7 +50,7 @@ describe('useRetentionOffer', () => {
     await accept()
 
     expect(phase.value).toBe('applied')
-    expect(workspaceApi.acceptRetentionOffer).toHaveBeenCalledExactlyOnceWith(
+    expect(billingApi.acceptRetentionOffer).toHaveBeenCalledExactlyOnceWith(
       'session-1'
     )
     expect(
@@ -62,7 +61,7 @@ describe('useRetentionOffer', () => {
   })
 
   it('applies an acceptance the server already settled without polling', async () => {
-    vi.mocked(workspaceApi.acceptRetentionOffer).mockResolvedValue({
+    vi.mocked(billingApi.acceptRetentionOffer).mockResolvedValue({
       billing_op_id: 'op-retention',
       status: 'succeeded'
     })
@@ -121,7 +120,7 @@ describe('useRetentionOffer', () => {
   ] as const)(
     'a $status $code refusal leaves the offer $phase without reporting',
     async ({ status, code, phase: expected }) => {
-      vi.mocked(workspaceApi.acceptRetentionOffer).mockRejectedValue(
+      vi.mocked(billingApi.acceptRetentionOffer).mockRejectedValue(
         new WorkspaceApiError('refused', status, code)
       )
       const { phase, accept } = useRetentionOffer('session-1', 'workspace-1')
@@ -136,7 +135,7 @@ describe('useRetentionOffer', () => {
   it.for(['declined', 'expired'] as const)(
     'sends nothing more once the offer is %s',
     async (expected) => {
-      vi.mocked(workspaceApi.acceptRetentionOffer).mockRejectedValue(
+      vi.mocked(billingApi.acceptRetentionOffer).mockRejectedValue(
         new WorkspaceApiError(
           'refused',
           409,
@@ -151,7 +150,7 @@ describe('useRetentionOffer', () => {
       await accept()
 
       expect(phase.value).toBe(expected)
-      expect(workspaceApi.acceptRetentionOffer).toHaveBeenCalledOnce()
+      expect(billingApi.acceptRetentionOffer).toHaveBeenCalledOnce()
     }
   )
 
@@ -167,7 +166,7 @@ describe('useRetentionOffer', () => {
       phase: 'offered'
     }
   ])('recording the shown offer: $name', async ({ error, phase: expected }) => {
-    vi.mocked(workspaceApi.recordRetentionFlowEvent).mockRejectedValue(error)
+    vi.mocked(billingApi.recordRetentionFlowEvent).mockRejectedValue(error)
     const { phase, recordShown } = useRetentionOffer('session-1', 'workspace-1')
 
     await recordShown()
@@ -179,7 +178,7 @@ describe('useRetentionOffer', () => {
     { name: 'a server error', error: new WorkspaceApiError('boom', 500) },
     { name: 'a lost response', error: new Error('Network Error') }
   ])('$name leaves the outcome unconfirmed', async ({ error }) => {
-    vi.mocked(workspaceApi.acceptRetentionOffer).mockRejectedValue(error)
+    vi.mocked(billingApi.acceptRetentionOffer).mockRejectedValue(error)
     const { phase, accept } = useRetentionOffer('session-1', 'workspace-1')
 
     await accept()
@@ -189,7 +188,7 @@ describe('useRetentionOffer', () => {
   })
 
   it('checks an unconfirmed outcome again with the same session', async () => {
-    vi.mocked(workspaceApi.acceptRetentionOffer).mockRejectedValueOnce(
+    vi.mocked(billingApi.acceptRetentionOffer).mockRejectedValueOnce(
       new Error('Network Error')
     )
     settlesAs('succeeded')
@@ -199,7 +198,7 @@ describe('useRetentionOffer', () => {
     await accept()
 
     expect(phase.value).toBe('applied')
-    expect(workspaceApi.acceptRetentionOffer).toHaveBeenNthCalledWith(
+    expect(billingApi.acceptRetentionOffer).toHaveBeenNthCalledWith(
       2,
       'session-1'
     )
@@ -211,11 +210,11 @@ describe('useRetentionOffer', () => {
 
     await Promise.all([accept(), accept()])
 
-    expect(workspaceApi.acceptRetentionOffer).toHaveBeenCalledOnce()
+    expect(billingApi.acceptRetentionOffer).toHaveBeenCalledOnce()
   })
 
   it('tries a refused offer again with the same session', async () => {
-    vi.mocked(workspaceApi.acceptRetentionOffer).mockRejectedValueOnce(
+    vi.mocked(billingApi.acceptRetentionOffer).mockRejectedValueOnce(
       new WorkspaceApiError('refused', 409)
     )
     settlesAs('succeeded')
@@ -226,7 +225,7 @@ describe('useRetentionOffer', () => {
     await accept()
 
     expect(phase.value).toBe('applied')
-    expect(workspaceApi.acceptRetentionOffer).toHaveBeenNthCalledWith(
+    expect(billingApi.acceptRetentionOffer).toHaveBeenNthCalledWith(
       2,
       'session-1'
     )
@@ -240,6 +239,6 @@ describe('useRetentionOffer', () => {
     await accept()
 
     expect(phase.value).toBe('applied')
-    expect(workspaceApi.acceptRetentionOffer).toHaveBeenCalledOnce()
+    expect(billingApi.acceptRetentionOffer).toHaveBeenCalledOnce()
   })
 })

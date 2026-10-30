@@ -7,10 +7,7 @@
       role="note"
       class="mb-2 flex gap-2 rounded-md border border-warning/30 bg-warning/10 p-2.5 text-warning"
     >
-      <i
-        aria-hidden="true"
-        class="mt-0.5 icon-[lucide--lock] size-4 shrink-0"
-      />
+      <i aria-hidden="true" class="mt-0.5 icon-[lucide--lock]" />
       <p class="m-0 text-xs/relaxed">
         <span class="font-semibold">
           {{ t('rightSidePanel.missingModels.gatedModelsHintLabel') }}
@@ -77,7 +74,7 @@
         :aria-describedby="showGatedModelsHint ? gatedHintId : undefined"
         @click="downloadAllModels"
       >
-        <i aria-hidden="true" class="icon-[lucide--download] size-4 shrink-0" />
+        <i aria-hidden="true" class="icon-[lucide--download]" />
         <span class="truncate">{{ downloadAllLabel }}</span>
       </Button>
     </div>
@@ -90,7 +87,7 @@ import { useI18n } from 'vue-i18n'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 import { isCloud } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/workflowErrors/missingModel/components/MissingModelRow.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useMissingModelDownload } from '@/platform/workflowErrors/missingModel/composables/useMissingModelDownload'
 import { isTrustedHuggingFaceUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { getDownloadableModels } from '@/platform/workflowErrors/missingModel/missingModelViewUtils'

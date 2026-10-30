@@ -12,12 +12,12 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useTelemetry } from '@/platform/telemetry'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -30,7 +30,7 @@ import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
-import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
 import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 
 import { GetNodeParentGroupKey } from '@/components/rightSidePanel/shared'
@@ -297,7 +297,7 @@ defineExpose({
           <span class="flex min-w-0 flex-1 items-center gap-2">
             <i
               v-if="nodeHasError"
-              class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive"
+              class="icon-[lucide--octagon-alert] text-destructive"
             />
             <span :class="cn('truncate', nodeHasError && 'text-destructive')">
               <slot name="label">
@@ -330,7 +330,7 @@ defineExpose({
             :aria-label="t('rightSidePanel.resetAllParameters')"
             @click.stop="handleResetAllWidgets"
           >
-            <i class="icon-[lucide--rotate-ccw] size-4" />
+            <i class="icon-[lucide--rotate-ccw]" />
           </Button>
           <Button
             v-if="canShowLocateButton"
@@ -341,7 +341,7 @@ defineExpose({
             :aria-label="t('rightSidePanel.locateNode')"
             @click.stop="handleLocateNode"
           >
-            <i class="icon-[lucide--locate] size-4" />
+            <i class="icon-[lucide--locate]" />
           </Button>
         </div>
       </template>

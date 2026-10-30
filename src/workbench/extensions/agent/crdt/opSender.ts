@@ -17,7 +17,7 @@
  */
 import type { Op } from '@comfyorg/comfy-multi-player'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { DocOp, DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
@@ -148,6 +148,8 @@ export interface OpSender {
    * `undeliverable` exactly as it would have. Idempotent.
    */
   resume(): void
+  /** Retries a batch held after transport exhaustion. */
+  retryTransport(): void
   /**
    * Eager abort seam (FE #16637 residual): settle the in-flight batch NOW
    * ('unconfirmed' once transmitted, 'undeliverable' otherwise) if its
@@ -206,6 +208,7 @@ interface InFlight extends WireBatch {
   reportedThrow: boolean
   resent: boolean
   parked: boolean
+  awaitingTransport: boolean
   timer: ReturnType<typeof setTimeout> | null
 }
 
@@ -326,10 +329,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           SEND_RETRY_INTERVAL_MS
         )
       } else {
-        settleUnbound(batch, 'transport_exhausted')
+        batch.awaitingTransport = true
       }
       return
     }
+    batch.awaitingTransport = false
     batch.sends++
     armResultTimeout(batch)
   }
@@ -443,6 +447,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           reportedThrow: false,
           resent: false,
           parked: false,
+          awaitingTransport: false,
           timer: null
         }
         transmit(inFlight, 0)
@@ -671,6 +676,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         inFlight.parked = false
         transmit(inFlight, 0)
       }
+    },
+    retryTransport() {
+      if (!inFlight?.awaitingTransport) return
+      inFlight.awaitingTransport = false
+      transmit(inFlight, 0)
     },
     abortIfUnbound() {
       if (inFlight && deps.workflowId() !== inFlight.workflowId) {

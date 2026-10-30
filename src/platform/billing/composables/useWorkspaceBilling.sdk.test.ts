@@ -3,10 +3,10 @@ import { effectScope } from 'vue'
 
 import type { BillingStatusData } from '@comfyorg/account-core/billing'
 
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { fakeBillingSdk } from '@/platform/billing/sdk/billingSdkTestUtils'
-import type { BillingSdk } from '@/platform/billing/sdk/createBillingSdk'
+import type { BillingSdk } from '@comfyorg/billing-core/sdk'
 import { useWorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -55,18 +55,19 @@ vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/billing/api/billingApi'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
-vi.mock(import('@/platform/billing/sdk/createBillingSdk'), () => ({
+vi.mock(import('@comfyorg/billing-core/sdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 
 const STATUS: BillingStatusResponse = {
+  ended_at: null,
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
@@ -84,6 +85,7 @@ const READ_AT = 1_700_000_000_000
 
 /** The status the SDK's reader decodes, before the host projects it. */
 const DECODED_STATUS: BillingStatusData = {
+  ended_at: null,
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
@@ -118,8 +120,8 @@ beforeEach(() => {
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
   flagState.billingSdkSubscriptionEnabled = false
   flagState.unifiedCloudAuthEnabled = true
-  vi.mocked(workspaceApi.getBillingStatus).mockResolvedValue(STATUS)
-  vi.mocked(workspaceApi.getBillingBalance).mockResolvedValue({
+  vi.mocked(billingApi.getBillingStatus).mockResolvedValue(STATUS)
+  vi.mocked(billingApi.getBillingBalance).mockResolvedValue({
     amount_micros: 0,
     currency: 'USD'
   })
@@ -137,7 +139,7 @@ describe('useWorkspaceBilling top-up with the billing SDK flag', () => {
       status: 'completed' as const,
       amount_cents: 1000
     }
-    vi.mocked(workspaceApi.createTopup).mockResolvedValue(response)
+    vi.mocked(billingApi.createTopup).mockResolvedValue(response)
 
     await expect(setupBilling().topup(1000)).resolves.toBe(response)
 
@@ -160,7 +162,7 @@ describe('useWorkspaceBilling top-up with the billing SDK flag', () => {
   it('keeps a pending top-up on the poller while unified auth is off, whatever the SDK flag says', async () => {
     flagState.billingSdkTopupEnabled = true
     flagState.unifiedCloudAuthEnabled = false
-    vi.mocked(workspaceApi.getBillingStatus).mockResolvedValue({
+    vi.mocked(billingApi.getBillingStatus).mockResolvedValue({
       ...STATUS,
       pending_billing_op_id: 'op-1',
       pending_billing_op_type: 'topup'
@@ -259,8 +261,8 @@ describe('useWorkspaceBilling reads with the billing SDK flag', () => {
     await billing.fetchStatus()
     await billing.fetchBalance()
 
-    expect(workspaceApi.getBillingStatus).toHaveBeenCalledOnce()
-    expect(workspaceApi.getBillingBalance).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingStatus).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingBalance).toHaveBeenCalledOnce()
     expect(mockCreateBillingSdk).not.toHaveBeenCalled()
   })
 
@@ -271,7 +273,7 @@ describe('useWorkspaceBilling reads with the billing SDK flag', () => {
 
     await billing.fetchStatus()
 
-    expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
+    expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
     expect(billing.tier.value).toBe('PRO')
     expect(billing.error.value).toBeNull()
   })
@@ -284,7 +286,7 @@ describe('useWorkspaceBilling reads with the billing SDK flag', () => {
 
     await billing.fetchStatus()
 
-    expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
+    expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
     expect(billing.tier.value).toBe('PRO')
   })
 
@@ -319,7 +321,7 @@ describe('useWorkspaceBilling reads with the billing SDK flag', () => {
 
     await billing.fetchBalance()
 
-    expect(workspaceApi.getBillingBalance).not.toHaveBeenCalled()
+    expect(billingApi.getBillingBalance).not.toHaveBeenCalled()
     expect(billing.balance.value?.amountMicros).toBe(5_000_000)
   })
 

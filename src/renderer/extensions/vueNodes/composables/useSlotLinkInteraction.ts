@@ -16,8 +16,8 @@ import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/slots'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 import {
   clearCanvasPointerHistory,
   toCanvasPointerEvent
@@ -36,7 +36,7 @@ import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDra
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { Point } from '@/renderer/core/layout/types'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
@@ -45,9 +45,9 @@ import { app } from '@/scripts/app'
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { createRafBatch } from '@/utils/rafBatch'
 
 interface SlotInteractionOptions {

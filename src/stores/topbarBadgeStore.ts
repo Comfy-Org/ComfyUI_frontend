@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import type { TopbarBadge } from '@/types/comfy'
 
-import { useExtensionStore } from './extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 
 export const useTopbarBadgeStore = defineStore('topbarBadge', () => {
   const extensionStore = useExtensionStore()

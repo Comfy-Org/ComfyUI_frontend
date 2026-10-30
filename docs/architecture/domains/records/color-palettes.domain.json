@@ -12,10 +12,6 @@
       "role": "domain"
     },
     {
-      "path": "src/services/colorPaletteService.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/services/colorPaletteService.ts",
       "role": "application"
     },

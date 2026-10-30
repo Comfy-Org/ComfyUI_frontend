@@ -4,15 +4,7 @@
   "description": "Node definition catalog, search, grouping, sorting, bookmarks, help content, previews, drag-to-canvas, and the node library and search interfaces. Wire schemas and LiteGraph node registration remain separate.",
   "modules": [
     {
-      "path": "src/components/common/ColorCustomizationSelector.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/common/ColorCustomizationSelector.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/common/CustomizationDialog.test.ts",
       "role": "presentation"
     },
     {
@@ -20,15 +12,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/common/SearchFilterChip.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/common/SearchFilterChip.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/common/TreeExplorer.test.ts",
       "role": "presentation"
     },
     {
@@ -36,15 +20,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/common/TreeExplorerTreeNode.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/common/TreeExplorerTreeNode.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/common/TreeExplorerV2.test.ts",
       "role": "presentation"
     },
     {
@@ -52,15 +28,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/common/TreeExplorerV2Node.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/common/TreeExplorerV2Node.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/NodeDragPreview.test.ts",
       "role": "presentation"
     },
     {
@@ -72,19 +40,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/searchbox/HighlightedText.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/searchbox/NodeSearchBox.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/searchbox/NodeSearchBox.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/searchbox/NodeSearchBoxPopover.test.ts",
       "role": "presentation"
     },
     {
@@ -100,10 +56,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/searchbox/v2/NodeSearchCategorySidebar.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/searchbox/v2/NodeSearchCategorySidebar.vue",
       "role": "presentation"
     },
@@ -112,15 +64,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/searchbox/v2/NodeSearchContent.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/searchbox/v2/NodeSearchContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/searchbox/v2/NodeSearchFilterBar.test.ts",
       "role": "presentation"
     },
     {
@@ -128,23 +72,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/searchbox/v2/NodeSearchInput.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/searchbox/v2/NodeSearchInput.vue",
       "role": "presentation"
     },
     {
-      "path": "src/components/searchbox/v2/NodeSearchListItem.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/searchbox/v2/NodeSearchListItem.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/searchbox/v2/NodeSearchTypeFilterPopover.test.ts",
       "role": "presentation"
     },
     {
@@ -160,15 +92,7 @@
       "role": "domain"
     },
     {
-      "path": "src/components/sidebar/tabs/NodeLibrarySidebarTab.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/sidebar/tabs/NodeLibrarySidebarTab.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/tabs/NodeLibrarySidebarTabV2.test.ts",
       "role": "presentation"
     },
     {
@@ -184,23 +108,11 @@
       "role": "integration"
     },
     {
-      "path": "src/composables/node/startModelNodeDragFromAsset.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/composables/node/startModelNodeDragFromAsset.ts",
       "role": "integration"
     },
     {
-      "path": "src/composables/node/useNodeDragToCanvas.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/composables/node/useNodeDragToCanvas.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useNodePreviewAndDrag.test.ts",
       "role": "integration"
     },
     {
@@ -212,10 +124,6 @@
       "role": "integration"
     },
     {
-      "path": "src/composables/useCanvasDrop.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/composables/useCanvasDrop.ts",
       "role": "integration"
     },
@@ -224,15 +132,7 @@
       "role": "application"
     },
     {
-      "path": "src/composables/useNodeHelpContent.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useNodeHelpContent.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/usePerTabState.test.ts",
       "role": "application"
     },
     {
@@ -244,15 +144,7 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/services/nodeOrganizationService.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/services/nodeOrganizationService.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/services/nodeSearchService.test.ts",
       "role": "application"
     },
     {
@@ -260,23 +152,7 @@
       "role": "application"
     },
     {
-      "path": "src/stores/nodeBookmarkStore.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/stores/nodeBookmarkStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/nodeDefStore.frequency.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/nodeDefStore.nodeText.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/nodeDefStore.test.ts",
       "role": "application"
     },
     {
@@ -296,15 +172,7 @@
       "role": "domain"
     },
     {
-      "path": "src/utils/categoryUtil.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/categoryUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/fuseUtil.test.ts",
       "role": "domain"
     },
     {
@@ -317,7 +185,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["extension-manager", "keybindings", "telemetry"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

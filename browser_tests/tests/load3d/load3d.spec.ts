@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Load3D', { tag: '@vue-nodes' }, () => {

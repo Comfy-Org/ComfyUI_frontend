@@ -5,9 +5,9 @@ import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPosit
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { Position } from '@e2e/fixtures/types'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
-import type { Point } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/types/nodeId'
-import type { RerouteId } from '@/types/rerouteId'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 
 type NodeGeometry = {
   inputs: Point[]

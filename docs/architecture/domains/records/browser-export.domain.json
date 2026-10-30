@@ -8,10 +8,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/composables/useCopyToClipboard.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/composables/useCopyToClipboard.ts",
       "role": "infrastructure"
     }

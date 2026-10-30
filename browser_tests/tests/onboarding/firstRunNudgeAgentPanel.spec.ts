@@ -62,7 +62,6 @@ test.describe(
           objectInfo: 'server',
           settings: { 'Comfy.TutorialCompleted': false },
           features: {
-            onboarding_tour_enabled: true,
             subscription_required: true
           }
         })

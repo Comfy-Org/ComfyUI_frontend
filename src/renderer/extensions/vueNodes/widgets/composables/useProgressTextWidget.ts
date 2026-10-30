@@ -6,9 +6,9 @@ import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { ComponentWidgetStandardProps } from '@/types/domWidget'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 type TextPreviewCustomProps = Omit<
   InstanceType<typeof TextPreviewWidget>['$props'],

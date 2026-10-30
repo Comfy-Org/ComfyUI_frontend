@@ -8,6 +8,7 @@ import type {
 interface DesktopHostUser {
   id: string
   email?: string
+  name?: string
   workspaceId?: string
 }
 
@@ -26,8 +27,8 @@ let revision = 0
 function toSession(state: DesktopHostAuthState): DesktopHostSession {
   if (state.status === 'disabled') return { status: 'inactive' }
   if (state.status === 'signed_out') return { status: 'signed_out' }
-  const { userId, email, workspaceId } = state
-  return { status: 'signed_in', user: { id: userId, email, workspaceId } }
+  const { userId, email, name, workspaceId } = state
+  return { status: 'signed_in', user: { id: userId, email, name, workspaceId } }
 }
 
 function apply(state: DesktopHostAuthState): void {

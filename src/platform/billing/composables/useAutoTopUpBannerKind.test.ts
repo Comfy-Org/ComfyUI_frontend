@@ -5,7 +5,7 @@ import { computed, effectScope } from 'vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
+import type { AutoReloadSettings } from '@comfyorg/billing-core'
 
 import { useAutoTopUpBannerKind } from './useAutoTopUpBannerKind'
 import { useBillingAutoTopUpCard } from './useBillingAutoTopUpCard'

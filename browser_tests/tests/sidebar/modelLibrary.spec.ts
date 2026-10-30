@@ -270,16 +270,14 @@ test.describe('Model library sidebar - empty state', () => {
 
       await tab.getLeafByLabel('sd_xl_base_1.0').click()
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 1000 })
-        .toBe(0)
+      await comfyPage.expectNodeCount(0, { timeout: 1000 })
 
       const canvasBox = (await comfyPage.canvas.boundingBox())!
       await comfyPage.canvas.click({
         position: { x: canvasBox.width / 2, y: canvasBox.height / 2 }
       })
 
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+      await comfyPage.expectNodeCount(1)
       await expect
         .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
         .toBe(1)
@@ -346,16 +344,14 @@ test.describe('Model library drops on Vue nodes', { tag: '@vue-nodes' }, () => {
     await expect
       .poll(() => filename.getValue())
       .toBe('dreamshaper_8.safetensors')
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(nodeCount)
+    await comfyPage.expectNodeCount(nodeCount)
   })
 
   test('still creates a loader when dropped onto empty canvas', async ({
     comfyPage
   }) => {
     await comfyPage.menu.topbar.newWorkflowButton.click()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
     const box = (await comfyPage.canvas.boundingBox())!
     await comfyPage.menu.modelLibraryTab
       .getLeafByLabel('dreamshaper_8')
@@ -363,7 +359,7 @@ test.describe('Model library drops on Vue nodes', { tag: '@vue-nodes' }, () => {
         targetPosition: { x: box.width / 2, y: box.height / 2 }
       })
     await comfyPage.nextFrame()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await comfyPage.expectNodeCount(1)
     const [loader] = await comfyPage.nodeOps.getNodeRefsByType(
       'CheckpointLoaderSimple'
     )

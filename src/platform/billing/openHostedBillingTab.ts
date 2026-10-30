@@ -8,8 +8,8 @@
 import type { BillingIntent } from '@comfyorg/billing-contract'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTelemetry } from '@/platform/telemetry'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
 import {
   readCheckoutOperation,
@@ -18,7 +18,7 @@ import {
 import { hostedBillingRoute } from '@/platform/billing/hostedBillingRoutes'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { createJourneyId } from '@/platform/billing/utils/checkoutJourney'
 
 export interface OpenHostedBillingTabOptions {
@@ -59,7 +59,7 @@ function watchForHostedOperation(
   readOperation: () => Promise<boolean>,
   workspaceId: string | undefined
 ) {
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
   const startedAt = Date.now()
   let reading = false
   const timer = setInterval(() => {
@@ -116,7 +116,7 @@ export function openHostedBillingTabOutcome(
   options: OpenHostedBillingTabOptions = {}
 ): HostedBillingTabOutcome {
   const { flags } = useFeatureFlags()
-  const workspaceId = useTeamWorkspaceStore().activeWorkspaceId ?? undefined
+  const workspaceId = useWorkspaceIdentity().activeWorkspaceId ?? undefined
   const correlationId = options.journeyId ?? createJourneyId()
   const route = hostedBillingRoute(flags.hostedBillingDestination, intent, {
     plan: options.plan,

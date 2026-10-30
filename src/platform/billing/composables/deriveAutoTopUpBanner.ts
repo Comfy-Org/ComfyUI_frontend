@@ -1,4 +1,4 @@
-import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
+import type { AutoReloadSettings } from '@comfyorg/billing-core'
 
 export type AutoTopUpBannerKind = 'autoTopUpFailed' | 'autoTopUpOff'
 

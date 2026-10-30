@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { FilterOption } from '@/platform/assets/types/filterTypes'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -66,7 +66,7 @@ const uploadButtonStyle = cn(
       :class="uploadButtonStyle"
       @click="emit('show-picker')"
     >
-      <i class="icon-[lucide--folder-search] size-4" />
+      <i class="icon-[lucide--folder-search]" />
       <span>{{ $t('g.upload') }}</span>
     </Button>
   </div>

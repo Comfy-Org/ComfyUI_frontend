@@ -85,7 +85,7 @@ export const maskEditorExtension: ComfyExtension = {
   commands: [
     {
       id: 'Comfy.MaskEditor.OpenMaskEditor',
-      icon: 'pi pi-pencil',
+      icon: 'icon-[lucide--pencil]',
       label: 'Open Mask Editor for Selected Node',
       function: () => {
         const selectedNodes = selectedCanvasNodes(app.canvas)
@@ -97,19 +97,19 @@ export const maskEditorExtension: ComfyExtension = {
     },
     {
       id: 'Comfy.MaskEditor.BrushSize.Increase',
-      icon: 'pi pi-plus-circle',
+      icon: 'icon-[lucide--circle-plus]',
       label: 'Increase Brush Size in MaskEditor',
       function: () => changeBrushSize((old) => _.clamp(old + 2, 1, 250))
     },
     {
       id: 'Comfy.MaskEditor.BrushSize.Decrease',
-      icon: 'pi pi-minus-circle',
+      icon: 'icon-[lucide--circle-minus]',
       label: 'Decrease Brush Size in MaskEditor',
       function: () => changeBrushSize((old) => _.clamp(old - 2, 1, 250))
     },
     {
       id: 'Comfy.MaskEditor.ColorPicker',
-      icon: 'pi pi-palette',
+      icon: 'icon-[lucide--palette]',
       label: 'Open Color Picker in MaskEditor',
       function: () => {
         if (!isOpened()) return
@@ -120,7 +120,7 @@ export const maskEditorExtension: ComfyExtension = {
     },
     {
       id: 'Comfy.MaskEditor.Rotate.Right',
-      icon: 'pi pi-refresh',
+      icon: 'icon-[lucide--rotate-cw]',
       label: 'Rotate Right in MaskEditor',
       function: async () => {
         if (!isOpened()) return
@@ -129,7 +129,7 @@ export const maskEditorExtension: ComfyExtension = {
     },
     {
       id: 'Comfy.MaskEditor.Rotate.Left',
-      icon: 'pi pi-undo',
+      icon: 'icon-[lucide--undo-2]',
       label: 'Rotate Left in MaskEditor',
       function: async () => {
         if (!isOpened()) return
@@ -138,7 +138,7 @@ export const maskEditorExtension: ComfyExtension = {
     },
     {
       id: 'Comfy.MaskEditor.Mirror.Horizontal',
-      icon: 'pi pi-arrows-h',
+      icon: 'icon-[lucide--move-horizontal]',
       label: 'Mirror Horizontal in MaskEditor',
       function: async () => {
         if (!isOpened()) return
@@ -147,7 +147,7 @@ export const maskEditorExtension: ComfyExtension = {
     },
     {
       id: 'Comfy.MaskEditor.Mirror.Vertical',
-      icon: 'pi pi-arrows-v',
+      icon: 'icon-[lucide--move-vertical]',
       label: 'Mirror Vertical in MaskEditor',
       function: async () => {
         if (!isOpened()) return

@@ -3,7 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 test.describe(
   'ECS bridge history',
@@ -126,6 +126,7 @@ test.describe(
 
       const { before, moved } =
         await test.step('Move the subgraph and capture its geometry', async () => {
+          await comfyPage.vueNodes.waitForSlotLayout(nodeId)
           const before = await comfyPage.canvasOps.getNodeGeometry(nodeId)
           expect(
             before.inputs.length + before.outputs.length,
@@ -144,8 +145,8 @@ test.describe(
             x: start.x + 120,
             y: start.y + 90
           })
-          await comfyPage.nextFrame()
 
+          await comfyPage.vueNodes.waitForSlotLayout(nodeId)
           const moved = await comfyPage.canvasOps.getNodeGeometry(nodeId)
           comfyPage.canvasOps.expectSlotsTrackedNode(moved, before)
           await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
@@ -203,11 +204,13 @@ test.describe(
         ).toBeVisible()
 
         await comfyPage.subgraph.serializeAndReload()
-        comfyPage.canvasOps.expectNodeGeometryPreserved(
-          await comfyPage.canvasOps.getNodeGeometry(nodeId),
-          moved,
-          'after serialization and reload'
-        )
+        await expect(async () => {
+          comfyPage.canvasOps.expectNodeGeometryPreserved(
+            await comfyPage.canvasOps.getNodeGeometry(nodeId),
+            moved,
+            'after serialization and reload'
+          )
+        }).toPass({ timeout: 5000 })
       })
     })
   }

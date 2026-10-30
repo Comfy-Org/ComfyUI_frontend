@@ -4,7 +4,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -25,7 +25,7 @@ import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useLitegraphService } from '@/services/litegraphService'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -110,7 +110,7 @@ vi.mock(import('@/platform/onboarding/onboardingReset'))
 
 vi.mock(import('@/services/litegraphService'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 

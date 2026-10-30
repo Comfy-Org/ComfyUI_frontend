@@ -17,6 +17,7 @@ import type {
   ToolPart
 } from './agentMessageParts'
 import {
+  askIdOf,
   createAssistantMessage,
   isOpenAskPart,
   toAskOrNoticePart
@@ -540,6 +541,46 @@ function recordAssistantRow(
   return rowPending
 }
 
+function keepAuthoritativeAsk(
+  message: AssistantMessage,
+  row: AgentMessages[number],
+  isAskUnavailable: (askId: string) => boolean,
+  isAskRetired: (askId: string) => boolean
+): void {
+  const rowAsk = row.status === 'streaming' ? row.pending_ask : undefined
+  const priorAvailableAskId = message.parts.findLast((part) => {
+    const askId = askIdOf(part)
+    return (
+      isOpenAskPart(part) &&
+      askId !== undefined &&
+      askId !== rowAsk?.ask_id &&
+      !isAskUnavailable(askId)
+    )
+  })
+  // The snapshot's newest ask stays authoritative even while its answer is
+  // in flight. Falling back then would resurrect an older card.
+  const authoritativeAskId =
+    rowAsk !== undefined && !isAskRetired(rowAsk.ask_id)
+      ? rowAsk.ask_id
+      : ((priorAvailableAskId === undefined
+          ? undefined
+          : askIdOf(priorAvailableAskId)) ?? rowAsk?.ask_id)
+  message.parts = message.parts.filter((part) => {
+    if (!isOpenAskPart(part)) return true
+    const askId = askIdOf(part)
+    return askId !== undefined && askId === authoritativeAskId
+  })
+}
+
+/**
+ * Strips the liveness a row's `streaming` status granted a message that turns
+ * out not to be getting a transport. The parts matter as much as the flag,
+ * and both kinds this row could have been granted are settled here because a
+ * transport is the only thing that could have settled either: a still-running
+ * tool call is clamped, and a `runApproval` ask is dropped the way
+ * `agent_ask_resolved` drops it -- left in place it renders an enabled card
+ * whose answer would be posted against a turn that is no longer active.
+ */
 export function settleLiveMessage(message: AssistantMessage): void {
   message.streaming = false
   message.parts = message.parts.filter((part) => !isOpenAskPart(part))
@@ -566,7 +607,9 @@ function liveTranscriptTurn(
 }
 
 export function normalizeAgentTranscript(
-  history: AgentMessages
+  history: AgentMessages,
+  isAskUnavailable: (askId: string) => boolean = () => false,
+  isAskRetired: (askId: string) => boolean = () => false
 ): NormalizedAgentTranscript {
   const userTexts = new Map<TurnId, string>()
   const userAttachments = new Map<TurnId, UserAttachment[]>()
@@ -597,10 +640,11 @@ export function normalizeAgentTranscript(
       if (workflowId) latestWorkflowId = workflowId
     }
     if (row.role === 'assistant') {
-      pendingByTurn.set(
-        turnId,
-        recordAssistantRow(row, turnId, text, assistants)
-      )
+      const pending = recordAssistantRow(row, turnId, text, assistants)
+      const message = assistants.get(turnId)
+      if (message)
+        keepAuthoritativeAsk(message, row, isAskUnavailable, isAskRetired)
+      pendingByTurn.set(turnId, pending)
     }
   }
 

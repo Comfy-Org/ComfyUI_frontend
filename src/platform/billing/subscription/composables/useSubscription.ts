@@ -1,3 +1,4 @@
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { computed, onScopeDispose, ref, watch } from 'vue'
 import {
   createSharedComposable,
@@ -15,26 +16,24 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError as reportTelemetryError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError as reportTelemetryError } from '@comfyorg/telemetry/reportError'
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import type {
   CheckoutAttributionMetadata,
   ResubscribeClickMetadata,
   SubscriptionSuccessMetadata
-} from '@/platform/telemetry/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/telemetry/types'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import {
   PaymentPopupBlockedError,
   categorizeBillingApiError
 } from '@/platform/telemetry/utils/billingFailureCategory'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { toTierKey } from '@/platform/billing/subscription/constants/tierPricing'
@@ -118,7 +117,7 @@ function useSubscriptionInternal() {
   const { reportError, accessBillingPortalDirect } = useAuthActions()
 
   const authStore = useAuthStore()
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
   const { getFirebaseAuthHeader, fetchWithCustomerRecovery } = authStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
@@ -932,7 +931,7 @@ function useSubscriptionInternal() {
     try {
       const status = rail
         ? await readOnRail(rail.readStatus, 'getBillingStatus')
-        : await workspaceApi.getBillingStatus()
+        : await billingApi.getBillingStatus()
       return status
     } catch (error) {
       const status =
@@ -997,7 +996,7 @@ function useSubscriptionInternal() {
     lastPendingCheckoutStatus = statusData
     subscriptionStatus.value = statusData
     if (workspaceId && statusData.billing_rail) {
-      workspaceStore.setWorkspaceBillingRail(
+      useWorkspaceBillingStateStore().setWorkspaceBillingRail(
         workspaceId,
         statusData.billing_rail
       )

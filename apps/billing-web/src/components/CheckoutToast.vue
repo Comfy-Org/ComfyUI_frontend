@@ -20,8 +20,8 @@
         <i
           :class="
             severity === 'warn'
-              ? 'pi pi-exclamation-circle text-warning'
-              : 'pi pi-spin pi-spinner text-primary'
+              ? 'icon-[lucide--circle-alert] text-warning'
+              : 'icon-[lucide--loader-circle] animate-spin text-primary motion-reduce:animate-none'
           "
           aria-hidden="true"
         />
@@ -52,7 +52,7 @@
         class="relative -top-1.75 left-1.75 flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-inherit hover:bg-white/5"
         @click="emit('close')"
       >
-        <i class="pi pi-times text-base" aria-hidden="true" />
+        <i class="icon-[lucide--x]" aria-hidden="true" />
       </button>
     </div>
   </div>
@@ -72,22 +72,22 @@ const SEVERITY = {
   info: {
     shell:
       'border-[color-mix(in_srgb,#1d4ed8,transparent_64%)] bg-[color-mix(in_srgb,#3b82f6,transparent_84%)] text-[#3b82f6] [box-shadow:0px_4px_8px_0px_color-mix(in_srgb,#3b82f6,transparent_96%)]',
-    icon: 'pi pi-info-circle'
+    icon: 'icon-[lucide--info]'
   },
   success: {
     shell:
       'border-[color-mix(in_srgb,#15803d,transparent_64%)] bg-[color-mix(in_srgb,#22c55e,transparent_84%)] text-[#22c55e] [box-shadow:0px_4px_8px_0px_color-mix(in_srgb,#22c55e,transparent_96%)]',
-    icon: 'pi pi-check'
+    icon: 'icon-[lucide--check]'
   },
   warn: {
     shell:
       'border-[color-mix(in_srgb,#a16207,transparent_64%)] bg-[color-mix(in_srgb,#eab308,transparent_84%)] text-[#eab308] [box-shadow:0px_4px_8px_0px_color-mix(in_srgb,#eab308,transparent_96%)]',
-    icon: 'pi pi-exclamation-triangle'
+    icon: 'icon-[lucide--triangle-alert]'
   },
   error: {
     shell:
       'border-[color-mix(in_srgb,#b91c1c,transparent_64%)] bg-[color-mix(in_srgb,#ef4444,transparent_84%)] text-[#ef4444] [box-shadow:0px_4px_8px_0px_color-mix(in_srgb,#ef4444,transparent_96%)]',
-    icon: 'pi pi-times-circle'
+    icon: 'icon-[lucide--circle-x]'
   }
 } as const
 

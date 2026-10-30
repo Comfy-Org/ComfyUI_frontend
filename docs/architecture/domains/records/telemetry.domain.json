@@ -1,12 +1,8 @@
 {
   "id": "telemetry",
   "capability": "Product telemetry",
-  "description": "Product-analytics event dispatch: the TelemetryRegistry fan-out and useTelemetry accessor, event names and metadata types, the desktop host telemetry sink and its enablement gate, host user-id sync, store-readiness gating for store-backed providers, node-added and search-query tracking, and the metadata builders that enrich events (execution context, shell layout, checkout attribution, payment intent source, survey normalization, billing failure categories). Cloud vendor providers and initTelemetry belong to the cloud record; error reporting and startup tracing are separate records.",
+  "description": "Application adapters for the shared telemetry package: desktop host routing, enablement and identity sync, provider readiness, event tracking, and metadata enrichment. Cloud vendor providers belong to the cloud record; error reporting and startup tracing are separate records.",
   "modules": [
-    {
-      "path": "src/composables/useRunButtonTelemetry.test.ts",
-      "role": "application"
-    },
     {
       "path": "src/composables/useRunButtonTelemetry.ts",
       "role": "application"
@@ -16,31 +12,11 @@
       "role": "application"
     },
     {
-      "path": "src/platform/telemetry/TelemetryRegistry.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/__mocks__/index.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/telemetry/hostTelemetryEnabled.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/telemetry/hostUserIdSync.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/platform/telemetry/hostUserIdSync.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/telemetry/index.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/initHostTelemetry.test.ts",
       "role": "integration"
     },
     {
@@ -64,16 +40,8 @@
       "role": "application"
     },
     {
-      "path": "src/platform/telemetry/storeReadiness.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/telemetry/storeReadiness.ts",
       "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/types.ts",
-      "role": "domain"
     },
     {
       "path": "src/platform/telemetry/useTelemetry.test.ts",
@@ -96,15 +64,7 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/telemetry/utils/getActionbarDockState.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/telemetry/utils/getActionbarDockState.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/telemetry/utils/getAgentPanelOpen.test.ts",
       "role": "infrastructure"
     },
     {
@@ -112,15 +72,7 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/telemetry/utils/getExecutionContext.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/telemetry/utils/getExecutionContext.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/utils/getShellLayoutSnapshot.test.ts",
       "role": "application"
     },
     {
@@ -129,8 +81,21 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedDependencies": ["ingest-api", "node-replacement", "remote-config"],
+  "allowedConsumers": [
+    "app-host",
+    "authentication",
+    "billing",
+    "cloud",
+    "error-reporting",
+    "extension-runtime",
+    "node-library",
+    "selection-toolbox",
+    "settings",
+    "workbench-shell",
+    "workflow-management",
+    "workflow-templates"
+  ],
   "characterizationScenarios": [
     {
       "name": "TelemetryRegistry fans each event out to every registered provider and useTelemetry exposes the active registry",
@@ -183,7 +148,7 @@
   "compatibilityPromises": [
     "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "useTelemetry() returning null until a registry is installed remains the contract every caller and cloud provider relies on.",
-    "Cloud providers under providers/cloud and initTelemetry stay in the cloud record and may keep importing storeReadiness and types during inventory.",
+    "Cloud providers consume readiness and metadata adapters; feature callers submit search inputs and event context without granting telemetry access to their stores.",
     "Metadata builders that read workflow, setting, node-definition, panel, workspace-billing, and auth stores, and the localStorage keys duplicated from their writers, remain visible as coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"

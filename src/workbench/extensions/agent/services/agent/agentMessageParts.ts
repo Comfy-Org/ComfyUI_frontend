@@ -1,9 +1,11 @@
 import type { AgentAskConflict, AgentAskOption } from '@comfyorg/ingest-types'
 import {
   zAgentDeleteApprovalContext,
+  zAgentPausedContext,
   zAgentRunApprovalContext
 } from '@comfyorg/ingest-types/zod'
 import { isEqual, uniqBy } from 'es-toolkit'
+import { microUsdToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import type {
   AgentMessages,
@@ -145,19 +147,36 @@ export interface DeleteApprovalPart {
   resolution?: AskUserResolution
 }
 
-export type AskPart = RunApprovalPart | AskUserPart | DeleteApprovalPart
+export const NO_FUNDS_PAUSE_REASON = 'no_funds'
+
+export interface PausedPart {
+  type: 'paused'
+  askId: string
+  prompt: string
+  message: string
+  reason: string
+  recheckAfterSeconds: number
+}
+
+export type AskPart =
+  | RunApprovalPart
+  | AskUserPart
+  | DeleteApprovalPart
+  | PausedPart
 
 function isAskPart(part: MessagePart): part is AskPart {
   return (
     part.type === 'runApproval' ||
     part.type === 'askUser' ||
-    part.type === 'deleteApproval'
+    part.type === 'deleteApproval' ||
+    part.type === 'paused'
   )
 }
 
 export function isPendingAskPart(part: MessagePart): part is AskPart {
   return (
     part.type === 'runApproval' ||
+    part.type === 'paused' ||
     (isAskPart(part) && part.resolution === undefined)
   )
 }
@@ -166,8 +185,35 @@ export function isOpenAskPart(part: MessagePart): boolean {
   return isPendingAskPart(part) || part.type === 'askUnavailable'
 }
 
+/** A part that tells the user, inline in the transcript, that credits ran out. */
+export function isCreditsStopPart(part: MessagePart): boolean {
+  return (
+    part.type === 'paywall' ||
+    (part.type === 'paused' && part.reason === NO_FUNDS_PAUSE_REASON)
+  )
+}
+
 export function askIdOf(part: MessagePart): string | undefined {
   return 'askId' in part ? part.askId : undefined
+}
+
+const ASK_KIND_BY_PART_TYPE: Record<AskPart['type'], RenderedAskKind> = {
+  runApproval: 'run_approval',
+  askUser: 'ask_user',
+  deleteApproval: 'delete_approval',
+  paused: 'paused'
+}
+
+/** The wire kind of the ask card with this id, if one is among the parts. */
+export function askKindOf(
+  parts: readonly MessagePart[],
+  askId: string
+): RenderedAskKind | undefined {
+  const part = parts.find(
+    (candidate): candidate is AskPart =>
+      isAskPart(candidate) && candidate.askId === askId
+  )
+  return part && ASK_KIND_BY_PART_TYPE[part.type]
 }
 
 export function retireAskParts(
@@ -177,6 +223,8 @@ export function retireAskParts(
 ): MessagePart[] {
   const next = parts.flatMap((part): MessagePart[] => {
     if (askIdOf(part) !== askId) return [part]
+    if (part.type === 'paused')
+      return resolution.status === 'unconfirmed' ? [part] : []
     if (!isAskPart(part) || part.type === 'runApproval') return []
     const settled = settleResolution(part.resolution, resolution)
     return [
@@ -270,6 +318,28 @@ function toDeleteApprovalPart(ask: AskInput): DeleteApprovalPart | undefined {
   }
 }
 
+function toPausedPart(ask: AskInput): PausedPart | undefined {
+  const context = zAgentPausedContext.safeParse(ask.context).data
+  if (!context) return undefined
+  const offersResume =
+    isEqual(
+      ask.options.map(({ id }) => id),
+      ['resume']
+    ) &&
+    ask.min_selections <= 1 &&
+    ask.max_selections === 1 &&
+    !ask.allow_other
+  if (!offersResume) return undefined
+  return {
+    type: 'paused',
+    askId: ask.ask_id,
+    prompt: clip(ask.prompt, ASK_LIMITS.prompt),
+    message: clip(context.message, ASK_LIMITS.prompt),
+    reason: context.reason,
+    recheckAfterSeconds: Math.max(0, context.recheck_after_seconds)
+  }
+}
+
 const ASK_PART_BUILDERS: Record<
   RenderedAskKind,
   (ask: AskInput) => AskPart | undefined
@@ -284,7 +354,8 @@ const ASK_PART_BUILDERS: Record<
     }
   },
   ask_user: toAskUserPart,
-  delete_approval: toDeleteApprovalPart
+  delete_approval: toDeleteApprovalPart,
+  paused: toPausedPart
 }
 
 function isRenderedAskKind(kind: AskInput['kind']): kind is RenderedAskKind {
@@ -318,6 +389,7 @@ export type MessagePart =
   | RunApprovalPart
   | AskUserPart
   | DeleteApprovalPart
+  | PausedPart
   | PaywallPart
 
 export interface AssistantMessage {
@@ -327,6 +399,19 @@ export interface AssistantMessage {
   streaming: boolean
   thinking: boolean
   thinkingText?: string
+  creditsUsed?: number
+}
+
+export function creditsFromChargeMicroUsd(
+  chargeMicroUsd: unknown
+): number | undefined {
+  if (
+    typeof chargeMicroUsd !== 'number' ||
+    !Number.isFinite(chargeMicroUsd) ||
+    chargeMicroUsd <= 0
+  )
+    return undefined
+  return microUsdToCredits(chargeMicroUsd)
 }
 
 export function createAssistantMessage(id: TurnId): AssistantMessage {

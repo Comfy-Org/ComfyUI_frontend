@@ -4,7 +4,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import type { ISlotType } from '@/lib/litegraph/src/interfaces'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 

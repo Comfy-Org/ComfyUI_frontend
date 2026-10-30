@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { z } from 'zod'
 
 import { RecordRefusal } from './agentConversationAssemble'
 import type { Observation } from './agentConversationFromLangfuse'
@@ -21,7 +22,8 @@ import {
   captureFromObservations,
   fetchObservations,
   main,
-  readEnvFile
+  readEnvFile,
+  zObservation
 } from './agentConversationFromLangfuse'
 import {
   assertOpsApply,
@@ -345,7 +347,10 @@ describe('captureFromObservations', () => {
 
 describe('attributeOf', () => {
   it('reads nested OTel attributes and flattened metadata keys', () => {
-    const nested = span('n', { 'comfy.turn_id': 'm-1', 'comfy.tool.ok': false })
+    const nested = span('n', {
+      'comfy.turn_id': 'm-1',
+      'comfy.tool.ok': false
+    })
     expect(attributeOf(nested, 'comfy.turn_id')).toBe('m-1')
     expect(attributeOf(nested, 'comfy.tool.ok')).toBe('false')
     const flat: Observation = {
@@ -353,9 +358,34 @@ describe('attributeOf', () => {
       metadata: { 'comfy.turn_id': 'm-2' }
     }
     expect(attributeOf(flat, 'comfy.turn_id')).toBe('m-2')
+    const v2: Observation = {
+      ...nested,
+      metadata: {
+        'attributes.comfy.turn_id': 'm-3',
+        'attributes.comfy.step': 11
+      }
+    }
+    expect(attributeOf(v2, 'comfy.turn_id')).toBe('m-3')
+    expect(attributeOf(v2, 'comfy.step')).toBe('11')
     expect(
       attributeOf({ ...nested, metadata: null }, 'comfy.turn_id')
     ).toBeUndefined()
+  })
+
+  it('falls back to flattened keys a nested attributes object lacks', () => {
+    const mixed: Observation = {
+      ...span('m', { 'comfy.thread_id': THREAD }),
+      metadata: {
+        attributes: { 'comfy.thread_id': THREAD, 'comfy.tool.ok': null },
+        'attributes.comfy.tool.ok': true,
+        'attributes.comfy.turn_id': 'm-4',
+        'comfy.step': 12
+      }
+    }
+    expect(attributeOf(mixed, 'comfy.thread_id')).toBe(THREAD)
+    expect(attributeOf(mixed, 'comfy.turn_id')).toBe('m-4')
+    expect(attributeOf(mixed, 'comfy.step')).toBe('12')
+    expect(attributeOf(mixed, 'comfy.tool.ok')).toBe('true')
   })
 })
 
@@ -400,12 +430,14 @@ describe('fetchObservations', () => {
     LANGFUSE_PUBLIC_KEY: 'pk-test',
     LANGFUSE_SECRET_KEY: 'sk-test'
   }
-  const page = (data: unknown[], totalPages: number) =>
-    new Response(JSON.stringify({ data, meta: { totalPages } }), {
-      status: 200
-    })
+  const V2 = '/api/public/v2/observations'
+  const page = (data: unknown[], cursor?: string) =>
+    new Response(
+      JSON.stringify({ data, meta: cursor === undefined ? {} : { cursor } }),
+      { status: 200 }
+    )
 
-  it('walks every page of a trace with basic auth', async () => {
+  it('walks every cursor page of a trace on the v2 endpoint with basic auth', async () => {
     const calls: string[] = []
     const observations = await fetchObservations(
       env,
@@ -415,45 +447,115 @@ describe('fetchObservations', () => {
         expect(new Headers(init.headers).get('authorization')).toBe(
           `Basic ${Buffer.from('pk-test:sk-test').toString('base64')}`
         )
-        const pageNumber = new URL(url).searchParams.get('page')
-        return page([span(`o-${pageNumber}`, {})], 2)
+        const cursor = new URL(url).searchParams.get('cursor')
+        return cursor === null
+          ? page([span('o-1', {})], 'next-1')
+          : page([span(`o-${cursor}`, {})])
       }
     )
     expect(observations.map((observation) => observation.id)).toEqual([
       'o-1',
-      'o-2'
+      'o-next-1'
     ])
-    expect(calls.map((url) => new URL(url).pathname)).toEqual([
-      '/api/public/observations',
-      '/api/public/observations'
-    ])
-    expect(new URL(calls[0]).searchParams.get('traceId')).toBe('trace-1')
+    expect(calls.map((url) => new URL(url).pathname)).toEqual([V2, V2])
+    const first = new URL(calls[0]).searchParams
+    expect(first.get('traceId')).toBe('trace-1')
+    expect(first.get('fields')).toBe('core,basic,io,metadata')
+    expect(first.has('page')).toBe(false)
+    expect(new URL(calls[1]).searchParams.get('cursor')).toBe('next-1')
   })
 
-  it('resolves a session to its traces first', async () => {
-    const paths: string[] = []
+  it('reads a session with one sessionId filter and no v1 traces call', async () => {
+    const calls: string[] = []
     const observations = await fetchObservations(
       env,
       { sessionId: 'session-1' },
       async (url) => {
-        const parsed = new URL(url)
-        paths.push(parsed.pathname)
-        if (parsed.pathname === '/api/public/traces') {
-          expect(parsed.searchParams.get('sessionId')).toBe('session-1')
-          return page([{ id: 't-1' }, { id: 't-2' }], 1)
-        }
-        return page([span(`o-${parsed.searchParams.get('traceId')}`, {})], 1)
+        calls.push(url)
+        return page([span('o-a', {}), span('o-b', {})])
       }
     )
-    expect(paths).toEqual([
-      '/api/public/traces',
-      '/api/public/observations',
-      '/api/public/observations'
-    ])
+    expect(calls.map((url) => new URL(url).pathname)).toEqual([V2])
+    expect(new URL(calls[0]).searchParams.get('sessionId')).toBe('session-1')
+    expect(new URL(calls[0]).searchParams.has('traceId')).toBe(false)
     expect(observations.map((observation) => observation.id)).toEqual([
-      'o-t-1',
-      'o-t-2'
+      'o-a',
+      'o-b'
     ])
+  })
+
+  it('parses the raw-string input and output v2 returns, keeping plain text as text', async () => {
+    const [observation] = await fetchObservations(
+      env,
+      { traceId: 'trace-1' },
+      async () =>
+        page([
+          span(
+            'o-1',
+            {},
+            {
+              input: JSON.stringify([{ role: 'user', text: 'hi' }]),
+              output: 'plain answer, not JSON'
+            }
+          )
+        ])
+    )
+    expect(observation.input).toEqual([{ role: 'user', text: 'hi' }])
+    expect(observation.output).toBe('plain answer, not JSON')
+  })
+
+  it('refuses a cursor the server repeats instead of paging forever', async () => {
+    let calls = 0
+    const failure = await fetchObservations(
+      env,
+      { traceId: 'trace-1' },
+      async () => {
+        calls += 1
+        return page([span(`o-${calls}`, {})], 'same')
+      }
+    ).catch((error: unknown) => error)
+    expect(failure).toBeInstanceOf(RecordRefusal)
+    expect(failure instanceof RecordRefusal && failure.message).toBe(
+      'Langfuse /api/public/v2/observations page 2 repeated cursor same'
+    )
+    expect(calls).toBe(2)
+  })
+
+  it('reads a sanitized production trace from v2 exactly as v1 did', async () => {
+    const fixture = (name: string): unknown =>
+      JSON.parse(
+        readFileSync(`scripts/__fixtures__/langfuse-v2-parity/${name}`, 'utf8')
+      )
+    const v1 = z
+      .object({ data: z.array(zObservation) })
+      .parse(fixture('trace.v1.json')).data
+    const v2 = await fetchObservations(
+      env,
+      { traceId: 'trace-1' },
+      async () =>
+        new Response(JSON.stringify(fixture('trace.v2.json')), { status: 200 })
+    )
+    expect(v2.map((observation) => observation.id)).toEqual(
+      v1.map((observation) => observation.id)
+    )
+    const keys = [
+      'comfy.thread_id',
+      'comfy.turn_id',
+      'gen_ai.operation.name',
+      'gen_ai.tool.call.id',
+      'gen_ai.tool.name',
+      'comfy.tool.ok',
+      'gen_ai.response.model'
+    ]
+    const project = (observation: Observation) => ({
+      input: observation.input,
+      output: observation.output,
+      attributes: keys.map((key) => attributeOf(observation, key))
+    })
+    expect(v2.map(project)).toEqual(v1.map(project))
+    const capture = captureFromObservations(v2, options)
+    expect(capture.turns).toHaveLength(1)
+    expect(capture).toEqual(captureFromObservations(v1, options))
   })
 
   it('reports a non-2xx page as a request failure, not a capture refusal', async () => {
@@ -469,7 +571,7 @@ describe('fetchObservations', () => {
     expect(failure).toBeInstanceOf(LangfuseRequestError)
     expect(failure).not.toBeInstanceOf(RecordRefusal)
     expect(failure instanceof LangfuseRequestError && failure.message).toBe(
-      'Langfuse /api/public/observations returned 503 on page 1'
+      'Langfuse /api/public/v2/observations returned 503 on page 1'
     )
   })
 })
@@ -539,11 +641,10 @@ describe('main', () => {
           JSON.stringify({ source: 'postgres', ...dump })
         ),
       page: (observations: Observation[]) => async (url: string) => {
-        expect(new URL(url).pathname).toBe('/api/public/observations')
-        return new Response(
-          JSON.stringify({ data: observations, meta: { totalPages: 1 } }),
-          { status: 200 }
-        )
+        expect(new URL(url).pathname).toBe('/api/public/v2/observations')
+        return new Response(JSON.stringify({ data: observations, meta: {} }), {
+          status: 200
+        })
       },
       written: () =>
         zAgentConversation.parse(JSON.parse(readFileSync(outPath, 'utf8')))

@@ -13,7 +13,7 @@ import {
 import { i18n, loadLocale } from '@/i18n'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { PromptFailureResponse } from '@/platform/remote/comfyui/types'
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { api, PromptExecutionError } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -21,7 +21,7 @@ import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import { useDialogService } from './dialogService'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard: vi.fn(async () => true) })

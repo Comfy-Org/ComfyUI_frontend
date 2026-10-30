@@ -493,12 +493,12 @@
               {
                 "name": "@sentry/vue",
                 "importNames": ["captureException"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
               },
               {
                 "name": "@datadog/browser-rum",
                 "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
               }
             ]
           }
@@ -507,7 +507,12 @@
     },
     {
       "files": ["**/*.ts"],
-      "excludeFiles": ["**/use[A-Z]*.ts", "**/*.test.ts", "src/i18n.ts"],
+      "excludeFiles": [
+        "**/use[A-Z]*.ts",
+        "**/*.test.ts",
+        "src/i18n.ts",
+        "src/platform/telemetry/initErrorReporter.ts"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -526,12 +531,13 @@
               {
                 "name": "@sentry/vue",
                 "importNames": ["captureException"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+                "allowTypeImports": true,
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
               },
               {
                 "name": "@datadog/browser-rum",
                 "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
               }
             ]
           }
@@ -553,12 +559,12 @@
               {
                 "name": "@sentry/vue",
                 "importNames": ["captureException"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
               },
               {
                 "name": "@datadog/browser-rum",
                 "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
               }
             ]
           }
@@ -588,6 +594,13 @@
         "src/stores/nodeDefStore.frequency.test.ts"
       ],
       "rules": {
+        "import/no-relative-parent-imports": "error"
+      }
+    },
+    {
+      "files": ["packages/design-system/src/components/**"],
+      "rules": {
+        "comfy/no-relative-parent-paths": "error",
         "import/no-relative-parent-imports": "error"
       }
     },

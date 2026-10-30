@@ -6,10 +6,6 @@ import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 
 test.describe('App mode builder selection', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-  })
-
   test(
     'Can independently select inputs of same name',
     { tag: '@vue-nodes' },

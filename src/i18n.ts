@@ -1,4 +1,5 @@
 import { createI18n } from 'vue-i18n'
+import type { PluralizationRule } from 'vue-i18n'
 
 import {
   getDefaultLocale,
@@ -291,6 +292,29 @@ type LocaleMessages = typeof en & {
 
 export const FALLBACK_LOCALE = 'en'
 
+const russianPluralRules = new Intl.PluralRules('ru')
+
+const russianPluralRule: PluralizationRule = (
+  choice,
+  choicesLength,
+  defaultRule
+) => {
+  if (choicesLength !== 4) {
+    return defaultRule ? defaultRule(choice, choicesLength) : 0
+  }
+
+  switch (russianPluralRules.select(choice)) {
+    case 'one':
+      return 0
+    case 'few':
+      return 1
+    case 'many':
+      return 2
+    default:
+      return 3
+  }
+}
+
 function createAppI18n() {
   const messages: Partial<Record<SupportedLocale, LocaleMessages>> = {
     en: buildLocale(en, enNodes, enCommands, enSettings)
@@ -300,6 +324,7 @@ function createAppI18n() {
     locale: getDefaultLocale(),
     fallbackLocale: FALLBACK_LOCALE,
     escapeParameter: true,
+    pluralRules: { ru: russianPluralRule },
     messages,
     missingWarn: /^(?!settings\.Comfy_Locale\.options\.).+/,
     fallbackWarn: /^(?!settings\.Comfy_Locale\.options\.).+/

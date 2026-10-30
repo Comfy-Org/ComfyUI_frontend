@@ -11,6 +11,7 @@ export class SettingDialog extends BaseDialog {
   public readonly contentArea: Locator
   public readonly extensionActionsButton: Locator
   public readonly keybindingPanel: KeybindingPanel
+  public readonly leftPanel: Locator
   public readonly searchBox: Locator
 
   constructor(
@@ -24,7 +25,11 @@ export class SettingDialog extends BaseDialog {
       .getByRole('columnheader')
       .getByRole('button', { name: 'More Options' })
     this.keybindingPanel = new KeybindingPanel(page, comfyPage)
-    this.searchBox = this.root.getByPlaceholder(/Search/)
+    const searchField = page.getByPlaceholder(/Search/)
+    this.searchBox = this.root.locator(searchField)
+    this.leftPanel = this.root
+      .getByRole('navigation')
+      .filter({ has: searchField })
   }
 
   async open() {

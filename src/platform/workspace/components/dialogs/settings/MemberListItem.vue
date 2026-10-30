@@ -11,6 +11,7 @@
     <div class="flex items-center gap-3">
       <UserAvatar
         v-if="isCurrentUser && photoUrl"
+        :label="$t('auth.login.userAvatar')"
         class="size-8"
         :photo-url="photoUrl"
         icon-class="size-5"
@@ -88,13 +89,13 @@
 </template>
 
 <script setup lang="ts">
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Menu from '@/components/ui/menu/Menu.vue'
-import UserAvatar from '@/components/common/UserAvatar.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
+import Button from '@comfyorg/design-system/button/Button'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
 

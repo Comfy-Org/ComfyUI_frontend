@@ -29,8 +29,8 @@
 </template>
 
 <script setup lang="ts">
-import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
-import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
+import type { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
 
 import type { EditKeybindingDialogState } from '@/platform/keybindings/components/editKeybindingDialogState'
 

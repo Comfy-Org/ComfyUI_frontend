@@ -149,7 +149,7 @@
                 :key="feature"
                 class="flex items-start gap-2"
               >
-                <i class="pi pi-check mt-0.5 text-xs" />
+                <i class="mt-0.5 icon-[lucide--check] size-3" />
                 <span class="text-sm font-normal text-muted-foreground">
                   {{ feature }}
                 </span>
@@ -160,10 +160,7 @@
                  card bottom so the figures align across tiers. -->
             <div class="mt-auto flex flex-col gap-1">
               <div class="flex items-center gap-2">
-                <i
-                  class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
-                  aria-hidden="true"
-                />
+                <i class="icon-[lucide--coins] bg-credit" aria-hidden="true" />
                 <span class="text-sm/normal font-bold tabular-nums">
                   {{ n(creditsForTier(tier)) }}
                 </span>
@@ -242,7 +239,7 @@
               <div class="flex flex-col gap-1">
                 <div class="flex items-center gap-2">
                   <i
-                    class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
+                    class="icon-[lucide--coins] bg-credit"
                     aria-hidden="true"
                   />
                   <span class="text-sm/normal font-bold tabular-nums">
@@ -297,7 +294,7 @@
                   :key="perk"
                   class="flex items-start gap-2"
                 >
-                  <i class="pi pi-check mt-0.5 text-xs" />
+                  <i class="mt-0.5 icon-[lucide--check] size-3" />
                   <span class="text-sm font-normal text-muted-foreground">
                     {{ perk }}
                   </span>
@@ -309,7 +306,7 @@
                   {{ t('subscription.teamPlan.comingSoonLabel') }}
                 </span>
                 <div class="flex items-start gap-2">
-                  <i class="pi pi-clock mt-0.5 text-xs" />
+                  <i class="mt-0.5 icon-[lucide--clock] size-3" />
                   <span class="text-sm font-normal">
                     {{ t('subscription.teamPlan.perkProjectAssets') }}
                   </span>
@@ -349,16 +346,42 @@
       </div>
     </div>
 
-    <div class="mt-auto flex min-h-14 items-center justify-center pt-4 text-sm">
+    <div
+      class="mt-auto flex min-h-14 flex-col items-center justify-center gap-2 pt-4 text-sm"
+    >
+      <div
+        v-if="showPastDueNotice"
+        role="status"
+        data-testid="pricing-past-due-notice"
+        class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
+      >
+        <i class="icon-[lucide--info] bg-background" aria-hidden="true" />
+        <span>
+          {{
+            t(
+              isOwnerNotice
+                ? 'subscription.pastDueNoticeOwner'
+                : 'subscription.pastDueNoticeMember'
+            )
+          }}
+        </span>
+        <button
+          v-if="isOwnerNotice"
+          ref="updatePaymentButtonEl"
+          type="button"
+          class="cursor-pointer border-none bg-transparent p-0 font-inter text-sm font-bold text-background hover:opacity-80 disabled:cursor-default disabled:opacity-60"
+          :disabled="isUpdatingPayment"
+          @click="updatePayment"
+        >
+          {{ t('subscription.paymentRecovery.ownerCta') }}
+        </button>
+      </div>
       <div
         v-if="showScheduledPlanChange"
         role="status"
         class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
       >
-        <i
-          class="icon-[lucide--info] size-4 shrink-0 bg-background"
-          aria-hidden="true"
-        />
+        <i class="icon-[lucide--info] bg-background" aria-hidden="true" />
         <span>
           {{
             t('subscription.scheduledChangeNotice', {
@@ -369,7 +392,7 @@
         </span>
       </div>
       <I18nT
-        v-else
+        v-if="!showPastDueNotice && !showScheduledPlanChange"
         keypath="subscription.pricingBlurb"
         tag="p"
         class="m-0 text-center text-muted-foreground"
@@ -420,21 +443,22 @@
 </template>
 
 <script setup lang="ts">
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import PricingTierHeading from '@/platform/billing/components/PricingTierHeading.vue'
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import {
   BILLING_ACTION_NAME,
   planCtaActionName
 } from '@/platform/telemetry/billingActionNames'
 import type { PlanAction } from '@comfyorg/ingest-types'
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import CreditSlider from '@/platform/billing/components/credit-slider/CreditSlider.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import {
   ENTERPRISE_URL,
@@ -457,11 +481,12 @@ import {
 import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import type { Plan } from '@comfyorg/billing-core'
 import { formatSubscriptionDate } from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -470,12 +495,14 @@ interface Props {
   loadingTier?: CheckoutTierKey | null
   /** Initial plan scope. */
   initialPlanMode?: 'personal' | 'team'
+  outstandingPaymentRefusals?: number
 }
 
 const {
   isLoading,
   loadingTier = null,
-  initialPlanMode = 'personal'
+  initialPlanMode = 'personal',
+  outstandingPaymentRefusals = 0
 } = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -493,7 +520,7 @@ const emit = defineEmits<{
 
 const { t, n, locale } = useI18n()
 const capabilities = useBillingCapabilities()
-const { permissions } = useWorkspaceUI()
+const { permissions } = useBillingUI()
 
 // Every CTA here resolves to a billing write the server authorizes on its own,
 // so each catalog asks whether any write that reaches it is permitted instead of
@@ -639,6 +666,26 @@ watch(
     if (!canSelect) planMode.value = 'team'
   },
   { immediate: true }
+)
+
+const {
+  updatePayment,
+  isUpdatingPayment,
+  paymentRecoveryLock,
+  refreshCapabilities
+} = usePaymentRecoveryDialog()
+const updatePaymentButtonEl = ref<HTMLElement | null>(null)
+const showPastDueNotice = computed(
+  () => isCloud && paymentRecoveryLock.value !== null
+)
+const isOwnerNotice = computed(() => paymentRecoveryLock.value === 'owner')
+watch(
+  () => outstandingPaymentRefusals,
+  async () => {
+    await refreshCapabilities()
+    await nextTick()
+    updatePaymentButtonEl.value?.focus()
+  }
 )
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)

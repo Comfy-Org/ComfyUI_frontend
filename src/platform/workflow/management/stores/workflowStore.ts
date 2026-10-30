@@ -15,7 +15,7 @@ import {
   ensureWorkflowId,
   getLegacyWorkflowId
 } from '@/platform/workflow/core/utils/workflowId'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 // oxlint-disable-next-line comfy/no-restricted-paths
@@ -23,20 +23,23 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
-import { defaultGraph } from '@/scripts/defaultGraph'
+import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { useDialogService } from '@/services/dialogService'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 import {
   createLeafNodeExecutionId,
   createNodeLocatorId,
   parseNodeExecutionId,
   parseNodeLocatorId,
   tryNormalizeNodeExecutionId
-} from '@/types/nodeIdentification'
-import { parseNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/nodeIdentification'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
@@ -272,7 +275,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     })
     workflow.legacyId = getLegacyWorkflowId(workflowData?.id)
 
-    const initialWorkflowData = ensureWorkflowId(workflowData ?? defaultGraph)
+    const initialWorkflowData = ensureWorkflowId(
+      workflowData ?? getDefaultWorkflow()
+    )
     workflow.originalContent = workflow.content =
       JSON.stringify(initialWorkflowData)
 
@@ -579,6 +584,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
+  const tabsRestored = ref(false)
+  const markTabsRestored = () => {
+    tabsRestored.value = true
+  }
+
   /** @see WorkflowStore.isSubgraphActive */
   const isSubgraphActive = ref(false)
 
@@ -783,6 +793,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isSyncLoading,
     loadWorkflows,
 
+    tabsRestored: computed(() => tabsRestored.value),
+    markTabsRestored,
     isSubgraphActive,
     activeSubgraph,
     updateActiveGraph,

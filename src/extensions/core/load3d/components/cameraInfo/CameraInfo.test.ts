@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { fromPartial } from '@total-typescript/shoehorn'
+
+import type { ComponentWidget } from '@/types/domWidget'
 
 const i18n = createI18n({
   legacy: false,
@@ -61,24 +63,51 @@ vi.mock<unknown>(import('@vueuse/core'), () => ({
   useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
 }))
 
-import CameraInfo from './CameraInfo.vue'
+const liveGraphNodes = vi.hoisted(() => ({
+  reloads: new Set<() => void>()
+}))
 
-function makeWidget(): SimplifiedWidget {
+vi.mock(import('@/composables/useLiveGraphNode'), async () => {
+  const { computed, onScopeDispose, shallowRef } = await import('vue')
   return {
-    name: 'camera_info_state',
-    type: 'cameraInfo',
-    value: [],
-    options: {}
+    useLiveGraphNode: (resolve) => {
+      const node = shallowRef(resolve() ?? null)
+      const reload = () => (node.value = resolve() ?? null)
+      liveGraphNodes.reloads.add(reload)
+      onScopeDispose(() => liveGraphNodes.reloads.delete(reload))
+      return computed(() => node.value)
+    }
   }
+})
+
+function reloadLiveGraphNodes() {
+  for (const reload of liveGraphNodes.reloads) reload()
 }
 
+import CameraInfo from './CameraInfo.vue'
+
+type WidgetNode = ComponentWidget<string[]>['node']
+
 function renderComponent() {
-  return render(CameraInfo, {
-    props: { widget: makeWidget() },
+  let node: WidgetNode | undefined = fromPartial<WidgetNode>({})
+  const widget = fromPartial<ComponentWidget<string[]>>({
+    name: 'camera_info_state',
+    type: 'cameraInfo',
+    get node() {
+      return node
+    }
+  })
+  const rendered = render(CameraInfo, {
+    props: { widget },
     global: {
       plugins: [i18n]
     }
   })
+  function reloadGraph({ nodeKept }: { nodeKept: boolean }) {
+    node = nodeKept ? fromPartial<WidgetNode>({}) : undefined
+    reloadLiveGraphNodes()
+  }
+  return { ...rendered, reloadGraph }
 }
 
 function setMode(value: string) {
@@ -119,6 +148,29 @@ describe('CameraInfo toolbar', () => {
     await user.click(screen.getByRole('button', { name: 'Camera view' }))
 
     expect(api().setLookThrough).toHaveBeenCalledWith(true)
+  })
+
+  it('initializes the viewport again, keeping the toolbar state, for the node a reloaded graph holds', async () => {
+    const { reloadGraph } = renderComponent()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Hide gizmos' }))
+    Object.values(api()).forEach((fn) => fn.mockClear())
+
+    reloadGraph({ nodeKept: true })
+    await nextTick()
+
+    expect(api().initialize).toHaveBeenCalledOnce()
+    expect(api().setGizmosVisible).toHaveBeenCalledWith(false)
+  })
+
+  it('cleans up the viewport when a reload leaves no node behind', async () => {
+    const { reloadGraph } = renderComponent()
+    api().cleanup.mockClear()
+
+    reloadGraph({ nodeKept: false })
+    await nextTick()
+
+    expect(api().cleanup).toHaveBeenCalledOnce()
   })
 })
 
@@ -165,6 +217,7 @@ describe('CameraInfo transform gizmo reconciliation', () => {
   it('keeps the selected gizmo when the new mode still supports it', async () => {
     setMode('orbit')
     renderComponent()
+    api().setTransformGizmoMode.mockClear()
     const user = userEvent.setup()
 
     await user.click(screen.getByRole('button', { name: 'Target' }))

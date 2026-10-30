@@ -1,4 +1,4 @@
-import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
+import type { BillingRail } from '@comfyorg/billing-core'
 
 type BillingRailValue = BillingRail | null | undefined
 

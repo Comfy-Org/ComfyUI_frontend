@@ -1,67 +1,21 @@
 import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
-import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
-import { createI18n } from 'vue-i18n'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import type {
-  BalanceInfo,
-  SubscriptionInfo
-} from '@/platform/billing/composables/types'
-import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import enMessages from '@/locales/en/main.json'
-import { reportError } from '@/platform/telemetry/reportError'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import CurrentUserPopoverWorkspace from '@/platform/workspace/components/CurrentUserPopoverWorkspace.vue'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
-const state = vi.hoisted(() => ({ isCloud: true }))
-
-vi.mock(import('@/composables/auth/useCurrentUser'))
-vi.mock(import('@/platform/billing/composables/useBillingContext'))
-vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
-vi.mock(
-  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
-)
-vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
-vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
-vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
-vi.mock(import('@/platform/distribution/types'), () => ({
-  get isCloud() {
-    return state.isCloud
-  }
-}))
-vi.mock(import('@/platform/billing/billingWeb'), () => ({
-  getBillingWebUrl: () => new URL('http://localhost:5174')
-}))
-vi.mock(import('@/config/comfyApi'), () => ({
-  getComfyCloudBaseUrl: () => 'https://testcloud.comfy.org'
-}))
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-})
-
-const PROCESSING_LINE = "Payment processing. You don't need to pay again."
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 function serveCheckout(checkoutState: HostedTopupCheckout['state']) {
-  vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+  vi.spyOn(billingApi, 'listTopupCheckouts').mockResolvedValue({
     checkouts: [
       {
         amount_cents: 2500,
@@ -71,108 +25,13 @@ function serveCheckout(checkoutState: HostedTopupCheckout['state']) {
     ],
     next_cursor: null
   })
-  vi.spyOn(workspaceApi, 'getTopupCheckout').mockResolvedValue({
+  vi.spyOn(billingApi, 'getTopupCheckout').mockResolvedValue({
     amount_cents: 2500,
     payment_amount_cents: 2500,
     session_id: 'cs_bank',
     state: checkoutState
   })
 }
-
-function renderPopover() {
-  useTeamWorkspaceStore().initState = 'ready'
-  Object.assign(useTeamWorkspaceStore(), {
-    workspaceName: 'Personal Workspace',
-    isInPersonalWorkspace: true
-  })
-  return render(CurrentUserPopoverWorkspace, {
-    global: {
-      plugins: [getActivePinia()!, i18n],
-      stubs: {
-        WorkspaceSwitcherPopover: defineComponent({ template: '<div />' }),
-        SubscribeButton: defineComponent({ template: '<button />' }),
-        WorkspaceProfilePic: true,
-        DeploymentSwitcher: defineComponent({ template: '<div />' })
-      }
-    }
-  })
-}
-
-describe('credits flyout payment processing', () => {
-  beforeEach(() => {
-    state.isCloud = true
-    useCurrentUser().userDisplayName = computed(() => 'Liz')
-    useCurrentUser().userEmail = computed(() => 'liz@example.com')
-    useCurrentUser().userPhotoUrl = computed(() => null)
-    useBillingCapabilities().canTopUp = computed(() => true)
-    vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'stripe'
-    const billingContext = useBillingContext()
-    billingContext.billingStatus = computed(() => 'paid')
-    billingContext.canAccessSubscriptionFeatures = computed(() => true)
-    billingContext.subscription = computed(
-      () =>
-        ({
-          isActive: true,
-          tier: null,
-          duration: null,
-          isCancelled: false,
-          planSlug: 'pro-monthly',
-          scheduledChange: null,
-          renewalDate: null,
-          endDate: null,
-          hasFunds: true,
-          agentHasFunds: true
-        }) satisfies SubscriptionInfo
-    )
-    billingContext.balance = computed(
-      () => ({ amountMicros: 100, currency: 'USD' }) satisfies BalanceInfo
-    )
-    billingContext.isLoading = ref(false)
-    vi.mocked(useBillingContext).mockReturnValue(billingContext)
-    const workspaceUI = vi.mocked(useWorkspaceUI())
-    workspaceUI.permissions = computed(() => ({
-      canViewOtherMembers: false,
-      canViewPendingInvites: false,
-      canManageSubscription: false,
-      canManageSubscriptionLifecycle: false,
-      canDowngradeToPersonal: false
-    }))
-    workspaceUI.canReactivatePlan = computed(() => false)
-    workspaceUI.canOpenPricingSurface = computed(() => false)
-    vi.mocked(useBillingRouting()).shouldUseWorkspaceBilling = computed(
-      () => true
-    )
-  })
-
-  it('does not read checkouts while unified billing settings are off', () => {
-    const list = vi.spyOn(workspaceApi, 'listTopupCheckouts')
-    renderPopover()
-
-    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
-    expect(screen.queryByText(PROCESSING_LINE)).not.toBeInTheDocument()
-    expect(list).not.toHaveBeenCalled()
-  })
-
-  it('shows the processing line from the checkout state', async () => {
-    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
-    serveCheckout('payment_processing')
-    renderPopover()
-
-    expect(await screen.findByText(PROCESSING_LINE)).toBeInTheDocument()
-    expect(workspaceApi.getTopupCheckout).toHaveBeenCalledWith('cs_bank')
-  })
-
-  it('leaves the line out when the checkout is still open', async () => {
-    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
-    serveCheckout('open')
-    renderPopover()
-
-    await waitFor(() =>
-      expect(workspaceApi.getTopupCheckout).toHaveBeenCalledWith('cs_bank')
-    )
-    expect(screen.queryByText(PROCESSING_LINE)).not.toBeInTheDocument()
-  })
-})
 
 function checkout(
   state: HostedTopupCheckout['state'],
@@ -234,7 +93,7 @@ function leaveAndReturn() {
 describe('useProcessingTopupPayment', () => {
   it('does not read checkouts while the surface is hidden', async () => {
     enableProcessingRead()
-    const list = vi.spyOn(workspaceApi, 'listTopupCheckouts')
+    const list = vi.spyOn(billingApi, 'listTopupCheckouts')
     const shown = ref(false)
     renderPayment(shown)
 
@@ -257,12 +116,12 @@ describe('useProcessingTopupPayment', () => {
     enableProcessingRead()
     const shown = ref(true)
     const first = deferred<HostedTopupCheckout>()
-    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+    vi.spyOn(billingApi, 'listTopupCheckouts').mockResolvedValue({
       checkouts: [listed('cs_bank')],
       next_cursor: null
     })
     let reads = 0
-    vi.spyOn(workspaceApi, 'getTopupCheckout').mockImplementation(() => {
+    vi.spyOn(billingApi, 'getTopupCheckout').mockImplementation(() => {
       reads += 1
       return reads === 1
         ? first.promise
@@ -271,7 +130,7 @@ describe('useProcessingTopupPayment', () => {
     renderPayment(shown)
 
     await waitFor(() =>
-      expect(workspaceApi.getTopupCheckout).toHaveBeenCalledTimes(1)
+      expect(billingApi.getTopupCheckout).toHaveBeenCalledTimes(1)
     )
     shown.value = false
     await nextTick()
@@ -289,16 +148,14 @@ describe('useProcessingTopupPayment', () => {
   it('withholds the amount when another checkout detail fails', async () => {
     enableProcessingRead()
     const cause = new WorkspaceApiError('unavailable', 503)
-    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+    vi.spyOn(billingApi, 'listTopupCheckouts').mockResolvedValue({
       checkouts: [listed('cs_bank'), listed('cs_other')],
       next_cursor: null
     })
-    vi.spyOn(workspaceApi, 'getTopupCheckout').mockImplementation(
-      (sessionId) => {
-        if (sessionId === 'cs_other') return Promise.reject(cause)
-        return Promise.resolve(checkout('payment_processing', 2500, sessionId))
-      }
-    )
+    vi.spyOn(billingApi, 'getTopupCheckout').mockImplementation((sessionId) => {
+      if (sessionId === 'cs_other') return Promise.reject(cause)
+      return Promise.resolve(checkout('payment_processing', 2500, sessionId))
+    })
     renderPayment(ref(true))
 
     await waitFor(() =>
@@ -313,11 +170,11 @@ describe('useProcessingTopupPayment', () => {
   it('reports a failed checkout detail without a processing notice', async () => {
     enableProcessingRead()
     const cause = new WorkspaceApiError('unavailable', 503)
-    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+    vi.spyOn(billingApi, 'listTopupCheckouts').mockResolvedValue({
       checkouts: [listed('cs_bank')],
       next_cursor: null
     })
-    vi.spyOn(workspaceApi, 'getTopupCheckout').mockRejectedValue(cause)
+    vi.spyOn(billingApi, 'getTopupCheckout').mockRejectedValue(cause)
     renderPayment(ref(true))
 
     await waitFor(() =>
@@ -338,8 +195,8 @@ describe('useProcessingTopupPayment', () => {
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent('2500')
     )
-    const reads = vi.mocked(workspaceApi.getTopupCheckout).mock.calls.length
-    vi.mocked(workspaceApi.getTopupCheckout).mockResolvedValue(
+    const reads = vi.mocked(billingApi.getTopupCheckout).mock.calls.length
+    vi.mocked(billingApi.getTopupCheckout).mockResolvedValue(
       checkout('failed', null, 'cs_bank')
     )
     leaveAndReturn()
@@ -347,7 +204,7 @@ describe('useProcessingTopupPayment', () => {
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent('none')
     )
-    expect(workspaceApi.getTopupCheckout).toHaveBeenCalledTimes(reads + 1)
+    expect(billingApi.getTopupCheckout).toHaveBeenCalledTimes(reads + 1)
   })
 
   it('keeps the processing notice when a return read fails', async () => {
@@ -359,7 +216,7 @@ describe('useProcessingTopupPayment', () => {
       expect(screen.getByRole('status')).toHaveTextContent('2500')
     )
     const cause = new WorkspaceApiError('bad gateway', 502)
-    vi.mocked(workspaceApi.listTopupCheckouts).mockRejectedValue(cause)
+    vi.mocked(billingApi.listTopupCheckouts).mockRejectedValue(cause)
     leaveAndReturn()
 
     await waitFor(() =>
@@ -380,7 +237,7 @@ describe('useProcessingTopupPayment', () => {
       expect(screen.getByRole('status')).toHaveTextContent('2500')
     )
     const cause = new WorkspaceApiError('bad gateway', 502)
-    vi.mocked(workspaceApi.getTopupCheckout).mockRejectedValue(cause)
+    vi.mocked(billingApi.getTopupCheckout).mockRejectedValue(cause)
     leaveAndReturn()
 
     await waitFor(() =>
@@ -395,11 +252,11 @@ describe('useProcessingTopupPayment', () => {
 
   it('withholds the amount when a cached open sibling cannot be refreshed', async () => {
     enableProcessingRead()
-    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+    vi.spyOn(billingApi, 'listTopupCheckouts').mockResolvedValue({
       checkouts: [listed('cs_bank'), listed('cs_other')],
       next_cursor: null
     })
-    vi.spyOn(workspaceApi, 'getTopupCheckout').mockImplementation((sessionId) =>
+    vi.spyOn(billingApi, 'getTopupCheckout').mockImplementation((sessionId) =>
       Promise.resolve(
         sessionId === 'cs_other'
           ? checkout('open', null, sessionId)
@@ -412,7 +269,7 @@ describe('useProcessingTopupPayment', () => {
     )
 
     const cause = new WorkspaceApiError('bad gateway', 502)
-    vi.mocked(workspaceApi.getTopupCheckout).mockImplementation((sessionId) =>
+    vi.mocked(billingApi.getTopupCheckout).mockImplementation((sessionId) =>
       sessionId === 'cs_other'
         ? Promise.reject(cause)
         : Promise.resolve(checkout('payment_processing', 2500, sessionId))
@@ -433,11 +290,11 @@ describe('useProcessingTopupPayment', () => {
     )
 
     const cause = new WorkspaceApiError('bad gateway', 502)
-    vi.mocked(workspaceApi.listTopupCheckouts).mockResolvedValue({
+    vi.mocked(billingApi.listTopupCheckouts).mockResolvedValue({
       checkouts: [listed('cs_bank'), listed('cs_other')],
       next_cursor: null
     })
-    vi.mocked(workspaceApi.getTopupCheckout).mockImplementation((sessionId) =>
+    vi.mocked(billingApi.getTopupCheckout).mockImplementation((sessionId) =>
       sessionId === 'cs_other'
         ? Promise.reject(cause)
         : Promise.resolve(checkout('fulfilled', 2500, sessionId))
@@ -458,26 +315,26 @@ describe('useProcessingTopupPayment', () => {
     enableProcessingRead()
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     const workspaceARead = deferred<HostedTopupCheckout>()
-    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+    vi.spyOn(billingApi, 'listTopupCheckouts').mockResolvedValue({
       checkouts: [listed('cs_a')],
       next_cursor: null
     })
-    vi.spyOn(workspaceApi, 'getTopupCheckout').mockReturnValue(
+    vi.spyOn(billingApi, 'getTopupCheckout').mockReturnValue(
       workspaceARead.promise
     )
     renderPayment(ref(true))
     await waitFor(() =>
-      expect(workspaceApi.getTopupCheckout).toHaveBeenCalledWith('cs_a')
+      expect(billingApi.getTopupCheckout).toHaveBeenCalledWith('cs_a')
     )
 
     const workspaceBList =
-      deferred<Awaited<ReturnType<typeof workspaceApi.listTopupCheckouts>>>()
-    vi.mocked(workspaceApi.listTopupCheckouts).mockReturnValueOnce(
+      deferred<Awaited<ReturnType<typeof billingApi.listTopupCheckouts>>>()
+    vi.mocked(billingApi.listTopupCheckouts).mockReturnValueOnce(
       workspaceBList.promise
     )
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
     await waitFor(() =>
-      expect(workspaceApi.listTopupCheckouts).toHaveBeenCalledTimes(2)
+      expect(billingApi.listTopupCheckouts).toHaveBeenCalledTimes(2)
     )
 
     workspaceARead.resolve(checkout('payment_processing', 2500, 'cs_a'))
@@ -485,7 +342,7 @@ describe('useProcessingTopupPayment', () => {
     await new Promise((settle) => setTimeout(settle))
     expect(screen.getByRole('status')).toHaveTextContent('none')
 
-    vi.mocked(workspaceApi.getTopupCheckout).mockResolvedValue(
+    vi.mocked(billingApi.getTopupCheckout).mockResolvedValue(
       checkout('payment_processing', 100, 'cs_b')
     )
     workspaceBList.resolve({ checkouts: [listed('cs_b')], next_cursor: null })
@@ -502,7 +359,7 @@ describe('useProcessingTopupPayment', () => {
       expect(screen.getByRole('status')).toHaveTextContent('2500')
     )
 
-    vi.mocked(workspaceApi.listTopupCheckouts).mockRejectedValue(
+    vi.mocked(billingApi.listTopupCheckouts).mockRejectedValue(
       new WorkspaceApiError('Workspace billing owner required', 403)
     )
     leaveAndReturn()
@@ -516,7 +373,7 @@ describe('useProcessingTopupPayment', () => {
   it('reports a failing checkout read once across returns', async () => {
     enableProcessingRead()
     const list = vi
-      .spyOn(workspaceApi, 'listTopupCheckouts')
+      .spyOn(billingApi, 'listTopupCheckouts')
       .mockRejectedValue(new WorkspaceApiError('bad gateway', 502))
     renderPayment(ref(true))
     await waitFor(() => expect(reportError).toHaveBeenCalledTimes(1))
@@ -536,11 +393,11 @@ describe('useProcessingTopupPayment', () => {
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent('2500')
     )
-    const lists = vi.mocked(workspaceApi.listTopupCheckouts).mock.calls.length
+    const lists = vi.mocked(billingApi.listTopupCheckouts).mock.calls.length
     view.unmount()
     leaveAndReturn()
 
-    expect(workspaceApi.listTopupCheckouts).toHaveBeenCalledTimes(lists)
+    expect(billingApi.listTopupCheckouts).toHaveBeenCalledTimes(lists)
   })
 
   it('does not start a queued return read after the surface is gone', async () => {
@@ -551,33 +408,33 @@ describe('useProcessingTopupPayment', () => {
       expect(screen.getByRole('status')).toHaveTextContent('2500')
     )
     const pending = deferred<HostedTopupCheckout>()
-    vi.mocked(workspaceApi.getTopupCheckout).mockReturnValue(pending.promise)
+    vi.mocked(billingApi.getTopupCheckout).mockReturnValue(pending.promise)
     leaveAndReturn()
     await waitFor(() =>
-      expect(workspaceApi.getTopupCheckout).toHaveBeenCalledTimes(2)
+      expect(billingApi.getTopupCheckout).toHaveBeenCalledTimes(2)
     )
     leaveAndReturn()
-    const lists = vi.mocked(workspaceApi.listTopupCheckouts).mock.calls.length
+    const lists = vi.mocked(billingApi.listTopupCheckouts).mock.calls.length
 
     view.unmount()
     pending.resolve(checkout('payment_processing', 2500, 'cs_bank'))
     await pending.promise
     await new Promise((settle) => setTimeout(settle))
 
-    expect(workspaceApi.listTopupCheckouts).toHaveBeenCalledTimes(lists)
+    expect(billingApi.listTopupCheckouts).toHaveBeenCalledTimes(lists)
   })
 
   it('does not report a checkout read that fails after the surface is gone', async () => {
     enableProcessingRead()
-    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+    vi.spyOn(billingApi, 'listTopupCheckouts').mockResolvedValue({
       checkouts: [listed('cs_bank')],
       next_cursor: null
     })
     const pending = deferred<HostedTopupCheckout>()
-    vi.spyOn(workspaceApi, 'getTopupCheckout').mockReturnValue(pending.promise)
+    vi.spyOn(billingApi, 'getTopupCheckout').mockReturnValue(pending.promise)
     const view = renderPayment(ref(true))
     await waitFor(() =>
-      expect(workspaceApi.getTopupCheckout).toHaveBeenCalledTimes(1)
+      expect(billingApi.getTopupCheckout).toHaveBeenCalledTimes(1)
     )
 
     view.unmount()

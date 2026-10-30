@@ -2,16 +2,16 @@ import type {
   LGraph,
   LLink,
   Reroute
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { GraphScope } from '@/types/graphScopeId'
-import type { LinkId } from '@/types/linkId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import {
   cancelLinkHideTransition,
   startLinkHideTransitions

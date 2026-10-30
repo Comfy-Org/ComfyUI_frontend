@@ -12,7 +12,8 @@ async function loadTelemetry() {
   const { rumBeforeSend } = await import('./datadogRumBeforeSend')
   const { initDatadogRum } = await import('./initDatadogRum')
   const { trackUserManualRefresh } = await import('./manualRefreshTracker')
-  const { getDatadogRum, getFrontendBucket } = await import('./rumContext')
+  const { getDatadogRum, getFrontendBucket } =
+    await import('@comfyorg/telemetry/rumContext')
   return {
     datadogRum,
     getDatadogRum,

@@ -5,10 +5,10 @@ import {
 } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import type { AutoReloadSettings } from '@comfyorg/billing-core'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -25,7 +25,7 @@ interface ScopedRead {
 function useBillingAutoTopUpCardInternal() {
   const authStore = useAuthStore()
   const apiKeyAuthStore = useApiKeyAuthStore()
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
 
   const scope = computed(() => {
     const actorId = authStore.userId ?? apiKeyAuthStore.currentUser?.id
@@ -46,7 +46,7 @@ function useBillingAutoTopUpCardInternal() {
     try {
       const next = {
         scope: requestScope,
-        settings: await workspaceApi.getBillingAutoReload()
+        settings: await billingApi.getBillingAutoReload()
       }
       if (serial !== refreshSerial) return committed
       committed = next

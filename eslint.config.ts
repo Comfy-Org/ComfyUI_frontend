@@ -207,7 +207,12 @@ const commonParserOptions = {
   extraFileExtensions
 } as const
 
-// Tailwind CSS v4 linting (class ordering, duplicates, conflicts, etc.)
+const layerClassRestriction = {
+  pattern: '^(?:.*:)?!?-?z-(?:[0-9]{3,}|\\[.*\\]|\\(.*\\))!?$',
+  message:
+    'Use a named layer for cross-component ordering; keep local stacking inside an isolated owner.'
+}
+
 const tailwindConfigs = defineConfig([
   betterTailwindcss.configs.recommended,
   {
@@ -245,13 +250,27 @@ const tailwindConfigs = defineConfig([
     }
   },
   {
+    name: 'design-system/owned-layers',
+    files: ['src/**/*.{ts,vue}'],
+    rules: {
+      'better-tailwindcss/no-restricted-classes': [
+        'error',
+        { restrict: [layerClassRestriction] }
+      ]
+    }
+  },
+  {
     name: 'design-system/core-ui-theme-tokens',
-    files: ['src/components/ui/**/*.{ts,vue}'],
+    files: [
+      'src/components/ui/**/*.{ts,vue}',
+      'packages/design-system/src/components/**/*.{ts,vue}'
+    ],
     rules: {
       'better-tailwindcss/no-restricted-classes': [
         'error',
         {
           restrict: [
+            layerClassRestriction,
             {
               pattern: specializedThemeClassPattern,
               message:
@@ -337,6 +356,13 @@ export default defineConfig([
       // Difference in typecheck on CI vs Local
       pluginVue.configs['flat/recommended'],
       ...tailwindConfigs,
+      {
+        files: ['**/*.vue'],
+        plugins: { 'template-classes': templateClasses },
+        rules: {
+          'template-classes/icon-element': 'error'
+        }
+      },
       {
         files: [
           'src/**/*.vue',
@@ -473,7 +499,6 @@ export default defineConfig([
         ignores: [
           'src/App.vue',
           'src/components/graph/SelectionToolbox.vue',
-          'src/components/ui/tooltip/*.vue',
           'src/renderer/core/layout/transform/TransformPane.vue'
         ],
         rules: {

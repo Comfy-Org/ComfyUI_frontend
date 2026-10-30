@@ -5,19 +5,12 @@
       videoStatus === 'failed' ? videoFailedDescriptionId : undefined
     "
   >
-    <div
-      v-if="hasAnyProgressPercent(progressTotalPercent, progressCurrentPercent)"
-      :class="progressBarContainerClass"
-    >
+    <div v-if="progressBars.length" :class="progressBarContainerClass">
       <div
-        v-if="hasProgressPercent(progressTotalPercent)"
-        :class="progressBarPrimaryClass"
-        :style="progressPercentStyle(progressTotalPercent)"
-      />
-      <div
-        v-if="hasProgressPercent(progressCurrentPercent)"
-        :class="progressBarSecondaryClass"
-        :style="progressPercentStyle(progressCurrentPercent)"
+        v-for="bar in progressBars"
+        :key="bar.id"
+        :class="bar.class"
+        :style="progressPercentStyle(bar.percent)"
       />
     </div>
 
@@ -38,58 +31,17 @@
         :icon-class="iconClass"
         :icon-aria-label="iconAriaLabel"
       >
-        <div
-          v-if="previewUrl"
-          class="relative size-full"
-          @click="emit('preview-click')"
-        >
-          <template v-if="isVideoPreview">
-            <video
-              v-if="videoStatus !== 'failed'"
-              :src="videoSrc"
-              preload="metadata"
-              muted
-              playsinline
-              class="pointer-events-none size-full object-cover"
-              @error="onVideoError"
-            />
-            <VideoPlayOverlay v-if="videoStatus !== 'failed'" size="sm" />
-            <i
-              v-if="videoStatus === 'failed'"
-              aria-hidden="true"
-              class="absolute inset-0 m-auto icon-[lucide--video-off] size-4 text-muted-foreground"
-            />
-          </template>
-          <img
-            v-else-if="failedImageUrl !== previewUrl"
-            :src="previewUrl"
-            :alt="previewAlt"
-            class="size-full object-cover"
-            :draggable="false"
-            @error="failedImageUrl = previewUrl"
-          />
-          <i
-            v-else
-            aria-hidden="true"
-            class="absolute inset-0 m-auto icon-[lucide--image] size-4 text-muted-foreground"
-          />
-        </div>
-        <div
-          v-else
-          class="flex size-full items-center justify-center"
-          @click="emit('preview-click')"
-        >
-          <i
-            aria-hidden="true"
-            :class="
-              cn(
-                iconName ?? 'icon-[lucide--image]',
-                'size-4 text-muted-foreground',
-                iconClass
-              )
-            "
-          />
-        </div>
+        <AssetsListItemPreview
+          :preview-url
+          :preview-alt
+          :icon-name
+          :icon-class
+          :is-video-preview
+          :video-src
+          :video-failed="videoStatus === 'failed'"
+          @preview-click="emit('preview-click')"
+          @video-error="onVideoError"
+        />
       </slot>
     </div>
 
@@ -132,7 +84,7 @@
         :aria-expanded="stackExpanded"
         @click.stop="emit('stack-toggle')"
       >
-        <i aria-hidden="true" class="icon-[lucide--layers] size-4" />
+        <i aria-hidden="true" class="icon-[lucide--layers]" />
         <span class="text-xs leading-none">{{ stackCount }}</span>
         <i
           aria-hidden="true"
@@ -159,14 +111,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, useId } from 'vue'
+import { computed, useId } from 'vue'
 
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import VideoPlayOverlay from './VideoPlayOverlay.vue'
+import AssetsListItemPreview from './AssetsListItemPreview.vue'
 
 const emit = defineEmits<{
   'stack-toggle': []
@@ -212,14 +164,27 @@ const {
 } = useRetryableMediaSrc(() => (isVideoPreview ? previewUrl : undefined))
 
 const videoFailedDescriptionId = useId()
-const failedImageUrl = ref<string>()
 
 const {
   progressBarContainerClass,
   progressBarPrimaryClass,
   progressBarSecondaryClass,
   hasProgressPercent,
-  hasAnyProgressPercent,
   progressPercentStyle
 } = useProgressBarBackground()
+
+const progressBars = computed(() =>
+  [
+    {
+      id: 'total',
+      percent: progressTotalPercent,
+      class: progressBarPrimaryClass
+    },
+    {
+      id: 'current',
+      percent: progressCurrentPercent,
+      class: progressBarSecondaryClass
+    }
+  ].filter((bar) => hasProgressPercent(bar.percent))
+)
 </script>

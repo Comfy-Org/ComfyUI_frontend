@@ -8,7 +8,7 @@ import type { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeRe
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useApp } from '@/scripts/appInstance'
 import type { NodeError } from '@/platform/remote/comfyui/types'
-import { getParentExecutionIds } from '@/types/nodeIdentification'
+import { getParentExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 import { hasErrorForSlot } from '@/utils/executionErrorUtil'
 import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 

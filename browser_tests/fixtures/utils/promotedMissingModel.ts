@@ -11,7 +11,7 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 import { setPromotedHostWidgetValue } from '@e2e/fixtures/utils/promotedWidgets'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 const PROMOTED_MODEL_WIDGET_NAME = 'ckpt_name'
 

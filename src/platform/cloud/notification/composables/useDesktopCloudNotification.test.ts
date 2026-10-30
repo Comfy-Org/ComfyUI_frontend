@@ -32,7 +32,7 @@ vi.mock(
     }) as const
 )
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: errorReporter
 }))
 

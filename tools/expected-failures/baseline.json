@@ -8,27 +8,11 @@
     "classification": "live-defect"
   },
   {
-    "id": "playwright:browser_tests/tests/agent/agentLocalNodeAppearanceSurvivesAgentEdit.spec.ts:recolouring a node mid-turn is not reverted when the agent renames it:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "playwright:browser_tests/tests/agent/agentLocalNodeAppearanceSurvivesAgentEdit.spec.ts:reshaping a node mid-turn is not reverted when the agent renames it:1",
-    "classification": "live-defect"
-  },
-  {
     "id": "playwright:browser_tests/tests/agent/agentNodeIdCollision.spec.ts:<expression:\"leaves the agent's own graph read disagreeing with the \" + 'still-visible canvas after its write is silently dropped'>:1",
     "classification": "live-defect"
   },
   {
     "id": "playwright:browser_tests/tests/agent/agentNodeIdCollision.spec.ts:<expression:'wipes a duplicated node and replaces it with a phantom node when ' + \"the agent's write lands on the same id\">:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "playwright:browser_tests/tests/agent/agentRateLimitDuplicateSubmit.spec.ts:keeps repeated Enter presses to one rejected send:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "playwright:browser_tests/tests/agent/agentReplyDrafts.spec.ts:<expression:`a completed turn keeps its ${selection} approval action live`>:1",
     "classification": "live-defect"
   },
   {
@@ -77,10 +61,6 @@
   },
   {
     "id": "playwright:browser_tests/tests/workspace/workflowDraftForeignWindowSignIn.spec.ts:a second window signing in neither wipes drafts nor stops persistence:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/lib/litegraph/src/LGraphCanvas.gesture.test.ts:releases a hovered node with the pointerup event:1",
     "classification": "live-defect"
   },
   {

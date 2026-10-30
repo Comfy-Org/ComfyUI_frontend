@@ -1,3 +1,4 @@
+import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
 import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
@@ -158,9 +159,6 @@ function renderNodeDecorations(
   }
 }
 
-/**
- * Render nodes on the minimap with performance optimizations
- */
 function renderNodes(
   ctx: CanvasRenderingContext2D,
   dataSource: MinimapDataSource,
@@ -174,17 +172,14 @@ function renderNodes(
 
   ctx.save()
 
-  // Group nodes by color for batch rendering (performance optimization)
   const nodesByColor = new Map<
     string,
-    Array<{
-      x: number
-      y: number
-      w: number
-      h: number
-      hasErrors?: boolean
-      executionState?: MinimapNodeExecutionState | null
-    }>
+    Array<
+      CompactRect & {
+        hasErrors?: boolean
+        executionState?: MinimapNodeExecutionState | null
+      }
+    >
   >()
 
   for (const node of nodes) {
@@ -209,7 +204,6 @@ function renderNodes(
     })
   }
 
-  // Batch render nodes by color
   for (const [color, nodes] of nodesByColor) {
     ctx.fillStyle = color
     for (const node of nodes) {

@@ -5,7 +5,7 @@ import {
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   cleanupFakeModel,
   dismissErrorOverlay

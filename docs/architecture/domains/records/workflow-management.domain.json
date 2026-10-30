@@ -4,10 +4,6 @@
   "description": "Open workflow documents and sessions: the ComfyWorkflow model and workflow store (open tabs, active workflow, modified state, subgraph paths), workflowService open, save, save-as, close, and insert flows, workflow menu actions, workflow ids and clipboard conversion, pending load warnings, restoring dynamic group inputs from API prompts, extracting workflows from jobs and assets, and the workflows and apps sidebar tab registrations. Draft persistence, sharing, templates, deployment, the document format, and graph entity implementation are separate records.",
   "modules": [
     {
-      "path": "src/components/common/WorkflowActionsDropdown.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/common/WorkflowActionsDropdown.vue",
       "role": "presentation"
     },
@@ -16,15 +12,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/sidebar/tabs/AppsSidebarTab.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/sidebar/tabs/AppsSidebarTab.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.test.ts",
       "role": "presentation"
     },
     {
@@ -44,27 +32,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/composables/useNewMenuItemIndicator.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useNewMenuItemIndicator.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useWorkflowActionsMenu.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useWorkflowActionsMenu.ts",
       "role": "application"
     },
     {
       "path": "src/platform/workflow/core/services/**",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/core/utils/pendingWarnings.test.ts",
       "role": "application"
     },
     {
@@ -76,19 +48,7 @@
       "role": "application"
     },
     {
-      "path": "src/platform/workflow/core/utils/workflowId.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/workflow/core/utils/workflowId.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/core/utils/workflowToClipboardItems.integration.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/core/utils/workflowToClipboardItems.test.ts",
       "role": "domain"
     },
     {
@@ -108,10 +68,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/scripts/changeTracker.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/scripts/changeTracker.ts",
       "role": "application"
     },
@@ -120,16 +76,8 @@
       "role": "domain"
     },
     {
-      "path": "src/stores/userFileStore.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/stores/userFileStore.ts",
       "role": "infrastructure"
-    },
-    {
-      "path": "src/stores/workflowTabActivityStore.test.ts",
-      "role": "application"
     },
     {
       "path": "src/stores/workflowTabActivityStore.ts",
@@ -145,8 +93,8 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": ["agent"],
+  "allowedDependencies": ["error-reporting", "keybindings", "telemetry"],
+  "allowedConsumers": ["agent", "execution"],
   "characterizationScenarios": [
     {
       "name": "Workflow store opens, renames, closes, and tracks modified workflows",
@@ -200,10 +148,9 @@
       "checks": ["src/stores/workflowTabActivityStore.test.ts"]
     },
     {
-      "name": "Workflow actions menu and new-item indicators reflect workflow and settings state; entity sync reconciles user files",
+      "name": "Workflow actions menu reflects workflow and settings state; entity sync reconciles user files",
       "checks": [
         "src/composables/useWorkflowActionsMenu.test.ts",
-        "src/composables/useNewMenuItemIndicator.test.ts",
         "src/platform/workflow/management/stores/workflowStore.test.ts"
       ]
     },

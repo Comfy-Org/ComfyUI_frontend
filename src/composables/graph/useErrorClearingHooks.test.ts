@@ -12,7 +12,7 @@ import {
 import {
   LGraphEventMode,
   NodeSlotType
-} from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 import {
   createMissingMediaCandidate,
   createPromotedMediaRuntime,
@@ -28,8 +28,8 @@ import { cloudReleaseModelOptions } from '@/platform/workflowErrors/missingModel
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'

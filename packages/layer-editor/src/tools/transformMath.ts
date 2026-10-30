@@ -1,4 +1,5 @@
-import type { Transform, Vec2 } from '#/node'
+import type { Transform } from '#/node'
+import type { Point2D as Vec2 } from '@comfyorg/shared-frontend-utils/geometry'
 
 export type HandleId =
   | 'nw'

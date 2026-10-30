@@ -57,6 +57,7 @@ defineOptions({ inheritAttrs: false })
 const {
   label,
   expanded = false,
+  referenceMenuId,
   activeDescendant,
   historyEpoch = 0,
   editableWorkflowId,
@@ -65,6 +66,7 @@ const {
 } = defineProps<{
   label: string
   expanded?: boolean
+  referenceMenuId?: string
   activeDescendant?: string
   historyEpoch?: number
   editableWorkflowId?: string
@@ -330,8 +332,8 @@ function nodeReferenceView(
   dom.dataset.testid = `${reference.kind}-reference-chip`
   dom.className = inlineReferenceChipClass
   dom.tabIndex = 0
-  const icon = document.createElement('span')
-  icon.className = 'icon-[comfy--node] size-3 shrink-0'
+  const icon = document.createElement('i')
+  icon.className = 'icon-[comfy--node] size-3'
   icon.setAttribute('aria-hidden', 'true')
   const label = document.createElement('span')
   label.className = 'min-w-0 max-w-56 truncate'
@@ -351,7 +353,7 @@ function nodeReferenceView(
   remove.className = inlineReferenceRemoveButtonClass
   const badge = document.createElement('span')
   badge.className = inlineReferenceRemoveBadgeClass
-  const cross = document.createElement('span')
+  const cross = document.createElement('i')
   cross.className = 'icon-[lucide--x] size-2'
   cross.setAttribute('aria-hidden', 'true')
   badge.append(cross)
@@ -375,8 +377,10 @@ onMounted(() => {
       role: 'textbox',
       'aria-label': label,
       'aria-multiline': 'true',
-      'aria-expanded': String(expanded),
-      'aria-controls': 'agent-reference-menu',
+      ...(referenceMenuId ? { 'aria-haspopup': 'menu' } : {}),
+      ...(expanded && referenceMenuId
+        ? { 'aria-controls': referenceMenuId }
+        : {}),
       ...(activeDescendant
         ? { 'aria-activedescendant': activeDescendant }
         : {}),
@@ -562,8 +566,9 @@ onMounted(() => {
         }
         open.className =
           'flex min-w-0 cursor-pointer items-center border-none bg-transparent p-0 text-inherit outline-none aria-disabled:cursor-not-allowed'
-        const icon = document.createElement('span')
-        icon.className = 'icon-[comfy--workflow] mr-1 size-3 shrink-0'
+        const icon = document.createElement('i')
+        icon.className = 'icon-[comfy--workflow] mr-1 size-3'
+        icon.setAttribute('aria-hidden', 'true')
         const title = document.createElement('span')
         title.className = 'min-w-0 max-w-56 truncate'
         title.textContent = name
@@ -582,8 +587,9 @@ onMounted(() => {
         remove.className = inlineReferenceRemoveButtonClass
         const badge = document.createElement('span')
         badge.className = inlineReferenceRemoveBadgeClass
-        const cross = document.createElement('span')
+        const cross = document.createElement('i')
         cross.className = 'icon-[lucide--x] size-2'
+        cross.setAttribute('aria-hidden', 'true')
         badge.append(cross)
         remove.append(badge)
         remove.onclick = () => {
@@ -638,7 +644,7 @@ watch(
 )
 
 watch(
-  () => [label, expanded, activeDescendant, searchHint],
+  () => [label, expanded, referenceMenuId, activeDescendant, searchHint],
   () => view?.setProps({})
 )
 watch(

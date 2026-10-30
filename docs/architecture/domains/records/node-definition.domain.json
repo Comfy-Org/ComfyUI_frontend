@@ -25,7 +25,7 @@
     }
   ],
   "publicEntryPoints": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"],
-  "allowedDependencies": [],
+  "allowedDependencies": ["extension-manager"],
   "allowedConsumers": ["graph-model"],
   "characterizationScenarios": [
     {

@@ -1,3 +1,4 @@
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import type {
   BillingTelemetryEvent,
   BillingTelemetryFailure,
@@ -15,15 +16,15 @@ import type { TierKey } from '@/platform/billing/subscription/constants/tierPric
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import type {
   BillingAuthenticationState,
   BillingOperationPhase,
   BillingRecoveryAction
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 import { refreshBilling } from '@/platform/billing/billingRefresh'
 import type {
   ProgressToast,
@@ -37,7 +38,7 @@ import {
   progressToastKind
 } from '@/platform/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import {
   clearCheckoutJourney,
   getActiveCheckoutJourney,
@@ -152,7 +153,7 @@ interface FailureRecovery {
 }
 
 export const useBillingOperationStore = defineStore('billingOperation', () => {
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
   const toast = useToast()
   const operations = ref<Map<string, BillingOperation>>(new Map())
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>()
@@ -385,7 +386,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     try {
-      const response = await workspaceApi.getBillingOpStatus(opId)
+      const response = await billingApi.getBillingOpStatus(opId)
       const currentOperation = operations.value.get(opId)
       if (currentOperation !== operation) return
       if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
@@ -688,7 +689,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       }
 
       if (operation.type === 'cancel') {
-        useTeamWorkspaceStore().updateActiveWorkspace({ isSubscribed: false })
+        if (operation.workspaceId) {
+          useWorkspaceBillingStateStore().updateSummary(operation.workspaceId, {
+            isSubscribed: false
+          })
+        }
         return
       }
 

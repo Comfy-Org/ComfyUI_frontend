@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IComboWidget } from '@comfyorg/graph-model/widgets'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { InputSpec } from '@/schemas/nodeDefSchema'

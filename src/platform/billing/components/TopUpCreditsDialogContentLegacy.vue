@@ -24,86 +24,16 @@
       {{ $t('credits.topUp.insufficientWorkflowMessage') }}
     </p>
 
-    <!-- Preset amount buttons -->
-    <div class="px-8">
-      <h3 class="m-0 text-sm font-normal text-muted-foreground">
-        {{ $t('credits.topUp.selectAmount') }}
-      </h3>
-      <div class="flex gap-2 pt-3">
-        <Button
-          v-for="amount in TOPUP_AMOUNT_PRESETS_USD"
-          :key="amount"
-          :autofocus="amount === 50"
-          variant="secondary"
-          size="lg"
-          :aria-pressed="selectedPreset === amount"
-          :class="
-            cn(
-              'h-10 w-full text-base focus-visible:ring-ring',
-              selectedPreset === amount && 'bg-muted'
-            )
-          "
-          @click="handlePresetClick(amount)"
-        >
-          ${{ amount }}
-        </Button>
-      </div>
-      <p
-        v-if="planCreditCopy"
-        class="m-0 pt-3 text-sm text-muted-foreground"
-        data-testid="top-up-plan-credit-line"
-      >
-        {{ planCreditCopy }}
-      </p>
-    </div>
-    <!-- Amount (USD) / Credits -->
-    <div class="flex gap-2 px-8 pt-8">
-      <!-- You Pay -->
-      <div
-        class="flex min-w-0 flex-1 flex-col gap-3"
-        data-testid="top-up-pay-amount"
-      >
-        <div class="text-sm text-muted-foreground">
-          {{ $t('credits.topUp.youPay') }}
-        </div>
-        <FormNumberField
-          class="w-full"
-          :aria-label="$t('credits.topUp.youPay')"
-          input-class="text-lg font-medium"
-          :model-value="payAmount"
-          :min="0"
-          :max="MAX_AMOUNT"
-          :step="getStepAmount(payAmount)"
-          :format-options="{ maximumFractionDigits: 0 }"
-          @update:model-value="handlePayAmountChange"
-        >
-          <template #prefix>
-            <span class="shrink-0 text-base font-semibold">$</span>
-          </template>
-        </FormNumberField>
-      </div>
-
-      <!-- You Get -->
-      <div class="flex min-w-0 flex-1 flex-col gap-3">
-        <div class="text-sm text-muted-foreground">
-          {{ $t('credits.topUp.youGet') }}
-        </div>
-        <FormNumberField
-          v-model="creditsModel"
-          class="w-full"
-          :aria-label="$t('credits.topUp.youGet')"
-          input-class="text-lg font-medium"
-          :min="0"
-          :max="usdToCredits(MAX_AMOUNT)"
-          :step="getCreditsStepAmount(creditsModel)"
-          :format-options="{ maximumFractionDigits: 0 }"
-        >
-          <template #prefix>
-            <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
-          </template>
-        </FormNumberField>
-      </div>
-    </div>
+    <TopUpAmountFields
+      :pay-amount
+      :credits="creditsModel"
+      :selected-preset
+      :max-amount="MAX_AMOUNT"
+      :plan-credit-copy
+      @preset="handlePresetClick"
+      @pay-amount="handlePayAmountChange"
+      @credits="creditsModel = $event"
+    />
 
     <!-- Warnings -->
 
@@ -111,7 +41,7 @@
       v-if="isBelowMin"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-destructive"
     >
-      <i class="icon-[lucide--coins] size-4" />
+      <i class="icon-[lucide--coins]" />
       {{
         $t('credits.topUp.minRequired', {
           credits: formatNumber(usdToCredits(MIN_AMOUNT))
@@ -122,7 +52,7 @@
       v-if="showCeilingWarning"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-warning"
     >
-      <i class="icon-[lucide--coins] size-4" />
+      <i class="icon-[lucide--coins]" />
       {{
         $t('credits.topUp.maxAllowed', {
           credits: formatNumber(usdToCredits(MAX_AMOUNT))
@@ -154,7 +84,7 @@
           class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           {{ $t('credits.topUp.viewPricing') }}
-          <i class="icon-[lucide--external-link] size-4" />
+          <i class="icon-[lucide--external-link]" />
         </a>
       </div>
     </div>
@@ -162,30 +92,26 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
-import {
-  getTopupAmountPreset,
-  TOPUP_AMOUNT_PRESETS_USD
-} from '@comfyorg/account-core/billing'
+import Card from '@comfyorg/design-system/card/Card'
+import { getTopupAmountPreset } from '@comfyorg/account-core/billing'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
-import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import FormNumberField from '@/components/common/FormNumberField.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import TopUpAmountFields from './TopUpAmountFields.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { describeBillingFailure } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean
@@ -233,18 +159,6 @@ const showCeilingWarning = computed(() => payAmount.value >= MAX_AMOUNT)
 // Utility functions
 function formatNumber(num: number): string {
   return num.toLocaleString('en-US')
-}
-
-// Step amount functions
-function getStepAmount(currentAmount: number): number {
-  if (currentAmount < 100) return 5
-  if (currentAmount < 1000) return 50
-  return 100
-}
-
-function getCreditsStepAmount(currentCredits: number): number {
-  const usdAmount = creditsToUsd(currentCredits)
-  return usdToCredits(getStepAmount(usdAmount))
 }
 
 // Event handlers

@@ -134,7 +134,7 @@ function changedWidgetOperations(
       const old = oldValues[name]
       return JSON.stringify(old) === JSON.stringify(value)
         ? []
-        : [{ op: 'set_widget', node_id: id, widget: name, value, old }]
+        : [{ op: 'set_widget', node_id: id, widget: name, value }]
     })
   })
 }

@@ -18,7 +18,7 @@ import type {
   WebSessionRequestScope,
   WebSessionRequests
 } from '@/platform/auth/session/webSessionFetch'
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useWorkspaceSession } from '@/platform/workspace/ports/workspaceSession'
 
 export type WebSessionBillingSession = BillingSession & BillingScopeSource
 
@@ -63,7 +63,7 @@ export function createWebSessionBillingSession(
   requests: WebSessionRequests
 ): WebSessionBillingSession {
   const webSession = useCloudWebSessionStore()
-  const workspaceAuth = useWorkspaceAuthStore()
+  const workspaceAuth = useWorkspaceSession()
 
   function getScope(): BillingScope | undefined {
     const user = webSession.signedInUser

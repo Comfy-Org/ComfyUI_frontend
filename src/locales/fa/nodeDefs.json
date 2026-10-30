@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "از میان ورودی‌های متصل بر اساس نام انتخاب کنید. ورودی‌ها را می‌توان با دوبار کلیک کردن روی آن‌ها تغییر نام داد.",
+    "display_name": "شاخه",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "با استفاده از Bria، شیئی را که با متن ساده توصیف شده است به تصویر اضافه کنید. Bria کل فریم را با وضوح حدود ۱ مگاپیکسل بازپردازی می‌کند، بنابراین نتیجه با ورودی پیکسل‌به‌پیکسل هم‌تراز نیست.",
     "display_name": "افزودن شیء با Bria",
@@ -9289,12 +9310,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB، ‏Rec.709 خطی، HDR (Rec.2020 HLG)، HDR PQ (Rec.2020 PQ)، HDR LogC3 و HDR ACEScct را تبدیل می‌کند. LogC3 از منحنی EI 800 با رنگ‌های اصلی Rec.709 استفاده می‌کند و کدها به [0, 1] محدود می‌شوند. ACEScct از رنگ‌های اصلی AP1 و سفید D60 استفاده می‌کند، با تطبیق Bradford به D65. برای ذخیره‌سازی EXR، LogC3 یا ACEScct را به خطی تبدیل کنید. خطی 1.0 از همان سفید مرجع ۲۰۳ نیتِ sRGB استفاده می‌کند؛ HLG از نمایشگر مرجع ۱۰۰۰ نیت استفاده می‌کند. خروجی‌های خطی و ACEScct مقادیر گسترده را حفظ می‌کنند. تبدیل‌های خطی به HDR، هایلایت‌ها را بدون tone mapping حفظ می‌کنند؛ خروجی‌های HLG و PQ کانال‌های منفی را clip می‌کنند. خروجی SDR و تبدیل PQ به HLG، روشنایی اضافی را در سراسر batch با tone mapping تنظیم کرده و رنگ‌های خارج از gamut را فشرده می‌کنند. تبدیل‌ها با float32 محاسبه می‌شوند و device و dtype میانی را بازمی‌گردانند. آلفای مستقیم تبدیل رنگی نمی‌شود.",
+    "description": "sRGB، Rec.709 خطی، HDR (Rec.2020 HLG)، HDR PQ (Rec.2020 PQ)، HDR LogC3، ACEScg خطی و HDR ACEScct را تبدیل می‌کند. LogC3 از منحنی EI ۸۰۰ با رنگ‌های اولیهٔ Rec.709 استفاده می‌کند و کدها به [0, 1] محدود می‌شوند. ACEScg، AP1 خطیِ صحنه با نقطهٔ سفید D60 است. ACEScct رمزگذاری لگاریتمی ACEScg است. هر دو از سازگارسازی Bradford با D65 استفاده می‌کنند. پیش از ذخیرهٔ EXR، LogC3 یا ACEScct را به ACEScg خطی (AP1 خطیِ صحنه) یا خطی (Rec.709) تبدیل کنید. خطی ۱.۰ و ACEScg ۱.۰ از همان سفید مرجع ۲۰۳ نیتِ sRGB استفاده می‌کنند؛ HLG از نمایشگر مرجع ۱۰۰۰ نیت استفاده می‌کند. خروجی‌های خطی، ACEScg و ACEScct مقادیر گسترده را حفظ می‌کنند. تبدیل‌های خطی به HDR، روشنایی‌ها را بدون نگاشت تُن حفظ می‌کنند؛ خروجی‌های HLG و PQ کانال‌های منفی را برش می‌دهند. خروجی SDR و تبدیل PQ به HLG، درخشندگیِ بیش‌ازحد را در سراسر batch نگاشت تُن می‌کنند و رنگ‌های خارج از گستره را فشرده می‌سازند. تبدیل‌ها با float32 محاسبه می‌شوند و دستگاه و dtype میانی را بازمی‌گردانند. آلفای مستقیم تبدیل رنگی نمی‌شود.",
     "display_name": "تبدیل فضای رنگ تصویر",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "فضای رنگی پیکسل‌های خروجی. node ذخیره را روی همین فضای رنگی تنظیم کنید. پیش از ذخیره‌سازی EXR، LogC3 یا ACEScct را به خطی تبدیل کنید؛ یا پیش از ذخیره‌سازی ویدئو، آن را به sRGB/HDR/HDR PQ تبدیل کنید."
+        "tooltip": "فضای رنگی پیکسل‌های خروجی. node ذخیره را روی همین فضای رنگی تنظیم کنید. برای EXR از نوع ACEScg، LogC3 یا ACEScct را به ACEScg خطی و برای EXR از نوع Rec.709 آن را به خطی تبدیل کنید. پیش از ذخیرهٔ ویدئو، به sRGB/HDR/HDR PQ تبدیل کنید."
       },
       "image": {
         "name": "image"
@@ -16743,6 +16764,170 @@
       },
       "transformer_blocks_9_": {
         "name": "transformer_blocks.۹."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "final_linear_video_": {
+        "name": "final_linear_video."
+      },
+      "final_norm_video_": {
+        "name": "final_norm_video."
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "layers.23."
+      },
+      "layers_24_": {
+        "name": "layers.24."
+      },
+      "layers_25_": {
+        "name": "layers.25."
+      },
+      "layers_26_": {
+        "name": "layers.26."
+      },
+      "layers_27_": {
+        "name": "layers.27."
+      },
+      "layers_28_": {
+        "name": "layers.28."
+      },
+      "layers_29_": {
+        "name": "layers.29."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_30_": {
+        "name": "layers.30."
+      },
+      "layers_31_": {
+        "name": "layers.31."
+      },
+      "layers_32_": {
+        "name": "layers.32."
+      },
+      "layers_33_": {
+        "name": "layers.33."
+      },
+      "layers_34_": {
+        "name": "layers.34."
+      },
+      "layers_35_": {
+        "name": "layers.35."
+      },
+      "layers_36_": {
+        "name": "layers.36."
+      },
+      "layers_37_": {
+        "name": "layers.37."
+      },
+      "layers_38_": {
+        "name": "layers.38."
+      },
+      "layers_39_": {
+        "name": "layers.39."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_40_": {
+        "name": "layers.40."
+      },
+      "layers_41_": {
+        "name": "layers.41."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "video_head_modulation_": {
+        "name": "video_head_modulation."
       }
     }
   },
@@ -25262,7 +25447,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "یک دستور ویرایش را همراه با تصاویر مرجع برای یک LoRA ویرایش MOSS-Image کدگذاری می‌کند؛ از آن برای prompt منفی نیز استفاده کنید. مراجع با همان اندازهٔ ورودی خود استفاده می‌شوند؛ ابتدا آن‌ها را مقیاس‌بندی کنید.",
+    "description": "یک دستور ویرایش را همراه با تصاویر مرجع برای LoRA ویرایش MOSS-Image کدگذاری می‌کند؛ از آن برای پرامپت منفی نیز استفاده کنید. تصاویر مرجع با همان ابعادی که وارد می‌شوند استفاده می‌شوند؛ ابتدا مقیاس آن‌ها را تغییر دهید. بدون VAE، تصاویر فقط به رمزگذار متن ارسال می‌شوند.",
     "display_name": "کدگذاری متن برای ویرایش MOSS-Image",
     "inputs": {
       "clip": {
@@ -25272,6 +25457,10 @@
         "name": "قالب ویرایش",
         "tooltip": "چیدمانی که LoRA ویرایش با آن آموزش دیده است: MOSS-Image Edit Training مربوط به ai-toolkit (با گزینهٔ kv_cache روشن یا خاموش) یا Moss-Image-Edit. با خاموش بودن kv_cache، مراجع به تصویری که در حال تولید است نیز توجه می‌کنند؛ بنابراین در هر گام دوباره محاسبه می‌شوند."
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "میزان توجه مدل به تصاویری را که رمزگذار متن می‌بیند مقیاس‌بندی می‌کند (فرمت‌های ai-toolkit، یا بدون VAE): ۰ آن‌ها را نادیده می‌گیرد، ۱ بدون تغییر است و مقادیر بالاتر از ۱ بر آن‌ها تأکید می‌کنند."
+      },
       "images": {
         "name": "تصاویر"
       },
@@ -25279,7 +25468,8 @@
         "name": "prompt"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "تصاویر را به‌صورت latentهای مرجع برای LoRA ویرایش کدگذاری می‌کند."
       }
     },
     "outputs": {

@@ -7,14 +7,14 @@ import {
 import { computed, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import {
   selectTopupCheckoutBanner,
   topupCheckoutBannerKey
 } from '@/platform/billing/components/billingTab/topupCheckoutBanner'
 import type { TopupCheckoutSnapshot } from '@/platform/billing/components/billingTab/topupCheckoutBanner'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 const CREDITS_APPLYING_POLL_MS = 5_000
 
@@ -24,7 +24,7 @@ const NO_CHECKOUTS: TopupCheckoutSnapshot = {
 }
 
 export function useTopupCheckoutBanner(enabled: MaybeRefOrGetter<boolean>) {
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
   const workspaceScope = () =>
     `${workspaceStore.workspaceTransitionGeneration}:${workspaceStore.activeWorkspaceId}`
   const reportedSessions = new Set<string>()
@@ -48,9 +48,9 @@ export function useTopupCheckoutBanner(enabled: MaybeRefOrGetter<boolean>) {
 
   async function readTopupCheckouts(): Promise<TopupCheckoutSnapshot> {
     const launchedScope = workspaceScope()
-    let listed: Awaited<ReturnType<typeof workspaceApi.listTopupCheckouts>>
+    let listed: Awaited<ReturnType<typeof billingApi.listTopupCheckouts>>
     try {
-      listed = await workspaceApi.listTopupCheckouts()
+      listed = await billingApi.listTopupCheckouts()
       listFailureOpen = false
     } catch (error) {
       reportCheckoutReadFailure(error, 'list')
@@ -58,9 +58,7 @@ export function useTopupCheckoutBanner(enabled: MaybeRefOrGetter<boolean>) {
     }
     const { checkouts } = listed
     const reads = await Promise.allSettled(
-      checkouts.map(({ session_id }) =>
-        workspaceApi.getTopupCheckout(session_id)
-      )
+      checkouts.map(({ session_id }) => billingApi.getTopupCheckout(session_id))
     )
     if (workspaceScope() !== launchedScope) return read.state.value
     const lastKnown = new Map(

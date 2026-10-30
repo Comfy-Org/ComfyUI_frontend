@@ -8,8 +8,8 @@ import type { Ref } from 'vue'
 
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import type { SettingParams, Settings } from '@/platform/settings/types'
-import { useTelemetry } from '@/platform/telemetry'
-import type { SettingChangedMetadata } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { SettingChangedMetadata } from '@comfyorg/telemetry/types'
 import { api } from '@/scripts/api'
 
 export const getSettingInfo = (setting: SettingParams) => {
@@ -29,7 +29,15 @@ interface SettingChange {
 interface AppliedSetting<TValue> {
   previousValue: TValue
   newValue: TValue
+  writeToken: number
 }
+
+type RevertibleSettingId = 'Comfy.Extension.DisabledPacks'
+
+type SettingWriteOutcome =
+  | { status: 'saved' | 'unchanged' }
+  | { status: 'refused'; statusCode: number; statusText: string }
+  | { status: 'unconfirmed'; cause: unknown }
 
 function resolveDefaultValue<T>(value: T | (() => T)): T {
   return typeof value === 'function' ? (value as () => T)() : value
@@ -139,10 +147,13 @@ export const useSettingStore = defineStore('setting', () => {
           'Setting values must be loaded before any setting is registered.'
         )
       }
-      settingValues.value = await retry(() => api.getSettings(), {
-        retries: 3,
-        delay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000)
-      })
+      settingValues.value = await retry(
+        () => api.getSettings({ skipStatusRetry: true }),
+        {
+          retries: 3,
+          delay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000)
+        }
+      )
       await migrateZoomThresholdToFontSize()
       await migrateCanvasNavigationOverrides()
     },
@@ -171,13 +182,8 @@ export const useSettingStore = defineStore('setting', () => {
   }
 
   /**
-   * Apply a setting value locally: clone, migrate, update the in-memory
-   * store, and fire onChange. Returns the migrated value, or `undefined`
-   * when the value is unchanged and was skipped.
-   *
-   * The store is updated before `onChange` runs so that handlers reading
-   * this setting — including handlers of other settings this one cascades
-   * into — observe the new value rather than the one it replaced.
+   * Apply a setting value in memory and fire onChange, without persisting it.
+   * @returns The migrated value, or `undefined` when it was already current.
    */
   async function applySettingLocally<K extends keyof Settings>(
     key: K,
@@ -193,8 +199,8 @@ export const useSettingStore = defineStore('setting', () => {
 
     const typedNewValue = newValue as Settings[K]
     settingValues.value[key] = typedNewValue
-    const write = (latestWrite.get(key) ?? 0) + 1
-    latestWrite.set(key, write)
+    const writeToken = (latestWrite.get(key) ?? 0) + 1
+    latestWrite.set(key, writeToken)
 
     await onChange(
       settingsById.value[key],
@@ -203,13 +209,57 @@ export const useSettingStore = defineStore('setting', () => {
       settingChanged.trigger
     )
 
-    // Handlers are awaited, so a slow one lets a later change to this key land
-    // first. That change owns the value now; persisting ours would revert it.
-    if (latestWrite.get(key) !== write) return undefined
+    if (latestWrite.get(key) !== writeToken) return undefined
     return {
       previousValue: oldValue,
-      newValue: typedNewValue
+      newValue: typedNewValue,
+      writeToken
     }
+  }
+
+  async function revertSettingLocally<K extends keyof Settings>(
+    key: K,
+    hadValue: boolean,
+    applied: AppliedSetting<Settings[K]>
+  ) {
+    if (latestWrite.get(key) !== applied.writeToken) return
+    if (hadValue) settingValues.value[key] = applied.previousValue
+    else delete settingValues.value[key]
+    await onChange(
+      settingsById.value[key],
+      applied.previousValue,
+      applied.newValue,
+      settingChanged.trigger
+    )
+  }
+
+  async function setWithOutcome<K extends RevertibleSettingId>(
+    key: K,
+    value: Settings[K]
+  ): Promise<SettingWriteOutcome> {
+    const hadValue = exists(key)
+    const applied = await applySettingLocally(key, value)
+    if (applied === undefined) return { status: 'unchanged' }
+
+    let response: Response
+    try {
+      response = await api.storeSetting(key, applied.newValue)
+    } catch (cause) {
+      return { status: 'unconfirmed', cause }
+    }
+
+    if (!response.ok) {
+      await revertSettingLocally(key, hadValue, applied)
+      return {
+        status: 'refused',
+        statusCode: response.status,
+        statusText: response.statusText
+      }
+    }
+
+    const event = settingChangedEvent(settingsById.value[key], key, applied)
+    if (event) useTelemetry()?.trackSettingChanged(event)
+    return { status: 'saved' }
   }
 
   /**
@@ -436,7 +486,9 @@ export const useSettingStore = defineStore('setting', () => {
     error,
     load,
     addSetting,
+    applySettingLocally,
     set,
+    setWithOutcome,
     setMany,
     get,
     exists,

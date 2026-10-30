@@ -4,10 +4,6 @@
   "description": "Backend model folders, metadata, previews, loader-node mapping, desktop download tracking, and the model library sidebar. Asset-backed browsing and missing-model scans remain separate.",
   "modules": [
     {
-      "path": "src/components/sidebar/tabs/ModelLibrarySidebarTab.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/sidebar/tabs/ModelLibrarySidebarTab.vue",
       "role": "presentation"
     },
@@ -24,23 +20,11 @@
       "role": "application"
     },
     {
-      "path": "src/stores/electronDownloadStore.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/stores/electronDownloadStore.ts",
       "role": "integration"
     },
     {
-      "path": "src/stores/modelStore.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/stores/modelStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/modelToNodeStore.test.ts",
       "role": "application"
     },
     {

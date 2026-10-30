@@ -69,12 +69,12 @@ import { Field as VeeField, useForm } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Field from '@/components/ui/field/Field.vue'
-import FieldDescription from '@/components/ui/field/FieldDescription.vue'
-import FieldError from '@/components/ui/field/FieldError.vue'
-import FieldLabel from '@/components/ui/field/FieldLabel.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Field from '@comfyorg/design-system/field/Field'
+import FieldDescription from '@comfyorg/design-system/field/FieldDescription'
+import FieldError from '@comfyorg/design-system/field/FieldError'
+import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
+import Input from '@comfyorg/design-system/input/Input'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
   configValueOrDefault,

@@ -12,14 +12,6 @@
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/litegraph.publicApi.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/litegraph.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/lib/litegraph/src/litegraph.ts",
       "role": "integration"
     },

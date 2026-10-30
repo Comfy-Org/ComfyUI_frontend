@@ -16,7 +16,7 @@
           :value="option.value"
           class="flex h-auto w-full gap-2 rounded-sm bg-card p-2 font-inter text-foreground data-[state=on]:bg-muted"
         >
-          <i :class="cn('size-4', option.icon)" />
+          <i :class="option.icon" />
           <span class="text-center text-sm font-bold">
             {{ option.label }}
           </span>
@@ -183,8 +183,9 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import Button from '@comfyorg/design-system/button/Button'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useSliderFromMouse } from '@/platform/workflow/sharing/composables/useSliderFromMouse'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import {

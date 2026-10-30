@@ -1,3 +1,4 @@
+import type { Vector3 } from '@comfyorg/shared-frontend-utils/geometry'
 import * as THREE from 'three'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils'
 
@@ -669,9 +670,9 @@ class Load3d extends Viewport3d {
   }
 
   public applyGizmoTransform(
-    position: { x: number; y: number; z: number },
-    rotation: { x: number; y: number; z: number },
-    scale?: { x: number; y: number; z: number }
+    position: Vector3,
+    rotation: Vector3,
+    scale?: Vector3
   ): void {
     if (!this.getCurrentModelCapabilities().gizmoTransform) return
     this.gizmoManager.applyTransform(position, rotation, scale)
@@ -685,9 +686,9 @@ class Load3d extends Viewport3d {
   }
 
   public getGizmoTransform(): {
-    position: { x: number; y: number; z: number }
-    rotation: { x: number; y: number; z: number }
-    scale: { x: number; y: number; z: number }
+    position: Vector3
+    rotation: Vector3
+    scale: Vector3
   } {
     return this.gizmoManager.getTransform()
   }

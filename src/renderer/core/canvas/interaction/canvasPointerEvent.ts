@@ -1,14 +1,10 @@
+import type { Point2D as PointerOffsets } from '@comfyorg/shared-frontend-utils/geometry'
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import type {
   CanvasPointerEvent,
   CanvasPointerExtensions
-} from '@/lib/litegraph/src/types/events'
+} from '@comfyorg/graph-model/events'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-
-type PointerOffsets = {
-  x: number
-  y: number
-}
 
 const pointerHistory = new Map<number, PointerOffsets>()
 

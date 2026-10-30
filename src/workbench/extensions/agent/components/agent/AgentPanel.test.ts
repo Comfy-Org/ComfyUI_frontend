@@ -331,14 +331,12 @@ describe('AgentPanel', () => {
     )
   })
 
-  it('renders and forwards the treatment starter prompt exposure', () => {
+  it('renders the winning static Cloud starter prompts', () => {
     distribution.isCloud = true
-    const { emitted } = render(AgentPanel, {
+    render(AgentPanel, {
       props: {
         entries: [],
-        historyGroups: createHistoryGroups(),
-        starterPromptAssignment: 'test',
-        attributeStarterPromptExperiment: true
+        historyGroups: createHistoryGroups()
       },
       global: {
         plugins: [i18n],
@@ -351,7 +349,6 @@ describe('AgentPanel', () => {
         name: i18n.global.t('agent.suggestedPrompts.treatment.cloud.0')
       })
     ).toBeVisible()
-    expect(emitted('starterPromptRendered')).toEqual([['test']])
   })
 
   it('shows a recoverable workflow sync failure and emits retry', async () => {

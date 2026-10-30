@@ -55,7 +55,7 @@ function edit(event: Event) {
         class="flex size-8 cursor-pointer items-center justify-center rounded-lg hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 max-lg:size-10"
         @click="emit('dismiss')"
       >
-        <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+        <i class="icon-[lucide--x]" aria-hidden="true" />
       </button>
     </div>
     <p

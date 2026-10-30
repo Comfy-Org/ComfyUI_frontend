@@ -2,8 +2,8 @@ import type {
   LGraph,
   LGraphNode,
   Subgraph
-} from '@/lib/litegraph/src/types/entityRegistry'
-import type { INodeSlot } from '@/lib/litegraph/src/interfaces'
+} from '@comfyorg/graph-model/entityRegistry'
+import type { INodeSlot } from '@comfyorg/graph-model/interfaces'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 
 /**
