@@ -479,10 +479,10 @@ export class AgentPanel {
     description: string,
     progress: string
   ): Promise<Locator> {
-    const card = this.page.getByRole('dialog', { name: title })
+    const card = this.page.getByRole('dialog', { name: title, exact: true })
     await expect(card).toBeVisible()
     await expect(card).toHaveAccessibleDescription(description)
-    await expect(card).toContainText(progress)
+    await expect(card.getByText(progress, { exact: true })).toBeVisible()
     await expect(this.page.getByTestId('agent-coach-spotlight')).toBeVisible()
     await expect(card).toBeInViewport({ ratio: 1 })
     return card

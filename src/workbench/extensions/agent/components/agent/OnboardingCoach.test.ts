@@ -242,7 +242,7 @@ describe('OnboardingCoach', () => {
     }
   })
 
-  it.for(STEPS.filter((step) => step.placement !== 'graph-bottom'))(
+  it.for(STEPS)(
     'points the $placement card arrow at the middle of its target',
     async (step) => {
       mount([step])
@@ -261,13 +261,6 @@ describe('OnboardingCoach', () => {
       expect(arrow).not.toHaveStyle({ visibility: 'hidden' })
     }
   )
-
-  it('draws no arrow on the canvas card, which sits on its target', async () => {
-    mount([STEPS[2]])
-    await screen.findByRole('dialog', { name: STEPS[2].title })
-
-    expect(screen.queryByTestId('agent-coach-arrow')).toBeNull()
-  })
 
   it('hides the arrow when the target center is outside the arrow reach', async () => {
     const panel = rectangles.panel

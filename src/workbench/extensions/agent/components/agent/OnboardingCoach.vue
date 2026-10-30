@@ -186,28 +186,13 @@ watch(
 )
 
 const middleware = computed<Middleware[]>(() => {
-  const result = [
+  return [
     offset({
       mainAxis: CARD_GAP,
       crossAxis: step.value?.placement === 'left-start' ? -16 : 0
-    })
+    }),
+    shift({ padding: 8, crossAxis: true })
   ]
-  if (step.value?.placement === 'graph-bottom') {
-    const bottom = toolbar.value ? toolbarBounds.top.value : bounds.bottom.value
-    result.push({
-      name: 'graphBottom',
-      fn: ({ rects }) => ({
-        x:
-          rects.reference.x +
-          (rects.reference.width - rects.floating.width) / 2,
-        y:
-          Math.min(bottom, rects.reference.y + rects.reference.height) -
-          16 -
-          rects.floating.height
-      })
-    })
-  }
-  return [...result, shift({ padding: 8, crossAxis: true })]
 })
 
 const pointsAtTarget = computed(() => step.value?.placement.startsWith('left'))
@@ -244,12 +229,17 @@ const arrowStyle = computed(() => {
 const cardBorderClass = computed(() =>
   index.value < 2 ? 'border-secondary' : 'border-smoke-500/20'
 )
+const cardStyle = computed(() => ({
+  ...floatingStyles.value,
+  opacity: isPositioned.value ? 1 : 0
+}))
 
 const {
   isPending: nudged,
   start: startNudgeTimer,
   stop: stopNudgeTimer
 } = useTimeoutFn(() => undefined, NUDGE_MS, { immediate: false })
+const nudgedAttribute = computed(() => (nudged.value ? '' : undefined))
 watch([index, active], stopNudgeTimer)
 function nudgeCard(): void {
   startNudgeTimer()
@@ -333,11 +323,8 @@ useEventListener(
           :aria-labelledby="titleId"
           :aria-describedby="describedBy"
           tabindex="-1"
-          :data-nudged="nudged ? '' : undefined"
-          :style="{
-            ...floatingStyles,
-            opacity: isPositioned ? 1 : 0
-          }"
+          :data-nudged="nudgedAttribute"
+          :style="cardStyle"
           :class="
             cn(
               'fixed box-border flex max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] flex-col gap-3 rounded-2xl border bg-background p-4 text-foreground shadow-lg transition-shadow',
