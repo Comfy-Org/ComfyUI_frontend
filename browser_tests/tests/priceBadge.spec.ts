@@ -13,7 +13,7 @@ test.describe('Price badge', { tag: '@vue-nodes' }, () => {
     await comfyPage.searchBoxV2.addNode(apiNodeName)
     const apiNode = await comfyPage.vueNodes.getFixtureByTitle(apiNodeName)
     await expect(apiNode.root, 'Add partner node').toBeVisible()
-    await expect(apiNode.priceBadge.required, 'Has price badge').toBeVisible()
+    await expect(apiNode.priceBadge, 'Has price badge').toBeVisible()
 
     await comfyPage.contextMenu
       .openForVueNode(apiNode.root)
@@ -21,9 +21,9 @@ test.describe('Price badge', { tag: '@vue-nodes' }, () => {
     const subgraphNode = await comfyPage.vueNodes.getFixtureByTitle('Subgraph')
     await expect(subgraphNode.root, 'Convert to Subgraph').toBeVisible()
 
-    const nodePrice = subgraphNode.priceBadge.required
+    const nodePrice = subgraphNode.priceBadge
     await expect(nodePrice, 'subgraphNode has price badge').toBeVisible()
-    const initialPrice = Number(await nodePrice.innerText())
+    const initialPrice = Number.parseFloat(await nodePrice.innerText())
 
     await comfyPage.subgraph.editor.togglePromotion(subgraphNode.root, {
       nodeName: apiNodeName,
@@ -32,33 +32,27 @@ test.describe('Price badge', { tag: '@vue-nodes' }, () => {
     })
     await comfyPage.vueNodes.selectComboOption('New Subgraph', 'price', '2x')
     await expect(nodePrice, 'Price is reactive').toHaveText(
-      String(initialPrice * 2)
+      `${initialPrice * 2} credits/Run`
     )
   })
 
-  test('Price badge part spacing', async ({ comfyPage }) => {
+  test('Price badge displays the complete label above the node', async ({
+    comfyPage
+  }) => {
     await comfyPage.menu.topbar.newWorkflowButton.click()
     await comfyPage.nextFrame()
 
     await comfyPage.searchBoxV2.addNode(apiNodeName)
     const node = await comfyPage.vueNodes.getFixtureByTitle(apiNodeName)
-    await expect(node.priceBadge.required).toBeVisible()
-    await expect(node.priceBadge.rest).toBeVisible()
+    await expect(node.priceBadge).toHaveText('211 credits/Run')
 
     const nodeBox = await node.boundingBox()
-    const requiredBox = await node.priceBadge.required.boundingBox()
-    const restBox = await node.priceBadge.rest.boundingBox()
-    const requiredTextBox = await node.priceBadge.requiredText.boundingBox()
-    const restTextBox = await node.priceBadge.restText.boundingBox()
-    if (!(nodeBox && requiredBox && restBox && requiredTextBox && restTextBox))
+    const badgeBox = await node.priceBadge.boundingBox()
+    if (!(nodeBox && badgeBox))
       throw new Error('Pricing badge layout is unavailable')
 
-    for (const box of [requiredBox, restBox]) {
-      expect(box.x + box.width).toBeLessThanOrEqual(nodeBox.x + nodeBox.width)
-      expect(box.y + box.height).toBeLessThanOrEqual(nodeBox.y + nodeBox.height)
-    }
-    expect(
-      restTextBox.x - (requiredTextBox.x + requiredTextBox.width)
-    ).toBeGreaterThan(0)
+    expect(badgeBox.height).toBe(20)
+    expect(badgeBox.x + badgeBox.width).toBeCloseTo(nodeBox.x + nodeBox.width)
+    expect(badgeBox.y + badgeBox.height).toBeLessThan(nodeBox.y)
   })
 })
