@@ -59,6 +59,12 @@
               </span>
             </div>
           </div>
+          <DeploymentBuildActions
+            v-if="buildDeployment"
+            :deployment="buildDeployment"
+            :missing-pack-groups="missingPackGroups"
+            :missing-model-groups="missingModelGroups"
+          />
           <div
             v-if="hasMixedSeverityTotals"
             data-testid="errors-summary-filters"
@@ -364,6 +370,7 @@
               v-if="group.type === 'missing_model'"
               :missing-model-groups="missingModelGroups"
               :highlighted-node-ids="selectionMatchedAssetNodeIds"
+              :on-deployment="runsOnDeployment"
               @locate-model="handleLocateAssetNode"
             />
 
@@ -387,6 +394,7 @@ import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
+import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -397,6 +405,8 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
+import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
@@ -413,8 +423,9 @@ import { isCloud } from '@/platform/distribution/types'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
-import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
-import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
+import DeploymentBuildActions from './DeploymentBuildActions.vue'
+import { useBootDeploymentLabel } from '@/platform/workspace/composables/useDeploymentLabels'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup, ErrorGroupSeverity } from './types'
@@ -567,6 +578,32 @@ const hasMixedSeverity = computed(
   () => errorCount.value > 0 && missingCount.value > 0
 )
 
+const BUILD_FIXABLE_TYPES: ReadonlySet<ErrorGroup['type']> = new Set([
+  'missing_node',
+  'missing_model'
+])
+const { bootDeployment, changeSinceBoot } = storeToRefs(
+  useDeploymentPickStore()
+)
+const bootDeploymentLabel = useBootDeploymentLabel()
+const runsOnDeployment = computed(() => isCloud && !!bootDeployment.value)
+const buildDeployment = computed(() => {
+  if (!runsOnDeployment.value || !bootDeployment.value) return undefined
+  const buildFixes = filteredGroups.value.some((group) =>
+    BUILD_FIXABLE_TYPES.has(group.type)
+  )
+  return buildFixes ? bootDeployment.value : undefined
+})
+const buildFixesAllSetup = computed(
+  () =>
+    buildDeployment.value !== undefined &&
+    changeSinceBoot.value === null &&
+    filteredGroups.value.every(
+      (group) =>
+        group.severity !== 'missing' || BUILD_FIXABLE_TYPES.has(group.type)
+    )
+)
+
 const severityTotals = computed(() => {
   const totals: Record<ErrorGroupSeverity, number> = { error: 0, missing: 0 }
   for (const group of allErrorGroups.value) {
@@ -699,7 +736,13 @@ const hero = computed(() => {
       count: missingCount.value,
       countClass: 'text-warning',
       title: t('rightSidePanel.setupRequired'),
-      description: t('rightSidePanel.finishSetupBeforeRun')
+      description: buildFixesAllSetup.value
+        ? t(
+            'rightSidePanel.addToDeploymentBuild',
+            { deployment: bootDeploymentLabel.value },
+            { escapeParameter: false }
+          )
+        : t('rightSidePanel.finishSetupBeforeRun')
     }
   }
   return {

@@ -1710,7 +1710,7 @@ describe('errorMessageResolver', () => {
       catalogId: 'missing_node',
       displayTitle: 'Missing Node Packs',
       displayMessage:
-        "These nodes aren't on Studio Build v2. Replace them, or pick a deployment that has them.",
+        "These nodes aren't on Studio Build v2. Add their packs to its build, or replace them.",
       toastTitle: "FooNode isn't on Studio Build v2",
       toastMessage: 'Replace this node, or pick a deployment that has it.'
     })
@@ -1744,7 +1744,7 @@ describe('errorMessageResolver', () => {
       catalogId: 'missing_model',
       displayTitle: 'Missing Models',
       displayMessage:
-        "These models aren't on Studio Build v2. Open the node to choose one it has.",
+        "These models aren't on Studio Build v2. Add them to its build, or open the node to choose one it has.",
       toastTitle: "sdxl.safetensors isn't on Studio Build v2",
       toastMessage:
         'Choose a different model, or pick a deployment that has it.'
