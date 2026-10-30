@@ -1,7 +1,10 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getOutputSubfolder } from '@/platform/assets/utils/assetMetadataUtils'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
+import { getAssetType as getAssetSourceType } from '@/platform/assets/utils/assetTypeUtil'
+import { getStoredOutputIdentity } from '@/platform/assets/utils/outputAssetUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { TaskItemImpl } from '@/stores/queueStore'
@@ -67,21 +70,38 @@ const byCreatedAtAsc = (a: AssetItem, b: AssetItem): number =>
 
 const byCreatedAtDesc = (a: AssetItem, b: AssetItem): number =>
   new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+function isTempOutput(asset: AssetItem): boolean {
+  return asset.tags.includes('temp') || getAssetSourceType(asset) === 'temp'
+}
+
+const NON_OUTPUT_TAGS = new Set(['input', 'models'])
+
+/** Whether an asset added to a workflow lives in the temp root: its stored output identity, else temp evidence on a generated output. */
+export function isGeneratedTempOutput(asset: AssetItem): boolean {
+  const storedType = getStoredOutputIdentity(asset)?.type
+  if (storedType) return storedType === 'temp'
+  if (getAssetSourceType(asset) === 'input') return false
+  return (
+    !asset.tags.some((tag) => NON_OUTPUT_TAGS.has(tag)) && isTempOutput(asset)
+  )
+}
+
 const byIsTemp = (a: AssetItem, b: AssetItem): number =>
-  Number(b.tags.includes('temp')) - Number(a.tags.includes('temp'))
+  Number(isTempOutput(b)) - Number(isTempOutput(a))
 
 function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   const url = asset.preview_url ?? ''
   return {
     assetId: asset.id,
+    hash: asset.hash,
     display_name: asset.display_name ?? undefined,
     filename: asset.name,
     format: metadata?.format,
     mediaType: getMediaTypeFromFilename(asset.name),
     nodeId: metadata?.nodeId ?? '',
-    subfolder: metadata?.subfolder ?? '',
-    type: asset.tags.includes('temp') ? 'temp' : 'output',
+    subfolder: getOutputSubfolder(asset.user_metadata) ?? '',
+    type: isTempOutput(asset) ? 'temp' : 'output',
     url,
     previewUrl: asset.thumbnail_url ?? url
   }

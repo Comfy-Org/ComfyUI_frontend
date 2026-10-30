@@ -3,8 +3,6 @@ import { useClipboard } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 const { label, code } = defineProps<{
   label: string
   code: string
@@ -40,12 +38,7 @@ const segments = computed(() => code.split(/(?<=[_-])/))
         @click="copy(code)"
       >
         <i
-          :class="
-            cn(
-              'size-4',
-              copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
-            )
-          "
+          :class="copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'"
           aria-hidden="true"
         />
       </button>

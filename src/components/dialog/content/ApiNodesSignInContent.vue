@@ -10,7 +10,7 @@
       :aria-label="t('g.close')"
       @click="onCancel?.()"
     >
-      <i class="icon-[lucide--x] block size-4 leading-none" />
+      <i class="icon-[lucide--x] block leading-none" />
     </Button>
 
     <img
@@ -45,7 +45,7 @@
               class="flex items-center gap-2 rounded-lg bg-secondary px-3.5 py-2.5 text-sm font-semibold"
             >
               <i
-                class="icon-[tabler--crown-filled] size-4 shrink-0 text-brand-yellow"
+                class="icon-[tabler--crown-filled] text-brand-yellow"
                 aria-hidden="true"
               />
               <span
@@ -70,10 +70,7 @@
               rel="noopener noreferrer"
               class="flex items-center gap-1 text-xs text-muted-foreground no-underline duration-150 hover:text-foreground motion-safe:transition-colors"
             >
-              <i
-                class="icon-[lucide--info] size-4 shrink-0"
-                aria-hidden="true"
-              />
+              <i class="icon-[lucide--info]" aria-hidden="true" />
               <span class="leading-4">
                 {{ t('apiNodesSignInDialog.whatArePartnerNodes') }}
               </span>
@@ -99,11 +96,11 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 

@@ -1,7 +1,10 @@
-import type { LGraphCanvas } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 import { clamp } from 'es-toolkit/compat'
 
-import type { Point, Rect } from './interfaces'
+import type {
+  PointTuple as Point,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 import { distance } from './measure'
 

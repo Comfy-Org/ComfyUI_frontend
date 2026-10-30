@@ -7,7 +7,7 @@ import {
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -17,7 +17,6 @@ import { useFolderWorkflowsUrlLoader } from './useFolderWorkflowsUrlLoader'
 
 vi.mock(import('vue-router'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({

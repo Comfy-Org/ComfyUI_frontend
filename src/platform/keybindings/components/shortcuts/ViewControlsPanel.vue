@@ -16,7 +16,7 @@ import {
   VIEW_CONTROLS_CONFIG,
   useCommandSubcategories
 } from '@/platform/keybindings/composables/useCommandSubcategories'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import ShortcutsList from './ShortcutsList.vue'
 

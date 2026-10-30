@@ -16,18 +16,6 @@
       "role": "application"
     },
     {
-      "path": "src/services/dialogService.concurrency.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/services/dialogService.errorCatalog.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/services/dialogService.options.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/services/dialogService.ts",
       "role": "application"
     },
@@ -40,24 +28,27 @@
       "role": "integration"
     },
     {
-      "path": "src/stores/dialogStore.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/stores/dialogStore.ts",
       "role": "application"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": ["bounding-boxes", "settings"],
+  "allowedDependencies": ["error-reporting", "keybindings"],
+  "allowedConsumers": [
+    "agent",
+    "bounding-boxes",
+    "extension-manager",
+    "image-compositor",
+    "settings"
+  ],
   "characterizationScenarios": [
     {
       "name": "Global dialog renders stacked dialogs and restores body pointer events on close",
       "checks": [
         "src/components/dialog/GlobalDialog.test.ts",
         "src/components/dialog/GlobalDialog.menu.test.ts",
-        "src/components/dialog/bodyPointerEventsRestore.test.ts"
+        "src/components/dialog/bodyPointerEventsRestore.test.ts",
+        "src/workbench/extensions/agent/AgentPanelRoot.test.ts"
       ]
     },
     {
@@ -85,7 +76,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points; settings is an approved consumer of dialog-host internals, and imports from other classified domains remain subject to cross-domain rules."
+    "Inventory preserves existing exports and runtime behavior without granting public entry points."
   ],
   "deepImports": "inventory"
 }

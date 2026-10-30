@@ -4,7 +4,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type { SettledSubscribeResponse } from '@/platform/billing/sdk/subscriptionOperationView'
 import type {
   BillingStatus,
@@ -21,7 +21,7 @@ import type {
   SubscriptionTier,
   TeamCreditStops,
   TeamCreditStopSummary
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 /** `unknown` until the active workspace has loaded; no billing call may be made yet. */
 export type BillingType = 'legacy' | 'workspace' | 'unknown'
@@ -86,6 +86,8 @@ export interface SubscriptionInfo {
    * disabled, absent when the server does not report it.
    */
   agentScopedHasFunds?: boolean
+  /** True only when the billing status names the rail that supplied the grant. */
+  agentScopedHasFundsAuthoritative?: boolean
 }
 
 /**

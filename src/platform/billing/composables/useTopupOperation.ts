@@ -5,12 +5,10 @@ import type { BillingClient } from '@comfyorg/account-core/billing'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
+import type { CreateTopupResponse } from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 
@@ -84,7 +82,7 @@ export function useTopupOperation() {
     if (sdkStore) {
       return sdkStore.createHostedTopupCheckout(amountCents, returnUrl, signal)
     }
-    const { checkout_url } = await workspaceApi.createTopupCheckout(
+    const { checkout_url } = await billingApi.createTopupCheckout(
       amountCents,
       returnUrl,
       signal

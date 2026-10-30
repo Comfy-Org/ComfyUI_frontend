@@ -47,6 +47,16 @@ const SNAPSHOT: CapabilitiesSnapshot = {
 }
 
 describe('projectBillingCapabilities', () => {
+  it.for([true, false])(
+    'preserves auto top-up enabled %s as served',
+    (served) => {
+      expect(
+        projectBillingCapabilities({ ...SNAPSHOT, autoTopUpEnabled: served })
+          .auto_top_up_enabled
+      ).toBe(served)
+    }
+  )
+
   it('reads the snapshot back as the response the composable holds', () => {
     expect(projectBillingCapabilities(SNAPSHOT)).toStrictEqual({
       capabilities: SNAPSHOT.capabilities,
@@ -72,4 +82,40 @@ describe('projectBillingCapabilities', () => {
       ).toBe(served)
     }
   )
+
+  it.for(['none', 'self_serve', 'sales_managed'] as const)(
+    'passes plan_kind %s through to the capabilities read',
+    (served) => {
+      expect(
+        projectBillingCapabilities({ ...SNAPSHOT, planKind: served }).plan_kind
+      ).toBe(served)
+    }
+  )
+
+  it('omits plan_kind when the snapshot has no value', () => {
+    expect(
+      projectBillingCapabilities({ ...SNAPSHOT, planKind: undefined })
+    ).not.toHaveProperty('plan_kind')
+  })
+
+  it.for([true, false])(
+    'passes has_parked_billing_operation %s through to the capabilities read',
+    (served) => {
+      expect(
+        projectBillingCapabilities({
+          ...SNAPSHOT,
+          hasParkedBillingOperation: served
+        }).has_parked_billing_operation
+      ).toBe(served)
+    }
+  )
+
+  it('omits has_parked_billing_operation when the snapshot has no value', () => {
+    expect(
+      projectBillingCapabilities({
+        ...SNAPSHOT,
+        hasParkedBillingOperation: undefined
+      })
+    ).not.toHaveProperty('has_parked_billing_operation')
+  })
 })

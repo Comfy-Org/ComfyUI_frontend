@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/i18n'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 describe('useAssetBrowserDialog without a registered modal', () => {
   it('reports the failure and opens no dialog when browse() is called', async () => {

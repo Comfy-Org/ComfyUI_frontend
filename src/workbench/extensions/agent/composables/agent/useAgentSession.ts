@@ -7,8 +7,8 @@ import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   AgentErrorClass,
   AgentErrorMetadata,
@@ -16,7 +16,7 @@ import type {
   AgentStopMethod,
   AgentThreadStartSource,
   AgentWorkflowBindSource
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
 import {
   getWorkspaceId,
@@ -40,6 +40,11 @@ import {
   zDisownedWorkflowError,
   zTurnInProgressError
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  agentRequestFailureFingerprint,
+  describeAgentRequestFailure
+} from '@/workbench/extensions/agent/services/agent/agentRequestFailure'
+import type { AgentRequestFailureDiagnostics } from '@/workbench/extensions/agent/services/agent/agentRequestFailure'
 import {
   AgentApiError,
   AgentResponseUnreadableError
@@ -324,9 +329,19 @@ export function trackAgentError(
   errorClass: AgentErrorClass,
   stage: AgentErrorMetadata['failure_stage'],
   uiTreatment: AgentErrorMetadata['ui_treatment'],
-  overrides: { retryable?: boolean; turnAccepted?: boolean } = {}
+  overrides: {
+    retryable?: boolean
+    turnAccepted?: boolean
+    /**
+     * FE-3200. Spread straight through, so a call site that has already built
+     * the diagnosis for `reportError` passes the same record to both sinks
+     * rather than deriving it twice and risking them disagreeing.
+     */
+    diagnostics?: AgentRequestFailureDiagnostics
+  } = {}
 ): void {
   useTelemetry()?.trackAgentError({
+    ...overrides.diagnostics,
     error_class: errorClass,
     failure_stage: stage,
     retryable: overrides.retryable ?? stage === 'pre_acceptance',
@@ -384,16 +399,26 @@ function namesCommittedAnswer({
   return Array.isArray(selected) || Boolean(other_text)
 }
 
+function diffAnswers(
+  submitted: AgentAnswerRequest,
+  committed: Extract<AskUserResolution, { status: 'answered' }>,
+  selectionKnown: boolean
+) {
+  return {
+    selection_changed:
+      selectionKnown && xor(submitted.selected, committed.selected).length > 0,
+    other_text_changed:
+      (submitted.other_text || undefined) !== committed.otherText
+  }
+}
+
 function isSupersededAnswer(
   submitted: AgentAnswerRequest,
   committed: Extract<AskUserResolution, { status: 'answered' }>,
   selectionKnown: boolean
 ): boolean {
-  return (
-    (selectionKnown &&
-      xor(submitted.selected, committed.selected).length > 0) ||
-    (submitted.other_text || undefined) !== committed.otherText
-  )
+  const changes = diffAnswers(submitted, committed, selectionKnown)
+  return changes.selection_changed || changes.other_text_changed
 }
 
 let sessionGeneration = 0
@@ -1091,15 +1116,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
         localStorage.removeItem(threadStorageKey)
       return false
     }
+    const diagnostics = describeAgentRequestFailure(error)
     reportError(error, {
       surface: 'agent',
-      errorType: 'agent_history_load_failed'
+      errorType: 'agent_history_load_failed',
+      tags: diagnostics,
+      fingerprint: agentRequestFailureFingerprint(
+        'agent_history_load_failed',
+        diagnostics
+      )
     })
     if (failureNotice === 'error_overlay')
       pushError(error instanceof Error ? error.message : String(error))
     trackAgentError('history_load_failed', 'pre_acceptance', failureNotice, {
       retryable: isRetryableRequestFailure(error, false),
-      turnAccepted: stashedTurn
+      turnAccepted: stashedTurn,
+      diagnostics
     })
     return false
   }
@@ -1181,24 +1213,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
     clientMessageId?: string
   ): PostMessageInput {
     const draft = workflow?.draft?.(origin)
-    const unboundTarget = isUnboundTarget(wfContext, boundWorkflowId.value)
-    // Resolved here rather than at the call site: `buildPostInput` runs after
-    // `prepareWorkflow()`, so a tab whose cloud id was still unresolved on
-    // mount has one by now (QAF-19).
+    const tabs = workflow?.tabs?.(origin)
+    const unboundTarget = isUnboundTarget(
+      wfContext,
+      boundWorkflowId.value,
+      draft,
+      tabs
+    )
     const selectedWorkflowId = selectionWorkflowId?.()
     return {
       content: serializeWorkflowReferences(text, workflowReferences ?? []),
-      tabs: workflow?.tabs?.(origin),
+      tabs,
       workflowReferences: serializeReferencedWorkflows(
         workflowReferences,
         wfContext?.id
       ),
       selection: selectedNodes(tags, selectedWorkflowId),
       attachments: attachments?.map((attachment) => attachment.ref),
-      // Carried through untouched so the server can echo it onto
-      // agent_turn_started: it is the same id this send reports on its own
-      // app:agent_message_sent event, and the only value that can appear on both
-      // sides of the message -> turn step.
       clientMessageId,
       ...buildTargetFields(threadId, wfContext, draft, unboundTarget)
     }
@@ -1239,33 +1270,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return threadId === 'new' || wfContext?.id !== undefined || unboundTarget
   }
 
-  // current_tab_unbound's own contract (see its generated doc comment) is
-  // a tab-level fact: this tab has no cloud id yet. wfContext with no id
-  // is exactly that (a saved tab whose cloud id failed to resolve makes
-  // wfContext undefined entirely instead - see targetWorkflowTurnContext).
-  //
-  // boundWorkflowId === null narrows WHEN we assert that fact, and is a
-  // client-side policy choice, not part of the field's own meaning: the
-  // server has no way yet to tell "this thread's remembered workflow is
-  // itself my own prior unbound mint for this same tab" apart from "an
-  // unrelated workflow from a different tab" (see
-  // TestPostMessageUnboundCurrentTabMintsInsteadOfReusingTheThreadWorkflow
-  // in the agent service), so asserting the flag on every turn a still-
-  // unbound tab is asked about would mint a fresh, contentless workflow
-  // each time. Once any turn this session has bound a workflow, that
-  // binding (or the thread's own remembered workflow) is a safer target
-  // than minting again. Telling the server this is a selected-but-unbound
-  // tab, not "nothing selected", is what keeps the seed from telling the
-  // model no workflow is selected - see PM-1429/PM-1430.
   function isUnboundTarget(
     wfContext: WorkflowTurnContext | undefined,
-    boundWorkflowId: string | null
+    boundWorkflowId: string | null,
+    draft: DraftSnapshot | undefined,
+    tabs: OpenTabsSnapshot | undefined
   ): boolean {
-    return (
-      wfContext !== undefined &&
-      wfContext.id === undefined &&
-      boundWorkflowId === null
-    )
+    if (wfContext === undefined || wfContext.id !== undefined) return false
+    if (boundWorkflowId === null) return true
+    return draft !== undefined && isOpenInATab(boundWorkflowId, tabs)
+  }
+
+  function isOpenInATab(
+    workflowId: string,
+    tabs: OpenTabsSnapshot | undefined
+  ): boolean {
+    return (tabs?.open_tabs ?? []).some((tab) => tab.workflow_id === workflowId)
   }
 
   function buildTargetFields(
@@ -2031,22 +2051,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const committed = toAskResolution(source)
     if (committed.status !== 'answered') return
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
+    if (submitted === undefined) return
+    const selectionKnown = Array.isArray(source.selected)
+    const changes = diffAnswers(submitted.answer, committed, selectionKnown)
     if (
-      submitted === undefined ||
-      !isSupersededAnswer(
-        submitted,
-        committed,
-        Array.isArray(source.selected)
-      ) ||
+      (!changes.selection_changed && !changes.other_text_changed) ||
       !recordAnswerReport(supersededAnswerReports, askId)
     )
       return
-    reportError(
-      new Error(
-        `agent ask resolved as ${committed.selected.join(',')}, not ${submitted.selected.join(',')}`
-      ),
-      { surface: 'agent', errorType: 'agent_ask_answer_superseded' }
-    )
+    reportError(new Error('agent ask resolved with a different answer'), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_superseded',
+      tags: {
+        ...changes,
+        selection_known: selectionKnown,
+        committed_selected_count: selectionKnown
+          ? committed.selected.length
+          : undefined,
+        submitted_selected_count: submitted.answer.selected.length,
+        ask_kind: submitted.kind
+      }
+    })
     pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
   }
 
