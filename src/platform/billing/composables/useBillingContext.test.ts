@@ -304,6 +304,21 @@ describe('useBillingContext', () => {
     expect(context.renewalInvoice.value).toStrictEqual(invoice)
   })
 
+  it('forwards the period credit grant from workspace billing', async () => {
+    const grant = {
+      state: 'amount' as const,
+      credits: 2000,
+      period: 'MONTHLY' as const
+    }
+    mockBillingRail.value = 'stripe'
+    mockBillingStatus.value.period_credit_grant = grant
+
+    const context = useBillingContext()
+    await context.initialize()
+
+    expect(context.periodCreditGrant.value).toStrictEqual(grant)
+  })
+
   it('provides balance info from legacy billing', () => {
     mockBillingRail.value = 'legacy_stripe'
     const { balance } = useBillingContext()

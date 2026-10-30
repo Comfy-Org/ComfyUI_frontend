@@ -12,7 +12,8 @@ export function useBillingCreditsCard(planRow: Ref<PlanRowState>) {
     billingStatus,
     subscription,
     currentTeamCreditStop,
-    renewalDate
+    renewalDate,
+    periodCreditGrant
   } = useBillingContext()
 
   const planPoolCredits = computed(
@@ -29,6 +30,7 @@ export function useBillingCreditsCard(planRow: Ref<PlanRowState>) {
       balance: balance.value,
       planKind: planRow.value.kind,
       billingStatus: billingStatus.value,
+      periodCreditGrant: periodCreditGrant.value,
       planPoolCredits: planPoolCredits.value,
       renewalDate: renewalDate.value,
       endDate: planRow.value.kind === 'ending' ? planRow.value.endsAt : null

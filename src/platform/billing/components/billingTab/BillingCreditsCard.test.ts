@@ -29,6 +29,7 @@ const activeFacts: CreditsCardFacts = {
   balance: balanceOf({ effective: 700, plan: 400, topUp: 300 }),
   planKind: 'active',
   billingStatus: 'paid',
+  periodCreditGrant: null,
   planPoolCredits: 1000,
   renewalDate: null,
   endDate: null
@@ -297,6 +298,59 @@ describe('BillingCreditsCard', () => {
     expect(
       screen.queryByRole('meter')?.getAttribute('aria-valuenow') ?? null
     ).toBe(row.meter)
+  })
+
+  it.for<{
+    case: string
+    grant: CreditsCardFacts['periodCreditGrant']
+    plan: string | null
+    topUp: string | null
+    meter: string | null
+  }>([
+    {
+      case: 'an amount grant as the plan total',
+      grant: { state: 'amount', credits: 2000, period: 'MONTHLY' },
+      plan: '844 of 2,000',
+      topUp: '633',
+      meter: '58'
+    },
+    {
+      case: 'an unknown grant without a total or meter',
+      grant: { state: 'unknown' },
+      plan: '844',
+      topUp: '633',
+      meter: null
+    },
+    {
+      case: 'a none grant as Available alone',
+      grant: { state: 'none' },
+      plan: null,
+      topUp: null,
+      meter: null
+    },
+    {
+      case: 'an absent grant with the plan pool fallback',
+      grant: null,
+      plan: '844 of 1,000',
+      topUp: '633',
+      meter: '16'
+    }
+  ])('renders $case', ({ grant, plan, topUp, meter }) => {
+    renderCard({ ...activeFacts, periodCreditGrant: grant })
+
+    expect(
+      screen.getByTestId('billing-credits-available').textContent.trim()
+    ).toBe('1,477')
+    expect(
+      screen.queryByTestId('billing-credits-plan')?.textContent.trim() ?? null
+    ).toBe(plan)
+    expect(
+      screen.queryByTestId('billing-credits-top-up')?.textContent.trim() ?? null
+    ).toBe(topUp)
+    expect(
+      screen.queryByRole('meter')?.getAttribute('aria-valuenow') ?? null
+    ).toBe(meter)
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeVisible()
   })
 
   it('shows nothing under the amount without a date or a total', () => {

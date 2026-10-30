@@ -150,6 +150,7 @@ function arrange(scenario: Scenario = {}) {
       balance: computed(() => scenario.balance ?? null),
       renewalDate: computed(() => null),
       currentTeamCreditStop: computed(() => null),
+      periodCreditGrant: computed(() => null),
       initialize,
       fetchStatus,
       resubscribe
