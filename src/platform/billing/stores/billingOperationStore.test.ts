@@ -453,19 +453,20 @@ describe('billingOperationStore', () => {
             pendingPhase('awaiting_payment_method')
           )
           const store = useBillingOperationStore()
-          void store.startOperation(
-            'op-1',
-            'subscription',
-            undefined,
-            checkoutUrl
-          )
+          void store.startOperation('op-1', 'subscription', {
+            paymentMethodUrl: checkoutUrl
+          })
 
           await vi.advanceTimersByTimeAsync(0)
           await vi.advanceTimersByTimeAsync(31_000)
 
           expect(store.getOperation('op-1')?.actionUrl).toBe(checkoutUrl)
-          expect(useToast().warning).toHaveBeenCalledOnce()
-          expect(useToast().loading).not.toHaveBeenCalled()
+          expect(useToast().toasts).toEqual([
+            expect.objectContaining({
+              kind: 'warning',
+              title: 'billingOperation.subscriptionActionRequired'
+            })
+          ])
         })
 
         it('shows the 3DS link once a poll serves it and does not bring the checkout link back', async () => {
@@ -474,12 +475,9 @@ describe('billingOperationStore', () => {
             .mockResolvedValueOnce(pendingPhase('in_progress', true))
             .mockResolvedValue(pendingPhase('awaiting_payment_method'))
           const store = useBillingOperationStore()
-          void store.startOperation(
-            'op-1',
-            'subscription',
-            undefined,
-            checkoutUrl
-          )
+          void store.startOperation('op-1', 'subscription', {
+            paymentMethodUrl: checkoutUrl
+          })
 
           await vi.advanceTimersByTimeAsync(0)
           await vi.advanceTimersByTimeAsync(31_000)
@@ -497,12 +495,69 @@ describe('billingOperationStore', () => {
             pendingPhase('in_progress')
           )
           const store = useBillingOperationStore()
+          void store.startOperation('op-1', 'subscription', {
+            paymentMethodUrl: checkoutUrl
+          })
+
+          await vi.advanceTimersByTimeAsync(0)
+
+          expect(store.getOperation('op-1')).toMatchObject({
+            actionUrl: null,
+            paymentMethodUrl: null
+          })
+        })
+
+        it('does not keep a 3DS link from a resumed operation as a checkout link', async () => {
+          vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(
+            pendingPhase('awaiting_payment_method')
+          )
+          const store = useBillingOperationStore()
           void store.startOperation(
             'op-1',
             'subscription',
-            undefined,
-            checkoutUrl
+            { resumed: true },
+            actionUrl
           )
+
+          expect(store.getOperation('op-1')).toMatchObject({
+            actionUrl,
+            paymentMethodUrl: null
+          })
+          await vi.advanceTimersByTimeAsync(0)
+
+          expect(store.getOperation('op-1')?.actionUrl).toBeNull()
+        })
+
+        it('refreshes the link when the same operation is started again', async () => {
+          vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(
+            pendingPhase('awaiting_payment_method')
+          )
+          const store = useBillingOperationStore()
+          void store.startOperation('op-1', 'subscription', {
+            paymentMethodUrl: checkoutUrl
+          })
+          await vi.advanceTimersByTimeAsync(0)
+
+          const renewedUrl = 'https://checkout.example/add-card-2'
+          void store.startOperation('op-1', 'subscription', {
+            paymentMethodUrl: renewedUrl
+          })
+          await vi.advanceTimersByTimeAsync(31_000)
+
+          expect(store.getOperation('op-1')).toMatchObject({
+            actionUrl: renewedUrl,
+            paymentMethodUrl: renewedUrl
+          })
+        })
+
+        it('does not keep the link when the poll reports no phase', async () => {
+          vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(
+            pending('op-1', false)
+          )
+          const store = useBillingOperationStore()
+          void store.startOperation('op-1', 'subscription', {
+            paymentMethodUrl: checkoutUrl
+          })
 
           await vi.advanceTimersByTimeAsync(0)
 
@@ -520,12 +575,9 @@ describe('billingOperationStore', () => {
             completed_at: new Date().toISOString()
           })
           const store = useBillingOperationStore()
-          void store.startOperation(
-            'op-1',
-            'subscription',
-            undefined,
-            checkoutUrl
-          )
+          void store.startOperation('op-1', 'subscription', {
+            paymentMethodUrl: checkoutUrl
+          })
 
           await vi.advanceTimersByTimeAsync(0)
 

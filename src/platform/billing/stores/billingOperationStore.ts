@@ -90,6 +90,7 @@ export interface StartOperationMetadata {
    * link it is announced by its first status, never before it.
    */
   resumed?: boolean
+  paymentMethodUrl?: string
   downgradeToPersonal?: {
     memberRemovalCount: number
     memberRemovalFailures: number
@@ -116,8 +117,6 @@ interface BillingOperation {
   operationStartedAt: number
   businessAttemptStartedAt?: number
   actionUrl: string | null
-  // The subscribe response's add-a-card link. Polls never serve it, so it is
-  // kept apart from the polled actionUrl and shown while no 3DS link exists.
   paymentMethodUrl: string | null
   authenticationState: BillingAuthenticationState | null
   isAuthenticating: boolean
@@ -307,6 +306,30 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
   }
 
+  function adoptPaymentMethodUrl(
+    operation: BillingOperation,
+    paymentMethodUrl: string | null
+  ) {
+    if (
+      !paymentMethodUrl ||
+      operation.status !== 'pending' ||
+      (operation.phase !== null &&
+        operation.phase !== 'awaiting_payment_method') ||
+      (operation.actionUrl !== null &&
+        operation.actionUrl !== operation.paymentMethodUrl)
+    ) {
+      return
+    }
+    const updated: BillingOperation = {
+      ...operation,
+      actionUrl: paymentMethodUrl,
+      paymentMethodUrl,
+      authenticationRequiredSeen: true
+    }
+    operations.value = new Map(operations.value).set(operation.opId, updated)
+    syncProgressToastAfterRead(operation, updated)
+  }
+
   function startOperation(
     opId: string,
     type: OperationType,
@@ -315,11 +338,16 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   ): Promise<BillingOperation> {
     const existing = operations.value.get(opId)
     if (existing && existing.status !== 'timeout') {
+      adoptPaymentMethodUrl(
+        existing,
+        validateActionUrl(metadata?.paymentMethodUrl)
+      )
       return terminalPromises.get(opId) ?? Promise.resolve(existing)
     }
     if (existing) clearOperation(opId)
 
-    const actionUrl = validateActionUrl(initialActionUrl)
+    const paymentMethodUrl = validateActionUrl(metadata?.paymentMethodUrl)
+    const actionUrl = validateActionUrl(initialActionUrl) ?? paymentMethodUrl
     const now = Date.now()
     const operation: BillingOperation = {
       opId,
@@ -330,7 +358,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operationStartedAt: metadata?.attemptStartedAt ?? now,
       businessAttemptStartedAt: metadata?.attemptStartedAt,
       actionUrl,
-      paymentMethodUrl: actionUrl,
+      paymentMethodUrl,
       authenticationState: null,
       isAuthenticating: false,
       canRetryAuthentication: false,
@@ -590,12 +618,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function updateOperationActionUrl(opId: string, actionUrl: string | null) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
-    const leftAwaitingPaymentMethod =
-      operation.phase !== null && operation.phase !== 'awaiting_payment_method'
     const paymentMethodUrl =
-      actionUrl !== null || leftAwaitingPaymentMethod
-        ? null
-        : operation.paymentMethodUrl
+      actionUrl === null && operation.phase === 'awaiting_payment_method'
+        ? operation.paymentMethodUrl
+        : null
     const shownUrl = actionUrl ?? paymentMethodUrl
     const updated: BillingOperation = {
       ...operation,
