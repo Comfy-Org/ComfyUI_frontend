@@ -74,10 +74,10 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
       galleryActiveIndex.value = findActiveIndex(rerun, activeUrl)
     }
     const refreshId = openSequence
+    if (hasHdrPreview(targetTask)) return
     void getOutputsForTask(targetTask).then((targetOutputs) => {
       if (targetOutputs === null || !isLiveRefreshCurrent(refreshId, taskId))
         return
-      if (hasHdrPreview(targetTask)) return
       const items = nonHdrOutputs(targetOutputs, rerun)
       if (!items.length) return
       const currentUrl =

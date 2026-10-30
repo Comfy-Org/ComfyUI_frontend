@@ -217,6 +217,22 @@ describe('MediaLightbox', () => {
       expect(onContextMenu).toHaveBeenCalledTimes(1)
       expect(onContextMenu.mock.calls[0][0]).toBeInstanceOf(MouseEvent)
     })
+
+    it('shows the more options button when the listener arrives after mount', async () => {
+      const { rerender } = renderGallery()
+      await nextTick()
+
+      expect(screen.queryByLabelText('More Options')).not.toBeInTheDocument()
+
+      await rerender({
+        allGalleryItems: mockGalleryItems,
+        activeIndex: 0,
+        onContextMenu: vi.fn()
+      })
+      await nextTick()
+
+      expect(screen.getByLabelText('More Options')).toBeInTheDocument()
+    })
   })
 
   describe('caption reveal and auto-hide', () => {
@@ -320,6 +336,49 @@ describe('MediaLightbox', () => {
       } finally {
         vi.useRealTimers()
       }
+    })
+
+    it('reveals the caption for an image that was already complete on mount', async () => {
+      const complete = vi
+        .spyOn(HTMLImageElement.prototype, 'complete', 'get')
+        .mockReturnValue(true)
+      const naturalWidth = vi
+        .spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get')
+        .mockReturnValue(64)
+      try {
+        renderGallery()
+        await screen.findByTestId('lightbox-content')
+        await nextTick()
+
+        expect(caption()).toHaveClass('opacity-100')
+      } finally {
+        complete.mockRestore()
+        naturalWidth.mockRestore()
+      }
+    })
+
+    it('ignores a late load from the item that was replaced', async () => {
+      const { rerender } = renderGallery({ activeIndex: 0 })
+      await screen.findByTestId('lightbox-content')
+      await nextTick()
+      const replaced = screen.getByAltText('image1.jpg')
+
+      await rerender({ allGalleryItems: mockGalleryItems, activeIndex: 1 })
+      await nextTick()
+      await nextTick()
+
+      expect(caption()).toHaveTextContent('image2.jpg')
+      expect(caption()).toHaveClass('opacity-0')
+
+      replaced.dispatchEvent(new Event('load'))
+      await nextTick()
+
+      expect(caption()).toHaveClass('opacity-0')
+
+      screen.getByAltText('image2.jpg').dispatchEvent(new Event('load'))
+      await nextTick()
+
+      expect(caption()).toHaveClass('opacity-100')
     })
   })
 

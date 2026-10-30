@@ -20,7 +20,7 @@
           class="rounded-full"
           :title="$t('g.moreOptions')"
           :aria-label="$t('g.moreOptions')"
-          @click="emit('context-menu', $event)"
+          @click="openContextMenu"
         >
           <i class="icon-[lucide--ellipsis] size-5" />
         </Button>
@@ -77,6 +77,8 @@
               :contain="false"
               :alt="activeItem.filename"
               class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
+              @load="imageSettled.load"
+              @error="imageSettled.error"
             />
             <ResultVideo
               v-else-if="isVideoResult(activeItem)"
@@ -133,14 +135,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  getCurrentInstance,
-  nextTick,
-  onBeforeUnmount,
-  ref,
-  watch
-} from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, useAttrs, watch } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from '@comfyorg/design-system/button/Button'
@@ -164,7 +159,6 @@ import ResultVideo from './ResultVideo.vue'
 
 const emit = defineEmits<{
   (e: 'update:activeIndex', value: number): void
-  (e: 'context-menu', event: MouseEvent): void
 }>()
 
 const props = defineProps<{
@@ -184,20 +178,42 @@ let previouslyFocusedElement: HTMLElement | null = null
 const hasMultiple = computed(() => props.allGalleryItems.length > 1)
 const activeItem = computed(() => props.allGalleryItems[props.activeIndex])
 
+type ContextMenuHandler = (event: MouseEvent) => void
+
+const isContextMenuHandler = (value: unknown): value is ContextMenuHandler =>
+  typeof value === 'function'
+
+const attrs = useAttrs()
+
+const contextMenuHandler = computed(() => {
+  const handler = attrs.onContextMenu
+  return isContextMenuHandler(handler) ? handler : undefined
+})
+
 const hasContextMenu = computed(
-  () =>
-    !!getCurrentInstance()?.vnode.props?.['onContextMenu'] &&
-    activeItem.value !== undefined
+  () => contextMenuHandler.value !== undefined && activeItem.value !== undefined
 )
+
+function openContextMenu(event: MouseEvent) {
+  contextMenuHandler.value?.(event)
+}
 
 const contentRef = ref<HTMLElement>()
 
 const captionVisible = ref(false)
 const captionPinned = ref(false)
 const mediaReady = ref(false)
+const mediaSeq = ref(0)
 let revealQueued = false
-let mediaSeq = 0
 let captionHideTimer: ReturnType<typeof setTimeout> | undefined
+
+const imageSettled = computed(() => {
+  const seq = mediaSeq.value
+  return {
+    load: () => markMediaReady(seq),
+    error: () => markMediaReady(seq)
+  }
+})
 
 function showCaptionTransient() {
   if (!mediaReady.value) {
@@ -213,30 +229,12 @@ function showCaptionTransient() {
 }
 
 function markMediaReady(seq: number) {
-  if (seq !== mediaSeq) return
+  if (seq !== mediaSeq.value) return
   mediaReady.value = true
   if (revealQueued) {
     revealQueued = false
     showCaptionTransient()
   }
-}
-
-function awaitMediaReady(item: AugmentedResultItem, seq: number) {
-  if (!isImageResult(item)) {
-    markMediaReady(seq)
-    return
-  }
-  const img = contentRef.value?.querySelector('img')
-  if (!img) {
-    markMediaReady(seq)
-    return
-  }
-  if (img.complete && img.naturalWidth > 0) {
-    markMediaReady(seq)
-    return
-  }
-  img.addEventListener('load', () => markMediaReady(seq), { once: true })
-  img.addEventListener('error', () => markMediaReady(seq), { once: true })
 }
 
 function hideCaptionNow() {
@@ -324,15 +322,15 @@ watch(
     if (!wasVisible) {
       previouslyFocusedElement = document.activeElement as HTMLElement | null
     }
-    mediaSeq += 1
-    const seq = mediaSeq
+    mediaSeq.value += 1
+    const seq = mediaSeq.value
     mediaReady.value = false
     revealQueued = false
     hideCaptionNow()
     void nextTick(() => {
-      if (seq !== mediaSeq) return
+      if (seq !== mediaSeq.value) return
       const nextItem = activeItem.value
-      if (nextItem) awaitMediaReady(nextItem, seq)
+      if (nextItem && !isImageResult(nextItem)) markMediaReady(seq)
       showCaptionTransient()
       dialogRef.value?.focus()
     })
@@ -341,7 +339,7 @@ watch(
 )
 
 function close() {
-  mediaSeq += 1
+  mediaSeq.value += 1
   galleryVisible.value = false
   emit('update:activeIndex', -1)
   previouslyFocusedElement?.focus()
