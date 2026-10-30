@@ -1,5 +1,9 @@
 import type { BillingStatus } from '@comfyorg/ingest-types'
-import { createSharedComposable, useTimestamp } from '@vueuse/core'
+import {
+  createSharedComposable,
+  useLocalStorage,
+  useTimestamp
+} from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -12,6 +16,7 @@ import { useBillingCapabilities } from '@/platform/billing/composables/useBillin
 import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
 import { isTopUpDeniedPastDue } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 export type BillingBannerKind =
   | 'paused'
@@ -39,6 +44,7 @@ export interface BillingBannerInputs {
   planEndedDismissed: boolean
   outOfCreditsDismissed: boolean
   planChangeDismissed: boolean
+  planEndingHidden: boolean
   hasScheduledChange: boolean
   topUpDeniedPastDue: boolean
   runDeniedPastDue: boolean
@@ -61,7 +67,7 @@ function deriveEnterpriseBanner(
   if (!inputs.billingControlEnabled) return null
   const withinEndingNotice =
     inputs.isCancelled && isWithinEnterpriseEndingNotice(inputs.endDate, now)
-  return withinEndingNotice ? 'ending' : null
+  return withinEndingNotice && !inputs.planEndingHidden ? 'ending' : null
 }
 
 const PERSONAL_TIERS: ReadonlySet<SubscriptionTier> = new Set([
@@ -92,7 +98,8 @@ function deriveLifecycleNotice(
   inputs: BillingBannerInputs,
   audience: BillingBannerAudience
 ): BillingBannerKind | null {
-  if (inputs.isCancelled && inputs.endDate) return 'ending'
+  if (inputs.isCancelled && inputs.endDate)
+    return inputs.planEndingHidden ? null : 'ending'
   const showsPlanChange =
     audience === 'team' &&
     inputs.hasScheduledChange &&
@@ -204,6 +211,21 @@ function useBillingBannerInternal() {
   const planEndedDismissed = ref(false)
   const outOfCreditsDismissed = ref(false)
   const planChangeDismissed = ref(false)
+  const workspaceIdentity = useWorkspaceIdentity()
+  const hiddenPlanEndings = useLocalStorage<string[]>(
+    'Comfy.Billing.HiddenPlanEndings',
+    []
+  )
+  const planEndingKey = computed(() => {
+    const workspaceId = workspaceIdentity.activeWorkspaceId
+    const endDate = subscription.value?.endDate
+    return workspaceId && endDate ? `${workspaceId}:${endDate}` : null
+  })
+  const planEndingHidden = computed(
+    () =>
+      planEndingKey.value !== null &&
+      hiddenPlanEndings.value.includes(planEndingKey.value)
+  )
 
   const now = useTimestamp({ interval: 60_000 })
 
@@ -218,6 +240,7 @@ function useBillingBannerInternal() {
     planEndedDismissed: planEndedDismissed.value,
     outOfCreditsDismissed: outOfCreditsDismissed.value,
     planChangeDismissed: planChangeDismissed.value,
+    planEndingHidden: planEndingHidden.value,
     topUpDeniedPastDue: isTopUpDeniedPastDue(topUpDenial.value),
     runDeniedPastDue: runDeniedPaymentPastDue.value,
     unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
@@ -237,7 +260,8 @@ function useBillingBannerInternal() {
             topUpDeniedPastDue: false,
             runDeniedPastDue: false,
             planEndedDismissed: false,
-            planChangeDismissed: false
+            planChangeDismissed: false,
+            planEndingHidden: false
           },
           now.value
         )
@@ -258,7 +282,13 @@ function useBillingBannerInternal() {
     if (kind.value === 'planChange') planChangeDismissed.value = true
   }
 
-  return { kind, lifecycleKind, audience, dismiss }
+  function hidePlanEnding() {
+    const key = planEndingKey.value
+    if (kind.value !== 'ending' || key === null) return
+    hiddenPlanEndings.value = [...hiddenPlanEndings.value, key]
+  }
+
+  return { kind, lifecycleKind, audience, dismiss, hidePlanEnding }
 }
 
 export const useBillingBanner = createSharedComposable(useBillingBannerInternal)

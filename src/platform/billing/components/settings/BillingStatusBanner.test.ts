@@ -44,6 +44,7 @@ const state = vi.hoisted(() => ({
   canManageSubscriptionLifecycle: true,
   canReactivatePlan: true,
   shouldUseWorkspaceBilling: true,
+  activeWorkspaceId: 'workspace-1' as string | null,
   manageSubscription: vi.fn(
     async (): Promise<BillingPortalOutcome> => ({ ok: true })
   ),
@@ -61,6 +62,17 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+
+vi.mock<unknown>(
+  import('@/platform/workspace/ports/workspaceIdentity'),
+  () => ({
+    useWorkspaceIdentity: () => ({
+      get activeWorkspaceId() {
+        return state.activeWorkspaceId
+      }
+    })
+  })
+)
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -162,7 +174,8 @@ const i18n = createI18n({
             enterpriseBody:
               'Members keep full access until then. Reach out to our sales team to extend.',
             reactivate: 'Resume plan',
-            contactSales: 'Contact sales'
+            contactSales: 'Contact sales',
+            dontShowAgain: "Don't show again"
           },
           planEnded: {
             teamTitle: 'Your Team plan ended on {date}',
@@ -287,6 +300,104 @@ describe('BillingStatusBanner', () => {
     useBillingCapabilities().canReactivate = computed(() => true)
     state.canReactivatePlan = true
     state.shouldUseWorkspaceBilling = true
+    state.activeWorkspaceId = 'workspace-1'
+    localStorage.clear()
+  })
+
+  describe("Don't show again on the plan ending notice", () => {
+    function endingOn(endDate: string) {
+      state.subscription = {
+        hasFunds: true,
+        isCancelled: true,
+        endDate,
+        scheduledChange: null
+      }
+    }
+
+    async function hideEnding() {
+      await userEvent.click(
+        screen.getByRole('button', { name: "Don't show again" })
+      )
+    }
+
+    it('hides the notice for the owner and keeps it hidden on remount', async () => {
+      endingOn('2026-08-01T00:00:00Z')
+      const { unmount } = renderBanner('planCredits')
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your Team plan ends on'
+      )
+      await hideEnding()
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+
+      unmount()
+      renderBanner('planCredits')
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+
+    it.for([
+      {
+        name: 'a different end date',
+        change: () => endingOn('2026-09-01T00:00:00Z')
+      },
+      {
+        name: 'a different workspace',
+        change: () => {
+          state.activeWorkspaceId = 'workspace-2'
+        }
+      }
+    ])('shows the notice again for $name', async ({ change }) => {
+      endingOn('2026-08-01T00:00:00Z')
+      const { unmount } = renderBanner('planCredits')
+      await hideEnding()
+      unmount()
+
+      change()
+      renderBanner('planCredits')
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your Team plan ends on'
+      )
+    })
+
+    it('offers members no way to hide the notice', () => {
+      endingOn('2026-08-01T00:00:00Z')
+      state.canManageSubscription = false
+      renderBanner('planCredits')
+
+      expect(screen.getByRole('status')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: "Don't show again" })
+      ).not.toBeInTheDocument()
+    })
+
+    it('keeps the notice on the Billing tab after it is hidden', async () => {
+      endingOn('2026-08-01T00:00:00Z')
+      const { unmount } = renderBanner('planCredits')
+      await hideEnding()
+      unmount()
+
+      renderBanner('billing')
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your Team plan ends on'
+      )
+      expect(
+        screen.queryByRole('button', { name: "Don't show again" })
+      ).not.toBeInTheDocument()
+    })
+
+    it('leaves the out-of-credits notice untouched', async () => {
+      endingOn('2026-08-01T00:00:00Z')
+      const { unmount } = renderBanner('planCredits')
+      await hideEnding()
+      unmount()
+
+      exhausted()
+      renderBanner('planCredits')
+      expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
+      expect(
+        screen.queryByRole('button', { name: "Don't show again" })
+      ).not.toBeInTheDocument()
+    })
   })
 
   describe('on the Billing tab', () => {

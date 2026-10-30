@@ -3793,7 +3793,8 @@
         "enterpriseTitle": "Your Enterprise plan ends on {date}",
         "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
         "reactivate": "Resume plan",
-        "contactSales": "Contact sales"
+        "contactSales": "Contact sales",
+        "dontShowAgain": "Don't show again"
       },
       "paused": {
         "body": "This workspace's subscription is paused. Update payment to resume."

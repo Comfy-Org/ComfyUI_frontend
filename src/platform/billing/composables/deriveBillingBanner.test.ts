@@ -20,6 +20,7 @@ const funded: BillingBannerInputs = {
   planEndedDismissed: false,
   outOfCreditsDismissed: false,
   planChangeDismissed: false,
+  planEndingHidden: false,
   hasScheduledChange: false,
   topUpDeniedPastDue: false,
   runDeniedPastDue: false,

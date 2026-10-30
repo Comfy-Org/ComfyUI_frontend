@@ -18,7 +18,7 @@
         <p class="m-0 pl-6 text-sm text-muted-foreground">{{ banner.body }}</p>
       </div>
       <div
-        v-if="banner.dismissible || banner.action"
+        v-if="banner.dismissible || banner.hideable || banner.action"
         class="flex shrink-0 flex-wrap items-center gap-2 pl-6 @2xl:pl-0"
       >
         <Button
@@ -28,6 +28,14 @@
           @click="dismiss"
         >
           {{ $t('workspacePanel.billingStatus.outOfCredits.dismiss') }}
+        </Button>
+        <Button
+          v-if="banner.hideable"
+          variant="textonly"
+          size="lg"
+          @click="hidePlanEnding"
+        >
+          {{ $t('workspacePanel.billingStatus.ending.dontShowAgain') }}
         </Button>
         <Button
           v-if="banner.action === 'addCredits'"
@@ -126,7 +134,8 @@ const {
   kind: overallKind,
   lifecycleKind,
   audience,
-  dismiss
+  dismiss,
+  hidePlanEnding
 } = useBillingBanner()
 const kind = computed(() =>
   section === 'billing' ? lifecycleKind.value : overallKind.value
@@ -160,6 +169,7 @@ interface BannerView {
   body: string
   action: BannerAction | null
   dismissible: boolean
+  hideable?: boolean
 }
 
 const bs = 'workspacePanel.billingStatus'
@@ -325,7 +335,8 @@ const enterpriseEndingView = (): BannerView => ({
     ? t(`${bs}.ending.enterpriseBody`)
     : t(`${bs}.ending.memberBody`),
   action: canManage.value ? 'contactSales' : null,
-  dismissible: false
+  dismissible: false,
+  hideable: canManage.value
 })
 
 const selfServeEndingView = (): BannerView => ({
@@ -338,7 +349,8 @@ const selfServeEndingView = (): BannerView => ({
     ? t(copy.value.endingBody)
     : t(`${bs}.ending.memberBody`),
   action: canManage.value && canReactivatePlan.value ? 'reactivate' : null,
-  dismissible: false
+  dismissible: false,
+  hideable: canManage.value
 })
 
 const endingView = (): BannerView =>
@@ -370,7 +382,7 @@ const banner = computed<BannerView | null>(() => {
   if (!kind.value || isHiddenOnSection.value) return null
   const view = bannerViews[kind.value]()
   return view && section === 'billing'
-    ? { ...view, action: null, dismissible: false }
+    ? { ...view, action: null, dismissible: false, hideable: false }
     : view
 })
 
