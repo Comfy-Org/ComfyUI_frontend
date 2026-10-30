@@ -8,7 +8,7 @@ import { useSubscription } from '@/platform/billing/subscription/composables/use
 import type {
   BillingStatusResponse,
   RenewalInvoice
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 import { useLegacyBilling } from './useLegacyBilling'
 
 vi.mock(import('firebase/auth'))
@@ -22,6 +22,7 @@ const statusWith = (
 ): BillingStatusResponse =>
   Object.assign(
     {
+      ended_at: null,
       is_active: true,
       has_funds: false,
       max_seats: 0,
@@ -181,6 +182,35 @@ describe('useLegacyBilling', () => {
         })
       }
     )
+
+    it('stops treating a cached Agent grant as authoritative after the current read fails', async () => {
+      useSubscription().subscriptionStatus.value = statusWith({
+        billing_rail: 'stripe',
+        scoped_has_funds: { agent: true }
+      })
+      let rejectStatusRead!: (reason: unknown) => void
+      const statusRead = new Promise<BillingStatusResponse | null>(
+        (_resolve, reject) => {
+          rejectStatusRead = (reason) => reject(reason)
+        }
+      )
+      vi.mocked(useSubscription().fetchStatusDirect).mockReturnValueOnce(
+        statusRead
+      )
+      const billing = useLegacyBilling()
+
+      const refresh = billing.fetchStatus()
+      expect(billing.subscription.value?.agentScopedHasFundsAuthoritative).toBe(
+        true
+      )
+
+      rejectStatusRead(new Error('status unavailable'))
+      await expect(refresh).rejects.toThrow('status unavailable')
+      expect(billing.subscription.value?.agentScopedHasFundsAuthoritative).toBe(
+        false
+      )
+      expect(billing.subscription.value?.agentScopedHasFunds).toBe(true)
+    })
   })
 
   describe('initialize', () => {
@@ -212,9 +242,32 @@ describe('useLegacyBilling', () => {
 
         await useLegacyBilling().initialize()
 
-        expect(useSubscription().fetchStatus).toHaveBeenCalledTimes(reads)
+        expect(useSubscription().fetchStatusDirect).toHaveBeenCalledTimes(reads)
       }
     )
+
+    it('finishes initialization and reports a failed status read', async () => {
+      const failure = new Error('status unavailable')
+      useSubscription().subscriptionStatus.value = statusWith({
+        billing_rail: 'stripe',
+        scoped_has_funds: { agent: true }
+      })
+      vi.mocked(useSubscription().fetchStatusDirect).mockRejectedValueOnce(
+        failure
+      )
+      vi.mocked(useAuthStore().fetchBalance).mockResolvedValueOnce(null)
+      const billing = useLegacyBilling()
+
+      await expect(billing.initialize()).resolves.toBeUndefined()
+
+      expect(billing.isInitialized.value).toBe(true)
+      expect(billing.subscription.value?.agentScopedHasFundsAuthoritative).toBe(
+        false
+      )
+      expect(useAuthActions().reportError).toHaveBeenCalledExactlyOnceWith(
+        failure
+      )
+    })
   })
 
   describe('resubscribe', () => {

@@ -3,12 +3,14 @@ import { z } from 'zod'
 const zClaims = z.object({
   sub: z.string().min(1),
   email: z.string().optional(),
+  name: z.string().optional(),
   workspace_id: z.string().optional()
 })
 
 export interface AccessTokenIdentity {
   userId: string
   email?: string
+  name?: string
   workspaceId?: string
 }
 
@@ -36,6 +38,6 @@ export function readAccessTokenIdentity(
   }
   const claims = zClaims.safeParse(decoded)
   if (!claims.success) return undefined
-  const { sub, email, workspace_id } = claims.data
-  return { userId: sub, email, workspaceId: workspace_id }
+  const { sub, email, name, workspace_id } = claims.data
+  return { userId: sub, email, name, workspaceId: workspace_id }
 }

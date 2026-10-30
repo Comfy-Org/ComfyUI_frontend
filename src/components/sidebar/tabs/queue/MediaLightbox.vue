@@ -51,6 +51,7 @@
               v-else-if="isVideoResult(activeItem)"
               :key="resultItemUrl(activeItem)"
               :result="activeItem"
+              :autoplay="autoplayVideo"
             />
             <ResultAudio
               v-else-if="isAudioResult(activeItem)"
@@ -83,7 +84,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 import {
@@ -104,6 +105,7 @@ const emit = defineEmits<{
 const props = defineProps<{
   allGalleryItems: AugmentedResultItem[]
   activeIndex: number
+  autoplayVideo?: boolean
 }>()
 
 /* Keeps the active video plus its neighbors buffered across gallery moves. */

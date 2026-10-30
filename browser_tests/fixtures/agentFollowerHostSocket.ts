@@ -27,6 +27,7 @@ import type {
   ParsedWireBatch,
   WireOpEnvelope
 } from '@e2e/fixtures/agentWireFrame'
+import { isPlainObject } from 'es-toolkit'
 
 const SUBSCRIBE_TIMEOUT = 15_000
 /** The sid the fake ComfyUI reports on its first `status` frame. */
@@ -68,6 +69,8 @@ export interface ClientDocFrame {
   /** `op:node_id` per op for a `doc_ops` frame; empty otherwise. */
   ops: string[]
   opIds: string[]
+  /** Wire `base_version` per op for a `doc_ops` frame; `null` when not a number. */
+  baseVersions: Array<number | null>
   writers: Array<string | null>
   connection: number
   comfyConnection: number
@@ -86,11 +89,11 @@ function docFrameEnvelope(
   raw: string | Buffer
 ): { type: string; data: Record<string, unknown> } | null {
   const frame: unknown = JSON.parse(raw.toString())
-  if (typeof frame !== 'object' || frame === null) return null
-  const { type, data } = frame as { type?: unknown; data?: unknown }
+  if (!isPlainObject(frame)) return null
+  const { type, data } = frame
   if (typeof type !== 'string' || !type.startsWith('doc_')) return null
-  if (typeof data !== 'object' || data === null) return null
-  return { type, data: data as Record<string, unknown> }
+  if (!isPlainObject(data)) return null
+  return { type, data }
 }
 
 function stringOrNull(value: unknown): string | null {
@@ -135,16 +138,21 @@ function parseClientDocFrame(
 }
 
 export class AgentFollowerHostSocket {
+  private readonly hosts = new Map<string, HostDoc>()
+  private readonly pausedSubscribes = new Set<string>()
+  private readonly pendingSubscribes = new Map<string, string>()
   private refuseReason: string | null = null
   private refusalsLeft = 0
   private refusedSubscribes = 0
 
   private socket: WebSocketRoute | null = null
+  private agentProcessDown = false
+  private refusedConnections = 0
   private comfySocket: WebSocketRoute | null = null
   private comfyConnections = 0
   private connections = 0
   private unansweredHumanBatches = 0
-  private subscribes = 0
+  private readonly subscribes = new Map<string, number>()
   private subscribeAnswer = (stateVector: string): HostFrame[] => [
     this.host.subscribed(),
     this.host.catchUp(stateVector)
@@ -152,6 +160,7 @@ export class AgentFollowerHostSocket {
   private readonly createdAt = Date.now()
   private readonly clientFrames: ClientDocFrame[] = []
   private readonly heldBatches: Array<{
+    workflowId: string
     tab: string | null
     ops: WireOpEnvelope[]
   }> = []
@@ -169,7 +178,27 @@ export class AgentFollowerHostSocket {
     private readonly host: HostDoc,
     private readonly humanOpsHost: HumanOpsHost = 'hold',
     private readonly hostUpdateSink?: HostUpdateSink
-  ) {}
+  ) {
+    this.hosts.set(workflowId, host)
+  }
+
+  addWorkflow(workflowId: string, host: HostDoc): void {
+    this.hosts.set(workflowId, host)
+  }
+
+  /** Holds subscribe answers for `workflowId` until {@link resumeSubscribe}. */
+  pauseSubscribes(workflowId: string): void {
+    this.pausedSubscribes.add(workflowId)
+  }
+
+  /** Ends the hold and answers the newest subscribe held by {@link pauseSubscribes}. */
+  resumeSubscribe(workflowId: string): void {
+    this.pausedSubscribes.delete(workflowId)
+    const stateVector = this.pendingSubscribes.get(workflowId)
+    if (stateVector === undefined) return
+    this.pendingSubscribes.delete(workflowId)
+    this.answerSubscribe(workflowId, stateVector)
+  }
 
   /** Pins the `status` sid; `''` models a socket with no id. */
   reportSocketSid(sid: string): this {
@@ -203,10 +232,33 @@ export class AgentFollowerHostSocket {
       )
     })
     await this.page.routeWebSocket(AGENT_SOCKET_URL, (socket) => {
+      if (this.agentProcessDown) {
+        this.refusedConnections += 1
+        void socket.close()
+        return
+      }
       this.connections += 1
       this.socket = socket
       socket.onMessage((raw) => this.onClientFrame(raw))
     })
+  }
+
+  /** Refuses reconnect attempts until the outage ends. */
+  async beginAgentOutage(): Promise<void> {
+    this.agentProcessDown = true
+    const socket = this.socket
+    this.socket = null
+    await socket?.close()
+  }
+
+  /** Allows the next reconnect attempt. */
+  endAgentOutage(): void {
+    this.agentProcessDown = false
+  }
+
+  /** Returns the number of refused reconnect attempts. */
+  refusedConnectionCount(): number {
+    return this.refusedConnections
   }
 
   send(frame: AgentWsEvent | AgentAskServerFrame | HostFrame): void {
@@ -259,11 +311,11 @@ export class AgentFollowerHostSocket {
     const frame = parseClientDocFrame(raw)
     if (!frame) return
     this.recordClientFrame(frame)
-    if (frame.workflowId !== this.workflowId) {
+    if (frame.workflowId === null || !this.hosts.has(frame.workflowId)) {
       this.rejectForeignOps(frame)
       return
     }
-    this.routeClientDocFrame(frame)
+    this.routeClientDocFrame(frame, frame.workflowId)
   }
 
   private recordClientFrame(frame: ParsedClientDocFrame): void {
@@ -277,31 +329,53 @@ export class AgentFollowerHostSocket {
       knownLineageSeq: frame.knownLineageSeq,
       ops: ops.map((op) => opLabel(op)),
       opIds: ops.map((op) => op.op_id),
+      baseVersions: ops.map((op) =>
+        'base_version' in op && typeof op.base_version === 'number'
+          ? op.base_version
+          : null
+      ),
       writers: ops.map(claimedWriter),
       connection: this.connections,
       comfyConnection: this.comfyConnections
     })
   }
 
-  private routeClientDocFrame(frame: ParsedClientDocFrame): void {
+  private routeClientDocFrame(
+    frame: ParsedClientDocFrame,
+    workflowId: string
+  ): void {
     if (frame.type === 'doc_subscribe' && frame.stateVector !== null) {
-      this.answerSubscribe(frame.stateVector)
+      if (this.pausedSubscribes.has(workflowId)) {
+        this.pendingSubscribes.set(workflowId, frame.stateVector)
+        return
+      }
+      this.answerSubscribe(workflowId, frame.stateVector)
       return
     }
-    if (frame.type === 'doc_ops') this.receiveHumanOps(frame)
+    if (frame.type === 'doc_ops') this.receiveHumanOps(frame, workflowId)
   }
 
-  private receiveHumanOps(frame: ParsedClientDocFrame): void {
-    if (this.unansweredHumanBatches > 0 && this.wouldAcceptHumanOps(frame)) {
+  private receiveHumanOps(
+    frame: ParsedClientDocFrame,
+    workflowId: string
+  ): void {
+    if (
+      this.unansweredHumanBatches > 0 &&
+      this.wouldAcceptHumanOps(frame, workflowId)
+    ) {
       this.unansweredHumanBatches -= 1
       return
     }
     if (this.humanOpsHost === 'apply') {
-      this.judgeHumanOps(frame.opsResult, frame.tab)
+      this.judgeHumanOps(workflowId, frame.opsResult, frame.tab)
       return
     }
     if (frame.opsResult.ok) {
-      this.heldBatches.push({ tab: frame.tab, ops: frame.opsResult.ops })
+      this.heldBatches.push({
+        workflowId,
+        tab: frame.tab,
+        ops: frame.opsResult.ops
+      })
     }
   }
 
@@ -314,7 +388,11 @@ export class AgentFollowerHostSocket {
   releaseHeldClientOps(): WireOpEnvelope[] {
     const batch = this.heldBatches.shift()
     if (!batch) return []
-    this.judgeHumanOps({ ok: true, ops: batch.ops }, batch.tab)
+    this.judgeHumanOps(
+      batch.workflowId,
+      { ok: true, ops: batch.ops },
+      batch.tab
+    )
     return batch.ops
   }
 
@@ -330,11 +408,16 @@ export class AgentFollowerHostSocket {
     this.subscribeAnswer = answer
   }
 
-  private answerSubscribe(stateVector: string): void {
-    if (this.refuseReason !== null && this.refusalsLeft > 0) {
+  private answerSubscribe(workflowId: string, stateVector: string): void {
+    const host = this.hosts.get(workflowId)!
+    if (
+      workflowId === this.workflowId &&
+      this.refuseReason !== null &&
+      this.refusalsLeft > 0
+    ) {
       this.refusalsLeft -= 1
       this.refusedSubscribes += 1
-      const refusal = this.host.subscribeRefused(this.refuseReason)
+      const refusal = host.subscribeRefused(this.refuseReason)
       this.send({
         ...refusal,
         data: { ...refusal.data, code: this.refuseReason }
@@ -342,8 +425,12 @@ export class AgentFollowerHostSocket {
       this.resolveSubscribed?.()
       return
     }
-    for (const frame of this.subscribeAnswer(stateVector)) this.send(frame)
-    this.subscribes += 1
+    const answer =
+      workflowId === this.workflowId
+        ? this.subscribeAnswer(stateVector)
+        : [host.subscribed(), host.catchUp(stateVector)]
+    for (const frame of answer) this.send(frame)
+    this.subscribes.set(workflowId, this.subscribeCount(workflowId) + 1)
     this.resolveSubscribed?.()
   }
 
@@ -357,28 +444,37 @@ export class AgentFollowerHostSocket {
     this.unansweredHumanBatches += count
   }
 
-  private wouldAcceptHumanOps({ opsResult, tab }: ParsedClientDocFrame) {
-    return 'ops' in this.classifyHumanOps(opsResult, tab)
+  private wouldAcceptHumanOps(
+    { opsResult, tab }: ParsedClientDocFrame,
+    workflowId: string
+  ) {
+    return 'ops' in this.classifyHumanOps(workflowId, opsResult, tab)
   }
 
   private classifyHumanOps(
+    workflowId: string,
     opsResult: ParsedWireBatch,
     tab: string | null
   ): { ops: WireOpEnvelope[] } | { refusal: HostFrame } {
     if (!opsResult.ok || !tab || !isValidDocOpsBatch(opsResult.ops))
-      return { refusal: this.invalidFrameResult() }
+      return { refusal: this.invalidFrameResult(workflowId) }
     if (!claimsOneFrameActor(opsResult.ops, tab))
-      return { refusal: this.forbiddenResult() }
+      return { refusal: this.forbiddenResult(workflowId) }
     return { ops: opsResult.ops }
   }
 
-  private judgeHumanOps(opsResult: ParsedWireBatch, tab: string | null): void {
-    const verdict = this.classifyHumanOps(opsResult, tab)
+  private judgeHumanOps(
+    workflowId: string,
+    opsResult: ParsedWireBatch,
+    tab: string | null
+  ): void {
+    const verdict = this.classifyHumanOps(workflowId, opsResult, tab)
     if ('refusal' in verdict) {
       this.send(verdict.refusal)
       return
     }
-    const { result, update, outcomes } = this.host.applyWire(verdict.ops)
+    const host = this.hosts.get(workflowId)!
+    const { result, update, outcomes } = host.applyWire(verdict.ops)
     this.humanOutcomes.push(...outcomes)
     this.send(result)
     if (update) (this.hostUpdateSink ?? ((frame) => this.send(frame)))(update)
@@ -398,17 +494,17 @@ export class AgentFollowerHostSocket {
         applied: [],
         skipped: [],
         code: 'unknown_workflow',
-        message: 'the fake host serves one workflow'
+        message: 'the fake host does not serve this workflow'
       }
     })
   }
 
-  private invalidFrameResult(): HostFrame {
+  private invalidFrameResult(workflowId: string): HostFrame {
     return {
       type: 'doc_ops_result',
       data: {
         v: DOC_PROTOCOL_VERSION,
-        workflow_id: this.workflowId,
+        workflow_id: workflowId,
         ok: false,
         code: 'invalid_frame',
         message: 'doc_ops frame was not structurally valid'
@@ -416,12 +512,12 @@ export class AgentFollowerHostSocket {
     }
   }
 
-  private forbiddenResult(): HostFrame {
+  private forbiddenResult(workflowId: string): HostFrame {
     return {
       type: 'doc_ops_result',
       data: {
         v: DOC_PROTOCOL_VERSION,
-        workflow_id: this.workflowId,
+        workflow_id: workflowId,
         ok: false,
         code: 'forbidden',
         message: 'op actor does not match the authenticated writer'
@@ -432,10 +528,11 @@ export class AgentFollowerHostSocket {
   /**
    * Rises once per subscribe the host accepted, after its answer was sent.
    * A custom answer from {@link answerSubscribesWith} may carry no catch-up;
-   * refused subscribes count only in {@link refusedSubscribeCount}.
+   * refused subscribes count only in {@link refusedSubscribeCount}. Counts the
+   * primary workflow unless another served workflow id is passed.
    */
-  subscribeCount(): number {
-    return this.subscribes
+  subscribeCount(workflowId = this.workflowId): number {
+    return this.subscribes.get(workflowId) ?? 0
   }
 
   connectionCount(): number {

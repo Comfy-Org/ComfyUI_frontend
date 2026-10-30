@@ -8,16 +8,8 @@
       "role": "presentation"
     },
     {
-      "path": "src/extensions/core/load3d/components/ViewportWidgetShell.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/extensions/core/load3d/components/menubar/menuBarStyles.ts",
       "role": "presentation"
-    },
-    {
-      "path": "src/extensions/core/load3d/composables/useViewportNodeWiring.test.ts",
-      "role": "integration"
     },
     {
       "path": "src/extensions/core/load3d/composables/useViewportNodeWiring.ts",

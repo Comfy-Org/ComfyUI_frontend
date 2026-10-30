@@ -8,10 +8,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/onboarding/coachmarkRegistry.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/onboarding/coachmarkRegistry.ts",
       "role": "application"
     },
@@ -20,35 +16,15 @@
       "role": "application"
     },
     {
-      "path": "src/platform/onboarding/onboardingOverlayStore.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/onboarding/onboardingOverlayStore.ts",
       "role": "application"
-    },
-    {
-      "path": "src/platform/onboarding/onboardingReplay.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/platform/onboarding/onboardingReplay.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/onboarding/onboardingReset.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/onboarding/onboardingReset.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/onboarding/onboardingTourStore.registeredTour.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/onboarding/onboardingTourStore.test.ts",
       "role": "application"
     },
     {
@@ -56,15 +32,7 @@
       "role": "application"
     },
     {
-      "path": "src/platform/onboarding/onboardingTours.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/onboarding/onboardingTours.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/onboarding/tourState.test.ts",
       "role": "domain"
     },
     {

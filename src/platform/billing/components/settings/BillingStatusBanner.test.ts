@@ -6,7 +6,7 @@ import {
   runDeniedPaymentPastDueFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -15,10 +15,8 @@ import type {
   BillingPortalOutcome,
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
-import type {
-  BillingStatus,
-  WorkspaceType
-} from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatus } from '@comfyorg/billing-core'
+import type { WorkspaceWithRole } from '@comfyorg/ingest-types'
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 
 interface Subscription {
@@ -41,7 +39,7 @@ const state = vi.hoisted(() => ({
     scheduledChange: null
   } as Subscription | null,
   renewalDate: null as string | null,
-  workspaceType: 'team' as WorkspaceType,
+  workspaceType: 'team' as WorkspaceWithRole['type'],
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
   canReactivatePlan: true,
@@ -90,19 +88,16 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: computed(() => ({
-        canManageSubscription: state.canManageSubscription,
-        canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-      })),
-      workspaceType: computed(() => state.workspaceType),
-      canReactivatePlan: computed(() => state.canReactivatePlan)
-    })
+vi.mock<unknown>(import('@/platform/billing/composables/useBillingUI'), () => ({
+  useBillingUI: () => ({
+    permissions: computed(() => ({
+      canManageSubscription: state.canManageSubscription,
+      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+    })),
+    workspaceType: computed(() => state.workspaceType),
+    canReactivatePlan: computed(() => state.canReactivatePlan)
   })
-)
+}))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
@@ -218,7 +213,9 @@ const globalOptions = {
   plugins: [i18n]
 }
 
-function renderBanner(section?: 'planCredits' | 'members' | 'allowlist') {
+function renderBanner(
+  section?: 'planCredits' | 'members' | 'allowlist' | 'billing'
+) {
   return render(BillingStatusBanner, {
     props: { section },
     global: globalOptions
@@ -290,6 +287,106 @@ describe('BillingStatusBanner', () => {
     useBillingCapabilities().canReactivate = computed(() => true)
     state.canReactivatePlan = true
     state.shouldUseWorkspaceBilling = true
+  })
+
+  describe('on the Billing tab', () => {
+    it.for([
+      {
+        name: 'plan ending',
+        enter: () => {
+          state.subscription = {
+            ...state.subscription!,
+            isCancelled: true,
+            endDate: '2026-10-28T00:00:00Z'
+          }
+        },
+        text: 'Your Team plan ends on'
+      },
+      {
+        name: 'a scheduled change while out of credits',
+        enter: () => {
+          scheduledFor('pro-annual')
+          state.subscription = { ...state.subscription!, hasFunds: false }
+        },
+        text: 'Your plan changes to'
+      },
+      {
+        name: 'plan ending while out of credits',
+        enter: () => {
+          state.subscription = {
+            ...state.subscription!,
+            hasFunds: false,
+            isCancelled: true,
+            endDate: '2026-10-28T00:00:00Z'
+          }
+        },
+        text: 'Your Team plan ends on'
+      },
+      {
+        name: 'plan ended',
+        enter: () => {
+          state.subscriptionStatus = 'ended'
+          state.billingStatus = 'inactive'
+          state.canAccessSubscriptionFeatures = false
+          state.subscription = {
+            hasFunds: false,
+            isCancelled: true,
+            endDate: '2026-09-12T12:00:00Z',
+            scheduledChange: null,
+            tier: 'PRO'
+          }
+        },
+        text: 'Your Team plan ended on September 12, 2026'
+      }
+    ])('shows $name with no buttons', ({ enter, text }) => {
+      enter()
+      renderBanner('billing')
+
+      const banner = screen.getByRole('status')
+      expect(banner).toHaveTextContent(text)
+      expect(within(banner).queryAllByRole('button')).toEqual([])
+    })
+
+    it.for([
+      {
+        name: 'a scheduled change',
+        enter: () => scheduledFor('pro-annual')
+      },
+      {
+        name: 'plan ended',
+        enter: () => {
+          state.subscriptionStatus = 'ended'
+          state.billingStatus = 'inactive'
+          state.canAccessSubscriptionFeatures = false
+          state.subscription = {
+            hasFunds: false,
+            isCancelled: true,
+            endDate: '2026-09-12T12:00:00Z',
+            scheduledChange: null,
+            tier: 'PRO'
+          }
+        }
+      }
+    ])('keeps $name after another tab dismisses it', async ({ enter }) => {
+      enter()
+      renderBanner('planCredits')
+      await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+
+      renderBanner('billing')
+
+      expect(screen.getByRole('status')).toBeInTheDocument()
+    })
+
+    it.for([
+      { name: 'out of credits', enter: exhausted },
+      { name: 'paused', enter: pausedState }
+    ])('leaves $name to the Billing tab banners', ({ enter }) => {
+      enter()
+      renderBanner('billing')
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
   })
 
   it('renders nothing for a healthy funded team', () => {

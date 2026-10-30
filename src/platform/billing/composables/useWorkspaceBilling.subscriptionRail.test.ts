@@ -3,21 +3,19 @@ import { effectScope } from 'vue'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   BillingStatusResponse,
   PreviewSubscribeResponse
-} from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import {
   fakeBillingSdk,
   serverCode,
   settledOperation
 } from '@/platform/billing/sdk/billingSdkTestUtils'
-import type { BillingSdk } from '@/platform/billing/sdk/createBillingSdk'
+import type { BillingSdk } from '@comfyorg/billing-core/sdk'
 import { useWorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -60,14 +58,15 @@ vi.mock(
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
-vi.mock(import('@/platform/billing/sdk/createBillingSdk'), () => ({
+vi.mock(import('@comfyorg/billing-core/sdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 
 const STATUS: BillingStatusResponse = {
+  ended_at: null,
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
@@ -146,27 +145,27 @@ beforeEach(() => {
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
   flagState.billingSdkSubscriptionEnabled = false
   flagState.unifiedCloudAuthEnabled = true
-  vi.spyOn(workspaceApi, 'getBillingStatus').mockResolvedValue(STATUS)
-  vi.spyOn(workspaceApi, 'getBillingBalance').mockResolvedValue({
+  vi.spyOn(billingApi, 'getBillingStatus').mockResolvedValue(STATUS)
+  vi.spyOn(billingApi, 'getBillingBalance').mockResolvedValue({
     amount_micros: 0,
     currency: 'USD'
   })
-  vi.spyOn(workspaceApi, 'cancelSubscription').mockResolvedValue({
+  vi.spyOn(billingApi, 'cancelSubscription').mockResolvedValue({
     billing_op_id: 'op-legacy',
     cancel_at: '2099-12-31T12:00:00Z'
   })
-  vi.spyOn(workspaceApi, 'resubscribe').mockResolvedValue({
+  vi.spyOn(billingApi, 'resubscribe').mockResolvedValue({
     billing_op_id: 'op-legacy',
     status: 'active'
   })
-  vi.spyOn(workspaceApi, 'getPaymentPortalUrl').mockResolvedValue({
+  vi.spyOn(billingApi, 'getPaymentPortalUrl').mockResolvedValue({
     url: 'https://portal.legacy.example/session'
   })
-  vi.spyOn(workspaceApi, 'subscribe').mockResolvedValue({
+  vi.spyOn(billingApi, 'subscribe').mockResolvedValue({
     billing_op_id: 'op-legacy',
     status: 'subscribed'
   })
-  vi.spyOn(workspaceApi, 'previewSubscribe').mockResolvedValue(LEGACY_QUOTE)
+  vi.spyOn(billingApi, 'previewSubscribe').mockResolvedValue(LEGACY_QUOTE)
   // A tab that opens, so these routing tests are not all reading as blocked.
   vi.spyOn(window, 'open').mockReturnValue(window)
   vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue({
@@ -178,7 +177,7 @@ describe('cancel subscription on the billing SDK rail', () => {
   it('issues through the workspace client while the rail is off', async () => {
     await setupBilling().cancelSubscription()
 
-    expect(workspaceApi.cancelSubscription).toHaveBeenCalledOnce()
+    expect(billingApi.cancelSubscription).toHaveBeenCalledOnce()
     expect(mockCreateBillingSdk).not.toHaveBeenCalled()
   })
 
@@ -188,7 +187,7 @@ describe('cancel subscription on the billing SDK rail', () => {
 
     await setupBilling().cancelSubscription()
 
-    expect(workspaceApi.cancelSubscription).toHaveBeenCalledOnce()
+    expect(billingApi.cancelSubscription).toHaveBeenCalledOnce()
     expect(mockCreateBillingSdk).not.toHaveBeenCalled()
   })
 
@@ -201,7 +200,7 @@ describe('cancel subscription on the billing SDK rail', () => {
     await setupBilling().cancelSubscription()
 
     expect(harness.sdk.commands.cancelSubscription).toHaveBeenCalledOnce()
-    expect(workspaceApi.cancelSubscription).not.toHaveBeenCalled()
+    expect(billingApi.cancelSubscription).not.toHaveBeenCalled()
   })
 
   it('falls back to the workspace client once when the route is missing', async () => {
@@ -215,7 +214,7 @@ describe('cancel subscription on the billing SDK rail', () => {
     await billing.cancelSubscription()
 
     expect(harness.sdk.commands.cancelSubscription).toHaveBeenCalledOnce()
-    expect(workspaceApi.cancelSubscription).toHaveBeenCalledTimes(2)
+    expect(billingApi.cancelSubscription).toHaveBeenCalledTimes(2)
   })
 
   it.for([
@@ -240,7 +239,7 @@ describe('cancel subscription on the billing SDK rail', () => {
         WorkspaceApiError
       )
       expect(billing.error.value).toBe(detail)
-      expect(workspaceApi.cancelSubscription).not.toHaveBeenCalled()
+      expect(billingApi.cancelSubscription).not.toHaveBeenCalled()
     }
   )
 
@@ -257,7 +256,7 @@ describe('cancel subscription on the billing SDK rail', () => {
     await expect(setupBilling().cancelSubscription()).rejects.toThrow(
       "We couldn't update your subscription. Please try again."
     )
-    expect(workspaceApi.cancelSubscription).not.toHaveBeenCalled()
+    expect(billingApi.cancelSubscription).not.toHaveBeenCalled()
   })
 })
 
@@ -358,7 +357,7 @@ describe('resubscribe on the billing SDK rail', () => {
   it('issues through the workspace client while the rail is off', async () => {
     await setupBilling().resubscribe()
 
-    expect(workspaceApi.resubscribe).toHaveBeenCalledOnce()
+    expect(billingApi.resubscribe).toHaveBeenCalledOnce()
     expect(mockCreateBillingSdk).not.toHaveBeenCalled()
   })
 
@@ -369,7 +368,7 @@ describe('resubscribe on the billing SDK rail', () => {
     await setupBilling().resubscribe()
 
     expect(harness.sdk.commands.resubscribe).toHaveBeenCalledOnce()
-    expect(workspaceApi.resubscribe).not.toHaveBeenCalled()
+    expect(billingApi.resubscribe).not.toHaveBeenCalled()
   })
 
   it('falls back to the workspace client when the route is missing', async () => {
@@ -378,7 +377,7 @@ describe('resubscribe on the billing SDK rail', () => {
 
     await setupBilling().resubscribe()
 
-    expect(workspaceApi.resubscribe).toHaveBeenCalledOnce()
+    expect(billingApi.resubscribe).toHaveBeenCalledOnce()
   })
 })
 
@@ -386,7 +385,7 @@ describe('subscribe on the billing SDK rail', () => {
   it('issues through the workspace client while the rail is off', async () => {
     await setupBilling().subscribe('pro-yearly', { promotionCode: 'LAUNCH' })
 
-    expect(workspaceApi.subscribe).toHaveBeenCalledWith('pro-yearly', {
+    expect(billingApi.subscribe).toHaveBeenCalledWith('pro-yearly', {
       promotionCode: 'LAUNCH'
     })
     expect(mockCreateBillingSdk).not.toHaveBeenCalled()
@@ -432,7 +431,7 @@ describe('subscribe on the billing SDK rail', () => {
       requiredPayment: false,
       operationObserved: true
     })
-    expect(workspaceApi.subscribe).not.toHaveBeenCalled()
+    expect(billingApi.subscribe).not.toHaveBeenCalled()
   })
 
   it('falls back to the workspace client once when the route is missing', async () => {
@@ -444,7 +443,7 @@ describe('subscribe on the billing SDK rail', () => {
     await billing.subscribe('pro-monthly')
 
     expect(harness.sdk.commands.subscribe).toHaveBeenCalledOnce()
-    expect(workspaceApi.subscribe).toHaveBeenCalledTimes(2)
+    expect(billingApi.subscribe).toHaveBeenCalledTimes(2)
   })
 
   it.for([
@@ -509,7 +508,7 @@ describe('subscribe on the billing SDK rail', () => {
     await expect(setupBilling().subscribe('pro-monthly')).rejects.toMatchObject(
       { code: 'REACTIVATION_CONFIRMATION_REQUIRED' }
     )
-    expect(workspaceApi.subscribe).not.toHaveBeenCalled()
+    expect(billingApi.subscribe).not.toHaveBeenCalled()
   })
 
   it('surfaces a refused transition under the server code', async () => {
@@ -524,7 +523,7 @@ describe('subscribe on the billing SDK rail', () => {
     await expect(setupBilling().subscribe('pro-monthly')).rejects.toMatchObject(
       { code: 'TRANSITION_NOT_ALLOWED', status: 409 }
     )
-    expect(workspaceApi.subscribe).not.toHaveBeenCalled()
+    expect(billingApi.subscribe).not.toHaveBeenCalled()
   })
 
   it('reports an operation that never settled as a failure', async () => {
@@ -543,7 +542,7 @@ describe('subscribe on the billing SDK rail', () => {
         code: 'timed_out'
       }
     )
-    expect(workspaceApi.subscribe).not.toHaveBeenCalled()
+    expect(billingApi.subscribe).not.toHaveBeenCalled()
   })
 })
 
@@ -553,7 +552,7 @@ describe('preview subscribe on the billing SDK rail', () => {
       teamCreditStopId: 'stop-1'
     })
 
-    expect(workspaceApi.previewSubscribe).toHaveBeenCalledWith('pro-yearly', {
+    expect(billingApi.previewSubscribe).toHaveBeenCalledWith('pro-yearly', {
       teamCreditStopId: 'stop-1'
     })
     expect(quote).toEqual(LEGACY_QUOTE)
@@ -577,7 +576,7 @@ describe('preview subscribe on the billing SDK rail', () => {
       promotionCode: 'LAUNCH'
     })
     expect(quote).toEqual(SDK_QUOTE)
-    expect(workspaceApi.previewSubscribe).not.toHaveBeenCalled()
+    expect(billingApi.previewSubscribe).not.toHaveBeenCalled()
   })
 
   it('falls back to the workspace client when the route is missing', async () => {
@@ -603,7 +602,7 @@ describe('payment portal on the billing SDK rail', () => {
   it('opens the workspace client URL while the rail is off', async () => {
     await setupBilling().manageSubscription()
 
-    expect(workspaceApi.getPaymentPortalUrl).toHaveBeenCalledOnce()
+    expect(billingApi.getPaymentPortalUrl).toHaveBeenCalledOnce()
     expect(portalTab.location.href).toBe(
       'https://portal.legacy.example/session'
     )
@@ -621,7 +620,7 @@ describe('payment portal on the billing SDK rail', () => {
     expect(harness.sdk.commands.openPaymentPortal).toHaveBeenCalledWith({
       returnUrl: window.location.href
     })
-    expect(workspaceApi.getPaymentPortalUrl).not.toHaveBeenCalled()
+    expect(billingApi.getPaymentPortalUrl).not.toHaveBeenCalled()
     expect(portalTab.location.href).toBe('https://portal.sdk.example/session')
   })
 
@@ -633,7 +632,7 @@ describe('payment portal on the billing SDK rail', () => {
 
     await setupBilling().manageSubscription()
 
-    expect(workspaceApi.getPaymentPortalUrl).toHaveBeenCalledOnce()
+    expect(billingApi.getPaymentPortalUrl).toHaveBeenCalledOnce()
     expect(portalTab.location.href).toBe(
       'https://portal.legacy.example/session'
     )
@@ -721,7 +720,7 @@ describe('payment portal telemetry', () => {
   })
 
   it('reports a refused portal request as a failed open', async () => {
-    vi.mocked(workspaceApi.getPaymentPortalUrl).mockRejectedValue(
+    vi.mocked(billingApi.getPaymentPortalUrl).mockRejectedValue(
       new WorkspaceApiError('Forbidden', 403)
     )
 

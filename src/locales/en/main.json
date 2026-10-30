@@ -28,7 +28,7 @@
     "validate": "Validate",
     "removeImage": "Remove image",
     "removeVideo": "Remove video",
-    "removeTag": "Remove tag",
+    "removeTagNamed": "Remove {tag}",
     "remove": "Remove",
     "removeFilter": "Remove {label} filter",
     "chart": "Chart",
@@ -75,6 +75,11 @@
     "textFailedToLoad": "Text failed to load",
     "liveSamplingPreview": "Live sampling preview",
     "extensionName": "Extension Name",
+    "extensionPath": "Extension Folder",
+    "extensionPaths": "Extensions by Folder",
+    "extensionPathToggle": "Extension folder {name}",
+    "extensionPathSaveRefused": "The extension change was not saved. Please try again.",
+    "extensionPathSaveUnconfirmed": "The extension change could not be confirmed. Reload the page before trying again.",
     "reloadToApplyChanges": "Reload to apply changes",
     "insert": "Insert",
     "systemInfo": "System Info",
@@ -225,8 +230,14 @@
     "enableSelected": "Enable Selected",
     "disableSelected": "Disable Selected",
     "disableThirdParty": "Disable Third-Party",
+    "disableAgentCreated": "Disable all agent-created",
     "core": "Core",
     "custom": "Custom",
+    "createdByAgent": "Created by agent",
+    "agentCreated": "Agent-created",
+    "agentExtensionAdded": "Your agent added {name}",
+    "agentExtensionDisableFailed": "Couldn't disable the extension. Try again.",
+    "disableExtension": "Disable extension",
     "command": "Command",
     "keybinding": "Keybinding",
     "keybindings": "Keybindings",
@@ -299,7 +310,7 @@
     "cancelled": "Cancelled",
     "agentWorking": "Agent is working on this workflow",
     "agentModified": "Agent updated this workflow",
-    "agentNeedsApproval": "Agent needs your approval",
+    "agentNeedsApproval": "Agent is waiting for your answer",
     "job": "Job",
     "asset": "{count} asset | {count} assets",
     "untitled": "Untitled",
@@ -378,6 +389,7 @@
     "recordingFailedToStart": "Could not start recording",
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
+    "agentInputNeededShort": "Input needed",
     "duplicate": "Duplicate",
     "itemsCopiedToClipboard": "Items copied to clipboard",
     "selectItemsToCopy": "Select items to copy",
@@ -1513,6 +1525,9 @@
     "jobAddedToQueue": "Job queued",
     "jobQueueing": "Job queuing",
     "completedIn": "Finished in {duration}",
+    "downloadingModel": "Downloading {name}",
+    "downloadingModelOf": "Downloading {name} ({index} of {count})",
+    "downloadedOfTotal": "{downloaded} of {total}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
       "openWorkflowNewTab": "Open workflow in new tab",
@@ -1576,7 +1591,6 @@
     "Quit": "Quit",
     "Reinstall": "Reinstall",
     "Restart": "Restart",
-    "Open 3D Viewer (Beta) for Selected Node": "Open 3D Viewer (Beta) for Selected Node",
     "Experimental: Browse Model Assets": "Experimental: Browse Model Assets",
     "Browse Templates": "Browse Templates",
     "Copy": "Copy",
@@ -2579,6 +2593,15 @@
     "fileSizeMegabytes": "{count} MB",
     "noVideoSource": "Select or connect a video to preview and edit"
   },
+  "videoConcat": {
+    "noClips": "Connect videos to preview and order them",
+    "clips": "Clips",
+    "clipLabel": "Clip {position}",
+    "previewClips": "Clips",
+    "previewResult": "Last run",
+    "reorderHint": "Drag clips or press Alt + arrow keys to reorder, click to jump",
+    "mixedDimensions": "Mixed sizes"
+  },
   "toastMessages": {
     "nothingToPasteIntoNode": "Nothing to paste into this node",
     "notificationsLabel": "Notification",
@@ -2725,6 +2748,7 @@
     "desktopHost": {
       "continueInBrowser": "Finish signing in in your browser",
       "signInFailed": "Sign-in didn't finish. Try again.",
+      "popupBlocked": "Allow pop-ups for this page to sign in.",
       "signOutFailed": "Comfy Desktop is still signed in. Finish or cancel any running install, then sign out again."
     },
     "showPassword": "Show password",
@@ -2739,8 +2763,15 @@
       "storageFailedDetail": "Please try again.",
       "stored": "API Key stored",
       "storedDetail": "Your API Key has been stored successfully",
+      "storedForSession": "API Key saved for this session only",
+      "storedForSessionDetail": "Your browser could not save it, so the key will be cleared when you reload.",
+      "storedForSessionBlockedDetail": "Your browser is blocking site storage, so this key won't be kept after you reload. A key saved earlier may be used again if you re-enable storage.",
+      "storedForSessionPreviousKeptDetail": "Your browser could not save it. After you reload, your previously saved key will be used again.",
       "cleared": "API Key cleared",
       "clearedDetail": "Your API Key has been cleared successfully",
+      "clearedForSession": "API Key cleared for this session only",
+      "clearedForSessionDetail": "Your browser could not remove the saved key, so it will be used again after you reload.",
+      "clearedForSessionBlockedDetail": "Your browser is blocking site storage. A key saved earlier may be used again if you re-enable storage.",
       "invalid": "Invalid API Key",
       "invalidDetail": "Please enter a valid API Key",
       "helpText": "Need an API key?",
@@ -2820,6 +2851,7 @@
         "orgNotAttached": "Your organization's Comfy workspace isn't set up yet. Contact your administrator.",
         "emailDomainNotAllowed": "Your organization's sign-in returned an email outside its domains. Ask your administrator to use your work email in the directory.",
         "orgMismatch": "You signed in to a different organization than the one for this email. Try again with your work account.",
+        "seatLimitReached": "Your organization has used all its Comfy seats. Ask your administrator to free a seat or add more.",
         "suspended": "Your organization has removed your access. Contact your administrator.",
         "accountDeleted": "This account is scheduled for deletion. If this is a mistake, email support{'@'}comfy.org.",
         "accountConflict": "More than one Comfy account uses this email. Email support{'@'}comfy.org for help.",
@@ -3205,6 +3237,7 @@
     "creditsYouveAdded": "Additional",
     "remaining": "remaining",
     "refillsDate": "Refills {date}",
+    "refillsAfterPayment": "Refills when the payment goes through",
     "refillsNextCycle": "Refills next cycle",
     "creditsUsed": "{used} used",
     "creditsLeftOfTotal": "{remaining} left of {total}",
@@ -3348,6 +3381,8 @@
     "teamHeaderLearnMore": "Learn more",
     "personalHeader": "Personal plans are for individual use only. {action}",
     "personalHeaderAction": "To add teammates, subscribe to the Team plan.",
+    "pastDueNoticeOwner": "You have an outstanding payment — update your payment method to change plans.",
+    "pastDueNoticeMember": "This workspace has an outstanding payment — ask your workspace owner to update the payment method.",
     "scheduledChangeNotice": "Your plan changes to {plan} on {date}.",
     "everythingInPlus": "Everything in {plan}, plus:",
     "monthlyCredits": "monthly credits",
@@ -3612,14 +3647,14 @@
         "onHold": "No default payment method. Set one to resume auto top-up.",
         "paused": "Monthly limit reached. Resumes {date}.",
         "pausedNoDate": "Monthly limit reached.",
-        "rule": "Adds {amount} ({credits} credits) when below {threshold} credits.",
+        "rule": "Tops up to {target} credits when below {threshold} credits.",
         "status": {
           "failed": "Failed",
           "turnedOff": "Turned off",
           "off": "Off",
           "on": "On",
           "onHold": "On hold",
-          "paused": "Paused"
+          "limitReached": "Limit reached"
         },
         "title": "Auto top-up",
         "unavailable": "Couldn't load auto top-up."
@@ -3627,10 +3662,12 @@
       "credits": {
         "addCredits": "Add credits",
         "available": "Available",
+        "availableUntil": "Available until {date}",
         "inUse": "In use now",
         "overdrawn": "Your runs used {count} more credit than you had. | Your runs used {count} more credits than you had.",
         "plan": "Plan",
         "planOfPool": "{remaining} of {total}",
+        "planUsed": "{percent}% used",
         "planTooltip": "Credits included with your plan. They refill each billing period.",
         "rateInfo": "About credits",
         "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
@@ -3639,6 +3676,10 @@
         "topUpTooltip": "Credits you added. They're used once plan credits run out.",
         "unavailable": "Couldn't load your balance."
       },
+      "footer": {
+        "messageSupport": "Message support",
+        "partnerNodesPricing": "Partner Nodes pricing"
+      },
       "handoff": {
         "member": {
           "action": "View usage",
@@ -3646,7 +3687,9 @@
         },
         "owner": {
           "action": "Open billing",
-          "label": "Payment methods, invoices, and usage"
+          "label": "Payment methods, invoices, and usage",
+          "line": "Manage everything else about billing on {platform}",
+          "platform": "platform.comfy.org"
         }
       },
       "loadError": "We couldn't load your plan.",
@@ -3674,13 +3717,19 @@
           "line": "Subscribe to run workflows on Cloud.",
           "title": "This workspace has no active plan"
         },
+        "paused": "Paused. The renewal payment didn't go through.",
         "resumeConfirm": {
           "body": "Your plan will renew on {date}. You can cancel again anytime.",
           "title": "Resume your {plan} plan?"
         },
+        "salesManaged": {
+          "line": "Billed by contract.",
+          "renews": "Billed by contract. Renews {date}.",
+          "title": "Enterprise"
+        },
         "scheduledChange": "Changes to {plan} on {date}.",
         "stayConfirm": {
-          "body": "Your plan won't change to {plan} on {date}. You can schedule a change again anytime.",
+          "bodyNoAmount": "You'll stay on {current}. You can schedule a change again anytime.",
           "title": "Cancel your change to {plan}?"
         },
         "unknown": {
@@ -3730,7 +3779,10 @@
       },
       "lowCredits": {
         "title": "Credits are low",
-        "localBody": "You have {credits} credits left. Add credits to keep running Partner Nodes."
+        "localBody": "You have {credits} credit left. Add credits to keep running Partner Nodes. | You have {credits} credits left. Add credits to keep running Partner Nodes.",
+        "personalBody": "You have {credits} credit left. Add credits before you run out. | You have {credits} credits left. Add credits before you run out.",
+        "ownerBody": "This workspace has {credits} credit left. Add credits before you run out. | This workspace has {credits} credits left. Add credits before you run out.",
+        "memberBody": "This workspace has {credits} credit left. Ask the workspace owner to add credits before you run out. | This workspace has {credits} credits left. Ask the workspace owner to add credits before you run out."
       },
       "ending": {
         "title": "Your Team plan ends on {date}",
@@ -3753,7 +3805,7 @@
           "title": "Payment received"
         },
         "verifyPayment": {
-          "action": "Verify your payment",
+          "action": "Complete verification",
           "body": "Your bank requires additional verification to complete this payment.",
           "title": "Verify your payment"
         }
@@ -4046,24 +4098,30 @@
     "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
     "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
+    "cannotCreateWorkspace": "You can't create a workspace on this account right now.",
     "failedToSwitch": "Failed to switch workspace"
   },
   "deploymentSwitcher": {
     "runOn": "Run on",
+    "runningOn": "Running on",
     "comfyCloud": "Comfy Cloud",
     "deployment": "{build} v{version}",
     "unnamedDeployment": "Deployment {id}",
     "namedDeployment": "{name}",
     "fullLabel": "{build} · {deployment}",
-    "nameWithVersion": "{name} · v{version}",
+    "version": "v{version}",
+    "labelWithDetail": "{label} · {detail}",
     "status": {
       "stopped": "Stopped",
+      "stopping": "Stopping",
+      "failed": "Failed",
       "starting": "Starting",
       "provisioning": "Starting",
       "notReady": "Not ready"
     },
     "triggerLabel": "Running on {deployment}. Choose where this editor runs",
     "triggerLabelNotReady": "{status} Choose where this editor runs",
+    "triggerLabelNew": "New. {label}",
     "currentTooltip": "Running on {deployment}",
     "stoppedTooltip": "Running on {deployment}. It's stopped, so jobs won't run until it's started on the Developer Platform.",
     "notReadyTooltip": "Running on {deployment}. It isn't ready, so jobs won't run until it is.",
@@ -4077,7 +4135,21 @@
     "defaultGoneOwner": "The workspace default was deleted, so members start on Comfy Cloud. Choose a new one under Workspace default.",
     "noDeployments": "This workspace has no deployments yet.",
     "createCustomDeployment": "Create a custom deployment",
-    "createCustomDeploymentTooltip": "Run the editor with your own custom nodes and models. Set it up on the Developer Platform.",
+    "manageDeployments": "Manage deployments",
+    "manageDeploymentsTooltip": "Manage your Builds and their deployments on the Developer Platform.",
+    "customDeployment": {
+      "title": "Create a custom deployment",
+      "body": "A custom deployment adds the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
+      "pointNodes": "Use custom nodes and models that aren't on Comfy Cloud",
+      "pointGpu": "Work in ComfyUI on the GPU you choose",
+      "pointApi": "Call it from your product as an autoscaling API",
+      "createOnPlatform": "Create on Platform"
+    },
+    "deployCustomNodes": {
+      "title": "Deploy Custom Nodes on Comfy Cloud",
+      "body": "Create a custom deployment that runs your custom nodes and models on Comfy Cloud, and appears under Run on for your workspace.",
+      "pointNodes": "Deploy the custom or private node packs your workflows need"
+    },
     "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
     "reload": "Reload",
@@ -4098,9 +4170,35 @@
     "linkWorkspaceRefused": "Couldn't switch to that workspace. You're still in {workspaceName}.",
     "lookupUnavailable": "Could not check which deployment this editor runs on.",
     "lookupUnavailableDetail": "The models shown are Comfy Cloud's. Reload to try again.",
-    "runsThisWorkflow": "Runs this workflow",
-    "missingNodes": "Missing {count} node | Missing {count} nodes",
-    "notChecked": "Not checked"
+    "compatibleEnvironments": "Compatible environments",
+    "incompatibleEnvironments": "Incompatible environments",
+    "missingNodesNamed": "{deployment} cannot run this workflow. It is missing {nodes}.",
+    "notCheckedNamed": "Could not check whether {deployment} can run this workflow.",
+    "reason": {
+      "starting": "{deployment} is starting. Pick it once it's ready.",
+      "startElsewhere": "{deployment} isn't running. Start it on the Developer Platform, then pick it.",
+      "notReady": "{deployment} isn't ready. Pick it once it's ready.",
+      "stopped": "{deployment} is stopped. Start it to run jobs on it.",
+      "failed": "{deployment} failed. Start it again to run jobs on it."
+    },
+    "missingNodesAfterReason": "It cannot run this workflow. It is missing {nodes}.",
+    "notCheckedAfterReason": "Could not check whether it can run this workflow.",
+    "start": "Start",
+    "retry": "Retry",
+    "startLabel": "Start {deployment}",
+    "startOnPlatformLabel": "Start {deployment} on the Developer Platform",
+    "retryLabel": "Retry starting {deployment}",
+    "startFailed": "{deployment} didn't start.",
+    "startFix": {
+      "noCredits": "Add credits, then retry.",
+      "tooManyRunning": "Stop another deployment, then retry.",
+      "unavailable": "Start it on the Developer Platform for now.",
+      "failed": "Retry, or check it on the Developer Platform."
+    },
+    "pickStopped": "{deployment} is stopped, so jobs won't run. Start it, or pick a ready deployment.",
+    "pickFailed": "{deployment} failed, so jobs won't run. Start it again, or pick a ready deployment.",
+    "stoppedStartTooltip": "Running on {deployment}. It's stopped, so jobs won't run. Open this menu to start it.",
+    "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again."
   },
   "selectionToolbox": {
     "executeButton": {
@@ -4432,6 +4530,23 @@
     "fileName": "File Name",
     "fileSize": "File Size",
     "filterBy": "Filter by",
+    "fileUpload": {
+      "cancelled": "Upload canceled.",
+      "choose": "Choose a file",
+      "drop": "Or drop a .safetensors file here",
+      "failed": "Upload failed. Try again.",
+      "notSafetensors": "Only .safetensors files can be uploaded.",
+      "notStopped": "Couldn't confirm the earlier upload stopped, so the file wasn't sent again.",
+      "planUnavailable": "Couldn't check your plan. Try again.",
+      "privateModelsDisabled": "Your plan doesn't include private models.",
+      "progress": "{sent} of {total}",
+      "saving": "Saving to your library...",
+      "stopping": "Stopping the earlier upload...",
+      "tryAgain": "Try again",
+      "unsupportedType": "Cloud can't store this model type yet. Choose another type.",
+      "upload": "Upload",
+      "uploading": "Uploading {name}"
+    },
     "findInLibrary": "Find it in the {type} section of the models library.",
     "finish": "Finish",
     "importAnother": "Import Another",
@@ -5062,7 +5177,9 @@
       "expand": "Expand",
       "runsOn": "Runs on:",
       "andMore": "and {count} more",
-      "noDeploymentRunsIt": "No deployment in this workspace has all of these nodes."
+      "noDeploymentRunsIt": "No deployment in this workspace has all of these nodes.",
+      "unsupportedOnBuild": "Not supported on this build: {cause}",
+      "unsupportedOnBuildNoCause": "Not supported on this build"
     },
     "missingModels": {
       "import": "Import",
@@ -5531,6 +5648,7 @@
     "downloadingModel": "Downloading model...",
     "downloadsFailed": "{count} download failed | {count} downloads failed",
     "allDownloadsCompleted": "All downloads completed",
+    "uploadsInLibrary": "{name} is in your library | {count} models are in your library",
     "noImportsInQueue": "No {filter} in queue",
     "failed": "Failed",
     "finished": "Finished",
@@ -5861,6 +5979,7 @@
   "agent": {
     "previewAsset": "Preview {name}",
     "title": "Comfy Agent",
+    "openVideo": "Open video: {name}",
     "diagnosticReport": {
       "retry": "Retry copy report",
       "clipboardFailed": "Clipboard access failed. Select and copy the report below, or retry.",
@@ -5875,6 +5994,7 @@
     "entryFailedReason": "ComfyUI could not start the agent: {reason}",
     "entryStartingReason": "ComfyUI is starting the agent: {reason}",
     "feedbackCaption": "Share feedback",
+    "creditsUsed": "Agent used {credits} credit | Agent used {credits} credits",
     "freeUseNoticeLabel": "Free use notice",
     "freeUseNotice": "Try your first chat for free!",
     "creditTransitionNotice": "You've used your free agent credits. Further agent activity uses your workspace credits, which may include paid credits.",
@@ -5901,6 +6021,7 @@
       "run": "Run",
       "answerFailed": "Could not send your answer. Reload the page and try again.",
       "answerUncertain": "Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.",
+      "answerAcceptedUnconfirmed": "Your answer reached the agent, but we could not confirm whether it was the answer applied. Reload the page to see where things stand.",
       "answerSuperseded": "This was already answered somewhere else, so that answer was used instead of yours."
     },
     "askUnavailable": "The agent is waiting on a step this panel can't show.",
@@ -5953,6 +6074,7 @@
     "historyYesterday": "Yesterday",
     "historyEarlier": "Earlier",
     "historyEmpty": "No conversations yet",
+    "historyIncomplete": "Some chats could not be loaded. Showing the ones we have.",
     "historyOpenFailed": "Could not open. Select this chat to retry.",
     "copyMarkdown": "Copy as markdown",
     "delete": "Delete",
@@ -6117,7 +6239,7 @@
     "workflowSyncFailedTitle": "This workflow can't sync",
     "workflowSyncFailedDetail": "This workflow was created with an incompatible document version. Your canvas has been left unchanged.",
     "workflowSyncFailedDetailCatalogMismatch": "A node in this workflow has changed since the agent last saw it. Your canvas has been left unchanged. Your next message sends your canvas so the agent can rebuild its copy of the workflow.",
-    "workflowSyncFailedDetailStaleClient": "This page is out of date, so the agent's changes can't be shown. Reload the page to see them.",
+    "workflowSyncFailedDetailStaleClient": "This page can't display the current version of this document, so the agent's changes can't be shown here. They are kept. Reloading may fix this; if it doesn't, the update hasn't reached your app yet.",
     "workflowSyncFailedDetailStaleHost": "This page is ahead of the agent service, so the agent's changes can't be shown here yet. Reload the page once the service finishes updating to see them.",
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
@@ -6145,13 +6267,23 @@
       "readDocs": "Read the docs",
       "reject": "Skip for now",
       "accept": "Start using Comfy Agent",
-      "agreeAndContinue": "Agree and continue",
-      "signInNext": "You'll sign in next.",
+      "agreeAndContinue": "Agree and continue with sign in",
       "body2BeforeSignIn": "To build your workflows, Comfy Agent processes some of your data. Please rest assured, your data is never used for AI model training. By clicking Agree and continue, you agree to its usage.",
       "videoPlaceholder": "Video unavailable",
       "loadError": "Could not load your Agent preference. Try again.",
-      "signInError": "Could not open sign-in. Please try again.",
-      "saveError": "Could not save your preference. Try again."
+      "saveError": "Could not save your preference. Try again.",
+      "errorTitle": "Couldn't start Comfy Agent",
+      "loadErrorTitle": "Couldn't load your Agent settings",
+      "signInErrorTitle": "Couldn't open sign-in",
+      "errorContact": "Please check your connection and try again. If you continue having issues, please use the {contactForm}.",
+      "contactForm": "contact form",
+      "tryAgain": "Try again"
+    },
+    "paused": {
+      "title": "The agent is paused",
+      "titleNoFunds": "The agent paused — out of credits",
+      "recheck": "It will try again on its own in about {seconds} second. | It will try again on its own in about {seconds} seconds.",
+      "resume": "Resume"
     },
     "paywall": {
       "title": "Out of credits",

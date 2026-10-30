@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
+import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { mockDeploymentListing } from '@/platform/workspace/__fixtures__/deploymentListing'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -97,6 +98,16 @@ vi.mock(
   () => ({ registerCoreBottomPanelTabs: vi.fn(async () => {}) })
 )
 
+vi.mock(
+  import('@/platform/customNodes/useReconnectNodeDefinitionRefresh'),
+  () => {
+    const refreshNodeDefinitionsOnReconnect = vi.fn(async () => {})
+    return {
+      useReconnectNodeDefinitionRefresh: () => refreshNodeDefinitionsOnReconnect
+    }
+  }
+)
+
 vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
   const refreshOnReconnect = vi.fn(async () => {})
   return { useReconnectQueueRefresh: () => refreshOnReconnect }
@@ -144,7 +155,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(
   import('@/platform/updates/common/useFrontendVersionMismatchWarning'),
   () => ({
@@ -200,7 +211,7 @@ vi.mock<unknown>(
   () => stubModule
 )
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/components/ManagerProgressToast.vue'),
+  import('@/platform/customNodes/manager/components/ManagerProgressToast.vue'),
 
   () => stubModule
 )
@@ -251,13 +262,14 @@ describe('GraphView - reconnect wiring', () => {
     delete window.__comfyDesktop2
   })
 
-  it('wires the reconnected event to the toast and queue refresh', () => {
+  it('wires the reconnected event to the toast, queue refresh and node definition refresh', () => {
     render(GraphView, { global: { plugins: [i18n] } })
 
     apiMock.dispatchCustomEvent('reconnected')
 
     expect(useReconnectingNotification().onReconnected).toHaveBeenCalledTimes(1)
     expect(useReconnectQueueRefresh()).toHaveBeenCalledTimes(1)
+    expect(useReconnectNodeDefinitionRefresh()).toHaveBeenCalledTimes(1)
   })
 
   it('reconciles a completed template input without a page refresh', async () => {
