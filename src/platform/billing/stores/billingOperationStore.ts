@@ -331,14 +331,13 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     ) {
       return
     }
-    const updated: BillingOperation = {
-      ...operation,
+    const before = { ...operation }
+    Object.assign(operation, {
       actionUrl: paymentMethodUrl,
       paymentMethodUrl,
       authenticationRequiredSeen: true
-    }
-    operations.value = new Map(operations.value).set(operation.opId, updated)
-    syncProgressToastAfterRead(operation, updated)
+    })
+    syncProgressToastAfterRead(before, operation)
   }
 
   function createPendingOperation(

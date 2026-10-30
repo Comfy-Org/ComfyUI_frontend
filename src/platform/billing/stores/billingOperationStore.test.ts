@@ -550,6 +550,27 @@ describe('billingOperationStore', () => {
           })
         })
 
+        it('keeps polling when the link is adopted while a read is in flight', async () => {
+          let resolveRead: (value: BillingOpStatusResponse) => void = () => {}
+          vi.mocked(billingApi.getBillingOpStatus)
+            .mockReturnValueOnce(
+              new Promise<BillingOpStatusResponse>((resolve) => {
+                resolveRead = resolve
+              })
+            )
+            .mockResolvedValue(pendingPhase('awaiting_payment_method'))
+          const store = useBillingOperationStore()
+          void store.startOperation('op-1', 'subscription', { resumed: true })
+
+          void store.startOperation('op-1', 'subscription', {
+            paymentMethodUrl: checkoutUrl
+          })
+          resolveRead(pendingPhase('awaiting_payment_method'))
+          await vi.advanceTimersByTimeAsync(31_000)
+
+          expect(billingApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
+        })
+
         it('does not keep the link when the poll reports no phase', async () => {
           vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(
             pending('op-1', false)
