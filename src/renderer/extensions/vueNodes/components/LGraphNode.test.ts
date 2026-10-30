@@ -730,7 +730,7 @@ describe('LGraphNode', () => {
       expect(missingResourcesIcon()).not.toBeInTheDocument()
     })
 
-    it('hides for a node with an execution error while the Issues tab is off', () => {
+    it('hides for a node with a validation error while the Issues tab is off', () => {
       setIssuesTabEnabled(false)
       recordValidationError()
       renderWithHeader()
