@@ -8,7 +8,6 @@ describe('useUserBusy', () => {
 
   afterEach(() => {
     for (const scope of scopes.splice(0)) scope.stop()
-    document.body.replaceChildren()
   })
 
   function watchUserBusy() {
