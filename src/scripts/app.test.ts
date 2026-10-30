@@ -58,6 +58,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 import {
   createTestCanvasElement,
   createTestDragAndScale,
@@ -1013,7 +1014,7 @@ describe('ComfyApp', () => {
 
         expect(active.extra).toEqual(expectedVisibleExtra)
         expect(workflow.graph).toBe(null)
-        expect(ChangeTracker.isLoadingGraph).toBe(false)
+        expect(isGraphLoading(active)).toBe(false)
         expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
           'onGraphLoadError',
           expect.any(Error)
@@ -1058,13 +1059,13 @@ describe('ComfyApp', () => {
             mockExtensionService.invokeExtensionsAsync
           ).toHaveBeenCalledWith('onGraphLoadError', error)
         )
-        expect(ChangeTracker.isLoadingGraph).toBe(true)
+        expect(isGraphLoading(app.rootGraph)).toBe(true)
       } finally {
         releaseErrorHandling()
         await load
       }
       await expect(load).resolves.toBe(false)
-      expect(ChangeTracker.isLoadingGraph).toBe(false)
+      expect(isGraphLoading(app.rootGraph)).toBe(false)
 
       expect(showDialog).toHaveBeenCalledOnce()
       expect(useSubgraphNavigationStore().updateHash).toHaveBeenCalledWith(
@@ -1426,7 +1427,7 @@ describe('ComfyApp', () => {
           marker: 'saved'
         })
         expect(secondGraph.extra).toMatchObject({ marker: 'other' })
-        expect(ChangeTracker.isLoadingGraph).toBe(false)
+        expect(isGraphLoading(app.rootGraph)).toBe(false)
       }
     )
 
@@ -1588,7 +1589,7 @@ describe('ComfyApp', () => {
           expect(runMissingModelPipeline).toHaveBeenCalledOnce()
         )
 
-        expect(ChangeTracker.isLoadingGraph).toBe(false)
+        expect(isGraphLoading(app.rootGraph)).toBe(false)
       } finally {
         releaseModels()
         await load
@@ -4427,6 +4428,7 @@ describe('ComfyApp', () => {
     it('gives each imported workflow its own restorable run errors', async () => {
       const workflowService = await useRealWorkflowService()
       const workflowStore = useWorkflowStore()
+      workflowStore.provideChangeTracker(ChangeTracker)
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)

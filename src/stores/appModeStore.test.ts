@@ -27,7 +27,8 @@ import type {
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
+import type { ChangeTracker } from '@/scripts/changeTracker'
 import {
   createMockChangeTracker,
   createNodeState
@@ -122,7 +123,7 @@ describe('appModeStore', () => {
 
   beforeEach(() => {
     vi.mocked(app.rootGraph).extra = {}
-    ChangeTracker.isLoadingGraph = false
+    endGraphLoad(app.rootGraph)
     mockResolveNode.mockReturnValue(undefined)
     vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
     vi.mocked(useCanvasStore().getCanvas).mockReturnValue(
@@ -527,7 +528,7 @@ describe('appModeStore', () => {
     })
 
     it('does not warn while a graph is still loading', () => {
-      ChangeTracker.isLoadingGraph = true
+      beginGraphLoad(app.rootGraph)
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [nodeWithWidgets(1, ['seed'])]
       vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
@@ -557,14 +558,14 @@ describe('appModeStore', () => {
   })
 
   describe('pruneLinearData during graph loading', () => {
-    it('still upgrades legacy inputs but defers output pruning when ChangeTracker.isLoadingGraph is true', () => {
+    it('still upgrades legacy inputs but defers output pruning while the graph is loading', () => {
       const node1 = nodeWithWidgets(1, ['seed'])
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
         id === toNodeId(1) ? node1 : null
       )
-      ChangeTracker.isLoadingGraph = true
+      beginGraphLoad(app.rootGraph)
 
       store.loadSelections({
         inputs: [

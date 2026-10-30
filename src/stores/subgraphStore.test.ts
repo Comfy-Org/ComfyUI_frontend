@@ -8,8 +8,10 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { GlobalSubgraphData } from '@/scripts/api'
@@ -79,6 +81,7 @@ describe('useSubgraphStore', () => {
   }
 
   beforeEach(() => {
+    useWorkflowStore().provideChangeTracker(ChangeTracker)
     vi.mocked(useDialogService().prompt).mockResolvedValue('testname')
     vi.mocked(useDialogService().confirm).mockResolvedValue(true)
     mockDistributionTypes.isCloud = false

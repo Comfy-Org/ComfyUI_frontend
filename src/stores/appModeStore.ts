@@ -15,7 +15,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
@@ -111,7 +111,7 @@ export const useAppModeStore = defineStore('appMode', () => {
       outputs: rawOutputs.flatMap((nodeId) => {
         const parsedNodeId = parseNodeId(nodeId)
         if (!parsedNodeId) return []
-        return ChangeTracker.isLoadingGraph || resolveNode(parsedNodeId)
+        return isGraphLoading(rootGraph) || resolveNode(parsedNodeId)
           ? [parsedNodeId]
           : []
       })
@@ -191,10 +191,13 @@ export const useAppModeStore = defineStore('appMode', () => {
     resolvedInputs: LinearInput[],
     resolvedOutputs: NodeId[]
   ) {
-    if (ChangeTracker.isLoadingGraph) return
-
     const app = useApp()
-    if (!app.isGraphReady || !app.rootGraph.nodes.length) return
+    if (
+      !app.isGraphReady ||
+      isGraphLoading(app.rootGraph) ||
+      !app.rootGraph.nodes.length
+    )
+      return
 
     const hadConfig = !!(data?.inputs?.length || data?.outputs?.length)
     if (!hadConfig || resolvedInputs.length || resolvedOutputs.length) return
@@ -240,9 +243,9 @@ export const useAppModeStore = defineStore('appMode', () => {
         ? { inputs: selectedInputs.value, outputs: selectedOutputs.value }
         : null,
     (data) => {
-      if (!data || ChangeTracker.isLoadingGraph) return
-      if (!useApp().isGraphReady) return
+      if (!data || !useApp().isGraphReady) return
       const graph = useApp().rootGraph
+      if (isGraphLoading(graph)) return
       const extra = graph.extra
       extra.linearData = {
         inputs: data.inputs.map(

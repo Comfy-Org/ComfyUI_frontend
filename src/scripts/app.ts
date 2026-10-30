@@ -16,7 +16,7 @@ import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionA
 import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
 import { registerApp } from '@/scripts/appRegistry'
 import {
   clipspace,
@@ -1275,7 +1275,7 @@ export class ComfyApp implements IComfyApp {
       clean
     )
     try {
-      ChangeTracker.isLoadingGraph = true
+      beginGraphLoad(graph)
       let reset_invalid_values = false
       const missingNodeTypes: MissingNodeType[] = []
       try {
@@ -1425,7 +1425,7 @@ export class ComfyApp implements IComfyApp {
           await this.reportGraphLoadFailure(error)
           if (clean) this.disownFailedLoadGraph(workflow)
         } finally {
-          ChangeTracker.isLoadingGraph = false
+          endGraphLoad(graph)
         }
         void useSubgraphNavigationStore().updateHash(
           'workflow-load',
@@ -1640,7 +1640,7 @@ export class ComfyApp implements IComfyApp {
           return undefined
         }
         await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-        ChangeTracker.isLoadingGraph = false
+        endGraphLoad(graph)
         activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
 
         const activeMissingNodeTypes = missingNodeTypes.filter(
@@ -1702,7 +1702,7 @@ export class ComfyApp implements IComfyApp {
           'workflow-load',
           workflowNavigationId
         )
-        ChangeTracker.isLoadingGraph = false
+        endGraphLoad(graph)
         useExecutionErrorStore().retireResolvedMissingNodePromptError()
         reconcileResourceErrors?.()
       }

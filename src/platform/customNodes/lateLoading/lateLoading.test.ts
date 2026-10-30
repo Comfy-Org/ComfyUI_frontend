@@ -27,6 +27,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
@@ -194,6 +195,7 @@ async function startEditor(signal?: AbortSignal) {
 
 describe('late custom node loading', () => {
   beforeEach(() => {
+    useWorkflowStore().provideChangeTracker(ChangeTracker)
     vi.useFakeTimers()
     log = []
     vi.mocked(useFeatureFlags().flags).lateCustomNodesEnabled = true

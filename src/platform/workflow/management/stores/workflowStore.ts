@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef, watch } from 'vue'
 import type { Raw } from 'vue'
 
+import { assert } from '@/base/assert'
 import { t } from '@/i18n'
 import type {
   LGraph,
@@ -22,7 +23,6 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
-import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
 import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { useDialogService } from '@/services/dialogService'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
@@ -48,38 +48,52 @@ import {
   registerWorkflowRuntime,
   reportWorkflowStateAnomaly
 } from './comfyWorkflow'
-import type { LoadedComfyWorkflow } from './comfyWorkflow'
+import type {
+  ChangeTrackerConstructor,
+  LoadedComfyWorkflow
+} from './comfyWorkflow'
 import type { WorkflowStore } from './workflowStoreTypes'
 export { ComfyWorkflow, type LoadedComfyWorkflow }
 
-registerWorkflowRuntime({
-  createChangeTracker: (workflow, initialState) =>
-    new ChangeTrackerAccess(workflow, initialState),
-  getDraft: (path) => useWorkflowDraftStoreV2().getDraft(path),
-  removeDraft: (path) => useWorkflowDraftStoreV2().removeDraft(path),
-  markDraftUsed: (path) => useWorkflowDraftStoreV2().markDraftUsed(path),
-  isDraftPersistenceEnabled: () =>
-    useSettingStore().get('Comfy.Workflow.Persist'),
-  forgetNodeHistories: (rootGraphId) =>
-    useWidgetHistoryStore().clearWorkflow(rootGraphId),
-  async promptSave(workflow) {
-    try {
-      return await useDialogService().prompt({
-        title: t(workflow.saveNamePrompt.title),
-        message: t(workflow.saveNamePrompt.message),
-        defaultValue: workflow.filename
-      })
-    } catch (error) {
-      reportError(error, {
-        surface: 'graph',
-        errorType: 'error_loading_dialog_service_prompt_save'
-      })
-      return null
-    }
-  }
-})
-
 export const useWorkflowStore = defineStore('workflow', () => {
+  let changeTrackerClass: ChangeTrackerConstructor | undefined
+
+  function provideChangeTracker(tracker: ChangeTrackerConstructor): void {
+    changeTrackerClass = tracker
+  }
+
+  registerWorkflowRuntime({
+    createChangeTracker: (workflow, initialState) => {
+      assert(
+        changeTrackerClass,
+        'No change tracker provided; call provideChangeTracker before loading workflows'
+      )
+      return new changeTrackerClass(workflow, initialState)
+    },
+    getDraft: (path) => useWorkflowDraftStoreV2().getDraft(path),
+    removeDraft: (path) => useWorkflowDraftStoreV2().removeDraft(path),
+    markDraftUsed: (path) => useWorkflowDraftStoreV2().markDraftUsed(path),
+    isDraftPersistenceEnabled: () =>
+      useSettingStore().get('Comfy.Workflow.Persist'),
+    forgetNodeHistories: (rootGraphId) =>
+      useWidgetHistoryStore().clearWorkflow(rootGraphId),
+    async promptSave(workflow) {
+      try {
+        return await useDialogService().prompt({
+          title: t(workflow.saveNamePrompt.title),
+          message: t(workflow.saveNamePrompt.message),
+          defaultValue: workflow.filename
+        })
+      } catch (error) {
+        reportError(error, {
+          surface: 'graph',
+          errorType: 'error_loading_dialog_service_prompt_save'
+        })
+        return null
+      }
+    }
+  })
+
   /**
    * History of tab activations. Most recent at the end.
    * Tracks the order in which tabs were activated to support "go to previous" behavior.
@@ -755,6 +769,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   return {
+    provideChangeTracker,
     activeWorkflow,
     attachWorkflow,
     isActive,

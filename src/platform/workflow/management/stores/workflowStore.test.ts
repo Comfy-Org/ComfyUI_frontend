@@ -31,7 +31,7 @@ import {
   resetDefaultWorkflowForTesting
 } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
-import '@/scripts/changeTracker'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -121,6 +121,7 @@ describe('useWorkflowStore', () => {
 
   beforeEach(() => {
     store = useWorkflowStore()
+    store.provideChangeTracker(ChangeTracker)
     bookmarkStore = useWorkflowBookmarkStore()
 
     // Add default mock implementations
