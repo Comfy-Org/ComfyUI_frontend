@@ -9,10 +9,6 @@ import type {
   JSONReportTest
 } from '@playwright/test/reporter'
 
-// Shapes Playwright's JSON reporter writes, derived from its own exports so the
-// consumed fields cannot drift from the producer. Every field stays optional:
-// the fork deploy workflow runs this on report artifacts a fork PR uploaded, so
-// the content is untrusted and re-validated at use.
 type ReportConfig = Partial<
   Pick<JSONReport['config'], 'rootDir' | 'configFile'>
 >
@@ -38,12 +34,9 @@ interface FailedTest {
   reportUrl?: string
 }
 
-/** What every failure entry needs beyond the spec it came from. */
 interface FailureContext {
   config?: ReportConfig
-  /** Deployed HTML report the entries link into, when there is one. */
   reportLinkBase?: string
-  /** Test root the caller states, used when the report states none. */
   testRoot?: string
 }
 
@@ -57,13 +50,7 @@ interface TestCounts {
 }
 
 const MAX_LISTED_FAILURES = 20
-/** Longest failure title kept. Playwright does not bound a test title. */
 const MAX_FAILURE_NAME_CHARS = 200
-/**
- * Character budget for the whole failure list. GitHub rejects a comment over
- * 65,536 characters and this is one section of several in it, so the entry cap
- * alone is not a size bound.
- */
 const MAX_FAILURE_LIST_CHARS = 4000
 
 function toCount(value: unknown): number {
@@ -72,7 +59,6 @@ function toCount(value: unknown): number {
     : 0
 }
 
-/** The shell splits failure records on `|` and on newlines. */
 function stripReportFieldDelimiters(text: string): string {
   return text.replace(/[|\r\n]+/g, ' ')
 }
@@ -83,7 +69,6 @@ function markdownSafe(text: string): string {
     .replace(/@/g, '@\u200b')
 }
 
-/** Truncates by code point, so a clamped title cannot end mid-character. */
 function clamp(text: string, limit: number): string {
   const characters = Array.from(text)
   return characters.length <= limit
@@ -91,16 +76,10 @@ function clamp(text: string, limit: number): string {
     : `${characters.slice(0, limit).join('')}…`
 }
 
-/**
- * Encodes one path or query segment for a Markdown link destination.
- * `encodeURIComponent` leaves parentheses alone and an unescaped `)` ends the
- * destination early.
- */
 function urlSegment(segment: string): string {
   return encodeURIComponent(segment).replace(/\(/g, '%28').replace(/\)/g, '%29')
 }
 
-/** A relative path that cannot escape the directory it is joined to. */
 function staysInside(candidate: string): boolean {
   return (
     !path.posix.isAbsolute(candidate) &&
@@ -109,12 +88,6 @@ function staysInside(candidate: string): boolean {
   )
 }
 
-/**
- * Test root the report itself states, relative to the repository. `''` when
- * tests live at the repository root; `undefined` when the report carries no
- * usable mapping — `merge-reports` drops `configFile` unless it is given a
- * config, so the sharded CI path reports none.
- */
 function configuredTestRoot(config: ReportConfig = {}) {
   const { rootDir, configFile } = config
   if (!rootDir || !configFile) return undefined
@@ -122,14 +95,12 @@ function configuredTestRoot(config: ReportConfig = {}) {
   return staysInside(testRoot) ? testRoot : undefined
 }
 
-/** Accepts only a plain relative directory from the caller. */
 function callerTestRoot(argument: string | undefined) {
   if (!argument) return undefined
   const normalized = path.posix.normalize(argument)
   return normalized !== '.' && staysInside(normalized) ? normalized : undefined
 }
 
-/** Repository-relative path of a test file, encoded for a Markdown link. */
 function linkedPath(file: string, context: FailureContext): string {
   const testRoot = configuredTestRoot(context.config) ?? context.testRoot
   const repoFile = testRoot ? path.posix.join(testRoot, file) : file
@@ -142,7 +113,6 @@ function linkedReport(specId: string | undefined, context: FailureContext) {
     : undefined
 }
 
-/** A flaky test passed on retry and the comment script counts it as passing. */
 function failedUnexpectedly(spec: Spec): boolean {
   return (spec.tests ?? []).some((test) => test.status === 'unexpected')
 }
@@ -165,7 +135,6 @@ function specFailure(
   ]
 }
 
-/** Keeps whole entries only, so every listed failure stays linkable. */
 function withinCommentBudget(failures: FailedTest[]): FailedTest[] {
   const kept: FailedTest[] = []
   let chars = 0
@@ -332,10 +301,9 @@ function extractTestCounts(
   }
 }
 
-// Main execution
 const reportDir = process.argv[2]
-const baseUrl = process.argv[3] // Optional: base URL of the deployed HTML report
-const testRoot = process.argv[4] // Optional: test root, relative to the repository
+const baseUrl = process.argv[3]
+const testRoot = process.argv[4]
 
 if (!reportDir) {
   console.error(
@@ -346,7 +314,6 @@ if (!reportDir) {
 
 const counts = extractTestCounts(reportDir, baseUrl, testRoot)
 
-// Output as JSON for easy parsing in shell script
 process.stdout.write(JSON.stringify(counts) + '\n')
 
 export { extractTestCounts, extractFailedTests }
