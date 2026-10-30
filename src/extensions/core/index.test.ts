@@ -66,6 +66,7 @@ describe('core extensions', () => {
       'Comfy.UploadImage',
       'Comfy.WebcamCapture',
       'Comfy.NodeTemplates',
+      'Comfy.Local.CloudBillingFlags',
       'Comfy.AgentPanel'
     ])
   })

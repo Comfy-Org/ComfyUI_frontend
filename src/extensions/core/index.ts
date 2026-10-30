@@ -79,6 +79,9 @@ async function registerInOrder() {
 
   if (!isCloud) {
     register((await import('./nodeTemplates')).nodeTemplatesExtension)
+    register(
+      (await import('./localCloudBillingFlags')).localCloudBillingFlagsExtension
+    )
   }
 
   await registerElectronAdapterExtension()
