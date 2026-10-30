@@ -343,14 +343,16 @@ describe('useBillingContext', () => {
         id: 'stop-1',
         credits_monthly: 1000,
         stop_usd: 10
-      }
+      },
+      period_credit_grant: { state: 'none' }
     }
 
     const {
       billingStatus,
       subscriptionStatus,
       subscriptionState,
-      currentTeamCreditStop
+      currentTeamCreditStop,
+      periodCreditGrant
     } = useBillingContext()
 
     expect(billingStatus.value).toBe('payment_failed')
@@ -361,6 +363,7 @@ describe('useBillingContext', () => {
       credits_monthly: 1000,
       stop_usd: 10
     })
+    expect(periodCreditGrant.value).toEqual({ state: 'none' })
   })
 
   it('exposes initialize action', async () => {
