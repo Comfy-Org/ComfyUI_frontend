@@ -3,9 +3,12 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { api } from '@/scripts/api'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import enMessages from '@/locales/en/main.json'
@@ -13,6 +16,7 @@ import enMessages from '@/locales/en/main.json'
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/assets/utils/resolveWidgetValueAsset'))
 
 function createItems(...names: string[]): FormDropdownItem[] {
   return names.map((name, i) => ({
@@ -307,6 +311,40 @@ describe('useWidgetSelectActions', () => {
 
       expect(useToast().warning).toHaveBeenCalledWith(
         'File is too large to upload (limit: 100 MB).'
+      )
+    })
+  })
+
+  describe('HDR preview', () => {
+    it('splits a backslash-separated value into subfolder and filename', async () => {
+      vi.mocked(resolveWidgetValueAsset).mockResolvedValue(
+        fromPartial({ preview_id: 'preview-1' })
+      )
+      const locatorId = fromPartial<NodeLocatorId>('7')
+
+      useWidgetSelectActions({
+        modelValue: ref<string | undefined>('scenes\\sky.exr'),
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'image',
+            type: 'combo',
+            value: 'scenes\\sky.exr'
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined,
+        locatorId: () => locatorId
+      })
+
+      await vi.waitFor(() =>
+        expect(useNodeOutputStore().nodeOutputs[locatorId]?.images).toEqual([
+          {
+            filename: 'sky.exr',
+            subfolder: 'scenes',
+            preview_id: 'preview-1',
+            type: 'input'
+          }
+        ])
       )
     })
   })

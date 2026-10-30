@@ -8,9 +8,20 @@
     "conditions": [
       "@comfyorg/account-core",
       "@comfyorg/account-ui",
+      "@comfyorg/billing-contract",
+      "@comfyorg/billing-core",
+      "@comfyorg/design-system",
+      "@comfyorg/graph-model",
+      "@comfyorg/ingest-types",
+      "@comfyorg/keybindings",
       "@comfyorg/layer-editor",
       "@comfyorg/mask-editor",
       "@comfyorg/object-info-parser",
+      "@comfyorg/registry-types",
+      "@comfyorg/shared-frontend-utils",
+      "@comfyorg/tailwind-utils",
+      "@comfyorg/telemetry",
+      "@comfyorg/test-utils",
       "@comfyorg/viewport3d"
     ]
   },

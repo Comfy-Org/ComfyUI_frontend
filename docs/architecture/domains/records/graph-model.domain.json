@@ -186,6 +186,10 @@
     {
       "path": "src/utils/uuid.ts",
       "role": "infrastructure"
+    },
+    {
+      "path": "packages/graph-model/src/**",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

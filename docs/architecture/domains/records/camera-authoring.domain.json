@@ -34,6 +34,14 @@
     {
       "path": "src/extensions/core/load3d/cameraInfo/widgetBridge.ts",
       "role": "application"
+    },
+    {
+      "path": "packages/viewport3d/src/cameraAngle/**",
+      "role": "application"
+    },
+    {
+      "path": "packages/viewport3d/src/cameraInfo/**",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],
