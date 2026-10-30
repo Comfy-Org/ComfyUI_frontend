@@ -89,7 +89,7 @@
             :class="cn('w-full @xl:w-auto', !copied && 'gap-3')"
             data-testid="custom-deployment-agent"
             :loading="isCopying"
-            @click="copyBrief"
+            @click="copy(CUSTOM_DEPLOYMENT_BRIEF)"
           >
             <template v-if="copied">
               <i class="icon-[lucide--check]" aria-hidden="true" />
@@ -126,16 +126,15 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { createReusableTemplate } from '@vueuse/core'
-import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import Video from '@/components/common/Video.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import AgentMarks from '@/platform/workflow/deploy/components/AgentMarks.vue'
+import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
 import { CUSTOM_DEPLOYMENT_BRIEF } from '@/platform/workspace/customDeploymentBrief'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 
@@ -157,24 +156,9 @@ const emit = defineEmits<{
 defineOptions({ inheritAttrs: false })
 
 const { buildDocsUrl } = useExternalLink()
-const { copyToClipboard } = useCopyToClipboard()
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
-const isCopying = ref(false)
-const copied = ref(false)
+const { isCopying, copied, copy } = useBriefCopy()
 
 const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
 const createDeploymentUrl = `${getComfyPlatformBaseUrl()}/profile/builds`
-
-async function copyBrief() {
-  if (isCopying.value) return
-  isCopying.value = true
-  copied.value = false
-  try {
-    copied.value = await copyToClipboard(CUSTOM_DEPLOYMENT_BRIEF, {
-      toastOnSuccess: false
-    })
-  } finally {
-    isCopying.value = false
-  }
-}
 </script>
