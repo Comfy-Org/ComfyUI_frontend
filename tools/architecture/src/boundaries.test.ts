@@ -192,6 +192,16 @@ describe('buildBoundaries', () => {
       from: 'src/editor/model/a.ts',
       to: 'src/images/app/index.ts',
       allowed: false
+    },
+    {
+      name: 'role direction applies across inventory domains',
+      records: [
+        images({ deepImports: 'inventory' }),
+        editor({ deepImports: 'inventory' })
+      ],
+      from: 'src/editor/model/a.ts',
+      to: 'src/images/app/store.ts',
+      allowed: false
     }
   ])('$name', ({ records, from, to, allowed }) => {
     expect(fallowAllows(records, from, to)).toBe(allowed)
