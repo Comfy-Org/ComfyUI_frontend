@@ -2,6 +2,7 @@ import type {
   GetEmbeddingsResponse,
   GetExtensionsResponse,
   GetI18nResponse,
+  ModelDownloadData,
   ModelFile,
   PostAssetsFromWorkflowResponse
 } from '@comfyorg/ingest-types'
@@ -217,6 +218,7 @@ interface BackendApiCalls {
   feature_flags: FeatureFlagsWsMessage
   agent_status: AgentStatusWsMessage
   asset_download: AssetDownloadWsMessage
+  model_download: ModelDownloadData
   asset_export: AssetExportWsMessage
   'assets.seed.completed': AssetSeedCompletedWsMessage
 }
