@@ -45,6 +45,7 @@
             cn(
               'group col-span-full grid grid-cols-subgrid items-stretch',
               row.showsControl && 'lg-node-widget',
+              row.socketOnly && '-mb-1',
               row.inHoveredGroup && 'rounded-sm ring-1 ring-primary'
             )
           "
@@ -177,6 +178,7 @@ const renderedRows = computed(() =>
           widget,
           autogrowGroup: true,
           inHoveredGroup: false,
+          socketOnly: false,
           showsControl: false,
           slotClass: '',
           standalone: false,
@@ -186,8 +188,8 @@ const renderedRows = computed(() =>
       ]
     }
     const isConverted = isConvertedWidgetType(widget.simplified.type)
-    const showsControl = !isConverted && widget.visible
-    //A connected group renders as an ordinary connected row
+    const isSocketOnly = widget.simplified.type === 'shim'
+    const showsControl = !isConverted && !isSocketOnly && widget.visible
     const suppressedByConnection =
       !!widget.suppressedByConnection || isAutogrowGroup
     const shouldRender = isConverted
@@ -201,18 +203,16 @@ const renderedRows = computed(() =>
         widget,
         autogrowGroup: false,
         inHoveredGroup: highlighted,
+        socketOnly: isSocketOnly,
         showsControl,
         slotClass: cn(
           'z-10 flex items-stretch',
           showsControl
             ? 'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100'
             : 'col-span-full',
-          (widget.slotMetadata?.linked ||
-            widget.simplified.type === 'shim' ||
-            highlighted) &&
-            'opacity-100'
+          (widget.slotMetadata?.linked || highlighted) && 'opacity-100'
         ),
-        standalone: !showsControl && suppressedByConnection,
+        standalone: !showsControl && (suppressedByConnection || isSocketOnly),
         testId: showsControl ? 'node-widget' : undefined,
         rowSize:
           showsControl &&
