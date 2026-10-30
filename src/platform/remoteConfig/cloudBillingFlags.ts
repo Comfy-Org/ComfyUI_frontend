@@ -10,7 +10,7 @@ import { remoteConfig, remoteConfigRevision } from './remoteConfig'
 import type { RemoteConfig } from './types'
 
 /** The billing keys a local build reads from Cloud; the local server serves none of them. */
-export const CLOUD_BILLING_FLAG_KEYS = [
+const CLOUD_BILLING_FLAG_KEYS = [
   'unified_billing_settings',
   'hosted_billing_destination',
   'billing_web_url'
