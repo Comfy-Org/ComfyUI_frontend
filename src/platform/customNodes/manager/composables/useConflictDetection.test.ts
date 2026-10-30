@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -466,6 +467,42 @@ describe('useConflictDetection', () => {
       expect(bannedPackIds(results)).toEqual(packIds(250).slice(100))
     })
 
+    it('reports failed chunks once per run as a degraded lookup', async () => {
+      installPacks(350)
+      vi.mocked(mockRegistryService.getBulkNodeVersions).mockImplementation(
+        (nodeVersions) =>
+          nodeVersions.some(({ node_id }) =>
+            ['pack-0', 'pack-100'].includes(node_id)
+          )
+            ? Promise.reject(new Error('network down'))
+            : Promise.resolve(bannedResponse(nodeVersions))
+      )
+
+      const { runFullConflictAnalysis } = useConflictDetection()
+      await runFullConflictAnalysis()
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        new Error('network down'),
+        expect.objectContaining({
+          errorType: 'failure_fetching_bulk_node_versions',
+          tags: { outcome: 'degraded' },
+          context: { failedChunkCount: 2, totalChunkCount: 4 }
+        })
+      )
+    })
+
+    it('does not report when every chunk succeeds', async () => {
+      installPacks(250)
+      vi.mocked(mockRegistryService.getBulkNodeVersions).mockImplementation(
+        (nodeVersions) => Promise.resolve(bannedResponse(nodeVersions))
+      )
+
+      const { runFullConflictAnalysis } = useConflictDetection()
+      await runFullConflictAnalysis()
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
     it('bounds how many chunk requests are in flight at once', async () => {
       installPacks(1000)
       let inFlightRequests = 0
@@ -522,6 +559,7 @@ describe('useConflictDetection', () => {
             String(message).includes('Failed to fetch bulk version data')
           )
       ).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
     })
 
     it('sends a single request when the install fits in one chunk', async () => {

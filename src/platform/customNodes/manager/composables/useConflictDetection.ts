@@ -1,6 +1,7 @@
 import { until } from '@vueuse/core'
 import { chunk } from 'es-toolkit'
 import { find } from 'es-toolkit/compat'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
@@ -33,16 +34,8 @@ import {
 import { normalizeOSList } from '@/platform/customNodes/manager/utils/systemCompatibility'
 import { getFrontendVersion } from '@/platform/customNodes/manager/utils/versionUtil'
 
-/**
- * Node versions sent per `POST /bulk/nodes/versions` request. Must stay at or
- * below the registry's server-side cap on that array (currently 1000).
- */
 const BULK_NODE_VERSIONS_CHUNK_SIZE = 100
 
-/**
- * Chunk requests allowed in flight at once, so a large install can't fan out
- * into dozens of simultaneous registry requests and get rate-limited.
- */
 const BULK_NODE_VERSIONS_MAX_PARALLEL_REQUESTS = 4
 
 type BulkNodeVersionsResponse =
@@ -50,19 +43,13 @@ type BulkNodeVersionsResponse =
 
 interface BulkNodeVersionsResult {
   versionDataMap: Map<string, components['schemas']['NodeVersion']>
-  /**
-   * Packs the Registry never gave a banned/pending answer for, because their
-   * chunk request went unanswered or their entry came back `status: 'error'`.
-   * A `not_found` entry (or an omitted one) is NOT in here — that is how the
-   * Registry reports packs it doesn't know about.
-   */
-  failedNodeIds: Set<string>
+  unverifiedNodeIds: Set<string>
 }
 
 function collectNodeVersions(
   response: BulkNodeVersionsResponse,
   versionDataMap: Map<string, components['schemas']['NodeVersion']>,
-  failedNodeIds: Set<string>
+  unverifiedNodeIds: Set<string>
 ): void {
   response.node_versions.forEach((result) => {
     if (result.status === 'success' && result.node_version) {
@@ -72,26 +59,36 @@ function collectNodeVersions(
         `[ConflictDetection] Failed to fetch version data for ${result.identifier.node_id}@${result.identifier.version}:`,
         result.error_message
       )
-      failedNodeIds.add(result.identifier.node_id)
+      unverifiedNodeIds.add(result.identifier.node_id)
     }
   })
 }
+
+type BulkNodeVersionsChunkOutcome =
+  | { ok: true; response: BulkNodeVersionsResponse }
+  | { ok: false; cause: unknown }
 
 async function retryBulkNodeVersionsChunk(
   registryService: ReturnType<typeof useComfyRegistryService>,
   nodeVersions: components['schemas']['NodeVersionIdentifier'][],
   signal?: AbortSignal
-): Promise<BulkNodeVersionsResponse | null> {
+): Promise<BulkNodeVersionsChunkOutcome> {
   try {
-    return await registryService.getBulkNodeVersions(nodeVersions, signal)
-  } catch (error) {
-    if (!isAbortError(error)) {
+    const response = await registryService.getBulkNodeVersions(
+      nodeVersions,
+      signal
+    )
+    return response
+      ? { ok: true, response }
+      : { ok: false, cause: new Error('Empty bulk node versions response') }
+  } catch (cause) {
+    if (!isAbortError(cause)) {
       console.warn(
         '[ConflictDetection] Retry of bulk version data failed:',
-        error
+        cause
       )
     }
-    return null
+    return { ok: false, cause }
   }
 }
 
@@ -100,9 +97,9 @@ async function resolveBulkNodeVersionsChunk(
   bulkResponse: PromiseSettledResult<BulkNodeVersionsResponse | null>,
   nodeVersions: components['schemas']['NodeVersionIdentifier'][],
   signal?: AbortSignal
-): Promise<BulkNodeVersionsResponse | null> {
+): Promise<BulkNodeVersionsChunkOutcome> {
   if (bulkResponse.status === 'fulfilled' && bulkResponse.value) {
-    return bulkResponse.value
+    return { ok: true, response: bulkResponse.value }
   }
   if (bulkResponse.status === 'rejected') {
     console.warn(
@@ -113,20 +110,15 @@ async function resolveBulkNodeVersionsChunk(
   return retryBulkNodeVersionsChunk(registryService, nodeVersions, signal)
 }
 
-/**
- * Fetches version data for every installed pack in bounded batches of
- * `POST /bulk/nodes/versions` requests, keyed by node id. A chunk that fails is
- * retried once; if it still fails, its packs are reported as unknown rather
- * than silently treated as having no Registry status.
- */
 async function fetchBulkNodeVersions(
   registryService: ReturnType<typeof useComfyRegistryService>,
   nodeVersions: components['schemas']['NodeVersionIdentifier'][],
   signal?: AbortSignal
 ): Promise<BulkNodeVersionsResult> {
   const versionDataMap = new Map<string, components['schemas']['NodeVersion']>()
-  const failedNodeIds = new Set<string>()
-  const result = { versionDataMap, failedNodeIds }
+  const unverifiedNodeIds = new Set<string>()
+  const result = { versionDataMap, unverifiedNodeIds }
+  const failedChunkCauses: unknown[] = []
 
   const requestChunks = chunk(nodeVersions, BULK_NODE_VERSIONS_CHUNK_SIZE)
 
@@ -143,11 +135,10 @@ async function fetchBulkNodeVersions(
     )
 
     for (const [index, bulkResponse] of bulkResponses.entries()) {
-      // A cancelled run is not a failed lookup: leave those packs unmarked.
       if (signal?.aborted) return result
 
       const nodeVersionsChunk = parallelChunks[index]
-      const response = await resolveBulkNodeVersionsChunk(
+      const outcome = await resolveBulkNodeVersionsChunk(
         registryService,
         bulkResponse,
         nodeVersionsChunk,
@@ -155,16 +146,32 @@ async function fetchBulkNodeVersions(
       )
       if (signal?.aborted) return result
 
-      if (!response) {
+      if (!outcome.ok) {
         console.warn(
           '[ConflictDetection] Failed to fetch bulk version data for one batch of installed packs'
         )
-        nodeVersionsChunk.forEach(({ node_id }) => failedNodeIds.add(node_id))
+        nodeVersionsChunk.forEach(({ node_id }) =>
+          unverifiedNodeIds.add(node_id)
+        )
+        failedChunkCauses.push(outcome.cause)
         continue
       }
 
-      collectNodeVersions(response, versionDataMap, failedNodeIds)
+      collectNodeVersions(outcome.response, versionDataMap, unverifiedNodeIds)
     }
+  }
+
+  if (failedChunkCauses.length > 0) {
+    reportError(failedChunkCauses[0], {
+      errorType: 'failure_fetching_bulk_node_versions',
+      surface: 'platform',
+      level: 'warning',
+      tags: { outcome: 'degraded' },
+      context: {
+        failedChunkCount: failedChunkCauses.length,
+        totalChunkCount: requestChunks.length
+      }
+    })
   }
 
   return result
@@ -285,7 +292,7 @@ export function useConflictDetection() {
         version: pack.version
       }))
 
-      const { versionDataMap, failedNodeIds } = await fetchBulkNodeVersions(
+      const { versionDataMap, unverifiedNodeIds } = await fetchBulkNodeVersions(
         registryService,
         nodeVersions,
         abortController.value?.signal
@@ -335,9 +342,7 @@ export function useConflictDetection() {
             `[ConflictDetection] No Registry data found for ${installedPackVersion.id}, using fallback`
           )
 
-          // Create fallback requirement without Registry data. A failed lookup
-          // is flagged rather than reported as not-banned, so an earlier known
-          // banned/pending status isn't erased.
+          // Create fallback requirement without Registry data
           const fallbackRequirement: NodeRequirements = {
             id: installedPackVersion.id,
             name: packInfo?.name || installedPackVersion.id,
@@ -345,7 +350,9 @@ export function useConflictDetection() {
             is_enabled: isEnabled,
             is_banned: false,
             is_pending: false,
-            registry_status_unknown: failedNodeIds.has(installedPackVersion.id)
+            registry_status_unknown: unverifiedNodeIds.has(
+              installedPackVersion.id
+            )
           }
 
           requirements.push(fallbackRequirement)
@@ -492,13 +499,6 @@ export function useConflictDetection() {
     return results
   }
 
-  /**
-   * Keeps the Registry-derived conflicts an earlier run already established for
-   * packs whose Registry lookup failed this run, so an outage can't quietly
-   * downgrade a known-banned pack to "compatible". `import_failed` is excluded
-   * because it comes from the Manager, not the Registry, and is re-detected in
-   * full on every run — carrying it over would resurrect a resolved failure.
-   */
   function carryOverUnverifiedConflicts(
     unknownPackIds: Set<string>
   ): ConflictDetectionResult[] {
@@ -537,7 +537,6 @@ export function useConflictDetection() {
     isDetecting.value = true
     detectionError.value = null
 
-    // Held locally because `cancelRequests` drops the ref on abort
     abortController.value = new AbortController()
     const { signal } = abortController.value
 
@@ -555,7 +554,6 @@ export function useConflictDetection() {
             : []
         )
       )
-      // Read before the store is overwritten below
       const carriedOverConflicts = carryOverUnverifiedConflicts(
         registryUnknownPackIds
       )
@@ -588,8 +586,6 @@ export function useConflictDetection() {
       // 5. Combine all results
       const allResults = [...packageResults, ...importFailResults]
 
-      // A cancelled run saw only partial Registry and Manager data; committing
-      // it would downgrade every pack it never got to re-verify.
       if (signal.aborted) {
         return {
           success: false,
@@ -628,7 +624,6 @@ export function useConflictDetection() {
         detectionResults.value = []
       }
 
-      // After clearConflicts(), which also resets the unknown-pack ids
       conflictStore.setRegistryUnknownPackIds(registryUnknownPackIds)
 
       const response: ConflictDetectionResponse = {
