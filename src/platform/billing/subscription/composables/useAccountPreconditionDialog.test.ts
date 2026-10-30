@@ -2,6 +2,7 @@ import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { describe, expect, it, vi } from 'vitest'
 
+import { getPreservedQueryParam } from '@/platform/navigation/preservedQueryManager'
 import { useWorkspaceCreditsSource } from '@/platform/workspace/ports/workspaceCreditsSource'
 import { useDialogStore } from '@/stores/dialogStore'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
@@ -18,13 +19,13 @@ vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
-function mockCreditsSource(switchToPersonalSucceeds = true) {
+function mockCreditsSource(
+  personalSwitch: 'active' | 'reloading' | 'failed' = 'active'
+) {
   const source = {
     teamWorkspaces: [{ id: 'ws-acme', name: 'Acme' }],
     switchWorkspace: vi.fn().mockResolvedValue(true),
-    switchToPersonalWorkspace: vi
-      .fn()
-      .mockResolvedValue(switchToPersonalSucceeds)
+    switchToPersonalWorkspace: vi.fn().mockResolvedValue(personalSwitch)
   }
   vi.mocked(useWorkspaceCreditsSource).mockReturnValue(source)
   return source
@@ -162,15 +163,27 @@ describe('useAccountPreconditionDialog', () => {
       isInsufficientCredits: true
     })
     expect(personalWalletDialogProps()).toBeUndefined()
+    expect(getPreservedQueryParam('topup', 'topup')).toBeUndefined()
   })
 
   it('keeps the personal-wallet dialog open when the personal workspace switch fails', async () => {
-    mockCreditsSource(false)
+    mockCreditsSource('failed')
     await useAccountPreconditionDialog().open('personal_wallet_session')
 
     await personalWalletDialogProps()?.onAddCredits()
 
     expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
     expect(personalWalletDialogProps()).toBeDefined()
+    expect(getPreservedQueryParam('topup', 'topup')).toBeUndefined()
+  })
+
+  it('defers the top-up to the next boot when the personal workspace switch reloads the page', async () => {
+    mockCreditsSource('reloading')
+    await useAccountPreconditionDialog().open('personal_wallet_api_key')
+
+    await personalWalletDialogProps()?.onAddCredits()
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(getPreservedQueryParam('topup', 'topup')).toBe('out_of_credits')
   })
 })

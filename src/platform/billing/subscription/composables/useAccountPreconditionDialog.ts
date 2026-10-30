@@ -3,6 +3,7 @@ import PersonalWalletCreditsDialog from '@/platform/billing/components/PersonalW
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { AccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
+import { setOutOfCreditsTopUpResume } from '@/platform/billing/subscription/composables/useTopUpUrlLoader'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import type { PersonalWalletCredential } from '@/platform/workflowErrors/errorCatalog/runtimeErrorMatcher'
@@ -65,7 +66,11 @@ export function useAccountPreconditionDialog() {
             closePersonalWalletDialog()
         },
         onAddCredits: async () => {
-          if (!(await creditsSource.switchToPersonalWorkspace())) return
+          setOutOfCreditsTopUpResume(true)
+          const personalSwitch = await creditsSource.switchToPersonalWorkspace()
+          if (personalSwitch === 'reloading') return
+          setOutOfCreditsTopUpResume(false)
+          if (personalSwitch === 'failed') return
           closePersonalWalletDialog()
           showTopUpForExhaustedBalance(context)
         },

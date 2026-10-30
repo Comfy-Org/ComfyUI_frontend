@@ -1,6 +1,7 @@
 import { useRoute, useRouter } from 'vue-router'
 
 import {
+  capturePreservedQuery,
   clearPreservedQuery,
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
@@ -12,6 +13,17 @@ import { useBillingCapabilities } from '@/platform/billing/composables/useBillin
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.TOPUP
+const OUT_OF_CREDITS = 'out_of_credits'
+
+/**
+ * Carries an out-of-credits top-up across a workspace switch's page reload,
+ * so the next boot opens it in the workspace the switch landed in.
+ */
+export function setOutOfCreditsTopUpResume(resume: boolean): void {
+  if (resume)
+    capturePreservedQuery(NAMESPACE, { topup: OUT_OF_CREDITS }, ['topup'])
+  else clearPreservedQuery(NAMESPACE)
+}
 
 /**
  * Opens the credit top-up dialog from a `?topup=1` deep link, to send existing
@@ -51,6 +63,11 @@ export function useTopUpUrlLoader() {
     // Only a non-empty string value opens the dialog; an empty/array param
     // just gets stripped above.
     if (!shouldOpen) return
+
+    if (param === OUT_OF_CREDITS) {
+      void showTopUpCreditsDialog({ isInsufficientCredits: true })
+      return
+    }
 
     if (!canTopUp.value) return
 
