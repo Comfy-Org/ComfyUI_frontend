@@ -4,10 +4,6 @@
   "description": "Shared technical module, not a business domain. Renders Markdown to sanitized HTML with link and media handling for note nodes, text output previews, release notes, node help, node previews, and agent replies. The note-nodes and text-output-preview records explicitly leave shared Markdown rendering outside their capability; this record is that owner.",
   "modules": [
     {
-      "path": "src/utils/markdownRendererUtil.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/utils/markdownRendererUtil.ts",
       "role": "infrastructure"
     }

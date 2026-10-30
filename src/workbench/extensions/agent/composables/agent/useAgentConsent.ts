@@ -244,7 +244,6 @@ export function useAgentConsent() {
           }
         },
         dialogComponentProps: {
-          centerOnViewport: true,
           dismissOnPointerDownOutside: true,
           headless: true,
           onClose: () => {

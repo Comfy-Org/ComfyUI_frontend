@@ -33,7 +33,6 @@ import { BILLING_TELEMETRY_EVENTS } from '@comfyorg/account-core/billing'
 import type { BillingSource } from '@comfyorg/billing-contract'
 import type {
   AgentRunMode,
-  GetFeaturesResponses,
   SubscriptionTier,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
@@ -955,17 +954,6 @@ export type AgentStarterPromptId =
   | 'slot_4'
   | 'slot_5'
   | 'unregistered'
-export type AgentStarterPromptAssignment = NonNullable<
-  GetFeaturesResponses[200]['agent-starter-prompt-set']
->
-interface AgentStarterPromptExperimentMetadata {
-  /**
-   * Assignment of the prompt set that rendered. Optional consumers omit it
-   * for QA overrides, unsupported locales, and surfaces rendered before
-   * authenticated config.
-   */
-  '$feature/agent-starter-prompt-set': AgentStarterPromptAssignment
-}
 /**
  * Where the free-use notice was placed, for the DES-1221 placement experiment.
  *
@@ -985,6 +973,14 @@ export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
   placement: AgentFreeUseVariant
   '$feature/agent-free-use-message-placement': AgentFreeUseVariant
 }
+export type AgentCreditUsageVariant = 'control' | 'treatment'
+export interface AgentCreditUsageExposureMetadata extends Record<
+  string,
+  unknown
+> {
+  variant: AgentCreditUsageVariant
+  '$feature/agent-credit-usage-summary': AgentCreditUsageVariant
+}
 /**
  * Interactions with the notice itself. This event adds what the existing
  * outcome events cannot say: whether the notice was actually on screen in its
@@ -1000,10 +996,10 @@ export interface AgentCreditTransitionNoticeMetadata extends Record<
 > {
   action: 'shown' | 'dismissed'
 }
-export interface AgentStarterPromptClickedMetadata
-  extends
-    Record<string, unknown>,
-    Partial<AgentStarterPromptExperimentMetadata> {
+export interface AgentStarterPromptClickedMetadata extends Record<
+  string,
+  unknown
+> {
   prompt_id: AgentStarterPromptId
   /** Slot position, so a reorder is visible rather than silently re-labelling. */
   prompt_index: number
@@ -1013,9 +1009,8 @@ export interface AgentStarterPromptClickedMetadata
    * How many of that set the viewer could actually see. A panel narrower than
    * 460px hides everything past the third chip with a container query, so this
    * is 3 there and `prompt_count` elsewhere. Deliberately not folded into
-   * `prompt_count`: that field has to keep meaning "set size" for the
-   * starter-prompt set experiment to read it, and a reader cannot otherwise
-   * tell a shrunken set from a narrow panel.
+   * `prompt_count`: that field has to keep meaning "set size", and a reader
+   * cannot otherwise tell a shrunken set from a narrow panel.
    */
   visible_prompt_count: number
   /**
@@ -1042,12 +1037,7 @@ export interface AgentStarterPromptClickedMetadata
    */
   draft_was_empty: boolean
 }
-export interface AgentStarterPromptExposureMetadata
-  extends Record<string, unknown>, AgentStarterPromptExperimentMetadata {}
-export interface AgentMessageSentMetadata
-  extends
-    Record<string, unknown>,
-    Partial<AgentStarterPromptExperimentMetadata> {
+export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
   node_tag_count: number
   /**
@@ -1671,11 +1661,11 @@ export interface TelemetryProvider {
   trackAgentStarterPromptClicked?(
     metadata: AgentStarterPromptClickedMetadata
   ): void
-  trackAgentStarterPromptExposure?(
-    metadata: AgentStarterPromptExposureMetadata
-  ): void
   trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
   trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
+  trackAgentCreditUsageExposure?(
+    metadata: AgentCreditUsageExposureMetadata
+  ): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
@@ -1864,9 +1854,9 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
-  AGENT_STARTER_PROMPT_EXPOSURE: 'app:agent_starter_prompt_exposure',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
+  AGENT_CREDIT_USAGE_EXPOSURE: 'app:agent_credit_usage_exposure',
   AGENT_CREDIT_TRANSITION_NOTICE: 'app:agent_credit_transition_notice',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',

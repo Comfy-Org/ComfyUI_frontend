@@ -873,7 +873,7 @@ them for any mock targeting their endpoints:
 | ------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | Cloud-only (hub, billing, workflows)              | `@comfyorg/ingest-types` (`packages/ingest-types`)                                 |
 | Registry (releases, nodes, publishers)            | `@comfyorg/registry-types` (`packages/registry-types`)                             |
-| Manager (queue tasks, packages)                   | `generatedManagerTypes.ts` (`src/workbench/extensions/manager/types/`)             |
+| Manager (queue tasks, packages)                   | `generatedManagerTypes.ts` (`src/platform/customNodes/manager/types/`)             |
 | Local webserver responses that differ from ingest | `src/platform/remote/comfyui/types.ts`                                             |
 | WebSocket messages and custom-node outputs        | `src/platform/remote/comfyui/execution/types.ts`                                   |
 | Frontend settings                                 | `src/platform/settings/types.ts`                                                   |
