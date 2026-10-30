@@ -732,6 +732,24 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures credit-usage experiment exposure with the PostHog arm', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentCreditUsageExposure({
+        variant: 'treatment',
+        '$feature/agent-credit-usage-summary': 'treatment'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_CREDIT_USAGE_EXPOSURE,
+        {
+          variant: 'treatment',
+          '$feature/agent-credit-usage-summary': 'treatment'
+        }
+      )
+    })
+
     it('captures link dedup drop events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

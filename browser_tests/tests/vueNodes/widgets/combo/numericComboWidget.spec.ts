@@ -36,9 +36,9 @@ test.describe(
       const node = await comfyPage.vueNodes.getFixtureByTitle(
         'Node With Numeric Combo'
       )
-      const priceBadge = node.priceBadge.required
+      const priceBadge = node.priceBadge
       await expect(priceBadge).toBeVisible()
-      await expect(priceBadge).toHaveText('211')
+      await expect(priceBadge).toHaveText('211 credits/Run')
 
       await comfyPage.vueNodes.selectComboOption(
         'Node With Numeric Combo',
@@ -47,7 +47,7 @@ test.describe(
       )
 
       await expect(priceBadge).toBeVisible()
-      await expect(priceBadge).toHaveText('422')
+      await expect(priceBadge).toHaveText('422 credits/Run')
     })
   }
 )
