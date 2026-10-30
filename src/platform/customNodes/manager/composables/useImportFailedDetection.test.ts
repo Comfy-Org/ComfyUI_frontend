@@ -17,7 +17,7 @@ beforeEach(() => {
   })
 })
 vi.mock<unknown>(
-  import('@/platform/customNodes/manager/composables/useImportFailedNodeDialog'),
+  import('@/platform/customNodes/manager/composables/dialogs/useImportFailedNodeDialog'),
   () => ({
     useImportFailedNodeDialog: () => ({
       show: mockShow

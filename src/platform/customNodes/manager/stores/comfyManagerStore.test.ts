@@ -36,13 +36,16 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/composables/useServerLogs'), () => ({
-  useServerLogs: () => ({
-    startListening: vi.fn(),
-    stopListening: vi.fn(),
-    logs: ref([])
+vi.mock(
+  import('@/platform/customNodes/manager/services/useServerLogs'),
+  () => ({
+    useServerLogs: () => ({
+      startListening: vi.fn(),
+      stopListening: vi.fn(),
+      logs: ref([])
+    })
   })
-}))
+)
 
 vi.mock(
   import('@/platform/customNodes/manager/composables/useApplyChanges'),

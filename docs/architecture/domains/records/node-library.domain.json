@@ -313,7 +313,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["keybindings", "telemetry"],
+  "allowedDependencies": ["extension-manager", "keybindings", "telemetry"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
