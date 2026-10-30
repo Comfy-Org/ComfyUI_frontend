@@ -6,12 +6,14 @@ import { createI18n } from 'vue-i18n'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import enMessages from '@/locales/en/main.json'
 import type { PrototypeCloudCheck } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { PROTOTYPE_CHECK_MS } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { defaultGraph } from '@/scripts/defaultGraph'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import CloudButton from './CloudButton.vue'
 
@@ -187,6 +189,39 @@ describe('CloudButton', () => {
     await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS)
 
     expect(modalHeading()).not.toBeInTheDocument()
+  })
+
+  it('a modal that fails to open leaves the next click free to open it', async () => {
+    const user = renderButton()
+    vi.spyOn(useDialogStore(), 'showDialog').mockImplementationOnce(() => {
+      throw new Error('The dialog chunk failed to load')
+    })
+    await user.hover(cloudButton())
+    await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS)
+    await user.click(cloudButton())
+    await vi.waitFor(() =>
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledOnce()
+    )
+
+    await user.click(cloudButton())
+
+    expect(
+      await screen.findByRole('heading', { name: 'Run on Comfy Cloud' })
+    ).toBeInTheDocument()
+  })
+
+  it('opens the modal an answer asked for while the button was away', async () => {
+    useCloudWorkflowCheckStore().state = {
+      phase: 'answered',
+      verdict: { kind: 'canOpen' },
+      showsModal: true
+    }
+
+    renderButton()
+
+    expect(
+      await screen.findByRole('heading', { name: 'Run on Comfy Cloud' })
+    ).toBeInTheDocument()
   })
 
   it.for<{

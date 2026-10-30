@@ -53,6 +53,7 @@ import { computed } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import DeploySetupCard from '@/platform/openOnCloud/components/DeploySetupCard.vue'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
@@ -75,18 +76,19 @@ defineOptions({ inheritAttrs: false })
 
 const { state } = storeToRefs(useCloudWorkflowCheckStore())
 const { showSignInDialog } = useAuthDialogs()
+const { toastErrorHandler } = useErrorHandling()
 
 const verdict = computed(() =>
   state.value.phase === 'answered' ? state.value.verdict : null
 )
 
 function openOnCloud() {
-  void openWorkflowOnCloud()
+  openWorkflowOnCloud().catch(toastErrorHandler)
   emit('done')
 }
 
 function signIn() {
-  void showSignInDialog()
+  showSignInDialog().catch(toastErrorHandler)
   emit('done')
 }
 </script>

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import type {
   CloudWorkflowCheckEvent,
@@ -22,6 +22,9 @@ export const useCloudWorkflowCheckStore = defineStore(
     const prototypeCheck = ref<PrototypeCloudCheck>('canOpen')
     const state = shallowRef<CloudWorkflowCheckState>({ phase: 'idle' })
     const checker = prototypeCloudWorkflowChecker(() => prototypeCheck.value)
+    const isModalShown = computed(
+      () => state.value.phase === 'answered' && state.value.showsModal
+    )
     let lastRun = 0
 
     function dispatch(event: CloudWorkflowCheckEvent) {
@@ -44,6 +47,13 @@ export const useCloudWorkflowCheckStore = defineStore(
       dispatch({ type: 'modalDismissed' })
     }
 
-    return { state, prototypeCheck, check, requestModal, dismissModal }
+    return {
+      state,
+      prototypeCheck,
+      isModalShown,
+      check,
+      requestModal,
+      dismissModal
+    }
   }
 )

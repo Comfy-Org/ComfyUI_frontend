@@ -7,8 +7,9 @@ const DIALOG_KEY = 'global-run-on-comfy-cloud'
 export async function openRunOnCloudDialog(): Promise<void> {
   const { default: RunOnCloudDialog } =
     await import('@/platform/openOnCloud/components/RunOnCloudDialog.vue')
-  const dialogStore = useDialogStore()
   const checkStore = useCloudWorkflowCheckStore()
+  if (!checkStore.isModalShown) return
+  const dialogStore = useDialogStore()
   const hide = () => dialogStore.closeDialog({ key: DIALOG_KEY })
   dialogStore.showDialog({
     key: DIALOG_KEY,

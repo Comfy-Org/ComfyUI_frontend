@@ -38,12 +38,9 @@ const isDevBuild = import.meta.env.DEV
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const store = useCloudWorkflowCheckStore()
-const { state } = storeToRefs(store)
+const { state, isModalShown } = storeToRefs(store)
 
 const isChecking = computed(() => state.value.phase === 'checking')
-const isModalShown = computed(
-  () => state.value.phase === 'answered' && state.value.showsModal
-)
 const tooltip = computed(() =>
   isChecking.value
     ? t('openOnCloud.cloudButton.checking')
@@ -59,8 +56,19 @@ function openModal() {
   store.requestModal()
 }
 
-watch(isModalShown, (shown) => {
-  if (shown) openRunOnCloudDialog().catch(toastErrorHandler)
-  else closeRunOnCloudDialog()
-})
+function showModal() {
+  openRunOnCloudDialog().catch((error: unknown) => {
+    store.dismissModal()
+    toastErrorHandler(error)
+  })
+}
+
+watch(
+  isModalShown,
+  (shown) => {
+    if (shown) showModal()
+    else closeRunOnCloudDialog()
+  },
+  { immediate: true }
+)
 </script>
