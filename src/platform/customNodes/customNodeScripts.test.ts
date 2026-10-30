@@ -83,6 +83,28 @@ describe('shouldLoadCustomNodeScript', () => {
   })
 })
 
+describe('loadCustomNodeScripts', () => {
+  it('keeps disabled scripts inert on the CPU-reading import path', async () => {
+    const { loadCustomNodeScripts } = await import('./customNodeScripts')
+    const { api } = await import('@/scripts/api')
+    const executed: string[] = []
+    vi.stubGlobal('recordGateScript', (script: string) => executed.push(script))
+    vi.spyOn(api, 'fileURL').mockImplementation(
+      (script) =>
+        `data:text/javascript,globalThis.recordGateScript(${JSON.stringify(script)})`
+    )
+
+    await loadCustomNodeScripts(
+      ['/extensions/blocked/main.js', '/extensions/enabled/main.js'],
+      new AbortController().signal,
+      Promise.resolve({ answer: 'none' }),
+      { disabledExtensionPaths: ['/extensions/blocked/'] }
+    )
+
+    expect(executed).toEqual(['/extensions/enabled/main.js'])
+  })
+})
+
 describe('isSafeExtensionBoot', () => {
   it.for([
     { search: '?safe', expected: true },
