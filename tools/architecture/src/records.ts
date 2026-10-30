@@ -66,7 +66,7 @@ function listSourceFiles(repositoryRoot: string): Outcome<string[]> {
   }
 }
 
-export function matchesModulePath(filename: string, path: string): boolean {
+function matchesModulePath(filename: string, path: string): boolean {
   return path.endsWith('/**')
     ? filename.startsWith(path.slice(0, -2))
     : filename === path
