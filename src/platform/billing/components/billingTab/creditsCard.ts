@@ -1,11 +1,15 @@
 import type { BalanceInfo } from '@/platform/billing/composables/types'
 import type { AutoReloadSettings, BillingStatus } from '@comfyorg/billing-core'
 import type { PeriodCreditGrant } from '@comfyorg/ingest-types'
-import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'
+import type {
+  PlanKind,
+  PlanRowState
+} from '@/platform/billing/components/billingTab/planRow'
 
 export interface CreditsCardFacts {
   balance: BalanceInfo | null
   planKind: PlanRowState['kind']
+  servedPlanKind: PlanKind | null
   billingStatus: BillingStatus | null
   periodCreditGrant: PeriodCreditGrant | null
   planPoolCredits: number | null
@@ -106,9 +110,11 @@ function planDateFor(facts: CreditsCardFacts): PlanCreditsState['planDate'] {
       return { kind: 'afterPayment' }
     case 'ending':
       return { kind: 'availableUntil', date: facts.endDate }
-    case 'salesManaged':
-      return { kind: 'refills', date: null }
     default:
-      return { kind: 'refills', date: facts.renewalDate }
+      return {
+        kind: 'refills',
+        date:
+          facts.servedPlanKind === 'sales_managed' ? null : facts.renewalDate
+      }
   }
 }

@@ -28,6 +28,7 @@ function balanceOf(cents: {
 const activeFacts: CreditsCardFacts = {
   balance: balanceOf({ effective: 700, plan: 400, topUp: 300 }),
   planKind: 'active',
+  servedPlanKind: 'self_serve',
   billingStatus: 'paid',
   periodCreditGrant: null,
   planPoolCredits: 1000,
@@ -245,12 +246,26 @@ describe('BillingCreditsCard', () => {
       case: 'a sales-managed plan has no refill date',
       facts: {
         planKind: 'salesManaged',
+        servedPlanKind: 'sales_managed',
         renewalDate: '2026-10-01T00:00:00Z'
       },
       amount: '844 of 1,000',
       date: '',
       used: '16% used',
       meter: '16'
+    },
+    {
+      case: 'a sales-managed plan the row cannot name has no refill date',
+      facts: {
+        planKind: 'unknown',
+        servedPlanKind: 'sales_managed',
+        billingStatus: 'paused',
+        renewalDate: '2026-10-01T00:00:00Z'
+      },
+      amount: '0 of 1,000',
+      date: '',
+      used: null,
+      meter: null
     },
     {
       case: 'an ending plan is available until its end date',
