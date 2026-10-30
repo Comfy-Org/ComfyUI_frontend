@@ -123,6 +123,7 @@ import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'
 import NavTitle from '@/components/widget/nav/NavTitle.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -304,7 +305,7 @@ watch(activeCategoryKey, (newKey, oldKey) => {
     activeCategoryKey.value = oldKey
   }
   if (newKey === 'credits') {
-    void fetchBalance()
+    void refreshBalanceInBackground(fetchBalance)
   }
   if (newKey) {
     void nextTick(() => {
