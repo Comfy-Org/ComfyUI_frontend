@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
-import { i18n } from '@/i18n'
+import { i18n, loadLocale } from '@/i18n'
 import {
   authenticatedRemoteConfigState,
   remoteConfig
@@ -124,6 +124,31 @@ describe('AgentMessage credit usage', () => {
       const usage = screen.getByTestId('agent-credit-usage')
       expect(usage).toHaveTextContent('<0,01')
       expect(usage).not.toHaveTextContent('<0.01')
+    } finally {
+      i18n.global.locale.value = previousLocale
+    }
+  })
+
+  it('renders fractional Russian credits without hiding the usage row', async () => {
+    const previousLocale = i18n.global.locale.value
+    await loadLocale('ru')
+    i18n.global.locale.value = 'ru'
+    try {
+      render(AgentMessage, {
+        props: {
+          message: {
+            ...createAssistantMessage(toTurnId('msg-russian-credit')),
+            parts: [{ type: 'text', text: 'Done', state: 'done' }],
+            streaming: false,
+            creditsUsed: 1.274
+          }
+        },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByTestId('agent-credit-usage')).toHaveTextContent(
+        /^Агент использовал 1,27 кредита$/
+      )
     } finally {
       i18n.global.locale.value = previousLocale
     }

@@ -333,7 +333,7 @@ describe('agentApiSchema contract subtleties', () => {
       data: { ...doneBase.data, usage }
     })
 
-    if (parsed.type !== 'agent_message_done') throw new Error('wrong variant')
+    assert(parsed.type === 'agent_message_done')
     expect(parsed.data.usage).toEqual(usage)
   })
 
@@ -350,7 +350,7 @@ describe('agentApiSchema contract subtleties', () => {
       data: { ...doneBase.data, usage }
     })
 
-    if (parsed.type !== 'agent_message_done') throw new Error('wrong variant')
+    assert(parsed.type === 'agent_message_done')
     expect(parsed.data.usage).toBeUndefined()
   })
 
