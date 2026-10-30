@@ -36,6 +36,17 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     return item ? resultItemUrl(item) : undefined
   }
 
+  function retainActiveItem(
+    items: readonly AugmentedResultItem[],
+    activeItem: AugmentedResultItem | undefined
+  ): AugmentedResultItem[] {
+    if (!activeItem) return [...items]
+    const activeUrl = resultItemUrl(activeItem)
+    return items.some((item) => resultItemUrl(item) === activeUrl)
+      ? [...items]
+      : [activeItem, ...items]
+  }
+
   function isLiveRefreshCurrent(refreshId: number, taskId: string): boolean {
     return (
       refreshId === openSequence &&
@@ -66,8 +77,9 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     if (taskId === null || index === -1) return
     const targetTask = tasks.find((task) => task.jobId === taskId)
     if (!targetTask) return
-    const activeUrl = urlAt(galleryItems.value, index)
-    const rerun = resolveItems(targetTask, tasks)
+    const activeItem = galleryItems.value.at(index)
+    const activeUrl = activeItem ? resultItemUrl(activeItem) : undefined
+    const rerun = retainActiveItem(resolveItems(targetTask, tasks), activeItem)
     openSequence += 1
     if (rerun.length) {
       galleryItems.value = rerun

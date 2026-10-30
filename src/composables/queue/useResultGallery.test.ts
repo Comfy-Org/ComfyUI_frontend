@@ -310,6 +310,37 @@ describe('useResultGallery', () => {
     expect(galleryActiveIndex.value).toBe(0)
   })
 
+  it('keeps the selected output when the refreshed preview list omits it', async () => {
+    const selected = createResultItem('selected.png')
+    const first = createResultItem('first.png')
+    const second = createResultItem('second.png')
+    const jobId = 'retain-active-job'
+    const initialTask = new TaskItemImpl(createMockJob(jobId, 1), {}, [
+      selected
+    ])
+    const sources = ref([initialTask])
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => sources.value
+    )
+
+    await onViewItem(createJobViewItem('job-retain-active', initialTask))
+    expect(galleryItems.value).toEqual([selected])
+    expect(galleryItems.value.at(galleryActiveIndex.value)).toEqual(selected)
+
+    const refreshedOutputs = [first, selected, second]
+    const refreshedTask = new TaskItemImpl(createMockJob(jobId, 3), {}, [
+      first,
+      second
+    ])
+    refreshedTask.loadFullOutputs = async () =>
+      new TaskItemImpl(createMockJob(jobId, 3), {}, refreshedOutputs)
+    sources.value = [refreshedTask]
+    await nextTick()
+    await vi.waitFor(() => expect(galleryItems.value).toEqual(refreshedOutputs))
+
+    expect(galleryItems.value.at(galleryActiveIndex.value)).toEqual(selected)
+  })
+
   it('keeps the open gallery when the viewed task leaves the source list', async () => {
     const viewed = createResultItem('viewed.png')
     const viewedTask = createTask(viewed)
