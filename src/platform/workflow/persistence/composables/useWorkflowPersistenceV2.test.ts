@@ -31,7 +31,7 @@ vi.mock(
   })
 )
 
-const openWorkflowMock = vi.fn()
+const openWorkflowMock = vi.fn(async () => true)
 const loadBlankWorkflowMock = vi.fn()
 vi.mock<unknown>(
   import('@/platform/workflow/core/services/workflowService'),
@@ -404,6 +404,25 @@ describe('useWorkflowPersistenceV2', () => {
       })
       // Should NOT fall through to loadGraphData (fallbackToLatestDraft)
       expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the latest draft when opening the saved workflow is refused', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const savedWorkflow = workflowStore.createTemporary('SavedWorkflow.json')
+      const draftStore = useWorkflowDraftStoreV2()
+      draftStore.saveDraft('workflows/LatestDraft.json', '{"nodes":[]}', {
+        name: 'LatestDraft.json',
+        isTemporary: true
+      })
+      writeActivePath(savedWorkflow.path)
+      openWorkflowMock.mockResolvedValueOnce(false)
+      mocks.loadGraphDataMock.mockResolvedValue(true)
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+
+      await expect(initializeWorkflow()).resolves.toBe('restored')
+      expect(mocks.loadGraphDataMock).toHaveBeenCalledOnce()
     })
 
     it('prefers draft over saved workflow when draft exists', async () => {
