@@ -5,6 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 
 const lazyModules = vi.hoisted(() => {
   const defineExtension = (name: string) => ({
@@ -384,11 +385,19 @@ describe('load3dLazy', () => {
   it('rolls back a partial registration when a lazy 3D extension name is taken, then retries once it is free', async () => {
     const { extensionStore, registeredNames, createNode, reportError } =
       await loadLazyExtensionFresh()
-    extensionStore.registerExtension({ name: 'Comfy.CreateLightInfo' })
+    extensionStore.captureCoreExtensions()
+    extensionStore.loadDisabledExtensionNames(['Comfy.CreateLightInfo'])
+    extensionStore.registerExtension({
+      name: 'Comfy.CreateLightInfo',
+      topbarBadges: [{ text: 'Disabled third-party badge' }]
+    })
+    expect(useTopbarBadgeStore().badges).toEqual([])
 
     await expect(createNode(makeNode('Load3D'))).resolves.toBeUndefined()
 
     expect(registeredNames()).toEqual(['Comfy.CreateLightInfo'])
+    expect(useTopbarBadgeStore().badges).toEqual([])
+    expect(extensionStore.hasThirdPartyExtensions).toBe(true)
     expect(replayedNodes()).toEqual(lazyExtensions.map(() => []))
     expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
       errorType: 'error_loading_3d_extensions',
@@ -399,5 +408,15 @@ describe('load3dLazy', () => {
     await createNode(makeNode('Preview3D'))
 
     expect(registeredNames()).toEqual(LAZY_EXTENSION_REGISTRATION_ORDER)
+    expect(extensionStore.hasThirdPartyExtensions).toBe(false)
+
+    extensionStore.unregisterExtension('Comfy.CreateLightInfo')
+    extensionStore.registerExtension({
+      name: 'Comfy.CreateLightInfo',
+      topbarBadges: [{ text: 'Replacement third-party badge' }]
+    })
+
+    expect(useTopbarBadgeStore().badges).toEqual([])
+    expect(extensionStore.hasThirdPartyExtensions).toBe(true)
   })
 })

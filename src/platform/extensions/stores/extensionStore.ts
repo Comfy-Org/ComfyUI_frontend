@@ -234,10 +234,10 @@ export const useExtensionStore = defineStore('extension', () => {
     }
   }
 
-  const coreExtensionNames = ref(new Set<string>())
+  const coreExtensions = ref(new Set<ComfyExtension>())
   const coreExtensionsCaptured = ref(false)
-  function markCoreExtensions(coreExtensions: readonly ComfyExtension[]) {
-    for (const { name } of coreExtensions) coreExtensionNames.value.add(name)
+  function markCoreExtensions(extensions: readonly ComfyExtension[]) {
+    for (const extension of extensions) coreExtensions.value.add(extension)
   }
 
   function captureCoreExtensions() {
@@ -246,7 +246,10 @@ export const useExtensionStore = defineStore('extension', () => {
   }
 
   function isCoreExtension(name: string) {
-    return coreExtensionNames.value.has(name)
+    return (
+      isExtensionInstalled(name) &&
+      coreExtensions.value.has(extensionByName.value[name])
+    )
   }
 
   /** Whether a registered extension's commands, keybindings and UI contributions apply. */
