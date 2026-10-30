@@ -82,6 +82,18 @@
     {
       "path": "src/types/serverArgs.ts",
       "role": "domain"
+    },
+    {
+      "path": "packages/settings-core/src/canvasNavigation.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/settings-core/src/settingStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "packages/settings-core/src/types.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

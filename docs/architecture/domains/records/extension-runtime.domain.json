@@ -78,6 +78,14 @@
     {
       "path": "src/types/extensionTypes.ts",
       "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/ComfyApi.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "packages/api-client/src/apiTimeouts.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],

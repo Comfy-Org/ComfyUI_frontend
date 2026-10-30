@@ -62,6 +62,10 @@
     {
       "path": "src/lib/litegraph/src/infrastructure/LinkConnectorEventMap.ts",
       "role": "domain"
+    },
+    {
+      "path": "packages/settings-core/src/searchBoxTypes.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

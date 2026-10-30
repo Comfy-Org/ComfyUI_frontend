@@ -246,6 +246,26 @@
     {
       "path": "packages/account-ui/src/auth/turnstileGate.ts",
       "role": "application"
+    },
+    {
+      "path": "packages/api-client/src/apiAuthProvider.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/authCredential.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/sessionMediaUrl.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/webSessionFetch.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "packages/api-client/src/authTypes.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

@@ -94,6 +94,18 @@
     {
       "path": "src/utils/resultItemUrl.ts",
       "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/fetchJobs.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "packages/api-client/src/__mocks__/fetchJobs.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "packages/api-client/src/jobTypes.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

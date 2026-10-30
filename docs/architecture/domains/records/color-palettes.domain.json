@@ -14,6 +14,10 @@
     {
       "path": "src/stores/workspace/colorPaletteStore.ts",
       "role": "application"
+    },
+    {
+      "path": "packages/settings-core/src/colorPaletteSchema.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

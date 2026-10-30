@@ -20,6 +20,10 @@
         ]
       },
       {
+        "name": "comfyui-api/domain/public",
+        "patterns": ["packages/api-client/src/executionTypes.ts"]
+      },
+      {
         "name": "ingest-api/domain/public",
         "patterns": ["src/platform/remote/ingest/ingestApiError.ts"]
       },
@@ -540,7 +544,13 @@
           "src/utils/hostWhitelist.ts",
           "src/utils/hostWhitelist.test.ts",
           "packages/account-core/src/signInSchemas.ts",
-          "packages/account-core/src/signInSchemas.test.ts"
+          "packages/account-core/src/signInSchemas.test.ts",
+          "packages/api-client/src/apiAuthProvider.ts",
+          "packages/api-client/src/authCredential.ts",
+          "packages/api-client/src/authCredential.test.ts",
+          "packages/api-client/src/sessionMediaUrl.ts",
+          "packages/api-client/src/sessionMediaUrl.test.ts",
+          "packages/api-client/src/authTypes.ts"
         ]
       },
       {
@@ -592,7 +602,9 @@
           "src/platform/workspace/stores/legacyWorkspaceTokenRail.ts",
           "src/platform/workspace/stores/legacyWorkspaceTokenRail.lifecycle.test.ts",
           "src/platform/workspace/stores/legacyWorkspaceTokenRail.test.ts",
-          "src/types/axios-augmentation.d.ts"
+          "src/types/axios-augmentation.d.ts",
+          "packages/api-client/src/webSessionFetch.ts",
+          "packages/api-client/src/webSessionFetch.test.ts"
         ]
       },
       {
@@ -1033,7 +1045,10 @@
       },
       {
         "name": "color-palettes/domain",
-        "patterns": ["src/constants/coreColorPalettes.ts"]
+        "patterns": [
+          "src/constants/coreColorPalettes.ts",
+          "packages/settings-core/src/colorPaletteSchema.ts"
+        ]
       },
       {
         "name": "color-palettes/application",
@@ -1080,7 +1095,11 @@
         "name": "comfyui-api/domain",
         "patterns": [
           "src/utils/createAnnotatedPath.ts",
-          "src/utils/createAnnotatedPath.test.ts"
+          "src/utils/createAnnotatedPath.test.ts",
+          "packages/api-client/src/executionTypes.ts",
+          "packages/api-client/src/executionTypes.test.ts",
+          "packages/api-client/src/resultItemTypeSchema.ts",
+          "packages/api-client/src/types.ts"
         ]
       },
       {
@@ -1280,7 +1299,10 @@
       },
       {
         "name": "extension-manager/domain",
-        "patterns": ["src/platform/customNodes/manager/utils/**"]
+        "patterns": [
+          "src/platform/customNodes/manager/utils/**",
+          "packages/api-client/src/generatedManagerTypes.ts"
+        ]
       },
       {
         "name": "extension-manager/infrastructure",
@@ -1345,7 +1367,11 @@
           "src/platform/customNodes/customNodeScripts.ts",
           "src/platform/customNodes/customNodeScripts.test.ts",
           "src/platform/extensions/services/extensionLoader.ts",
-          "src/platform/extensions/services/extensionLoader.test.ts"
+          "src/platform/extensions/services/extensionLoader.test.ts",
+          "packages/api-client/src/ComfyApi.ts",
+          "packages/api-client/src/ComfyApi.clientId.test.ts",
+          "packages/api-client/src/ComfyApi.eventListeners.test.ts",
+          "packages/api-client/src/apiTimeouts.ts"
         ]
       },
       {
@@ -1856,7 +1882,8 @@
           "src/utils/queueUtil.ts",
           "src/utils/resultItem.ts",
           "src/utils/resultItemUrl.ts",
-          "src/utils/resultItemUrl.test.ts"
+          "src/utils/resultItemUrl.test.ts",
+          "packages/api-client/src/jobTypes.ts"
         ]
       },
       {
@@ -1885,7 +1912,10 @@
           "src/platform/remote/comfyui/jobs/**",
           "src/platform/workflow/cloud/**",
           "src/services/jobOutputCache.ts",
-          "src/services/jobOutputCache.test.ts"
+          "src/services/jobOutputCache.test.ts",
+          "packages/api-client/src/fetchJobs.ts",
+          "packages/api-client/src/fetchJobs.test.ts",
+          "packages/api-client/src/__mocks__/fetchJobs.ts"
         ]
       },
       {
@@ -1991,7 +2021,8 @@
           "src/extensions/core/slotDefaultTypes.ts",
           "src/extensions/core/slotDefaultTypes.test.ts",
           "src/lib/litegraph/src/canvas/RenderLink.ts",
-          "src/lib/litegraph/src/infrastructure/LinkConnectorEventMap.ts"
+          "src/lib/litegraph/src/infrastructure/LinkConnectorEventMap.ts",
+          "packages/settings-core/src/searchBoxTypes.ts"
         ]
       },
       {
@@ -2784,14 +2815,17 @@
         "patterns": [
           "src/constants/serverConfig.ts",
           "src/platform/settings/constants/agent.ts",
-          "src/types/serverArgs.ts"
+          "src/types/serverArgs.ts",
+          "packages/settings-core/src/canvasNavigation.ts",
+          "packages/settings-core/src/types.ts"
         ]
       },
       {
         "name": "settings/application",
         "patterns": [
           "src/stores/serverConfigStore.ts",
-          "src/stores/serverConfigStore.test.ts"
+          "src/stores/serverConfigStore.test.ts",
+          "packages/settings-core/src/settingStore.ts"
         ]
       },
       {
@@ -2991,7 +3025,10 @@
       },
       {
         "name": "tasks/infrastructure",
-        "patterns": ["src/platform/tasks/**"]
+        "patterns": [
+          "src/platform/tasks/**",
+          "packages/api-client/src/taskSchema.ts"
+        ]
       },
       {
         "name": "telemetry/domain",
@@ -3549,7 +3586,9 @@
           "packages/shared-frontend-utils/src/templateRanking.ts",
           "packages/shared-frontend-utils/src/templateRanking.test.ts",
           "packages/shared-frontend-utils/src/templateSearch.ts",
-          "packages/shared-frontend-utils/src/templateSearch.test.ts"
+          "packages/shared-frontend-utils/src/templateSearch.test.ts",
+          "packages/api-client/src/templateSchema.ts",
+          "packages/api-client/src/templateTypes.ts"
         ]
       },
       {
@@ -4123,6 +4162,15 @@
           "billing/infrastructure/outer-1",
           "billing/presentation/outer-1",
           "billing/application/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "comfyui-api/domain/public",
+        "allow": [
+          "comfyui-api/domain/public",
+          "comfyui-api/domain",
+          "comfyui-api/domain/outer-1",
           "unclassified"
         ]
       },
@@ -5343,6 +5391,7 @@
       {
         "from": "comfyui-api/domain",
         "allow": [
+          "comfyui-api/domain/public",
           "comfyui-api/domain",
           "comfyui-api/domain/outer-1",
           "unclassified"
@@ -6042,6 +6091,7 @@
       {
         "from": "graph-model/domain",
         "allow": [
+          "comfyui-api/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -6056,6 +6106,7 @@
       {
         "from": "graph-model/application",
         "allow": [
+          "comfyui-api/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -6074,6 +6125,7 @@
       {
         "from": "graph-model/infrastructure",
         "allow": [
+          "comfyui-api/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -6092,6 +6144,7 @@
       {
         "from": "graph-model/integration",
         "allow": [
+          "comfyui-api/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -8881,6 +8934,7 @@
       {
         "from": "comfyui-api/domain/outer-1",
         "allow": [
+          "comfyui-api/domain/public",
           "comfyui-api/domain",
           "comfyui-api/domain/outer-1",
           "unclassified"
@@ -9109,6 +9163,7 @@
       {
         "from": "graph-model/domain/outer-1",
         "allow": [
+          "comfyui-api/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -9123,6 +9178,7 @@
       {
         "from": "graph-model/integration/outer-1",
         "allow": [
+          "comfyui-api/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -9948,6 +10004,7 @@
         "allow": [
           "account/presentation/public",
           "account/integration/public",
+          "comfyui-api/domain/public",
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
           "keybindings/application/public",
