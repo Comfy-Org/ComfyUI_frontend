@@ -810,7 +810,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       code: 'unresolvable_widget_owner',
       errorType: 'agent_crdt_widget_owner_unresolved',
       graphId,
-      nodeId: event.nodeId
+      nodeId: event.nodeId,
+      widget: event.name
     })
   }
 
