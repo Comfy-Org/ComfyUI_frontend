@@ -3821,6 +3821,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                   clientX - rect.left,
                   clientY - rect.top
                 ])
+                const [, rowTop] = this.convertCanvasToOffset([
+                  clientX - rect.left,
+                  autogrowDropRow.rowClientTop - rect.top
+                ])
+                autogrowGroupWidget.y = rowTop - node.pos[1]
                 linkConnector.overWidget = autogrowGroupWidget
               } else if (overWidget) {
                 // Check widgets first - inputId is only valid if over the input socket
