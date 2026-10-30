@@ -35,10 +35,7 @@ export function setHoveredAutogrowGroup(
     current?.groupName === target?.groupName
   )
     return
-  hoveredGroup.value = target && {
-    nodeId: target.nodeId,
-    groupName: target.groupName
-  }
+  hoveredGroup.value = target
 }
 
 export function setIoInputDragActive(active: boolean) {
@@ -70,9 +67,5 @@ export function findAutogrowGroupDropRow(
   }
 }
 
-export function useAutogrowGroupDropState() {
-  return {
-    ioInputDragActive: readonly(ioInputDragActive),
-    hoveredGroup: readonly(hoveredGroup)
-  }
-}
+export const autogrowIoInputDragActive = readonly(ioInputDragActive)
+export const hoveredAutogrowGroup = readonly(hoveredGroup)

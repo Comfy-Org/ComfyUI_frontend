@@ -23,10 +23,7 @@ import {
   zMatchTypeOptions
 } from '@comfyorg/object-info-parser'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
-import {
-  addAutogrowGroupWidget,
-  addShimWidget
-} from '@/core/graph/widgets/inputWidgetShim'
+import { addShimWidget } from '@/core/graph/widgets/inputWidgetShim'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import {
@@ -87,7 +84,6 @@ function syncNodeWidgetOrder(node: LGraphNode) {
 
 function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
   const name = input.widget?.name ?? input.name
-  //A recreated input rebinds to the widget its predecessor left behind
   const existing = node.widgets?.find((w) => w.name === name)
   if (existing) {
     input.widget ??= { name }
@@ -96,8 +92,6 @@ function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
   }
   addShimWidget(node, input)
 
-  //Keep the group's rows contiguous behind its group widget. Saved widgets
-  //are never moved: that would reorder positional widgets_values.
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
   const widgets = node.widgets
   const shim = widgets?.pop()
@@ -842,7 +836,7 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
       localized_name: inputSpecV2.display_name
     })
   if (!node.widgets?.some((w) => w.name === groupName))
-    addAutogrowGroupWidget(node, groupInput)
+    addShimWidget(node, groupInput, { autogrowGroup: true })
   withComfyAutogrow(node)
 
   const parseResult = zAutogrowOptions.safeParse(inputSpecV2)

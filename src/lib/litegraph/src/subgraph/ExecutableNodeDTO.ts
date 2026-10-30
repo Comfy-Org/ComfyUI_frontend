@@ -5,6 +5,7 @@ import type {
   SubgraphNode
 } from '@comfyorg/graph-model/entityRegistry'
 import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
+import { hostInputOf } from '@/lib/litegraph/src/subgraph/hostInput'
 
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
@@ -144,16 +145,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     }
   }
 
-  /** The subgraph node's input bound to the subgraph input at `subgraphSlot`. */
-  private _subgraphNodeSlot(subgraphSlot: number): number {
-    const { subgraphNode } = this
-    if (!subgraphNode) return -1
-    const subgraphInput = subgraphNode.subgraph.inputs.at(subgraphSlot)
-    return subgraphNode.inputs.findIndex(
-      (input) => input._subgraphSlot === subgraphInput
-    )
-  }
-
   private _subgraphNodeDto(): ExecutableLGraphNode | undefined {
     return this.nodesByExecutionId.get(this.subgraphNodePath.join(':'))
   }
@@ -167,8 +158,9 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       const link =
         input.linkId == null ? null : this.graph.getLink(input.linkId)
       if (!link?.originIsIoNode) return []
-      const owner = subgraphNode.inputs.at(
-        this._subgraphNodeSlot(link.origin_slot)
+      const owner = hostInputOf(
+        subgraphNode,
+        subgraphNode.subgraph.inputs.at(link.origin_slot)
       )
       if (!owner) return []
       const prefix = `${owner.name}.`
@@ -248,11 +240,10 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
     // Link goes up and out of this subgraph
     if (subgraphNode && link.originIsIoNode) {
-      const subgraphNodeSlot = this._subgraphNodeSlot(link.origin_slot)
-      const subgraphNodeInput =
-        subgraphNodeSlot === -1
-          ? undefined
-          : subgraphNode.inputs[subgraphNodeSlot]
+      const subgraphNodeInput = hostInputOf(
+        subgraphNode,
+        subgraphNode.subgraph.inputs.at(link.origin_slot)
+      )
       if (!subgraphNodeInput)
         throw new SlotIndexError(
           `No input found for slot [${link.origin_slot}] ${input.name}`
@@ -264,8 +255,11 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         )
       // Nothing connected
       const linkId =
-        inputLinkId(subgraphNode.graph, subgraphNode.id, subgraphNodeSlot) ??
-        null
+        inputLinkId(
+          subgraphNode.graph,
+          subgraphNode.id,
+          subgraphNode.inputs.indexOf(subgraphNodeInput)
+        ) ?? null
       if (linkId === null) {
         const id = subgraphNodeInput.widgetId
         if (!id) return
