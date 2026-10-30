@@ -340,7 +340,7 @@ describe('BillingStatusBanner', () => {
           }
         },
         text: 'Your Team plan ended on September 12, 2026',
-        buttons: ['Resubscribe']
+        buttons: []
       }
     ])(
       'shows $name with its plan action and no Dismiss',
