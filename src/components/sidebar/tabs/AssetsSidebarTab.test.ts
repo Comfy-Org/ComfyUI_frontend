@@ -222,7 +222,9 @@ it('gives the lightbox a playable URL for a video without a preview_url', async 
   ]
   renderTab()
 
-  await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Preview clip.mp4' })
+  )
 
   expect(screen.getByTestId('lightbox-url').textContent).toBeTruthy()
 })
