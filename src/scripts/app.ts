@@ -94,6 +94,7 @@ import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/types/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
@@ -843,6 +844,8 @@ export class ComfyApp implements IComfyApp {
     api.addEventListener('feature_flags', () => {
       void useNodeReplacementStore().load()
     })
+
+    useJobModelDownloadStore()
 
     void api.init()
   }
