@@ -85,6 +85,7 @@ const actions = vi.mockObject<
     | 'graphToPrompt'
     | 'handleFile'
     | 'loadGraphData'
+    | 'loadGraphDataWithinLoad'
     | 'openClipspace'
     | 'queuePrompt'
     | 'refreshComboInNodes'
@@ -99,6 +100,9 @@ const actions = vi.mockObject<
   {
     async setup() {},
     async loadGraphData() {
+      return false
+    },
+    async loadGraphDataWithinLoad() {
       return false
     },
     async queuePrompt() {
