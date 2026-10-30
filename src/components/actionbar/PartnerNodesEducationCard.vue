@@ -10,7 +10,7 @@
     >
       <div
         v-if="isVisible"
-        class="pointer-events-none fixed right-0 bottom-0 z-1500"
+        class="pointer-events-none fixed right-0 bottom-0 z-education"
       >
         <div
           role="dialog"

@@ -13,8 +13,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useExtensionService } from '@/services/extensionService'
-import { useCommandStore } from '@/stores/commandStore'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
@@ -22,7 +22,7 @@ import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 vi.mock(import('@comfyorg/telemetry'))
-vi.mock(import('@/services/extensionService'), () => {
+vi.mock(import('@/platform/extensions/services/extensionService'), () => {
   const service: ReturnType<typeof useExtensionService> = {
     registerExtension: vi.fn(),
     registerExtensionNow: vi.fn(),

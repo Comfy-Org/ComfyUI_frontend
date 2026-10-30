@@ -1,6 +1,5 @@
 #maskEditor_brush {
   position: absolute;
-  z-index: 8889;
   pointer-events: none;
   border-radius: 50%;
   overflow: visible;

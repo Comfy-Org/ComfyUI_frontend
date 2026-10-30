@@ -38,6 +38,9 @@ const config: KnipConfig = {
     'packages/graph-model': {
       project: ['src/**/*.ts']
     },
+    'packages/keybindings': {
+      project: ['src/**/*.ts']
+    },
     'packages/design-system': {
       entry: ['tests/consumer/vite.config.ts'],
       project: ['src/**/*.{css,js,ts,vue}'],
@@ -80,7 +83,7 @@ const config: KnipConfig = {
   ],
   ignore: [
     // Auto generated API types
-    'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
+    'src/platform/customNodes/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
