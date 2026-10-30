@@ -292,10 +292,10 @@ function nextChallenge(
   state: PendingBillingOperation,
   status: BillingOpStatus
 ): EmbeddedChallenge | undefined {
-  if (state.presentation !== 'embedded') return state.challenge
   const secret = status.payment_intent_client_secret
   if (secret === undefined) return state.challenge
   if (state.challenge?.clientSecret === secret) return state.challenge
+  if (state.presentation !== 'embedded') return undefined
   if (status.authentication_state !== 'requires_action') return state.challenge
   return { clientSecret: secret, status: 'required' }
 }

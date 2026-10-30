@@ -315,6 +315,43 @@ describe('reduceBillingOperation', () => {
     )
   })
 
+  it('clears the deadline when a hosted flow moves past a settled challenge and the server later omits both secret and deadline', () => {
+    const settled = reduceBillingOperation(
+      reduceBillingOperation(
+        reduceBillingOperation(
+          polled(pending({ kind: 'topup' }), {
+            authentication_state: 'requires_action',
+            authentication_deadline: '2026-10-30T15:40:00Z',
+            payment_intent_client_secret: 'pi_a'
+          }),
+          { type: 'challenge_started' }
+        ),
+        { type: 'challenge_settled', outcome: 'completed' }
+      ),
+      {
+        type: 'presentation_switched',
+        presentation: 'hosted',
+        hostedDestination: 'billing_web'
+      }
+    )
+    const servedB = polled(settled, {
+      authentication_state: 'requires_action',
+      authentication_deadline: '2026-10-30T16:10:00Z',
+      payment_intent_client_secret: 'pi_b'
+    })
+
+    const secretless = polled(servedB, {
+      authentication_state: 'requires_action'
+    })
+
+    expect((servedB as PendingBillingOperation).authenticationDeadline).toBe(
+      '2026-10-30T16:10:00Z'
+    )
+    expect(
+      (secretless as PendingBillingOperation).authenticationDeadline
+    ).toBeUndefined()
+  })
+
   it('drops the authentication deadline once the server settles the operation', () => {
     const served = polled(pending({ kind: 'topup' }), {
       authentication_state: 'requires_action',
