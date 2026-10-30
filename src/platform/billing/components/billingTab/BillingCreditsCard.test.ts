@@ -242,6 +242,17 @@ describe('BillingCreditsCard', () => {
       meter: '16'
     },
     {
+      case: 'a sales-managed plan has no refill date',
+      facts: {
+        planKind: 'salesManaged',
+        renewalDate: '2026-10-01T00:00:00Z'
+      },
+      amount: '844 of 1,000',
+      date: '',
+      used: '16% used',
+      meter: '16'
+    },
+    {
       case: 'an ending plan is available until its end date',
       facts: {
         planKind: 'ending',

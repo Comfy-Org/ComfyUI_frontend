@@ -106,6 +106,8 @@ function planDateFor(facts: CreditsCardFacts): PlanCreditsState['planDate'] {
       return { kind: 'afterPayment' }
     case 'ending':
       return { kind: 'availableUntil', date: facts.endDate }
+    case 'salesManaged':
+      return { kind: 'refills', date: null }
     default:
       return { kind: 'refills', date: facts.renewalDate }
   }
