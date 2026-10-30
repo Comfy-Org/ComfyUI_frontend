@@ -179,8 +179,10 @@ describe('sentryBeforeSend', () => {
       }
     } satisfies ErrorEvent
 
-    expect(sentryBeforeSend(event, {})).toBe(event)
-    expect(sentryBeforeSend(event, {})?.tags).toBeUndefined()
+    const result = sentryBeforeSend(event, {})
+    expect(result).not.toBeNull()
+    expect(result?.tags?.error_origin).toBeUndefined()
+    expect(result?.tags?.extension).toBeUndefined()
   })
 
   it.for([
@@ -200,44 +202,67 @@ describe('sentryBeforeSend', () => {
       }
     } satisfies ErrorEvent
 
-    expect(sentryBeforeSend(event, {})).toBe(event)
-    expect(sentryBeforeSend(event, {})?.tags).toBeUndefined()
+    const result = sentryBeforeSend(event, {})
+    expect(result).not.toBeNull()
+    expect(result?.tags?.error_origin).toBeUndefined()
+    expect(result?.tags?.extension).toBeUndefined()
   })
 
-  it('tags an immediate follow-on error from a stale chunk', () => {
+  it.for([
+    "Cannot destructure property 'useSessionCookie' of '(intermediate value)' as it is undefined.",
+    "Cannot read properties of undefined (reading 'useWorkspaceAuthStore')",
+    "undefined is not an object (evaluating 'workspaceAuthStore.user')"
+  ])(
+    'tags an immediate undefined follow-on from a stale chunk: %s',
+    (value) => {
+      const event = {
+        type: undefined,
+        timestamp: 100,
+        tags: { error_type: 'workspace_auth_gate_initialization_failure' },
+        breadcrumbs: [
+          {
+            timestamp: 99.998,
+            category: 'console',
+            message:
+              '[Reported error]: vite_preload_error TypeError: Failed to fetch dynamically imported module'
+          },
+          {
+            timestamp: 99.999,
+            category: 'sentry.event',
+            message: 'TypeError: Failed to fetch dynamically imported module'
+          }
+        ],
+        exception: {
+          values: [{ value }]
+        }
+      } satisfies ErrorEvent
+
+      expect(sentryBeforeSend(event, {})).toMatchObject({
+        tags: {
+          error_type: 'workspace_auth_gate_initialization_failure',
+          error_cause: 'vite_preload_error'
+        }
+      })
+    }
+  )
+
+  it('does not attribute an unrelated error inside the follow-on window', () => {
     const event = {
       type: undefined,
       timestamp: 100,
-      tags: { error_type: 'workspace_auth_gate_initialization_failure' },
       breadcrumbs: [
         {
           timestamp: 99.998,
-          category: 'console',
           message:
             '[Reported error]: vite_preload_error TypeError: Failed to fetch dynamically imported module'
-        },
-        {
-          timestamp: 99.999,
-          category: 'sentry.event',
-          message: 'TypeError: Failed to fetch dynamically imported module'
         }
       ],
       exception: {
-        values: [
-          {
-            value:
-              "Cannot destructure property 'useSessionCookie' of '(intermediate value)' as it is undefined."
-          }
-        ]
+        values: [{ value: 'Billing request failed with status 500' }]
       }
     } satisfies ErrorEvent
 
-    expect(sentryBeforeSend(event, {})).toMatchObject({
-      tags: {
-        error_type: 'workspace_auth_gate_initialization_failure',
-        error_cause: 'vite_preload_error'
-      }
-    })
+    expect(sentryBeforeSend(event, {})?.tags?.error_cause).toBeUndefined()
   })
 
   it.for([

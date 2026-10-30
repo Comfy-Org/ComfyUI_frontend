@@ -3,10 +3,28 @@ import type { ErrorEvent } from '@sentry/vue'
 const VITE_PRELOAD_ERROR = 'vite_preload_error'
 const PRELOAD_BREADCRUMB_PREFIX = `[Reported error]: ${VITE_PRELOAD_ERROR}`
 const FOLLOW_ON_WINDOW_SECONDS = 5
+const UNDEFINED_FOLLOW_ON_PATTERNS = [
+  /^Cannot destructure property .+ as it is undefined\.?$/,
+  /^Cannot read propert(?:y|ies) of undefined\b/,
+  /^undefined is not an object \(evaluating .+\)$/
+]
+
+function isUndefinedFollowOn(event: ErrorEvent): boolean {
+  const exceptions = event.exception?.values ?? []
+  const value = exceptions.at(-1)?.value
+  return (
+    typeof value === 'string' &&
+    UNDEFINED_FOLLOW_ON_PATTERNS.some((pattern) => pattern.test(value))
+  )
+}
 
 export function tagSentryStaleChunkCause(event: ErrorEvent): ErrorEvent {
   try {
-    if (event.tags?.error_type === VITE_PRELOAD_ERROR || !event.timestamp) {
+    if (
+      event.tags?.error_type === VITE_PRELOAD_ERROR ||
+      !event.timestamp ||
+      !isUndefinedFollowOn(event)
+    ) {
       return event
     }
 
