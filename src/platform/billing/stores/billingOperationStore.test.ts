@@ -584,6 +584,36 @@ describe('billingOperationStore', () => {
           await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
         })
 
+        it('settles on a succeeded read requested before the link was adopted', async () => {
+          let resolveRead: (value: BillingOpStatusResponse) => void = () => {}
+          vi.mocked(billingApi.getBillingOpStatus).mockReturnValueOnce(
+            new Promise<BillingOpStatusResponse>((resolve) => {
+              resolveRead = resolve
+            })
+          )
+          const store = useBillingOperationStore()
+          const terminal = store.startOperation('op-1', 'subscription', {
+            resumed: true
+          })
+
+          void store.startOperation('op-1', 'subscription', {
+            paymentMethodUrl: checkoutUrl
+          })
+          resolveRead({
+            id: 'op-1',
+            status: 'succeeded',
+            started_at: new Date().toISOString(),
+            completed_at: new Date().toISOString()
+          })
+
+          await expect(terminal).resolves.toMatchObject({
+            status: 'succeeded',
+            actionUrl: null,
+            paymentMethodUrl: null
+          })
+          expect(billingApi.getBillingOpStatus).toHaveBeenCalledOnce()
+        })
+
         it.for([
           ['no phase', { id: 'op-1', status: 'pending' }],
           [

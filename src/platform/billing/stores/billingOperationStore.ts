@@ -168,6 +168,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const inFlightPolls = new Map<string, Promise<void>>()
   const generations = new Map<string, symbol>()
+  const adoptions = new Map<string, number>()
 
   useEventListener(document, 'visibilitychange', () => {
     if (document.visibilityState === 'visible') pollPendingOperations()
@@ -338,7 +339,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       paymentMethodUrl,
       authenticationRequiredSeen: true
     }
-    generations.set(operation.opId, Symbol(operation.opId))
+    adoptions.set(operation.opId, (adoptions.get(operation.opId) ?? 0) + 1)
     operations.value = new Map(operations.value).set(operation.opId, updated)
     syncProgressToastAfterRead(operation, updated)
   }
@@ -464,12 +465,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     const generation = generations.get(opId)
+    const adoption = adoptions.get(opId)
     try {
       const response = await billingApi.getBillingOpStatus(opId)
-      if (isStalePoll(opId, generation)) {
-        scheduleNextPoll(opId)
-        return
-      }
+      if (isStalePoll(opId, generation)) return
       if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
         if (stopIfTimedOut(opId, operation)) return
         scheduleNextPoll(opId)
@@ -497,14 +496,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       updateOperationPhase(opId, response.phase ?? null)
       if (stopIfTimedOut(opId, operations.value.get(opId) ?? operation)) return
 
-      updateOperationActionUrl(opId, validateActionUrl(response.action_url))
+      updateOperationActionUrl(
+        opId,
+        validateActionUrl(response.action_url),
+        adoptions.get(opId) !== adoption
+      )
       scheduleNextPoll(opId)
     } catch {
       const currentOperation = operations.value.get(opId)
-      if (!currentOperation || isStalePoll(opId, generation)) {
-        scheduleNextPoll(opId)
-        return
-      }
+      if (!currentOperation || isStalePoll(opId, generation)) return
       if (stopIfTimedOut(opId, currentOperation)) return
       scheduleNextPoll(opId)
     }
@@ -661,17 +661,27 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function keptPaymentMethodUrl(
     operation: BillingOperation,
-    polledActionUrl: string | null
+    polledActionUrl: string | null,
+    readPredatesAdoption: boolean
   ): string | null {
     const keeps =
-      polledActionUrl === null && operation.phase === 'awaiting_payment_method'
+      polledActionUrl === null &&
+      (readPredatesAdoption || operation.phase === 'awaiting_payment_method')
     return keeps ? operation.paymentMethodUrl : null
   }
 
-  function updateOperationActionUrl(opId: string, actionUrl: string | null) {
+  function updateOperationActionUrl(
+    opId: string,
+    actionUrl: string | null,
+    readPredatesAdoption: boolean
+  ) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
-    const paymentMethodUrl = keptPaymentMethodUrl(operation, actionUrl)
+    const paymentMethodUrl = keptPaymentMethodUrl(
+      operation,
+      actionUrl,
+      readPredatesAdoption
+    )
     const shownUrl = actionUrl ?? paymentMethodUrl
     const updated: BillingOperation = {
       ...operation,
@@ -1226,6 +1236,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function clearOperation(opId: string) {
     cleanup(opId)
     generations.delete(opId)
+    adoptions.delete(opId)
     const newMap = new Map(operations.value)
     newMap.delete(opId)
     operations.value = newMap
