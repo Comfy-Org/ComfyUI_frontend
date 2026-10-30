@@ -4155,8 +4155,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { eDown } = pointer
     const pressedBadge =
       eDown && queryLinkBadgeHitAtPoint(this, eDown.canvasX, eDown.canvasY)
+    const wasConnecting = this.linkConnector.isConnecting
     const isClick = pointer.up(e)
-    if (e.button === 0 && !this.linkConnector.isConnecting) {
+    if (e.button === 0 && !wasConnecting) {
       this.dirty_canvas = true
       const x = e.canvasX
       const y = e.canvasY
@@ -4166,14 +4167,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         [x - this.node_over.pos[0], y - this.node_over.pos[1]],
         this
       )
-      this.node_capturing_input?.onMouseUp?.(
-        e,
-        [
-          x - this.node_capturing_input.pos[0],
-          y - this.node_capturing_input.pos[1]
-        ],
-        this
-      )
+      if (this.node_capturing_input !== this.node_over)
+        this.node_capturing_input?.onMouseUp?.(
+          e,
+          [
+            x - this.node_capturing_input.pos[0],
+            y - this.node_capturing_input.pos[1]
+          ],
+          this
+        )
     }
     if (isClick) {
       if (e.button === 0 && !pressedBadge && collapseLinkBadgeStacks(this)) {
