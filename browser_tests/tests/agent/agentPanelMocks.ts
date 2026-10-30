@@ -123,6 +123,7 @@ function createDeferredGate(): DeferredGate {
 class AgentBillingFixture {
   private status: BillingStatusResponse = FUNDED_BILLING_STATUS
   private available = true
+  private statusRequests = 0
   private heldRefresh:
     | {
         entered: DeferredGate
@@ -164,6 +165,10 @@ class AgentBillingFixture {
     this.available = true
   }
 
+  get statusRequestCount(): number {
+    return this.statusRequests
+  }
+
   holdNextFundedRefresh(): HeldBillingRefresh {
     const heldRefresh: NonNullable<AgentBillingFixture['heldRefresh']> = {
       entered: createDeferredGate(),
@@ -186,6 +191,7 @@ class AgentBillingFixture {
   }
 
   async fulfillStatus(route: Route): Promise<void> {
+    this.statusRequests++
     if (!this.available) {
       await route.fulfill({ status: 503 })
       return
