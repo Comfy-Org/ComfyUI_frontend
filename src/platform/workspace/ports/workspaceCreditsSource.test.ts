@@ -89,4 +89,17 @@ describe('useWorkspaceCreditsSource', () => {
     expect(switchWorkspace).not.toHaveBeenCalled()
     expect(outcome).toBe('active')
   })
+
+  it('fails without switching when the workspaces cannot load', async () => {
+    const { switchWorkspace } = mockWorkspace({ workspaces: [] })
+    vi.mocked(useTeamWorkspaceStore().initialize).mockRejectedValue(
+      new Error('workspace list failed')
+    )
+
+    const outcome =
+      await useWorkspaceCreditsSource().switchToPersonalWorkspace()
+
+    expect(switchWorkspace).not.toHaveBeenCalled()
+    expect(outcome).toBe('failed')
+  })
 })
