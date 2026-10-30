@@ -83,6 +83,7 @@
     "copyMarkdown": "markdown으로 복사",
     "copyUnavailable": "이 버전에서는 현재 대화만 복사할 수 있습니다",
     "creditTransitionNotice": "무료 에이전트 크레딧을 모두 사용했습니다. 이후 에이전트 활동에는 유료 크레딧을 포함할 수 있는 워크스페이스 크레딧이 사용됩니다.",
+    "creditsUsed": "에이전트가 {credits} 크레딧을 사용했습니다 | 에이전트가 {credits} 크레딧을 사용했습니다",
     "currentTab": "현재 탭",
     "delete": "삭제",
     "deleteApproval": {
