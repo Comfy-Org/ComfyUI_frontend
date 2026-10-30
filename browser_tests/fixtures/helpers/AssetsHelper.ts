@@ -6,14 +6,11 @@ import type {
   ListAssetsResponse
 } from '@comfyorg/ingest-types'
 
-import type {
-  JobDetail,
-  RawJobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobDetail, RawJobListItem } from '@comfyorg/api-client/jobTypes'
 import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 
 const jobsListRoutePattern = '**/api/jobs?*'
 const assetsListRoutePattern = /\/api\/assets(?:\?.*)?$/

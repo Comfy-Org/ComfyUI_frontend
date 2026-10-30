@@ -62,6 +62,10 @@ import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restor
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
+  getDefaultWorkflow,
+  initDefaultWorkflow
+} from '@/platform/workflow/core/services/defaultWorkflowService'
+import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
@@ -84,12 +88,9 @@ import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/wor
 import type {
   ExecutionErrorWsMessage,
   NodeExecutionOutput
-} from '@/platform/remote/comfyui/execution/types'
-import type { NodeError } from '@/platform/remote/comfyui/types'
-import {
-  isComboInputSpecV1,
-  isComboInputSpecV2
-} from '@comfyorg/object-info-parser'
+} from '@comfyorg/api-client/executionTypes'
+import type { NodeError } from '@comfyorg/api-client/types'
+import { isComboInputSpecV1, isComboInputSpecV2 } from '@comfyorg/object-info-parser'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/types/domWidget'
@@ -184,9 +185,9 @@ import {
 } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
-import { PromptExecutionError, api } from './api'
-import type { ComfyApi } from './api'
-import { defaultGraph } from './defaultGraph'
+import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
+import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
+import { api } from './api'
 import { importA1111 } from './pnginfo'
 import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
 import { syncPromotedComboHostOptions } from '@/core/graph/widgets/syncPromotedComboHostOptions'
@@ -866,6 +867,8 @@ export class ComfyApp implements IComfyApp {
 
     this.canvasElRef.value = canvasEl
 
+    const defaultWorkflowReady = initDefaultWorkflow()
+
     await bootstrapTracer.settle('bootstrap/sync-workflows', () =>
       useWorkspaceStore().workflow.syncWorkflows()
     )
@@ -973,6 +976,8 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
       useExtensionService().invokeExtensionsAsync('setup')
     )
+
+    await defaultWorkflowReady
 
     this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,
@@ -1228,7 +1233,7 @@ export class ComfyApp implements IComfyApp {
         typeof graphData !== 'object' ||
         Array.isArray(graphData)
       ) {
-        graphData = defaultGraph
+        graphData = getDefaultWorkflow()
         reset_invalid_values = true
       }
 

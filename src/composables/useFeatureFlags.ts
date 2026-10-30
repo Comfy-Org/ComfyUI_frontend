@@ -245,6 +245,14 @@ export function useFeatureFlags() {
         false
       )
     },
+    /** The model folders an uploaded model file may go into; empty when uploads are off. */
+    get modelUploadFolders(): readonly string[] {
+      return resolveFlag<readonly string[]>(
+        ServerFeatureFlag.MODEL_UPLOAD_FOLDERS,
+        remoteConfig.value.model_upload_folders,
+        []
+      )
+    },
     get lateCustomNodesEnabled() {
       return resolveFlag(
         ServerFeatureFlag.LATE_CUSTOM_NODES_ENABLED,

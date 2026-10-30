@@ -213,6 +213,10 @@ export function createInputSpecInterpreter(
     inputs: Record<string, InputSpecV2>,
     outputMatchTypes: (string | undefined)[] | undefined
   ): string[] {
+    if (!outputs.some((output) => output.type === 'COMFY_MATCHTYPE_V3')) {
+      return outputs.flatMap((output) => splitSlotTypes(output.type))
+    }
+
     const allowedTypesByTemplate = new Map<string, string[]>()
     for (const spec of Object.values(inputs).flatMap(inputSpecTree)) {
       const template = matchTypeTemplate(spec)

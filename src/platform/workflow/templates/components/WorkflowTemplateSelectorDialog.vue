@@ -490,8 +490,8 @@ import type { PreparedWorkflowTemplate } from '@/platform/workflow/templates/com
 import type {
   TemplateInfo,
   TemplateTypeFilter
-} from '@/platform/workflow/templates/types/template'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+} from '@comfyorg/api-client/templateTypes'
+import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
 import type {
   TemplateDetailGroup,
   TemplateDetailRow,

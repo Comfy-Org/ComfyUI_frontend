@@ -1,7 +1,7 @@
 {
   "id": "node-definition",
   "capability": "Node definition contracts (shared technical module)",
-  "description": "Shared technical module, not a business domain. App-side node definition contracts read from /object_info. @comfyorg/object-info-parser owns the V1 and V2 schemas, V1-to-V2 migration, and the input spec interpreter, including flattening and searchable slot type collection. This record holds the app's interpreter binding that reports input spec diagnostics, upload input augmentation, input ordering for widget values, node help base URLs, and the essentials node list. The node definition store, node library and search UI, and widget constructors that consume these contracts belong to their own records.",
+  "description": "Shared technical module, not a business domain. App-side node definition contracts read from /object_info. @comfyorg/object-info-parser owns the V1 and V2 schemas, V1-to-V2 migration, the node source classifier and pack grouping helpers, and the input spec interpreter, including flattening and searchable slot type collection. This record holds the app's interpreter binding that reports input spec diagnostics, upload input augmentation, input ordering for widget values, node help base URLs, and the essentials node list. The node definition store, node library and search UI, and widget constructors that consume these contracts belong to their own records.",
   "modules": [
     {
       "path": "src/constants/essentialsNodes.ts",
@@ -21,6 +21,10 @@
     },
     {
       "path": "src/workbench/utils/**",
+      "role": "domain"
+    },
+    {
+      "path": "packages/object-info-parser/src/**",
       "role": "domain"
     }
   ],

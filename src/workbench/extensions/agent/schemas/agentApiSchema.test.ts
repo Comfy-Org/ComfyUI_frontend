@@ -310,40 +310,48 @@ describe('agentApiSchema contract subtleties', () => {
     ).toBe(true)
   })
 
-  it('accepts agent_message_done usage whether fully populated or partial', () => {
-    const usages = [
-      {
+  it.for([
+    {
+      name: 'fully populated',
+      usage: {
         input_tokens: 4493,
         output_tokens: 425,
         total_tokens: 4918,
         cache_read_input_tokens: 35596,
-        cache_creation_input_tokens: 0
-      },
-      { input_tokens: 1, output_tokens: 2 },
-      {}
-    ]
+        cache_creation_input_tokens: 0,
+        charge_micro_usd: 6038
+      }
+    },
+    {
+      name: 'partially populated',
+      usage: { input_tokens: 1, output_tokens: 2 }
+    },
+    { name: 'empty', usage: {} }
+  ])('accepts $name agent_message_done usage', ({ usage }) => {
+    const parsed = zAgentWsEvent.parse({
+      ...doneBase,
+      data: { ...doneBase.data, usage }
+    })
 
-    for (const usage of usages) {
-      const parsed = zAgentWsEvent.parse({
-        ...doneBase,
-        data: { ...doneBase.data, usage }
-      })
-
-      if (parsed.type !== 'agent_message_done') throw new Error('wrong variant')
-      expect(parsed.data.usage).toEqual(usage)
-    }
+    assert(parsed.type === 'agent_message_done')
+    expect(parsed.data.usage).toEqual(usage)
   })
 
-  it('degrades a malformed usage instead of failing the done frame', () => {
-    for (const usage of ['nope', 42, { input_tokens: '4493' }]) {
-      const parsed = zAgentWsEvent.parse({
-        ...doneBase,
-        data: { ...doneBase.data, usage }
-      })
+  it.for([
+    { name: 'string', usage: 'nope' },
+    { name: 'number', usage: 42 },
+    { name: 'string token count', usage: { input_tokens: '4493' } },
+    { name: 'negative charge', usage: { charge_micro_usd: -1 } },
+    { name: 'zero charge', usage: { charge_micro_usd: 0 } },
+    { name: 'fractional charge', usage: { charge_micro_usd: 1.5 } }
+  ])('degrades $name usage instead of failing the done frame', ({ usage }) => {
+    const parsed = zAgentWsEvent.parse({
+      ...doneBase,
+      data: { ...doneBase.data, usage }
+    })
 
-      if (parsed.type !== 'agent_message_done') throw new Error('wrong variant')
-      expect(parsed.data.usage).toBeUndefined()
-    }
+    assert(parsed.type === 'agent_message_done')
+    expect(parsed.data.usage).toBeUndefined()
   })
 
   it('keeps draft frames foreign to this union', () => {
