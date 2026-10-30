@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, assert, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -10,6 +11,14 @@ vi.mock(import('@/scripts/app'))
 afterEach(() => {
   clipspace.current = null
 })
+
+function previews(...sources: string[]) {
+  return sources.map((src) => {
+    const image = new Image()
+    image.src = src
+    return image
+  })
+}
 
 describe('clipspace image paste', () => {
   it.for([
@@ -104,4 +113,46 @@ describe('clipspace image paste', () => {
       expect(promptWidget.value).toBe('pasted text')
     }
   )
+
+  it('pastes the image the user selected when outputs contain degenerate entries', () => {
+    const good = { filename: 'good.png', subfolder: '', type: 'output' }
+    const graph = new LGraph()
+    const source = new LGraphNode('source')
+    const target = new LGraphNode('target')
+    graph.add(source)
+    graph.add(target)
+    source.imgs = previews(
+      'https://comfy.test/a.png',
+      'https://comfy.test/b.png'
+    )
+    source.imageIndex = 1
+    useNodeOutputStore().setNodeOutputImages(
+      source,
+      fromAny([
+        null,
+        { status: 'unavailable', reason: 'upload_failed' },
+        { filename: 'stale.png', subfolder: '', type: 'output' },
+        good
+      ])
+    )
+    copyToClipspace(source)
+    target.imgs = []
+    const imageWidget = target.addWidget(
+      'combo',
+      'image',
+      'before.png',
+      () => {},
+      {
+        values: []
+      }
+    )
+
+    pasteFromClipspace(target)
+
+    expect(imageWidget.value).toBe('good.png [output]')
+    expect(useNodeOutputStore().getNodeOutputs(target)?.images).toEqual([good])
+    expect(target.imgs.map((img) => img.src)).toEqual([
+      'https://comfy.test/b.png'
+    ])
+  })
 })
