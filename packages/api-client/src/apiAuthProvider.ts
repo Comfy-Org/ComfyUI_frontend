@@ -1,5 +1,5 @@
-import type { AuthHeader } from '@/types/authTypes'
-import type { RetryPolicy } from '@/utils/retryPolicy'
+import type { AuthHeader } from './authTypes'
+import type { RetryPolicy } from './retryPolicy'
 
 export interface RetrySignalLifecycle {
   clearInitialTimeout: () => void

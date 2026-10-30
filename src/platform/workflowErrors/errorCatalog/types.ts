@@ -1,5 +1,5 @@
-import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
-import type { PromptError } from '@/platform/remote/comfyui/types'
+import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
+import type { PromptError } from '@comfyorg/api-client/types'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'

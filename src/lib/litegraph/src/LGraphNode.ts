@@ -45,7 +45,7 @@ import { toSelectableKey } from '@/core/selection/selectionState'
 import type {
   NodeExecutionOutput,
   ResultItem
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'

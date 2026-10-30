@@ -1,9 +1,9 @@
 import { useEventListener } from '@vueuse/core'
 import { onUnmounted, ref } from 'vue'
 
-import type { LogsWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { LogsWsMessage } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
-import type { components } from '@/platform/customNodes/manager/types/generatedManagerTypes'
+import type { components } from '@comfyorg/api-client/generatedManagerTypes'
 
 const LOGS_MESSAGE_TYPE = 'logs'
 const MANAGER_WS_TASK_DONE_NAME = 'cm-task-completed'

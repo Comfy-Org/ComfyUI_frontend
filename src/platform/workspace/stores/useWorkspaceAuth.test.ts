@@ -15,8 +15,8 @@ import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import type {
   WebSessionRequestScope,
   WebSessionRequests
-} from '@/platform/auth/session/webSessionFetch'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useTelemetry } from '@comfyorg/telemetry'

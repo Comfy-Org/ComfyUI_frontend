@@ -7,7 +7,7 @@ import {
 } from '@/components/common/systemStatsColumns'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { t } from '@/i18n'
-import type { SystemStats } from '@/platform/remote/comfyui/types'
+import type { SystemStats } from '@comfyorg/api-client/types'
 import { formatSize } from '@/utils/formatUtil'
 
 function formatSystemInfoText(stats: SystemStats): string {

@@ -33,7 +33,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import type {
   NodeExecutionOutput,
   NodeOutputWith
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'

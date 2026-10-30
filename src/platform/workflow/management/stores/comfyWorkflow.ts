@@ -1,7 +1,7 @@
 import { markRaw } from 'vue'
 
 import { assert } from '@/base/assert'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'

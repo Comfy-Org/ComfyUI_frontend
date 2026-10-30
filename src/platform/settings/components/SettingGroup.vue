@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import SettingItem from '@/platform/settings/components/SettingItem.vue'
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 defineProps<{

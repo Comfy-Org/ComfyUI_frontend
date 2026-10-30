@@ -1,4 +1,4 @@
-import type { TemplateInput } from '@/platform/workflow/templates/schemas/templateSchema'
+import type { TemplateInput } from './templateSchema'
 
 export interface LogoInfo {
   /** Provider name(s) matching index_logo.json. String for single, array for stacked logos. */

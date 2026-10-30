@@ -5,13 +5,13 @@ import {
 } from '@/locales/localeConfig'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
-import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
+import { CANVAS_NAVIGATION_PRESETS } from '@comfyorg/settings-core/canvasNavigation'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
 import { normalizeDisabledExtensionPaths } from '@/platform/settings/utils/extensionPath'
 import type { Keybinding } from '@comfyorg/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import { LinkReleaseTriggerAction } from '@comfyorg/settings-core/searchBoxTypes'
 import { breakpointsTailwind } from '@vueuse/core'
 
 /**

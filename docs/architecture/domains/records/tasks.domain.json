@@ -6,6 +6,10 @@
     {
       "path": "src/platform/tasks/**",
       "role": "infrastructure"
+    },
+    {
+      "path": "packages/api-client/src/taskSchema.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],

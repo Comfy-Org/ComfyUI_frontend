@@ -1,4 +1,5 @@
 import type {
+  ModelFolder,
   PromptErrorResponse,
   PromptInfo,
   PromptResponse as IngestPromptResponse,
@@ -58,3 +59,8 @@ export type UserConfigResponse = {
 
 export type UserData = string[][]
 export type UserDataFullInfo = Required<UserDataResponseFull>
+
+export type ModelFolderInfo = ModelFolder & {
+  /** Raw extension allowlist; empty matches all, absent on older backends. */
+  extensions?: string[]
+}

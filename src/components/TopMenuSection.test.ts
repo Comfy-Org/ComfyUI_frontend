@@ -25,10 +25,7 @@ import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composabl
 
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
-import type {
-  JobListItem,
-  JobStatus
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobListItem, JobStatus } from '@comfyorg/api-client/jobTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import {

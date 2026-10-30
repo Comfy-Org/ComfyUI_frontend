@@ -14,7 +14,7 @@ import type {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'

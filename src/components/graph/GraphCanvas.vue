@@ -186,7 +186,7 @@ import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftT
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { UnauthorizedError } from '@/scripts/api'
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
