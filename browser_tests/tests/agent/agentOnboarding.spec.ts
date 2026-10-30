@@ -52,7 +52,7 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       .toBe('false')
   })
 
-  test('points the PM-2276 card at the highlighted panel and answers clicks on it', async ({
+  test('points the first card at the highlighted panel and answers clicks on it', async ({
     page,
     agentFlagEnabled
   }) => {
@@ -66,28 +66,35 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     })
     await expect(firstCard).toBeVisible()
     const arrow = page.getByTestId('agent-coach-arrow')
+    const spotlight = page.getByTestId('agent-coach-spotlight')
     await expect(arrow).toHaveCSS('visibility', 'visible')
+    await expect
+      .poll(async () => {
+        const [arrowBox, spotlightBox] = await Promise.all([
+          arrow.boundingBox(),
+          spotlight.boundingBox()
+        ])
+        if (!arrowBox || !spotlightBox) return null
+        return {
+          leftOfSpotlight: arrowBox.x < spotlightBox.x,
+          centersAligned:
+            Math.abs(
+              arrowBox.y +
+                arrowBox.height / 2 -
+                (spotlightBox.y + spotlightBox.height / 2)
+            ) < 4
+        }
+      })
+      .toEqual({ leftOfSpotlight: true, centersAligned: true })
 
-    const spotlight = await page
-      .getByTestId('agent-coach-spotlight')
-      .boundingBox()
-    const arrowBox = await arrow.boundingBox()
-    if (!spotlight || !arrowBox) throw new Error('tour layout has no box')
-    expect(arrowBox.x).toBeLessThan(spotlight.x)
-    expect(
-      Math.abs(
-        arrowBox.y + arrowBox.height / 2 - (spotlight.y + spotlight.height / 2)
-      )
-    ).toBeLessThan(4)
-
+    const spotlightBox = await spotlight.boundingBox()
+    if (!spotlightBox) throw new Error('spotlight has no box')
     await page.mouse.click(
-      spotlight.x + spotlight.width / 2,
-      spotlight.y + spotlight.height / 2
+      spotlightBox.x + spotlightBox.width / 2,
+      spotlightBox.y + spotlightBox.height / 2
     )
 
-    await expect(
-      firstCard.getByRole('button', { name: enMessages.g.next })
-    ).toBeFocused()
+    await expect(firstCard).toBeFocused()
     await expect(firstCard).toBeVisible()
   })
 

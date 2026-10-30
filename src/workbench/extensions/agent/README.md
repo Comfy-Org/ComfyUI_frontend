@@ -139,7 +139,7 @@ screen all dismiss the tour and mark it complete.
 
 Cards placed beside their target carry an arrow pointing at it. The rest of the
 screen, the highlighted area included, does not respond while a card is up; a
-click there briefly outlines the card and moves focus to **Next** (or **Done**)
+click there briefly outlines the card and moves focus to it
 so the user finds the controls instead of clicking the highlight.
 
 Completion is device-local in `localStorage`, scoped to the authenticated user

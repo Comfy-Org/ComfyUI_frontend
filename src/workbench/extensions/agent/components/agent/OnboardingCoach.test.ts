@@ -233,34 +233,72 @@ describe('OnboardingCoach', () => {
     }
   })
 
-  it('points an arrow from each side-placed card at the middle of its target', async () => {
-    const user = userEvent.setup()
-    mount()
-    for (const [index, step] of STEPS.entries()) {
+  it.for(STEPS.filter((step) => step.placement !== 'graph-bottom'))(
+    'points the $placement card arrow at the middle of its target',
+    async (step) => {
+      mount([step])
       const dialog = await screen.findByRole('dialog', { name: step.title })
-      if (step.placement === 'graph-bottom') {
-        expect(screen.queryByTestId('agent-coach-arrow')).toBeNull()
-      } else {
-        const targetRect = rectangles[step.target.slice(1)]
-        const arrow = screen.getByTestId('agent-coach-arrow')
-        expect(dialog).toContainElement(arrow)
-        await waitFor(() => {
-          const arrowCenter =
-            parseFloat(dialog.style.top) +
+      const arrow = screen.getByTestId('agent-coach-arrow')
+      const targetRect = rectangles[step.target.slice(1)]
+
+      expect(dialog).toContainElement(arrow)
+      await waitFor(() =>
+        expect(
+          parseFloat(dialog.style.top) +
             parseFloat(arrow.style.top) +
             ARROW_SIZE / 2
-          expect(arrowCenter).toBeCloseTo(
-            targetRect.top + targetRect.height / 2,
-            0
-          )
-        })
-      }
-      if (index < 3)
-        await user.click(screen.getByRole('button', { name: 'Next' }))
+        ).toBeCloseTo(targetRect.top + targetRect.height / 2, 0)
+      )
+      expect(arrow).not.toHaveStyle({ visibility: 'hidden' })
+    }
+  )
+
+  it('draws no arrow on the canvas card, which sits on its target', async () => {
+    mount([STEPS[2]])
+    await screen.findByRole('dialog', { name: STEPS[2].title })
+
+    expect(screen.queryByTestId('agent-coach-arrow')).toBeNull()
+  })
+
+  it('hides the arrow when the target center is outside the arrow reach', async () => {
+    const panel = rectangles.panel
+    rectangles.panel = new DOMRect(950, 0, 420, 24)
+    try {
+      mount([STEPS[0]])
+      const dialog = await screen.findByRole('dialog', {
+        name: STEPS[0].title
+      })
+      await waitFor(() => expect(dialog.style.opacity).toBe('1'))
+      expect(
+        parseFloat(dialog.style.left) + dialog.offsetWidth
+      ).toBeLessThanOrEqual(rectangles.panel.left)
+      expect(screen.getByTestId('agent-coach-arrow')).toHaveStyle({
+        visibility: 'hidden'
+      })
+    } finally {
+      rectangles.panel = panel
     }
   })
 
-  it('draws attention to the card when the user clicks the dimmed screen or the highlighted area', async () => {
+  it('keeps the arrow when a small shift still leaves a gap beside the target', async () => {
+    const panel = rectangles.panel
+    rectangles.panel = new DOMRect(330, 60, 420, 700)
+    try {
+      mount([STEPS[0]])
+      const dialog = await screen.findByRole('dialog', {
+        name: STEPS[0].title
+      })
+      await waitFor(() => expect(dialog.style.opacity).toBe('1'))
+      expect(parseFloat(dialog.style.left)).toBe(8)
+      expect(screen.getByTestId('agent-coach-arrow')).not.toHaveStyle({
+        visibility: 'hidden'
+      })
+    } finally {
+      rectangles.panel = panel
+    }
+  })
+
+  it('draws attention to the card and focuses it when the user clicks the dimmed screen or the highlighted area', async () => {
     const user = userEvent.setup()
     mount()
     const dialog = await screen.findByRole('dialog', { name: STEPS[0].title })
@@ -269,7 +307,7 @@ describe('OnboardingCoach', () => {
     await user.click(screen.getByTestId('agent-coach-scrim'))
 
     expect(dialog).toHaveAttribute('data-nudged')
-    expect(screen.getByRole('button', { name: 'Next' })).toHaveFocus()
+    expect(dialog).toHaveFocus()
     expect(screen.getByRole('dialog', { name: STEPS[0].title })).toBe(dialog)
     expect(localStorage.getItem(KEY)).toBe('false')
     expect(telemetry().trackAgentOnboardingStep).not.toHaveBeenCalled()
@@ -280,7 +318,7 @@ describe('OnboardingCoach', () => {
     mount()
     await screen.findByRole('dialog', { name: STEPS[0].title })
     await user.click(screen.getByTestId('agent-coach-scrim'))
-    await user.keyboard('{Enter}')
+    await user.click(screen.getByRole('button', { name: 'Next' }))
 
     const second = await screen.findByRole('dialog', { name: STEPS[1].title })
     expect(second).not.toHaveAttribute('data-nudged')

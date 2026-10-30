@@ -30,6 +30,7 @@ import {
 const TARGET_MISSING_AFTER_MS = 8000
 const COACH_HOVER_ATTRIBUTE = 'data-coach-hover'
 const NUDGE_MS = 1200
+const CARD_GAP = 16
 const ARROW_CORNER_CLEARANCE = 20
 
 const { steps, storageKey, holdNotice } = defineProps<{
@@ -72,7 +73,6 @@ useOnboardingOverlayStore().registerSource(() => visible.value)
 const toolbar = ref<HTMLElement | null>(null)
 const card = ref<HTMLElement | null>(null)
 const arrowElement = ref<HTMLElement | null>(null)
-const primaryAction = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
 const tooltip = ref<HTMLElement | null>(null)
 const bounds = useElementBounding(target)
 const toolbarBounds = useElementBounding(toolbar)
@@ -196,7 +196,7 @@ watch(
 const middleware = computed<Middleware[]>(() => {
   const result = [
     offset({
-      mainAxis: 16,
+      mainAxis: CARD_GAP,
       crossAxis: step.value?.placement === 'left-start' ? -16 : 0
     })
   ]
@@ -242,7 +242,7 @@ const { floatingStyles, isPositioned, middlewareData } = useFloating(
 
 const arrowStyle = computed(() => {
   const { arrow: arrowData, shift: shiftData } = middlewareData.value
-  const besideTarget = !shiftData?.x
+  const besideTarget = (shiftData?.x ?? 0) < CARD_GAP
   const reachesTargetCenter = arrowData?.centerOffset === 0
   return arrowData?.y !== undefined && besideTarget && reachesTargetCenter
     ? { top: `${arrowData.y}px` }
@@ -266,9 +266,7 @@ watch([index, active], () => {
 function nudgeCard(): void {
   nudged.value = true
   startNudgeTimer()
-  const action = primaryAction.value
-  const element = action instanceof HTMLElement ? action : action?.$el
-  element?.focus()
+  card.value?.focus()
 }
 
 const spotlightStyle = computed(() => {
@@ -375,7 +373,7 @@ useEventListener(
               )
             "
           />
-          <div class="flex min-h-0 flex-col gap-6 overflow-y-auto">
+          <div class="-m-1 flex min-h-0 flex-col gap-6 overflow-y-auto p-1">
             <div class="flex flex-col gap-2">
               <p class="m-0 text-xs/normal opacity-50">
                 {{
@@ -418,13 +416,9 @@ useEventListener(
               <Button variant="secondary" size="md" @click="onSkip">{{
                 $t('agent.skip')
               }}</Button>
-              <Button
-                ref="primaryAction"
-                variant="inverted"
-                size="md"
-                @click="onNext"
-                >{{ $t(advanceLabelKey) }}</Button
-              >
+              <Button variant="inverted" size="md" @click="onNext">{{
+                $t(advanceLabelKey)
+              }}</Button>
             </div>
           </div>
         </div>
