@@ -89,9 +89,10 @@ describe('loadCustomNodeScripts', () => {
     const { api } = await import('@/scripts/api')
     const executed: string[] = []
     vi.stubGlobal('recordGateScript', (script: string) => executed.push(script))
+    const attempt = crypto.randomUUID()
     vi.spyOn(api, 'fileURL').mockImplementation(
       (script) =>
-        `data:text/javascript,globalThis.recordGateScript(${JSON.stringify(script)})`
+        `data:text/javascript,globalThis.recordGateScript(${JSON.stringify(script)})#${attempt}`
     )
 
     await loadCustomNodeScripts(
