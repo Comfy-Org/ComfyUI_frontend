@@ -2975,6 +2975,26 @@ describe('attachDocOpMinter', () => {
       ])
     })
 
+    it('mints an added row default over a peer value the document holds at that index', async () => {
+      const { node, widget } = seedGroup()
+      docWidgetValue = (nodeId, name) =>
+        nodeId === node.id && name === 'loras.1.lora_name' ? 'B' : undefined
+
+      widget('loras.1').callback?.(undefined)
+      widget('loras.$add').callback?.(undefined)
+      await afterFlush()
+
+      // #21091, an accepted V1 residual (multi-player ADR-039): a retained
+      // value and a newer peer edit look alike here, so a local Add writes the
+      // default and the stamp decides. Stable row identity lifts this.
+      expect(minted).toContainEqual({
+        op: 'set_widget',
+        node_id: node.id,
+        widget: 'loras.1.lora_name',
+        value: 'A'
+      })
+    })
+
     function seedThreeRows() {
       const seeded = seedGroup()
       const { widget } = seeded
