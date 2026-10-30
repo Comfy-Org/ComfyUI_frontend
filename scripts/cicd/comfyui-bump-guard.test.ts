@@ -6,19 +6,26 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  rmSync,
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { parse } from 'yaml'
 
 const SCRIPT = path.join(import.meta.dirname, 'comfyui-bump-guard.sh')
 const WORKFLOW = '.github/workflows/release-weekly-comfyui.yaml'
 
+function ownedTempDir(prefix: string) {
+  const dir = mkdtempSync(path.join(tmpdir(), prefix))
+  onTestFinished(() => rmSync(dir, { recursive: true, force: true }))
+  return dir
+}
+
 function requirementsPinning(line: string) {
-  const dir = mkdtempSync(path.join(tmpdir(), 'bump-guard-'))
+  const dir = ownedTempDir('bump-guard-')
   const file = path.join(dir, 'requirements.txt')
   writeFileSync(file, `torch\n${line}\ncomfyui-workflow-templates==0.9.1\n`)
   return file
@@ -69,11 +76,13 @@ describe('comfyui-bump-guard.sh', () => {
     expect(guard('1.58.2', '1.57.6', '1.58.1').stdout).toBe('proceed')
   })
 
-  it('fails instead of guessing on an unsupported version', () => {
-    expect(guard('', '1.58.1').status).not.toBe(0)
-    expect(guard('latest', '1.58.1').status).not.toBe(0)
-    expect(guard('1.59.0', '1.59.0.post1').status).not.toBe(0)
-    expect(guard('1.59.0rc1', '1.58.1').status).not.toBe(0)
+  it.for([
+    ['', '1.58.1'],
+    ['latest', '1.58.1'],
+    ['1.59.0', '1.59.0.post1'],
+    ['1.59.0rc1', '1.58.1']
+  ])('fails instead of guessing on target %j with pin %j', ([target, pin]) => {
+    expect(guard(target, pin).status).not.toBe(0)
   })
 
   it('fails when a file has no exact frontend pin', () => {
@@ -114,7 +123,7 @@ function runCreatePrStep({ target, masterPin, openPrPin }: StepRun) {
     '${{ needs.resolve-version.outputs.target_version }}',
     target
   )
-  const root = mkdtempSync(path.join(tmpdir(), 'bump-step-'))
+  const root = ownedTempDir('bump-step-')
   const bin = path.join(root, 'bin')
   const comfyui = path.join(root, 'comfyui')
   const guardDir = path.join(root, 'frontend-scripts/scripts/cicd')
