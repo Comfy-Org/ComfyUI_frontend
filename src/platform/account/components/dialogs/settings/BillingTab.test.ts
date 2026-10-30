@@ -1067,6 +1067,27 @@ describe('BillingTab', () => {
     )
   })
 
+  it.for([
+    {
+      case: 'a served end date',
+      endDate: '2026-09-01T00:00:00Z',
+      line: 'Ended September 1.'
+    },
+    { case: 'no end date', endDate: null, line: 'This plan has ended.' }
+  ])('reads an ended plan with $case as "$line"', ({ endDate, line }) => {
+    arrange({
+      subscriptionStatus: 'ended',
+      subscription: { ...activeSubscription, isActive: false, endDate }
+    })
+
+    expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+      line
+    )
+    expect(
+      screen.getByRole('link', { name: 'Choose a plan' })
+    ).toBeInTheDocument()
+  })
+
   it('renders an unrecognised plan as Your plan', () => {
     arrange({ subscription: { ...activeSubscription, tier: null } })
 
@@ -1287,6 +1308,40 @@ describe('BillingTab', () => {
       )
       expect(addCreditsVariants()).toEqual(['secondary'])
     })
+
+    it.for([
+      {
+        surface: 'Cloud',
+        isCloud: true,
+        choosePlan: 'inverted',
+        addCredits: 'secondary'
+      },
+      {
+        surface: 'local ComfyUI',
+        isCloud: false,
+        choosePlan: 'secondary',
+        addCredits: 'inverted'
+      }
+    ])(
+      'keeps one white button on $surface when an ended plan is out of credits',
+      async ({ isCloud, choosePlan, addCredits }) => {
+        distribution.isCloud = isCloud
+        onTestFinished(() => {
+          distribution.isCloud = false
+        })
+        arrange({
+          balance: zeroBalance,
+          subscriptionStatus: 'ended',
+          subscription: { ...activeSubscription, isActive: false }
+        })
+
+        await screen.findByTestId('billing-auto-top-up-status')
+        expect(
+          screen.getByRole('link', { name: 'Choose a plan' })
+        ).toHaveAttribute('data-variant', choosePlan)
+        expect(addCreditsVariants()).toEqual([addCredits])
+      }
+    )
 
     it('offers no Add credits on a failed top-up when the server withholds can_top_up', async () => {
       servedCheckouts(checkout('failed'))

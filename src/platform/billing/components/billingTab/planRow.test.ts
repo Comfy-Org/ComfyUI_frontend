@@ -166,7 +166,22 @@ describe('derivePlanRow', () => {
     {
       case: 'an ended plan without an end date',
       facts: { subscriptionStatus: 'ended' },
-      expected: { kind: 'unknown' }
+      expected: {
+        kind: 'ended',
+        planName: 'Pro',
+        cadence: 'monthly',
+        endedAt: null
+      }
+    },
+    {
+      case: 'a served ended subscription_state',
+      facts: { subscriptionState: 'ended', subscriptionStatus: null },
+      expected: {
+        kind: 'ended',
+        planName: 'Pro',
+        cadence: 'monthly',
+        endedAt: null
+      }
     },
     {
       case: 'an active sales-managed plan with no served plan name',

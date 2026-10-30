@@ -59,6 +59,7 @@
         :state="planRow"
         :action="action"
         :sales-variant="salesVariant"
+        :add-credits-variant="addCreditsVariant"
         :can-manage-subscription="capabilities.canManageSubscription.value"
       />
     </section>
@@ -160,6 +161,7 @@ import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -252,7 +254,7 @@ const addCreditsVariant = computed(() =>
         ? autoTopUp.value.settings.status
         : null,
     planActionIsPrimary:
-      action.value === 'subscribe' || action.value === 'choosePlan'
+      action.value === 'subscribe' || (action.value === 'choosePlan' && isCloud)
   })
 )
 
