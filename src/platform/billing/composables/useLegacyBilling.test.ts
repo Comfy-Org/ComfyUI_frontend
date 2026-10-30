@@ -113,6 +113,20 @@ describe('useLegacyBilling', () => {
       )
     })
 
+    it('keeps a tierless ended subscription_state without an invoice as a subscription', () => {
+      useInactiveStatus(
+        statusWith({
+          is_active: false,
+          subscription_state: 'ended',
+          ended_at: '2026-08-20T00:00:00Z'
+        })
+      )
+
+      expect(useLegacyBilling().subscription.value?.endedAt).toBe(
+        '2026-08-20T00:00:00Z'
+      )
+    })
+
     it('is null when the billing status carries no renewal invoice', () => {
       useSubscription().subscriptionStatus.value = statusWith({})
 

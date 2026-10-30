@@ -45,6 +45,10 @@ function servesEndedSubscription(status: BillingStatusResponse | null) {
   switch (status?.subscription_status) {
     case 'ended':
       return true
+  }
+  switch (status?.subscription_state) {
+    case 'ended':
+      return true
     default:
       return false
   }
