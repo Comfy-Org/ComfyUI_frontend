@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
-import type { UserConfigResponse } from '@/platform/remote/comfyui/types'
+import type { UserConfigResponse } from '@comfyorg/api-client/types'
 import { api } from '@/scripts/api'
 
 export interface User {

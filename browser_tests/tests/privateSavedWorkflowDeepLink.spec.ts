@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 import { workspaceSwitcherTest } from '@e2e/fixtures/workspaceSwitcherFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'

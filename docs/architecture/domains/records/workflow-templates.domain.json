@@ -24,14 +24,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workflow/templates/schemas/templateSchema.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/templates/types/**",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/workflow/templates/utils/**",
       "role": "domain"
     },
@@ -41,6 +33,14 @@
     },
     {
       "path": "packages/shared-frontend-utils/src/templateSearch.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/templateSchema.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/templateTypes.ts",
       "role": "domain"
     }
   ],

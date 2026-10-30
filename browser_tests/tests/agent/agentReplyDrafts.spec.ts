@@ -6,7 +6,7 @@ import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import { zAgentAnswerRequest } from '@comfyorg/ingest-types/zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {

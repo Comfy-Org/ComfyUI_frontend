@@ -5,7 +5,7 @@ import path from 'path'
 import type {
   TemplateInfo,
   WorkflowTemplates
-} from '@/platform/workflow/templates/types/template'
+} from '@comfyorg/api-client/templateTypes'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 export class ComfyTemplates {

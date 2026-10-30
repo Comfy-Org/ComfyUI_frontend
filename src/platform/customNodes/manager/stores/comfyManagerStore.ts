@@ -20,7 +20,7 @@ import type {
   RegistryPack,
   TaskLog
 } from '@/platform/customNodes/manager/types/comfyManagerTypes'
-import type { components } from '@/platform/customNodes/manager/types/generatedManagerTypes'
+import type { components } from '@comfyorg/api-client/generatedManagerTypes'
 import { versionStatusFilters } from '@/platform/customNodes/manager/utils/nodePackVersionUtil'
 
 type InstallPackParams = components['schemas']['InstallPackParams']

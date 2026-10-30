@@ -8,7 +8,7 @@ import type {
 import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 
 import {
   agentTest as test,

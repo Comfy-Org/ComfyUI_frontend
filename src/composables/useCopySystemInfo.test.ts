@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SystemStats } from '@/platform/remote/comfyui/types'
+import type { SystemStats } from '@comfyorg/api-client/types'
 
 import { useCopySystemInfo } from './useCopySystemInfo'
 

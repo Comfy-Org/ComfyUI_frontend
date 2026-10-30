@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { RetryPolicy } from '@/utils/retryPolicy'
+import type { RetryPolicy } from './retryPolicy'
 import {
   DEFAULT_RETRY_POLICY,
   NO_RETRY_POLICY,
   nextRetry,
   parseRetryAfterMs,
   sleep
-} from '@/utils/retryPolicy'
+} from './retryPolicy'
 
 const NOW = Date.parse('2026-10-18T12:00:00Z')
 

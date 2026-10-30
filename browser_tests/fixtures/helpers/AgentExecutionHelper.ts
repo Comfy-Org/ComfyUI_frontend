@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 
-import type { PromptResponse } from '@/platform/remote/comfyui/types'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { PromptResponse } from '@comfyorg/api-client/types'
+import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 import type {
   AgentFollowerHostSocket,

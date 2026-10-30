@@ -9,7 +9,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { NavGroupData } from '@comfyorg/design-system/lib/navigation/types'
-import type { SettingDialogProps } from '@/platform/settings/types'
+import type { SettingDialogProps } from '@comfyorg/settings-core/types'
 
 import SettingDialog from './SettingDialog.vue'
 

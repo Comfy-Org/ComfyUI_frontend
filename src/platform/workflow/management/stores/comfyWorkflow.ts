@@ -1,7 +1,7 @@
 import { markRaw } from 'vue'
 
 import { assert } from '@/base/assert'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import type { UserFileIdentity } from '@/platform/workflow/core/utils/userFileIdentity'
 import {
   SavedFileIdentityError,

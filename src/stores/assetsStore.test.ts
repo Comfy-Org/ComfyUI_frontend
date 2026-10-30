@@ -10,7 +10,7 @@ import type {
   AssetResponse
 } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { api } from '@/scripts/api'
 
 vi.mock(import('@/scripts/api'))

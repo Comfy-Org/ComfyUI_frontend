@@ -1,15 +1,7 @@
-import type { RetryPolicy } from '@/utils/retryPolicy'
-import {
-  canRetryMethod,
-  nextRetry,
-  sleep as sleepFor
-} from '@/utils/retryPolicy'
-import type { StatusRetryEnd } from '@/utils/statusRetryTelemetry'
-import {
-  abortEnd,
-  endForStop,
-  trackStatusRetry
-} from '@/utils/statusRetryTelemetry'
+import type { RetryPolicy } from './retryPolicy'
+import { canRetryMethod, nextRetry, sleep as sleepFor } from './retryPolicy'
+import type { StatusRetryEnd } from './statusRetryTelemetry'
+import { abortEnd, endForStop, trackStatusRetry } from './statusRetryTelemetry'
 
 type FetchLike = (
   input: RequestInfo | URL,

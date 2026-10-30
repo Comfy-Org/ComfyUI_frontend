@@ -136,3 +136,10 @@ contract, navigation reuses its validator, and classified billing contract tests
 retain their existing public imports. This avoids granting navigation access to
 the inventory-mode workspace domain or copying its identifier regular expression.
 All other workspace ownership and access modes stay unchanged.
+
+The shared API-client extraction keeps guarded userdata operations in
+`packages/api-client/src/ComfyApi.ts`, alongside the normal authentication,
+retry and RequestInit transport. The app's API adapter remains the upstream
+composition layer. The optional received userdata id follows its shared
+`UserDataFullInfo` type into the package; existing no-id callers remain legacy
+compatible and every supplied expected id still selects the mandatory namespace.

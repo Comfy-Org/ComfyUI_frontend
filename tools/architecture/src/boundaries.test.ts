@@ -261,7 +261,7 @@ describe('saved-file identity public boundary', () => {
       allowed: false
     },
     {
-      from: 'src/platform/remote/comfyui/types.ts',
+      from: 'packages/api-client/src/types.ts',
       to: 'src/platform/workflow/core/utils/userFileIdentity.ts',
       allowed: false
     }
@@ -318,7 +318,7 @@ describe('published workspace-link boundary', () => {
       allowed: false
     },
     {
-      from: 'src/platform/remote/comfyui/types.ts',
+      from: 'packages/api-client/src/types.ts',
       to: 'packages/account-core/src/workspaceLink.ts',
       allowed: false
     },

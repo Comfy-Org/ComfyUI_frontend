@@ -6,7 +6,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { Settings } from '@/platform/settings/types'
+import type { Settings } from '@comfyorg/settings-core/types'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useExtensionDialogService } from '@/services/dialogService'
 import type {

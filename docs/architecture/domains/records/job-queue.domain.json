@@ -44,10 +44,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/remote/comfyui/jobs/jobTypes.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/remote/comfyui/useQueuePolling.ts",
       "role": "application"
     },
@@ -98,6 +94,18 @@
     {
       "path": "src/utils/resultItemUrl.ts",
       "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/fetchJobs.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "packages/api-client/src/__mocks__/fetchJobs.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "packages/api-client/src/jobTypes.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -107,7 +115,7 @@
     {
       "name": "Jobs client fetches queue, history pages, details, and assets with schema validation",
       "checks": [
-        "src/platform/remote/comfyui/jobs/fetchJobs.test.ts",
+        "packages/api-client/src/fetchJobs.test.ts",
         "src/stores/resultItemParsing.test.ts"
       ]
     },

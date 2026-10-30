@@ -2,8 +2,10 @@ import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { JobsListResponse } from '@comfyorg/ingest-types'
-import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
-import type { PromptResponse } from '@/platform/remote/comfyui/types'
+import type {
+  ModelFolderInfo,
+  PromptResponse
+} from '@comfyorg/api-client/types'
 import type {
   ComfyApiWorkflow,
   WorkflowJSON04

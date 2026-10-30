@@ -3,7 +3,7 @@ import type {
   AuthCredential,
   AuthHeader,
   LoggedInAuthHeader
-} from '@/types/authTypes'
+} from './authTypes'
 
 const HEADER_CREDENTIAL = {
   Authorization: 'bearer',
