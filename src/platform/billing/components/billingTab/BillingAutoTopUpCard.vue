@@ -95,6 +95,7 @@ import { formatCredits, formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import type { AutoReloadSettings } from '@comfyorg/billing-core'
+import { zAutoReloadSettings } from '@comfyorg/ingest-types/zod'
 import { formatPlanDate } from '@/platform/billing/components/billingTab/planRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTopUpCardViewed'
@@ -326,7 +327,7 @@ const LINES: Record<ViewKey, (settings: AutoReloadSettings) => Line[]> = {
 }
 
 function isStatus(status: string): status is Status {
-  return Object.hasOwn(STATUS, status)
+  return zAutoReloadSettings.shape.status.safeParse(status).success
 }
 
 function viewKey(settings: AutoReloadSettings): ViewKey {

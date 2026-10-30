@@ -416,13 +416,18 @@ describe('BillingAutoTopUpCard', () => {
     expect(screen.queryByText(FAILED)).not.toBeInTheDocument()
   })
 
-  it('renders an unknown served status as off', async () => {
-    renderCard(fromAny({ ...notConfigured, status: 'paused_by_admin' }))
+  it.for(['paused_by_admin', 'maximumReached', 'turnedOff'])(
+    'renders the unknown served status %s as off',
+    async (status) => {
+      renderCard(
+        fromAny({ ...configured, monthly_budget_is_default: true, status })
+      )
 
-    expect(
-      await screen.findByTestId('billing-auto-top-up-status')
-    ).toHaveTextContent('Off')
-  })
+      expect(
+        await screen.findByTestId('billing-auto-top-up-status')
+      ).toHaveTextContent(/^Off$/)
+    }
+  )
 
   it('renders nothing when the server marks setup unavailable', async () => {
     renderCard(configured, {
