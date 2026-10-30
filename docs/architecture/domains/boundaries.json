@@ -1316,6 +1316,7 @@
           "src/scripts/api.folderPaths.test.ts",
           "src/scripts/api.getEmbeddings.test.ts",
           "src/scripts/api.getExtensions.test.ts",
+          "src/scripts/api.getHistory.test.ts",
           "src/scripts/api.getNodeDefs.test.ts",
           "src/scripts/api.getSettings.test.ts",
           "src/scripts/api.getShareableAssets.test.ts",
@@ -2611,6 +2612,7 @@
           "src/composables/graph/useGraphHierarchy.ts",
           "src/composables/graph/useGraphHierarchy.test.ts",
           "src/stores/workspace/favoritedWidgetsStore.ts",
+          "src/stores/workspace/favoritedWidgetsStore.test.ts",
           "src/stores/workspace/rightSidePanelStore.ts"
         ]
       },
