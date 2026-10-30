@@ -3436,7 +3436,6 @@
         "patterns": [
           "src/platform/workflow/utils/**",
           "src/stores/userFileStore.ts",
-          "src/stores/userFileStore.identity.test.ts",
           "src/stores/userFileStore.test.ts"
         ]
       },
