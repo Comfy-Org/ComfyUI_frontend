@@ -2428,6 +2428,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  async function fetchSettledTurnOutcome(
+    turn: LiveTurn,
+    generation: number,
+    signal: AbortSignal
+  ): Promise<TurnOutcome> {
+    let outcome = await fetchTurnOutcome(turn, signal)
+    for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
+      if (outcome.kind !== 'streaming' || generation !== sessionGeneration)
+        return outcome
+      await delay(ms, { signal })
+      outcome = await fetchTurnOutcome(turn, signal)
+    }
+    return outcome
+  }
+
   async function reconcileSettledSnapshotTurn(turn: LiveTurn): Promise<void> {
     const generation = ownedGeneration
     const key = recoveryKey(turn)
@@ -2446,13 +2461,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       TURN_RECOVERY_DEADLINE_MS
     )
     try {
-      let outcome = await fetchTurnOutcome(turn, recovery.signal)
-      for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
-        if (outcome.kind !== 'streaming' || generation !== sessionGeneration)
-          break
-        await delay(ms, { signal: recovery.signal })
-        outcome = await fetchTurnOutcome(turn, recovery.signal)
-      }
+      const outcome = await fetchSettledTurnOutcome(
+        turn,
+        generation,
+        recovery.signal
+      )
       if (generation !== sessionGeneration) return
       if (outcome.kind === 'error') {
         reportError(outcome.cause, {

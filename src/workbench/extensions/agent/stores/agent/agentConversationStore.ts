@@ -322,52 +322,78 @@ function storedCallIdOf(
   }
 }
 
+interface RoundMergePlan {
+  replaced: Map<number, ThinkingPart[]>
+  insertBefore: Map<string, ThinkingPart[]>
+  finalLive: ThinkingPart[]
+  unplaced: Set<ThinkingPart>
+}
+
+function joinStoredRound(
+  plan: RoundMergePlan,
+  storedRound: IndexedThinking[],
+  liveText: string
+): void {
+  const storedText = storedRound.map(({ part }) => part.text).join('')
+  const joined = joinRound(storedText, liveText)
+  if (joined.length === 1 && joined[0] === storedText) return
+  const [first, ...rest] = storedRound
+  plan.replaced.set(
+    first.index,
+    joined.map((text) => ({ ...first.part, text }))
+  )
+  for (const { index } of rest) plan.replaced.set(index, [])
+}
+
+function planRoundMerge(
+  stored: Map<RoundKey, IndexedThinking[]>,
+  live: Map<RoundKey, IndexedThinking[]>,
+  persistedCallIds: Set<string>
+): RoundMergePlan {
+  const plan: RoundMergePlan = {
+    replaced: new Map(),
+    insertBefore: new Map(),
+    finalLive: [],
+    unplaced: new Set()
+  }
+  for (const [round, liveRound] of live) {
+    const storedRound = stored.get(round)
+    const parts = liveRound.map(({ part }) => part)
+    if (storedRound !== undefined)
+      joinStoredRound(
+        plan,
+        storedRound,
+        parts.map((part) => part.text).join('')
+      )
+    else if (round === FINAL_ROUND) plan.finalLive = parts
+    else if (persistedCallIds.has(round)) plan.insertBefore.set(round, parts)
+    else for (const part of parts) plan.unplaced.add(part)
+  }
+  return plan
+}
+
 function mergeSnapshotThinking(
   liveParts: AssistantMessage['parts'],
   persistedParts: AssistantMessage['parts'],
   offset: number,
   storedCallId: (callId: string) => string
 ): AssistantMessage['parts'] {
-  const stored = thinkingByRound(persistedParts)
-  const live = thinkingByRound(liveParts, storedCallId)
-  const persistedCallIds = new Set(toolCallIdsOf(persistedParts))
-  const unplaced = new Set<ThinkingPart>()
-  const replaced = new Map<number, ThinkingPart[]>()
-  const insertBefore = new Map<string, ThinkingPart[]>()
-  let finalLive: ThinkingPart[] = []
-  for (const [round, liveRound] of live) {
-    const storedRound = stored.get(round)
-    const liveText = liveRound.map(({ part }) => part.text).join('')
-    if (storedRound !== undefined) {
-      const storedText = storedRound.map(({ part }) => part.text).join('')
-      const joined = joinRound(storedText, liveText)
-      if (joined.length === 1 && joined[0] === storedText) continue
-      const [first, ...rest] = storedRound
-      replaced.set(
-        first.index,
-        joined.map((text) => ({ ...first.part, text }))
-      )
-      for (const { index } of rest) replaced.set(index, [])
-      continue
-    }
-    const parts = liveRound.map(({ part }) => part)
-    if (round === FINAL_ROUND) finalLive = parts
-    else if (persistedCallIds.has(round)) insertBefore.set(round, parts)
-    else for (const part of parts) unplaced.add(part)
-  }
+  const plan = planRoundMerge(
+    thinkingByRound(persistedParts),
+    thinkingByRound(liveParts, storedCallId),
+    new Set(toolCallIdsOf(persistedParts))
+  )
   const merged = persistedParts.flatMap((part, index) => [
-    ...(part.type === 'tool' ? (insertBefore.get(part.callId) ?? []) : []),
-    ...(replaced.get(index) ?? [part])
+    ...(part.type === 'tool' ? (plan.insertBefore.get(part.callId) ?? []) : []),
+    ...(plan.replaced.get(index) ?? [part])
   ])
-  if (finalLive.length > 0) {
-    const lastTool = merged.findLastIndex((part) => part.type === 'tool')
-    merged.splice(lastTool + 1, 0, ...finalLive)
-  }
-  if (unplaced.size === 0) return merged
+  const lastTool = merged.findLastIndex((part) => part.type === 'tool')
+  merged.splice(lastTool + 1, 0, ...plan.finalLive)
+  if (plan.unplaced.size === 0) return merged
   return interleaveLocalParts(
     merged,
     anchorLocalParts(liveParts)
-      .filter(({ part }) => part.type === 'thinking' && unplaced.has(part))
+      .filter(({ part }) => part.type === 'thinking' && plan.unplaced.has(part))
       .map((anchor) => ({ ...anchor, toolCount: anchor.toolCount + offset }))
   )
 }
@@ -391,6 +417,15 @@ function preserveCanvasConfirmation(
       ? { ...part, canvasConfirmed: true }
       : part
   )
+}
+
+function finishActiveSlotMessage(
+  slot: { origin: ActiveTurnSlot['origin']; message: AssistantMessage },
+  persistedParts: AssistantMessage['parts'] | undefined
+): void {
+  if (slot.origin === 'snapshot' && persistedParts !== undefined)
+    finishSnapshotTurn(slot.message, persistedParts)
+  else finishWithPersistedParts(slot.message, persistedParts)
 }
 
 function finishSnapshotTurn(
@@ -1434,9 +1469,7 @@ export const useAgentConversationStore = defineStore(
         turn.messageId === slot.turnId
       if (isActive) {
         clearSettledAskState(turn.threadId)
-        if (slot.origin === 'snapshot' && persistedParts !== undefined)
-          finishSnapshotTurn(slot.message, persistedParts)
-        else finishWithPersistedParts(slot.message, persistedParts)
+        finishActiveSlotMessage(slot, persistedParts)
         rememberDepartedActiveTurn('settled-turn')
         slot.transport.settle()
         slot.transport.dispose()
