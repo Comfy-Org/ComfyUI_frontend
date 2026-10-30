@@ -652,7 +652,6 @@ function autogrowInputDisconnected(input: INodeInputSlot, node: AutogrowNode) {
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (ordinal == undefined || ordinal + 1 < min) return
 
-  //resolve all inputs in group
   const groupInputs = node.inputs.filter(
     (inp) =>
       inp.name.startsWith(groupName + '.') &&
@@ -707,9 +706,9 @@ function autogrowInputDisconnected(input: INodeInputSlot, node: AutogrowNode) {
   }
   for (const input of toRemove) {
     const widgetName = input.widget?.name
-    const widget = node.widgets.find((w) => w.name === widgetName)
-    if (!widget) continue
-    node.removeWidget(widget)
+    if (!widgetName) continue
+    for (const widget of node.widgets.filter((w) => w.name === widgetName))
+      node.removeWidget(widget)
     syncNodeWidgetOrder(node)
   }
   node.size = [node.size[0], node.computeSize([...node.size])[1]]
