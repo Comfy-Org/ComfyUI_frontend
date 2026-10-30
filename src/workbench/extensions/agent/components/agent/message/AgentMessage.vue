@@ -95,11 +95,8 @@ const creditUsage = computed(() => {
     maximumFractionDigits: 2
   }).format
   const credits = creditsUsed < 0.01 ? `<${format(0.01)}` : format(creditsUsed)
-  return t(
-    'agent.creditsUsed',
-    { credits },
-    { plural: Number(creditsUsed.toFixed(2)), escapeParameter: false }
-  )
+  const plural = creditsUsed < 0.01 ? 0.01 : Number(creditsUsed.toFixed(2))
+  return t('agent.creditsUsed', { credits }, { plural, escapeParameter: false })
 })
 
 const replyAssets = computed(() =>

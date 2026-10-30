@@ -155,6 +155,31 @@ describe('AgentMessage credit usage', () => {
     }
   })
 
+  it('pluralizes the Russian below-minimum amount from its displayed bound', async () => {
+    const previousLocale = i18n.global.locale.value
+    await loadLocale('ru')
+    i18n.global.locale.value = 'ru'
+    try {
+      render(AgentMessage, {
+        props: {
+          message: {
+            ...createAssistantMessage(toTurnId('msg-russian-tiny-credit')),
+            parts: [{ type: 'text', text: 'Done', state: 'done' }],
+            streaming: false,
+            creditsUsed: microUsdToCredits(1)
+          }
+        },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByTestId('agent-credit-usage')).toHaveTextContent(
+        /^Агент использовал <0,01 кредита$/
+      )
+    } finally {
+      i18n.global.locale.value = previousLocale
+    }
+  })
+
   it('hides unavailable usage', () => {
     render(AgentMessage, {
       props: {
