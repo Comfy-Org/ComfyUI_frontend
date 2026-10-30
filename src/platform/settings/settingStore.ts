@@ -181,6 +181,10 @@ export const useSettingStore = defineStore('setting', () => {
     return settingValues.value[key] !== undefined
   }
 
+  /**
+   * Apply a setting value in memory and fire onChange, without persisting it.
+   * @returns The migrated value, or `undefined` when it was already current.
+   */
   async function applySettingLocally<K extends keyof Settings>(
     key: K,
     value: Settings[K]
@@ -482,6 +486,7 @@ export const useSettingStore = defineStore('setting', () => {
     error,
     load,
     addSetting,
+    applySettingLocally,
     set,
     setWithOutcome,
     setMany,

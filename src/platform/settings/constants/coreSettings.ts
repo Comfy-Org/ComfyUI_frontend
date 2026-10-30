@@ -691,6 +691,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.11'
   },
   {
+    id: 'Comfy.Extension.SeenAgentExtensions',
+    name: 'Seen agent-created extension names',
+    type: 'hidden',
+    defaultValue: [] as string[],
+    versionAdded: '1.34.0'
+  },
+  {
     id: 'Comfy.Extension.DisabledPacks',
     name: 'Disabled extension paths',
     type: 'hidden',

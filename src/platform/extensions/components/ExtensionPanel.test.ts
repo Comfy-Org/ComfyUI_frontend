@@ -468,4 +468,22 @@ describe('ExtensionPanel', () => {
       })
     ).toHaveAttribute('aria-disabled', 'true')
   })
+
+  it.for([
+    { disabled: false, checked: true },
+    { disabled: true, checked: false }
+  ])(
+    'seeds a late extension switch when disabled is $disabled',
+    async ({ disabled, checked }) => {
+      const extensionStore = useExtensionStore()
+      if (disabled) extensionStore.loadDisabledExtensionNames(['Late.Toolbar'])
+      renderPanel()
+
+      extensionStore.registerExtension({ name: 'Late.Toolbar' })
+
+      expect(
+        await screen.findByRole('switch', { name: 'Late.Toolbar' })
+      ).toHaveAttribute('aria-checked', String(checked))
+    }
+  )
 })
