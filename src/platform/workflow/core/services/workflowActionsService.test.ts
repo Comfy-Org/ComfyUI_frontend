@@ -1,5 +1,3 @@
-import { fromAny } from '@total-typescript/shoehorn'
-
 import { useDialogService } from '@/services/dialogService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,7 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import * as utils from '@/scripts/utils'
 import { markGraphLoadFailurePresented } from '@/services/graphLoadFailure'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowActionsService } from './workflowActionsService'
 
@@ -81,12 +78,6 @@ describe('workflowActionsService.exportWorkflowAction', () => {
 })
 
 describe('workflowActionsService.openWorkflowAction', () => {
-  beforeEach(() => {
-    vi.spyOn(useWorkflowStore(), 'createTemporary').mockReturnValue(
-      fromAny({ path: 'workflows/opened.json' })
-    )
-  })
-
   it('returns the no-workflow error when given null', async () => {
     const { openWorkflowAction } = useWorkflowActionsService()
 
@@ -99,22 +90,20 @@ describe('workflowActionsService.openWorkflowAction', () => {
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
-  it('returns success when the workflow service opens the workflow', async () => {
-    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
+  it.for([
+    { name: 'a completed load', opened: true, expected: { success: true } },
+    {
+      name: 'an already-presented incomplete load',
+      opened: false,
+      expected: { success: false, errorPresentation: 'handled' }
+    }
+  ])('returns the outcome of $name', async ({ opened, expected }) => {
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(opened)
     const { openWorkflowAction } = useWorkflowActionsService()
 
     const result = await openWorkflowAction(minimalWorkflow, 'wf.json')
 
-    expect(result).toEqual({ success: true })
-  })
-
-  it('reports an already-presented failure when the load does not complete', async () => {
-    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(false)
-    const { openWorkflowAction } = useWorkflowActionsService()
-
-    const result = await openWorkflowAction(minimalWorkflow, 'wf.json')
-
-    expect(result).toEqual({ success: false, errorPresentation: 'handled' })
+    expect(result).toEqual(expected)
   })
 
   it.for([
