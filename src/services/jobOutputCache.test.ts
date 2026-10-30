@@ -185,6 +185,37 @@ describe('jobOutputCache', () => {
       expect(api.getJobDetail).toHaveBeenCalledTimes(2)
     })
 
+    it('loads full outputs after a generic call cached an outputs-less detail', async () => {
+      const previewOutput = createResultItem('preview')
+      const jobId = uniqueId('generic-detail-then-load')
+      const task = new TaskItemImpl(createMockJob(jobId, 3), {}, [
+        previewOutput
+      ])
+      const incomplete: JobDetail = {
+        id: jobId,
+        status: 'completed',
+        create_time: Date.now(),
+        priority: 0
+      }
+      const complete: JobDetail = {
+        ...incomplete,
+        outputs: {
+          'node-1': {
+            images: [{ filename: 'full.png', subfolder: '', type: 'output' }]
+          }
+        }
+      }
+      vi.mocked(api.getJobDetail)
+        .mockResolvedValueOnce(incomplete)
+        .mockResolvedValueOnce(complete)
+
+      await getJobDetail(jobId)
+      const outputs = await getOutputsForTask(task)
+
+      expect(outputs?.map((item) => item.filename)).toEqual(['full.png'])
+      expect(api.getJobDetail).toHaveBeenCalledTimes(2)
+    })
+
     it('falls back to preview outputs on load error', async () => {
       const previewOutput = createResultItem('preview')
 
@@ -397,6 +428,63 @@ describe('jobOutputCache', () => {
       const result = await getJobDetail(jobId)
 
       expect(result).toBeUndefined()
+    })
+
+    it('refetches a cached detail that has no outputs when outputs are required', async () => {
+      const jobId = uniqueId('job-require-outputs')
+      const incomplete: JobDetail = {
+        id: jobId,
+        status: 'completed',
+        create_time: Date.now(),
+        priority: 0
+      }
+      const complete: JobDetail = {
+        ...incomplete,
+        outputs: {
+          'node-1': {
+            images: [{ filename: 'full.png', subfolder: '', type: 'output' }]
+          }
+        }
+      }
+      vi.mocked(api.getJobDetail)
+        .mockResolvedValueOnce(incomplete)
+        .mockResolvedValueOnce(complete)
+
+      expect(await getJobDetail(jobId)).toEqual(incomplete)
+      expect(await getJobDetail(jobId, { requireOutputs: true })).toEqual(
+        complete
+      )
+      expect(api.getJobDetail).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not cache an outputs-less detail fetched for a full-output request', async () => {
+      const jobId = uniqueId('job-incomplete-outputs')
+      vi.mocked(api.getJobDetail).mockResolvedValue({
+        id: jobId,
+        status: 'completed',
+        create_time: Date.now(),
+        priority: 0
+      })
+
+      await getJobDetail(jobId, { requireOutputs: true })
+      await getJobDetail(jobId, { requireOutputs: true })
+
+      expect(api.getJobDetail).toHaveBeenCalledTimes(2)
+    })
+
+    it('returns a cached detail without outputs to generic callers', async () => {
+      const jobId = uniqueId('job-generic-incomplete')
+      const incomplete: JobDetail = {
+        id: jobId,
+        status: 'completed',
+        create_time: Date.now(),
+        priority: 0
+      }
+      vi.mocked(api.getJobDetail).mockResolvedValue(incomplete)
+
+      expect(await getJobDetail(jobId)).toEqual(incomplete)
+      expect(await getJobDetail(jobId)).toEqual(incomplete)
+      expect(api.getJobDetail).toHaveBeenCalledTimes(1)
     })
   })
 
