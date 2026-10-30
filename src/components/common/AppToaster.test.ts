@@ -362,11 +362,12 @@ describe('AppToaster', () => {
     const user = userEvent.setup()
     renderToaster()
 
-    useToast().warning('Check settings')
+    const id = useToast().warning('Check settings')
     await nextTick()
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
     expect(screen.queryByText('Check settings')).not.toBeInTheDocument()
+    expect(useToast().wasClosedByUser(id)).toBe(true)
   })
 
   it('cannot swipe away a notification and keeps its text selectable', async () => {

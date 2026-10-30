@@ -54,7 +54,7 @@ function updateToastOpen(id: ToastId, open: boolean) {
     escapeToastId = undefined
     return
   }
-  toast.dismiss(id)
+  toast.close(id)
 }
 
 const icons = {

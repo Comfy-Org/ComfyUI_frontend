@@ -123,7 +123,6 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const callerStarted = new Set<BillingOperationKind>()
   const offeredActions = new Map<string, Set<string>>()
   const progressToasts = new Map<string, ProgressToast>()
-  // Operations whose customer closed the progress toast; they get no replacement.
   const closedProgressToasts = new Set<string>()
 
   function sessionPorts(): Pick<
@@ -301,11 +300,16 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     })
     const current = progressToasts.get(state.id)
     if (current?.kind === progress) return
-    if (current && !toast.toasts.some((shown) => shown.id === current.id)) {
+    if (current && toast.wasClosedByUser(current.id)) {
       closedProgressToasts.add(state.id)
     }
     clearProgressToast(state.id)
-    if (progress === undefined || closedProgressToasts.has(state.id)) return
+    if (
+      progress === undefined ||
+      (progress === 'processing' && closedProgressToasts.has(state.id))
+    ) {
+      return
+    }
     const title = t(PROGRESS_SUMMARY[kind][progress])
     const id =
       progress === 'action' ? toast.warning(title) : toast.loading(title)
