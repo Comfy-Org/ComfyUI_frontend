@@ -1478,8 +1478,10 @@ describe('useAgentCrdtFollower', () => {
     // and clear applied state without arming a lineage replacement.
     const replacementFollower = {
       updatesApplied: 7,
-      share: new Map(),
-      doc: { getMap: () => ({ toJSON: () => ({}), get: () => undefined }) }
+      doc: {
+        share: new Map(),
+        getMap: () => ({ toJSON: () => ({}), get: () => undefined })
+      }
     }
     const initialFollower = bridge().follower
     bridge().subscribe.mockImplementationOnce((nextWorkflowId: string) => {
