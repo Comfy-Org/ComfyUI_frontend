@@ -78,7 +78,13 @@ export function tagSentryNonFirstPartyOrigin(event: ErrorEvent): ErrorEvent {
   try {
     const frame = event.exception?.values?.at(-1)?.stacktrace?.frames?.at(-1)
     const path = frame?.abs_path ?? frame?.filename
-    if (!path) return event
+    if (
+      !path ||
+      path.trim() === '' ||
+      path === '<anonymous>' ||
+      path === '[native code]'
+    )
+      return event
 
     const origin = classifyTelemetryErrorOrigin(path)
     if (origin.origin === 'first_party') return event
