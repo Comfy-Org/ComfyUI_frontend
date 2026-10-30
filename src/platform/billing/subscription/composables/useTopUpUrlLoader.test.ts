@@ -194,7 +194,6 @@ describe('useTopUpUrlLoader', () => {
   })
 
   it('opens an out-of-credits top-up carried across a workspace switch reload, without deep-link attribution', async () => {
-    useBillingCapabilities().canTopUp = computed(() => false)
     setRouteQuery({})
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
       topup: 'out_of_credits'
@@ -209,6 +208,19 @@ describe('useTopUpUrlLoader', () => {
     expect(
       useTelemetry()?.trackAddApiCreditButtonClicked
     ).not.toHaveBeenCalled()
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'topup'
+    )
+  })
+
+  it('does not open an out-of-credits top-up when the server denies top-up', async () => {
+    useBillingCapabilities().canTopUp = computed(() => false)
+    setRouteQuery({ topup: 'out_of_credits' })
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'topup'
     )

@@ -64,12 +64,12 @@ export function useTopUpUrlLoader() {
     // just gets stripped above.
     if (!shouldOpen) return
 
+    if (!canTopUp.value) return
+
     if (param === OUT_OF_CREDITS) {
       void showTopUpCreditsDialog({ isInsufficientCredits: true })
       return
     }
-
-    if (!canTopUp.value) return
 
     telemetry?.trackAddApiCreditButtonClicked({ source: 'deep_link' })
 
