@@ -5473,6 +5473,11 @@
   "templates": {
     "logoProviderSeparator": " و "
   },
+  "textEditor": {
+    "characterCount": "{count} کاراکتر | {count} کاراکتر",
+    "expand": "بزرگ کردن",
+    "title": "{widget} · {node}"
+  },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "امکان بارگذاری workflow وجود ندارد زیرا این نصب ComfyUI فاقد nodeهای اصلی است. بررسی کنید که backend به درستی راه‌اندازی شده باشد.",
     "a1111EmbeddingsUnavailable": "امبدینگ‌ها از سرور بارگیری نشدند. workflow وارد شد، اما نام‌های امبدینگ به‌صورت متن ساده باقی ماندند.",
