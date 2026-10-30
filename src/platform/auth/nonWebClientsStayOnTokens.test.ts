@@ -10,7 +10,7 @@ import type { RequestTarget } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import { createSessionTokenMint } from '@comfyorg/account-core/sessionTokenMint'
 
-import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { anonymousApiAuthProvider } from '@comfyorg/api-client/apiAuthProvider'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { bootCloudIdentity } from '@/platform/auth/session/cloudIdentityBoot'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'

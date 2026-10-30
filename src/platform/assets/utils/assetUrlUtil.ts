@@ -6,8 +6,8 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   isMediaRoute,
   scopeMediaRoute
-} from '@/platform/auth/session/sessionMediaUrl'
-import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/sessionMediaUrl'
+import { webSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { isResultItemType } from '@/utils/typeGuardUtil'

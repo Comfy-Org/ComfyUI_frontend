@@ -2,7 +2,7 @@ import axios from 'axios'
 import { ref } from 'vue'
 
 import { useApiRequest } from '@/composables/useApiRequest'
-import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
+import { webSessionResourceHeader } from '@comfyorg/api-client/webSessionFetch'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { d, t } from '@/i18n'

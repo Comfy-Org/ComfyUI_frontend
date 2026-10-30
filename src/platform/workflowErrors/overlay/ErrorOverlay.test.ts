@@ -12,7 +12,7 @@ import type {
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 import '@/scripts/changeTracker'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+import type { NodeError } from '@comfyorg/api-client/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 import ErrorOverlay from './ErrorOverlay.vue'

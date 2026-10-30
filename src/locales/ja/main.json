@@ -83,6 +83,7 @@
     "copyMarkdown": "Markdownとしてコピー",
     "copyUnavailable": "このバージョンでは、現在の会話のみコピーできます",
     "creditTransitionNotice": "無料のエージェントクレジットを使い切りました。以降のエージェント操作ではワークスペースのクレジットが使用され、有料クレジットが含まれる場合があります。",
+    "creditsUsed": "エージェントは {credits} クレジットを使用しました | エージェントは {credits} クレジットを使用しました",
     "currentTab": "現在のタブ",
     "delete": "削除",
     "deleteApproval": {

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
+import { CANVAS_NAVIGATION_PRESETS } from '@comfyorg/settings-core/canvasNavigation'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
 
 const NAV = 'Comfy.Canvas.NavigationMode'
 const LEFT = 'Comfy.Canvas.LeftMouseClickBehavior'

@@ -4397,6 +4397,25 @@ export const zAssetMetadataResponse = z.object({
 })
 
 /**
+ * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
+ */
+export const zModelUploadStarted = z.object({
+  upload_id: z.uuid(),
+  upload_url: z.string(),
+  method: z.enum(['PUT']),
+  headers: z.record(z.string(), z.string()),
+  expires_at: z.iso.datetime(),
+  max_size_bytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+/**
  * Acknowledgement of an async asset download task; clients poll GET /api/tasks/{task_id} for status.
  */
 export const zAssetDownloadResponse = z.object({
@@ -4433,6 +4452,33 @@ export const zAgentViewableAttachmentExtension = z.enum([
   '.heic',
   '.heif'
 ])
+
+/**
+ * Usage of a completed turn, as carried on agent_message_done. Mirrors `$defs.agent_message_done.data.usage` in services/agent/api/agent_events.schema.json; TestMessageDoneFrameMatchesContract holds the two definitions to the same fields and constraints. charge_micro_usd appears only when the server durably captured priced billing for at least one round. It is the exact charge in millionths of a US dollar; clients convert that denomination to catalog credits for display and must not read its absence as a zero charge.
+ */
+export const zAgentTurnUsage = z.object({
+  cache_creation_input_tokens: z.int().gte(0),
+  cache_read_input_tokens: z.int().gte(0),
+  charge_micro_usd: z.int().gte(1).optional(),
+  input_tokens: z.int().gte(0),
+  output_tokens: z.int().gte(0),
+  total_tokens: z.int().gte(0)
+})
+
+/**
+ * Present on agent_message_done only when the model service refused the turn. Mirrors `$defs.agent_message_done.data.refusal` in services/agent/api/agent_events.schema.json, which states the full rendering rules. Absence must not be read as the account having credit.
+ */
+export const zAgentTurnRefusal = z.object({
+  can_add_credit: z.boolean(),
+  kind: z.enum([
+    'no_funds',
+    'manual_block',
+    'payment_required',
+    'auth',
+    'rate_limit'
+  ]),
+  reason: z.string().optional()
+})
 
 /**
  * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, agent_message_done); canvas edits arrive as doc_update frames.
@@ -4836,6 +4882,24 @@ export const zAgentPendingAsk = z.union([
     })
     .and(zAgentPendingDeleteApproval)
 ])
+
+/**
+ * The `data` of an agent_message_done WebSocket event: the assistant message is complete. Mirrors `$defs.agent_message_done.data` in services/agent/api/agent_events.schema.json.
+ */
+export const zAgentMessageDoneData = z.object({
+  message_id: z.string(),
+  refusal: zAgentTurnRefusal.optional(),
+  thread_id: z.string(),
+  usage: zAgentTurnUsage.nullable()
+})
+
+/**
+ * Server-to-client agent_message_done frame on /ws. Closed, like the canonical envelope.
+ */
+export const zAgentMessageDoneFrame = z.object({
+  data: zAgentMessageDoneData,
+  type: z.enum(['agent_message_done'])
+})
 
 /**
  * A persisted message in an agent thread.
@@ -5340,6 +5404,7 @@ export const zListAssetsQuery = z.object({
     .default('created_at'),
   order: z.enum(['asc', 'desc']).optional().default('desc'),
   include_public: z.boolean().optional().default(true),
+  workspace_library: z.boolean().optional().default(false),
   hash: z.string().optional(),
   after: z.string().optional()
 })
@@ -5458,6 +5523,38 @@ export const zCreateAssetDownloadResponse = z.union([
   zAssetCreated,
   zAssetDownloadResponse
 ])
+
+export const zStartModelUploadBody = z.object({
+  filename: z.string(),
+  size_bytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  tags: z.array(z.string())
+})
+
+/**
+ * Signed upload URL for one staged object
+ */
+export const zStartModelUploadResponse = zModelUploadStarted
+
+export const zCompleteModelUploadBody = z.object({
+  filename: z.string(),
+  tags: z.array(z.string())
+})
+
+export const zCompleteModelUploadPath = z.object({
+  upload_id: z.string()
+})
+
+/**
+ * Accepted; a task stores the file as an asset
+ */
+export const zCompleteModelUploadResponse = zAssetDownloadResponse
 
 export const zCreateAssetExportBody = z.object({
   asset_ids: z.array(z.string()).optional(),
@@ -5980,6 +6077,10 @@ export const zGetFeaturesResponse = z.object({
     ])
     .optional()
     .default('control'),
+  'agent-credit-usage-summary': z
+    .enum(['control', 'treatment'])
+    .optional()
+    .default('control'),
   'agent-starter-prompt-set': z
     .enum(['control', 'test'])
     .optional()
@@ -6001,6 +6102,7 @@ export const zGetFeaturesResponse = z.object({
     })
     .optional(),
   max_upload_size: z.int().optional(),
+  model_upload_folders: z.array(z.string()).optional(),
   new_free_tier_subscriptions: z.boolean().optional(),
   private_workflow_links_enabled: z.boolean().optional(),
   sso_enabled: z.boolean().optional(),

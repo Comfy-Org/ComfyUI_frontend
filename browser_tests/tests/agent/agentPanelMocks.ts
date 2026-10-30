@@ -14,7 +14,7 @@ import type {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
@@ -123,6 +123,9 @@ function createDeferredGate(): DeferredGate {
 class AgentBillingFixture {
   private status: BillingStatusResponse = FUNDED_BILLING_STATUS
   private available = true
+  private initialStatusResponse = createDeferredGate()
+  private initialStatusResponseCompleted = false
+  private statusRequests = 0
   private heldRefresh:
     | {
         entered: DeferredGate
@@ -164,6 +167,20 @@ class AgentBillingFixture {
     this.available = true
   }
 
+  get statusRequestCount(): number {
+    return this.statusRequests
+  }
+
+  waitForInitialStatusResponse(): Promise<void> {
+    return this.initialStatusResponse.promise
+  }
+
+  private completeInitialStatusResponse(): void {
+    if (this.initialStatusResponseCompleted) return
+    this.initialStatusResponseCompleted = true
+    this.initialStatusResponse.release()
+  }
+
   holdNextFundedRefresh(): HeldBillingRefresh {
     const heldRefresh: NonNullable<AgentBillingFixture['heldRefresh']> = {
       entered: createDeferredGate(),
@@ -186,8 +203,10 @@ class AgentBillingFixture {
   }
 
   async fulfillStatus(route: Route): Promise<void> {
+    this.statusRequests++
     if (!this.available) {
       await route.fulfill({ status: 503 })
+      this.completeInitialStatusResponse()
       return
     }
     const response = this.status
@@ -201,6 +220,7 @@ class AgentBillingFixture {
       await heldRefresh.request.promise
     }
     await route.fulfill(jsonRoute(response))
+    this.completeInitialStatusResponse()
     completedHeldRefresh?.completed.release()
   }
 }

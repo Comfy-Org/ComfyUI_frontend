@@ -19,7 +19,7 @@ import {
   WORKSPACE_STORAGE_KEYS
 } from '@/platform/workspace/workspaceConstants'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 
 // Picked off the generated schema: a hand-written enum that lags the spec would
 // reject a valid persisted identity and silently clear the session.

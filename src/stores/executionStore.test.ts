@@ -22,7 +22,7 @@ import {
   createNodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
-import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
+import type { NodeProgressState } from '@comfyorg/api-client/executionTypes'
 
 const apiEvents: EventTarget = api
 

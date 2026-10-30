@@ -5,7 +5,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   webSessionRequests,
   webSessionSend
-} from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
   getGlobalSetting,

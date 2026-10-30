@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import type { JobId } from '@/platform/remote/comfyui/execution/types'
+import type { JobId } from '@comfyorg/api-client/executionTypes'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 

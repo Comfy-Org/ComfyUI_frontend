@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import en from '@/locales/en/main.json'
 import { api } from '@/scripts/api'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
-import type { components } from '@/platform/customNodes/manager/types/generatedManagerTypes'
+import type { components } from '@comfyorg/api-client/generatedManagerTypes'
 
 import ManagerProgressToast from './ManagerProgressToast.vue'
 

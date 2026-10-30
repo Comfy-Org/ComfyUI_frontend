@@ -898,6 +898,14 @@ export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
   placement: AgentFreeUseVariant
   '$feature/agent-free-use-message-placement': AgentFreeUseVariant
 }
+export type AgentCreditUsageVariant = 'control' | 'treatment'
+export interface AgentCreditUsageExposureMetadata extends Record<
+  string,
+  unknown
+> {
+  variant: AgentCreditUsageVariant
+  '$feature/agent-credit-usage-summary': AgentCreditUsageVariant
+}
 /**
  * Interactions with the notice itself. This event adds what the existing
  * outcome events cannot say: whether the notice was actually on screen in its
@@ -1580,6 +1588,9 @@ export interface TelemetryProvider {
   ): void
   trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
   trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
+  trackAgentCreditUsageExposure?(
+    metadata: AgentCreditUsageExposureMetadata
+  ): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
@@ -1769,6 +1780,7 @@ export const TelemetryEvents = {
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
+  AGENT_CREDIT_USAGE_EXPOSURE: 'app:agent_credit_usage_exposure',
   AGENT_CREDIT_TRANSITION_NOTICE: 'app:agent_credit_transition_notice',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
