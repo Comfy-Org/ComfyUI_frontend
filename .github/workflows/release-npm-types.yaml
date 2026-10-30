@@ -30,8 +30,9 @@ on:
         type: string
 
 concurrency:
-  group: publish-frontend-types-${{ github.workflow }}-${{ inputs.version }}-${{ inputs.dist_tag }}
+  group: publish-frontend-types
   cancel-in-progress: false
+  queue: max
 
 jobs:
   publish_types_manual:
@@ -92,6 +93,17 @@ jobs:
       - name: Build types
         run: pnpm build:types
 
+      - name: Verify declarations are included in the package
+        working-directory: dist
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s index.d.ts
+          npm pack --dry-run --json | jq -e '.[0].files | any(.path == "index.d.ts" and .size > 0)'
+
+      - name: Type-check a consumer against the built types
+        run: pnpm check:types-consumer
+
       - name: Verify version matches input
         id: verify
         shell: bash
@@ -129,9 +141,19 @@ jobs:
             fi
           fi
 
+      - name: Resolve dist-tag
+        id: dist_tag
+        if: steps.check_npm.outputs.exists == 'false'
+        env:
+          NAME: '@comfyorg/comfyui-frontend-types'
+          VERSION: ${{ inputs.version }}
+          DIST_TAG: ${{ inputs.dist_tag }}
+        run: pnpm exec tsx scripts/cicd/resolve-npm-dist-tag.ts
+
       - name: Publish package
         if: steps.check_npm.outputs.exists == 'false'
-        run: pnpm publish --access public --tag "${{ inputs.dist_tag }}" --no-git-checks
+        run: pnpm publish --access public --tag "$DIST_TAG" --no-git-checks
         working-directory: dist
         env:
+          DIST_TAG: ${{ steps.dist_tag.outputs.tag }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

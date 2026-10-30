@@ -1,14 +1,28 @@
-import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
+import type {
+  AgentMessages,
+  TurnId
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   toTurnId,
+  zPersistedThinkingEntry,
   zPersistedToolCallSummary
-} from '../../schemas/agentApiSchema'
-import type { WorkflowReference } from '../../types/workflowReference'
-import type { SkillReference } from '../../types/skillReference'
-import { parseSkillReferenceText } from '../../utils/skillReferenceText'
-import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
-import type { AssistantMessage, ToolPart } from './agentMessageParts'
-import { createAssistantMessage } from './agentMessageParts'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import type { SkillReference } from '@/workbench/extensions/agent/types/skillReference'
+import { parseSkillReferenceText } from '@/workbench/extensions/agent/utils/skillReferenceText'
+import { parseWorkflowReferences } from '@/workbench/extensions/agent/utils/workflowReferenceText'
+import type {
+  AssistantMessage,
+  ThinkingPart,
+  ToolPart
+} from './agentMessageParts'
+import {
+  askIdOf,
+  createAssistantMessage,
+  isOpenAskPart,
+  toAskOrNoticePart
+} from './agentMessageParts'
+import { toolCanMutateCanvas } from './agentToolClassification'
 
 type AttachmentKind = 'image' | 'video' | 'audio'
 
@@ -103,7 +117,7 @@ function parseAttachmentRefs(value: unknown): ParsedAttachmentRef[] {
   })
 }
 
-function isAttachmentKind(value: unknown): value is AttachmentKind {
+export function isAttachmentKind(value: unknown): value is AttachmentKind {
   return value === 'image' || value === 'video' || value === 'audio'
 }
 
@@ -264,18 +278,6 @@ function toolPartOptionalFields(
   }
 }
 
-/**
- * Validates one `content.tool_calls` entry against `zPersistedToolCallSummary`,
- * picking only the fields this function actually reads (`id`/`tool_call_id`,
- * `tool_name`, `status`, `duration_ms`, `skill`) so an unrelated field a real
- * historical row gets wrong or omits (e.g. `started_at`/`finished_at`,
- * which are never read) can't sink an otherwise-usable entry. Maps a valid
- * entry onto the same `ToolPart` the live WebSocket path builds from
- * `agent_tool_call` events, so a reloaded transcript renders through the
- * identical work-summary UI as a live turn. `undefined` for anything that
- * doesn't validate (missing `id`/`tool_name`, wrong types, ...) or for a live
- * row's id-only entry (see `isLiveEntryMissingToolCallId`).
- */
 function parseToolCallEntry(
   entry: unknown,
   isLive: boolean
@@ -307,16 +309,13 @@ function parseToolCallEntry(
     status,
     part: {
       type: 'tool',
-      // A live `agent_tool_call` frame keys its update on `tool_call_id`, not
-      // this row's own `id` — prefer it so a restored part matches a live
-      // frame that arrives for it later. Falls back to `id` only for rows
-      // recorded before `tool_call_id` existed; `||`, not `??`, so an empty
-      // string (as genuinely id-less as a missing field) falls back too
-      // instead of colliding every empty-`tool_call_id` entry on `''`.
       callId: toolCallId || id,
       name: toolName,
       state,
-      ...toolPartOptionalFields(ok, skill, durationMs)
+      ...toolPartOptionalFields(ok, skill, durationMs),
+      ...(ok === true && toolCanMutateCanvas(toolName)
+        ? { canvasConfirmed: false }
+        : {})
     }
   }
 }
@@ -339,6 +338,31 @@ function parseToolCalls(
     if (parsed) parsedByCallId.set(parsed.part.callId, parsed)
   }
   return parsedByCallId.size > 0 ? [...parsedByCallId.values()] : undefined
+}
+
+function insertThinking(
+  parts: AssistantMessage['parts'],
+  content: Record<string, unknown> | undefined
+): AssistantMessage['parts'] {
+  const raw = content?.thinking
+  if (!Array.isArray(raw)) return parts
+  const next = [...parts]
+  let unplaced: ThinkingPart[] = []
+  for (const entry of raw as unknown[]) {
+    const parsed = zPersistedThinkingEntry.safeParse(entry)
+    if (!parsed.success || !parsed.data.text.trim()) continue
+    unplaced.push({ type: 'thinking', text: parsed.data.text, state: 'done' })
+    const anchor = parsed.data.tool_call_id
+    const index = anchor
+      ? next.findIndex(
+          (existing) => existing.type === 'tool' && existing.callId === anchor
+        )
+      : -1
+    if (index === -1) continue
+    next.splice(index, 0, ...unplaced)
+    unplaced = []
+  }
+  return [...next, ...unplaced]
 }
 
 /** A persisted tool-call `status` of `pending`/`running` is still in flight;
@@ -418,40 +442,11 @@ function appendAssistantContent(
     }
     message.parts = appended.length > 0 ? [...parts, ...appended] : parts
   }
+  message.parts = insertThinking(message.parts, row.content)
   if (text)
     message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
 }
 
-/**
- * A row's `pending_ask` carries a `run_approval` context only while that row
- * is still mid-ask; this reads it into the flat shape the `runApproval` part
- * renders, or `undefined` once the ask is resolved or absent.
- */
-function pendingRunApproval(
-  row: AgentMessages[number]
-): { askId: string; workflowId?: string; workflowName?: string } | undefined {
-  const ask = row.pending_ask
-  if (ask?.kind !== 'run_approval') return undefined
-  return {
-    askId: ask.ask_id,
-    workflowId: ask.context?.workflow_id || undefined,
-    workflowName: ask.context?.workflow_name || undefined
-  }
-}
-
-/**
- * Applies one persisted assistant row onto its running message: appends any
- * parsed tool-call parts and text part, then, for a row the server still
- * reports as `streaming`, attaches a `runApproval` part when that row is also
- * mid-ask. Returns the `pending` entry for a live row, or `undefined` for a
- * terminal one; `normalizeAgentTranscript` owns `message.streaming` itself.
- *
- * PM-1776/PM-1682: `row.status` is the only authority on whether the turn is
- * still running. Reading a live row as finished unless it carried a
- * `pending_ask` left every client that hydrates mid-turn — a reopened panel,
- * a refreshed tab — showing a completed transcript and offering Send for a
- * thread the server answers with 409.
- */
 function applyAssistantRow(
   row: AgentMessages[number],
   message: AssistantMessage,
@@ -463,8 +458,7 @@ function applyAssistantRow(
 
   if (!isLive) return undefined
 
-  const runApproval = pendingRunApproval(row)
-  if (runApproval) message.parts.push({ type: 'runApproval', ...runApproval })
+  if (row.pending_ask) message.parts.push(toAskOrNoticePart(row.pending_ask))
   return { messageId: toTurnId(row.id), message }
 }
 
@@ -547,6 +541,37 @@ function recordAssistantRow(
   return rowPending
 }
 
+function keepAuthoritativeAsk(
+  message: AssistantMessage,
+  row: AgentMessages[number],
+  isAskUnavailable: (askId: string) => boolean,
+  isAskRetired: (askId: string) => boolean
+): void {
+  const rowAsk = row.status === 'streaming' ? row.pending_ask : undefined
+  const priorAvailableAskId = message.parts.findLast((part) => {
+    const askId = askIdOf(part)
+    return (
+      isOpenAskPart(part) &&
+      askId !== undefined &&
+      askId !== rowAsk?.ask_id &&
+      !isAskUnavailable(askId)
+    )
+  })
+  // The snapshot's newest ask stays authoritative even while its answer is
+  // in flight. Falling back then would resurrect an older card.
+  const authoritativeAskId =
+    rowAsk !== undefined && !isAskRetired(rowAsk.ask_id)
+      ? rowAsk.ask_id
+      : ((priorAvailableAskId === undefined
+          ? undefined
+          : askIdOf(priorAvailableAskId)) ?? rowAsk?.ask_id)
+  message.parts = message.parts.filter((part) => {
+    if (!isOpenAskPart(part)) return true
+    const askId = askIdOf(part)
+    return askId !== undefined && askId === authoritativeAskId
+  })
+}
+
 /**
  * Strips the liveness a row's `streaming` status granted a message that turns
  * out not to be getting a transport. The parts matter as much as the flag,
@@ -558,7 +583,7 @@ function recordAssistantRow(
  */
 export function settleLiveMessage(message: AssistantMessage): void {
   message.streaming = false
-  message.parts = message.parts.filter((part) => part.type !== 'runApproval')
+  message.parts = message.parts.filter((part) => !isOpenAskPart(part))
   for (const part of message.parts) {
     if (part.type !== 'tool' || part.state !== 'streaming') continue
     part.state = 'done'
@@ -582,7 +607,9 @@ function liveTranscriptTurn(
 }
 
 export function normalizeAgentTranscript(
-  history: AgentMessages
+  history: AgentMessages,
+  isAskUnavailable: (askId: string) => boolean = () => false,
+  isAskRetired: (askId: string) => boolean = () => false
 ): NormalizedAgentTranscript {
   const userTexts = new Map<TurnId, string>()
   const userAttachments = new Map<TurnId, UserAttachment[]>()
@@ -613,10 +640,11 @@ export function normalizeAgentTranscript(
       if (workflowId) latestWorkflowId = workflowId
     }
     if (row.role === 'assistant') {
-      pendingByTurn.set(
-        turnId,
-        recordAssistantRow(row, turnId, text, assistants)
-      )
+      const pending = recordAssistantRow(row, turnId, text, assistants)
+      const message = assistants.get(turnId)
+      if (message)
+        keepAuthoritativeAsk(message, row, isAskUnavailable, isAskRetired)
+      pendingByTurn.set(turnId, pending)
     }
   }
 

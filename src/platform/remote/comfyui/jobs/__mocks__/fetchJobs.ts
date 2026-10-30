@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
 
-import type { fetchHistoryPage as RealFetchHistoryPage } from '../fetchJobs'
+import type { fetchHistoryPage as RealFetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 
 export const fetchHistoryPage = vi.fn<typeof RealFetchHistoryPage>()

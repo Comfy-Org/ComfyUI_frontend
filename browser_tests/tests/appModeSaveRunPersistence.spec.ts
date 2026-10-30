@@ -32,7 +32,6 @@ test.describe('App mode save keeps run history', { tag: '@ui' }, () => {
   })
 
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
     await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.appMode.enterAppModeWithInputs([[KSAMPLER_NODE, 'seed']])
     await expect(comfyPage.appMode.linearWidgets).toBeVisible()

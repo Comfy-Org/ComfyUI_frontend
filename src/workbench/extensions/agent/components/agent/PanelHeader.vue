@@ -1,10 +1,9 @@
 <script setup lang="ts">
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const { isMaximized = false } = defineProps<{
   isMaximized?: boolean
@@ -28,14 +27,12 @@ const sizeToggleLabel = computed(() =>
 </script>
 
 <template>
-  <header
-    class="flex h-12 shrink-0 items-center gap-2 border-b border-component-node-border px-4"
-  >
+  <header class="flex h-12 shrink-0 items-center gap-2 border-b px-4">
     <div class="flex items-center gap-1">
       <h1
         id="agent-panel-title"
         data-testid="agent-panel-title"
-        class="my-0 text-sm font-normal whitespace-nowrap text-base-foreground"
+        class="my-0 text-sm font-normal whitespace-nowrap"
       >
         {{ t('agent.title') }}
       </h1>
@@ -48,14 +45,15 @@ const sizeToggleLabel = computed(() =>
         class="size-6 shrink-0"
         @click="emit('startTour')"
       >
-        <span class="icon-[lucide--info] size-4" />
+        <i aria-hidden="true" class="icon-[lucide--info]" />
       </Button>
     </div>
-    <span
-      class="shrink-0 rounded-full border border-border-default px-2 py-0.5 text-xs text-muted-foreground"
+    <Badge
+      variant="pill"
+      class="border bg-transparent text-xs text-muted-foreground"
     >
       {{ t('agent.beta') }}
-    </span>
+    </Badge>
 
     <div class="ml-auto flex items-center gap-2">
       <Button
@@ -66,7 +64,7 @@ const sizeToggleLabel = computed(() =>
         :aria-label="t('agent.newChat')"
         @click="emit('newChat')"
       >
-        <span class="icon-[lucide--message-circle-plus] size-4" />
+        <i aria-hidden="true" class="icon-[lucide--plus]" />
       </Button>
       <Button
         :tooltip="sizeToggleLabel"
@@ -76,7 +74,7 @@ const sizeToggleLabel = computed(() =>
         :aria-label="sizeToggleLabel"
         @click="emit('toggleSize')"
       >
-        <span :class="cn(sizeToggleIcon, 'size-4')" />
+        <i aria-hidden="true" :class="sizeToggleIcon" />
       </Button>
       <Button
         :tooltip="t('agent.close')"
@@ -86,7 +84,7 @@ const sizeToggleLabel = computed(() =>
         :aria-label="t('agent.close')"
         @click="emit('close')"
       >
-        <span class="icon-[lucide--x] size-4" />
+        <i aria-hidden="true" class="icon-[lucide--x]" />
       </Button>
     </div>
   </header>

@@ -13,7 +13,7 @@ import type {
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { LGraph, LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -21,7 +21,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
@@ -134,7 +134,7 @@ describe('useNodePointerInteractions', () => {
       click: 'a plain click replacing the selection',
       modifiers: {},
       preselect: ['Second'],
-      emitted: [[], ['First']]
+      emitted: [['First']]
     },
     {
       click: 'a shift click adding a node',

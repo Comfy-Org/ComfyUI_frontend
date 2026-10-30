@@ -5,14 +5,13 @@ import { nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { CoachStep } from '../../composables/agent/useOnboarding'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 
 import OnboardingCoach from './OnboardingCoach.vue'
 
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const telemetry = () => vi.mocked(useTelemetry())!
 
@@ -287,6 +286,35 @@ describe('OnboardingCoach', () => {
     })
   })
 
+  it.for([
+    {
+      label: 'shows and announces the hold notice when one is set',
+      holdNotice: 'Held',
+      description: 'Build and run workflows. Held'
+    },
+    {
+      label: 'shows no hold notice by default',
+      holdNotice: undefined,
+      description: 'Build and run workflows.'
+    }
+  ])('$label', async ({ holdNotice, description }) => {
+    render(
+      {
+        components: { OnboardingCoach },
+        setup: () => ({ steps: STEPS, holdNotice }),
+        template:
+          '<div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" /><OnboardingCoach :steps="steps" storage-key="coach-hold" :hold-notice="holdNotice" />'
+      },
+      { global: { plugins: [i18n] } }
+    )
+    const dialog = await screen.findByRole('dialog', { name: STEPS[0].title })
+
+    expect(
+      screen.queryByTestId('agent-coach-hold-notice')?.textContent.trim()
+    ).toBe(holdNotice)
+    expect(dialog).toHaveAccessibleDescription(description)
+  })
+
   it('neither completes the tour nor signals the overlay while its target is absent', async () => {
     const overlay = useOnboardingOverlayStore()
     render(OnboardingCoach, {
@@ -420,6 +448,90 @@ describe('OnboardingCoach', () => {
     expect(useOnboardingOverlayStore().active).toBe(true)
   })
 
+  function mountWithFinished(
+    storageKey: string,
+    onFinished: () => void,
+    steps = STEPS
+  ) {
+    return render(
+      {
+        components: { OnboardingCoach },
+        setup: () => ({ steps, storageKey, onFinished }),
+        template:
+          '<div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" /><OnboardingCoach :steps="steps" :storage-key="storageKey" @finished="onFinished" />'
+      },
+      { global: { plugins: [i18n] } }
+    )
+  }
+
+  it('reports the tour finished when another tab completes it', async () => {
+    const onFinished = vi.fn()
+    mountWithFinished('coach-elsewhere', onFinished)
+    await screen.findByRole('dialog', { name: 'Meet the agent' })
+
+    localStorage.setItem('coach-elsewhere', 'true')
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'coach-elsewhere',
+        newValue: 'true',
+        storageArea: localStorage
+      })
+    )
+
+    await waitFor(() => expect(onFinished).toHaveBeenCalled())
+    await nextTick()
+
+    expect(onFinished).toHaveBeenCalledOnce()
+  })
+
+  it('reports finished once when the user skips', async () => {
+    const onFinished = vi.fn()
+    mountWithFinished('coach-skip-once', onFinished)
+    await userEvent.click(await screen.findByRole('button', { name: 'Skip' }))
+    await nextTick()
+    await nextTick()
+
+    expect(onFinished).toHaveBeenCalledOnce()
+  })
+
+  it('reports finished once when the user clicks Done', async () => {
+    const onFinished = vi.fn()
+    mountWithFinished('coach-done-once', onFinished, [STEPS[0]])
+    await userEvent.click(await screen.findByRole('button', { name: 'Done' }))
+    await nextTick()
+    await nextTick()
+
+    expect(onFinished).toHaveBeenCalledOnce()
+  })
+
+  it('reports a later completion in another tab after a replay', async () => {
+    const onFinished = vi.fn()
+    const coach = ref<{ restart: () => void } | null>(null)
+    render(
+      {
+        components: { OnboardingCoach },
+        setup: () => ({ steps: STEPS, coach, onFinished }),
+        template:
+          '<div id="panel" /><OnboardingCoach ref="coach" :steps="steps" storage-key="coach-replay-elsewhere" @finished="onFinished" />'
+      },
+      { global: { plugins: [i18n] } }
+    )
+    await userEvent.click(await screen.findByRole('button', { name: 'Skip' }))
+    coach.value?.restart()
+    await screen.findByRole('dialog', { name: 'Meet the agent' })
+
+    localStorage.setItem('coach-replay-elsewhere', 'true')
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'coach-replay-elsewhere',
+        newValue: 'true',
+        storageArea: localStorage
+      })
+    )
+
+    await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(2))
+  })
+
   describe('reporting a step whose target never mounts', () => {
     const renderMissing = (target: string) =>
       render(OnboardingCoach, {
@@ -504,6 +616,40 @@ describe('OnboardingCoach', () => {
       await vi.advanceTimersByTimeAsync(10_000)
 
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('signals a stall once without completing the tour', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      const onStalled = vi.fn()
+      const onFinished = vi.fn()
+      render(OnboardingCoach, {
+        props: {
+          steps: [
+            { ...STEPS[0], target: '#late-g' },
+            { ...STEPS[1], target: '#never-g' }
+          ],
+          storageKey: 'coach-stalled',
+          onStalled,
+          onFinished
+        },
+        global: { plugins: [i18n] }
+      })
+
+      await vi.advanceTimersByTimeAsync(7_000)
+      expect(onStalled).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(onStalled).toHaveBeenCalledOnce()
+
+      const late = document.createElement('div')
+      late.id = 'late-g'
+      document.body.appendChild(late)
+      await user.click(await screen.findByRole('button', { name: 'Next' }))
+      await vi.advanceTimersByTimeAsync(8_000)
+
+      expect(reportError).toHaveBeenCalledTimes(2)
+      expect(onStalled).toHaveBeenCalledOnce()
+      expect(onFinished).not.toHaveBeenCalled()
+      expect(localStorage.getItem('coach-stalled')).toBe('false')
     })
 
     it('stays quiet when the panel closes before the grace period ends', async () => {

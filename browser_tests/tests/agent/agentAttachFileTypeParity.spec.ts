@@ -3,9 +3,9 @@ import { truncate, writeFile } from 'node:fs/promises'
 import { expect } from '@playwright/test'
 
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
+import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { formatSize } from '@/utils/formatUtil'
 
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -31,7 +31,7 @@ test.describe(
         return route.fulfill(jsonRoute(response))
       })
       await comfyPage.nodeOps.clearGraph()
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
     })
 
     test('accepts a video and an audio file by both the file browser and a drop', async ({
@@ -42,11 +42,11 @@ test.describe(
 
       await expect(agentPanel.fileInput).toHaveAttribute(
         'accept',
-        /(^|,)video\/\*(,|$)/
+        /(^|,)\.mp4(,|$)/
       )
       await expect(agentPanel.fileInput).toHaveAttribute(
         'accept',
-        /(^|,)audio\/\*(,|$)/
+        /(^|,)\.wav(,|$)/
       )
 
       await agentPanel.fileInput.setInputFiles([
@@ -68,7 +68,7 @@ test.describe(
       await agentPanel.dropFile(comfyPage.dragDrop, AUDIO)
       await expect(agentPanel.attachmentChip(AUDIO)).toBeVisible()
 
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
     })
 
     test('refuses an oversized file the same way whichever route it arrives by', async ({
@@ -123,8 +123,6 @@ test.describe(
       )
 
       expect(dropped).not.toBe('ignored')
-
-      test.fail()
       expect(
         dropped,
         `the file browser answered "${picked}"; a drop of the same file must answer the same`

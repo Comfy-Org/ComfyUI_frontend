@@ -4,12 +4,13 @@
   >
     <div
       v-if="enableNodePreview && hoveredSuggestion"
-      class="comfy-vue-node-preview-container absolute top-[50px] left-[-375px] z-50 cursor-pointer"
+      class="comfy-vue-node-preview-container absolute top-1/2 left-[-375px] z-50 hidden max-h-[85vh] -translate-y-1/2 cursor-pointer overflow-y-auto 2xl:block"
       @mousedown.stop="onAddNode(hoveredSuggestion!, $event)"
     >
       <NodePreview
         :key="hoveredSuggestion?.name || ''"
         :node-def="hoveredSuggestion"
+        position="relative"
       />
     </div>
 
@@ -19,26 +20,36 @@
       class="filter-button z-10"
       @click="filterVisible = true"
     >
-      <i class="pi pi-filter" />
+      <i class="icon-[lucide--funnel]" />
     </Button>
-    <Dialog
-      v-model:visible="filterVisible"
-      class="min-w-96"
-      dismissable-mask
-      modal
-      @hide="reFocusInput"
-    >
-      <template #header>
-        <h3>{{ $t('g.addNodeFilterCondition') }}</h3>
-      </template>
-      <div class="_dialog-body">
-        <NodeSearchFilter @add-filter="onAddFilter" />
-      </div>
+    <Dialog :open="filterVisible" @update:open="onFilterDialogOpenChange">
+      <DialogPortal>
+        <DialogOverlay
+          data-testid="node-search-filter-overlay"
+          @pointerdown.self.stop="filterVisible = false"
+        />
+        <DialogContent
+          class="min-w-96"
+          @escape-key-down="$event.isComposing && $event.preventDefault()"
+          @pointer-down-outside="(e) => onRekaPointerDownOutside({}, e)"
+          @close-auto-focus="onFilterDialogCloseAutoFocus"
+        >
+          <DialogHeader>
+            <DialogTitle>{{ $t('g.addNodeFilterCondition') }}</DialogTitle>
+            <DialogClose :aria-label="$t('g.close')" />
+          </DialogHeader>
+          <div class="px-4 py-2">
+            <NodeSearchFilter @add-filter="onAddFilter" />
+          </div>
+        </DialogContent>
+      </DialogPortal>
     </Dialog>
 
     <SearchAutocomplete
       ref="searchAutocomplete"
       v-model="currentQuery"
+      :clear-label="$t('g.clear')"
+      :accessible-label="searchLabel"
       class="comfy-vue-node-search-box z-10 grow"
       anchor-class="h-auto min-h-8 flex-wrap"
       :content-style="{ maxHeight: '40vh' }"
@@ -79,23 +90,31 @@
 
 <script setup lang="ts">
 import { debounce } from 'es-toolkit/compat'
-import Dialog from 'primevue/dialog'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
 import NodePreview from '@/components/node/NodePreview.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
-import Button from '@/components/ui/button/Button.vue'
-import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogHeader from '@comfyorg/design-system/dialog/DialogHeader'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import SearchAutocomplete from '@comfyorg/design-system/search-input/SearchAutocomplete'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
-import SearchFilterChip from '../common/SearchFilterChip.vue'
+import SearchFilterChip from '@/components/common/SearchFilterChip.vue'
 
 const settingStore = useSettingStore()
 const { t } = useI18n()
@@ -119,11 +138,12 @@ const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
 const suggestions = ref<ComfyNodeDefImpl[]>([])
 const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
 const currentQuery = ref('')
-const placeholder = computed(() => {
-  return filters.length === 0
-    ? t('g.searchPlaceholder', { subject: t('g.nodes') })
-    : ''
-})
+const searchLabel = computed(() =>
+  t('g.searchPlaceholder', { subject: t('g.nodes') })
+)
+const placeholder = computed(() =>
+  filters.length === 0 ? searchLabel.value : ''
+)
 
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
@@ -141,7 +161,7 @@ const search = (query: string) => {
   const queryIsEmpty = query === '' && filters.length === 0
   currentQuery.value = query
   suggestions.value = queryIsEmpty
-    ? nodeFrequencyStore.topNodeDefs
+    ? nodeDefStore.topNodeDefs
     : [
         ...nodeDefStore.nodeSearchService.searchNode(query, filters, {
           limit: searchLimit
@@ -179,6 +199,15 @@ const reFocusInput = async () => {
   await nextTick()
   searchAutocomplete.value?.focus()
   searchAutocomplete.value?.open()
+}
+
+function onFilterDialogOpenChange(open: boolean) {
+  filterVisible.value = open
+}
+
+function onFilterDialogCloseAutoFocus(event: Event) {
+  event.preventDefault()
+  void reFocusInput()
 }
 
 onMounted(() => {

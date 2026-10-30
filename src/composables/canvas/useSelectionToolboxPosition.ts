@@ -4,10 +4,16 @@ import type { Ref } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import type { ReadOnlyRect, Rect } from '@/lib/litegraph/src/interfaces'
+import type {
+  ReadOnlyRect,
+  Rect,
+  Point2D as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
+import { getSelectedLinksAnchor } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
 
@@ -52,6 +58,9 @@ function getSelectionBounds(item: LGraphNode | LGraphGroup): ReadOnlyRect {
   return bounds
 }
 
+const SELECTION_BOUNDS_PADDING = 10
+const LINK_ANCHOR_GAP = 10
+
 export function useSelectionToolboxPosition(
   toolboxRef: Ref<HTMLElement | undefined>
 ) {
@@ -60,6 +69,7 @@ export function useSelectionToolboxPosition(
   const { getSelectableItems } = useSelectedLiteGraphItems()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const isDraggingLiteGraphItems = ref(lgCanvas.isDragging)
+  const linkSelectionStore = useLinkSelectionStore()
 
   useEventListener(
     lgCanvas.canvas,
@@ -86,43 +96,41 @@ export function useSelectionToolboxPosition(
     return isDraggingLiteGraphItems.value || vueNodeDragging
   })
 
-  /**
-   * Update position based on selection
-   */
+  function itemsAnchor(items: Set<unknown>): Point | undefined {
+    const bounds = computeUnionBounds(
+      [...items].flatMap((item) =>
+        item instanceof LGraphNode || item instanceof LGraphGroup
+          ? [getSelectionBounds(item)]
+          : []
+      )
+    )
+    return bounds
+      ? {
+          x: bounds.x + bounds.width / 2,
+          y: bounds.y - SELECTION_BOUNDS_PADDING
+        }
+      : undefined
+  }
+
+  function selectionAnchor(): Point | undefined {
+    const items = getSelectableItems()
+    if (items.size) return itemsAnchor(items)
+    const linkAnchor = lgCanvas.graph && getSelectedLinksAnchor(lgCanvas.graph)
+    return linkAnchor
+      ? { x: linkAnchor.x, y: linkAnchor.y - LINK_ANCHOR_GAP }
+      : undefined
+  }
+
   const updateSelectionBounds = () => {
-    const selectableItems = getSelectableItems()
+    const anchor = selectionAnchor()
 
-    if (!selectableItems.size) {
-      visible.value = false
-      return
-    }
-
-    // Don't show toolbox while dragging
-    if (isDragging.value) {
+    if (!anchor || isDragging.value) {
       visible.value = false
       return
     }
 
     visible.value = true
-
-    // Get bounds for all selected items
-    const allBounds: ReadOnlyRect[] = []
-    for (const item of selectableItems) {
-      if (item instanceof LGraphNode || item instanceof LGraphGroup) {
-        allBounds.push(getSelectionBounds(item))
-      }
-    }
-
-    // Compute union bounds
-    const unionBounds = computeUnionBounds(allBounds)
-    if (!unionBounds) return
-
-    worldPosition.value = {
-      x: unionBounds.x + unionBounds.width / 2,
-      // createBounds() applied a default padding of 10px
-      // so adjust Y to maintain visual consistency
-      y: unionBounds.y - 10
-    }
+    worldPosition.value = anchor
 
     updateTransform()
   }
@@ -167,7 +175,11 @@ export function useSelectionToolboxPosition(
   }
 
   watch(
-    [() => canvasStore.selectedItems, () => layoutStore.layoutVersion],
+    [
+      () => canvasStore.selectedItems,
+      () => layoutStore.layoutVersion,
+      () => linkSelectionStore.selection
+    ],
     ([selectedItems], [previousSelectedItems]) => {
       if (selectedItems !== previousSelectedItems)
         handleSelectionMembershipChange()

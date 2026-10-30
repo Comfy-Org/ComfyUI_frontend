@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -10,10 +10,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ColorOption } from '@/lib/litegraph/src/litegraph'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { adjustColor } from '@/utils/colorUtil'
+import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import LayoutField from './LayoutField.vue'
+import LayoutField from '@comfyorg/design-system/field/LayoutField'
 
 /**
  * Good design limits dependencies and simplifies the interface of the abstraction layer.
@@ -66,9 +66,7 @@ const colorOptions: NodeColorOption[] = [
   }))
 ]
 
-const isLightTheme = computed(
-  () => colorPaletteStore.completedActivePalette.light_theme
-)
+const isLightTheme = computed(() => colorPaletteStore.colorScheme === 'light')
 
 const nodeColor = computed<NodeColorOption['name'] | null>({
   get() {
@@ -111,7 +109,7 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
 <template>
   <LayoutField :label="t('rightSidePanel.color')">
     <div
-      class="grid grid-cols-5 justify-items-center gap-1 rounded-lg border-none bg-secondary-background p-1"
+      class="grid grid-cols-5 justify-items-center gap-1 rounded-lg bg-secondary p-1"
     >
       <Tooltip v-for="option of colorOptions" :key="option.name">
         <TooltipTrigger as-child>
@@ -120,9 +118,7 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
             :class="
               cn(
                 'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-left ring-0 outline-0',
-                option.name === nodeColor
-                  ? 'bg-interface-menu-component-surface-selected'
-                  : 'hover:bg-interface-menu-component-surface-selected'
+                option.name === nodeColor ? 'bg-muted' : 'hover:bg-muted'
               )
             "
             @click="nodeColor = option.name"

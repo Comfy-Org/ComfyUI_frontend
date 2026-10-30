@@ -2,11 +2,14 @@ import type { MaybeRefOrGetter } from 'vue'
 import { computed, onScopeDispose, reactive, ref, toValue, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
-import { publishSkillPack, SkillPacksApiError } from '../api/skillsApi'
-import { useSkillPacksStore } from '../stores/skillPacksStore'
-import type { SkillPack } from '../types'
+import {
+  publishSkillPack,
+  SkillPacksApiError
+} from '@/platform/skills/api/skillsApi'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import type { SkillPack } from '@/platform/skills/types'
 import {
   CONTROL_CHARACTERS,
   codePointLength,
@@ -15,7 +18,7 @@ import {
   PACK_NAME_PATTERN,
   RESERVED_PACK_NAMES,
   utf8ByteLength
-} from '../types'
+} from '@/platform/skills/types'
 
 interface UseSkillPackFormOptions {
   pack?: MaybeRefOrGetter<SkillPack | undefined>

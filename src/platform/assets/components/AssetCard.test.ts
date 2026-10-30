@@ -57,9 +57,6 @@ function renderCard(asset: AssetDisplayItem) {
       plugins: [i18n],
       stubs: {
         AssetBadgeGroup: true
-      },
-      directives: {
-        tooltip: {}
       }
     }
   })

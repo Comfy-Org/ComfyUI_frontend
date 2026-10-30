@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import type { useAudioService } from '@/services/audioService'
+import type { ComfyExtension } from '@/types/comfy'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 const {
   mockMediaRecorderConstruct,
@@ -39,8 +39,6 @@ vi.mock(import('extendable-media-recorder'), () => ({
     }
   )
 }))
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/composables/node/useNodeDragAndDrop'), () => ({
   useNodeDragAndDrop: (_node, options) => {
@@ -82,18 +80,12 @@ vi.mock(import('@/services/audioService'), () => ({
     })
 }))
 
-await import('./uploadAudio')
-const registeredExtensions = vi
-  .mocked(app.registerExtension)
-  .mock.calls.map(([extension]) => extension)
+const { audioWidgetExtension, recordAudioExtension, uploadAudioExtension } =
+  await import('./uploadAudio')
 
-async function getCustomWidget(extensionName: string, widgetName: string) {
-  const extension = registeredExtensions.find(
-    ({ name }) => name === extensionName
-  )
-  if (!extension) throw new Error(`${extensionName} was not registered`)
+async function getCustomWidget(extension: ComfyExtension, widgetName: string) {
   if (!extension.getCustomWidgets) {
-    throw new Error(`${extensionName} does not register custom widgets`)
+    throw new Error(`${extension.name} does not register custom widgets`)
   }
   const widgets = await extension.getCustomWidgets(fromAny({}))
   return widgets[widgetName]
@@ -140,7 +132,7 @@ function createAudioNode() {
 }
 
 async function loadAudioUploadWidget() {
-  const widget = await getCustomWidget('Comfy.UploadAudio', 'AUDIOUPLOAD')
+  const widget = await getCustomWidget(uploadAudioExtension, 'AUDIOUPLOAD')
   return (node: LGraphNode, inputName: string) =>
     widget(node, inputName, fromAny({}), fromAny({}))
 }
@@ -268,7 +260,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 })
 
 async function loadAudioUIWidget() {
-  const widget = await getCustomWidget('Comfy.AudioWidget', 'AUDIO_UI')
+  const widget = await getCustomWidget(audioWidgetExtension, 'AUDIO_UI')
   return (node: LGraphNode, inputName: string) =>
     widget(node, inputName, fromAny({}), fromAny({}))
 }
@@ -293,7 +285,7 @@ describe('Comfy.AudioWidget AUDIO_UI widget', () => {
 })
 
 async function loadAudioRecordWidget() {
-  const widget = await getCustomWidget('Comfy.RecordAudio', 'AUDIO_RECORD')
+  const widget = await getCustomWidget(recordAudioExtension, 'AUDIO_RECORD')
   return (node: LGraphNode, inputName: string) =>
     widget(node, inputName, fromAny({}), fromAny({}))
 }

@@ -1,7 +1,11 @@
 import { RuleTester } from 'oxlint/plugins-dev'
 import { describe, it } from 'vitest'
 
-import { noCapabilityRecombination, noServerFactLiterals } from './serverFacts'
+import {
+  noCapabilityRecombination,
+  noServerFactLiterals,
+  noStrayServerFactConstructor
+} from './serverFacts'
 
 RuleTester.describe = describe
 RuleTester.it = it
@@ -650,7 +654,8 @@ const ended = subscriptionStatus.value === 'ended' ? true : isCancelled.value
     },
     {
       name: 'a server error message matched as text',
-      filename: 'src/platform/errorCatalog/runtimeErrorMatcher.ts',
+      filename:
+        'src/platform/workflowErrors/errorCatalog/runtimeErrorMatcher.ts',
       code: `
 const oom = error.message.includes('CUDA')
 const blocked = (message: string) => message.includes('content policy')
@@ -659,3 +664,64 @@ const blocked = (message: string) => message.includes('content policy')
     }
   ]
 })
+
+const constructorImport = `import { receiveServerFact } from '@/platform/serverFacts/serverFact'`
+
+ruleTester.run(
+  'no-stray-server-fact-constructor',
+  noStrayServerFactConstructor,
+  {
+    valid: [
+      {
+        name: 'the capability read decoding the API response',
+        filename: 'src/platform/billing/composables/useBillingCapabilities.ts',
+        code: constructorImport
+      },
+      {
+        name: 'a unit test building a fact double',
+        filename: 'src/platform/workspace/composables/useMembersPanel.test.ts',
+        code: constructorImport
+      },
+      {
+        name: 'a vitest manual mock',
+        filename:
+          'src/platform/billing/composables/__mocks__/useBillingCapabilities.ts',
+        code: constructorImport
+      },
+      {
+        name: 'a storybook mock',
+        filename: 'src/storybook/mocks/useBillingCapabilities.ts',
+        code: constructorImport
+      },
+      {
+        name: 'a gate reading facts without minting one',
+        filename: 'src/platform/workspace/composables/useMembersPanel.ts',
+        code: `import { narrowServerFact } from '@/platform/serverFacts/serverFact'`
+      }
+    ],
+    invalid: [
+      {
+        name: 'a gate minting its own fact',
+        filename: 'src/platform/workspace/composables/useMembersPanel.ts',
+        code: constructorImport,
+        errors: [{ messageId: 'stray' }]
+      },
+      {
+        name: 'a namespace import whose member mints a fact',
+        filename: 'src/platform/workspace/composables/useMembersPanel.ts',
+        code: `
+import * as facts from '@/platform/serverFacts/serverFact'
+const canInvite = facts.receiveServerFact('can_invite_members', true)
+const canManage = facts['receiveServerFact']('can_manage_members', true)
+`,
+        errors: [{ messageId: 'stray' }, { messageId: 'stray' }]
+      },
+      {
+        name: 'an aliased import in a component',
+        filename: 'src/platform/billing/components/UnifiedPricingTable.vue',
+        code: `import { receiveServerFact as fact } from '@/platform/serverFacts/serverFact'`,
+        errors: [{ messageId: 'stray' }]
+      }
+    ]
+  }
+)

@@ -2,7 +2,8 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { toNodeId } from '@/types/nodeId'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 test.describe(
   'ECS bridge history',
@@ -80,6 +81,40 @@ test.describe(
       })
     })
 
+    test('preserves Redo after Undo normalizes a subgraph node size', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
+      await comfyPage.vueNodes.enterSubgraph('11')
+      await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
+
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const title = 'Sampling with a long descriptive title for this workflow'
+      const rootBreadcrumb = comfyPage.page.getByTestId(
+        TestIds.breadcrumb.item('root')
+      )
+      await node.setTitle(title)
+      await rootBreadcrumb.click()
+      await comfyPage.vueNodes.enterSubgraph('11')
+
+      const stepsRow = comfyPage.vueNodes.getWidgetRowByLabel(title, 'steps')
+      const steps = stepsRow.getByRole('spinbutton')
+      await comfyPage.vueNodes.setInputNumberValue(stepsRow, '21')
+      await expect(steps).toHaveValue('21')
+      await rootBreadcrumb.click()
+      await comfyPage.vueNodes.enterSubgraph('11')
+
+      await comfyPage.command.executeCommand('Comfy.Undo')
+      await expect(steps).toHaveValue('20')
+      await rootBreadcrumb.click()
+
+      await comfyPage.command.executeCommand('Comfy.Redo')
+      await comfyPage.vueNodes.enterSubgraph('11')
+      await expect(steps).toHaveValue('21')
+    })
+
     test('preserves geometry through navigation, renderer toggle, and history', async ({
       comfyPage
     }) => {
@@ -91,6 +126,7 @@ test.describe(
 
       const { before, moved } =
         await test.step('Move the subgraph and capture its geometry', async () => {
+          await comfyPage.vueNodes.waitForSlotLayout(nodeId)
           const before = await comfyPage.canvasOps.getNodeGeometry(nodeId)
           expect(
             before.inputs.length + before.outputs.length,
@@ -109,8 +145,8 @@ test.describe(
             x: start.x + 120,
             y: start.y + 90
           })
-          await comfyPage.nextFrame()
 
+          await comfyPage.vueNodes.waitForSlotLayout(nodeId)
           const moved = await comfyPage.canvasOps.getNodeGeometry(nodeId)
           comfyPage.canvasOps.expectSlotsTrackedNode(moved, before)
           await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
@@ -168,11 +204,13 @@ test.describe(
         ).toBeVisible()
 
         await comfyPage.subgraph.serializeAndReload()
-        comfyPage.canvasOps.expectNodeGeometryPreserved(
-          await comfyPage.canvasOps.getNodeGeometry(nodeId),
-          moved,
-          'after serialization and reload'
-        )
+        await expect(async () => {
+          comfyPage.canvasOps.expectNodeGeometryPreserved(
+            await comfyPage.canvasOps.getNodeGeometry(nodeId),
+            moved,
+            'after serialization and reload'
+          )
+        }).toPass({ timeout: 5000 })
       })
     })
   }

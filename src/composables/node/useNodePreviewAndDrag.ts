@@ -3,7 +3,7 @@ import { computed, ref, toValue } from 'vue'
 
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const PREVIEW_WIDTH = 200
 const PREVIEW_MARGIN = 16
@@ -40,7 +40,7 @@ export function useNodePreviewAndDrag(
     top: '0px',
     left: '0px',
     pointerEvents: 'none',
-    zIndex: 1000
+    zIndex: 'var(--z-index-panel)'
   })
 
   function calculatePreviewPosition(rect: DOMRect) {
@@ -78,7 +78,7 @@ export function useNodePreviewAndDrag(
       top: `${top}px`,
       left: `${left}px`,
       pointerEvents: 'none',
-      zIndex: 1000,
+      zIndex: 'var(--z-index-panel)',
       opacity: 0
     }
     isHovered.value = true

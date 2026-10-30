@@ -1,11 +1,9 @@
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { LGraphEventMode, LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyExtension } from '@/types/comfy'
-
-import { app } from '../../scripts/app'
 
 function setNodeMode(node: LGraphNode, mode: LGraphEventMode) {
   node.mode = mode
@@ -23,7 +21,7 @@ function addNodesToGroup(group: LGraphGroup, items: Iterable<Positionable>) {
   group.resizeTo([...group.children, ...items], padding)
 }
 
-const ext: ComfyExtension = {
+export const groupOptionsExtension: ComfyExtension = {
   name: 'Comfy.GroupOptions',
 
   getCanvasMenuItems(canvas: LGraphCanvas): (IContextMenuValue | null)[] {
@@ -117,5 +115,3 @@ const ext: ComfyExtension = {
     return items
   }
 }
-
-app.registerExtension(ext)
