@@ -34,7 +34,7 @@ const uniqueList = <T extends z.ZodString>(item: T, minimum = 0) =>
 const sourcePath = z
   .string()
   .regex(
-    /^(?:src|packages\/[^/*?[\]{}]+\/src)(?:\/[^*?[\]{}]+?(?:\/\*\*)?|\/\*\*)$/,
+    /^(?:(?:src|packages\/[^/*?[\]{}]+\/src)\/[^*?[\]{}]+?(?:\/\*\*)?|packages\/[^/*?[\]{}]+\/src\/\*\*)$/,
     'must be a file or a directory ending in /** under src/ or packages/<name>/src/'
   )
 

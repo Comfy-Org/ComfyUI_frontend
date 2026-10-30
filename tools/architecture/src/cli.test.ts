@@ -77,6 +77,11 @@ describe('loadArchitectureConfiguration', () => {
       error: 'must be a file or a directory ending in /** under src/'
     },
     {
+      name: 'a claim on all of src',
+      overrides: { modules: [{ path: 'src/**', role: 'domain' }] },
+      error: 'must be a file or a directory ending in /** under src/'
+    },
+    {
       name: 'a package path outside the package src directory',
       overrides: {
         modules: [{ path: 'packages/widgets/vite.config.ts', role: 'domain' }]
