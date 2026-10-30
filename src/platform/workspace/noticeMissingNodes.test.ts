@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import { DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import {
   loadedEvent,
@@ -29,7 +31,8 @@ const deployment: WorkspaceDeployment = {
   deployment_name: 'production',
   release_id: 'rel-3',
   status: 'ready',
-  created_at: '2026-10-01T00:00:00Z'
+  created_at: '2026-10-01T00:00:00Z',
+  can_start: false
 }
 
 const UNSUPPORTED: MissingNodeType[] = [
@@ -47,6 +50,20 @@ function listing(served: boolean, bootDeployment: WorkspaceDeployment | null) {
   store.bootDeployment = bootDeployment
 }
 
+function workflowMissing(nodeTypes: MissingNodeType[]) {
+  useMissingNodesErrorStore().setMissingNodeTypes(nodeTypes)
+}
+
+function listingAnswersLater(): () => void {
+  let answer = () => {}
+  vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
+    new Promise<void>((resolve) => {
+      answer = resolve
+    })
+  )
+  return answer
+}
+
 describe(noticeMissingNodes, () => {
   beforeEach(() => {
     offered.value = true
@@ -56,8 +73,9 @@ describe(noticeMissingNodes, () => {
 
   it('offers a custom deployment instead of the overlay on Comfy Cloud, to an account served the deployments listing', async () => {
     listing(true, null)
+    workflowMissing(UNSUPPORTED)
 
-    noticeMissingNodes(UNSUPPORTED)
+    noticeMissingNodes()
 
     await vi.waitFor(() =>
       expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
@@ -105,8 +123,9 @@ describe(noticeMissingNodes, () => {
     async ({ offer, served, boot, nodes }) => {
       offered.value = offer
       listing(served, boot)
+      workflowMissing(nodes)
 
-      noticeMissingNodes(nodes)
+      noticeMissingNodes()
 
       await vi.waitFor(() =>
         expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
@@ -118,11 +137,44 @@ describe(noticeMissingNodes, () => {
   it('falls back to the error overlay when the dialog cannot load', async () => {
     vi.mocked(openWorkflowNeedsDeploymentDialog).mockResolvedValue(false)
     listing(true, null)
+    workflowMissing(UNSUPPORTED)
 
-    noticeMissingNodes(UNSUPPORTED)
+    noticeMissingNodes()
 
     await vi.waitFor(() =>
       expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
     )
+  })
+
+  it('shows the error overlay when the deployments listing has not answered in time', async () => {
+    vi.useFakeTimers()
+    listing(false, null)
+    listingAnswersLater()
+    workflowMissing(UNSUPPORTED)
+
+    noticeMissingNodes()
+    await vi.advanceTimersByTimeAsync(
+      DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS - 1
+    )
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(false)
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+    expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+  })
+
+  it('does not offer a custom deployment for a workflow that no longer needs one when the listing answers', async () => {
+    listing(true, null)
+    const answer = listingAnswersLater()
+    workflowMissing(UNSUPPORTED)
+
+    noticeMissingNodes()
+    workflowMissing([])
+    answer()
+
+    await vi.waitFor(() =>
+      expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+    )
+    expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
   })
 })
