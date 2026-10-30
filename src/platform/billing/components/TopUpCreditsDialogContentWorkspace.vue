@@ -295,7 +295,10 @@
             {{ $t('credits.topUp.paymentProcessingBody') }}
           </p>
         </div>
-        <TopUpAutoTopUpCard v-if="step === 'amount'" />
+        <TopUpAutoTopUpCard
+          v-if="step === 'amount' && !processingPayment"
+          class="mb-2"
+        />
         <Button
           v-if="step === 'confirm' && topupActionUrl && canTopUp"
           variant="primary"

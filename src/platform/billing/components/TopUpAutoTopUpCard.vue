@@ -1,16 +1,11 @@
 <template>
   <section
-    v-if="autoTopUpEnabled && canManageAutoTopUp"
-    class="flex items-center justify-between gap-4 rounded-lg border border-border/60 px-4 py-3"
+    v-if="visible"
+    class="flex items-center justify-between gap-4 rounded-2xl border border-border/60 p-4"
   >
-    <div class="flex min-w-0 flex-col gap-1">
-      <h3 class="m-0 text-sm font-medium text-foreground">
-        {{ $t('credits.topUp.autoTopUp.title') }}
-      </h3>
-      <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('credits.topUp.autoTopUp.body') }}
-      </p>
-    </div>
+    <p class="m-0 text-sm text-foreground">
+      {{ $t('credits.topUp.autoTopUp.prompt') }}
+    </p>
     <Button
       as="a"
       :href
@@ -18,7 +13,7 @@
       rel="noopener"
       variant="secondary"
       size="md"
-      class="shrink-0"
+      class="shrink-0 no-underline"
       @click="track"
     >
       {{ $t('credits.topUp.autoTopUp.setUp') }}
@@ -29,11 +24,37 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
+import { computed, watch } from 'vue'
 
+import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 
-const { autoTopUpEnabled, canManageAutoTopUp } = useBillingCapabilities()
+const { autoTopUpEnabled, canManageAutoTopUp, autoTopUpSetup } =
+  useBillingCapabilities()
+const { state, ensureRead } = useBillingAutoTopUpCard()
+
+const canSetUp = computed(() => {
+  if (!autoTopUpEnabled.value) return false
+  if (!canManageAutoTopUp.value) return false
+  const setup = autoTopUpSetup.value
+  if (setup === null || setup.state === 'unavailable') return false
+  return !(setup.state === 'frozen' && setup.reason === 'payment_past_due')
+})
+
+watch(
+  canSetUp,
+  (allowed) => {
+    if (allowed) ensureRead()
+  },
+  { immediate: true }
+)
+
+const visible = computed(() => {
+  if (!canSetUp.value) return false
+  const read = state.value
+  return read.kind === 'loaded' && read.settings.status === 'off'
+})
 
 const { href, track } = usePlatformHandoff('/profile/billing', {
   target: 'auto_top_up',

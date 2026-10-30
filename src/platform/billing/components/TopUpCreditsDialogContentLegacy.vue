@@ -68,18 +68,16 @@
     </p>
 
     <div class="flex flex-col gap-8 p-8">
-      <div class="flex flex-col gap-4">
-        <TopUpAutoTopUpCard />
-        <Button
-          :disabled="!isValidAmount || loading"
-          :loading
-          variant="primary"
-          size="lg"
-          @click="handleBuy"
-        >
-          {{ $t('credits.topUp.buyCredits') }}
-        </Button>
-      </div>
+      <TopUpAutoTopUpCard class="-mb-4" />
+      <Button
+        :disabled="!isValidAmount || loading"
+        :loading
+        variant="primary"
+        size="lg"
+        @click="handleBuy"
+      >
+        {{ $t('credits.topUp.buyCredits') }}
+      </Button>
       <div class="flex items-center justify-center gap-1">
         <a
           :href="pricingUrl"

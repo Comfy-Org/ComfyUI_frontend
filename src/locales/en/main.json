@@ -3043,8 +3043,7 @@
       "startOver": "Start over",
       "viewPricing": "View pricing details",
       "autoTopUp": {
-        "title": "Auto top-up",
-        "body": "Refills credits when your balance runs low.",
+        "prompt": "Running low on credits? Turn on auto top-up.",
         "setUp": "Set up"
       },
       "youPay": "Amount (USD)",
