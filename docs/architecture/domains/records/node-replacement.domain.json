@@ -8,10 +8,6 @@
       "role": "application"
     },
     {
-      "path": "src/platform/workflowErrors/nodeReplacement/cnrIdUtil.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/workflowErrors/nodeReplacement/cnrIdUtil.ts",
       "role": "domain"
     },
