@@ -418,6 +418,64 @@ describe('billingOperationStore', () => {
       )
     })
 
+    describe('the verification toast', () => {
+      const actionUrl = 'https://verify.example/sensitive-token'
+      const pending = (id: string, withUrl: boolean) => ({
+        id,
+        status: 'pending' as const,
+        started_at: new Date().toISOString(),
+        ...(withUrl ? { action_url: actionUrl } : {})
+      })
+
+      afterEach(() => {
+        useBillingOperationStore().clearOperation('op-1')
+        useBillingOperationStore().clearOperation('op-2')
+      })
+
+      it('holds through a first read that omits the link, and still moves to processing once a later read clears it', async () => {
+        vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(
+          pending('op-1', false)
+        )
+        const store = useBillingOperationStore()
+        void store.startOperation('op-1', 'subscription', undefined, actionUrl)
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(store.getOperation('op-1')?.actionUrl).toBe(actionUrl)
+        expect(useToast().warning).toHaveBeenCalledOnce()
+        expect(useToast().loading).not.toHaveBeenCalled()
+
+        await vi.advanceTimersByTimeAsync(31_000)
+
+        expect(store.getOperation('op-1')?.actionUrl).toBeNull()
+        expect(useToast().loading).toHaveBeenCalledOnce()
+      })
+
+      it('does not bring back a toast the customer closed, and still announces the next operation', async () => {
+        vi.mocked(billingApi.getBillingOpStatus)
+          .mockResolvedValueOnce(pending('op-1', true))
+          .mockResolvedValue(pending('op-1', false))
+        const store = useBillingOperationStore()
+        void store.startOperation('op-1', 'subscription', undefined, actionUrl)
+        await vi.advanceTimersByTimeAsync(0)
+
+        const shown = vi.mocked(useToast().warning).mock.results[0].value
+        useToast().dismiss(shown)
+        await vi.advanceTimersByTimeAsync(31_000)
+
+        expect(store.getOperation('op-1')?.actionUrl).toBeNull()
+        expect(useToast().loading).not.toHaveBeenCalled()
+        expect(useToast().warning).toHaveBeenCalledOnce()
+
+        vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(
+          pending('op-2', false)
+        )
+        void store.startOperation('op-2', 'subscription')
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(useToast().loading).toHaveBeenCalledOnce()
+      })
+    })
+
     describe('a resumed operation', () => {
       afterEach(() => {
         useBillingOperationStore().clearOperation('op-resumed')

@@ -161,6 +161,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const waitingWithoutActionSince = new Map<string, number>()
   const progressToasts = new Map<string, ProgressToast>()
   const progressToastsAwaitingFirstRead = new Set<string>()
+  // Operations whose customer closed the progress toast; they get no replacement.
+  const dismissedProgressToasts = new Set<string>()
+  // Operations started with a checkout-supplied link, until their first read.
+  const awaitingFirstReadOfInitialAction = new Set<string>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const inFlightPolls = new Map<string, Promise<void>>()
@@ -230,10 +234,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const previous = progressToasts.get(opId)
     if (previous?.kind === kind) return
     if (previous) {
-      toast.dismiss(previous.id)
       progressToasts.delete(opId)
+      if (toast.toasts.some((shown) => shown.id === previous.id)) {
+        toast.dismiss(previous.id)
+      } else {
+        dismissedProgressToasts.add(opId)
+      }
     }
-    if (kind === undefined) return
+    if (kind === undefined || dismissedProgressToasts.has(opId)) return
 
     const messageKey =
       type === 'subscription'
@@ -346,6 +354,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
+    if (actionUrl !== null) awaitingFirstReadOfInitialAction.add(opId)
     announceStart(operation, metadata)
 
     const terminal = new Promise<BillingOperation>((resolve) => {
@@ -576,6 +585,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function updateOperationActionUrl(opId: string, actionUrl: string | null) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
+    // The first read can lag the link checkout already supplied; keeping it
+    // avoids flashing "processing" before the link reappears.
+    if (awaitingFirstReadOfInitialAction.delete(opId) && actionUrl === null) {
+      return
+    }
     const updated: BillingOperation = {
       ...operation,
       actionUrl,
@@ -1115,6 +1129,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     intervals.delete(opId)
     waitingWithoutActionSince.delete(opId)
     progressToastsAwaitingFirstRead.delete(opId)
+    awaitingFirstReadOfInitialAction.delete(opId)
+    dismissedProgressToasts.delete(opId)
 
     const progressToast = progressToasts.get(opId)
     if (progressToast) {

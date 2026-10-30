@@ -205,6 +205,17 @@ describe('useBillingSdkStore', () => {
     expect(toast.toasts).toEqual([])
   })
 
+  it('does not bring back a progress toast the customer closed', () => {
+    useBillingSdkStore()
+    const toast = useToast()
+
+    harness.publish(pendingTopup({ actionUrl: 'https://verify.example/op-1' }))
+    toast.dismiss(toast.toasts[0].id)
+    harness.publish(pendingTopup())
+
+    expect(toast.toasts).toEqual([])
+  })
+
   it('keeps a subscribe in step with its progress toast, as the poller did', () => {
     useBillingSdkStore()
     const toast = useToast()
