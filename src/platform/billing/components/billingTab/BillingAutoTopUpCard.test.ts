@@ -255,6 +255,18 @@ describe('BillingAutoTopUpCard', () => {
       settings: {
         ...configured,
         monthly_budget_is_default: true,
+        paused_by_budget_remainder: true
+      },
+      label: 'Maximum reached',
+      lines: [RULE, 'Monthly maximum reached. Resets November 28.'],
+      action: 'Manage',
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
+    },
+    {
+      status: 'paused_by_budget',
+      settings: {
+        ...configured,
+        monthly_budget_is_default: true,
         cycle_resets_at: null
       },
       label: 'Maximum reached',
