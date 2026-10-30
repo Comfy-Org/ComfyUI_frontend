@@ -466,14 +466,14 @@ describe('useQueueStore', () => {
 
   describe('update() - failed fetches', () => {
     it('should keep the existing queue when the queue fetch fails', async () => {
-      mockGetQueue.mockResolvedValue({
+      vi.mocked(api.getQueue).mockResolvedValue({
         Running: [createRunningJob(1, 'run-1')],
         Pending: [createPendingJob(2, 'pend-1')]
       })
-      mockGetHistory.mockResolvedValue([])
+      vi.mocked(api.getHistory).mockResolvedValue([])
       await store.update()
 
-      mockGetQueue.mockRejectedValue(new Error('API error'))
+      vi.mocked(api.getQueue).mockRejectedValue(new Error('API error'))
       await store.update()
 
       expect(store.runningTasks).toHaveLength(1)
@@ -482,11 +482,13 @@ describe('useQueueStore', () => {
     })
 
     it('should keep the existing history when the history fetch fails', async () => {
-      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
-      mockGetHistory.mockResolvedValue([createHistoryJob(5, 'hist-1')])
+      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getHistory).mockResolvedValue([
+        createHistoryJob(5, 'hist-1')
+      ])
       await store.update()
 
-      mockGetHistory.mockRejectedValue(new Error('API error'))
+      vi.mocked(api.getHistory).mockRejectedValue(new Error('API error'))
       await store.update()
 
       expect(store.historyTasks).toHaveLength(1)
@@ -494,8 +496,8 @@ describe('useQueueStore', () => {
     })
 
     it('should not mark the history snapshot as fetched when the history fetch fails', async () => {
-      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
-      mockGetHistory.mockRejectedValue(new Error('API error'))
+      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getHistory).mockRejectedValue(new Error('API error'))
 
       await store.update()
 
@@ -504,8 +506,8 @@ describe('useQueueStore', () => {
 
     it('should stay silent when a fetch is aborted', async () => {
       const abortError = new DOMException('Aborted', 'AbortError')
-      mockGetQueue.mockRejectedValue(abortError)
-      mockGetHistory.mockRejectedValue(abortError)
+      vi.mocked(api.getQueue).mockRejectedValue(abortError)
+      vi.mocked(api.getHistory).mockRejectedValue(abortError)
 
       await store.update()
 
