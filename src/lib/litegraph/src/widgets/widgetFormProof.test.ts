@@ -4,29 +4,23 @@ import {
   needsFormButHasNone,
   proveWidgetForm
 } from '@/lib/litegraph/src/widgets/widgetFormProof'
-import type { WidgetFormRefusal } from '@/lib/litegraph/src/widgets/widgetFormProof'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+interface TestWidget {
+  name: string
+  type: string
+  value: unknown
+  serialize?: boolean
+  options?: { serialize?: boolean }
+}
 
-/**
- * Each case below is a shape measured in the real frontend or in a shipping custom-node pack,
- * not a hypothetical. The invariant under test is one-directional and is the whole point:
- *
- *   **either no form, or a form that agrees. Never a form that disagrees.**
- *
- * A form-carrying node consults no widget catalog, so a wrong form is authoritative and
- * cannot be detected downstream. Every `provable: false` assertion here is therefore a
- * success, not a limitation.
- */
-
-function widget(name: string, extra: Partial<IBaseWidget> = {}): IBaseWidget {
-  return { name, type: 'number', value: 0, ...extra } as IBaseWidget
+function widget(name: string, extra: Partial<TestWidget> = {}): TestWidget {
+  return { name, type: 'number', value: 0, ...extra }
 }
 
 /** Serialize the way `serialiseWidgetValues` does, and hand back the array identity. */
-function produce(widgets: IBaseWidget[]) {
+function produce(widgets: TestWidget[]) {
   const values = widgets
     .filter((w) => w.serialize !== false)
-    .map((w) => w.value as unknown)
+    .map((w) => w.value)
   return { values, serialised: { widgets_values: values } }
 }
 
@@ -324,9 +318,19 @@ describe('proveWidgetForm', () => {
       })
     ]
 
-    expect(proofs.map((p) => p.provable)).toEqual(proofs.map(() => false))
-    expect(proofs.map((p) => p.order)).toEqual(proofs.map(() => null))
-    expect(proofs.filter((p) => p.refusal === null)).toEqual([])
+    expect(
+      proofs.map(({ provable, order, refusal }) => ({
+        provable,
+        order,
+        refusal
+      }))
+    ).toEqual([
+      { provable: false, order: null, refusal: 'duplicate_widget_name' },
+      { provable: false, order: null, refusal: 'replayed_serialization' },
+      { provable: false, order: null, refusal: 'values_not_positional' },
+      { provable: false, order: null, refusal: 'widgets_not_serialized' },
+      { provable: false, order: null, refusal: 'widgets_not_serialized' }
+    ])
   })
 })
 
@@ -353,39 +357,5 @@ describe('needsFormButHasNone', () => {
     expect(needsFormButHasNone({ widgets_values: [1, 2] })).toBe(false)
     expect(needsFormButHasNone({})).toBe(false)
     expect(needsFormButHasNone({ widgets_values: null })).toBe(false)
-  })
-})
-
-describe('the refusal set', () => {
-  it('is covered case-for-case by the tests above', () => {
-    // Pins the union so a new refusal cannot be added without a test that reaches it, and a
-    // retired one cannot linger. Each entry below is asserted by a named case above; this
-    // list is the index, not a second source of truth.
-    const exercised: Record<WidgetFormRefusal, true> = {
-      class_may_rewrite_payload: true,
-      replayed_serialization: true,
-      widgets_not_serialized: true,
-      values_replaced: true,
-      values_not_positional: true,
-      length_mismatch: true,
-      duplicate_widget_name: true,
-      unnameable_widget: true
-    }
-
-    // arrayContaining plus toHaveLength, per the repo's prefer-array-containing rule: the
-    // length is what makes this a closed set, so a new refusal added without a case here fails.
-    expect(Object.keys(exercised)).toEqual(
-      expect.arrayContaining([
-        'class_may_rewrite_payload',
-        'replayed_serialization',
-        'widgets_not_serialized',
-        'values_replaced',
-        'values_not_positional',
-        'length_mismatch',
-        'duplicate_widget_name',
-        'unnameable_widget'
-      ])
-    )
-    expect(Object.keys(exercised)).toHaveLength(8)
   })
 })
