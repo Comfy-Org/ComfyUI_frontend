@@ -2,15 +2,19 @@ import { cloneDeep } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { shallowReactive } from 'vue'
 
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 export const WIDGET_HISTORY_LIMIT = 10
 
 const NODE_HISTORY_WIDGET_TYPES: ReadonlySet<string> = new Set([
+  'boundingbox',
   'boundingboxes',
+  'colors',
   'curve',
+  'imagecrop',
   'lightinfo',
-  'range'
+  'range',
+  'videoedit'
 ])
 
 export function ownsNodeHistory(widget: { type?: string }): boolean {

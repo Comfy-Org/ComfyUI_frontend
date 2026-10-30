@@ -38,17 +38,13 @@
         :class="groupClasses"
       >
         <ComfyMenuButton />
-        <SidebarIcon
+        <SidebarExtensionTabButton
           v-for="tab in tabs"
           :key="tab.id"
-          :icon="tab.icon"
-          :icon-badge="tab.iconBadge"
-          :tooltip="tab.tooltip"
+          :tab
           :tooltip-suffix="getTabTooltipSuffix(tab)"
-          :label="tab.label || tab.title"
           :is-small
           :selected="tab.id === selectedTab?.id"
-          :data-testid="`${tab.id}-tab-button`"
           @click="onTabClick(tab)"
         />
         <SidebarTemplatesButton />
@@ -93,17 +89,17 @@ import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vu
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/stores/commandStore'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
-import SidebarIcon from './SidebarIcon.vue'
+import SidebarExtensionTabButton from './SidebarExtensionTabButton.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
 

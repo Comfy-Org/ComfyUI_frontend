@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import {
   WIDGET_HISTORY_LIMIT,
@@ -43,10 +43,14 @@ function undoAll(store: Store): unknown[] {
 
 describe(ownsNodeHistory, () => {
   it.for([
+    { type: 'boundingbox', owns: true },
     { type: 'boundingboxes', owns: true },
+    { type: 'colors', owns: true },
     { type: 'curve', owns: true },
+    { type: 'imagecrop', owns: true },
     { type: 'lightinfo', owns: true },
     { type: 'range', owns: true },
+    { type: 'videoedit', owns: true },
     { type: 'number', owns: false },
     { type: undefined, owns: false }
   ])('returns $owns for widget type $type', ({ type, owns }) => {

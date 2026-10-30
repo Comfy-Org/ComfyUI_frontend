@@ -8,7 +8,7 @@ import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 const GRAPH_SIZE_GROWTH: [number, number] = [90, 100]
@@ -72,6 +72,36 @@ export class VueNodeHelpers {
     return this.getOutputSlotRow(nodeId, slotIndex).getByTestId(
       TestIds.node.slotConnectionDot
     )
+  }
+
+  async waitForSlotLayout(nodeId: string): Promise<void> {
+    await expect
+      .poll(() =>
+        this.getNodeLocator(nodeId).evaluate((element, id) => {
+          const app = window.app!
+          const node = app.canvas.graph!.getNodeById(id)!
+          const errors = [
+            ...node.inputs.map((_, index) => ({
+              key: `${id}-in-${index}`,
+              position: node.getInputPos(index)
+            })),
+            ...node.outputs.map((_, index) => ({
+              key: `${id}-out-${index}`,
+              position: node.getOutputPos(index)
+            }))
+          ].flatMap(({ key, position }) => {
+            const dot = element.querySelector(`[data-slot-key="${key}"]`)
+            if (!dot) return []
+            const rect = dot.getBoundingClientRect()
+            const [, y] = app.canvasPosToClientPos(position)
+            return [
+              Math.abs(y - rect.top - rect.height / 2) / app.canvas.ds.scale
+            ]
+          })
+          return errors.length ? Math.max(...errors) : Infinity
+        }, toNodeId(nodeId))
+      )
+      .toBeLessThan(0.5)
   }
 
   /**
@@ -267,14 +297,13 @@ export class VueNodeHelpers {
     })
   }
 
-  getWidgetRowByLabel(nodeTitle: string, widgetName: string): Locator {
+  getWidgetRowByLabel(node: string | Locator, widgetName: string): Locator {
     const widgetLabel = this.page
       .getByTestId(TestIds.widgets.layoutFieldLabel)
       .and(this.page.getByText(widgetName, { exact: true }))
 
-    return this.getNodeByTitle(nodeTitle)
-      .getByTestId(TestIds.widgets.widget)
-      .filter({ has: widgetLabel })
+    const root = typeof node === 'string' ? this.getNodeByTitle(node) : node
+    return root.getByTestId(TestIds.widgets.widget).filter({ has: widgetLabel })
   }
 
   /**

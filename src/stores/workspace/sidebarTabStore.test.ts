@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 vi.mock(import('@/i18n'), () => ({
@@ -43,5 +43,26 @@ describe('useSidebarTabStore', () => {
         expect(store.activeSidebarTabId).toBe(activeTabId)
       }
     )
+  })
+
+  it('keeps runtime registration attribution outside the public tab shape', () => {
+    const store = useSidebarTabStore()
+    store.registerSidebarTab(
+      {
+        id: 'agent-tab',
+        title: 'Agent tab',
+        type: 'vue',
+        component: {}
+      },
+      undefined,
+      'agent.tools.sidebar'
+    )
+
+    expect(store.getSourceExtensionName('agent-tab')).toBe(
+      'agent.tools.sidebar'
+    )
+
+    store.unregisterSidebarTab('agent-tab')
+    expect(store.getSourceExtensionName('agent-tab')).toBeUndefined()
   })
 })

@@ -111,6 +111,40 @@ describe('loadArchitectureConfiguration', () => {
     })
   })
 
+  it('gives each unlisted test the role of its sibling source file, or else of the longest file path its name extends', () => {
+    const root = createRepository(
+      {
+        modules: [
+          ...record.modules,
+          { path: 'src/imageView.compact.vue', role: 'application' }
+        ]
+      },
+      {
+        'src/imageView.test.ts': '',
+        'src/imageView.compact.vue': '<template />',
+        'src/imageView.compact.test.ts': '',
+        'src/imageView.compact.cloud.test.ts': '',
+        'src/imageView.unlisted.ts': '',
+        'src/imageView.unlisted.test.ts': '',
+        'src/imageViewer.test.ts': ''
+      }
+    )
+    const config = loadValidConfiguration(root)
+    expect(
+      Object.fromEntries(
+        [...config.claims].map(([file, { module }]) => [file, module.role])
+      )
+    ).toEqual({
+      'src/images/index.ts': 'domain',
+      'src/images/index.test.ts': 'domain',
+      'src/imageView.vue': 'presentation',
+      'src/imageView.test.ts': 'presentation',
+      'src/imageView.compact.vue': 'application',
+      'src/imageView.compact.test.ts': 'application',
+      'src/imageView.compact.cloud.test.ts': 'application'
+    })
+  })
+
   it('collects every unreadable record and ledger instead of stopping at the first', () => {
     const root = createRepository(
       {},
@@ -166,10 +200,22 @@ describe('runArchitecture', () => {
           { path: 'src/gone/**', role: 'domain' },
           { path: 'src/images/index.ts', role: 'application' },
           { path: 'src/images/index.test.ts', role: 'application' },
-          { path: 'src/images/extra/**', role: 'domain' }
+          { path: 'src/images/extra/**', role: 'domain' },
+          { path: 'src/images/extra/b.ts', role: 'application' },
+          { path: 'src/images/extra/b.test.ts', role: 'domain' },
+          { path: 'src/images/view.ts', role: 'presentation' },
+          { path: 'src/images/view.wide.ts', role: 'domain' }
         ]
       },
-      { 'src/brandNew.ts': '', 'src/images/extra/a.ts': '' }
+      {
+        'src/images/view.ts': '',
+        'src/images/view.wide.ts': '',
+        'src/images/view.wide.cloud.test.ts': '',
+        'src/brandNew.ts': '',
+        'src/images/extra/a.ts': '',
+        'src/images/extra/b.ts': '',
+        'src/images/extra/b.test.ts': ''
+      }
     )
     runArchitecture(root, 'update')
     expect(runArchitecture(root, 'check')).toEqual({
@@ -190,6 +236,12 @@ describe('runArchitecture', () => {
         {
           message: expect.stringContaining(
             'images path repeats the role of the enclosing src/images/**: src/images/extra/**'
+          ),
+          file
+        },
+        {
+          message: expect.stringContaining(
+            'images path repeats the role of its subject src/images/index.ts: src/images/index.test.ts'
           ),
           file
         },
@@ -243,10 +295,13 @@ describe('runArchitecture', () => {
 describe('main', () => {
   function runMain(args: string[], root: string) {
     const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
     const exitCode = main(args, root)
     const output = stderr.mock.calls.map(([text]) => String(text)).join('')
+    const summary = stdout.mock.calls.map(([text]) => String(text)).join('')
     stderr.mockRestore()
-    return { exitCode, output }
+    stdout.mockRestore()
+    return { exitCode, output, summary }
   }
 
   it.for([
@@ -287,8 +342,12 @@ describe('main', () => {
     const reportDirectory = mkdtempSync(join(tmpdir(), 'architecture-report-'))
     roots.push(reportDirectory)
     const reportFile = join(reportDirectory, 'report.md')
-    const { exitCode } = runMain(['--check', '--report', reportFile], root)
+    const { exitCode, summary } = runMain(
+      ['--check', '--report', reportFile],
+      root
+    )
     expect(exitCode).toBe(0)
+    expect(summary).toBe('Architecture check passed with 1 warning(s)\n')
     expect(readFileSync(reportFile, 'utf8')).toContain(
       '- src/brandNew.ts is not claimed by any domain'
     )
@@ -357,9 +416,9 @@ describe('formatReport', () => {
   })
 
   it.for([
-    { count: 50, last: 'src/file49.ts is unclaimed', overflow: undefined },
-    { count: 51, last: 'src/file49.ts is unclaimed', overflow: '…and 1 more' }
-  ])('lists at most 50 of $count findings', ({ count, last, overflow }) => {
+    { count: 50, lastLine: '- src/file49.ts is unclaimed' },
+    { count: 51, lastLine: '- …and 1 more' }
+  ])('lists at most 50 of $count findings', ({ count, lastLine }) => {
     const warnings = Array.from({ length: count }, (_, i) => ({
       message: `src/file${i}.ts is unclaimed`,
       file: `src/file${i}.ts`
@@ -368,7 +427,7 @@ describe('formatReport', () => {
       .trimEnd()
       .split('\n')
     expect(lines[0]).toBe(`### Warnings (${count})`)
-    expect(lines.at(-1)).toBe(`- ${overflow ?? last}`)
+    expect(lines.at(-1)).toBe(lastLine)
     expect(lines).not.toContain('- src/file50.ts is unclaimed')
   })
 
@@ -458,7 +517,7 @@ describe('buildCatalog', () => {
       {},
       {
         'src/zeta.tsx': '',
-        'src/imageView.test.ts': '',
+        'src/imageViewer.test.ts': '',
         'src/images/nested/deep.vue': '<template />',
         'src/README.md': '',
         'apps/desktop/main.ts': ''
@@ -470,7 +529,7 @@ describe('buildCatalog', () => {
       total: 6,
       classified: 4,
       unclassified: 2,
-      unclassifiedFiles: ['src/imageView.test.ts', 'src/zeta.tsx']
+      unclassifiedFiles: ['src/imageViewer.test.ts', 'src/zeta.tsx']
     })
   })
 })

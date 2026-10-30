@@ -25,7 +25,7 @@
             :aria-label="t('assetBrowser.modelInfo.editDisplayName')"
             @click="isEditingDisplayName = !isImmutable"
           >
-            <i class="icon-[lucide--square-pen] size-4 self-center" />
+            <i class="icon-[lucide--square-pen] self-center" />
           </Button>
         </div>
       </ModelInfoField>
@@ -57,7 +57,7 @@
             class="size-4 shrink-0"
           />
           {{ t('assetBrowser.modelInfo.viewOnSource', { source: sourceName }) }}
-          <i class="icon-[lucide--external-link] size-4 shrink-0" />
+          <i class="icon-[lucide--external-link]" />
         </a>
       </ModelInfoField>
     </PropertiesAccordionItem>
@@ -100,48 +100,26 @@
         </template>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.compatibleBaseModels')">
-        <TagsInput
-          v-slot="{ isEmpty }"
+        <TagEditor
           v-model="baseModels"
           :disabled="isImmutable"
-        >
-          <TagsInputItem
-            v-for="model in baseModels"
-            :key="model"
-            :value="model"
-          >
-            <TagsInputItemText />
-            <TagsInputItemDelete />
-          </TagsInputItem>
-          <TagsInputInput
-            :is-empty="isEmpty"
-            :placeholder="
-              isImmutable
-                ? t('assetBrowser.modelInfo.baseModelUnknown')
-                : t('assetBrowser.modelInfo.addBaseModel')
-            "
-          />
-        </TagsInput>
+          :placeholder="
+            isImmutable
+              ? t('assetBrowser.modelInfo.baseModelUnknown')
+              : t('assetBrowser.modelInfo.addBaseModel')
+          "
+        />
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.additionalTags')">
-        <TagsInput
-          v-slot="{ isEmpty }"
+        <TagEditor
           v-model="additionalTags"
           :disabled="isImmutable"
-        >
-          <TagsInputItem v-for="tag in additionalTags" :key="tag" :value="tag">
-            <TagsInputItemText />
-            <TagsInputItemDelete />
-          </TagsInputItem>
-          <TagsInputInput
-            :is-empty="isEmpty"
-            :placeholder="
-              isImmutable
-                ? t('assetBrowser.modelInfo.noAdditionalTags')
-                : t('assetBrowser.modelInfo.addTag')
-            "
-          />
-        </TagsInput>
+          :placeholder="
+            isImmutable
+              ? t('assetBrowser.modelInfo.noAdditionalTags')
+              : t('assetBrowser.modelInfo.addTag')
+          "
+        />
       </ModelInfoField>
     </PropertiesAccordionItem>
 
@@ -161,7 +139,7 @@
             :aria-label="t('g.copyAll')"
             @click="copyToClipboard(triggerPhrases.join(', '))"
           >
-            <i class="icon-[lucide--copy] size-4 min-h-4 min-w-4 opacity-60" />
+            <i class="icon-[lucide--copy] min-h-4 min-w-4 opacity-60" />
           </Button>
         </template>
         <div class="flex flex-wrap gap-1 pt-1">
@@ -175,7 +153,7 @@
             @click="copyToClipboard(phrase)"
           >
             {{ phrase }}
-            <i class="icon-[lucide--copy] size-4 min-h-4 min-w-4 opacity-60" />
+            <i class="icon-[lucide--copy] min-h-4 min-w-4 opacity-60" />
           </Button>
         </div>
       </ModelInfoField>
@@ -214,21 +192,17 @@ import { useDebounceFn } from '@vueuse/core'
 import { computed, ref, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import EditableText from '@/components/common/EditableText.vue'
+import EditableText from '@comfyorg/design-system/common/EditableText'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
-import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
-import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
-import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
-import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
-import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
+import Button from '@comfyorg/design-system/button/Button'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
+import TagEditor from '@/components/common/TagEditor.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { isCloud } from '@/platform/distribution/types'
@@ -249,7 +223,7 @@ import {
 import { useAssetsStore } from '@/stores/assetsStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import ModelInfoField from './ModelInfoField.vue'
+import ModelInfoField from '@comfyorg/design-system/field/ModelInfoField'
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()

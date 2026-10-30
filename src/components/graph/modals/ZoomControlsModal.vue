@@ -2,7 +2,7 @@
   <div
     v-if="visible"
     ref="modalRoot"
-    class="absolute right-0 bottom-[62px] z-1300 flex w-[250px] justify-center border-0! bg-inherit!"
+    class="absolute right-0 bottom-[62px] flex w-[250px] justify-center border-0! bg-inherit!"
   >
     <div
       class="w-4/5 rounded-lg border bg-background p-2 text-foreground shadow-lg select-none"
@@ -41,19 +41,20 @@
           <span class="text-[9px]">{{ zoomToFitCommandText }}</span>
         </div>
 
-        <NumberField
+        <FormNumberField
+          class="w-full"
           :model-value="canvasStore.appScalePercentage"
           :min="1"
           :max="1000"
           :format-options="{ useGrouping: false, maximumFractionDigits: 0 }"
+          :aria-label="$t('zoomControls.zoomPercentage')"
           data-testid="zoom-percentage-input"
           @update:model-value="canvasStore.setAppZoomFromPercentage"
         >
-          <NumberFieldDecrement />
-          <NumberFieldInput :aria-label="$t('zoomControls.zoomPercentage')" />
-          <span class="shrink-0 text-sm">%</span>
-          <NumberFieldIncrement />
-        </NumberField>
+          <template #suffix>
+            <span class="shrink-0 text-sm">%</span>
+          </template>
+        </FormNumberField>
       </div>
     </div>
   </div>
@@ -62,13 +63,10 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 
-import NumberField from '@/components/ui/number-field/NumberField.vue'
-import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
-import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
-import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import FormNumberField from '@/components/common/FormNumberField.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 const minimap = useMinimap()
 const commandStore = useCommandStore()

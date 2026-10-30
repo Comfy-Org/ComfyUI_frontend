@@ -25,3 +25,18 @@ export const DEPLOYMENT_LISTING_BACKSTOP_MS =
 export const DEPLOYMENT_LISTING_RETRY_DELAYS_MS: readonly number[] = [
   1_000, 2_000
 ]
+
+/** How long the boot waits for the listing when this browser has no deployment hint or link. */
+export const DEPLOYMENT_LISTING_NO_HINT_WAIT_MS = 5_000
+
+/** How long Comfy Cloud's Extensions button waits for the listing before it opens the custom-node survey. */
+export const DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS = 5_000
+
+/** Minimum gap between focus-triggered listing retries. */
+export const DEPLOYMENT_LISTING_FOCUS_RETRY_MS = 60_000
+
+/** How long a Start request may take once sent. */
+export const DEPLOYMENT_START_TIMEOUT_MS = 30_000
+
+/** How often the open menu refreshes the listing while a deployment starts. */
+export const DEPLOYMENT_START_POLL_MS = 5_000

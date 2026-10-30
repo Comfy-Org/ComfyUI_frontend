@@ -1,16 +1,19 @@
 <template>
-  <div class="comfyui-body grid size-full overflow-hidden">
-    <div id="comfyui-body-top" class="comfyui-body-top" />
-    <div id="comfyui-body-bottom" class="comfyui-body-bottom" />
-    <div id="comfyui-body-left" class="comfyui-body-left" />
-    <div id="comfyui-body-right" class="comfyui-body-right" />
+  <div class="comfyui-body isolate grid size-full overflow-hidden">
+    <div id="comfyui-body-top" class="comfyui-body-top z-3" />
+    <div id="comfyui-body-bottom" class="comfyui-body-bottom z-2" />
+    <div id="comfyui-body-left" class="comfyui-body-left z-1" />
+    <div id="comfyui-body-right" class="comfyui-body-right z-1" />
     <div
       v-show="!linearMode"
       id="graph-canvas-container"
-      ref="graphCanvasContainerRef"
-      class="graph-canvas-container"
+      class="graph-canvas-container isolate"
     >
-      <GraphCanvas @ready="onGraphReady" />
+      <GraphCanvas @ready="onGraphReady">
+        <template #legacy-menu>
+          <div ref="legacyMenuContainerRef" />
+        </template>
+      </GraphCanvas>
     </div>
     <LinearView v-if="linearMode" />
     <template v-if="isBuilderMode">
@@ -20,14 +23,13 @@
     </template>
   </div>
 
-  <Toaster />
+  <AppToaster />
   <ToastDock>
     <ModelImportProgressDialog />
     <AssetExportProgressDialog />
     <ManagerProgressToast />
   </ToastDock>
   <PartnerNodesEducationCard v-if="!isCloud" />
-  <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
@@ -53,8 +55,8 @@ import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
-import ToastDock from '@/components/ui/toast/ToastDock.vue'
-import Toaster from '@/components/ui/toast/Toaster.vue'
+import ToastDock from '@comfyorg/design-system/toast/ToastDock'
+import AppToaster from '@/components/common/AppToaster.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'
@@ -67,8 +69,8 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
-import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
-import { scanAllMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
+import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
+import { scanAllMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
 import { startTemplateInputDownloadGraphSync } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { refreshDownloadedTemplateInputBindings } from '@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
@@ -79,13 +81,14 @@ import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vu
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { registerAssetBrowserModalComponent } from '@/platform/assets/composables/useAssetBrowserDialog'
-import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
+import { useDesktopCloudNotification } from '@/platform/cloud/notification/composables/useDesktopCloudNotification'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
 import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
 import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/getPageVisibilityMetadata'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
@@ -98,7 +101,7 @@ import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useAppMode } from '@/composables/useAppMode'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -111,7 +114,7 @@ import {
   useQueueStore
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
-import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
@@ -120,12 +123,14 @@ import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
-import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
+import ManagerProgressToast from '@/platform/customNodes/manager/components/ManagerProgressToast.vue'
 
 setupAutoQueueHandler()
 useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
+useDesktopCloudNotification()
+if (isCloud) useDeploymentCompatibility()
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
@@ -133,7 +138,7 @@ const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
-const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
+const legacyMenuContainerRef = ref<HTMLDivElement | null>(null)
 const graphReady = ref(false)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
@@ -322,8 +327,7 @@ onMounted(() => {
   executionStore.bindExecutionEvents()
 
   try {
-    // Relocate the legacy menu container to the graph canvas container so it is below other elements
-    graphCanvasContainerRef.value?.prepend(app.ui.menuContainer)
+    legacyMenuContainerRef.value?.append(app.ui.menuContainer)
   } catch (e) {
     console.error('Failed to init ComfyUI frontend', e)
   }
@@ -475,15 +479,8 @@ const onGraphReady = () => {
 
 .comfyui-body-top {
   order: -5;
-  /* Span across all columns */
   grid-column: 1/-1;
-  /* Position at the first row */
   grid-row: 1;
-  /* Top menu bar dropdown needs to be above of graph canvas splitter overlay which is z-index: 999 */
-  /* Top menu bar z-index needs to be higher than bottom menu bar z-index as by default
-  pysssss's image feed is located at body-bottom, and it can overlap with the queue button, which
-  is located in body-top. */
-  z-index: 1001;
   display: flex;
   flex-direction: column;
 }
@@ -494,7 +491,6 @@ const onGraphReady = () => {
   grid-column: 1;
   /* Position below the top element */
   grid-row: 2;
-  z-index: 10;
   display: flex;
 }
 
@@ -510,18 +506,14 @@ const onGraphReady = () => {
 
 .comfyui-body-right {
   order: -2;
-  z-index: 10;
   grid-column: 3;
   grid-row: 2;
 }
 
 .comfyui-body-bottom {
   order: 4;
-  /* Span across all columns */
   grid-column: 1/-1;
   grid-row: 3;
-  /* Bottom menu bar dropdown needs to be above of graph canvas splitter overlay which is z-index: 999 */
-  z-index: 1000;
   display: flex;
   flex-direction: column;
 }

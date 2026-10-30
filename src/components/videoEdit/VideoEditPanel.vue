@@ -37,6 +37,7 @@
           :source-width="width"
           :source-height="height"
           :locked-ratio="lockedRatio"
+          @edit-end="emit('editEnd')"
         />
         <div
           v-if="loading"
@@ -97,12 +98,7 @@
         @click="isPlaying = !isPlaying"
       >
         <i
-          :class="
-            cn(
-              isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]',
-              'size-4'
-            )
-          "
+          :class="isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'"
         />
       </button>
       <span
@@ -128,7 +124,7 @@
         :aria-label="t('videoEdit.fullscreen')"
         @click="enterFullscreen"
       >
-        <i class="icon-[lucide--maximize] size-4" />
+        <i class="icon-[lucide--maximize]" />
       </button>
       <button
         type="button"
@@ -139,13 +135,11 @@
       >
         <i
           :class="
-            cn(
-              isMuted ? 'icon-[lucide--volume-x]' : 'icon-[lucide--volume-2]',
-              'size-4'
-            )
+            isMuted ? 'icon-[lucide--volume-x]' : 'icon-[lucide--volume-2]'
           "
         />
       </button>
+      <slot name="history" />
     </div>
 
     <div
@@ -165,6 +159,7 @@
         "
         :loading="loading"
         @scrub="handleScrub"
+        @edit-end="emit('editEnd')"
       />
 
       <WidgetInputNumberInput
@@ -172,6 +167,7 @@
         v-model="startFrame"
         root-class="col-span-full grid grid-cols-subgrid items-center"
         :widget="startFrameWidget"
+        @update:model-value="emit('editEnd', 'trim:start')"
       />
 
       <WidgetInputNumberInput
@@ -179,6 +175,7 @@
         v-model="endFrame"
         root-class="col-span-full grid grid-cols-subgrid items-center"
         :widget="endFrameWidget"
+        @update:model-value="emit('editEnd', 'trim:end')"
       />
 
       <div v-if="hasCrop" class="col-span-full flex items-center gap-2">
@@ -222,6 +219,7 @@
         v-model="cropBounds"
         class="col-span-full"
         :disabled="loading || width <= 0"
+        @edit-end="(field) => emit('editEnd', `crop:${field}`)"
       />
 
       <div
@@ -245,6 +243,8 @@
 </template>
 
 <script setup lang="ts">
+import type { Size2D, Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { useEventListener } from '@vueuse/core'
 import { computed, ref, toRef, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -253,13 +253,13 @@ import { clamp } from 'es-toolkit'
 
 import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
 import Loader from '@/components/loader/Loader.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import VideoCropOverlay from '@/components/videoEdit/VideoCropOverlay.vue'
 import VideoFilmstripTrim from '@/components/videoEdit/VideoFilmstripTrim.vue'
 import { useCropRatioLock } from '@/composables/video/useCropRatioLock'
@@ -267,8 +267,7 @@ import { useTrimPlayback } from '@/composables/video/useTrimPlayback'
 import { useVideoEditFormats } from '@/composables/video/useVideoEditFormats'
 import { DEFAULT_VIDEO_FPS } from '@/composables/video/useVideoFilmstrip'
 import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
-import type { VideoEditFeature } from '@/lib/litegraph/src/types/widgets'
-import type { Bounds } from '@/renderer/core/layout/types'
+import type { VideoEditFeature } from '@comfyorg/graph-model/widgets'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { frameToTime, timeToFrame } from '@/utils/videoFrameUtil'
@@ -287,24 +286,25 @@ const {
   height,
   loading = false,
   error = null
-} = defineProps<{
-  features: VideoEditFeature[]
-  videoUrl?: string
-  hasSource?: boolean
-  thumbnail: string
-  totalFrames: number
-  duration: number
-  fps: number
-  fileSize?: number
-  width: number
-  height: number
-  loading?: boolean
-  error?: FilmstripError | null
-}>()
+} = defineProps<
+  Size2D & {
+    features: VideoEditFeature[]
+    videoUrl?: string
+    hasSource?: boolean
+    thumbnail: string
+    totalFrames: number
+    duration: number
+    fps: number
+    fileSize?: number
+    loading?: boolean
+    error?: FilmstripError | null
+  }
+>()
 
 const emit = defineEmits<{
   retry: []
   loadError: []
+  editEnd: [mergeKey?: string]
 }>()
 
 const startFrame = defineModel<number>('startFrame', { default: 0 })
@@ -318,7 +318,7 @@ const { t } = useI18n()
 const { formatDuration, formatFileSize, formatTimecode } = useVideoEditFormats()
 
 const videoRef = useTemplateRef<HTMLVideoElement>('videoRef')
-const videoIntrinsicSize = ref<{ width: number; height: number } | null>(null)
+const videoIntrinsicSize = ref<Size2D | null>(null)
 const isMuted = ref(false)
 const isFullscreen = ref(false)
 
@@ -369,7 +369,8 @@ function handleVideoTimeUpdate() {
 const { lockedRatio, ratioKeys, selectedRatio, isLockEnabled, canLockRatio } =
   useCropRatioLock(cropBounds, {
     sourceWidth: toRef(() => width),
-    sourceHeight: toRef(() => height)
+    sourceHeight: toRef(() => height),
+    onEditEnd: () => emit('editEnd')
   })
 
 const startFrameWidget = computed(

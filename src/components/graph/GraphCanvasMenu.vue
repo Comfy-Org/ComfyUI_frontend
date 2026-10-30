@@ -1,19 +1,8 @@
 <template>
-  <div>
-    <ZoomControlsModal :visible="isModalVisible" @close="hideModal" />
+  <div class="isolate">
+    <div v-if="hasActivePopup" class="fixed inset-0" @click="hideModal"></div>
 
-    <!-- Backdrop -->
-    <div
-      v-if="hasActivePopup"
-      class="fixed inset-0 z-1200"
-      @click="hideModal"
-    ></div>
-
-    <!-- Right-anchoring alone lets a toolbar wider than the canvas overhang its
-         left edge and cover the sidebar. Spanning the canvas and pushing with an
-         auto margin pins the toolbar to the right instead, and the width cap keeps
-         any overflow inside the canvas as a scroll. -->
-    <div class="pointer-events-none absolute inset-x-0 bottom-0 z-1200 flex">
+    <div class="pointer-events-none absolute inset-x-0 bottom-0 flex">
       <div
         role="toolbar"
         :aria-label="t('graphCanvasMenu.canvasToolbar')"
@@ -34,7 +23,7 @@
           class="size-8 bg-transparent p-0"
           @click="() => commandStore.execute('Comfy.Canvas.FitView')"
         >
-          <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--focus]" aria-hidden="true" />
         </Button>
 
         <Button
@@ -53,7 +42,7 @@
         >
           <span class="inline-flex items-center gap-1 px-2 text-xs">
             <span>{{ canvasStore.appScalePercentage }}%</span>
-            <i class="icon-[lucide--chevron-down] size-4" aria-hidden="true" />
+            <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
           </span>
         </Button>
 
@@ -73,7 +62,7 @@
           "
           @click="onMinimapToggleClick"
         >
-          <i class="icon-[lucide--map] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--map]" aria-hidden="true" />
         </Button>
 
         <Button
@@ -90,10 +79,11 @@
           :style="stringifiedMinimapStyles.buttonStyles"
           @click="onLinkVisibilityToggleClick"
         >
-          <i class="icon-[lucide--route-off] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--route-off]" aria-hidden="true" />
         </Button>
       </div>
     </div>
+    <ZoomControlsModal :visible="isModalVisible" @close="hideModal" />
   </div>
 </template>
 
@@ -101,15 +91,15 @@
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useZoomControls } from '@/composables/useZoomControls'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import CanvasModeSelector from './CanvasModeSelector.vue'

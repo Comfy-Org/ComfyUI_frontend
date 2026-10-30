@@ -5,33 +5,33 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromAny } from '@total-typescript/shoehorn'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { computed, nextTick, ref } from 'vue'
 import type { PropType } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import {
-  LGraphEventMode,
-  TitleMode
-} from '@/lib/litegraph/src/types/globalEnums'
+import { LGraphEventMode, TitleMode } from '@comfyorg/graph-model/globalEnums'
 import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
+import { toSelectableKey } from '@/core/selection/selectionState'
+import { setSelectedIn } from '@/core/selection/selectionStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -217,6 +217,21 @@ const mockRerouteNodeData: NodeState = {
   title: '',
   type: 'Reroute',
   titleMode: TitleMode.NO_TITLE
+}
+
+function selectMockNode() {
+  const graph: Record<string, unknown> = {
+    id: mockNodeData.graphId,
+    getNodeById: () => null,
+    subgraphs: new Map()
+  }
+  graph.rootGraph = graph
+  useCanvasStore().currentGraph = fromAny(graph)
+  setSelectedIn(
+    graphScopeOf(fromAny(graph)),
+    toSelectableKey('node', mockNodeData.id),
+    true
+  )
 }
 
 describe('LGraphNode', () => {
@@ -427,9 +442,7 @@ describe('LGraphNode', () => {
   })
 
   it('should apply selected styling when selected prop is true', async () => {
-    const canvasStore = useCanvasStore()
-    canvasStore.selectedNodeIds.clear()
-    canvasStore.selectedNodeIds.add(mockNodeData.id)
+    selectMockNode()
 
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)
@@ -635,8 +648,7 @@ describe('LGraphNode', () => {
   })
 
   it('should widen the selection outline rounding when the node has an error', () => {
-    const canvasStore = useCanvasStore()
-    canvasStore.selectedNodeIds.add(mockNodeData.id)
+    selectMockNode()
     useExecutionErrorStore().recordNodeErrors({
       [mockNodeData.id]: nodeError([
         validationError('required_input_missing', 'positive')

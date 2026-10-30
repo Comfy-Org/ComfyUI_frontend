@@ -100,7 +100,44 @@ describe('AgentMessage paywall reply', () => {
     await user.click(screen.getByRole('button', { name: 'Add credits' }))
     await user.click(screen.getByRole('button', { name: 'Upgrade plan' }))
 
-    expect(onPaywallAction.mock.calls).toEqual([['addCredits'], ['upgrade']])
+    expect(onPaywallAction.mock.calls).toEqual([
+      ['addCredits', 'refused_send'],
+      ['upgrade', 'refused_send']
+    ])
+  })
+
+  it('reports a credits pause CTA against the exhaustion surface, not a refused send', async () => {
+    const user = userEvent.setup()
+    const onPaywallAction = vi.fn()
+    render(AgentMessage, {
+      props: {
+        message: {
+          id: toTurnId('msg-paused'),
+          role: 'assistant',
+          parts: [
+            {
+              type: 'paused',
+              askId: 'turn-1:call-paused',
+              prompt: 'Paused until credits are added.',
+              message: 'Paused until credits are added.',
+              reason: 'no_funds',
+              recheckAfterSeconds: 60
+            }
+          ],
+          streaming: false,
+          thinking: false
+        },
+        paywallPresentation: { kind: 'subscribed', showUpgrade: true }
+      },
+      attrs: { onPaywallAction },
+      global: { plugins: [i18n] }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Add credits' }))
+
+    expect(onPaywallAction.mock.calls).toEqual([
+      ['addCredits', 'credits_exhausted']
+    ])
   })
 })
 
@@ -622,7 +659,7 @@ describe('AgentMessage run approval', () => {
     })
 
     expect(
-      screen.getByText('This tool wants to run the workflow:')
+      screen.getByText('Comfy Agent wants to run the workflow:')
     ).toBeInTheDocument()
     expect(screen.getByText('Do you approve?')).toBeInTheDocument()
 
@@ -672,7 +709,7 @@ describe('AgentMessage run approval', () => {
     })
 
     expect(
-      screen.getByText('This tool wants to run this workflow.')
+      screen.getByText('Comfy Agent wants to run this workflow.')
     ).toBeInTheDocument()
     expect(screen.queryByText('Portrait workflow')).not.toBeInTheDocument()
     expect(screen.getByText('Do you approve?')).toBeInTheDocument()

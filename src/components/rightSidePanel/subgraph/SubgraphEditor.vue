@@ -3,7 +3,7 @@ import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 
 import DraggableList from '@/components/common/DraggableList.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import {
   demoteWidget,
@@ -24,12 +24,12 @@ import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import type {
   INodeInputSlot,
   ISubgraphInput
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
+import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
   getPreviewExposureHostLocator,
@@ -337,7 +337,12 @@ onMounted(() => {
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
     <div class="flex gap-2 border-b px-4 pt-1 pb-4">
-      <AsyncSearchInput v-model="searchQuery" />
+      <AsyncSearchInput
+        v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+        :accessible-label="$t('g.search')"
+      />
     </div>
 
     <div class="flex-1">

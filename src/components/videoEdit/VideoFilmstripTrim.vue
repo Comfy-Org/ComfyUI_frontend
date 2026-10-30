@@ -164,10 +164,10 @@
 import { computed, toRef, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useRangeEditor } from '@/composables/useRangeEditor'
 import { useTimelineScrub } from '@/composables/video/useTimelineScrub'
-import type { RangeValue } from '@/lib/litegraph/src/types/widgets'
+import type { RangeValue } from '@comfyorg/graph-model/widgets'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const HANDLE_WIDTH_PX = 16
@@ -201,6 +201,7 @@ const playheadFrame = defineModel<number>('playheadFrame', { required: true })
 
 const emit = defineEmits<{
   scrub: [frame: number]
+  editEnd: []
 }>()
 
 const { t } = useI18n()
@@ -228,7 +229,8 @@ const { startDrag, activeHandle } = useRangeEditor({
   valueMax: frameMax,
   showMidpoint: toRef(() => false),
   contentInsetX,
-  handleCenterOffsetX: toRef(() => HANDLE_WIDTH_PX / 2)
+  handleCenterOffsetX: toRef(() => HANDLE_WIDTH_PX / 2),
+  onEditEnd: () => emit('editEnd')
 })
 
 const scrubMinFrame = computed(() => startFrame.value)

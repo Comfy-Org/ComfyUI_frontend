@@ -5,7 +5,7 @@ import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
@@ -17,8 +17,12 @@ import {
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import {
+  DYNAMIC_COMBO_CLASS,
+  dynamicComboNodeDef
+} from '@e2e/fixtures/data/agent/dynamicComboNode'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { nextFrame } from '@e2e/fixtures/utils/timing'
+import { pinCanvasTransform } from '@e2e/fixtures/utils/pinCanvasTransform'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 /**
@@ -52,26 +56,6 @@ const MESSAGE_ID = 'f18210000-0000-4000-8000-000000000003'
 const THREAD_ID = 'f18210000-0000-4000-8000-000000000004'
 
 /**
- * Fixes the canvas at 1:1 with a small origin offset, so the seed node sits in
- * the top-left corner and there is empty canvas below it to open the node
- * search box over. Pinning it is not optional: `loadIntoBootWorkflow` runs
- * `FitView`, whose zoom depends on how much graph there is, and a single seed
- * node fits by filling the viewport — a hard-coded screen point then lands on
- * the seed node's own `seed` widget instead of empty canvas. Related, and
- * worth reading before trusting any coordinate here:
- * `docs/env-and-harness-traps.md` on the default-graph viewport.
- */
-async function pinCanvasTransform(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const canvas = window.app!.canvas
-    canvas.ds.scale = 1
-    canvas.ds.offset = [40, 40]
-    canvas.setDirty(true, true)
-  })
-  await nextFrame(page)
-}
-
-/**
  * A screen point that is empty canvas: directly below the seed node, which the
  * pinned transform parks in the top-left corner. Measured rather than
  * hard-coded, and checked against the node's own box, so this fails loudly
@@ -97,33 +81,12 @@ async function emptyCanvasPointBelow(
   return point
 }
 
-/**
- * `CLIPTextEncode` is the class the person adds and the host refuses;
- * `KSampler` seeds both the canvas and the document so the refusal can be
- * shown to remove the added node and nothing else.
- */
-const ADDED_CLASS = 'CLIPTextEncode'
+const ADDED_CLASS = DYNAMIC_COMBO_CLASS
 const SEED_CLASS = 'KSampler'
 const SEED_NODE_ID = '1'
 
 const nodeDefs: Record<string, ComfyNodeDef> = {
-  [ADDED_CLASS]: {
-    name: ADDED_CLASS,
-    display_name: 'CLIP Text Encode',
-    description: '',
-    category: 'conditioning',
-    python_module: 'nodes',
-    output_node: false,
-    input: {
-      required: {
-        clip: ['CLIP', { forceInput: true }],
-        text: ['STRING', { default: '', multiline: true }]
-      }
-    },
-    output: ['CONDITIONING'],
-    output_is_list: [false],
-    output_name: ['CONDITIONING']
-  },
+  [ADDED_CLASS]: dynamicComboNodeDef,
   [SEED_CLASS]: {
     name: SEED_CLASS,
     display_name: 'KSampler',
@@ -147,18 +110,6 @@ const nodeDefs: Record<string, ComfyNodeDef> = {
   }
 }
 
-/**
- * The host's catalog describes `KSampler` and NOT `CLIPTextEncode`. That is
- * not a contrived gap: the widget catalog is a sha256-pinned projection of
- * one `object_info` (KEEP-ALIVE 12, pinned at mint via `meta.catalog_version`),
- * so a browser talking to a newer server can create a class the pinned catalog
- * has never described. `wireNodeSnapshot` mints NAME-KEYED `widgets_values`
- * for any non-virtual class, and the real applier refuses a name-keyed payload
- * it cannot project — `uncatalogued_widget_write`, raised by
- * `rejectUnprojectableWidgets`, because accepting it would make the whole
- * document unprojectable on every later read. No wire frame is fabricated
- * here; the verdict below is the applier's own.
- */
 const catalog: WidgetCatalog = {
   types: { [SEED_CLASS]: { widget_order: ['seed', 'steps'] } }
 }

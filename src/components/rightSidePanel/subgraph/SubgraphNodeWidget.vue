@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ClassValue } from '@comfyorg/tailwind-utils'
 
@@ -63,10 +63,11 @@ const icon = computed(() =>
     >
       <i :class="icon" :data-testid="isPhysical ? 'icon-link' : 'icon-eye'" />
     </Button>
-    <div
+    <i
       v-if="isDraggable"
+      aria-hidden="true"
       data-testid="subgraph-widget-drag-handle"
-      class="pointer-events-none icon-[lucide--grip-vertical] size-4"
+      class="pointer-events-none icon-[lucide--grip-vertical]"
     />
   </div>
 </template>

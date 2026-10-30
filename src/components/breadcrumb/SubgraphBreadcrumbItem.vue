@@ -34,7 +34,7 @@
       >
         {{ t('breadcrumbsMenu.blueprint') }}
       </Badge>
-      <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
+      <i v-if="isActive" class="icon-[lucide--chevron-down] size-2.5"></i>
     </Button>
   </DefineTrigger>
   <Menu
@@ -53,7 +53,7 @@
     ref="itemInputRef"
     v-model="itemLabel"
     data-testid="subgraph-breadcrumb-rename-input"
-    class="fixed z-10000 w-50 p-2 text-[.8rem]"
+    class="fixed z-overlay w-50 p-2 text-[.8rem]"
     @blur="inputBlur(false)"
     @click.stop
     @keydown.enter="inputBlur(true)"
@@ -67,11 +67,11 @@ import { createReusableTemplate } from '@vueuse/core'
 import { computed, nextTick, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItemAction } from '@/components/ui/menu/types'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItemAction } from '@comfyorg/design-system/lib/menu/types'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -80,12 +80,12 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
-import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
+import { graphHasMissingNodes } from '@/platform/customNodes/manager/utils/graphHasMissingNodes'
 
 export interface BreadcrumbItem extends MenuItemAction {
   isBlueprint?: boolean

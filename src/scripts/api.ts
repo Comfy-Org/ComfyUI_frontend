@@ -2,6 +2,7 @@ import type {
   GetEmbeddingsResponse,
   GetExtensionsResponse,
   GetI18nResponse,
+  ModelDownloadData,
   PostAssetsFromWorkflowResponse
 } from '@comfyorg/ingest-types'
 import {
@@ -34,9 +35,9 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { components as ManagerComponents } from '@/platform/customNodes/manager/types/generatedManagerTypes'
 import type {
   AgentStatusWsMessage,
   AssetDownloadWsMessage,
@@ -74,8 +75,8 @@ import type {
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/workflowSchema'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   JobAssetsResult,
   JobDetail,
@@ -83,7 +84,11 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { getFetchRouteTemplate } from '@/utils/fetchRouteTemplate'
+import { retryingSend } from '@/utils/fetchWithRetry'
+import { NO_RETRY_POLICY } from '@/utils/retryPolicy'
+import type { RetryPolicy } from '@/utils/retryPolicy'
 import {
   fetchHistory,
   fetchJobAssets,
@@ -154,52 +159,8 @@ interface FetchApiOptions extends RequestInit {
   onAuthScheme?: (scheme: AuthScheme) => void
   /** Reports the kind of credential sent, to tell a missing token from a wrong one. */
   onAuthCredential?: (credential: AuthCredential) => void
-}
-
-const FETCH_ROUTE_GROUPS = new Set([
-  'assets',
-  'embeddings',
-  'experiment',
-  'extensions',
-  'features',
-  'files',
-  'folder_paths',
-  'free',
-  'global_subgraphs',
-  'history',
-  'hub',
-  'internal',
-  'interrupt',
-  'jobs',
-  'logs',
-  'models',
-  'node_replacements',
-  'object_info',
-  'prompt',
-  'providers',
-  'queue',
-  'secrets',
-  'settings',
-  'system_stats',
-  'upload',
-  'user',
-  'userdata',
-  'users',
-  'video_metadata',
-  'view',
-  'view_metadata',
-  'workflow_templates',
-  'workflows',
-  'workspace'
-])
-
-function getFetchRouteTemplate(route: string): string {
-  const segments = (route.split(/[?#]/)[0] ?? '').split('/').filter(Boolean)
-  const routeSegments = segments[0] === 'api' ? segments.slice(1) : segments
-  const [routeGroup, ...resources] = routeSegments
-
-  if (!routeGroup || !FETCH_ROUTE_GROUPS.has(routeGroup)) return '/other'
-  return `/${routeGroup}${resources.length ? '/:resource' : ''}`
+  /** Send once, for callers that already retry on their own backoff. */
+  skipStatusRetry?: boolean
 }
 
 /**
@@ -271,6 +232,7 @@ interface BackendApiCalls {
   feature_flags: FeatureFlagsWsMessage
   agent_status: AgentStatusWsMessage
   asset_download: AssetDownloadWsMessage
+  model_download: ModelDownloadData
   asset_export: AssetExportWsMessage
   'assets.seed.completed': AssetSeedCompletedWsMessage
 }
@@ -288,6 +250,28 @@ interface ApiMessage<T extends keyof ApiCalls> {
 }
 
 export class UnauthorizedError extends Error {}
+
+const CLIENT_ID_STORAGE_KEY = 'clientId'
+
+let reportedClientIdStorageFailure = false
+
+function withClientIdStorage<T>(
+  access: (storage: Storage) => T
+): T | undefined {
+  try {
+    return access(window.sessionStorage)
+  } catch (cause) {
+    if (!reportedClientIdStorageFailure) {
+      reportedClientIdStorageFailure = true
+      reportError(cause, {
+        errorType: 'failure_accessing_client_id_storage',
+        surface: 'platform',
+        level: 'warning'
+      })
+    }
+    return undefined
+  }
+}
 
 /** Ensures workers get a fair shake. */
 type Unionize<T> = T[keyof T]
@@ -369,13 +353,13 @@ function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
 export interface ComfyApi extends EventTarget {
   addEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
-    callback: ((event: ApiEvents[TEvent]) => void) | null,
+    callback: ((event: ApiEvents[TEvent]) => void) | EventListenerObject | null,
     options?: AddEventListenerOptions | boolean
   ): void
 
   removeEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
-    callback: ((event: ApiEvents[TEvent]) => void) | null,
+    callback: ((event: ApiEvents[TEvent]) => void) | EventListenerObject | null,
     options?: EventListenerOptions | boolean
   ): void
 }
@@ -423,6 +407,23 @@ export class PromptExecutionError extends Error {
   }
 }
 
+interface LaunchContext {
+  host: string
+  base: string
+  initialClientId: string | null
+}
+
+function readLaunchContext(): LaunchContext {
+  return {
+    host: location.host,
+    base: isCloud ? '' : location.pathname.split('/').slice(0, -1).join('/'),
+    initialClientId:
+      withClientIdStorage((storage) =>
+        storage.getItem(CLIENT_ID_STORAGE_KEY)
+      ) ?? null
+  }
+}
+
 export class ComfyApi extends EventTarget {
   private _registered = new Set()
   /**
@@ -434,12 +435,7 @@ export class ComfyApi extends EventTarget {
     EventListenerOrEventListenerObject,
     EventListener
   >()
-  api_host: string
-  api_base: string
-  /**
-   * The client id from the initial session storage.
-   */
-  initialClientId: string | null
+  private launchContext?: LaunchContext
   /**
    * The current client id from websocket status updates.
    */
@@ -459,6 +455,7 @@ export class ComfyApi extends EventTarget {
    * identity always wins and superseded attempts never open a leaked socket.
    */
   private socketGeneration = 0
+  private socketRetryDelayMs = 1_000
 
   private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
@@ -509,11 +506,44 @@ export class ComfyApi extends EventTarget {
   constructor() {
     super()
     this.user = ''
-    this.api_host = location.host
-    this.api_base = isCloud
-      ? ''
-      : location.pathname.split('/').slice(0, -1).join('/')
-    this.initialClientId = sessionStorage.getItem('clientId')
+  }
+
+  /**
+   * Snapshots the page host, base path, and stored client id. Runs on first
+   * use; the bootstrap calls it before routing can change the location.
+   */
+  captureLaunchContext(): void {
+    this.launchContext ??= readLaunchContext()
+  }
+
+  private get capturedLaunchContext(): LaunchContext {
+    this.launchContext ??= readLaunchContext()
+    return this.launchContext
+  }
+
+  get api_host(): string {
+    return this.capturedLaunchContext.host
+  }
+
+  set api_host(host: string) {
+    this.launchContext = { ...this.capturedLaunchContext, host }
+  }
+
+  get api_base(): string {
+    return this.capturedLaunchContext.base
+  }
+
+  set api_base(base: string) {
+    this.launchContext = { ...this.capturedLaunchContext, base }
+  }
+
+  /** The client id from the initial session storage. */
+  get initialClientId(): string | null {
+    return this.capturedLaunchContext.initialClientId
+  }
+
+  set initialClientId(initialClientId: string | null) {
+    this.launchContext = { ...this.capturedLaunchContext, initialClientId }
   }
 
   internalURL(route: string): string {
@@ -546,11 +576,16 @@ export class ComfyApi extends EventTarget {
     this.authProvider = provider
   }
 
-  private async getWebSessionSend(): Promise<WebSessionSend | undefined> {
+  private async getWebSessionSend(
+    retryPolicy?: RetryPolicy
+  ): Promise<WebSessionSend | undefined> {
     const requests = webSessionRequests()
     if (!requests) return undefined
     const scope = await requests.scope()
-    return scope && ((url, init) => requests.send(url, init, scope))
+    return (
+      scope &&
+      retryingSend((url, init) => requests.send(url, init, scope), retryPolicy)
+    )
   }
 
   /** Sends a same-origin request on the web session; undefined when this tab is not on it. */
@@ -602,15 +637,17 @@ export class ComfyApi extends EventTarget {
       onAuthHeader,
       onAuthScheme,
       onAuthCredential,
+      skipStatusRetry,
       ...requestOptions
     } = options ?? {}
+    const retryPolicy = skipStatusRetry ? NO_RETRY_POLICY : undefined
     const headers: HeadersInit = requestOptions.headers ?? {}
     let unifiedRetryOn401 = false
     let sendOnWebSession: WebSessionSend | undefined
 
     if (isCloud) {
       await this.authProvider.waitForInitialization()
-      sendOnWebSession = await this.getWebSessionSend()
+      sendOnWebSession = await this.getWebSessionSend(retryPolicy)
       if (sendOnWebSession) {
         onAuthHeader?.(true)
         onAuthScheme?.('web-session')
@@ -710,7 +747,8 @@ export class ComfyApi extends EventTarget {
           this.apiURL(route),
           init,
           unifiedRetryOn401,
-          retrySignalLifecycle
+          retrySignalLifecycle,
+          retryPolicy
         )
     return response.finally(() => {
       if (timeoutId !== undefined) clearTimeout(timeoutId)
@@ -782,13 +820,12 @@ export class ComfyApi extends EventTarget {
 
   override addEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
-    callback: ((event: ApiEvents[TEvent]) => void) | null,
+    callback: ((event: ApiEvents[TEvent]) => void) | EventListenerObject | null,
     options?: AddEventListenerOptions | boolean
   ) {
-    // Type assertion: strictFunctionTypes.  So long as we emit events in a type-safe fashion, this is safe.
     super.addEventListener(
       type,
-      this.wrapListener(callback as EventListener),
+      this.wrapListener(callback as EventListenerOrEventListenerObject | null),
       options
     )
     this._registered.add(type)
@@ -796,12 +833,14 @@ export class ComfyApi extends EventTarget {
 
   override removeEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
-    callback: ((event: ApiEvents[TEvent]) => void) | null,
+    callback: ((event: ApiEvents[TEvent]) => void) | EventListenerObject | null,
     options?: EventListenerOptions | boolean
   ): void {
     super.removeEventListener(
       type,
-      this.getWrappedListener(callback as EventListener),
+      this.getWrappedListener(
+        callback as EventListenerOrEventListenerObject | null
+      ),
       options
     )
   }
@@ -895,20 +934,16 @@ export class ComfyApi extends EventTarget {
     return (await this.addSocketAuth(params)) ? params : null
   }
 
-  /**
-   * Creates and connects a WebSocket for realtime updates
-   * @param {boolean} isReconnect If the socket is connection is a reconnect attempt
-   */
   private async createSocket(isReconnect?: boolean) {
     if (this.socket) {
       return
     }
+    if (!isReconnect) this.socketRetryDelayMs = 1_000
     const generation = ++this.socketGeneration
 
     let opened = false
     const existingSession = window.name
 
-    // Build WebSocket URL with query parameters
     const params = new URLSearchParams()
 
     if (existingSession) {
@@ -916,15 +951,14 @@ export class ComfyApi extends EventTarget {
     }
 
     if (isCloud && !(await this.addSocketAuth(params))) return
+    const sessionRequests =
+      isCloud && !params.has('token') ? webSessionRequests() : undefined
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 
-    // A newer connect attempt (an identity reset, or a later reconnect) began
-    // while this one awaited its token. Abandon this attempt so only the latest
-    // generation owns this.socket and no superseded socket is opened.
     if (generation !== this.socketGeneration) return
 
     const socket = new WebSocket(wsUrl)
@@ -932,7 +966,6 @@ export class ComfyApi extends EventTarget {
     this.serverFeatureFlagsSettled.value = false
     socket.binaryType = 'arraybuffer'
 
-    // Armed before `open` so a socket that never opens still settles.
     const settleTimer = setTimeout(() => {
       if (this.socket === socket && !this.serverFeatureFlagsSettled.value) {
         this.serverFeatureFlagsSettled.value = true
@@ -940,9 +973,10 @@ export class ComfyApi extends EventTarget {
     }, SERVER_FEATURE_FLAGS_TIMEOUT_MS)
 
     socket.addEventListener('open', () => {
+      if (this.socket !== socket) return
       opened = true
+      this.socketRetryDelayMs = 1_000
 
-      // Send feature flags as the first message
       socket.send(
         JSON.stringify({
           type: 'feature_flags',
@@ -956,27 +990,31 @@ export class ComfyApi extends EventTarget {
     })
 
     socket.addEventListener('error', () => {
-      // A replaced socket (e.g. after resetSocket on an account switch) is
-      // already being torn down; ignore its late errors so it cannot start an
-      // unnecessary permanent polling loop for the previous identity.
       if (this.socket !== socket) return
       socket.close()
-      if (!isReconnect && !opened) {
+      if (!sessionRequests && !isReconnect && !opened) {
         this._pollQueue()
       }
     })
 
     socket.addEventListener('close', () => {
-      // A replaced socket (e.g. after resetSocket on an account switch) must
-      // not reconnect; only the active socket owns the reconnect lifecycle.
       if (this.socket !== socket) return
       this.serverFeatureFlagsSettled.value = true
       clearTimeout(settleTimer)
+      const recoverSession = sessionRequests && !opened
+      const delayMs = recoverSession ? this.socketRetryDelayMs : 300
+      if (recoverSession) {
+        this.socketRetryDelayMs = Math.min(delayMs * 2, 60_000)
+      }
       setTimeout(async () => {
         if (this.socket !== socket) return
+        if (recoverSession) {
+          await sessionRequests.refreshSession()
+          if (this.socket !== socket) return
+        }
         this.socket = null
         await this.createSocket(true)
-      }, 300)
+      }, delayMs)
       if (opened) {
         this.dispatchCustomEvent('status', null)
         this.dispatchCustomEvent('reconnecting')
@@ -984,8 +1022,6 @@ export class ComfyApi extends EventTarget {
     })
 
     socket.addEventListener('message', (event) => {
-      // Ignore late messages from a replaced socket so previous-account
-      // realtime data is not dispatched after an identity switch.
       if (this.socket !== socket) return
       try {
         if (event.data instanceof ArrayBuffer) {
@@ -1042,7 +1078,6 @@ export class ComfyApi extends EventTarget {
               break
             }
             case 4: {
-              // PREVIEW_IMAGE_WITH_METADATA
               const decoder4 = new TextDecoder()
               const metadataLength = view.getUint32(4)
               const metadataBytes = event.data.slice(8, 8 + metadataLength)
@@ -1055,7 +1090,6 @@ export class ComfyApi extends EventTarget {
                 type: imageMime4
               })
 
-              // Dispatch enhanced preview event with metadata
               this.dispatchCustomEvent('b_preview_with_metadata', {
                 blob: imageBlob4,
                 nodeId: metadata.node_id,
@@ -1065,7 +1099,6 @@ export class ComfyApi extends EventTarget {
                 jobId: metadata.prompt_id
               })
 
-              // Also dispatch legacy b_preview for backward compatibility
               this.dispatchCustomEvent('b_preview', imageBlob4)
               break
             }
@@ -1082,8 +1115,10 @@ export class ComfyApi extends EventTarget {
               if (msg.data.sid) {
                 const clientId = msg.data.sid
                 this.clientId = clientId
-                window.name = clientId // use window name so it isn't reused when duplicating tabs
-                sessionStorage.setItem('clientId', clientId) // store in session storage so duplicate tab can load correct workflow
+                window.name = clientId
+                withClientIdStorage((storage) =>
+                  storage.setItem(CLIENT_ID_STORAGE_KEY, clientId)
+                )
               }
               this.dispatchCustomEvent('status', msg.data.status ?? null)
               break
@@ -1128,7 +1163,6 @@ export class ComfyApi extends EventTarget {
               break
             default:
               if (this._registered.has(msg.type)) {
-                // Fallback for custom types - calls super direct.
                 super.dispatchEvent(
                   new CustomEvent(msg.type, { detail: msg.data })
                 )
@@ -1158,12 +1192,9 @@ export class ComfyApi extends EventTarget {
    * events over a handshake that was authenticated as that account.
    */
   async resetSocket(): Promise<void> {
-    // Clear every handshake identity source: createSocket() reads the client id
-    // from window.name (mirrored in session storage), not this.clientId, so the
-    // next connect must not inherit the prior account's id.
     this.clientId = undefined
     window.name = ''
-    sessionStorage.removeItem('clientId')
+    withClientIdStorage((storage) => storage.removeItem(CLIENT_ID_STORAGE_KEY))
     const { agent: _previousAgent, ...features } = this.serverFeatureFlags.value
     this.serverFeatureFlags.value = features
     await this.replaceSocket()
@@ -1261,9 +1292,27 @@ export class ComfyApi extends EventTarget {
    * Loads node object definitions for the graph
    * @returns The node definitions
    */
+  private nodeDefsPrefetch?: Promise<Response>
+
+  /** Start fetching `/object_info` so the next `getNodeDefs()` can reuse it. */
+  prefetchNodeDefs(): void {
+    this.nodeDefsPrefetch ??= this.fetchApi('/object_info', {
+      cache: 'no-store'
+    })
+    this.nodeDefsPrefetch.catch(() => undefined)
+  }
+
+  /** The `/object_info` response, the prefetched one when there is one, whatever its HTTP status. */
+  async fetchNodeDefs(): Promise<Response> {
+    const prefetched = this.nodeDefsPrefetch
+    this.nodeDefsPrefetch = undefined
+    const fetchFresh = () =>
+      this.fetchApi('/object_info', { cache: 'no-store' })
+    return await (prefetched?.catch(fetchFresh) ?? fetchFresh())
+  }
+
   async getNodeDefs(): Promise<Record<string, ComfyNodeDef>> {
-    const resp = await this.fetchApi('/object_info', { cache: 'no-store' })
-    return await resp.json()
+    return await (await this.fetchNodeDefs()).json()
   }
 
   /**
@@ -1466,8 +1515,11 @@ export class ComfyApi extends EventTarget {
    * @param jobId The job ID
    * @returns Full job details or undefined if not found
    */
-  async getJobDetail(jobId: string): Promise<JobDetail | undefined> {
-    return fetchJobDetail(this.fetchApi.bind(this), jobId)
+  async getJobDetail(
+    jobId: string,
+    signal?: AbortSignal
+  ): Promise<JobDetail | undefined> {
+    return fetchJobDetail(this.fetchApi.bind(this), jobId, signal)
   }
 
   /**
@@ -1610,8 +1662,10 @@ export class ComfyApi extends EventTarget {
    * Gets all setting values for the current user
    * @returns { Promise<string, unknown> } A dictionary of id -> value
    */
-  async getSettings(): Promise<Settings> {
-    const resp = await this.fetchApi('/settings')
+  async getSettings(
+    options?: Pick<FetchApiOptions, 'skipStatusRetry'>
+  ): Promise<Settings> {
+    const resp = await this.fetchApi('/settings', options)
 
     if (resp.status == 401) {
       // `statusText` is ALWAYS empty over HTTP/2 — the protocol carries no
@@ -1650,10 +1704,15 @@ export class ComfyApi extends EventTarget {
   /**
    * Stores a setting for the current user
    */
-  async storeSetting(id: keyof Settings, value: Settings[keyof Settings]) {
+  async storeSetting(
+    id: keyof Settings,
+    value: Settings[keyof Settings],
+    options?: Pick<RequestInit, 'keepalive'>
+  ) {
     return this.fetchApi(`/settings/${encodeURIComponent(id)}`, {
       method: 'POST',
-      body: JSON.stringify(value)
+      body: JSON.stringify(value),
+      ...options
     })
   }
 

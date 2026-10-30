@@ -8,7 +8,7 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 
 import { useLitegraphSettings } from './useLitegraphSettings'

@@ -43,8 +43,8 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { invalidateRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { reportError } from '@/platform/telemetry/reportError'
-import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -676,6 +676,14 @@ export const useAuthStore = defineStore('auth', () => {
     return authHeader
   }
 
+  const getWorkspaceAuthTokenOrThrow = async (): Promise<string> => {
+    const token = await getWorkspaceAuthToken()
+    if (!token) {
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+    return token
+  }
+
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     if (!hasPersonalWorkspace.value) return null
     isFetchingBalance.value = true
@@ -705,14 +713,16 @@ export const useAuthStore = defineStore('auth', () => {
           // Customer not found is expected for new users
           return null
         }
-        const { message } = await parseErrorResponse(response)
+        const { message, code } = await parseErrorResponse(response)
         if (!requestIsCurrent()) {
           return null
         }
         throw new AuthStoreError(
           t('toastMessages.failedToFetchBalance', {
             error: message
-          })
+          }),
+          response.status,
+          code
         )
       }
 
@@ -1183,6 +1193,7 @@ export const useAuthStore = defineStore('auth', () => {
     getWorkspaceAuthHeaderOrThrow,
     getAuthToken,
     getWorkspaceAuthToken,
+    getWorkspaceAuthTokenOrThrow,
     notifyTokenRefreshed
   }
 })

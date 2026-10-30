@@ -50,7 +50,7 @@ jobs:
           path: ${{ env.LINT_CACHE_PATHS }}
 
       - name: Run ESLint with auto-fix
-        run: pnpm lint:fix:ci
+        run: pnpm lint:fix
 
       - name: Run Stylelint with auto-fix
         run: pnpm stylelint:fix
@@ -61,7 +61,17 @@ jobs:
       - name: Verify architecture contracts
         id: architecture
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && hashFiles('tools/architecture/src/cli.ts') != '' }}
-        run: pnpm architecture:check --report "$RUNNER_TEMP/architecture-findings.md"
+        # PR heads branched before --report existed reject it; drop the fallback once those have rebased.
+        run: |
+          findings="$RUNNER_TEMP/architecture-findings.md"
+          probe=$(GITHUB_ACTIONS= pnpm --silent architecture:check --report= 2>&1 || true)
+          if grep -q -- '--report requires a file path' <<< "$probe"; then
+            pnpm architecture:check --report "$findings"
+          else
+            echo "::warning::This PR head's architecture CLI predates --report; rebase onto main to get findings in the PR report."
+            echo 'Findings are in the workflow run log and annotations; this PR head predates `--report`.' > "$findings"
+            pnpm architecture:check
+          fi
 
       - name: Check server facts on changed lines
         env:
@@ -123,13 +133,13 @@ jobs:
           path: ${{ env.LINT_CACHE_PATHS }}
 
       - name: Explain architecture verdict
-        if: ${{ !cancelled() && steps.architecture.outcome != 'skipped' }}
+        if: ${{ !cancelled() }}
         uses: ./.github/actions/explain-check
         with:
           slug: architecture
           title: Architecture
           icon: '🏛️'
-          status: ${{ steps.architecture.outcome == 'success' && 'pass' || 'fail' }}
+          status: ${{ steps.architecture.outcome == 'skipped' && 'withheld' || steps.architecture.outcome == 'success' && 'pass' || 'fail' }}
           details-file: ${{ runner.temp }}/architecture-findings.md
           reproduce: pnpm architecture:check
           docs: '[Frontend domain catalog](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.event.pull_request.head.sha }}/docs/architecture/domains/README.md)'
@@ -204,3 +214,7 @@ jobs:
 
       - name: Verify knip, locale integrity and ADR naming
         uses: ./.github/actions/repo-checks
+
+      - name: Prevent untracked expected failures
+        continue-on-error: true
+        run: pnpm test:expected-failure-ratchet

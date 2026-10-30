@@ -110,33 +110,45 @@
           "
         />
       </Button>
+      <WidgetHistoryButtons
+        class="ml-auto"
+        :can-undo
+        :can-redo
+        @undo="undo"
+        @redo="redo"
+      />
     </div>
 
     <WidgetBoundingBox
       v-model="effectiveBounds"
       :disabled="isDisabled"
       class="shrink-0"
+      @edit-end="commitAfterUpdate"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+import { computed, nextTick, useTemplateRef } from 'vue'
 
 import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
+import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
 import { ASPECT_RATIOS, useImageCrop } from '@/composables/useImageCrop'
 import {
   boundsExtractor,
   useUpstreamValue
 } from '@/composables/useUpstreamValue'
-import type { Bounds } from '@/renderer/core/layout/types'
-import type { NodeId } from '@/types/nodeId'
+import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
+import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -166,6 +178,18 @@ const effectiveBounds = computed({
   }
 })
 
+const { canUndo, canRedo, undo, redo, commit } = useWidgetValueHistory({
+  scope: () => widgetHistoryScope(widget, nodeId),
+  read: () => modelValue.value,
+  apply: (value) => {
+    if (isBoundsObject(value)) modelValue.value = value
+  }
+})
+
+function commitAfterUpdate(mergeKey?: string) {
+  void nextTick(() => commit(mergeKey))
+}
+
 const imageEl = useTemplateRef<HTMLImageElement>('imageEl')
 const containerEl = useTemplateRef<HTMLDivElement>('containerEl')
 
@@ -189,5 +213,10 @@ const {
   handleResizeStart,
   handleResizeMove,
   handleResizeEnd
-} = useImageCrop(nodeId, { imageEl, containerEl, modelValue: effectiveBounds })
+} = useImageCrop(nodeId, {
+  imageEl,
+  containerEl,
+  modelValue: effectiveBounds,
+  onEditEnd: () => commitAfterUpdate()
+})
 </script>
