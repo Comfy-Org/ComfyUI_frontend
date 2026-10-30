@@ -17,13 +17,14 @@
           {{ $t('deployToComfyApi.copied') }}
         </template>
         <template v-else>
-          <LocalAgentMarks />
+          <LocalAgentMarks v-if="localAgent.isOffered" />
+          <DesktopAgentMarks v-else />
           {{ $t('deployToComfyApi.deployWithAgent') }}
         </template>
         <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
       </Button>
     </template>
-    <MenuItem @select="startLocalAgent">
+    <MenuItem v-if="localAgent.isOffered" @select="startLocalAgent">
       <i class="icon-[lucide--astroid]" aria-hidden="true" />
       {{ $t('openOnCloud.agentMenu.useLocalAgent') }}
     </MenuItem>
@@ -51,6 +52,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import { useToast } from '@/components/ui/toast/toastStore'
+import DesktopAgentMarks from '@/platform/openOnCloud/components/DesktopAgentMarks.vue'
 import LocalAgentMarks from '@/platform/openOnCloud/components/LocalAgentMarks.vue'
 import { useLocalAgentStore } from '@/platform/openOnCloud/stores/localAgentStore'
 import AgentMark from '@/platform/workflow/deploy/components/AgentMark.vue'

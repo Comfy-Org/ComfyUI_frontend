@@ -88,22 +88,35 @@ describe('DeploySetupCard', () => {
     expect(onDone).toHaveBeenCalledOnce()
   })
 
-  it('offers four ways to hand the setup to an agent', async () => {
-    const { user } = renderCard()
+  it.for([
+    {
+      agent: 'found',
+      rows: [
+        'Use local agent',
+        'Open in Claude desktop',
+        'Open in ChatGPT desktop',
+        'Copy prompt'
+      ]
+    },
+    {
+      agent: 'hidden',
+      rows: ['Open in Claude desktop', 'Open in ChatGPT desktop', 'Copy prompt']
+    }
+  ] as const)(
+    'offers these ways to hand the setup to an agent when the local agent is $agent',
+    async ({ agent, rows }) => {
+      useLocalAgentStore().prototypeAgent = agent
+      const { user } = renderCard()
 
-    await user.click(screen.getByTestId('deploy-setup-agent'))
+      await user.click(screen.getByTestId('deploy-setup-agent'))
 
-    expect(
-      (await screen.findAllByRole('menuitem')).map((row) =>
-        row.textContent.trim()
-      )
-    ).toEqual([
-      'Use local agent',
-      'Open in Claude desktop',
-      'Open in ChatGPT desktop',
-      'Copy prompt'
-    ])
-  })
+      expect(
+        (await screen.findAllByRole('menuitem')).map((row) =>
+          row.textContent.trim()
+        )
+      ).toEqual(rows)
+    }
+  )
 
   it('copies the brief, then says so on the button and stays open', async () => {
     const { onDone, user } = renderCard()

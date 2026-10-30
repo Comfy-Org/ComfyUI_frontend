@@ -41,6 +41,9 @@
           <ToggleGroupItem value="notFound" size="sm" class="px-2.5">
             {{ $t('openOnCloud.prototype.agentNotFound') }}
           </ToggleGroupItem>
+          <ToggleGroupItem value="hidden" size="sm" class="px-2.5">
+            {{ $t('openOnCloud.prototype.agentHidden') }}
+          </ToggleGroupItem>
         </ToggleGroup>
       </div>
       <div class="grid grid-cols-2 gap-1.5">

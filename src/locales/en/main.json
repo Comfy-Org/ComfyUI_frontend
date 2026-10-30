@@ -4185,6 +4185,7 @@
       "localAgent": "Local agent",
       "agentFound": "Found",
       "agentNotFound": "Not found",
+      "agentHidden": "Hidden",
       "resetUpload": "Reset upload",
       "simulateOutOfMemory": "Simulate out of memory"
     },
