@@ -29,10 +29,8 @@ import {
 /** Long enough for any panel layout to settle; a target still absent is a regression. */
 const TARGET_MISSING_AFTER_MS = 8000
 const COACH_HOVER_ATTRIBUTE = 'data-coach-hover'
-/** How long a click outside the card keeps it highlighted. */
 const NUDGE_MS = 1200
-/** Keeps the arrow off the card's rounded corners. */
-const ARROW_PADDING = 20
+const ARROW_CORNER_CLEARANCE = 20
 
 const { steps, storageKey, holdNotice } = defineProps<{
   steps: CoachStep[]
@@ -220,7 +218,6 @@ const middleware = computed<Middleware[]>(() => {
   return [...result, shift({ padding: 8, crossAxis: true })]
 })
 
-// Only side-placed cards sit next to their target; the canvas card sits on it.
 const pointsAtTarget = computed(() => step.value?.placement.startsWith('left'))
 
 const { floatingStyles, isPositioned, middlewareData } = useFloating(
@@ -237,34 +234,36 @@ const { floatingStyles, isPositioned, middlewareData } = useFloating(
           : 'left-start',
     middleware: () => [
       ...middleware.value,
-      arrow({ element: arrowElement, padding: ARROW_PADDING })
+      arrow({ element: arrowElement, padding: ARROW_CORNER_CLEARANCE })
     ],
     whileElementsMounted: autoUpdate
   }
 )
 
 const arrowStyle = computed(() => {
-  const y = middlewareData.value.arrow?.y
-  return y === undefined ? { opacity: 0 } : { top: `${y}px` }
+  const { arrow: arrowData, shift: shiftData } = middlewareData.value
+  const besideTarget = !shiftData?.x
+  const reachesTargetCenter = arrowData?.centerOffset === 0
+  return arrowData?.y !== undefined && besideTarget && reachesTargetCenter
+    ? { top: `${arrowData.y}px` }
+    : { visibility: 'hidden' as const }
 })
 
-// The arrow shares the card's border so it reads as part of the card.
 const cardBorderClass = computed(() =>
   index.value < 2 ? 'border-secondary' : 'border-smoke-500/20'
 )
 
-// The scrim swallows clicks so the tour stays modal. A user looking at the
-// highlighted panel otherwise clicks it with no response, so point them at the
-// card instead.
 const nudged = ref(false)
-const { start: startNudgeTimer } = useTimeoutFn(
+const { start: startNudgeTimer, stop: stopNudgeTimer } = useTimeoutFn(
   () => (nudged.value = false),
   NUDGE_MS,
   { immediate: false }
 )
-async function nudgeCard(): Promise<void> {
+watch([index, active], () => {
+  stopNudgeTimer()
   nudged.value = false
-  await nextTick()
+})
+function nudgeCard(): void {
   nudged.value = true
   startNudgeTimer()
   const action = primaryAction.value

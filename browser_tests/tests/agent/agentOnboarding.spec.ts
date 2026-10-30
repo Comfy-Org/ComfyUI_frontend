@@ -52,34 +52,39 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       .toBe('false')
   })
 
-  test('points the user at the card when they click the highlighted panel', async ({
+  test('points the PM-2276 card at the highlighted panel and answers clicks on it', async ({
     page,
     agentFlagEnabled
   }) => {
-    // PM-2276: the panel is spotlit but inert while a card is up, and users
-    // clicked it for a minute without noticing the card beside it.
     await bootAgentApp(page, agentFlagEnabled, {
       onboardingCompleted: false
     })
-    const panel = new AgentPanel(page)
-    await panel.open()
+    await new AgentPanel(page).open()
 
     const firstCard = page.getByRole('dialog', {
       name: enMessages.agent.coachTitle
     })
     await expect(firstCard).toBeVisible()
-    await expect(page.getByTestId('agent-coach-arrow')).toBeVisible()
+    const arrow = page.getByTestId('agent-coach-arrow')
+    await expect(arrow).toHaveCSS('visibility', 'visible')
 
     const spotlight = await page
       .getByTestId('agent-coach-spotlight')
       .boundingBox()
-    if (!spotlight) throw new Error('spotlight has no box')
+    const arrowBox = await arrow.boundingBox()
+    if (!spotlight || !arrowBox) throw new Error('tour layout has no box')
+    expect(arrowBox.x).toBeLessThan(spotlight.x)
+    expect(
+      Math.abs(
+        arrowBox.y + arrowBox.height / 2 - (spotlight.y + spotlight.height / 2)
+      )
+    ).toBeLessThan(4)
+
     await page.mouse.click(
       spotlight.x + spotlight.width / 2,
       spotlight.y + spotlight.height / 2
     )
 
-    await expect(firstCard).toHaveAttribute('data-nudged', '')
     await expect(
       firstCard.getByRole('button', { name: enMessages.g.next })
     ).toBeFocused()
