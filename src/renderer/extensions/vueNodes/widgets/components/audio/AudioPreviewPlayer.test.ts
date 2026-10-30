@@ -145,6 +145,26 @@ describe('AudioPreviewPlayer', () => {
       }
     )
 
+    it('pauses the element when the source is cleared mid-playback', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+      const pause = vi
+        .spyOn(HTMLMediaElement.prototype, 'pause')
+        .mockImplementation(() => {})
+      const user = userEvent.setup()
+
+      const { rerender } = renderPlayer('http://example.com/audio.mp3')
+      const button = screen.getByRole('button', { name: 'g.playPause' })
+
+      await user.click(button)
+      expect(button).toHaveAttribute('aria-pressed', 'true')
+      pause.mockClear()
+
+      await rerender({ modelValue: undefined })
+
+      expect(pause).toHaveBeenCalledTimes(1)
+      expect(button).toHaveAttribute('aria-pressed', 'false')
+    })
+
     it('ignores a pending rejection after unmount', async () => {
       const attempts: Array<(reason: unknown) => void> = []
       vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(

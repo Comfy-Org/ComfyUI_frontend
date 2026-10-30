@@ -296,10 +296,13 @@ const menuItems = computed(() => [
   }
 ])
 
-watch(modelValue, () => {
+watch(modelValue, (value) => {
   playAttempt++
   isPlaying.value = false
   toast.dismiss(playbackErrorToastId)
+  // `whenever` below pauses when a new source arrives, but it never runs for a
+  // cleared one, and dropping the src attribute does not stop playback on its own.
+  if (!value) audioRef.value?.pause()
 })
 
 whenever(
