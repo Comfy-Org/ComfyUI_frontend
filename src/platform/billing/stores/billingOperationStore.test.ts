@@ -615,49 +615,36 @@ describe('billingOperationStore', () => {
         })
 
         it.for([
-          ['no phase', { id: 'op-1', status: 'pending' }],
+          ['no phase', { id: 'op-1', status: 'pending' }, null],
           [
             'in_progress',
-            { id: 'op-1', status: 'pending', phase: 'in_progress' }
+            { id: 'op-1', status: 'pending', phase: 'in_progress' },
+            'in_progress'
           ]
         ] as const)(
-          'discards a read requested before adoption that reports %s',
-          async ([, staleRead]) => {
+          'drops the adopted link when a read requested before adoption reports %s',
+          async ([, read, phase]) => {
             let resolveRead: (value: BillingOpStatusResponse) => void = () => {}
-            vi.mocked(billingApi.getBillingOpStatus)
-              .mockReturnValueOnce(
-                new Promise<BillingOpStatusResponse>((resolve) => {
-                  resolveRead = resolve
-                })
-              )
-              .mockResolvedValue(pendingPhase('awaiting_payment_method'))
+            vi.mocked(billingApi.getBillingOpStatus).mockReturnValueOnce(
+              new Promise<BillingOpStatusResponse>((resolve) => {
+                resolveRead = resolve
+              })
+            )
             const store = useBillingOperationStore()
-            const terminal = store.startOperation('op-1', 'subscription', {
+            void store.startOperation('op-1', 'subscription', {
               resumed: true
             })
 
             void store.startOperation('op-1', 'subscription', {
               paymentMethodUrl: checkoutUrl
             })
-            resolveRead({
-              ...staleRead,
-              started_at: new Date().toISOString()
-            })
+            resolveRead({ ...read, started_at: new Date().toISOString() })
             await vi.advanceTimersByTimeAsync(0)
 
-            expect(store.getOperation('op-1')?.actionUrl).toBe(checkoutUrl)
-
-            vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue({
-              id: 'op-1',
-              status: 'succeeded',
-              started_at: new Date().toISOString(),
-              completed_at: new Date().toISOString()
-            })
-            await vi.advanceTimersByTimeAsync(31_000)
-
-            expect(billingApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
-            await expect(terminal).resolves.toMatchObject({
-              status: 'succeeded'
+            expect(store.getOperation('op-1')).toMatchObject({
+              phase,
+              actionUrl: null,
+              paymentMethodUrl: null
             })
           }
         )

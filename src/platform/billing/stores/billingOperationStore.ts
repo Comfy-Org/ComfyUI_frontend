@@ -168,7 +168,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const inFlightPolls = new Map<string, Promise<void>>()
   const generations = new Map<string, symbol>()
-  const adoptions = new Map<string, number>()
 
   useEventListener(document, 'visibilitychange', () => {
     if (document.visibilityState === 'visible') pollPendingOperations()
@@ -339,7 +338,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       paymentMethodUrl,
       authenticationRequiredSeen: true
     }
-    adoptions.set(operation.opId, (adoptions.get(operation.opId) ?? 0) + 1)
     operations.value = new Map(operations.value).set(operation.opId, updated)
     syncProgressToastAfterRead(operation, updated)
   }
@@ -465,7 +463,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     const generation = generations.get(opId)
-    const adoption = adoptions.get(opId)
     try {
       const response = await billingApi.getBillingOpStatus(opId)
       if (isStalePoll(opId, generation)) return
@@ -496,11 +493,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       updateOperationPhase(opId, response.phase ?? null)
       if (stopIfTimedOut(opId, operations.value.get(opId) ?? operation)) return
 
-      updateOperationActionUrl(
-        opId,
-        validateActionUrl(response.action_url),
-        adoptions.get(opId) !== adoption
-      )
+      updateOperationActionUrl(opId, validateActionUrl(response.action_url))
       scheduleNextPoll(opId)
     } catch {
       const currentOperation = operations.value.get(opId)
@@ -661,27 +654,17 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function keptPaymentMethodUrl(
     operation: BillingOperation,
-    polledActionUrl: string | null,
-    readPredatesAdoption: boolean
+    polledActionUrl: string | null
   ): string | null {
     const keeps =
-      polledActionUrl === null &&
-      (readPredatesAdoption || operation.phase === 'awaiting_payment_method')
+      polledActionUrl === null && operation.phase === 'awaiting_payment_method'
     return keeps ? operation.paymentMethodUrl : null
   }
 
-  function updateOperationActionUrl(
-    opId: string,
-    actionUrl: string | null,
-    readPredatesAdoption: boolean
-  ) {
+  function updateOperationActionUrl(opId: string, actionUrl: string | null) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
-    const paymentMethodUrl = keptPaymentMethodUrl(
-      operation,
-      actionUrl,
-      readPredatesAdoption
-    )
+    const paymentMethodUrl = keptPaymentMethodUrl(operation, actionUrl)
     const shownUrl = actionUrl ?? paymentMethodUrl
     const updated: BillingOperation = {
       ...operation,
@@ -1236,7 +1219,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function clearOperation(opId: string) {
     cleanup(opId)
     generations.delete(opId)
-    adoptions.delete(opId)
     const newMap = new Map(operations.value)
     newMap.delete(opId)
     operations.value = newMap
