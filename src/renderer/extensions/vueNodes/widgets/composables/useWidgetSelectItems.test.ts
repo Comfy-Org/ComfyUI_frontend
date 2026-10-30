@@ -1130,6 +1130,20 @@ describe('useWidgetSelectItems', () => {
       }
     )
 
+    it.for(['../x.png', 'folder/./photo.png', '/abs/x.png', 'C:photo.png'])(
+      'shows no preview for the input option %s, which is not a plain relative path',
+      (value) => {
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({
+            values: () => [value],
+            modelValue: ref(value)
+          })
+        )
+
+        expect(dropdownItems.value[0].preview_url).toBe('')
+      }
+    )
+
     it.for([
       {
         title: 'an output in a subfolder',
