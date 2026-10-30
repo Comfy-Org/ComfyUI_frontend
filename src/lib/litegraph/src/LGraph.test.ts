@@ -935,7 +935,11 @@ describe('Store-driven serialization parity', () => {
         errorType: 'graph_serialization_state_mismatch',
         context: {
           graphId: graph.id,
-          mismatch: expect.stringMatching(/stored node .* has no live adapter/)
+          rootGraphId: graph.rootGraph.id,
+          mismatch: expect.stringMatching(/stored node .* has no live adapter/),
+          mismatchKind: 'stored_without_live_adapter',
+          nodeId: expect.anything(),
+          stateGraphId: graph.id
         }
       }
     )

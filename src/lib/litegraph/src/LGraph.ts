@@ -492,7 +492,29 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     reportError(new Error('Graph serialization state mismatch'), {
       surface: 'graph',
       errorType: 'graph_serialization_state_mismatch',
-      context: { graphId: owner.id, mismatch }
+      context: {
+        graphId: owner.id,
+        rootGraphId: owner.rootGraph.id,
+        mismatch,
+        ...(missingState
+          ? {
+              mismatchKind: 'stored_without_live_adapter',
+              nodeId: missingState.id,
+              stateGraphId: missingState.graphId
+            }
+          : missingAdapter
+            ? {
+                mismatchKind: 'live_without_stored_state',
+                nodeId: missingAdapter.id,
+                nodeGraphId: missingAdapter.graph?.id ?? null,
+                stateGraphId: missingAdapter._state.graphId,
+                registrationRootGraphId:
+                  missingAdapter._graphScope?.rootGraphId ?? null,
+                registrationGraphId:
+                  missingAdapter._graphScope?.owningGraphId ?? null
+              }
+            : { mismatchKind: 'count_mismatch' })
+      }
     })
     const nodes = sortNodes
       ? [...liveNodes].sort((a, b) => compareNodeIds(a.id, b.id))

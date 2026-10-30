@@ -86,6 +86,9 @@ describe('LGraph Serialisation', () => {
     graph.add(registered)
     const adapterOnly = new LGraphNode('Adapter only')
     adapterOnly.id = toNodeId(99)
+    adapterOnly.graph = graph
+    adapterOnly._state.graphId = graph.id
+    adapterOnly._graphScope = graphScopeOf(graph)
     graph._nodes.push(adapterOnly)
 
     const serialized = graph.serialize()
@@ -103,7 +106,14 @@ describe('LGraph Serialisation', () => {
         errorType: 'graph_serialization_state_mismatch',
         context: {
           graphId: graph.id,
-          mismatch: `live node ${adapterOnly.id} has no stored state`
+          rootGraphId: graph.rootGraph.id,
+          mismatch: `live node ${adapterOnly.id} has no stored state`,
+          mismatchKind: 'live_without_stored_state',
+          nodeId: adapterOnly.id,
+          nodeGraphId: graph.id,
+          stateGraphId: adapterOnly._state.graphId,
+          registrationRootGraphId: graph.rootGraph.id,
+          registrationGraphId: graph.id
         }
       }
     )
