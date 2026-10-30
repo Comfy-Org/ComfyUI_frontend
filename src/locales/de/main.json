@@ -58,6 +58,7 @@
     "coachGraphTitle": "Bearbeiten Sie weiter, während der Agent arbeitet",
     "coachHistoryBody": "Frühere Chats werden hier gespeichert. Öffnen Sie einen, um ihn zu prüfen oder die Arbeit mit dem Agenten fortzusetzen.",
     "coachHistoryTitle": "Machen Sie dort weiter, wo Sie aufgehört haben",
+    "coachHoldNotice": "Ihre Nachricht wird gesendet, wenn Sie die Tour abschließen oder überspringen.",
     "coachProgress": "{current} von {total}",
     "coachTitle": "Lernen Sie Ihren Comfy Agent kennen",
     "coachWorkflowBody": "Er wechselt mit Ihren Tabs, bis Sie eine Nachricht senden, einen Workflow auswählen oder eine Node-Referenz hinzufügen.",
@@ -540,6 +541,7 @@
     },
     "desktopHost": {
       "continueInBrowser": "Schließen Sie die Anmeldung in Ihrem Browser ab",
+      "popupBlocked": "Erlauben Sie Pop-ups für diese Seite, um sich anzumelden.",
       "signInFailed": "Die Anmeldung wurde nicht abgeschlossen. Versuchen Sie es erneut.",
       "signOutFailed": "Comfy Desktop ist weiterhin angemeldet. Schließen Sie eine laufende Installation ab oder brechen Sie sie ab, und melden Sie sich dann erneut ab."
     },
@@ -3606,6 +3608,7 @@
     "debug": "Debug",
     "detection": "Erkennung",
     "experimental": "Experimentell",
+    "fal": "fal",
     "fibo": "fibo",
     "filters": "Filter",
     "flux": "flux",

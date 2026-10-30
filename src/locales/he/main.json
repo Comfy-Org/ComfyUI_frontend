@@ -58,6 +58,7 @@
     "coachGraphTitle": "אפשרו לסוכן לפעול בזמן שאתם עורכים",
     "coachHistoryBody": "שיחות קודמות נשמרות כאן. פתחו אחת כדי לעיין בה או להמשיך לעבוד עם הסוכן.",
     "coachHistoryTitle": "המשיכו מהמקום שבו הפסקתם",
+    "coachHoldNotice": "ההודעה שלך תישלח לאחר סיום הסיור או דילוג עליו.",
     "coachProgress": "{current} מתוך {total}",
     "coachTitle": "הכירו את Comfy Agent שלכם",
     "coachWorkflowBody": "הוא מתחלף יחד עם הלשוניות שלך, עד שתשלח הודעה, תבחר תהליך עבודה או תוסיף הפניה לצומת.",
@@ -540,6 +541,7 @@
     },
     "desktopHost": {
       "continueInBrowser": "השלימו את ההתחברות בדפדפן שלכם",
+      "popupBlocked": "אפשר חלונות קופצים עבור דף זה כדי להיכנס.",
       "signInFailed": "ההתחברות לא הושלמה. נסו שוב.",
       "signOutFailed": "Comfy Desktop עדיין מחובר. השלימו או בטלו התקנה פעילה כלשהי, ולאחר מכן התנתקו שוב."
     },
@@ -3606,6 +3608,7 @@
     "debug": "debug",
     "detection": "detection",
     "experimental": "experimental",
+    "fal": "fal",
     "fibo": "fibo",
     "filters": "filters",
     "flux": "flux",

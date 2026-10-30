@@ -58,6 +58,7 @@
     "coachGraphTitle": "Deixe o agente executar enquanto você edita",
     "coachHistoryBody": "As conversas anteriores são salvas aqui. Abra uma para revisá-la ou continue trabalhando com o agente.",
     "coachHistoryTitle": "Retome de onde parou",
+    "coachHoldNotice": "Sua mensagem será enviada quando você concluir ou pular a visita guiada.",
     "coachProgress": "{current} de {total}",
     "coachTitle": "Conheça seu Agente Comfy",
     "coachWorkflowBody": "Ele alterna junto com suas abas até que você envie uma mensagem, escolha um fluxo de trabalho ou adicione uma referência de nó.",
@@ -540,6 +541,7 @@
     },
     "desktopHost": {
       "continueInBrowser": "Conclua o login no navegador",
+      "popupBlocked": "Permita pop-ups nesta página para fazer login.",
       "signInFailed": "O login não foi concluído. Tente novamente.",
       "signOutFailed": "O Comfy Desktop ainda está com sessão iniciada. Conclua ou cancele qualquer instalação em execução e saia novamente."
     },
@@ -3606,6 +3608,7 @@
     "debug": "depuração",
     "detection": "detecção",
     "experimental": "experimental",
+    "fal": "fal",
     "fibo": "fibo",
     "filters": "filtros",
     "flux": "flux",
