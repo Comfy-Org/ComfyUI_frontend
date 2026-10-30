@@ -28,7 +28,6 @@
       "name": "Image containers yield embedded workflow and prompt text and tolerate reader failures",
       "checks": [
         "src/scripts/metadata/png.test.ts",
-        "src/scripts/metadata/png.property.test.ts",
         "src/scripts/metadata/avif.test.ts",
         "src/scripts/metadata/svg.test.ts",
         "src/scripts/pnginfo.test.ts"

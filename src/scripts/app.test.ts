@@ -30,8 +30,6 @@ import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
-import * as fc from 'fast-check'
-
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import type { CurveData } from '@comfyorg/graph-model/curve'
 import type { useExtensionService } from '@/platform/extensions/services/extensionService'
@@ -658,11 +656,6 @@ describe('ComfyApp', () => {
     })
 
     it('resolves false and notifies onGraphLoadError when the outgoing preflight throws', async () => {
-      // `beforeLoadNewGraph` deactivates the outgoing workflow, which captures
-      // it and so can reach a custom node's throwing serializer. It runs after
-      // `beforeLoadGraph`, so a throw there owes this load an error terminal;
-      // outside the try it rejected instead, leaving the loading state a
-      // `beforeLoadGraph` listener had opened for this load unclosed.
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
@@ -3760,64 +3753,73 @@ describe('ComfyApp', () => {
       expect(loadedMarkers).toEqual(['first', 'second'])
     })
 
-    // The two-file case fixes one interleaving. This requires call order to
-    // survive every order the parses can finish in, which is the invariant the
-    // discovery queue exists for.
-    it('applies files in call order for any parse completion order', async () => {
-      const fileCount = 4
-      const callOrder = [...Array(fileCount).keys()]
-
-      await fc.assert(
-        fc.asyncProperty(
-          fc.shuffledSubarray(callOrder, {
-            minLength: fileCount,
-            maxLength: fileCount
-          }),
-          async (completionOrder) => {
-            const resolvers: ((
-              value: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
-            ) => void)[] = []
-            for (const _ of callOrder) {
-              vi.mocked(getWorkflowDataFromFile).mockReturnValueOnce(
-                new Promise((resolve) => {
-                  resolvers.push(resolve)
-                })
-              )
-            }
-            const loadedMarkers: unknown[] = []
-            mockExtensionService.invokeExtensionsAsync.mockImplementation(
-              async (hook) => {
-                if (hook === 'afterLoadGraph')
-                  loadedMarkers.push(app.rootGraph.extra.marker)
-              }
-            )
-
-            const pending = callOrder.map((index) =>
-              app.handleFile(
-                createTestFile(`file-${index}.json`, 'application/json')
-              )
-            )
-            await Promise.resolve()
-            for (const index of completionOrder) {
-              const graph = createWorkflowGraphData()
-              graph.extra = { marker: index }
-              resolvers[index]({ workflow: graph })
-            }
-            await Promise.all(pending)
-
-            expect(loadedMarkers).toEqual(callOrder)
+    it.for([
+      [0, 1, 2, 3],
+      [0, 1, 3, 2],
+      [0, 2, 1, 3],
+      [0, 2, 3, 1],
+      [0, 3, 1, 2],
+      [0, 3, 2, 1],
+      [1, 0, 2, 3],
+      [1, 0, 3, 2],
+      [1, 2, 0, 3],
+      [1, 2, 3, 0],
+      [1, 3, 0, 2],
+      [1, 3, 2, 0],
+      [2, 0, 1, 3],
+      [2, 0, 3, 1],
+      [2, 1, 0, 3],
+      [2, 1, 3, 0],
+      [2, 3, 0, 1],
+      [2, 3, 1, 0],
+      [3, 0, 1, 2],
+      [3, 0, 2, 1],
+      [3, 1, 0, 2],
+      [3, 1, 2, 0],
+      [3, 2, 0, 1],
+      [3, 2, 1, 0]
+    ])(
+      'applies files in call order for completion order %j',
+      async (completionOrder) => {
+        const callOrder = [0, 1, 2, 3]
+        const resolvers: ((
+          value: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
+        ) => void)[] = []
+        for (const _ of callOrder) {
+          vi.mocked(getWorkflowDataFromFile).mockReturnValueOnce(
+            new Promise((resolve) => {
+              resolvers.push(resolve)
+            })
+          )
+        }
+        const loadedMarkers: unknown[] = []
+        mockExtensionService.invokeExtensionsAsync.mockImplementation(
+          async (hook) => {
+            if (hook === 'afterLoadGraph')
+              loadedMarkers.push(app.rootGraph.extra.marker)
           }
-        ),
-        { numRuns: 20 }
-      )
-    }, 30_000)
+        )
+
+        const pending = callOrder.map((index) =>
+          app.handleFile(
+            createTestFile(`file-${index}.json`, 'application/json')
+          )
+        )
+        await Promise.resolve()
+        for (const index of completionOrder) {
+          const graph = createWorkflowGraphData()
+          graph.extra = { marker: index }
+          resolvers[index]({ workflow: graph })
+        }
+        await Promise.all(pending)
+
+        expect(loadedMarkers).toEqual(callOrder)
+      }
+    )
 
     it('loads the next file after an earlier metadata parse rejects', async () => {
       const parsed = createWorkflowGraphData()
       parsed.extra = { marker: 'recovered' }
-      // The real truncated-header rejection is covered by `png.test.ts`; here
-      // `getWorkflowDataFromFile` is mocked, so what this case owns is that a
-      // rejecting parse still releases the file-discovery queue.
       vi.mocked(getWorkflowDataFromFile)
         .mockRejectedValueOnce(new RangeError('metadata parse failed'))
         .mockResolvedValueOnce({ workflow: parsed })
@@ -3836,19 +3838,13 @@ describe('ComfyApp', () => {
     it('allows a non-graph media file from a graph lifecycle hook', async () => {
       vi.mocked(consumeGraphLoadHookOrigin).mockReturnValueOnce(true)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
-      vi.mocked(createNode).mockResolvedValue(null)
 
       await expect(
         app.handleFile(createTestFile('preview.png', 'image/png'))
       ).resolves.toBeUndefined()
-      // Resolving undefined also describes silently dropping the image, so
-      // require the media command that owns it to have run.
       expect(pasteImageNode).toHaveBeenCalled()
     })
 
-    // Each of these classes reaches the same refusal predicate; narrowing it to
-    // workflows alone would let a hook queue an API prompt or A1111 parameters
-    // behind its own load.
     it.for([
       {
         name: 'workflow',
