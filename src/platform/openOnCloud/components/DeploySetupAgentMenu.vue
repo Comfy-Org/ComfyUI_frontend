@@ -1,5 +1,10 @@
 <template>
-  <Menu align="end" :side-offset="6" class="min-w-57.5">
+  <Menu
+    align="end"
+    :side-offset="6"
+    class="min-w-57.5"
+    @update:open="clearCopiedOnOpen"
+  >
     <template #trigger>
       <Button
         variant="inverted"
@@ -57,6 +62,10 @@ const { copyBrief, openBriefIn } = useAgentHandoff()
 const isCopying = ref(false)
 const copied = ref(false)
 const isLocalAgentReady = computed(() => flags.agent?.state === 'ready')
+
+function clearCopiedOnOpen(open: boolean) {
+  if (open) copied.value = false
+}
 
 async function copyHandoff() {
   if (isCopying.value) return

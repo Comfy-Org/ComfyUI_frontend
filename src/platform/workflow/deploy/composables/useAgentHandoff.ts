@@ -103,15 +103,13 @@ export function useAgentHandoff(distribution: Distribution = DISTRIBUTION) {
     }
   }
 
-  function openBriefIn(app: AgentApp): boolean {
+  function openBriefIn(app: AgentApp): void {
     try {
       const { brief, downloadWorkflow } = prepareHandoff()
-      openAgentApp(app, brief)
       downloadWorkflow()
-      return true
+      openAgentApp(app, brief)
     } catch (error) {
       reportHandoffFailure(error, 'error_opening_deploy_agent_brief')
-      return false
     }
   }
 

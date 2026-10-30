@@ -129,7 +129,7 @@ describe('useAgentHandoff', () => {
     ({ app, distribution, downloads }) => {
       setActiveWorkflow()
 
-      expect(useAgentHandoff(distribution).openBriefIn(app)).toBe(true)
+      useAgentHandoff(distribution).openBriefIn(app)
 
       expect(openAgentApp).toHaveBeenCalledExactlyOnceWith(
         app,
@@ -140,6 +140,29 @@ describe('useAgentHandoff', () => {
       expect(downloadBlob).toHaveBeenCalledTimes(downloads)
     }
   )
+
+  it('downloads the workflow before it opens the app, and opens nothing when the download fails', () => {
+    setActiveWorkflow()
+    const order: string[] = []
+    vi.mocked(downloadBlob).mockImplementationOnce(() => {
+      order.push('download')
+    })
+    vi.mocked(openAgentApp).mockImplementationOnce(() => {
+      order.push('open')
+    })
+
+    useAgentHandoff().openBriefIn('claude')
+    vi.mocked(downloadBlob).mockImplementationOnce(() => {
+      throw new Error('download blocked')
+    })
+    useAgentHandoff().openBriefIn('claude')
+
+    expect(order).toEqual(['download', 'open'])
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'error_opening_deploy_agent_brief',
+      surface: 'platform'
+    })
+  })
 
   it('lists the model a known loader loads, and not prompt text ending in .pt', async () => {
     useNodeDefStore().nodeDefsByName = {

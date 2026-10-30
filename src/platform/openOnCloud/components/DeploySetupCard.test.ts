@@ -15,7 +15,7 @@ vi.mock(
   import('@/platform/workflow/deploy/composables/useAgentHandoff'),
   () => {
     const copyBrief = vi.fn(() => Promise.resolve(true))
-    const openBriefIn = vi.fn(() => true)
+    const openBriefIn = vi.fn()
     return { useAgentHandoff: () => fromPartial({ copyBrief, openBriefIn }) }
   }
 )
@@ -148,6 +148,17 @@ describe('DeploySetupCard', () => {
       /^Copied/
     )
     expect(onDone).not.toHaveBeenCalled()
+  })
+
+  it('shows the agent label again when the menu reopens after Copy prompt', async () => {
+    const { user } = renderCard()
+
+    await pickAgentRow(user, 'Copy prompt')
+    await user.click(screen.getByTestId('deploy-setup-agent'))
+
+    expect(screen.getByTestId('deploy-setup-agent')).toHaveTextContent(
+      'Build with your agent'
+    )
   })
 
   it('keeps the original label when the brief did not reach the clipboard', async () => {
