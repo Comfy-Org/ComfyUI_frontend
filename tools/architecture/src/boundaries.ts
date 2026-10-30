@@ -60,7 +60,7 @@ function domainZones(
     )
     const layers = [...new Set(own.map(({ layer }) => layer))]
     const zonePrefix =
-      domain.deepImports === 'inventory' ? 'inventory' : domain.id
+      domain.deepImports === 'inventory' ? '_inventory' : domain.id
     return [
       {
         domain,

@@ -55,7 +55,7 @@ package `src` code file belongs to a domain.
 
 Each record role becomes a Fallow zone (`<domain>/<role>`), and each public
 entry point becomes a `<domain>/<role>/public` zone. Inventory domains share
-one `inventory/<role>` zone per role, because any domain may import them and
+one `_inventory/<role>` zone per role, because any domain may import them and
 Fallow rules must name every zone they allow. Fallow puts a file in the first
 zone that matches it, so a path that contains another domain's or role's path
 moves to a later `outer-<n>` zone with the same rules.

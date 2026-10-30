@@ -194,6 +194,16 @@ describe('buildBoundaries', () => {
       allowed: false
     },
     {
+      name: 'an enforced domain named inventory stays closed to deep imports',
+      records: [
+        images({ deepImports: 'inventory' }),
+        domain('inventory', [{ path: 'src/stock/**', role: 'application' }])
+      ],
+      from: 'src/legacy/a.ts',
+      to: 'src/stock/store.ts',
+      allowed: false
+    },
+    {
       name: 'role direction applies across inventory domains',
       records: [
         images({ deepImports: 'inventory' }),
