@@ -64,10 +64,7 @@ export function useComposer(options: UseComposerOptions) {
     const clickId = uuidv4()
     store.markSuggestedPrompt({
       id: starterPrompt.promptId,
-      clickId,
-      ...(starterPrompt.assignment
-        ? { assignment: starterPrompt.assignment }
-        : {})
+      clickId
     })
     useTelemetry()?.trackAgentStarterPromptClicked({
       prompt_id: starterPrompt.promptId,
@@ -77,12 +74,7 @@ export function useComposer(options: UseComposerOptions) {
       prompt_text_hash: starterPrompt.promptTextHash,
       locale: starterPrompt.locale,
       click_id: clickId,
-      draft_was_empty: draftWasEmpty,
-      ...(starterPrompt.assignment
-        ? {
-            '$feature/agent-starter-prompt-set': starterPrompt.assignment
-          }
-        : {})
+      draft_was_empty: draftWasEmpty
     })
   }
 

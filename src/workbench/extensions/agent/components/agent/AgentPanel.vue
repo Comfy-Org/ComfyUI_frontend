@@ -12,7 +12,6 @@ import type { MenuItem } from '@/components/ui/menu/types'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
-  AgentStarterPromptAssignment,
   AgentStopMethod
 } from '@/platform/telemetry/types'
 
@@ -84,8 +83,6 @@ const {
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
-  starterPromptAssignment = 'control',
-  attributeStarterPromptExperiment = false,
   syncRetryAvailable = false
 } = defineProps<{
   entries: ConversationEntry[]
@@ -129,8 +126,6 @@ const {
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
-  starterPromptAssignment?: AgentStarterPromptAssignment
-  attributeStarterPromptExperiment?: boolean
   syncRetryAvailable?: boolean
 }>()
 const emit = defineEmits<{
@@ -167,7 +162,6 @@ const emit = defineEmits<{
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
   freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
-  starterPromptRendered: [assignment: AgentStarterPromptAssignment]
   retrySync: []
 }>()
 
@@ -512,9 +506,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :aria-busy="openingChat"
           :inert="openingChat"
           :user-name
-          :assignment="starterPromptAssignment"
-          :attribute-experiment="attributeStarterPromptExperiment"
-          @rendered="emit('starterPromptRendered', $event)"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)

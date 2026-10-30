@@ -699,20 +699,6 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
-    it('captures starter prompt exposure with its assignment', async () => {
-      const provider = createProvider()
-      await vi.dynamicImportSettled()
-
-      provider.trackAgentStarterPromptExposure({
-        '$feature/agent-starter-prompt-set': 'test'
-      })
-
-      expect(hoisted.mockCapture).toHaveBeenCalledWith(
-        TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE,
-        { '$feature/agent-starter-prompt-set': 'test' }
-      )
-    })
-
     it('captures free-use notice interactions with their placement', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -2114,6 +2100,29 @@ describe('PostHogTelemetryProvider', () => {
       // event.$set_once — PII stripped, non-PII preserved
       expect(result.$set_once).not.toHaveProperty('email')
       expect(result.$set_once).toHaveProperty('plan', 'free')
+    })
+
+    it('strips the retired starter prompt flag while preserving other flags', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const result = runBeforeSend({
+        uuid: 'test',
+        event: TelemetryEvents.AGENT_MESSAGE_SENT,
+        properties: {
+          '$feature/agent-starter-prompt-set': 'test',
+          '$feature/another-experiment': 'control'
+        }
+      })
+      assert.exists(result)
+
+      expect(result.properties).not.toHaveProperty(
+        '$feature/agent-starter-prompt-set'
+      )
+      expect(result.properties).toHaveProperty(
+        '$feature/another-experiment',
+        'control'
+      )
     })
 
     it('remoteConfig.posthog_config cannot override before_send (PII stripping)', async () => {
