@@ -84,6 +84,10 @@
     "classification": "live-defect"
   },
   {
+    "id": "vitest:src/lib/litegraph/src/node/widgetFormProof.subgraph.test.ts:refuses a subgraph host at core own post-hook payload:1",
+    "classification": "live-defect"
+  },
+  {
     "id": "vitest:src/platform/workflow/persistence/base/hashUtil.test.ts:produces different hashes for known collision paths:1",
     "classification": "live-defect"
   },
