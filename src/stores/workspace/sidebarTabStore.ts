@@ -7,6 +7,7 @@ import type { SidebarTabExtension } from '@/types/extensionTypes'
 
 export const useSidebarTabStore = defineStore('sidebarTab', () => {
   const sidebarTabs = ref<SidebarTabExtension[]>([])
+  const sourceExtensionNames = ref<Record<string, string>>({})
   const activeSidebarTabId = ref<string | null>(null)
 
   const activeSidebarTab = computed<SidebarTabExtension | null>(() => {
@@ -22,8 +23,12 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
 
   const registerSidebarTab = (
     tab: SidebarTabExtension,
-    options?: { prepend?: boolean }
+    options?: { prepend?: boolean },
+    sourceExtensionName?: string
   ) => {
+    if (sourceExtensionName) {
+      sourceExtensionNames.value[tab.id] = sourceExtensionName
+    }
     sidebarTabs.value = options?.prepend
       ? [tab, ...sidebarTabs.value]
       : [...sidebarTabs.value, tab]
@@ -86,14 +91,18 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       if (activeSidebarTabId.value === id) {
         activeSidebarTabId.value = null
       }
+      delete sourceExtensionNames.value[id]
     }
   }
+
+  const getSourceExtensionName = (id: string) => sourceExtensionNames.value[id]
 
   return {
     sidebarTabs,
     activeSidebarTabId,
     activeSidebarTab,
     toggleSidebarTab,
+    getSourceExtensionName,
     registerSidebarTab,
     unregisterSidebarTab
   }

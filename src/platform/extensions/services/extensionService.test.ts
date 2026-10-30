@@ -5,11 +5,13 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { useExtensionService } from './extensionService'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('firebase/auth'))
 
 describe('invokeExtensionsAsync', () => {
   const HOOK = 'addCustomNodeDefs'
@@ -405,6 +407,47 @@ describe('invokeExtensionsAsync', () => {
 
       expect(setup).toHaveBeenCalledOnce()
       expect(setup.mock.calls[0]).toHaveLength(1)
+    })
+
+    it('attributes sidebar tabs to the extension whose setup registered them', async () => {
+      const app = useApp()
+      const originalManager = Object.getOwnPropertyDescriptor(
+        app,
+        'extensionManager'
+      )
+      const workspaceStore = useWorkspaceStore()
+      Object.defineProperty(app, 'extensionManager', {
+        configurable: true,
+        value: workspaceStore
+      })
+      try {
+        register({
+          name: 'agent.tools.sidebar',
+          setup: (setupApp: ReturnType<typeof useApp>) => {
+            setupApp.extensionManager.registerSidebarTab({
+              id: 'agent-tab',
+              title: 'Agent tab',
+              type: 'vue',
+              component: {}
+            })
+          }
+        })
+
+        await useExtensionService().invokeExtensionsAsync('setup')
+      } finally {
+        if (originalManager)
+          Object.defineProperty(app, 'extensionManager', originalManager)
+        else delete (app as Partial<typeof app>).extensionManager
+      }
+
+      expect(
+        workspaceStore.sidebarTab.sidebarTabs.find(
+          ({ id }) => id === 'agent-tab'
+        )
+      ).toMatchObject({ title: 'Agent tab' })
+      expect(
+        workspaceStore.sidebarTab.getSourceExtensionName('agent-tab')
+      ).toBe('agent.tools.sidebar')
     })
   })
 })

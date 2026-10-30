@@ -198,6 +198,47 @@ describe('requestSignIn', () => {
     })
   })
 
+  it('lets two tabs sign in at once, each finishing only from its own popup', async () => {
+    const tokens = createMemoryTokenStore()
+    const first = setup(undefined, { tokens })
+    const second = setup(undefined, { tokens })
+    const callbackFrom = (tab: ReturnType<typeof setup>, code: string) => {
+      const { state } = JSON.parse(tab.storage.getItem(PENDING_KEY) ?? '')
+      return {
+        origin: ISSUER,
+        source: tab.popup,
+        data: {
+          type: 'comfy-local-web-sign-in',
+          search: `?code=${code}&state=${encodeURIComponent(state)}`
+        }
+      }
+    }
+    const firstSigningIn = first.bridge.requestSignIn()
+    const secondSigningIn = second.bridge.requestSignIn()
+    await authorized(first.env)
+    await authorized(second.env)
+
+    const secondCallback = callbackFrom(second, 'code-2')
+    first.post(secondCallback)
+    second.post(secondCallback)
+    const firstCallback = callbackFrom(first, 'code-1')
+    second.post(firstCallback)
+    first.post(firstCallback)
+
+    await expect(firstSigningIn).resolves.toMatchObject({
+      status: 'signed_in'
+    })
+    await expect(secondSigningIn).resolves.toMatchObject({
+      status: 'signed_in'
+    })
+    expect(first.env.fetchImpl).toHaveBeenCalledOnce()
+    expect(formOf(first.env.fetchImpl.mock.calls[0][1]).code).toBe('code-1')
+    expect(second.env.fetchImpl).toHaveBeenCalledOnce()
+    expect(formOf(second.env.fetchImpl.mock.calls[0][1]).code).toBe('code-2')
+    expect(first.env.reportSignInFailure).not.toHaveBeenCalled()
+    expect(second.env.reportSignInFailure).not.toHaveBeenCalled()
+  })
+
   it('opens the popup within the click, before preparing the sign-in', () => {
     const { bridge, env, popup } = setup()
 

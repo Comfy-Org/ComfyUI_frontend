@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import type { CheckboxCheckedState } from 'reka-ui'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -166,11 +166,18 @@ function toggleAllVisible(selected: CheckboxCheckedState) {
   )
 }
 
-onMounted(() => {
-  extensionStore.extensions.forEach((ext) => {
-    enabledByName.value[ext.name] = extensionStore.isExtensionEnabled(ext.name)
-  })
-})
+watch(
+  () => extensionStore.extensions,
+  (extensions) => {
+    extensions.forEach((ext) => {
+      if (ext.name in enabledByName.value) return
+      enabledByName.value[ext.name] = extensionStore.isExtensionEnabled(
+        ext.name
+      )
+    })
+  },
+  { immediate: true }
+)
 
 const enabledByPath = computed(() => {
   const disabledPaths = new Set(

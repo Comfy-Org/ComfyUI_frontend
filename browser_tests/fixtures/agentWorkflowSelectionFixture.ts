@@ -1,6 +1,7 @@
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -41,15 +42,21 @@ function moveSavedWorkflow(
 
 export const workflowSelectionTest = base.extend<{
   nodeDefinitions: Record<string, ComfyNodeDef> | undefined
+  workflowSelectionFeatures: Partial<RemoteConfig> | undefined
   workflowSelection: WorkflowSelection
 }>({
   nodeDefinitions: [undefined, { option: true }],
-  workflowSelection: async ({ page, nodeDefinitions }, use) => {
+  workflowSelectionFeatures: [undefined, { option: true }],
+  workflowSelection: async (
+    { page, nodeDefinitions, workflowSelectionFeatures },
+    use
+  ) => {
     if (nodeDefinitions)
       await page.route('**/api/object_info', (route) =>
         route.fulfill(jsonRoute(nodeDefinitions))
       )
     await bootAgentApp(page, true, {
+      features: workflowSelectionFeatures,
       objectInfo: nodeDefinitions ? 'server' : undefined
     })
     const workflows: CloudWorkflowEntry[] = []

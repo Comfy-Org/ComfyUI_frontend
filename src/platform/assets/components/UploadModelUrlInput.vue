@@ -55,6 +55,7 @@
           {{ error }}
         </p>
       </div>
+      <slot />
     </div>
 
     <div class="flex flex-col gap-6 text-muted-foreground">
