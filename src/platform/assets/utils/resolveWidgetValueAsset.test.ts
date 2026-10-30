@@ -35,4 +35,25 @@ describe('resolveWidgetValueAsset', () => {
     expect(hashLookups[0].get('hash')).toBe(templateHash)
     expect(hashLookups[0].get('include_public')).toBe('true')
   })
+
+  it.for([
+    { value: 'sky.exr', previewId: 'input-preview' },
+    { value: 'sky.exr [output]', previewId: 'output-preview' },
+    { value: 'sky.exr [temp]', previewId: 'output-preview' }
+  ])(
+    'resolves $value from its own root when input and output share a name',
+    async ({ value, previewId }) => {
+      const store = useAssetsStore()
+      store.inputAssets = fromPartial({
+        items: [{ name: 'sky.exr', preview_id: 'input-preview' }]
+      })
+      store.outputAssets = fromPartial({
+        items: [{ name: 'sky.exr', preview_id: 'output-preview' }]
+      })
+
+      const asset = await resolveWidgetValueAsset(value)
+
+      expect(asset?.preview_id).toBe(previewId)
+    }
+  )
 })
