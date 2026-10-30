@@ -433,7 +433,8 @@ export async function runPack(
 
   // ---- registerCustomNodes (frontend-only pack node types) --------------
   try {
-    const { useExtensionService } = await import('@/services/extensionService')
+    const { useExtensionService } =
+      await import('@/platform/extensions/services/extensionService')
     await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     row.registerCustomNodes = 'OK'
   } catch (e) {
@@ -444,7 +445,8 @@ export async function runPack(
     .sort()
   row.newTypes = newTypes
   try {
-    const { useExtensionStore } = await import('@/stores/extensionStore')
+    const { useExtensionStore } =
+      await import('@/platform/extensions/stores/extensionStore')
     const st = useExtensionStore()
     row.extTotal = st.extensions.length
     row.extEnabled = st.enabledExtensions.length

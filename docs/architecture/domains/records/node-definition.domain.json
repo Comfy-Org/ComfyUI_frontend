@@ -12,10 +12,6 @@
       "role": "domain"
     },
     {
-      "path": "src/schemas/**",
-      "role": "domain"
-    },
-    {
       "path": "src/types/nodeDefAugmentation.ts",
       "role": "domain"
     },
@@ -29,7 +25,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["extension-manager"],
   "allowedConsumers": ["graph-model"],
   "characterizationScenarios": [
     {

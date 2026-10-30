@@ -4,11 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { ErrorGroup } from '@/components/rightSidePanel/errors/types'
+import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
 import type {
   MissingPackGroup,
   SwapNodeGroup
-} from '@/components/rightSidePanel/errors/useErrorGroups'
+} from '@/platform/workflowErrors/panel/useErrorGroups'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -26,7 +26,7 @@ import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPi
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
-import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
+import ErrorOverlay from '@/platform/workflowErrors/overlay/ErrorOverlay.vue'
 
 const hoisted = vi.hoisted(() => ({
   rootGraph: undefined as unknown,
@@ -45,7 +45,7 @@ vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock<unknown>(
-  import('@/components/rightSidePanel/errors/useErrorGroups'),
+  import('@/platform/workflowErrors/panel/useErrorGroups'),
   () => ({
     useErrorGroups: () => hoisted.errorGroups
   })
@@ -88,6 +88,7 @@ function deployment(id: string, build: string): WorkspaceDeployment {
     build_name: build,
     release_version: 2,
     status: 'ready',
+    can_start: false,
     created_at: '2026-10-01T00:00:00Z'
   }
 }
