@@ -22,7 +22,7 @@ interface AppReadiness {
 }
 
 export interface TabSwitchLens {
-  afterConfigure: string[][]
+  afterLoad: string[][]
   removed: string[]
 }
 

@@ -16,7 +16,6 @@ import { createI18n } from 'vue-i18n'
 
 import type { Toast } from '@/components/ui/toast/toastStore'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -120,7 +119,8 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(import('@/scripts/app'), () => {
+vi.mock<unknown>(import('@/scripts/app'), async () => {
+  const { shallowRef } = await import('vue')
   const canvas = {
     render_canvas_border: false,
     graph: null,
@@ -128,25 +128,25 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     setDirty: mocks.setDirty,
     canvas: document.createElement('canvas')
   }
-  let rootGraphInternal: LGraph | undefined
+  const rootGraphInternal = shallowRef<LGraph>()
   return {
     app: {
       vueAppReady: false,
       canvas,
       get graph(): LGraph {
-        return rootGraphInternal!
+        return rootGraphInternal.value!
       },
       get rootGraph(): LGraph {
-        return rootGraphInternal!
+        return rootGraphInternal.value!
       },
       get rootGraphOrUndefined(): LGraph | undefined {
-        return rootGraphInternal
+        return rootGraphInternal.value
       },
       get isGraphReady(): boolean {
-        return !!rootGraphInternal
+        return !!rootGraphInternal.value
       },
       set rootGraph(graph: LGraph | undefined) {
-        rootGraphInternal = graph
+        rootGraphInternal.value = graph
       },
       ui: { settings: { dispatchChange: vi.fn() } },
       setup: vi.fn()
@@ -615,14 +615,16 @@ describe('GraphCanvas widget control mode watcher', () => {
   }
 
   function addControlWidgetNode() {
-    const controlWidget = {
-      name: 'control_after_generate',
-      label: undefined as string | undefined,
-      [IS_CONTROL_WIDGET]: true
-    }
     const node = new LGraphNode('Test node')
     node.id = toNodeId(1)
-    node.widgets = [controlWidget as unknown as IBaseWidget]
+    const controlWidget = node.addWidget(
+      'combo',
+      'control_after_generate',
+      'fixed',
+      () => {},
+      { values: ['fixed'] }
+    )
+    controlWidget[IS_CONTROL_WIDGET] = true
 
     const graph = new LGraph()
     graph._nodes.push(node)
@@ -642,7 +644,7 @@ describe('GraphCanvas widget control mode watcher', () => {
     await expect(cycleWidgetControlMode()).resolves.toBeUndefined()
   })
 
-  it('still syncs control-widget labels once the root graph is ready', async () => {
+  it('syncs control-widget labels on setting changes and when returning to a retained graph', async () => {
     await mountGraphCanvas()
 
     useCanvasStore().canvas = app.canvas
@@ -663,6 +665,18 @@ describe('GraphCanvas widget control mode watcher', () => {
     await nextTick()
     expect(controlWidget.label).toBeTruthy()
     expect(controlWidget.label).not.toBe(labelBeforeMode)
+
+    const background = addControlWidgetNode()
+    setRootGraph(background.graph)
+    await nextTick()
+
+    settingStore.settingValues['Comfy.WidgetControlMode'] = 'before'
+    await nextTick()
+    expect(background.controlWidget.label).toBe(labelBeforeMode)
+
+    setRootGraph(graph)
+    await nextTick()
+    expect(controlWidget.label).toBe(labelBeforeMode)
   })
 })
 

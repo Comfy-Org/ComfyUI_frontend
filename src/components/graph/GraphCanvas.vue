@@ -389,7 +389,10 @@ watchEffect(() => {
 })
 
 watch(
-  () => settingStore.get('Comfy.WidgetControlMode'),
+  [
+    () => settingStore.get('Comfy.WidgetControlMode'),
+    () => comfyApp.rootGraphOrUndefined
+  ],
   () => {
     if (!canvasStore.canvas) return
 
@@ -615,7 +618,10 @@ onMounted(async () => {
     useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
 
     window.app = comfyApp
-    window.graph = comfyApp.graph
+    Object.defineProperty(window, 'graph', {
+      configurable: true,
+      get: () => comfyApp.graph
+    })
 
     comfyAppReady.value = true
 

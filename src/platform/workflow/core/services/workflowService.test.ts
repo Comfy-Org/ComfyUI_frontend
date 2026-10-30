@@ -30,12 +30,17 @@ import {
 } from '@/platform/workflow/core/services/workflowService'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { nodeTypesMayStillArrive } from '@/platform/customNodes/lateLoading/lateNodeTypes'
+import {
+  graphsAwaitingNodeTypes,
+  nodeTypesMayStillArrive
+} from '@/platform/customNodes/lateLoading/lateNodeTypes'
 import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/waitingNodes'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
+import { api } from '@/scripts/api'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -45,6 +50,7 @@ import type { AppMode } from '@comfyorg/graph-model/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
 import { zeroUuid } from '@/utils/uuid'
 import { t } from '@/i18n'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
@@ -109,7 +115,9 @@ vi.mock(import('@/base/assert'), () => ({
   assert: mockAssert
 }))
 
-vi.mock(import('@/platform/customNodes/lateLoading/lateNodeTypes'))
+vi.mock(import('@/platform/customNodes/lateLoading/lateNodeTypes'), {
+  spy: true
+})
 vi.mock(import('@/platform/customNodes/lateLoading/waitingNodes'))
 
 const storeThumbnailMock = vi.hoisted(() => vi.fn())
@@ -526,10 +534,200 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('openWorkflow with a live graph', () => {
+    let previous: LoadedComfyWorkflow
+    let next: LoadedComfyWorkflow
+
+    beforeEach(() => {
+      previous = createModeTestWorkflow({ path: 'workflows/previous.json' })
+      next = createModeTestWorkflow({ path: 'workflows/next.json' })
+      next.adoptGraph(app.createRootGraph())
+      useWorkflowStore().activeWorkflow = previous
+      vi.mocked(app.activateRootGraph).mockClear()
+    })
+
+    it('shows the owned graph instead of reconfiguring from serialized state', async () => {
+      await useWorkflowService().openWorkflow(next)
+
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(app.activateRootGraph).toHaveBeenCalledWith(next.graph)
+      expect(next.changeTracker.restore).toHaveBeenCalled()
+      expect(useWorkflowStore().activeWorkflow?.path).toBe(next.path)
+    })
+
+    it('tells extensions the visible graph changed without reconfiguring', async () => {
+      const calls: string[] = []
+      useExtensionStore().registerExtension({
+        name: 'Test.GraphSwitch',
+        beforeLoadGraph: () => {
+          calls.push(`beforeLoadGraph:${app.rootGraph === next.graph}`)
+        },
+        afterConfigureGraph: () => {
+          calls.push('afterConfigureGraph')
+        },
+        afterLoadGraph: () => {
+          calls.push(`afterLoadGraph:${app.rootGraph === next.graph}`)
+        }
+      })
+
+      await useWorkflowService().openWorkflow(next)
+
+      expect(calls).toEqual(['beforeLoadGraph:false', 'afterLoadGraph:true'])
+    })
+
+    it('still reconfigures when the open is forced', async () => {
+      await useWorkflowService().openWorkflow(next, { force: true })
+
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.anything(),
+        true,
+        true,
+        next,
+        expect.anything()
+      )
+    })
+
+    it.for([
+      {
+        phase: 'waiting in the graph queue',
+        arrange: () => {
+          vi.mocked(app.enqueueGraphLoad).mockImplementation(
+            async (operation) => {
+              next.unload()
+              return operation()
+            }
+          )
+        }
+      },
+      {
+        phase: 'running beforeLoadGraph',
+        arrange: () => {
+          useExtensionStore().registerExtension({
+            name: 'Test.UnloadDuringSwitch',
+            beforeLoadGraph: () => next.unload()
+          })
+        }
+      }
+    ])(
+      'refetches a tab unloaded while $phase instead of configuring defaults',
+      async ({ arrange }) => {
+        const fetched = makeWorkflowData({ note: 'updated remote content' })
+        vi.spyOn(api, 'getUserData').mockResolvedValue(
+          new Response(JSON.stringify(fetched))
+        )
+        arrange()
+
+        await expect(useWorkflowService().openWorkflow(next)).resolves.toBe(
+          true
+        )
+
+        expect(app.activateRootGraph).not.toHaveBeenCalled()
+        expect(app.loadGraphData).toHaveBeenCalledWith(
+          fetched,
+          true,
+          true,
+          next,
+          expect.objectContaining({
+            deferWarnings: true,
+            skipAssetScans: false
+          })
+        )
+      }
+    )
+
+    it.for([
+      {
+        exit: 'the refetch fails',
+        status: 404,
+        currentAfterFetch: true,
+        expected:
+          "Error: Failed to load file 'workflows/next.json': 404 Not Found"
+      },
+      {
+        exit: 'the refetch is superseded',
+        status: 200,
+        currentAfterFetch: false,
+        expected: false
+      }
+    ])(
+      'keeps the visible previews when $exit after a refused switch',
+      async ({ status, currentAfterFetch, expected }) => {
+        const outputs = useNodeOutputStore()
+        Object.assign(useWorkflowStore(), { openWorkflows: [previous, next] })
+        const locator = createNodeLocatorId(null, 7)
+        outputs.setNodePreviewsByLocatorId(locator, ['blob:visible-preview'])
+        const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL')
+        let current = true
+        useExtensionStore().registerExtension({
+          name: 'Test.ReleaseDuringSwitch',
+          beforeLoadGraph: async () => {
+            await Promise.resolve()
+            next.unload()
+          }
+        })
+        vi.spyOn(api, 'getUserData').mockImplementation(async () => {
+          current = currentAfterFetch
+          return new Response(JSON.stringify(makeWorkflowData()), {
+            status,
+            statusText: 'Not Found'
+          })
+        })
+
+        const result = await useWorkflowService()
+          .openWorkflow(next, { isCurrent: () => current })
+          .catch(String)
+
+        expect(result).toBe(expected)
+        expect(useWorkflowStore().activeWorkflow?.path).toBe(previous.path)
+        expect(app.loadGraphData).not.toHaveBeenCalled()
+        expect(outputs.nodePreviewImages[locator]).toEqual([
+          'blob:visible-preview'
+        ])
+        expect(app.nodePreviewImages[locator]).toEqual(['blob:visible-preview'])
+        expect(revokeObjectURL).not.toHaveBeenCalled()
+        outputs.resetAllOutputsAndPreviews()
+      }
+    )
+
+    it('reconfigures when late types invalidate a live switch already queued', async () => {
+      const graph = next.graph
+      assert(graph)
+      let beginQueue = () => {}
+      const queued = new Promise<void>((resolve) => {
+        beginQueue = resolve
+      })
+      let finishQueue = () => {}
+      const proceed = new Promise<void>((resolve) => {
+        finishQueue = resolve
+      })
+      vi.mocked(app.enqueueGraphLoad).mockImplementation(async (operation) => {
+        beginQueue()
+        await proceed
+        return operation()
+      })
+      const opening = useWorkflowService().openWorkflow(next)
+      await queued
+
+      graphsAwaitingNodeTypes.add(graph)
+      finishQueue()
+      await opening
+
+      expect(app.activateRootGraph).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.anything(),
+        true,
+        true,
+        next,
+        expect.anything()
+      )
+    })
+  })
+
   describe('openWorkflow ordering', () => {
     it('reloads canvas edits made after the reload was requested', async () => {
       const workflow = createModeTestWorkflow()
       workflow.changeTracker = new ChangeTracker(workflow, makeWorkflowData())
+      workflow.adoptGraph(app.rootGraph)
       useWorkflowStore().activeWorkflow = workflow
       const reloading = useWorkflowService().reloadCurrentWorkflow()
       app.rootGraph.extra.agentEdit = true
@@ -573,7 +771,11 @@ describe('useWorkflowService', () => {
         workflow.changeTracker.undoQueue = [undo]
         vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
           assert.exists(data)
-          await useWorkflowService().afterLoadNewGraph(workflow, data)
+          await useWorkflowService().afterLoadNewGraph(
+            workflow,
+            data,
+            app.rootGraph
+          )
           return true
         })
 
@@ -718,6 +920,49 @@ describe('useWorkflowService', () => {
         ).toEqual([next, next])
       })
 
+      it('preserves the reloaded tab saved baseline and unsaved mark after a pending switch', async () => {
+        const saved = makeWorkflowData({ note: 'saved next tab' })
+        const edited = makeWorkflowData({ note: 'unsaved next tab' })
+        const tracker = new ChangeTracker(next, saved)
+        tracker.activeState = edited
+        next.changeTracker = tracker
+        next.isModified = true
+        const previousBaseline = previous.changeTracker.initialState
+        let beginLoading = () => {}
+        const loading = new Promise<void>((resolve) => {
+          beginLoading = resolve
+        })
+        let finishLoading = () => {}
+        const proceed = new Promise<void>((resolve) => {
+          finishLoading = resolve
+        })
+        vi.mocked(app.loadGraphData)
+          .mockImplementationOnce(async () => {
+            beginLoading()
+            await proceed
+            useWorkflowStore().activeWorkflow = next
+            return true
+          })
+          .mockImplementation(async () => {
+            next.changeTracker = new ChangeTracker(next, edited)
+            next.isModified = false
+            return true
+          })
+        const opening = useWorkflowService().openWorkflow(next)
+        await loading
+
+        const reloading = useWorkflowService().reloadCurrentWorkflow()
+        finishLoading()
+        await Promise.all([opening, reloading])
+
+        expect(
+          vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
+        ).toEqual([next, next])
+        expect(next.changeTracker.initialState).toEqual(saved)
+        expect(next.isModified).toBe(true)
+        expect(previous.changeTracker.initialState).toBe(previousBaseline)
+      })
+
       it('does not reopen the previous workflow when a switch lands after the reload read it', async () => {
         await Promise.all([
           useWorkflowService().reloadCurrentWorkflow(),
@@ -725,6 +970,28 @@ describe('useWorkflowService', () => {
         ])
 
         expect(useWorkflowStore().activeWorkflow?.path).toBe(next.path)
+      })
+
+      it('keeps edits captured by a switch that supersedes a reload', async () => {
+        const saved = makeWorkflowData({ note: 'saved previous tab' })
+        previous.changeTracker = new ChangeTracker(previous, saved)
+        previous.adoptGraph(app.rootGraph)
+        previous.isModified = false
+        next.adoptGraph(app.createRootGraph())
+        useWorkflowStore().attachWorkflow(previous, 0)
+        useWorkflowStore().attachWorkflow(next, 1)
+        app.rootGraph.extra.note = 'new edit before switch'
+
+        await Promise.all([
+          useWorkflowService().reloadCurrentWorkflow(),
+          useWorkflowService().openWorkflow(next)
+        ])
+
+        expect(useWorkflowStore().activeWorkflow?.path).toBe(next.path)
+        expect(previous.isModified).toBe(true)
+        expect(previous.changeTracker.activeState.extra).toEqual(
+          expect.objectContaining({ note: 'new edit before switch' })
+        )
       })
     })
 
@@ -1051,53 +1318,87 @@ describe('useWorkflowService', () => {
       )
     })
 
-    it('repaints the retained workflow when a replacement load reports failure', async () => {
+    it('shows the retained workflow graph again when a replacement load reports failure', async () => {
       const workflowStore = useWorkflowStore()
-      const retained = createWorkflow(null, {
-        loadable: true,
+      const retained = createModeTestWorkflow({
         path: 'workflows/retained.json'
       })
-      const failing = createWorkflow(null, {
-        loadable: true,
-        path: 'workflows/failing.json'
-      })
+      retained.adoptGraph(app.createRootGraph())
+      const failing = createModeTestWorkflow({ path: 'workflows/failing.json' })
       workflowStore.attachWorkflow(retained, 0)
       workflowStore.attachWorkflow(failing, 1)
-      workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
+      workflowStore.activeWorkflow = retained
       vi.mocked(app.loadGraphData).mockClear()
+      vi.mocked(app.activateRootGraph).mockClear()
       vi.mocked(app.loadGraphData).mockResolvedValueOnce(false)
 
       await expect(useWorkflowService().openWorkflow(failing)).resolves.toBe(
         false
       )
 
-      // Second call = the retained workflow repainted from its saved state,
-      // so selection, canvas, and change tracking agree after the abort.
-      expect(app.loadGraphData).toHaveBeenCalledTimes(2)
-      expect(app.loadGraphData).toHaveBeenNthCalledWith(
-        2,
-        retained.activeState,
-        true,
-        true,
-        expect.objectContaining({ path: 'workflows/retained.json' }),
-        expect.anything()
-      )
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(app.activateRootGraph).toHaveBeenCalledWith(retained.graph)
+      expect(retained.changeTracker.restore).toHaveBeenCalled()
       expect(workflowStore.activeWorkflow.path).toBe('workflows/retained.json')
     })
 
-    it('does not repaint the retained workflow for a superseded load', async () => {
+    it('preserves saved baseline and unsaved edits when a failed load restores a retained graph awaiting late types', async () => {
       const workflowStore = useWorkflowStore()
-      const retained = createWorkflow(null, {
-        loadable: true,
+      const retained = createModeTestWorkflow({
         path: 'workflows/retained.json'
       })
-      const superseded = createWorkflow(null, {
-        loadable: true,
+      const saved = makeWorkflowData({ note: 'saved retained tab' })
+      const edited = makeWorkflowData({ note: 'unsaved retained tab' })
+      const tracker = new ChangeTracker(retained, saved)
+      tracker.activeState = edited
+      retained.changeTracker = tracker
+      retained.isModified = true
+      const graph = app.createRootGraph()
+      retained.adoptGraph(graph)
+      graphsAwaitingNodeTypes.add(graph)
+      const failing = createModeTestWorkflow({ path: 'workflows/failing.json' })
+      workflowStore.attachWorkflow(retained, 0)
+      workflowStore.attachWorkflow(failing, 1)
+      workflowStore.activeWorkflow = retained
+      vi.mocked(app.loadGraphData)
+        .mockResolvedValueOnce(false)
+        .mockImplementationOnce(async () => {
+          retained.changeTracker = new ChangeTracker(retained, edited)
+          retained.isModified = false
+          return true
+        })
+
+      await expect(useWorkflowService().openWorkflow(failing)).resolves.toBe(
+        false
+      )
+
+      expect(app.loadGraphData).toHaveBeenLastCalledWith(
+        edited,
+        true,
+        true,
+        retained,
+        { deferWarnings: true, skipAssetScans: true }
+      )
+      expect(app.activateRootGraph).not.toHaveBeenCalled()
+      expect(workflowStore.activeWorkflow.path).toBe(retained.path)
+      expect(retained.changeTracker.initialState).toEqual(saved)
+      expect(retained.changeTracker.activeState).toEqual(edited)
+      expect(retained.isModified).toBe(true)
+    })
+
+    it('leaves the retained workflow alone for a superseded load', async () => {
+      const workflowStore = useWorkflowStore()
+      const retained = createModeTestWorkflow({
+        path: 'workflows/retained.json'
+      })
+      retained.adoptGraph(app.createRootGraph())
+      const superseded = createModeTestWorkflow({
         path: 'workflows/superseded.json'
       })
       workflowStore.attachWorkflow(retained, 0)
       workflowStore.attachWorkflow(superseded, 1)
-      workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
+      workflowStore.activeWorkflow = retained
+      vi.mocked(app.activateRootGraph).mockClear()
       vi.mocked(app.loadGraphData).mockResolvedValueOnce(undefined)
 
       await expect(useWorkflowService().openWorkflow(superseded)).resolves.toBe(
@@ -1105,6 +1406,7 @@ describe('useWorkflowService', () => {
       )
 
       expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(app.activateRootGraph).not.toHaveBeenCalled()
     })
 
     it('serializes rapid workflow opens so the final selection stays active', async () => {
@@ -2059,27 +2361,38 @@ describe('useWorkflowService', () => {
       )
     }
 
-    it('reports a tab only when a user action activates it', async () => {
-      const workflowStore = useWorkflowStore()
-      const restored = createWorkflow(null, {
-        loadable: true,
-        path: 'workflows/restored.json'
-      })
-      const clicked = createWorkflow(null, {
-        loadable: true,
-        path: 'workflows/clicked.json'
-      })
-      activateOnLoad()
-      const activated = vi.fn()
-      workflowStore.onUserActivation(activated)
-      const service = useWorkflowService()
+    it.for([
+      { path: 'configure', arrange: (_workflow: ComfyWorkflow) => {} },
+      {
+        path: 'live',
+        arrange: (workflow: ComfyWorkflow) => {
+          workflow.adoptGraph(app.createRootGraph())
+        }
+      }
+    ])(
+      'reports a tab only when a user action activates it through $path',
+      async ({ arrange }) => {
+        const workflowStore = useWorkflowStore()
+        const restored = createModeTestWorkflow({
+          path: 'workflows/restored.json'
+        })
+        const clicked = createModeTestWorkflow({
+          path: 'workflows/clicked.json'
+        })
+        arrange(restored)
+        arrange(clicked)
+        activateOnLoad()
+        const activated = vi.fn()
+        workflowStore.onUserActivation(activated)
+        const service = useWorkflowService()
 
-      await service.openWorkflow(restored)
-      await service.openWorkflow(clicked, { initiator: 'user' })
+        await service.openWorkflow(restored)
+        await service.openWorkflow(clicked, { initiator: 'user' })
 
-      expect(workflowStore.activeWorkflow?.path).toBe(clicked.path)
-      expect(activated.mock.calls).toEqual([[clicked]])
-    })
+        expect(workflowStore.activeWorkflow?.path).toBe(clicked.path)
+        expect(activated.mock.calls).toEqual([[clicked]])
+      }
+    )
 
     it('does not report a user activation whose load fails', async () => {
       const workflowStore = useWorkflowStore()
@@ -2694,7 +3007,8 @@ describe('useWorkflowService', () => {
         await expect(
           useWorkflowService().afterLoadNewGraph(
             'repeat',
-            makeWorkflowData({ linearMode: true })
+            makeWorkflowData({ linearMode: true }),
+            app.rootGraph
           )
         ).resolves.toBeUndefined()
 
@@ -2719,7 +3033,8 @@ describe('useWorkflowService', () => {
 
         await useWorkflowService().afterLoadNewGraph(
           'repeat',
-          makeWorkflowData({ linearMode: true })
+          makeWorkflowData({ linearMode: true }),
+          app.rootGraph
         )
 
         expect(current.initialMode).toBe('graph')
@@ -2733,7 +3048,11 @@ describe('useWorkflowService', () => {
         })
 
         await expect(
-          useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
+          useWorkflowService().afterLoadNewGraph(
+            'repeat',
+            makeWorkflowData(),
+            app.rootGraph
+          )
         ).resolves.toBeUndefined()
 
         expect(reportedContexts().map(({ context }) => context)).toEqual([
@@ -2753,7 +3072,11 @@ describe('useWorkflowService', () => {
         vi.mocked(workflowStore.openWorkflow).mockResolvedValue(unloaded)
 
         await expect(
-          useWorkflowService().afterLoadNewGraph(unloaded, makeWorkflowData())
+          useWorkflowService().afterLoadNewGraph(
+            unloaded,
+            makeWorkflowData(),
+            app.rootGraph
+          )
         ).resolves.toBeUndefined()
 
         expect(reportedContexts().map(({ context }) => context)).toEqual([
@@ -2787,11 +3110,27 @@ describe('useWorkflowService', () => {
     it('should restore the stashed previews of the newly active workflow', async () => {
       workflowStore.activeWorkflow = existingWorkflow
 
-      await useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
+      await useWorkflowService().afterLoadNewGraph(
+        'repeat',
+        makeWorkflowData(),
+        app.rootGraph
+      )
 
       expect(
         useNodeOutputStore().restorePreviewsForWorkflow
       ).toHaveBeenCalledWith(existingWorkflow.path)
+    })
+
+    it('should hand the configured root graph to the activated workflow', async () => {
+      workflowStore.activeWorkflow = existingWorkflow
+
+      await useWorkflowService().afterLoadNewGraph(
+        'repeat',
+        makeWorkflowData(),
+        app.rootGraph
+      )
+
+      expect(existingWorkflow.graph).toBe(app.rootGraph)
     })
 
     it('should reuse equivalent UUIDs regardless of casing', async () => {
@@ -2800,7 +3139,8 @@ describe('useWorkflowService', () => {
 
       await useWorkflowService().afterLoadNewGraph(
         'repeat',
-        makeWorkflowDataWithId(workflowId.toUpperCase())
+        makeWorkflowDataWithId(workflowId.toUpperCase()),
+        app.rootGraph
       )
 
       expect(workflowStore.getWorkflowByPath).toHaveBeenCalledWith(
@@ -2813,7 +3153,11 @@ describe('useWorkflowService', () => {
     })
 
     it('should reuse active workflow for repeated same-path loads without ids', async () => {
-      await useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
+      await useWorkflowService().afterLoadNewGraph(
+        'repeat',
+        makeWorkflowData(),
+        app.rootGraph
+      )
 
       expect(workflowStore.getWorkflowByPath).toHaveBeenCalledWith(
         'workflows/repeat.json'
@@ -2828,7 +3172,11 @@ describe('useWorkflowService', () => {
       existingWorkflow.changeTracker.activeState.id =
         '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
 
-      await useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
+      await useWorkflowService().afterLoadNewGraph(
+        'repeat',
+        makeWorkflowData(),
+        app.rootGraph
+      )
 
       expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
       expect(existingWorkflow.changeTracker.reset).toHaveBeenCalled()
@@ -2839,7 +3187,8 @@ describe('useWorkflowService', () => {
     it('should reuse active workflow when only workflowData has an id', async () => {
       await useWorkflowService().afterLoadNewGraph(
         'repeat',
-        makeWorkflowDataWithId('9cea40bb-b0cf-4b40-a758-8935cfe8d52f')
+        makeWorkflowDataWithId('9cea40bb-b0cf-4b40-a758-8935cfe8d52f'),
+        app.rootGraph
       )
 
       expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
@@ -2854,7 +3203,8 @@ describe('useWorkflowService', () => {
 
       await useWorkflowService().afterLoadNewGraph(
         'repeat',
-        makeWorkflowDataWithId('11111111-2222-3333-4444-555555555555')
+        makeWorkflowDataWithId('11111111-2222-3333-4444-555555555555'),
+        app.rootGraph
       )
 
       expect(workflowStore.createNewTemporary).toHaveBeenCalled()
@@ -2871,6 +3221,7 @@ describe('useWorkflowService', () => {
       await useWorkflowService().afterLoadNewGraph(
         'shared',
         makeWorkflowData(),
+        app.rootGraph,
         'share-1'
       )
 
@@ -2909,7 +3260,8 @@ describe('useWorkflowService', () => {
         // do not reach. Both sites must be fixed for this to pass.
         await useWorkflowService().afterLoadNewGraph(
           'repeat',
-          makeWorkflowData()
+          makeWorkflowData(),
+          app.rootGraph
         )
 
         expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
@@ -2922,7 +3274,8 @@ describe('useWorkflowService', () => {
         // `TypeError: Cannot read properties of null (reading 'id')`.
         await useWorkflowService().afterLoadNewGraph(
           existingWorkflow,
-          makeWorkflowData()
+          makeWorkflowData(),
+          app.rootGraph
         )
 
         expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
@@ -2937,7 +3290,8 @@ describe('useWorkflowService', () => {
 
         await useWorkflowService().afterLoadNewGraph(
           existingWorkflow,
-          makeWorkflowDataWithId(incomingId)
+          makeWorkflowDataWithId(incomingId),
+          app.rootGraph
         )
 
         expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
@@ -2949,7 +3303,11 @@ describe('useWorkflowService', () => {
     it('preserves share attribution on repeated same-path loads', async () => {
       existingWorkflow.shareId = 'share-1'
 
-      await useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
+      await useWorkflowService().afterLoadNewGraph(
+        'repeat',
+        makeWorkflowData(),
+        app.rootGraph
+      )
 
       expect(existingWorkflow.shareId).toBe('share-1')
     })
@@ -2959,7 +3317,8 @@ describe('useWorkflowService', () => {
 
       await useWorkflowService().afterLoadNewGraph(
         existingWorkflow,
-        makeWorkflowData()
+        makeWorkflowData(),
+        app.rootGraph
       )
 
       expect(existingWorkflow.shareId).toBe('share-1')
@@ -2971,6 +3330,7 @@ describe('useWorkflowService', () => {
       await useWorkflowService().afterLoadNewGraph(
         'repeat',
         makeWorkflowData(),
+        app.rootGraph,
         'share-2'
       )
 
@@ -2983,6 +3343,7 @@ describe('useWorkflowService', () => {
       await useWorkflowService().afterLoadNewGraph(
         existingWorkflow,
         makeWorkflowData(),
+        app.rootGraph,
         'share-2'
       )
 
@@ -2996,7 +3357,8 @@ describe('useWorkflowService', () => {
 
       await useWorkflowService().afterLoadNewGraph(
         'repeat',
-        makeWorkflowDataWithId('video-point-prompt-example')
+        makeWorkflowDataWithId('video-point-prompt-example'),
+        app.rootGraph
       )
 
       expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
@@ -3027,7 +3389,8 @@ describe('useWorkflowService', () => {
 
         await useWorkflowService().afterLoadNewGraph(
           'repeat',
-          makeWorkflowDataWithId(incomingId)
+          makeWorkflowDataWithId(incomingId),
+          app.rootGraph
         )
 
         expect(workflowStore.createNewTemporary).toHaveBeenCalled()
@@ -3041,7 +3404,8 @@ describe('useWorkflowService', () => {
 
       await useWorkflowService().afterLoadNewGraph(
         existingWorkflow,
-        makeWorkflowDataWithId('video-point-prompt-example')
+        makeWorkflowDataWithId('video-point-prompt-example'),
+        app.rootGraph
       )
 
       expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
@@ -3060,7 +3424,8 @@ describe('useWorkflowService', () => {
 
       await useWorkflowService().afterLoadNewGraph(
         existingWorkflow,
-        makeWorkflowDataWithId('different-legacy-name')
+        makeWorkflowDataWithId('different-legacy-name'),
+        app.rootGraph
       )
 
       expect(isValidUuid(existingWorkflow.activeState.id)).toBe(true)
@@ -3071,12 +3436,7 @@ describe('useWorkflowService', () => {
       const rootGraphId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
       const incomingId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
 
-      beforeEach(() => {
-        Reflect.set(app, 'isGraphReady', true)
-      })
-
       afterEach(() => {
-        Reflect.deleteProperty(app, 'isGraphReady')
         Reflect.deleteProperty(app.rootGraph, 'id')
       })
 
@@ -3084,7 +3444,11 @@ describe('useWorkflowService', () => {
         app.rootGraph.id = zeroUuid
         const workflowData = makeWorkflowDataWithId(zeroUuid)
 
-        await useWorkflowService().afterLoadNewGraph('repeat', workflowData)
+        await useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          workflowData,
+          app.rootGraph
+        )
 
         expect(app.rootGraph.id).not.toBe(zeroUuid)
         expect(isValidUuid(app.rootGraph.id)).toBe(true)
@@ -3099,7 +3463,11 @@ describe('useWorkflowService', () => {
         app.rootGraph.id = rootGraphId
         const workflowData = makeWorkflowDataWithId(incomingId)
 
-        await useWorkflowService().afterLoadNewGraph('repeat', workflowData)
+        await useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          workflowData,
+          app.rootGraph
+        )
 
         expect(workflowData.id).toBe(incomingId)
         expect(app.rootGraph.id).toBe(rootGraphId)
@@ -3213,7 +3581,8 @@ describe('useWorkflowService', () => {
 
         await service.afterLoadNewGraph(
           workflow,
-          makeWorkflowData({ linearMode: true })
+          makeWorkflowData({ linearMode: true }),
+          app.rootGraph
         )
 
         expect(workflow.initialMode).toBe('app')
@@ -3222,7 +3591,11 @@ describe('useWorkflowService', () => {
       it('leaves initialMode null when extra.linearMode is absent', async () => {
         const workflow = createModeTestWorkflow({ loaded: false })
 
-        await service.afterLoadNewGraph(workflow, makeWorkflowData())
+        await service.afterLoadNewGraph(
+          workflow,
+          makeWorkflowData(),
+          app.rootGraph
+        )
 
         expect(workflow.initialMode).toBeNull()
       })
@@ -3232,7 +3605,8 @@ describe('useWorkflowService', () => {
 
         await service.afterLoadNewGraph(
           workflow,
-          makeWorkflowData({ linearMode: false })
+          makeWorkflowData({ linearMode: false }),
+          app.rootGraph
         )
 
         expect(workflow.initialMode).toBe('graph')
@@ -3242,7 +3616,11 @@ describe('useWorkflowService', () => {
         const workflow = createModeTestWorkflow({ loaded: false })
 
         // First load — no linearMode in data
-        await service.afterLoadNewGraph(workflow, makeWorkflowData())
+        await service.afterLoadNewGraph(
+          workflow,
+          makeWorkflowData(),
+          app.rootGraph
+        )
         expect(workflow.initialMode).toBeNull()
 
         // User switches to app mode at runtime
@@ -3251,7 +3629,8 @@ describe('useWorkflowService', () => {
         // Tab switch / reload — data now has linearMode (leaked from graph)
         await service.afterLoadNewGraph(
           workflow,
-          makeWorkflowData({ linearMode: true })
+          makeWorkflowData({ linearMode: true }),
+          app.rootGraph
         )
 
         // initialMode should NOT have been updated — only builder save sets it
@@ -3263,7 +3642,11 @@ describe('useWorkflowService', () => {
           initialMode: 'app'
         })
 
-        await service.afterLoadNewGraph(workflow, makeWorkflowData())
+        await service.afterLoadNewGraph(
+          workflow,
+          makeWorkflowData(),
+          app.rootGraph
+        )
 
         expect(workflow.initialMode).toBe('app')
       })
@@ -3275,7 +3658,8 @@ describe('useWorkflowService', () => {
 
         await service.afterLoadNewGraph(
           'test.json',
-          makeWorkflowData({ linearMode: true })
+          makeWorkflowData({ linearMode: true }),
+          app.rootGraph
         )
 
         expect(appMode.mode.value).toBe('app')
@@ -3310,7 +3694,11 @@ describe('useWorkflowService', () => {
         // Draft data has NO linearMode (simulates rootGraph serialization)
         const draftData = makeWorkflowData()
 
-        await service.afterLoadNewGraph('saved-app.json', draftData)
+        await service.afterLoadNewGraph(
+          'saved-app.json',
+          draftData,
+          app.rootGraph
+        )
 
         // initialMode should come from the file, not the draft
         expect(persistedWorkflow.initialMode).toBe('app')

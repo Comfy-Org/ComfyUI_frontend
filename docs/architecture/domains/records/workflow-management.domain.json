@@ -93,7 +93,13 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["error-reporting", "keybindings", "telemetry"],
+  "allowedDependencies": [
+    "error-reporting",
+    "extension-runtime",
+    "graph-model",
+    "keybindings",
+    "telemetry"
+  ],
   "allowedConsumers": ["agent", "execution"],
   "characterizationScenarios": [
     {

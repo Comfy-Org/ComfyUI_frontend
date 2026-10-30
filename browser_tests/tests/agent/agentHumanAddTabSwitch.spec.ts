@@ -196,7 +196,7 @@ test.describe(
             'after-return'
           )
           expect(after.activeState).toContain(nodeId)
-          expect(after.observer?.afterConfigure.at(-1)).toContain(nodeId)
+          expect(after.observer?.afterLoad.at(-1)).toContain(nodeId)
           await expect(
             agentConversation.vueNodes.getNodeLocator(nodeId)
           ).toBeVisible()

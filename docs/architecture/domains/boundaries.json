@@ -24,6 +24,10 @@
         "patterns": ["src/platform/remote/comfyui/execution/types.ts"]
       },
       {
+        "name": "graph-model/domain/public",
+        "patterns": ["src/lib/litegraph/src/LGraph.ts"]
+      },
+      {
         "name": "ingest-api/domain/public",
         "patterns": ["src/platform/remote/ingest/ingestApiError.ts"]
       },
@@ -2476,7 +2480,8 @@
           "src/services/litegraphService.ts",
           "src/services/litegraphService.lateRegistration.test.ts",
           "src/services/litegraphService.test.ts",
-          "src/services/subgraphService.ts"
+          "src/services/subgraphService.ts",
+          "src/services/subgraphService.test.ts"
         ]
       },
       {
@@ -4157,6 +4162,22 @@
         ]
       },
       {
+        "from": "graph-model/domain/public",
+        "allow": [
+          "comfyui-api/domain/public",
+          "graph-model/domain/public",
+          "node-definition/domain/public",
+          "comfyui-api/domain",
+          "error-reporting/domain",
+          "graph-model/domain",
+          "node-definition/domain",
+          "graph-model/domain/outer-1",
+          "node-definition/domain/outer-1",
+          "comfyui-api/domain/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "ingest-api/domain/public",
         "allow": [
           "ingest-api/domain/public",
@@ -5024,6 +5045,7 @@
       {
         "from": "bounding-boxes/domain",
         "allow": [
+          "graph-model/domain/public",
           "bounding-boxes/domain",
           "design-system/domain",
           "dialog-host/domain",
@@ -5037,6 +5059,7 @@
       {
         "from": "bounding-boxes/application",
         "allow": [
+          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "design-system/domain",
@@ -5058,6 +5081,7 @@
       {
         "from": "bounding-boxes/presentation",
         "allow": [
+          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
@@ -5083,6 +5107,7 @@
       {
         "from": "bounding-boxes/integration",
         "allow": [
+          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
@@ -6044,6 +6069,7 @@
         "from": "graph-model/domain",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -6059,6 +6085,7 @@
         "from": "graph-model/application",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -6078,6 +6105,7 @@
         "from": "graph-model/infrastructure",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -6097,6 +6125,7 @@
         "from": "graph-model/integration",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -8133,10 +8162,14 @@
       {
         "from": "workflow-management/domain",
         "allow": [
+          "graph-model/domain/public",
           "error-reporting/domain",
+          "extension-runtime/domain",
+          "graph-model/domain",
           "keybindings/domain",
           "telemetry/domain",
           "workflow-management/domain",
+          "graph-model/domain/outer-1",
           "keybindings/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
@@ -8145,10 +8178,17 @@
       {
         "from": "workflow-management/application",
         "allow": [
+          "graph-model/domain/public",
           "keybindings/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
           "keybindings/domain",
           "keybindings/application",
           "telemetry/domain",
@@ -8157,6 +8197,8 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "extension-runtime/infrastructure/outer-1",
+          "graph-model/domain/outer-1",
           "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
@@ -8167,10 +8209,17 @@
       {
         "from": "workflow-management/infrastructure",
         "allow": [
+          "graph-model/domain/public",
           "keybindings/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
           "keybindings/domain",
           "keybindings/application",
           "telemetry/domain",
@@ -8179,6 +8228,8 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "extension-runtime/infrastructure/outer-1",
+          "graph-model/domain/outer-1",
           "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
@@ -8189,9 +8240,15 @@
       {
         "from": "workflow-management/presentation",
         "allow": [
+          "graph-model/domain/public",
           "keybindings/application/public",
           "error-reporting/domain",
           "error-reporting/application",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/presentation",
+          "graph-model/domain",
+          "graph-model/application",
           "keybindings/domain",
           "keybindings/application",
           "keybindings/presentation",
@@ -8200,6 +8257,8 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
+          "extension-runtime/presentation/outer-1",
+          "graph-model/domain/outer-1",
           "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
@@ -8211,11 +8270,21 @@
       {
         "from": "workflow-management/integration",
         "allow": [
+          "graph-model/domain/public",
           "keybindings/application/public",
           "keybindings/integration/public",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "extension-runtime/presentation",
+          "extension-runtime/integration",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "graph-model/integration",
           "keybindings/domain",
           "keybindings/application",
           "keybindings/presentation",
@@ -8229,6 +8298,10 @@
           "workflow-management/infrastructure",
           "workflow-management/presentation",
           "workflow-management/integration",
+          "extension-runtime/infrastructure/outer-1",
+          "extension-runtime/presentation/outer-1",
+          "graph-model/domain/outer-1",
+          "graph-model/integration/outer-1",
           "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
@@ -8755,6 +8828,7 @@
       {
         "from": "bounding-boxes/application/outer-1",
         "allow": [
+          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "design-system/domain",
@@ -9097,6 +9171,7 @@
         "from": "graph-model/domain/outer-1",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -9112,6 +9187,7 @@
         "from": "graph-model/integration/outer-1",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -9673,9 +9749,15 @@
       {
         "from": "workflow-management/presentation/outer-1",
         "allow": [
+          "graph-model/domain/public",
           "keybindings/application/public",
           "error-reporting/domain",
           "error-reporting/application",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/presentation",
+          "graph-model/domain",
+          "graph-model/application",
           "keybindings/domain",
           "keybindings/application",
           "keybindings/presentation",
@@ -9684,6 +9766,8 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
+          "extension-runtime/presentation/outer-1",
+          "graph-model/domain/outer-1",
           "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
@@ -9961,6 +10045,7 @@
           "account/presentation/public",
           "account/integration/public",
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
           "keybindings/application/public",

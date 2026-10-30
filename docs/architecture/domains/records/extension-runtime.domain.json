@@ -92,7 +92,7 @@
     "telemetry",
     "webcam-capture"
   ],
-  "allowedConsumers": ["agent", "extension-manager"],
+  "allowedConsumers": ["agent", "extension-manager", "workflow-management"],
   "characterizationScenarios": [
     {
       "name": "Extension loader fetches, filters, imports, and reports failing extensions",

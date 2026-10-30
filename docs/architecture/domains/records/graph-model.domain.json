@@ -192,9 +192,9 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/lib/litegraph/src/LGraph.ts"],
   "allowedDependencies": ["comfyui-api", "error-reporting", "node-definition"],
-  "allowedConsumers": ["bounding-boxes"],
+  "allowedConsumers": ["bounding-boxes", "workflow-management"],
   "characterizationScenarios": [
     {
       "name": "Graph configure and serialise round-trips preserve nodes, links, groups, and reroutes",

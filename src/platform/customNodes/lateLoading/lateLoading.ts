@@ -22,6 +22,7 @@ import type {
   CpuServerWatch
 } from './cpuServerStep'
 import { isBeingSetUp, watchCpuServer } from './cpuServerStep'
+import { graphsAwaitingNodeTypes } from './lateNodeTypes'
 import {
   showFailedToast,
   showReadyToast,
@@ -148,13 +149,12 @@ function watchLateWork(signal: AbortSignal, onAbort: () => void) {
 }
 
 async function rebuildOpenWorkflow() {
-  const workflow = useWorkflowStore().activeWorkflow
-  const baseline = workflow?.changeTracker.initialState
-  const wasModified = workflow?.isModified ?? false
+  await useApp().enqueueGraphLoad(async () => {
+    for (const workflow of useWorkflowStore().openWorkflows) {
+      if (workflow.graph) graphsAwaitingNodeTypes.add(workflow.graph)
+    }
+  })
   await useWorkflowService().reloadCurrentWorkflow()
-  if (!workflow || !baseline) return
-  workflow.changeTracker.initialState = baseline
-  workflow.isModified = wasModified
 }
 
 function reportLateCustomNodeFailure(

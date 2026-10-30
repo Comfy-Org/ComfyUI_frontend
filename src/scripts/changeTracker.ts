@@ -3,7 +3,7 @@ import _ from 'es-toolkit/compat'
 
 import { assert } from '@/base/assert'
 import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent, LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ComfyWorkflow,
@@ -98,17 +98,22 @@ function differsOnlyInNodeHistoryWidgets(
 }
 
 function keepingLiveNodeHistoryValues(
-  target: ComfyWorkflowJSON
+  target: ComfyWorkflowJSON,
+  rootGraph: LGraph | null
 ): ComfyWorkflowJSON {
-  const { rootGraph } = useApp()
+  if (!rootGraph) return target
   const widgets = collectNodeHistoryWidgets(rootGraph)
   if (!widgets.size) return target
   const live = clone(rootGraph.serialize()) as ComfyWorkflowJSON
   return withNodeHistoryValuesFrom(target, live, widgets, rootGraph.id)
 }
 
-function forgetRemovedNodeHistories(widgets: NodeHistoryWidgets): void {
-  useWidgetHistoryStore().retainLive(useApp().rootGraph.id, widgets)
+function forgetRemovedNodeHistories(
+  rootGraph: LGraph | null,
+  widgets = rootGraph && collectNodeHistoryWidgets(rootGraph)
+): void {
+  if (rootGraph && widgets)
+    useWidgetHistoryStore().retainLive(rootGraph.id, widgets)
 }
 
 function isActiveTracker(tracker: ChangeTracker): boolean {
@@ -334,13 +339,7 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
 
 export class ChangeTracker implements WorkflowChangeTracker {
   static MAX_HISTORY = 50
-  /**
-   * Guard flag to prevent captureCanvasState from running during loadGraphData.
-   * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
-   * contains the NEW workflow's data while activeWorkflow still points to
-   * the OLD workflow. Any captureCanvasState call in that window would
-   * serialize the wrong graph into the old workflow's activeState, corrupting it.
-   */
+  /** Set while loadGraphData reconfigures a graph in place; suppresses state capture. */
   static isLoadingGraph = false
   /**
    * The active state of the workflow.
@@ -458,8 +457,6 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   updateModified(previousState?: ComfyWorkflowJSON) {
-    // Get the workflow from the store as ChangeTracker is raw object, i.e.
-    // `this.workflow` is not reactive.
     const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
     if (workflow) {
       // Declared non-null, but a tracker can still lack it at runtime.
@@ -479,6 +476,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
       }
     }
 
+    if (!isActiveTracker(this)) return
+
     const autoQueueGraphChanged =
       !!previousState &&
       isAutoQueueOnChange() &&
@@ -493,16 +492,13 @@ export class ChangeTracker implements WorkflowChangeTracker {
     }
   }
 
-  /**
-   * Snapshot the current canvas state into activeState and push undo.
-   * INVARIANT: only the active workflow's tracker may read from the canvas.
-   * Calling this on an inactive tracker would capture the wrong graph.
-   */
+  /** Snapshot the workflow's own graph into activeState and push undo. */
   captureCanvasState() {
+    const graph = this.workflow.graph
     const isUndoRedoing = this._restoringState
     const isInsideChangeTransaction = this.changeCount > 0
     if (
-      !useApp().isGraphReady ||
+      !graph ||
       isInsideChangeTransaction ||
       isUndoRedoing ||
       ChangeTracker.isLoadingGraph
@@ -514,12 +510,10 @@ export class ChangeTracker implements WorkflowChangeTracker {
       return
     }
 
-    const currentState = clone(
-      useApp().rootGraph.serialize()
-    ) as ComfyWorkflowJSON
+    const currentState = clone(graph.serialize()) as ComfyWorkflowJSON
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
       const previousState = this.activeState
-      const nodeHistoryWidgets = collectNodeHistoryWidgets(useApp().rootGraph)
+      const nodeHistoryWidgets = collectNodeHistoryWidgets(graph)
       if (
         !differsOnlyInNodeHistoryWidgets(
           previousState,
@@ -536,20 +530,15 @@ export class ChangeTracker implements WorkflowChangeTracker {
 
       this.activeState = currentState
       this.updateModified(previousState)
-      forgetRemovedNodeHistories(nodeHistoryWidgets)
+      forgetRemovedNodeHistories(graph, nodeHistoryWidgets)
       void this.squashState()
     }
   }
   squashState = useDebounceFn(() => {
-    if (
-      this !== useWorkflowStore().activeWorkflow?.changeTracker ||
-      ChangeTracker.isLoadingGraph
-    )
-      return
+    const graph = this.workflow.graph
+    if (!graph || !isActiveTracker(this) || ChangeTracker.isLoadingGraph) return
 
-    const currentState = clone(
-      useApp().rootGraph.serialize()
-    ) as ComfyWorkflowJSON
+    const currentState = clone(graph.serialize()) as ComfyWorkflowJSON
     if (ChangeTracker.graphEqual(this.activeState, currentState)) return
 
     const previousState = this.activeState
@@ -580,7 +569,10 @@ export class ChangeTracker implements WorkflowChangeTracker {
       const prevState = source.pop()
       if (prevState) {
         const previousState = this.activeState
-        const targetState = keepingLiveNodeHistoryValues(prevState)
+        const targetState = keepingLiveNodeHistoryValues(
+          prevState,
+          this.workflow.graph
+        )
         const restoresSavedState = ChangeTracker.graphEqual(
           targetState,
           this.initialState
@@ -612,9 +604,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
           }
           if (restored) {
             this.updateModified(previousState)
-            forgetRemovedNodeHistories(
-              collectNodeHistoryWidgets(useApp().rootGraph)
-            )
+            forgetRemovedNodeHistories(this.workflow.graph)
           }
         }
       }

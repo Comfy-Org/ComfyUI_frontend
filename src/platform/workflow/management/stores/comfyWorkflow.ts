@@ -1,6 +1,8 @@
 import { markRaw } from 'vue'
+import type { Raw } from 'vue'
 
 import { assert } from '@/base/assert'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -278,6 +280,8 @@ export class ComfyWorkflow extends UserFile {
    * The change tracker for the workflow. Non-reactive raw object.
    */
   changeTracker: WorkflowChangeTracker | null = null
+  /** The live litegraph instance this workflow owns once loaded. */
+  graph: Raw<LGraph> | null = null
   /**
    * Whether the workflow has been modified comparing to the initial state.
    */
@@ -373,12 +377,31 @@ export class ComfyWorkflow extends UserFile {
     return this as this & LoadedComfyWorkflow
   }
 
+  /** Take ownership of `graph`, disposing any previously owned instance. */
+  adoptGraph(graph: LGraph): void {
+    if (this.graph === graph) return
+    const previous = this.graph
+    this.graph = markRaw(graph)
+    previous?.clear()
+  }
+
+  /** Dispose the owned graph instance and its per-root store state. */
+  releaseGraph(): void {
+    const graph = this.graph
+    this.graph = null
+    graph?.clear()
+  }
+
   override unload(): void {
     const rootGraphId = this.changeTracker?.activeState.id
     if (rootGraphId) workflowRuntime().forgetNodeHistories(rootGraphId)
-    this.changeTracker = null
-    this.activeMode = null
-    super.unload()
+    try {
+      this.releaseGraph()
+    } finally {
+      this.changeTracker = null
+      this.activeMode = null
+      super.unload()
+    }
   }
 
   override async save() {

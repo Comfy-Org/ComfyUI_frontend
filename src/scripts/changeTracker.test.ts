@@ -23,7 +23,7 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -34,6 +34,7 @@ import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
 import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
@@ -85,7 +86,8 @@ function createState(nodeCount = 0): ComfyWorkflowJSON {
 function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
   const state = initialState ?? createState()
   const workflow = {
-    path: `/test/workflow-${++workflowPathCounter}.json`
+    path: `/test/workflow-${++workflowPathCounter}.json`,
+    graph: app.rootGraph
   } as never
   const tracker = markRaw(new ChangeTracker(workflow, state))
   useWorkflowStore().activeWorkflow = fromPartial({
@@ -435,16 +437,30 @@ describe('ChangeTracker', () => {
 
   describe('captureCanvasState', () => {
     describe('guards', () => {
-      it('is a no-op when the graph is not ready', () => {
+      it('is a no-op when the workflow owns no graph', () => {
         const tracker = createTracker()
         const original = tracker.activeState
+        tracker.workflow.graph = null
 
-        const spy = vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
         tracker.captureCanvasState()
-        spy.mockRestore()
 
         expect(app.rootGraph.serialize).not.toHaveBeenCalled()
         expect(tracker.activeState).toBe(original)
+      })
+
+      it('snapshots the workflow graph even while another graph is on the canvas', () => {
+        const tracker = createTracker(createState(1))
+        const ownState = createState(2)
+        const ownGraph = new LGraph()
+        vi.spyOn(ownGraph, 'serialize').mockReturnValue(ownState as never)
+        tracker.workflow.graph = markRaw(ownGraph)
+        mockCanvasState(createState(3))
+
+        tracker.captureCanvasState()
+
+        expect(app.rootGraph.serialize).not.toHaveBeenCalled()
+        expect(tracker.activeState).toEqual(ownState)
+        expect(tracker.undoQueue).toHaveLength(1)
       })
 
       it('is a no-op when changeCount > 0', () => {
@@ -2331,6 +2347,68 @@ describe('ChangeTracker', () => {
         stateWith(id, { width: 512, bboxes: [regionA] })
       )
       expect(tracker.redoQueue).toEqual([movedAndEdited])
+    })
+
+    it('preserves live values and prunes only the restored background workflow histories', async () => {
+      const { id } = addBoundingBoxesNode()
+      const visibleHistory = recordNodeHistory(id)
+      const visible = stateWith(id, { width: 512, bboxes: [regionB] })
+      const activeTracker = createTracker(visible)
+      mockCanvasState(visible)
+      const graph = new LGraph()
+      const node = new LGraphNode('CreateBoundingBoxes')
+      node.id = id
+      node.serialize_widgets = true
+      node.pos = [50, 50]
+      const backgroundRegion = {
+        ...regionA,
+        metadata: { type: 'obj', text: '', desc: '', palette: [] }
+      } satisfies BoundingBox
+      node.addWidget('number', 'width', 512, null)
+      node.addWidget('boundingboxes', 'bboxes', [backgroundRegion], null)
+      graph.add(node)
+      const initial = stateWith(id, { width: 512, bboxes: [] })
+      const current = stateWith(
+        id,
+        { width: 512, bboxes: [backgroundRegion] },
+        [50, 50]
+      )
+      const tracker = new ChangeTracker(
+        fromPartial({ path: '/test/background.json', graph }),
+        current
+      )
+      tracker.undoQueue.push(initial)
+      const liveScope = {
+        rootGraphId: graph.id,
+        widgetId: widgetId(graph.id, id, 'bboxes')
+      }
+      const removedScope = {
+        rootGraphId: graph.id,
+        widgetId: widgetId(graph.id, toNodeId(99), 'bboxes')
+      }
+      const histories = useWidgetHistoryStore()
+      histories.record(liveScope, [])
+      histories.record(removedScope, [])
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async (state) => {
+        assert.exists(state)
+        tracker.reset(state)
+        return true
+      })
+      vi.mocked(api.dispatchCustomEvent).mockClear()
+
+      await tracker.undo()
+
+      expect(dispatchedEventNames()).not.toContain('graphChanged')
+      expectAutoQueueGraphChangedNotDispatched()
+      expect(tracker.activeState).toEqual(
+        stateWith(id, { width: 512, bboxes: [backgroundRegion] })
+      )
+      expect([
+        histories.canUndo(liveScope),
+        histories.canUndo(removedScope),
+        visibleHistory()
+      ]).toEqual([true, false, true])
+      expect(activeTracker.activeState).toEqual(visible)
     })
 
     it('forgets the node history of a deleted node', () => {
