@@ -1111,6 +1111,11 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     if (isListed()) mutableActiveWorkspaceId.value = hostWorkspaceId
   }
 
+  watch(desktopHostUser, (hostUser) => {
+    if (hostUser && initState.value === 'error')
+      void initialize().catch(() => undefined)
+  })
+
   watch(
     () => desktopHostUser.value?.workspaceId,
     (hostWorkspaceId) => {

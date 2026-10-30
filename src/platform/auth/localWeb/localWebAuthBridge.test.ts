@@ -589,6 +589,28 @@ describe('getWorkspaceToken', () => {
     })
   })
 
+  it('stays signed in while the token endpoint is unreachable, and says so again once it answers', async () => {
+    const { bridge, env, states } = await signedIn(30)
+    const renewed = accessToken({ sub: 'user-1', workspace_id: 'ws-1', n: 2 })
+    env.fetchImpl.mockImplementation(
+      async () => new Response(null, { status: 503 })
+    )
+
+    await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBeNull()
+    expect(states).toEqual([])
+
+    env.fetchImpl.mockImplementation(async () =>
+      tokenResponse(renewed, 'refresh-2')
+    )
+    await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBe(renewed)
+
+    expect(states.at(-1)).toMatchObject({
+      status: 'signed_in',
+      userId: 'user-1',
+      workspaceId: 'ws-1'
+    })
+  })
+
   it('signs out when the refresh token is dead', async () => {
     const { bridge, env, states } = await signedIn(30)
     env.fetchImpl.mockImplementation(async () => oauthError('invalid_grant'))

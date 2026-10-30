@@ -2647,6 +2647,23 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.initState).toBe('error')
     })
 
+    it('initializes again when the host session is announced after a failed start', async () => {
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace]
+      })
+      const store = useTeamWorkspaceStore()
+      await expect(store.initialize()).rejects.toThrow()
+      expect(store.initState).toBe('error')
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+      })
+
+      pushHostState(hostOn(mockTeamWorkspace.id))
+
+      await vi.waitFor(() => expect(store.initState).toBe('ready'))
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
     it('switches through Desktop without a reload or token exchange', async () => {
       const store = useTeamWorkspaceStore()
       await store.initialize()

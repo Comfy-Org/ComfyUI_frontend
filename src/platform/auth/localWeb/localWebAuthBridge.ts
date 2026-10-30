@@ -109,6 +109,7 @@ export function createLocalWebAuthBridge(
 ): LocalWebAuthBridge {
   const listeners = new Set<(state: DesktopHostAuthState) => void>()
   let refreshing: Promise<OAuthTokens | undefined> | undefined
+  let tokenUnreachable = false
   let signingIn:
     | {
         popup: LocalWebPopup
@@ -422,7 +423,14 @@ export function createLocalWebAuthBridge(
 
     async getWorkspaceToken(workspaceId) {
       const tokens = await freshTokens()
-      if (!tokens) return null
+      if (!tokens) {
+        tokenUnreachable = activeTokens() !== undefined
+        return null
+      }
+      if (tokenUnreachable) {
+        tokenUnreachable = false
+        emit()
+      }
       const identity = readAccessTokenIdentity(tokens.accessToken)
       return identity?.workspaceId === workspaceId ? tokens.accessToken : null
     },
