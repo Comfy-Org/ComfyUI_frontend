@@ -315,18 +315,19 @@ describe('reduceBillingOperation', () => {
     )
   })
 
-  it('clears the deadline when a hosted flow moves past a settled challenge and the server later omits both secret and deadline', () => {
-    const settled = reduceBillingOperation(
+  it('clears the deadline when a hosted flow moves past a failed challenge and the server later omits both secret and deadline', () => {
+    const hosted = reduceBillingOperation(
       reduceBillingOperation(
         reduceBillingOperation(
           polled(pending({ kind: 'topup' }), {
             authentication_state: 'requires_action',
             authentication_deadline: '2026-10-30T15:40:00Z',
-            payment_intent_client_secret: 'pi_a'
+            payment_intent_client_secret: 'pi_a',
+            action_url: 'https://billing.example/continue'
           }),
           { type: 'challenge_started' }
         ),
-        { type: 'challenge_settled', outcome: 'completed' }
+        { type: 'challenge_settled', outcome: 'failed' }
       ),
       {
         type: 'presentation_switched',
@@ -334,7 +335,7 @@ describe('reduceBillingOperation', () => {
         hostedDestination: 'billing_web'
       }
     )
-    const servedB = polled(settled, {
+    const servedB = polled(hosted, {
       authentication_state: 'requires_action',
       authentication_deadline: '2026-10-30T16:10:00Z',
       payment_intent_client_secret: 'pi_b'
@@ -344,12 +345,18 @@ describe('reduceBillingOperation', () => {
       authentication_state: 'requires_action'
     })
 
-    expect((servedB as PendingBillingOperation).authenticationDeadline).toBe(
-      '2026-10-30T16:10:00Z'
-    )
-    expect(
-      (secretless as PendingBillingOperation).authenticationDeadline
-    ).toBeUndefined()
+    expect(hosted).toMatchObject({
+      presentation: 'hosted',
+      actionUrl: 'https://billing.example/continue'
+    })
+    expect(servedB).toMatchObject({
+      phase: 'pending',
+      authenticationDeadline: '2026-10-30T16:10:00Z'
+    })
+    expect(secretless).toMatchObject({
+      phase: 'pending',
+      authenticationDeadline: undefined
+    })
   })
 
   it('drops the authentication deadline once the server settles the operation', () => {
