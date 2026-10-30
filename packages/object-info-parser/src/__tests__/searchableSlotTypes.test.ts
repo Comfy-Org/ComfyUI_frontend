@@ -247,6 +247,18 @@ describe('collectSearchableOutputTypes', () => {
     ).toEqual(['LATENT', 'MASK', 'AUDIO'])
   })
 
+  it('keeps a plain output beside a MatchType output', () => {
+    const inputs = { value: toV2(matchType('LATENT', 'group-a'), 'value') }
+    const mixedOutputs: OutputSpecV2[] = [
+      { index: 0, name: 'image', type: 'IMAGE,MASK', is_list: false },
+      { index: 1, name: 'out', type: 'COMFY_MATCHTYPE_V3', is_list: false }
+    ]
+
+    expect(
+      collectSearchableOutputTypes(mixedOutputs, inputs, [undefined, 'group-a'])
+    ).toEqual(['IMAGE', 'MASK', 'LATENT'])
+  })
+
   it('yields nothing for a MatchType output without a template id', () => {
     const inputs = { value: toV2(matchType('LATENT', 'group-a'), 'value') }
 
