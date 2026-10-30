@@ -83,8 +83,7 @@ const CORE_MENU_ITEMS = new Set([
   'Copy (Clipspace)',
   'Paste (Clipspace)',
   // Selection and alignment
-  'Align Selected To',
-  'Distribute Nodes',
+  'Arrange',
   // Deletion
   'Delete',
   'Remove',

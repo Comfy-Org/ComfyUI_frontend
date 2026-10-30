@@ -3,6 +3,8 @@ import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
+import { isSubMenuOption } from '@/composables/graph/menuOption'
+import type { SubMenuOption } from '@/composables/graph/menuOption'
 import { useGroupMenuOptions } from '@/composables/graph/useGroupMenuOptions'
 import { LGraphCanvas, LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
@@ -22,11 +24,13 @@ describe('useGroupMenuOptions.getGroupColorOptions', () => {
     const group = new LGraphGroup('Test Group')
     setCanvasSelection([group])
 
-    let submenu: { label: string; action: () => void }[] = []
+    let submenu: SubMenuOption[] = []
     const Wrapper = defineComponent({
       setup() {
         const { getGroupColorOptions } = useGroupMenuOptions()
-        submenu = getGroupColorOptions(group, () => {}).submenu ?? []
+        submenu = (getGroupColorOptions(group, () => {}).submenu ?? []).filter(
+          isSubMenuOption
+        )
         return () => null
       }
     })

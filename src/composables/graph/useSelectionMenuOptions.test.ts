@@ -3,13 +3,15 @@ import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
+import { isSubMenuOption } from '@/composables/graph/menuOption'
 import { useSelectionMenuOptions } from '@/composables/graph/useSelectionMenuOptions'
 
 const mocks = vi.hoisted(() => ({
   convertToSubgraph: vi.fn(),
   unpackSubgraph: vi.fn(),
   addSubgraphToLibrary: vi.fn(),
-  frameNodes: vi.fn()
+  frameNodes: vi.fn(),
+  canArrange: { value: true }
 }))
 
 const i18n = createI18n({
@@ -30,7 +32,9 @@ vi.mock<unknown>(import('@/composables/graph/useSelectionOperations'), () => ({
 }))
 
 vi.mock<unknown>(import('@/composables/graph/useNodeArrangement'), () => ({
+  ARRANGE_ICON: 'arrange',
   useNodeArrangement: () => ({
+    canArrange: mocks.canArrange,
     alignOptions: [{ localizedName: 'align-left', icon: 'align-left' }],
     distributeOptions: [{ localizedName: 'distribute', icon: 'distribute' }],
     applyAlign: vi.fn(),
@@ -133,4 +137,38 @@ describe('useSelectionMenuOptions - subgraph options', () => {
     )
     expect(addToLibraryOption?.action).toBe(mocks.addSubgraphToLibrary)
   })
+})
+
+describe('useSelectionMenuOptions - arrange option', () => {
+  it('puts Tidy up, the align options and the distribute options in one submenu', () => {
+    const { getArrangeOption } = setupComposable()
+    const option = getArrangeOption()
+
+    expect(option.label).toBe('contextMenu.Arrange')
+    expect(
+      option.submenu?.map((item) =>
+        isSubMenuOption(item) ? item.label : 'divider'
+      )
+    ).toEqual(['g.tidyUp', 'divider', 'align-left', 'divider', 'distribute'])
+  })
+
+  it.for([
+    { canArrange: true, disabled: false },
+    { canArrange: false, disabled: true }
+  ])(
+    'disables the align and distribute options: $disabled, when canArrange is $canArrange',
+    ({ canArrange, disabled }) => {
+      mocks.canArrange.value = canArrange
+      const { getArrangeOption } = setupComposable()
+
+      const arrangeOptions = (getArrangeOption().submenu ?? [])
+        .filter(isSubMenuOption)
+        .filter((item) => item.label !== 'g.tidyUp')
+      expect(arrangeOptions.map((item) => Boolean(item.disabled))).toEqual([
+        disabled,
+        disabled
+      ])
+      mocks.canArrange.value = true
+    }
+  )
 })

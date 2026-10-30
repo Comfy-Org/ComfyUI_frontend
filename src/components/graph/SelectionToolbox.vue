@@ -23,7 +23,16 @@
               <InfoButton v-if="canOpenNodeInfo" />
 
               <ColorPickerButton v-if="showColorPicker" />
-              <TidyUpButton v-if="showTidyUp" v-model:lift="lift" />
+              <TidyUpButton
+                v-if="showTidyUp"
+                v-model:open="tidyOpen"
+                v-model:lift="tidyLift"
+              />
+              <AlignButton
+                v-if="showAlign"
+                v-model:open="alignOpen"
+                v-model:lift="alignLift"
+              />
               <FrameNodes v-if="showFrameNodes" />
               <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
               <ConfigureSubgraph v-if="showSubgraphButtons" />
@@ -55,6 +64,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import AlignButton from '@/components/graph/selectionToolbox/AlignButton.vue'
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import ConfigureSubgraph from '@/components/graph/selectionToolbox/ConfigureSubgraph.vue'
@@ -90,7 +100,20 @@ const canvasInteractions = useCanvasInteractions()
 const linkSelectionStore = useLinkSelectionStore()
 
 const toolboxRef = ref<HTMLElement | undefined>()
-const lift = ref(0)
+const openBar = ref<'tidy' | 'align'>()
+const barOpen = (bar: 'tidy' | 'align') =>
+  computed({
+    get: () => openBar.value === bar,
+    set: (open: boolean) => {
+      if (open) openBar.value = bar
+      else if (openBar.value === bar) openBar.value = undefined
+    }
+  })
+const tidyOpen = barOpen('tidy')
+const alignOpen = barOpen('align')
+const tidyLift = ref(0)
+const alignLift = ref(0)
+const lift = computed(() => Math.max(tidyLift.value, alignLift.value))
 const { visible } = useSelectionToolboxPosition(toolboxRef, lift)
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
@@ -124,6 +147,7 @@ const {
 const showColorPicker = computed(() => hasAnySelection.value)
 const showConvertToSubgraph = computed(() => hasAnySelection.value)
 const showTidyUp = computed(() => hasMultipleSelection.value)
+const showAlign = computed(() => hasMultipleSelection.value)
 const showFrameNodes = computed(() => hasMultipleSelection.value)
 const showSubgraphButtons = computed(() => isSingleSubgraph.value)
 
@@ -150,6 +174,7 @@ const showAnyPrimaryActions = computed(
     showColorPicker.value ||
     showConvertToSubgraph.value ||
     showTidyUp.value ||
+    showAlign.value ||
     showFrameNodes.value ||
     showSubgraphButtons.value
 )

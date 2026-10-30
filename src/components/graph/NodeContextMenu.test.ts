@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -9,7 +9,9 @@ import {
   showNodeOptions,
   toggleNodeOptions
 } from '@/composables/graph/useMoreOptionsMenu'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 import NodeContextMenu from './NodeContextMenu.vue'
 
@@ -95,6 +97,34 @@ describe('NodeContextMenu', () => {
     await user.click(moreOptions)
 
     expect(await screen.findByRole('menu')).toBeVisible()
+  })
+
+  it('groups Tidy up, the align options and the distribute options in the Arrange submenu', async () => {
+    setCanvasSelection([new LGraphNode('First'), new LGraphNode('Second')])
+    render(NodeContextMenu, { global: { plugins: [i18n] } })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    toggleNodeOptions(new MouseEvent('click', { clientX: 100, clientY: 120 }))
+    await user.click(
+      await screen.findByRole('menuitem', { name: 'contextMenu.Arrange' })
+    )
+
+    await waitFor(() => expect(screen.getAllByRole('menu')).toHaveLength(2))
+    const submenu = screen.getAllByRole('menu')[1]
+    expect(
+      within(submenu)
+        .getAllByRole('menuitem')
+        .map((item) => item.textContent)
+    ).toEqual([
+      'g.tidyUp',
+      'contextMenu.Align top',
+      'contextMenu.Align bottom',
+      'contextMenu.Align left',
+      'contextMenu.Align right',
+      'contextMenu.Distribute horizontally',
+      'contextMenu.Distribute vertically'
+    ])
+    expect(within(submenu).getAllByRole('separator')).toHaveLength(2)
   })
 
   it('reopens at another control when its press dismisses the menu', async () => {

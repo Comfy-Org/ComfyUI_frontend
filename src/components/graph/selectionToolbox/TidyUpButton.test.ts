@@ -124,6 +124,42 @@ describe('TidyUpButton', () => {
     }
   )
 
+  it('starts closed again after it unmounts with its gap bar open', async () => {
+    const shown = ref(true)
+    const open = ref(false)
+    const { unmount } = render(
+      defineComponent({
+        render: () =>
+          h(TooltipProvider, () =>
+            h(
+              'div',
+              { 'data-selection-toolbox': '' },
+              shown.value
+                ? [
+                    h(TidyUpButton, {
+                      open: open.value,
+                      'onUpdate:open': (value: boolean) => (open.value = value)
+                    })
+                  ]
+                : []
+            )
+          )
+      }),
+      { global: { plugins: [i18n], stubs: { SelectionGapHandles: true } } }
+    )
+    await openBar()
+    expect(open.value).toBe(true)
+
+    shown.value = false
+    await nextTick()
+    expect(open.value).toBe(false)
+
+    shown.value = true
+    await nextTick()
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument()
+    unmount()
+  })
+
   it('stays open and lifted for a press on another toolbox button', async () => {
     const { unmount, lift } = renderButton()
     const { user } = await openBar()

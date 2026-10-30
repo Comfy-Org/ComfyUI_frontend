@@ -10,31 +10,25 @@
         <i class="icon-[lucide--layout-dashboard]" />
       </Button>
     </PopoverTrigger>
-    <PopoverPortal :key="Number(isOpen)">
-      <PopoverContent
-        side="bottom"
-        :side-offset="BAR_SIDE_OFFSET"
-        :collision-padding="10"
-        update-position-strategy="always"
-        class="z-overlay floating-panel will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
-        @interact-outside="keepOpenForToolboxAndHandles"
-      >
-        <div class="flex h-8 w-44 items-center gap-2 pr-1 pl-3">
-          <Slider
-            :model-value="[clamp(gap, MIN_TIDY_GAP, MAX_TIDY_GAP)]"
-            :min="MIN_TIDY_GAP"
-            :max="MAX_TIDY_GAP"
-            :step="1"
-            :aria-label="t('g.gapHandle')"
-            @update:model-value="onSliderUpdate"
-            @value-commit="onSliderCommit"
-          />
-          <span class="min-w-6 shrink-0 text-right text-xs tabular-nums">
-            {{ hasMixedGaps ? t('g.mixedGaps') : gap }}
-          </span>
-        </div>
-      </PopoverContent>
-    </PopoverPortal>
+    <SelectionToolboxBar
+      :open="isOpen"
+      keep-open-for="[data-selection-toolbox], [data-gap-handle]"
+    >
+      <div class="flex h-8 w-44 items-center gap-2 pr-1 pl-3">
+        <Slider
+          :model-value="[clamp(gap, MIN_TIDY_GAP, MAX_TIDY_GAP)]"
+          :min="MIN_TIDY_GAP"
+          :max="MAX_TIDY_GAP"
+          :step="1"
+          :aria-label="t('g.gapHandle')"
+          @update:model-value="onSliderUpdate"
+          @value-commit="onSliderCommit"
+        />
+        <span class="min-w-6 shrink-0 text-right text-xs tabular-nums">
+          {{ hasMixedGaps ? t('g.mixedGaps') : gap }}
+        </span>
+      </div>
+    </SelectionToolboxBar>
   </PopoverRoot>
   <Teleport to="body">
     <SelectionGapHandles
@@ -47,14 +41,8 @@
 
 <script setup lang="ts">
 import { clamp } from 'es-toolkit'
-import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
-import {
-  PopoverContent,
-  PopoverPortal,
-  PopoverRoot,
-  PopoverTrigger
-} from 'reka-ui'
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import { onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -66,13 +54,11 @@ import {
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
-
-const TOOLBOX_INSET = 4
-const BAR_GAP_BELOW_TOOLBOX = 8
-const BAR_INSET = 4
-const TRIGGER_HEIGHT = 32
-const BAR_SIDE_OFFSET = TOOLBOX_INSET + BAR_GAP_BELOW_TOOLBOX
-const LIFT_WHILE_OPEN = BAR_SIDE_OFFSET + BAR_INSET + TRIGGER_HEIGHT
+import SelectionToolboxBar from '@/components/graph/selectionToolbox/SelectionToolboxBar.vue'
+import {
+  LIFT_WHILE_OPEN,
+  hasSameMembers
+} from '@/components/graph/selectionToolbox/selectionToolboxBar'
 
 const { t } = useI18n()
 const { canTidy, gridNodes } = useSelectionGrid()
@@ -80,7 +66,7 @@ const { gap, hasMixedGaps, handles, start, previewGap, commitGap, finish } =
   useTidySession()
 const lift = defineModel<number>('lift', { default: 0 })
 
-const isOpen = ref(false)
+const isOpen = defineModel<boolean>('open', { default: false })
 
 watch(isOpen, (open) => {
   lift.value = open ? LIFT_WHILE_OPEN : 0
@@ -88,33 +74,14 @@ watch(isOpen, (open) => {
   else finish()
 })
 
-const hasSameNodes = <T>(nodes: T[], previous: T[]) => {
-  const previousNodes = new Set(previous)
-  return (
-    nodes.length === previousNodes.size &&
-    nodes.every((node) => previousNodes.has(node))
-  )
-}
-
 watch(gridNodes, (nodes, previous) => {
-  if (!hasSameNodes(nodes, previous)) isOpen.value = false
+  if (!hasSameMembers(nodes, previous)) isOpen.value = false
 })
 
 onBeforeUnmount(() => {
+  isOpen.value = false
   lift.value = 0
 })
-
-const keepOpenForToolboxAndHandles = (
-  event: FocusOutsideEvent | PointerDownOutsideEvent
-) => {
-  const { target } = event.detail.originalEvent
-  if (
-    target instanceof Element &&
-    target.closest('[data-selection-toolbox], [data-gap-handle]')
-  ) {
-    event.preventDefault()
-  }
-}
 
 const applySliderGap = (
   value: number[] | undefined,
