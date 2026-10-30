@@ -11,6 +11,7 @@
       "@comfyorg/api-client",
       "@comfyorg/billing-contract",
       "@comfyorg/billing-core",
+      "@comfyorg/comfyui-api-types",
       "@comfyorg/design-system",
       "@comfyorg/graph-model",
       "@comfyorg/ingest-types",
@@ -39,6 +40,7 @@
       "enablers": ["fallow"],
       "entryPoints": [
         "**/.storybook/{main.ts,preview.ts,style.css}",
+        "packages/comfyui-api-types/openapi-ts.config.ts",
         "packages/ingest-types/openapi-ts.config.ts",
         "scripts/**/*.{js,ts}"
       ],
@@ -95,6 +97,18 @@
   ],
 
   "ignoreExports": [
+    // Generated from core's pinned OpenAPI spec. openapi-ts emits the whole
+    // operation surface for the filtered endpoint; src/index.ts re-exports only
+    // the members this repo consumes, and is NOT ignored, so an unused
+    // derivation there still surfaces.
+    {
+      "file": "packages/comfyui-api-types/src/generated/index.ts",
+      "exports": ["*"]
+    },
+    {
+      "file": "packages/comfyui-api-types/src/generated/types.gen.ts",
+      "exports": ["*"]
+    },
     // Public extension API surface, deliberately exported for the 40+ custom-node
     // ecosystem (ADR-LAYOUT / ADR-ECS). No internal importer by design.
     { "file": "src/types/index.ts", "exports": ["*"] },
