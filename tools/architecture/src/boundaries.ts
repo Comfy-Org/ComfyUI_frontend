@@ -88,13 +88,6 @@ function domainZones(
   })
 }
 
-function permits(consumer: DomainRecord, producer: DomainRecord): boolean {
-  return (
-    consumer.allowedDependencies.includes(producer.id) &&
-    producer.allowedConsumers.includes(consumer.id)
-  )
-}
-
 function reachableFromOutside(zone: Zone): boolean {
   return zone.isPublic || zone.domain.deepImports === 'inventory'
 }
@@ -105,9 +98,7 @@ function allowedTargets(source: Zone, zones: Zone[]): string[] {
     .filter(
       (target) =>
         roles.includes(target.role) &&
-        (target.domain === source.domain ||
-          (permits(source.domain, target.domain) &&
-            reachableFromOutside(target)))
+        (target.domain === source.domain || reachableFromOutside(target))
     )
     .map(({ name }) => name)
 }

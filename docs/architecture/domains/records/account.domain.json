@@ -86,8 +86,6 @@
     "src/platform/account/composables/useInviteUrlLoader.ts",
     "src/platform/account/composables/useWorkspaceDialogs.ts"
   ],
-  "allowedDependencies": ["billing", "ingest-api", "server-facts", "workspace"],
-  "allowedConsumers": ["app-host", "authentication", "settings"],
   "characterizationScenarios": [
     {
       "name": "Account bootstrap waits for identity, workspace selection, and billing capabilities",

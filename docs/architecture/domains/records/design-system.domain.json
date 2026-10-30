@@ -109,14 +109,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [
-    "agent",
-    "billing",
-    "bounding-boxes",
-    "extension-manager",
-    "keybindings"
-  ],
   "characterizationScenarios": [
     {
       "name": "Form controls preserve value binding, validation state, and accessible semantics",
@@ -233,7 +225,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules until a tested public entry point and dependency approval exist.",
+    "Callers may import these internals during inventory; imports that break role direction remain subject to cross-domain rules until a tested public entry point exists.",
     "Component file paths, props, emits, and slots stay stable because extensions, renderer widgets, platform features, and stories import them directly.",
     "The toast store keeps its Pinia id and the add, update, and remove contract used by api, app, and service callers.",
     "Curve and range value shapes stay compatible with the litegraph widget types and GLSL uniform consumers that read them.",

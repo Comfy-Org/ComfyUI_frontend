@@ -30,15 +30,6 @@
     "src/platform/remote/ingest/webSessionAdapter.ts",
     "src/platform/remote/ingest/capabilityRevision.ts"
   ],
-  "allowedDependencies": [],
-  "allowedConsumers": [
-    "account",
-    "authentication",
-    "billing",
-    "error-reporting",
-    "telemetry",
-    "workspace"
-  ],
   "characterizationScenarios": [
     {
       "name": "Ingest errors preserve HTTP status, operation, and workspace-access refusal identity",
@@ -62,7 +53,7 @@
   ],
   "compatibilityPromises": [
     "WorkspaceApiError and NoWorkspaceAccessError retain shared runtime identity across billing and workspace clients.",
-    "Approved consumers import only the characterized public contracts; other ingest modules are not opened by this record."
+    "Other domains import only the characterized public contracts; other ingest modules are not opened by this record."
   ],
   "deepImports": "enforced"
 }

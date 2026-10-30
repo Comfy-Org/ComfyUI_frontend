@@ -73,8 +73,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["workflow-management"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Execution store tracks progress, completion, interruption, and errors from websocket events",

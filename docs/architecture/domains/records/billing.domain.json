@@ -385,14 +385,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [
-    "design-system",
-    "ingest-api",
-    "keybindings",
-    "server-facts",
-    "telemetry"
-  ],
-  "allowedConsumers": ["account"],
   "characterizationScenarios": [
     {
       "name": "Billing context routes reads and actions to the legacy or workspace billing rail",

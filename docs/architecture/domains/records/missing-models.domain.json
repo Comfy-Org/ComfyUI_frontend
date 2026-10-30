@@ -49,8 +49,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Missing model scan finds, verifies, and groups models absent from the installation",

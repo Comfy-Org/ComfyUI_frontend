@@ -21,8 +21,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["extension-manager", "keybindings"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Help center menu lists help links, feedback, and release notes and opens from the side toolbar",

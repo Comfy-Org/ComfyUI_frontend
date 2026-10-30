@@ -57,8 +57,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Promoted widgets resolve to their concrete inner widgets and keep values",

@@ -61,8 +61,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Layout store preserves geometry, actors, holders, and hit targets",

@@ -17,8 +17,6 @@
     "src/platform/serverFacts/serverFact.ts",
     "src/utils/__tests__/serverFactGate.ts"
   ],
-  "allowedDependencies": [],
-  "allowedConsumers": ["account", "billing", "workspace"],
   "characterizationScenarios": [
     {
       "name": "pendingServerFact returns its value and requires a backend ticket id",

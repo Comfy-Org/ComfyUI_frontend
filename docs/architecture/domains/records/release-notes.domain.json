@@ -17,8 +17,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["keybindings"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Release store fetches the feed and decides when to surface new-release UI",

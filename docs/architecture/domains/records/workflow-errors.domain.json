@@ -69,8 +69,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["extension-manager", "keybindings"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Error groups classify execution errors, missing nodes, missing models, and swappable nodes",

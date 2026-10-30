@@ -137,8 +137,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Asset service and stores fetch, paginate, and cache asset records",

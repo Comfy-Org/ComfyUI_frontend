@@ -81,21 +81,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [
-    "app-host",
-    "ingest-api",
-    "runtime-guards",
-    "telemetry"
-  ],
-  "allowedConsumers": [
-    "agent",
-    "app-host",
-    "dialog-host",
-    "extension-runtime",
-    "graph-model",
-    "node-widgets",
-    "workflow-management"
-  ],
   "characterizationScenarios": [
     {
       "name": "reportError routes each failure once to the sinks enabled for the distribution and host",

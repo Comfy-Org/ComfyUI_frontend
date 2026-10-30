@@ -69,8 +69,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Viewport orchestration preserves sizing, render loop, and context-menu behavior",
