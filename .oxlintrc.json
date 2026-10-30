@@ -185,7 +185,9 @@
         "src/**/*.vue",
         "apps/*/src/**/*.ts",
         "apps/*/src/**/*.tsx",
-        "apps/*/src/**/*.vue"
+        "apps/*/src/**/*.vue",
+        "packages/api-client/src/**/*.ts",
+        "packages/settings-core/src/**/*.ts"
       ],
       "excludeFiles": [
         "**/*.test.ts",
