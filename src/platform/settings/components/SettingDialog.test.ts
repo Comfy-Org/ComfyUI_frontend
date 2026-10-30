@@ -27,7 +27,7 @@ const searchMocks = vi.hoisted(() => ({
   matchedNavItemKeys: null as unknown as Ref<Set<string>>,
   searchQuery: null as unknown as Ref<string>,
   searchResultsCategories: null as unknown as Ref<Set<string>>,
-  handleSearch: null as unknown as ReturnType<typeof vi.fn>
+  handleSearch: vi.fn()
 }))
 
 vi.mock<unknown>(
@@ -255,13 +255,14 @@ it('navigates to a panel requested while the dialog is already open', async () =
 
 it('navigates to a repeated panel request made after moving away in-dialog', async () => {
   defaultCategory.value = { key: 'workspace', label: 'Workspace', children: [] }
+  const user = userEvent.setup()
   const onClose = vi.fn()
   const { rerender } = renderDialog({
     props: { onClose, defaultPanel: 'workspace', navigationRequestId: 1 }
   })
   expect(await screen.findByText('workspace panel')).toBeInTheDocument()
 
-  await userEvent.click(screen.getByRole('button', { name: 'Allowlist' }))
+  await user.click(screen.getByRole('button', { name: 'Allowlist' }))
   expect(
     await screen.findByText('workspace-allowlist panel')
   ).toBeInTheDocument()
