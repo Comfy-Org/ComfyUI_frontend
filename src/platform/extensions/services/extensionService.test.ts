@@ -236,9 +236,7 @@ describe('invokeExtensionsAsync', () => {
         ): Promise<false | undefined> =>
           isGraphLoadHookOrigin(options) ? false : void 0
       )
-      vi.spyOn(app, 'handleFile').mockImplementation(
-        wrap(handleFile)
-      )
+      vi.spyOn(app, 'handleFile').mockImplementation(wrap(handleFile))
       let nested: Promise<unknown> | undefined
       register({
         name: 'hook-file-loader',
@@ -301,14 +299,12 @@ describe('invokeExtensionsAsync', () => {
       }
       // An extension wrapper already on app.handleFile delays delegation, so
       // the independent call reaches the real entry first.
-      vi.spyOn(app, 'handleFile').mockImplementation(async (
-        file: File,
-        _openSource?: unknown,
-        options?: unknown
-      ) => {
-        await heldForwarding
-        entry('hook', file, options)
-      })
+      vi.spyOn(app, 'handleFile').mockImplementation(
+        async (file: File, _openSource?: unknown, options?: unknown) => {
+          await heldForwarding
+          entry('hook', file, options)
+        }
+      )
       register({
         name: 'awaiting-extension',
         beforeLoadGraph: (hookApp: HookApp) => hookApp.handleFile(hookFile)
