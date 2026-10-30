@@ -93,7 +93,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["ingest-api", "server-facts"],
+  "allowedDependencies": ["ingest-api", "server-facts", "workspace-link"],
   "allowedConsumers": ["account"],
   "characterizationScenarios": [
     {

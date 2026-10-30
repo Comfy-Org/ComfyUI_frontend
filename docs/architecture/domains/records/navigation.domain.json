@@ -21,7 +21,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["workspace-link"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

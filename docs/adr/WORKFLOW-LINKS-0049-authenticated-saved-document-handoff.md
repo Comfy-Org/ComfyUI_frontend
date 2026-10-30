@@ -127,3 +127,12 @@ rename; only its contract-established 404/412 responses become a typed local
 startup refusal so the URL coordinator can continue. Other transport failures
 and unrelated DOM errors retain their propagation. Failed reads always clear
 the document's loading state while retaining content and identity.
+
+Workspace package classification exposes the already published
+`@comfyorg/account-core/workspaceLink` subpath through the enforced
+`workspace-link` domain. Only its existing pure source leaf is public; package
+exports and parser bytes are unchanged. Workspace and account retain the shared
+contract, navigation reuses its validator, and classified billing contract tests
+retain their existing public imports. This avoids granting navigation access to
+the inventory-mode workspace domain or copying its identifier regular expression.
+All other workspace ownership and access modes stay unchanged.

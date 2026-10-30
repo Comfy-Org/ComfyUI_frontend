@@ -86,7 +86,13 @@
     "src/platform/account/composables/useInviteUrlLoader.ts",
     "src/platform/account/composables/useWorkspaceDialogs.ts"
   ],
-  "allowedDependencies": ["billing", "ingest-api", "server-facts", "workspace"],
+  "allowedDependencies": [
+    "billing",
+    "ingest-api",
+    "server-facts",
+    "workspace",
+    "workspace-link"
+  ],
   "allowedConsumers": ["app-host", "authentication", "settings"],
   "characterizationScenarios": [
     {

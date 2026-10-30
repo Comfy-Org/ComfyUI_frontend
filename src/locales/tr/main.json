@@ -83,6 +83,7 @@
     "copyMarkdown": "Markdown olarak kopyala",
     "copyUnavailable": "Bu sürümde yalnızca geçerli konuşma kopyalanabilir",
     "creditTransitionNotice": "Ücretsiz ajan kredilerinizi kullandınız. Sonraki ajan etkinlikleri, ücretli kredileri içerebilecek çalışma alanı kredilerinizi kullanır.",
+    "creditsUsed": "Ajan {credits} kredi kullandı | Ajan {credits} kredi kullandı",
     "currentTab": "Geçerli sekme",
     "delete": "Sil",
     "deleteApproval": {
