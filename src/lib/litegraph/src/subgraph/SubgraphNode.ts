@@ -757,11 +757,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return undefined
   }
 
-  /**
-   * App-layer hook to bind an input linked to an interior dynamic input group
-   * (e.g. autogrow), which this node then owns instead of promoting.
-   * @returns Whether the input was bound.
-   */
+  /** Binds an input linked to an interior dynamic input group, if it is one. */
   protected bindDynamicInput(
     _input: INodeInputSlot,
     _interiorNode: LGraphNode,
@@ -770,10 +766,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return false
   }
 
-  /**
-   * App-layer hook to release an input bound by {@link bindDynamicInput}.
-   * @returns Whether the input was bound.
-   */
+  /** Releases an input bound by {@link bindDynamicInput}, if it was. */
   protected unbindDynamicInput(_input: INodeInputSlot): boolean {
     return false
   }

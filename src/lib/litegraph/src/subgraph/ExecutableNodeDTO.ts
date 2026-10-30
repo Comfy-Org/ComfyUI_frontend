@@ -55,12 +55,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
   /** The graph that this node is a part of. */
   readonly graph: LGraph | Subgraph
 
-  /**
-   * The node's inputs, followed by the inputs a subgraph node owns under the
-   * subgraph input one of them is linked from (e.g. autogrow children). Those
-   * take the inner input's name and resolve through `ownerSlot` on the subgraph
-   * node's DTO.
-   */
+  /** Own inputs, then ones owned via the subgraph node (`ownerSlot`). */
   inputs: {
     linkId: LinkId | null
     name: string
