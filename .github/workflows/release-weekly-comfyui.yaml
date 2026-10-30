@@ -442,9 +442,6 @@ jobs:
             HEAD_BRANCH="${FORK_OWNER}:${BRANCH}"
           fi
 
-          # The branch is shared across release lines. If its open PR already
-          # pins a newer frontend (say 1.58.1), a patch on an older line (1.57.6)
-          # must not replace it: Comfy-Org/ComfyUI#17375 merged that way.
           TARGET_VERSION="${{ needs.resolve-version.outputs.target_version }}"
           PENDING_VERSION=""
           OPEN_PR=$(gh pr list --repo Comfy-Org/ComfyUI --head "$HEAD_BRANCH" --state open --json number --jq '.[0].number // empty')

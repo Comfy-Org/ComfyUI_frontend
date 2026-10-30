@@ -1,8 +1,6 @@
 /**
  * The weekly ComfyUI release reuses one branch and one PR in Comfy-Org/ComfyUI
- * (`automation/comfyui-frontend-bump`). A patch run for an older line must not
- * force-push over a pending bump to a newer version: that is how a 1.58.1 bump
- * merged pinning 1.57.6 (Comfy-Org/ComfyUI#17375).
+ * (`automation/comfyui-frontend-bump`).
  */
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
