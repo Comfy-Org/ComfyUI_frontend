@@ -1273,6 +1273,7 @@ describe('useSubscription', () => {
     })
 
     it('reports at the deadline without another lifecycle event', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({

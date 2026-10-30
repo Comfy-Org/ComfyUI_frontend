@@ -2,7 +2,7 @@ import { useEventListener } from '@vueuse/core'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useServerLogs } from '@/composables/useServerLogs'
+import { useServerLogs } from '@/platform/customNodes/manager/services/useServerLogs'
 import type { LogsWsMessage } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 
