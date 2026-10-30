@@ -83,9 +83,14 @@ import type { NodeBadgeProps } from './NodeBadge.vue'
 interface NodeHeaderProps {
   nodeData?: NodeState
   collapsed?: boolean
+  lastPressDragged?: () => boolean
 }
 
-const { nodeData, collapsed } = defineProps<NodeHeaderProps>()
+const {
+  nodeData,
+  collapsed,
+  lastPressDragged = () => false
+} = defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []
@@ -163,6 +168,7 @@ const handleCollapse = () => {
 }
 
 const handleDoubleClick = () => {
+  if (lastPressDragged()) return
   isEditing.value = true
 }
 
