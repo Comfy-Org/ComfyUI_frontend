@@ -31,8 +31,12 @@ function commandErrorEvent(
 const UNKNOWN_COMMAND = 'Command Comfy.CloseWorkflow not found'
 
 describe('Sentry origin of a rejected unknown command', () => {
-  it('marks code evaluated in the page as third party', () => {
-    const event = commandErrorEvent(UNKNOWN_COMMAND, 'at <anonymous>:1:38')
+  it.for([
+    UNKNOWN_COMMAND,
+    'Command  not found',
+    'Command missing command not found'
+  ])('marks code evaluated in the page as third party: %s', (value) => {
+    const event = commandErrorEvent(value, 'at <anonymous>:1:38')
 
     expect(sentryBeforeSend(event, {})?.tags?.error_origin).toBe('third_party')
   })
@@ -50,13 +54,13 @@ describe('Sentry origin of a rejected unknown command', () => {
   ])('keeps paging for $name', ({ caller }) => {
     const event = commandErrorEvent(UNKNOWN_COMMAND, caller)
 
-    expect(sentryBeforeSend(event, {})?.tags?.error_origin).toBeUndefined()
+    expect(sentryBeforeSend(event, {})).toEqual(event)
   })
 
   it('does not reclassify other errors thrown under evaluated code', () => {
     const event = commandErrorEvent('Graph not ready', 'at <anonymous>:1:38')
 
-    expect(sentryBeforeSend(event, {})?.tags?.error_origin).toBeUndefined()
+    expect(sentryBeforeSend(event, {})).toEqual(event)
   })
 
   it('keeps an unknown command with no stack', () => {
@@ -65,7 +69,7 @@ describe('Sentry origin of a rejected unknown command', () => {
       exception: { values: [{ type: 'Error', value: UNKNOWN_COMMAND }] }
     }
 
-    expect(sentryBeforeSend(event, {})?.tags?.error_origin).toBeUndefined()
+    expect(sentryBeforeSend(event, {})).toEqual(event)
   })
 
   it('preserves existing tags', () => {
