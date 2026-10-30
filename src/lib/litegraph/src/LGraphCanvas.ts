@@ -18,7 +18,7 @@ import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import {
   findAutogrowGroupDropRow,
   setHoveredAutogrowGroup,
-  setIoInputDragActive
+  setIoInputDragType
 } from '@/renderer/core/canvas/links/autogrowGroupDropState'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
@@ -1263,7 +1263,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // @deprecated Workaround: Keep until connecting_links is removed.
     this.linkConnector.events.addEventListener('reset', () => {
-      setIoInputDragActive(false)
+      setIoInputDragType(undefined)
       // Only stop link-drag autoPan; ghost placement manages its own.
       if (this.state.ghostNodeId == null) {
         this._autoPan?.stop()
@@ -3649,7 +3649,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       LiteGraph.vueNodesMode &&
       !!isSubgraphIOLink &&
       linkConnector.state.connectingTo === 'input'
-    setIoInputDragActive(ioInputDrag)
+    setIoInputDragType(ioInputDrag ? firstLink.fromSlot.type : undefined)
 
     // get node over
     const node =
@@ -3687,9 +3687,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const autogrowDropRow = ioInputDrag
         ? findAutogrowGroupDropRow(e.clientX, e.clientY)
         : null
+      const autogrowGroupName =
+        node && autogrowDropRow?.nodeId === node.id
+          ? autogrowDropRow.groupName
+          : undefined
+      const autogrowGroupInput = node?.inputs.find(
+        (input) => input.name === autogrowGroupName
+      )
       const autogrowGroupWidget =
-        autogrowDropRow && autogrowDropRow.nodeId === node?.id
-          ? node.widgets?.find((w) => w.name === autogrowDropRow.groupName)
+        node &&
+        autogrowGroupInput &&
+        linkConnector.isInputValidDrop(node, autogrowGroupInput)
+          ? node.widgets?.find((w) => w.name === autogrowGroupName)
           : undefined
       setHoveredAutogrowGroup(autogrowGroupWidget ? autogrowDropRow : null)
 

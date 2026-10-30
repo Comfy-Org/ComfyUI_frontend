@@ -116,9 +116,10 @@ import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { AUTOGROW_GROUP_WIDGET_TYPE } from '@/core/graph/widgets/inputWidgetShim'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
-  autogrowIoInputDragActive,
+  autogrowIoInputDragType,
   hoveredAutogrowGroup
 } from '@/renderer/core/canvas/links/autogrowGroupDropState'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
@@ -162,7 +163,13 @@ const renderedRows = computed(() =>
     const isAutogrowGroup =
       widget.simplified.type === AUTOGROW_GROUP_WIDGET_TYPE
     if (isAutogrowGroup && !widget.slotMetadata?.linked) {
-      if (!autogrowIoInputDragActive.value) return []
+      const dragType = autogrowIoInputDragType.value
+      if (
+        dragType === undefined ||
+        !widget.slotMetadata ||
+        !LiteGraph.isValidConnection(dragType, widget.slotMetadata.type)
+      )
+        return []
       return [
         {
           widget,
