@@ -79,7 +79,6 @@ describe('starter prompt identity', () => {
       3,
       5,
       'en',
-      undefined,
       3
     )
 
