@@ -2,8 +2,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { marked } from 'marked'
 import { describe, expect, it, onTestFinished } from 'vitest'
 
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
+import type { WebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { api } from '@/scripts/api'
 import { isAudioResult, isImageResult, isVideoResult } from '@/utils/resultItem'
 
@@ -34,7 +34,28 @@ function servedUnder(subpath: string) {
   })
 }
 
+function removeUrlParse() {
+  const descriptor = Object.getOwnPropertyDescriptor(URL, 'parse')
+  Object.defineProperty(URL, 'parse', {
+    configurable: true,
+    value: undefined
+  })
+  onTestFinished(() => {
+    if (descriptor) Object.defineProperty(URL, 'parse', descriptor)
+    else Reflect.deleteProperty(URL, 'parse')
+  })
+}
+
 describe('resolveAgentAssetUrl', () => {
+  it('re-homes a loopback asset when URL.parse is unavailable', () => {
+    removeUrlParse()
+    expect(URL.parse).toBeUndefined()
+
+    expect(resolveAgentAssetUrl(LOOPBACK_VIEW)).toBe(
+      `${window.location.origin}/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
+    )
+  })
+
   it('keeps the whole query, including an empty subfolder', () => {
     expect(resolveAgentAssetUrl(LOOPBACK_VIEW)).toBe(
       `${window.location.origin}/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`

@@ -12,9 +12,9 @@ import {
 } from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
-import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
-import { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader } from '@/types/authTypes'
+import type { WebSessionSend } from '@comfyorg/api-client/webSessionFetch'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
+import { retryingSend } from '@comfyorg/api-client/fetchWithRetry'
 
 export class GlobalSettingsApiError extends Error {
   constructor(
@@ -29,13 +29,6 @@ export class GlobalSettingsApiError extends Error {
 function globalSettingsUrl(key?: GlobalSettingKey): string {
   const path = `/global-settings${key ? `/${encodeURIComponent(key)}` : ''}`
   return isCloud ? api.apiURL(path) : `${getComfyApiBaseUrl()}/api${path}`
-}
-
-export async function getGlobalSettingsAuthHeader(): Promise<AuthHeader | null> {
-  const authStore = useAuthStore()
-  return isCloud
-    ? authStore.getWorkspaceAuthHeader()
-    : authStore.getUserAuthHeader()
 }
 
 async function responseBody(response: Response): Promise<unknown> {
@@ -57,7 +50,9 @@ function sendGlobalSetting(
   auth: GlobalSettingsAuth,
   headers: Record<string, string> = {}
 ): Promise<Response> {
-  if (typeof auth === 'function') return auth(url, { ...init, headers })
+  if (typeof auth === 'function') {
+    return retryingSend(auth)(url, { ...init, headers })
+  }
   return shouldRemintCloudRequest().then((remint) =>
     fetchWithUnifiedRemint(
       url,

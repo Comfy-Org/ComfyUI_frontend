@@ -21,9 +21,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import RadioGroup from '@/components/ui/radio-group/RadioGroup.vue'
-import RadioGroupItem from '@/components/ui/radio-group/RadioGroupItem.vue'
-import type { SettingOption } from '@/platform/settings/types'
+import RadioGroup from '@comfyorg/design-system/radio-group/RadioGroup'
+import RadioGroupItem from '@comfyorg/design-system/radio-group/RadioGroupItem'
+import type { SettingOption } from '@comfyorg/settings-core/types'
 
 const { options = [] } = defineProps<{
   options?: (string | SettingOption)[]

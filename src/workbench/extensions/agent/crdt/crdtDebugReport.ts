@@ -19,14 +19,14 @@
  * degrade to a note in the log section rather than abort the whole bundle.
  */
 import { DISTRIBUTION } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 
 import type {
   AssistantMessage,
   ToolPart
-} from '../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { DevEvent } from './devPanelLog'
@@ -438,6 +438,7 @@ function crdtSection(crdt: CrdtDebugSnapshot): string {
     `- **Schema version:** ${crdt.meta.schema_version ?? 'unknown'}`,
     `- **Enabled:** ${crdt.status.enabled}`,
     `- **Connected:** ${crdt.status.connected}`,
+    `- **Canvas may be stale:** ${crdt.status.canvasMayBeStale}`,
     `- **Doc id:** ${crdt.status.workflowId ?? 'none'}`,
     `- **Updates applied:** ${crdt.status.updatesApplied}`,
     `- **Last frame:** ${crdt.status.lastFrameType ?? 'none'}`,

@@ -13,16 +13,15 @@ import { listSkillPacks } from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
 
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const DESCRIPTION_DELAY_MS = 250
 const HOVER_CLOSE_DELAY_MS = 150

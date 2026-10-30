@@ -2,18 +2,18 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useExtensionStore } from '@/stores/extensionStore'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { api } from '@/scripts/api'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import { toTurnId } from '../schemas/agentApiSchema'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AssistantMessage,
   MessagePart,
   ToolPart
-} from '../services/agent/agentMessageParts'
-import { createAssistantMessage } from '../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { createAssistantMessage } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 const { reportError } = vi.hoisted(() => ({
   reportError: vi.fn()
@@ -27,7 +27,7 @@ beforeEach(() => {
   useExtensionStore().registerExtension({ name: 'Comfy.TestExtension' })
 })
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError
 }))
 
@@ -47,6 +47,7 @@ const SNAPSHOT: CrdtDebugSnapshot = {
   status: {
     enabled: true,
     connected: true,
+    canvasMayBeStale: false,
     terminal: null,
     workflowId: 'doc-1',
     updatesApplied: 3,
@@ -136,6 +137,7 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('doc-1')
     expect(report).toContain('doc_update')
     expect(report).toContain('Document stamps')
+    expect(report).toContain('Canvas may be stale:** false')
   })
 
   it('includes privacy-safe media UI state without selected values or URLs', async () => {

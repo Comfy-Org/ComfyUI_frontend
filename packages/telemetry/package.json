@@ -1,0 +1,39 @@
+{
+  "name": "@comfyorg/telemetry",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "@comfyorg/telemetry": "./src/index.ts",
+      "types": "./dist-types/index.d.ts",
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "@comfyorg/telemetry": "./src/*.ts",
+      "types": "./dist-types/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.declarations.json",
+    "typecheck": "tsc --noEmit",
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check"
+  },
+  "dependencies": {
+    "@comfyorg/account-core": "workspace:*",
+    "@comfyorg/billing-contract": "workspace:*",
+    "@comfyorg/comfyui-desktop-bridge-types": "catalog:",
+    "@comfyorg/graph-model": "workspace:*",
+    "@comfyorg/ingest-types": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@datadog/browser-rum": "catalog:",
+    "@sentry/vue": "catalog:",
+    "@total-typescript/shoehorn": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

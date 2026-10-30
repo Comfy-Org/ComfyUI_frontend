@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { TelemetryEvents } from '@/platform/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 import { HostTelemetrySink } from './HostTelemetrySink'
 
@@ -273,6 +273,14 @@ describe('HostTelemetrySink', () => {
       properties: { source: 'close_button', open_duration_ms: 1234 }
     },
     {
+      name: TelemetryEvents.AGENT_PANEL_RENDER_STALLED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentPanelRenderStalled({
+          stage: 'root_resolved_not_mounted'
+        }),
+      properties: { stage: 'root_resolved_not_mounted' }
+    },
+    {
       name: TelemetryEvents.AGENT_ENTRY_BUTTON_CLICKED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentEntryButtonClicked({ resulting_state: 'opened' }),
@@ -356,14 +364,6 @@ describe('HostTelemetrySink', () => {
       }
     },
     {
-      name: TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE,
-      track: (sink: HostTelemetrySink) =>
-        sink.trackAgentStarterPromptExposure({
-          '$feature/agent-starter-prompt-set': 'test'
-        }),
-      properties: { '$feature/agent-starter-prompt-set': 'test' }
-    },
-    {
       name: TelemetryEvents.AGENT_FREE_USE_NOTICE,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentFreeUseNotice({
@@ -382,6 +382,18 @@ describe('HostTelemetrySink', () => {
       properties: {
         placement: 'control',
         '$feature/agent-free-use-message-placement': 'control'
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_CREDIT_USAGE_EXPOSURE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentCreditUsageExposure({
+          variant: 'control',
+          '$feature/agent-credit-usage-summary': 'control'
+        }),
+      properties: {
+        variant: 'control',
+        '$feature/agent-credit-usage-summary': 'control'
       }
     },
     {
@@ -504,12 +516,12 @@ describe('HostTelemetrySink', () => {
       name: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentConsentOfferExited({
-          exit: 'workspace_switching',
+          exit: 'consent_unresolved',
           stage: 'offer',
           retry_armed: true
         }),
       properties: {
-        exit: 'workspace_switching',
+        exit: 'consent_unresolved',
         stage: 'offer',
         retry_armed: true
       }

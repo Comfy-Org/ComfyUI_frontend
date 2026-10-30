@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMemoryHistory, createRouter, useRouter } from 'vue-router'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import {
+  capturePreservedQuery,
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 
 import { useUrlActionLoaders } from './useUrlActionLoaders'
 
@@ -78,21 +83,21 @@ vi.mock(
     useWorkspaceUrlLoader: mocks.useWorkspace
   })
 )
-vi.mock(import('@/platform/workspace/composables/useInviteUrlLoader'), () => ({
+vi.mock(import('@/platform/account/composables/useInviteUrlLoader'), () => ({
   useInviteUrlLoader: mocks.useInvite
 }))
 vi.mock(
-  import('@/platform/workspace/composables/useCreateWorkspaceUrlLoader'),
+  import('@/platform/account/composables/useCreateWorkspaceUrlLoader'),
   () => ({
     useCreateWorkspaceUrlLoader: mocks.useCreateWorkspace
   })
 )
 vi.mock(
-  import('@/platform/cloud/subscription/composables/usePricingTableUrlLoader'),
+  import('@/platform/billing/subscription/composables/usePricingTableUrlLoader'),
   () => ({ usePricingTableUrlLoader: mocks.usePricingTable })
 )
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useTopUpUrlLoader'),
+  import('@/platform/billing/subscription/composables/useTopUpUrlLoader'),
   () => ({
     useTopUpUrlLoader: mocks.useTopUp
   })
@@ -104,9 +109,9 @@ vi.mock(import('@/platform/assets/composables/useAssetsUrlLoader'), () => ({
   useAssetsUrlLoader: mocks.useAssets
 }))
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 
@@ -274,8 +279,13 @@ describe('useUrlActionLoaders', () => {
   it('stops before every other step, the sweep included, when the deployment link reloads', async () => {
     await router.replace({
       path: '/',
-      query: { workspace: 'w-2', deployment: 'dep-1' }
+      query: { workspace: 'w-2', deployment: 'dep-1', workflows: 'build' }
     })
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.WORKFLOWS,
+      { workflows: 'build' },
+      ['workflows']
+    )
     mocks.loadDeployment.mockResolvedValueOnce(true)
 
     const { runUrlActionLoaders } = useUrlActionLoaders()
@@ -284,8 +294,39 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadWorkspace).not.toHaveBeenCalled()
     expect(router.currentRoute.value.query).toEqual({
       workspace: 'w-2',
-      deployment: 'dep-1'
+      deployment: 'dep-1',
+      workflows: 'build'
     })
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOWS, 'workflows')
+    ).toBe('build')
+  })
+
+  it('clears a workflows folder a deployment link left when it did not reload', async () => {
+    await router.replace({
+      path: '/',
+      query: { deployment: 'dep-1', workflows: 'build', workflow: 'keep-me' }
+    })
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
+  })
+
+  it('clears a workflows folder stash a deployment link left when it did not reload', async () => {
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.WORKFLOWS,
+      { workflows: 'build' },
+      ['workflows']
+    )
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOWS, 'workflows')
+    ).toBeUndefined()
   })
 
   it('clears a deployment param no loader acted on', async () => {

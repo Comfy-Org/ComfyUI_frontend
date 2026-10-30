@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { zResultItem } from '@/platform/remote/comfyui/execution/types'
+import { zResultItem } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 

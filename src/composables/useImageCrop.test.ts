@@ -11,10 +11,10 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetImageCrop from '@/components/imagecrop/WidgetImageCrop.vue'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 import {
@@ -36,6 +36,30 @@ vi.mock(import('@vueuse/core'), { spy: true })
 
 const mockResolveNode = vi.hoisted(() => vi.fn<typeof resolveNode>())
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
+vi.mock(import('@/scripts/app'))
+
+const liveGraphNodes = vi.hoisted(() => ({
+  reloads: new Set<() => void>()
+}))
+
+vi.mock(import('@/composables/useLiveGraphNode'), async () => {
+  const { computed, onScopeDispose, shallowRef } = await import('vue')
+  return {
+    useLiveGraphNode: (resolve) => {
+      const node = shallowRef(resolve() ?? null)
+      const reload = () => (node.value = resolve() ?? null)
+      liveGraphNodes.reloads.add(reload)
+      onScopeDispose(() => liveGraphNodes.reloads.delete(reload))
+      return computed(() => node.value)
+    }
+  }
+})
+
+function reloadGraph() {
+  for (const reload of liveGraphNodes.reloads) reload()
+}
+
+const onEditEnd = vi.fn()
 
 beforeEach(() => {
   vi.mocked(useResizeObserver).mockImplementation((_target, cb) => {
@@ -64,7 +88,8 @@ const ImageCropHarness = defineComponent({
       ...useImageCrop(toNodeId(props.nodeId), {
         imageEl,
         containerEl,
-        modelValue
+        modelValue,
+        onEditEnd
       })
     }
   },
@@ -385,6 +410,31 @@ describe('useImageCrop', () => {
     expect(vm.imageUrl).toBe('https://example.com/preview.png')
   })
 
+  it('shows the image upstream of the node a reloaded graph holds', async () => {
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+    const reloadedSource = createMockLGraphNode({
+      id: 98,
+      isSubgraphNode: () => false
+    })
+    mockResolveNode.mockReturnValue(
+      createMockLGraphNode({
+        id: 2,
+        getInputNode: vi.fn(() => reloadedSource),
+        getInputLink: vi.fn(() => ({ origin_slot: 0 })),
+        isSubgraphNode: () => false
+      })
+    )
+    vi.mocked(outputStore.getNodeImageUrls).mockImplementation((n) =>
+      n === reloadedSource ? ['https://example.com/b.png'] : undefined
+    )
+
+    reloadGraph()
+    await flushTicks()
+
+    expect(vm.imageUrl).toBe('https://example.com/b.png')
+  })
+
   it('shows the upstream image when the input is connected after mount', async () => {
     useLinkedCropNode()
     const vm = await mountHarness()
@@ -454,6 +504,15 @@ describe('useImageCrop', () => {
     expect((vm.resizeHandles as unknown[]).length).toBe(4)
   })
 
+  it('is loading the upstream image it mounts with until the image loads', async () => {
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+    expect(vm.isLoading).toBe(true)
+    ;(vm.handleImageLoad as () => void)()
+    expect(vm.isLoading).toBe(false)
+  })
+
   it('sets isLoading to true when imageUrl changes to a new URL, then clears on load', async () => {
     useSourcePreviews()
     setSourcePreview('https://example.com/a.png')
@@ -511,6 +570,54 @@ describe('useImageCrop', () => {
     expect(vm.cropX as number).toBeGreaterThan(x0)
     expect(vm.cropY as number).toBeGreaterThanOrEqual(0)
   })
+
+  it.for([
+    {
+      gesture: 'a drag',
+      start: 'handleDragStart',
+      move: 'handleDragMove',
+      end: 'handleDragEnd'
+    },
+    {
+      gesture: 'a resize',
+      start: 'handleResizeStart',
+      move: 'handleResizeMove',
+      end: 'handleResizeEnd'
+    }
+  ])(
+    'reports the end of an edit once $gesture ends',
+    async ({ start, move, end }) => {
+      const vm = await mountHarness()
+      setupImageLayout(vm, 400, 300)
+      const captureEl = document.createElement('div')
+      captureEl.setPointerCapture = vi.fn()
+      captureEl.releasePointerCapture = vi.fn()
+      const call = (name: string, e: PointerEvent) =>
+        (vm[name] as (e: PointerEvent, dir: string) => void)(e, 'right')
+
+      call(start, makePointerEvent('pointerdown', captureEl, 200, 150))
+      call(move, makePointerEvent('pointermove', captureEl, 230, 160))
+      expect(onEditEnd).not.toHaveBeenCalled()
+
+      call(end, makePointerEvent('pointerup', captureEl, 230, 160))
+      expect(onEditEnd).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    { ratio: '1:1', calls: 1 },
+    { ratio: 'custom', calls: 0 }
+  ])(
+    'reports $calls edit(s) when choosing the $ratio ratio',
+    async ({ ratio, calls }) => {
+      const vm = await mountHarness()
+      setupImageLayout(vm, 400, 400)
+
+      vm.selectedRatio = ratio
+
+      expect(onEditEnd).toHaveBeenCalledTimes(calls)
+    }
+  )
 
   it('resizes from the right edge without moving origin', async () => {
     const vm = await mountHarness()
@@ -672,7 +779,8 @@ describe('WidgetImageCrop', () => {
           lockRatio: 'Lock aspect ratio',
           unlockRatio: 'Unlock aspect ratio',
           custom: 'Custom'
-        }
+        },
+        widgetHistory: { undo: 'Undo', redo: 'Redo' }
       }
     }
   })

@@ -2,7 +2,7 @@
 import { computed, provide, ref, toRef, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
+import { SUPPORTED_EXTENSIONS_ACCEPT } from '@comfyorg/viewport3d/load3d/constants'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -10,7 +10,7 @@ import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'

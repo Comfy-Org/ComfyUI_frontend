@@ -6,7 +6,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { WidgetSelectDefaultFixture } from '@e2e/fixtures/components/WidgetSelectDefault'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
-import { zComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
 
 const zPromptRequestBody = z.object({ prompt: zComfyApiWorkflow })
 

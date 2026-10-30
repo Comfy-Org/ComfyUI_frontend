@@ -1,10 +1,10 @@
-import type { Settings } from '@/platform/settings/types'
+import type { Settings } from '@comfyorg/settings-core/types'
 import type { ComfySettingsDialog } from '@/scripts/ui/settings'
 
 import type { ComfyComponent } from '.'
-import { prop } from '../../utils'
-import { $el, applyClasses, toggleElement } from '../utils'
-import type { ClassList } from '../utils'
+import { prop } from '@/scripts/utils'
+import { $el, applyClasses, toggleElement } from '@/scripts/ui/utils'
+import type { ClassList } from '@/scripts/ui/utils'
 import type { ComfyPopup } from './popup'
 
 type ComfyButtonProps = {

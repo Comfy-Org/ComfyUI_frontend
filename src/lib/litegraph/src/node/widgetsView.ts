@@ -1,22 +1,22 @@
-import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { shallowReactive } from 'vue'
 
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
-import type { RefusedWidget } from '@/types/widgetId'
+import type { RefusedWidget } from '@comfyorg/graph-model/widgetId'
 import {
   dropUnrenamableDuplicateWidgets,
   isWidgetNameUnreadable,
   widgetId
-} from '@/types/widgetId'
+} from '@comfyorg/graph-model/widgetId'
 
-import { createArrayMutationView } from '../infrastructure/createMutationView'
-import type { INodeInputSlot } from '../types/slots'
-import { isNodeBindable } from '../utils/type'
-import { getWidgetIds } from '../utils/widget'
-import { BaseWidget } from '../widgets/BaseWidget'
+import { createArrayMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 
 export type WidgetRefusalReport =
   | { kind: 'refusal'; finding: RefusedWidget<IBaseWidget> }

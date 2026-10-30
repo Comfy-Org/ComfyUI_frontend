@@ -42,6 +42,7 @@ export const WEB_SESSION: WebSessionResponse = {
 export const WEB_SESSION_MINT: ExchangeTokenResponse = {
   token: 'session-jwt-e2e',
   expires_at: '2099-01-01T00:00:00Z',
+  user_id: 'uid-1',
   workspace: {
     id: TEAM_WORKSPACE.id,
     name: TEAM_WORKSPACE.name,

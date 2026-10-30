@@ -9,6 +9,10 @@ import type {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { setAssertReporter } from '@/base/assert'
+import {
+  CUSTOM_NODE_FAILURES_TRUNCATED_FIELD,
+  CUSTOM_NODE_LOAD_ERROR_TYPE
+} from '@/platform/telemetry/customNodeLoadTelemetry'
 
 import { classifyRumErrorOrigin, rumBeforeSend } from './datadogRumBeforeSend'
 
@@ -271,6 +275,124 @@ describe('rumBeforeSend', () => {
     expect(event.context).toEqual({
       error: { origin: 'extension', extension: 'comfyui-foo' }
     })
+  })
+
+  it.for([
+    {
+      name: 'its path when the preserved stack is first-party',
+      failures: [
+        {
+          ext: '/extensions/comfyui-foo/main.js',
+          stack: 'at load (https://cloud.comfy.org/assets/app.js:12:3)'
+        }
+      ],
+      expected: { origin: 'extension', extension: 'comfyui-foo' }
+    },
+    {
+      name: 'its preserved stack when no path is present',
+      failures: [
+        {
+          stack:
+            'at load (https://cloud.comfy.org/extensions/comfyui-foo/main.js:12:3)'
+        }
+      ],
+      expected: { origin: 'extension', extension: 'comfyui-foo' }
+    },
+    {
+      name: 'its path when no stack is present',
+      failures: [{ ext: '/extensions/comfyui-foo/main.js' }],
+      expected: { origin: 'extension', extension: 'comfyui-foo' }
+    },
+    {
+      name: 'the folder every failure shares',
+      failures: [
+        { ext: '/extensions/comfyui-foo/main.js' },
+        { ext: '/extensions/comfyui-foo/nodes.js' }
+      ],
+      expected: { origin: 'extension', extension: 'comfyui-foo' }
+    },
+    {
+      name: 'first-party when failures span two folders',
+      failures: [
+        { ext: '/extensions/comfyui-foo/main.js' },
+        { ext: '/extensions/comfyui-bar/main.js' }
+      ],
+      expected: { origin: 'first_party' }
+    },
+    {
+      name: 'first-party when one failure has no extension signal',
+      failures: [
+        { ext: '/extensions/comfyui-foo/main.js' },
+        { message: 'broken' }
+      ],
+      expected: { origin: 'first_party' }
+    }
+  ])('attributes a batched load failure to $name', ({ failures, expected }) => {
+    const event = createErrorEvent(
+      'Error loading extensions',
+      'at reportCustomNodeLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+    event.context = { error_type: CUSTOM_NODE_LOAD_ERROR_TYPE, failures }
+
+    rumBeforeSend(event, fromPartial({}))
+
+    expect(event.context.error).toEqual(expected)
+  })
+
+  it('keeps a truncated batch unattributed when its reported prefix shares a folder', () => {
+    const event = createErrorEvent(
+      'Error loading extensions',
+      'at reportCustomNodeLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+    event.context = {
+      error_type: CUSTOM_NODE_LOAD_ERROR_TYPE,
+      failures: Array.from({ length: 10 }, () => ({
+        ext: '/extensions/comfyui-foo/main.js'
+      })),
+      [CUSTOM_NODE_FAILURES_TRUNCATED_FIELD]: true
+    }
+
+    rumBeforeSend(event, fromPartial({}))
+
+    expect(event.context.error).toEqual({ origin: 'first_party' })
+  })
+
+  it.for([
+    {
+      name: 'missing error type',
+      context: { failures: [{ ext: '/extensions/comfyui-foo/main.js' }] }
+    },
+    {
+      name: 'non-array failures',
+      context: {
+        error_type: CUSTOM_NODE_LOAD_ERROR_TYPE,
+        failures: { ext: '/extensions/comfyui-foo/main.js' }
+      }
+    },
+    {
+      name: 'null failure',
+      context: {
+        error_type: CUSTOM_NODE_LOAD_ERROR_TYPE,
+        failures: [null, { ext: '/extensions/comfyui-foo/main.js' }]
+      }
+    },
+    {
+      name: 'non-string details',
+      context: {
+        error_type: CUSTOM_NODE_LOAD_ERROR_TYPE,
+        failures: [{ ext: ['/extensions/comfyui-foo/main.js'] }]
+      }
+    }
+  ])('keeps malformed batched context first-party: $name', ({ context }) => {
+    const event = createErrorEvent(
+      'Error loading extensions',
+      'at report (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+    event.context = context
+
+    rumBeforeSend(event, fromPartial({}))
+
+    expect(event.context.error).toEqual({ origin: 'first_party' })
   })
 
   it('groups Firebase pending-promise errors without rewriting them', () => {

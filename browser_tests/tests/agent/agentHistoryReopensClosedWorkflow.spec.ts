@@ -7,8 +7,8 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import {
@@ -161,11 +161,8 @@ test.describe(
 
       await bootAgentApp(page, agentFlagEnabled, {
         objectInfo: NODE_DEFINITIONS,
-        // Registered after the boot mocks so these win over their userdata
-        // stub: the saved workflow is in the user's workflow list from boot,
-        // but its tab is never opened.
         beforeNavigate: async (page) => {
-          await page.route('**/api/agent/threads', (route) =>
+          await page.route('**/api/agent/threads?*', (route) =>
             route.fulfill(jsonRoute(threads))
           )
           await page.route('**/api/agent/threads/*/messages', async (route) => {

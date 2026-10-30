@@ -5,7 +5,7 @@ import {
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   cleanupFakeModel,
   dismissErrorOverlay
@@ -14,16 +14,17 @@ import {
   ExecutionHelper,
   buildKSamplerError
 } from '@e2e/fixtures/helpers/ExecutionHelper'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+import type { NodeError } from '@comfyorg/api-client/types'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
-const ERROR_CLASS = /ring-destructive-background/
-const WARNING_CLASS = /ring-warning-background/
-const SLOT_ERROR_CLASS = /before:ring-error/
+const ERROR_CLASS = /ring-destructive/
+const WARNING_CLASS = /ring-warning/
+const SLOT_ERROR_CLASS = /before:ring-destructive/
 const UNKNOWN_NODE_ID = '1'
 const INNER_EXECUTION_ID = '2:1'
 const KSAMPLER_MODEL_INPUT_NAME = 'model'
@@ -195,7 +196,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
         await expect(
           comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
         ).toHaveClass(ERROR_CLASS)
-        await comfyPage.expectScreenshot(
+        await expectElementScreenshot(
           ksamplerNode,
           'vue-node-required-input-missing-slot-error.png'
         )

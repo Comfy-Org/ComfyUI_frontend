@@ -35,12 +35,17 @@ export function capabilitiesWith(
   overrides: Partial<BillingCapabilitiesResponse['capabilities']>
 ): BillingCapabilitiesResponse {
   return {
+    auto_top_up_enabled: false,
     capabilities: {
       can_cancel: true,
       can_change_seats: false,
       can_downgrade_to_personal: false,
+      can_edit_workspace: false,
       can_invite_members: false,
+      can_manage_auto_top_up: false,
       can_manage_members: false,
+      can_manage_subscription: true,
+      can_open_plans: true,
       can_delete_workspace: false,
       can_leave_workspace: false,
       can_manage_billing: false,
@@ -49,8 +54,10 @@ export function capabilitiesWith(
       can_view_team_usage: false,
       can_reactivate: false,
       can_revert_scheduled_change: false,
+      can_run_workflows: true,
       can_subscribe_self_serve: true,
       can_top_up: true,
+      can_upgrade: true,
       ...overrides
     },
     expires_at: inAnHour(),
@@ -135,6 +142,7 @@ export function challengeRequiredOperation(
 export function defaultScenario(): CloudScenario {
   return {
     status: {
+      ended_at: null,
       is_active: true,
       has_funds: true,
       max_seats: 1,
@@ -162,6 +170,8 @@ export function defaultScenario(): CloudScenario {
           credits_cents: 6900,
           max_seats: 1,
           availability: { available: false, reason: 'same_plan' },
+          action: 'none',
+          denied_reason: 'same_plan',
           seat_summary: {
             seat_count: 1,
             total_cost_cents: 2800,
@@ -176,6 +186,7 @@ export function defaultScenario(): CloudScenario {
           credits_cents: 10_000,
           max_seats: 1,
           availability: { available: true },
+          action: 'change',
           seat_summary: {
             seat_count: 1,
             total_cost_cents: 5000,
@@ -239,6 +250,7 @@ const CREATOR_YEARLY = {
   credits_cents: 82_800,
   max_seats: 1,
   availability: { available: true },
+  action: 'change',
   seat_summary: {
     seat_count: 1,
     total_cost_cents: 26_880,

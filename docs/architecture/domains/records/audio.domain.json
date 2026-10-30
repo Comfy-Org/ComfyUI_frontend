@@ -8,36 +8,16 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/common/WaveAudioPlayer.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/common/WaveAudioPlayer.vue",
       "role": "presentation"
-    },
-    {
-      "path": "src/composables/useWaveAudioPlayer.test.ts",
-      "role": "application"
     },
     {
       "path": "src/composables/useWaveAudioPlayer.ts",
       "role": "application"
     },
     {
-      "path": "src/extensions/core/uploadAudio.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/uploadAudio.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/components/AudioPreview.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.test.ts",
-      "role": "presentation"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue",
@@ -53,10 +33,6 @@
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/utils/audioUtils.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/services/audioService.test.ts",
       "role": "infrastructure"
     },
     {

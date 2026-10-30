@@ -4,20 +4,15 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
-import { useTelemetry } from '@/platform/telemetry'
+import { DialogPortal } from 'reka-ui'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import { FuseFilter } from '@/utils/fuseUtil'
 import NodeSearchBox from './NodeSearchBox.vue'
 
-vi.mock(import('@/platform/telemetry'))
-
-const OpenDialog = defineComponent({
-  directives: { rekaZIndex: vRekaZIndex },
-  template: '<div v-reka-z-index data-testid="open-dialog" />'
-})
+vi.mock(import('@comfyorg/telemetry'))
 
 const i18n = createI18n({
   legacy: false,
@@ -105,6 +100,7 @@ describe('NodeSearchBox', () => {
       data: () => ({ filterVisible: false })
     })
     render(Parent, { global: { plugins: [i18n] } })
+    expect(screen.getByRole('combobox', { name: 'Search nodes' })).toBeVisible()
 
     await userEvent
       .setup()
@@ -148,16 +144,18 @@ describe('NodeSearchBox', () => {
   )
 
   it('opens its filter dialog above search opened over another dialog', async () => {
-    render(OpenDialog)
-    const managerZIndex = Number(screen.getByTestId('open-dialog').style.zIndex)
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const manager = screen.getByTestId('existing-overlay')
     const Harness = defineComponent({
-      components: { NodeSearchBox },
-      directives: { rekaZIndex: vRekaZIndex },
+      components: { NodeSearchBox, DialogPortal },
       setup: () => ({ filterVisible: ref(false) }),
       template: `
-        <div v-reka-z-index data-testid="search-content">
+        <DialogPortal><div data-testid="search-content">
           <NodeSearchBox v-model:filter-visible="filterVisible" :filters="[]" />
-        </div>
+        </div></DialogPortal>
       `
     })
     render(Harness, {
@@ -174,9 +172,11 @@ describe('NodeSearchBox', () => {
         }
       }
     })
-    const searchContent = screen.getByTestId('search-content')
+    const searchContent = await screen.findByTestId('search-content')
 
-    expect(Number(searchContent.style.zIndex)).toBeGreaterThan(managerZIndex)
+    expect(manager.compareDocumentPosition(searchContent)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
 
     const user = userEvent.setup()
     await user.click(
@@ -184,8 +184,8 @@ describe('NodeSearchBox', () => {
     )
     const filterContent = await screen.findByRole('dialog')
 
-    expect(Number(filterContent.style.zIndex)).toBeGreaterThan(
-      Number(searchContent.style.zIndex)
+    expect(searchContent.compareDocumentPosition(filterContent)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
     )
   })
 })

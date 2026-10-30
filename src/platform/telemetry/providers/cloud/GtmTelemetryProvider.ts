@@ -31,8 +31,8 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteMetadata
-} from '../../types'
-import { TelemetryEvents } from '../../types'
+} from '@comfyorg/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 /**
  * Google Tag Manager telemetry provider.

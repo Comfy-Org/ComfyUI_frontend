@@ -6,16 +6,18 @@
           {{ $t('g.systemInfo') }}
         </h2>
         <Button variant="secondary" @click="copySystemInfo">
-          <i class="pi pi-copy" />
+          <i class="icon-[lucide--copy]" />
           {{ $t('g.copySystemInfo') }}
         </Button>
       </div>
       <div class="grid grid-cols-2 gap-2">
         <template v-for="col in systemStatsColumns" :key="col.field">
-          <div :class="cn('font-medium', isOutdated(col) && 'text-danger-100')">
+          <div
+            :class="cn('font-medium', isOutdated(col) && 'text-destructive')"
+          >
             {{ $t(col.headerKey) }}
           </div>
-          <div :class="cn(isOutdated(col) && 'text-danger-100')">
+          <div :class="cn(isOutdated(col) && 'text-destructive')">
             {{ getColumnDisplayValue(stats, col) }}
           </div>
         </template>
@@ -23,7 +25,7 @@
     </div>
 
     <template v-if="hasDevices">
-      <div class="my-4 border-t border-interface-stroke" />
+      <div class="my-4 border-t" />
 
       <div>
         <h2 class="mb-4 text-2xl font-semibold">
@@ -65,13 +67,13 @@ import {
   getColumnDisplayValue,
   systemStatsColumns
 } from '@/components/common/systemStatsColumns'
-import Button from '@/components/ui/button/Button.vue'
-import Tabs from '@/components/ui/tabs/Tabs.vue'
-import TabsContent from '@/components/ui/tabs/TabsContent.vue'
-import TabsList from '@/components/ui/tabs/TabsList.vue'
-import TabsTrigger from '@/components/ui/tabs/TabsTrigger.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Tabs from '@comfyorg/design-system/tabs/Tabs'
+import TabsContent from '@comfyorg/design-system/tabs/TabsContent'
+import TabsList from '@comfyorg/design-system/tabs/TabsList'
+import TabsTrigger from '@comfyorg/design-system/tabs/TabsTrigger'
 import { useCopySystemInfo } from '@/composables/useCopySystemInfo'
-import type { SystemStats } from '@/platform/remote/comfyui/types'
+import type { SystemStats } from '@comfyorg/api-client/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { stats } = defineProps<{

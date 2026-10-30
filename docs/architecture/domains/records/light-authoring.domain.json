@@ -4,47 +4,15 @@
   "description": "CreateLightInfo node viewport: light entry types and value normalization, light-to-orbit transforms, Three.js light overlays and viewport, the useLightInfo widget-state composable, Vue editor widgets, and extension registration. CameraInfo handles and orbit math, the shared Three.js renderer, Load3D viewport factory, load3d components, and viewport node wiring remain external host dependencies.",
   "modules": [
     {
-      "path": "src/components/lightInfo/**",
+      "path": "src/extensions/core/load3d/components/lightInfo/**",
       "role": "presentation"
     },
     {
-      "path": "src/components/lightInfo/useLightInfo.test.ts",
+      "path": "src/extensions/core/load3d/composables/useLightInfo.ts",
       "role": "application"
     },
     {
-      "path": "src/components/lightInfo/useLightInfo.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/lightInfo.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/lightInfo.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/lightInfo/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/lightInfo/LightInfoOverlay.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/lightInfo/LightInfoOverlay.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/lightInfo/LightInfoViewport.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/lightInfo/LightInfoViewport.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/lib/litegraph/src/widgets/LightInfoWidget.test.ts",
+      "path": "src/extensions/core/load3d/lightInfo.ts",
       "role": "integration"
     },
     {
@@ -52,16 +20,12 @@
       "role": "integration"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.ts",
       "role": "integration"
     },
     {
-      "path": "src/types/lightInfo.ts",
-      "role": "domain"
+      "path": "packages/viewport3d/src/lightInfo/**",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],
@@ -71,15 +35,15 @@
     {
       "name": "Light values normalize and light positions convert to and from orbit state",
       "checks": [
-        "src/extensions/core/lightInfo/lightsValue.test.ts",
-        "src/extensions/core/lightInfo/lightTransform.test.ts"
+        "packages/viewport3d/src/lightInfo/lightsValue.test.ts",
+        "packages/viewport3d/src/lightInfo/lightTransform.test.ts"
       ]
     },
     {
       "name": "Light viewport and overlay pick, drag, render, and dispose light gizmos",
       "checks": [
-        "src/extensions/core/lightInfo/LightInfoViewport.test.ts",
-        "src/extensions/core/lightInfo/LightInfoOverlay.test.ts"
+        "packages/viewport3d/src/lightInfo/LightInfoViewport.test.ts",
+        "packages/viewport3d/src/lightInfo/LightInfoOverlay.test.ts"
       ]
     },
     {
@@ -87,9 +51,9 @@
       "checks": [
         "src/lib/litegraph/src/widgets/LightInfoWidget.test.ts",
         "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts",
-        "src/components/lightInfo/useLightInfo.test.ts",
-        "src/components/lightInfo/LightInfo.test.ts",
-        "src/extensions/core/lightInfo.test.ts"
+        "src/extensions/core/load3d/composables/useLightInfo.test.ts",
+        "src/extensions/core/load3d/components/lightInfo/LightInfo.test.ts",
+        "src/extensions/core/load3d/lightInfo.test.ts"
       ]
     }
   ],

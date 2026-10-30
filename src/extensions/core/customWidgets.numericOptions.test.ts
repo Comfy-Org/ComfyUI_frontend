@@ -3,22 +3,15 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getActivePinia } from 'pinia'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
+import type { INumericWidget } from '@comfyorg/graph-model/widgets'
 import { getWidgetStep } from '@/lib/litegraph/src/utils/widget'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Settings } from '@/platform/settings/types'
+import type { Settings } from '@comfyorg/settings-core/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 
-const extensions = await vi.hoisted(async () => {
-  const { createExtensionCapture } =
-    await import('@/utils/__tests__/extensionTestUtils')
-  return createExtensionCapture()
-})
-app.registerExtension = extensions.registerExtension
-await import('./customWidgets')
-const extension = extensions.getExtension('Comfy.CustomWidgets')
+import { customWidgetsExtension } from './customWidgets'
 
 // Imported after `app` to break the `app` -> `scripts/widgets` -> composable
 // cycle; a static import here yields an uninitialised binding.
@@ -114,12 +107,12 @@ const createFloatNode = (name: FloatType = 'primitive') =>
 describe('Primitive numeric widget options', () => {
   beforeAll(async () => {
     for (const { nodeClass } of floatNodeClasses)
-      await extension.beforeRegisterNodeDef?.(
+      await customWidgetsExtension.beforeRegisterNodeDef?.(
         nodeClass,
         { name: 'PrimitiveFloat' } as ComfyNodeDef,
         app
       )
-    await extension.beforeRegisterNodeDef?.(
+    await customWidgetsExtension.beforeRegisterNodeDef?.(
       TestPrimitiveIntNode,
       { name: 'PrimitiveInt' } as ComfyNodeDef,
       app

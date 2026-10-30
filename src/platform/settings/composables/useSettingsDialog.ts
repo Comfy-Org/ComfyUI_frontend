@@ -1,14 +1,29 @@
 import type { Component } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import type {
   SettingDialogProps,
   SettingPanelType
-} from '@/platform/settings/types'
+} from '@comfyorg/settings-core/types'
 
 const DIALOG_KEY = 'global-settings'
+
+let navigationRequestCount = 0
+
+function nextNavigationRequest(
+  panel: SettingPanelType | undefined,
+  settingId: string | undefined
+): Partial<SettingDialogProps> | undefined {
+  if (!panel && !settingId) return undefined
+  navigationRequestCount += 1
+  return {
+    navigationRequestId: navigationRequestCount,
+    ...(panel ? { defaultPanel: panel } : {}),
+    ...(settingId ? { scrollToSettingId: settingId } : {})
+  }
+}
 
 // The redesigned Settings dialog is 1280px wide (DES 3253-16079).
 let settingDialogComponent: Component<SettingDialogProps> | undefined
@@ -39,13 +54,19 @@ export function useSettingsDialog() {
       })
       return
     }
+    const destination = nextNavigationRequest(panel, settingId)
+    if (destination && dialogStore.isDialogOpen(DIALOG_KEY)) {
+      dialogStore.updateDialog({
+        key: DIALOG_KEY,
+        contentProps: destination
+      })
+    }
     dialogStore.showDialog({
       key: DIALOG_KEY,
       component: settingDialogComponent,
       props: {
         onClose: hide,
-        ...(panel ? { defaultPanel: panel } : {}),
-        ...(settingId ? { scrollToSettingId: settingId } : {})
+        ...destination
       },
       dialogComponentProps: {
         headless: true,

@@ -8,7 +8,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type {
   AskUserPart,
   AskUserResolution
-} from '../../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import AskUserCard from './AskUserCard.vue'
 
@@ -21,6 +21,7 @@ const options: AskUserPart['options'] = [
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
+  escapeParameter: true,
   messages: { en: enMessages }
 })
 
@@ -335,6 +336,20 @@ describe('AskUserCard', () => {
         screen.queryByRole('button', { name: 'Submit' })
       ).not.toBeInTheDocument()
       expect(screen.queryByText(/^Choose/)).not.toBeInTheDocument()
+    })
+
+    it('reads back a URL in Other exactly as entered', () => {
+      const url = 'https://huggingface.co/a/b?x=1&y=2'
+      renderCard({
+        allowOther: true,
+        resolution: {
+          status: 'answered',
+          selected: [],
+          otherText: url
+        }
+      })
+
+      expect(screen.getByRole('listitem')).toHaveTextContent(`Other: ${url}`)
     })
 
     it.for<{ resolution: AskUserResolution; copy: string }>([

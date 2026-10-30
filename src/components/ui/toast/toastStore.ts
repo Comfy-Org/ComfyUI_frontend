@@ -14,20 +14,24 @@ export interface Toast {
   instance: symbol
   kind: ToastKind
   title: string
-  action?: ToastAction
+  actions: ToastAction[]
   description?: string
 }
 
 export const useToast = defineStore('toast', () => {
   const toasts = ref<Toast[]>([])
   const held = ref(false)
+  const closedByUser = new Set<ToastId>()
 
   function add(kind: ToastKind, title: string, options: ToastOptions = {}) {
     const id = options.id ?? createToastId()
     toasts.value = [
       ...toasts.value.filter((toast) => toast.id !== id),
       {
-        action: options.action,
+        actions: [
+          ...(options.action ? [options.action] : []),
+          ...(options.actions ?? [])
+        ],
         closable: options.closable ?? true,
         description: options.description,
         duration: options.duration ?? Number.POSITIVE_INFINITY,
@@ -60,11 +64,30 @@ export const useToast = defineStore('toast', () => {
     return add('loading', title, options)
   }
 
+  /** Changes a shown toast's text in place, without showing it again. */
+  function update(
+    id: ToastId,
+    changes: Partial<Pick<Toast, 'title' | 'description'>>
+  ) {
+    toasts.value = toasts.value.map((toast) =>
+      toast.id === id ? { ...toast, ...changes } : toast
+    )
+  }
+
   function dismiss(id: ToastId): boolean {
     const remaining = toasts.value.filter((toast) => toast.id !== id)
     const removed = remaining.length < toasts.value.length
     toasts.value = remaining
     return removed
+  }
+
+  function close(id: ToastId): boolean {
+    closedByUser.add(id)
+    return dismiss(id)
+  }
+
+  function takeClosedByUser(id: ToastId): boolean {
+    return closedByUser.delete(id)
   }
 
   function dismissAll() {
@@ -79,7 +102,10 @@ export const useToast = defineStore('toast', () => {
     info,
     warning,
     loading,
+    update,
     dismiss,
+    close,
+    takeClosedByUser,
     dismissAll
   }
 })

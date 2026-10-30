@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
 import { LGraph, LGraphNode } from './litegraph'
-import { TitleMode } from './types/globalEnums'
+import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 
 describe('execution order projection', () => {

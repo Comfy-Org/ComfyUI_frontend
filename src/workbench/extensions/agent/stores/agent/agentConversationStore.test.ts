@@ -1,17 +1,28 @@
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick, ref, watch } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { nextTick, watch } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
-import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
-import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
-import type { AssistantMessage } from '../../services/agent/agentMessageParts'
-import { askIdOf } from '../../services/agent/agentMessageParts'
+import type {
+  AgentMessages,
+  TurnId
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  zAgentMessages,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type {
+  AgentChatEvent,
+  CanvasSyncEvidence
+} from '@/workbench/extensions/agent/services/agent/agentEventTransport'
+import type { AssistantMessage } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { askIdOf } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
+import type { TurnTab } from './agentConversationStore'
 import { useAgentConversationStore } from './agentConversationStore'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string): AgentChatEvent =>
@@ -24,17 +35,27 @@ const delta = (id: string, text: string): AgentChatEvent =>
     type: 'agent_message_delta',
     data: { delta: text, message_id: id, thread_id: 'th' }
   })
-const toolCall = (id: string, name: string, status: string): AgentChatEvent =>
+const toolCall = (
+  id: string,
+  name: string,
+  status: string,
+  correlation?: { workflow_id: string; op_ids: string[] }
+): AgentChatEvent =>
   chat({
     type: 'agent_tool_call',
     data: {
       tool_call_id: `call-${name}`,
       tool_name: name,
       status,
+      ...correlation,
       message_id: id,
       thread_id: 'th'
     }
   })
+const liveCanvasEvidence = (
+  workflowId: string,
+  opIds: readonly string[] = []
+): CanvasSyncEvidence => ({ workflowId, opIds, isLive: true })
 const done = (id: string): AgentChatEvent =>
   chat({
     type: 'agent_message_done',
@@ -324,7 +345,9 @@ describe('useAgentConversationStore', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
-    expect(store.messages[0].parts[0]).toMatchObject({
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({
       type: 'tool',
       name: 'add_node',
       ok: true
@@ -340,25 +363,37 @@ describe('useAgentConversationStore', () => {
   // seconds later than the canvas actually caught up.
   it('still settles a canvas-sync-pending tool call after its turn has settled', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    const laterWorkflowId = '8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f'
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(
+      toolCall('t1', 'add_node', 'success', {
+        workflow_id: workflowId,
+        op_ids: ['op-add']
+      })
+    )
+    store.ingest(activeTab(laterWorkflowId, 't1'))
     store.ingest(done('t1'))
 
     // The turn is settled (message.streaming is false), but the tool part
     // itself is held at 'streaming' -- the spinner -- pending canvas catch-up.
     expect(store.messages[0].streaming).toBe(false)
-    expect(store.messages[0].parts[0]).toMatchObject({
-      type: 'tool',
-      state: 'streaming'
-    })
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'tool', state: 'streaming' })
+      ])
+    )
 
-    store.notifyCanvasCaughtUp()
+    store.notifyCanvasCaughtUp(
+      liveCanvasEvidence(workflowId.toUpperCase(), ['op-add'])
+    )
 
-    expect(store.messages[0].parts[0]).toMatchObject({
-      type: 'tool',
-      state: 'done'
-    })
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'tool', state: 'done' })
+      ])
+    )
   })
 
   // PM-1575 regression (finding #1/#9, high): the normal ordering on a
@@ -371,7 +406,7 @@ describe('useAgentConversationStore', () => {
     const store = useAgentConversationStore()
     let outcomeCount = 0
     store.setCanvasSyncGate(
-      () => true,
+      () => 'awaiting',
       () => outcomeCount
     )
     store.startTurn(T1)
@@ -380,11 +415,43 @@ describe('useAgentConversationStore', () => {
     outcomeCount += 1
     store.ingest(toolCall('t1', 'add_node', 'success'))
 
-    expect(store.messages[0].parts[0]).toMatchObject({
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({
       type: 'tool',
       state: 'done'
     })
   })
+
+  it.for([
+    {
+      mismatch: 'workflow',
+      evidence: liveCanvasEvidence('different-workflow', ['op-add'])
+    },
+    {
+      mismatch: 'operation',
+      evidence: liveCanvasEvidence('workflow', ['different-op'])
+    }
+  ])(
+    'keeps a held tool call waiting when the $mismatch does not match',
+    ({ evidence }) => {
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.startTurn(T1)
+      store.ingest(
+        toolCall('t1', 'add_node', 'success', {
+          workflow_id: 'workflow',
+          op_ids: ['op-add']
+        })
+      )
+
+      store.notifyCanvasCaughtUp(evidence)
+
+      expect(
+        store.messages[0].parts.find((part) => part.type === 'tool')
+      ).toMatchObject({ state: 'streaming' })
+    }
+  )
 
   // PM-1575 regression (finding #3, medium): settleActiveTurn used to keep
   // only a single "settled but still holding" transport reachable. A second
@@ -393,23 +460,30 @@ describe('useAgentConversationStore', () => {
   // STALE_AFTER_MS fallback.
   it('keeps an earlier settled turn reachable after a second turn also settles with a held part', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    store.setCanvasSyncGate(() => 'awaiting')
 
     store.startTurn(T1)
+    store.ingest(activeTab(workflowId, 't1'))
     store.ingest(toolCall('t1', 'add_node', 'success'))
     store.ingest(done('t1'))
 
     store.startTurn(T2)
+    store.ingest(activeTab(workflowId, 't2'))
     store.ingest(toolCall('t2', 'add_node', 'success'))
     store.ingest(done('t2'))
 
     store.notifyCanvasCaughtUp()
 
-    expect(store.messages[0].parts[0]).toMatchObject({
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({
       type: 'tool',
       state: 'done'
     })
-    expect(store.messages[1].parts[0]).toMatchObject({
+    expect(
+      store.messages[1].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({
       type: 'tool',
       state: 'done'
     })
@@ -422,14 +496,24 @@ describe('useAgentConversationStore', () => {
   // a turn nobody is tracking anymore.
   it('flushes a held tool-call part immediately when its turn is aborted', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+    store.ingest(
+      toolCall('t1', 'add_node', 'success', {
+        workflow_id: workflowId,
+        op_ids: ['op-add']
+      })
+    )
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({ state: 'streaming' })
 
     store.abortActiveTurn()
 
-    expect(store.messages[0].parts[0]).toMatchObject({
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({
       state: 'done',
       ok: true
     })
@@ -717,17 +801,23 @@ describe('useAgentConversationStore', () => {
   // settling the moment it is clear nothing will ever resume it.
   it('flushes a held tool-call part immediately when a settled background turn is resumed but not reactivated', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    store.setCanvasSyncGate(() => 'awaiting')
     store.setThreadId('th')
     store.startTurn(T1)
+    store.ingest(activeTab(workflowId, 't1'))
     store.ingest(toolCall('t1', 'add_node', 'success'))
     store.stashActiveTurn()
     store.ingest(done('t1'))
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({ state: 'streaming' })
 
     store.resumeBackgroundTurn()
 
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({ state: 'done' })
   })
 
   // PM-1575 regression (finding #5, medium): nothing cancelled a held tool
@@ -737,7 +827,7 @@ describe('useAgentConversationStore', () => {
   // with the disposed transport's own stale snapshot.
   it('does not let an orphaned canvas-sync timer overwrite hydrated content under the same turn id', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
     store.ingest(done('t1'))
@@ -758,47 +848,17 @@ describe('useAgentConversationStore', () => {
   // remount) never reached a transport created before it.
   it('routes a later setCanvasSyncGate() call to a transport created before it', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => false)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    store.setCanvasSyncGate(() => 'none')
     store.startTurn(T1)
 
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
+    store.ingest(activeTab(workflowId, 't1'))
     store.ingest(toolCall('t1', 'add_node', 'success'))
 
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
-  })
-
-  // PM-1575 regression (finding #10, medium): the source watcher this
-  // guards -- AgentPanelRoot.vue's `watch(() => crdtStatus.value.outcomes
-  // .applied, ...)` -- treated ANY change to the counter as catch-up,
-  // including a decrease. `useAgentCrdtFollower` resets `outcomes.applied`
-  // to 0 when its follower is torn down (e.g. toggling the panel mid-turn)
-  // and a restarted follower counts from 0 again, so that watcher's own
-  // guard, reproduced here against the real store, is what stops a mere
-  // reset from incorrectly releasing every held tool call.
-  it('does not release a held tool call when the applied counter decreases, only when it increases', () => {
-    const store = useAgentConversationStore()
-    const applied = ref(5)
-    store.setCanvasSyncGate(
-      () => true,
-      () => applied.value
-    )
-    store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
-
-    watch(
-      applied,
-      (value, previous) => {
-        if (value > previous) store.notifyCanvasCaughtUp()
-      },
-      { flush: 'sync' }
-    )
-
-    applied.value = 0
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
-
-    applied.value = 6
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({ state: 'streaming' })
   })
 
   it('restores a pending run approval as the live turn and continues after it resolves', () => {
@@ -1019,6 +1079,15 @@ describe('useAgentConversationStore', () => {
         ])[0]
       ]
       store.hydrate(deleteTranscript())
+      store.retireAsk('turn-1:call-1', { status: 'retired' }, 'th', false)
+      store.confirmAskPending('turn-1:call-1', 'th')
+      expect(
+        store.messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'deleteApproval')
+        )
+      ).toEqual([
+        expect.not.objectContaining({ resolution: expect.anything() })
+      ])
       store.retireAsk(
         'turn-1:call-1',
         { status: 'answered', selected: ['keep'] },
@@ -1063,6 +1132,64 @@ describe('useAgentConversationStore', () => {
       ])
       expect(store.activeTurnId).toBe('assistant-message-1')
     })
+
+    it('keeps a background question answered and its tab working after a stale refetch', () => {
+      const workflow = fromPartial<LoadedComfyWorkflow>({
+        path: 'workflows/a.json',
+        instanceId: 'workflow-a'
+      })
+      useWorkflowStore().attachWorkflow(workflow, 0)
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.setTurnTabResolver(() => ({
+        status: 'known',
+        workflowInstanceId: workflow.instanceId
+      }))
+      store.hydrate(askUserTranscript())
+      store.stashActiveTurn()
+      store.setThreadId('th-other')
+      store.hydrate([])
+      store.retireAsk(
+        'turn-1:call-1',
+        { status: 'answered', selected: [], otherText: 'watercolor' },
+        'th'
+      )
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
+
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+      store.resumeBackgroundTurn()
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: { ...pendingAskUser, thread_id: 'th' }
+        })
+      )
+
+      expect(store.messages).toHaveLength(1)
+      expect(askUserCards(store)).toEqual([
+        expect.objectContaining({
+          askId: 'turn-1:call-1',
+          resolution: {
+            status: 'answered',
+            selected: [],
+            otherText: 'watercolor'
+          }
+        })
+      ])
+      expect(store.activeTurnId).toBe('assistant-message-1')
+      expect(store.isStreaming).toBe(true)
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
+
+      store.ingest(done('assistant-message-1'))
+
+      expect(store.isStreaming).toBe(false)
+      expect(store.turnTabs).toEqual([])
+    })
   })
 
   // PM-1658. The server reports an ask as pending until its answer is
@@ -1103,6 +1230,7 @@ describe('useAgentConversationStore', () => {
     store.hydrate(parkedTranscript)
     store.retireAsk('turn-1:call-1', { status: 'retired' })
 
+    store.hydrate(parkedTranscript)
     store.hydrate(parkedTranscript)
 
     expect(
@@ -1257,6 +1385,59 @@ describe('useAgentConversationStore', () => {
     expect(store.messages).toHaveLength(0)
     expect(store.activeTurnId).toBeNull()
     expect(store.isStreaming).toBe(false)
+  })
+
+  it('reset discards foreground ask recovery state', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('foreground')
+    store.recordAskAnswer('ask-1', { selected: ['run'] })
+    store.retireAsk('ask-2', { status: 'retired' })
+
+    store.reset()
+
+    expect(store.submittedAskAnswer('ask-1')).toBeUndefined()
+    expect(store.isAskRetired('ask-2', 'foreground')).toBe(false)
+  })
+
+  it('reset preserves ask recovery state owned by a background turn', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('background')
+    store.startTurn(T1)
+    store.recordAskAnswer('ask-1', { selected: ['run'] })
+    store.retireAsk('ask-2', { status: 'retired' })
+    store.stashActiveTurn()
+
+    store.reset()
+
+    expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
+    expect(store.isAskRetired('ask-2', 'background')).toBe(true)
+  })
+
+  it('does not clear live ask state when a stale turn settlement arrives', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordAskAnswer('ask-1', { selected: ['run'] }, 'th')
+    store.retireAsk('ask-2', { status: 'retired' }, 'th', false)
+
+    store.settleTurn(
+      { threadId: 'th', messageId: 'stale' as TurnId },
+      undefined
+    )
+
+    expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
+    expect(store.isAskRetired('ask-2', 'th')).toBe(true)
+  })
+
+  it('clears provisional tombstones when the matching turn settles', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.retireAsk('ask-2', { status: 'retired' }, 'th', false)
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
+
+    expect(store.isAskRetired('ask-2', 'th')).toBe(false)
   })
 
   it('holds the thread id and clears it on reset', () => {
@@ -1850,6 +2031,56 @@ describe('useAgentConversationStore', () => {
   it.for([
     {
       name: 'the displayed turn',
+      turn: { threadId: 'th-front', messageId: T1 },
+      askId: 'front-ask',
+      otherAskId: 'back-ask'
+    },
+    {
+      name: 'a stashed background turn',
+      turn: { threadId: 'th-back', messageId: T2 },
+      askId: 'back-ask',
+      otherAskId: 'front-ask'
+    }
+  ])(
+    'reads back the approval showing on $name, and only that one',
+    ({ turn, askId, otherAskId }) => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-back')
+      store.startTurn(T2)
+      store.recordUser(T2, 'background prompt')
+      store.ingest(runApproval('t2', 'back-ask'))
+      store.stashActiveTurn()
+      store.setThreadId('th-front')
+      store.hydrate([])
+      store.startTurn(T1)
+      store.recordUser(T1, 'front prompt')
+      store.ingest(runApproval('t1', 'front-ask'))
+
+      expect(store.isApprovalShown(turn, askId)).toBe(true)
+      expect(store.isApprovalShown(turn, otherAskId)).toBe(false)
+      expect(store.isApprovalShown(turn, 'never-delivered')).toBe(false)
+    }
+  )
+
+  it('stops reporting an approval once its turn has settled', () => {
+    const store = useAgentConversationStore()
+    const turn = { threadId: 'th', messageId: T1 }
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(runApproval('t1', 'ask-1'))
+    expect(store.isApprovalShown(turn, 'ask-1')).toBe(true)
+
+    store.settleTurn(turn, [
+      { type: 'text', text: 'persisted final', state: 'done' }
+    ])
+
+    expect(store.isApprovalShown(turn, 'ask-1')).toBe(false)
+  })
+
+  it.for([
+    {
+      name: 'the displayed turn',
       settled: { threadId: 'th-front', messageId: T1 },
       stillLive: [{ threadId: 'th-back', messageId: T2 }]
     },
@@ -1959,21 +2190,43 @@ describe('useAgentConversationStore', () => {
 
   it('keeps a successful tool pending until canvas catch-up after background settlement', () => {
     const store = useAgentConversationStore()
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    const laterWorkflowId = '8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f'
     store.setThreadId('th')
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(
+      toolCall('t1', 'add_node', 'success', {
+        workflow_id: workflowId,
+        op_ids: ['op-add']
+      })
+    )
+    store.ingest(activeTab(laterWorkflowId, 't1'))
     store.stashActiveTurn()
 
     store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
 
-    expect(store.messages[0].parts).toMatchObject([
-      { type: 'tool', name: 'add_node', state: 'streaming', ok: true }
-    ])
-    store.notifyCanvasCaughtUp()
-    expect(store.messages[0].parts).toMatchObject([
-      { type: 'tool', name: 'add_node', state: 'done', ok: true }
-    ])
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'tool',
+          name: 'add_node',
+          state: 'streaming',
+          ok: true
+        })
+      ])
+    )
+    store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'tool',
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        })
+      ])
+    )
   })
 
   it.for<{
@@ -2062,6 +2315,37 @@ describe('useAgentConversationStore', () => {
       expect(store.messages[0].parts.map((part) => part.type)).toEqual(kept)
     }
   )
+
+  it.for([
+    {
+      name: 'persisted thinking replaces the streamed thinking',
+      persisted: [
+        { type: 'thinking', text: 'planning the whole turn', state: 'done' },
+        { type: 'text', text: 'done', state: 'done' }
+      ] satisfies AssistantMessage['parts'],
+      expected: ['planning the whole turn', 'done']
+    },
+    {
+      name: 'a row without thinking keeps the streamed thinking',
+      persisted: [
+        { type: 'text', text: 'done', state: 'done' }
+      ] satisfies AssistantMessage['parts'],
+      expected: ['planning', 'done']
+    }
+  ])('settles a recovered turn so $name', ({ persisted, expected }) => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(thinking('t1', 'planning'))
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, persisted)
+
+    expect(
+      store.messages[0].parts.map((part) =>
+        part.type === 'thinking' || part.type === 'text' ? part.text : part.type
+      )
+    ).toEqual(expected)
+  })
 
   it('splits persisted text around a local tab link when there is no tool', () => {
     const store = useAgentConversationStore()
@@ -2395,7 +2679,16 @@ describe('useAgentConversationStore', () => {
 
     it('reports an ask kind the panel has no card for', () => {
       const store = useAgentConversationStore()
+      const tab = fromPartial<LoadedComfyWorkflow>({
+        path: 'workflows/a.json',
+        instanceId: 'workflows/a.json'
+      })
+      useWorkflowStore().attachWorkflow(tab, 0)
       store.setThreadId('th')
+      store.setTurnTabResolver(() => ({
+        status: 'known',
+        workflowInstanceId: 'workflows/a.json'
+      }))
       store.startTurn(T1)
       store.ingest(delta('t1', 'building your workflow'))
 
@@ -2414,6 +2707,357 @@ describe('useAgentConversationStore', () => {
           })
         })
       )
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
+      expect(store.awaitingApproval).toBe(false)
     })
+  })
+
+  describe('turn tabs', () => {
+    type Store = ReturnType<typeof useAgentConversationStore>
+
+    function openTab(path: string): LoadedComfyWorkflow {
+      const tab = fromPartial<LoadedComfyWorkflow>({ path, instanceId: path })
+      tab.unload = vi.fn()
+      tab.rename = vi.fn(async (newPath: string) =>
+        Object.assign(tab, { path: newPath })
+      )
+      const workflowStore = useWorkflowStore()
+      workflowStore.attachWorkflow(tab, workflowStore.openWorkflows.length)
+      return tab
+    }
+
+    function knownTab(path: string): TurnTab {
+      return { status: 'known', workflowInstanceId: path }
+    }
+
+    function storeWithTurnOn(tab: TurnTab, stashed: boolean): Store {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.setTurnTabResolver(() => tab)
+      store.startTurn(T1)
+      store.setTurnTabResolver(() => ({ status: 'unknown' }))
+      if (stashed) {
+        store.stashActiveTurn()
+        store.setThreadId('th-other')
+        store.hydrate([])
+      }
+      return store
+    }
+
+    function completedTabs(store: Store): string[] {
+      const tabs: string[] = []
+      store.onTurnCompleted((path) => tabs.push(path))
+      return tabs
+    }
+
+    function spinningPaths(store: Store): string[] {
+      return store.turnTabs.map(({ path }) => path)
+    }
+
+    it('keeps a turn on its tab while it moves to the background and back', () => {
+      openTab('workflows/a.json')
+      const store = storeWithTurnOn(knownTab('workflows/a.json'), true)
+      expect(store.activeTurnTabPath).toBeNull()
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
+
+      store.setThreadId('th')
+      store.hydrate([])
+      store.resumeBackgroundTurn()
+
+      expect(store.activeTurnTabPath).toBe('workflows/a.json')
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
+    })
+
+    const recovered = (ending: 'completed' | 'failed') => (store: Store) =>
+      store.settleTurn({ threadId: 'th', messageId: T1 }, undefined, ending)
+
+    const endings = [
+      {
+        ending: 'its done frame',
+        open: (store: Store) => store.ingest(done('t1')),
+        background: (store: Store) => store.ingest(done('t1')),
+        completes: true
+      },
+      {
+        ending: 'a completed recovery',
+        open: recovered('completed'),
+        background: recovered('completed'),
+        completes: true
+      },
+      {
+        ending: 'a failed recovery',
+        open: recovered('failed'),
+        background: recovered('failed'),
+        completes: false
+      },
+      {
+        ending: 'a malformed done frame',
+        open: (store: Store) => store.abortActiveTurn(),
+        background: (store: Store) => store.settleBackgroundTurn(T1),
+        completes: false
+      },
+      {
+        ending: 'the session stopping',
+        open: (store: Store) => store.abortActiveTurn(),
+        background: (store: Store) => store.dropBackgroundTurns(),
+        completes: false
+      }
+    ]
+
+    it.for(
+      endings.flatMap((row) =>
+        (['open', 'background'] as const).map((chat) => ({
+          ...row,
+          chat,
+          end: row[chat]
+        }))
+      )
+    )(
+      'ends a $chat turn through $ending (completed: $completes)',
+      ({ chat, end, completes }) => {
+        openTab('workflows/a.json')
+        const store = storeWithTurnOn(
+          knownTab('workflows/a.json'),
+          chat === 'background'
+        )
+        const completed = completedTabs(store)
+
+        end(store)
+
+        expect(store.turnTabs).toEqual([])
+        expect(completed).toEqual(completes ? ['workflows/a.json'] : [])
+      }
+    )
+
+    it('keeps a known tab when a refetch re-adopts the same live turn', () => {
+      openTab('workflows/a.json')
+      openTab('workflows/b.json')
+      const store = storeWithTurnOn(knownTab('workflows/a.json'), false)
+      store.moveTurnToTab(T1, 'workflows/b.json')
+
+      store.hydrate([
+        historyRow(1, 'user', 'turn-1', 'go', 'u1'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 't1'),
+          status: 'streaming'
+        }
+      ])
+
+      expect(store.activeTurnId).toBe(T1)
+      expect(spinningPaths(store)).toEqual(['workflows/b.json'])
+    })
+
+    it('reports a background turn as completed once when its done frame repeats', () => {
+      openTab('workflows/a.json')
+      const store = storeWithTurnOn(knownTab('workflows/a.json'), true)
+      const completed = completedTabs(store)
+
+      store.ingest(done('t1'))
+      store.ingest(done('t1'))
+
+      expect(completed).toEqual(['workflows/a.json'])
+    })
+
+    it.for([false, true])(
+      'stops awaiting approval once the ask is being answered (stashed: %s)',
+      (stashed) => {
+        openTab('workflows/a.json')
+        const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
+
+        store.ingest(runApproval('t1', 'ask-1'))
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: true }
+        ])
+
+        store.setAskAnswering('ask-1', true)
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: false }
+        ])
+
+        store.setAskAnswering('ask-1', false)
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: true }
+        ])
+
+        store.retireAsk('ask-1', { status: 'retired' }, 'th')
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: false }
+        ])
+      }
+    )
+
+    const pendingAsks = [
+      {
+        kind: 'ask_user',
+        stashed: false,
+        overrides: {
+          kind: 'ask_user',
+          prompt: 'Allow network access to github.com?',
+          options: [
+            { id: 'allow', label: 'Allow' },
+            { id: 'deny', label: 'Deny' }
+          ]
+        }
+      },
+      {
+        kind: 'ask_user',
+        stashed: true,
+        overrides: {
+          kind: 'ask_user',
+          prompt: 'Allow network access to github.com?',
+          options: [
+            { id: 'allow', label: 'Allow' },
+            { id: 'deny', label: 'Deny' }
+          ]
+        }
+      },
+      {
+        kind: 'delete_approval',
+        stashed: false,
+        overrides: {
+          kind: 'delete_approval',
+          prompt: 'Delete 1 node you added?',
+          options: [
+            { id: 'delete', label: 'Delete' },
+            { id: 'keep', label: 'Keep' }
+          ],
+          context: {
+            action: 'delete_nodes',
+            nodes: [{ id: '7', title: 'Load Video' }]
+          }
+        }
+      }
+    ]
+
+    it.for(pendingAsks)(
+      'awaits approval for a $kind card until it is answered (stashed: $stashed)',
+      ({ stashed, overrides }) => {
+        openTab('workflows/a.json')
+        const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
+
+        store.ingest(runApproval('t1', 'ask-1', overrides))
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: true }
+        ])
+        expect(store.awaitingApproval).toBe(true)
+
+        store.setAskAnswering('ask-1', true)
+        expect(store.awaitingApproval).toBe(false)
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: false }
+        ])
+      }
+    )
+
+    it.for([
+      { turn: 'live', stashed: false },
+      { turn: 'stashed', stashed: true }
+    ])(
+      'stops awaiting approval when the asking turn ends ($turn turn)',
+      ({ stashed }) => {
+        openTab('workflows/a.json')
+        const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
+        store.ingest(runApproval('t1', 'ask-1'))
+
+        store.ingest(done('t1'))
+
+        expect(store.awaitingApproval).toBe(false)
+      }
+    )
+
+    it('keeps awaiting approval while an earlier background chat still waits', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'ask-1'))
+      store.stashActiveTurn()
+      store.startTurn(T2)
+      store.ingest(runApproval('t2', 'ask-2'))
+      store.stashActiveTurn()
+      store.setThreadId('th-other')
+      store.hydrate([])
+
+      store.retireAsk('ask-2', { status: 'retired' }, 'th')
+      expect(store.awaitingApproval).toBe(true)
+
+      store.retireAsk('ask-1', { status: 'retired' }, 'th')
+      expect(store.awaitingApproval).toBe(false)
+    })
+
+    it.for([
+      { turn: 'live', stashed: false },
+      { turn: 'stashed', stashed: true }
+    ])(
+      'awaits approval for a turn whose tab is not open ($turn turn)',
+      ({ stashed }) => {
+        const store = storeWithTurnOn({ status: 'none' }, stashed)
+
+        store.ingest(runApproval('t1', 'ask-1'))
+
+        expect(store.turnTabs).toEqual([])
+        expect(store.awaitingApproval).toBe(true)
+
+        store.retireAsk('ask-1', { status: 'retired' }, 'th')
+        expect(store.awaitingApproval).toBe(false)
+      }
+    )
+
+    it.for([false, true])(
+      'follows the tab of a live turn through a move, a rename and a close (stashed: %s)',
+      async (stashed) => {
+        openTab('workflows/a.json')
+        const other = openTab('workflows/b.json')
+        const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
+        const workflowStore = useWorkflowStore()
+
+        store.moveTurnToTab(T1, 'workflows/b.json')
+        expect(spinningPaths(store)).toEqual(['workflows/b.json'])
+
+        await workflowStore.renameWorkflow(other, 'workflows/renamed.json')
+        expect(spinningPaths(store)).toEqual(['workflows/renamed.json'])
+
+        await workflowStore.closeWorkflow(other)
+        expect(spinningPaths(store)).toEqual([])
+      }
+    )
+
+    const adoptions: { tab: TurnTab; before: string[]; after: string[] }[] = [
+      { tab: { status: 'unknown' }, before: [], after: ['workflows/b.json'] },
+      {
+        tab: { status: 'guessed', workflowInstanceId: 'workflows/a.json' },
+        before: ['workflows/a.json'],
+        after: ['workflows/b.json']
+      },
+      {
+        tab: { status: 'known', workflowInstanceId: 'workflows/a.json' },
+        before: ['workflows/a.json'],
+        after: ['workflows/a.json']
+      },
+      { tab: { status: 'none' }, before: [], after: [] }
+    ]
+
+    it.for(
+      adoptions.flatMap((row) =>
+        [false, true].map((stashed) => ({ ...row, stashed }))
+      )
+    )(
+      "adopts the thread's workflow tab for a $tab.status tab (stashed: $stashed)",
+      ({ tab, before, after, stashed }) => {
+        openTab('workflows/a.json')
+        openTab('workflows/b.json')
+        const store = storeWithTurnOn(tab, stashed)
+        expect(spinningPaths(store)).toEqual(before)
+
+        store.adoptThreadTab('th', 'workflows/b.json')
+
+        expect(spinningPaths(store)).toEqual(after)
+      }
+    )
   })
 })

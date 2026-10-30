@@ -1,18 +1,10 @@
 {
   "id": "cloud",
   "capability": "Cloud distribution",
-  "description": "Cloud-only distribution capability: onboarding and sign-in views, OAuth consent, subscription plans and checkout, desktop cloud notification, cloud telemetry providers, cloud session and API auth adapters, and cloud bootstrap extensions. Subcapabilities (onboarding, OAuth, subscription, notification, telemetry, session) may be split into separate records later. Shared auth, billing, workspace, telemetry, router, and app bootstrap remain external.",
+  "description": "Cloud-only distribution capability: onboarding and sign-in views, OAuth consent, desktop cloud notification, cloud telemetry providers, cloud session and API auth adapters, and cloud bootstrap extensions. Subcapabilities (onboarding, OAuth, notification, telemetry, session) may be split into separate records later. Shared auth, billing, workspace, telemetry, router, and app bootstrap remain external.",
   "modules": [
     {
-      "path": "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/subscription/**",
       "role": "presentation"
     },
     {
@@ -20,15 +12,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/config/subscriptionPricesConfig.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/extensions/core/cloudBadges.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/cloudFeedbackTopbarButton.test.ts",
       "role": "integration"
     },
     {
@@ -72,16 +56,8 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/cloud/oauth/OAuthConsentView.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/cloud/oauth/OAuthConsentView.vue",
       "role": "presentation"
-    },
-    {
-      "path": "src/platform/cloud/oauth/useOAuthPostLoginRedirect.test.ts",
-      "role": "application"
     },
     {
       "path": "src/platform/cloud/oauth/useOAuthPostLoginRedirect.ts",
@@ -92,20 +68,12 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/cloud/onboarding/auth.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/cloud/onboarding/auth.ts",
       "role": "infrastructure"
     },
     {
       "path": "src/platform/cloud/onboarding/composables/**",
       "role": "application"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/composables/useDocumentDarkTheme.test.ts",
-      "role": "presentation"
     },
     {
       "path": "src/platform/cloud/onboarding/composables/useDocumentDarkTheme.ts",
@@ -116,23 +84,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/cloud/onboarding/composables/useVideoCarousel.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/cloud/onboarding/composables/useVideoCarousel.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/cloud/onboarding/desktopLoginRedemption.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/platform/cloud/onboarding/desktopLoginRedemption.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/onboardingCloudRoutes.test.ts",
       "role": "integration"
     },
     {
@@ -144,19 +100,11 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/cloud/onboarding/sso/ssoReentry.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/cloud/onboarding/sso/ssoReentry.ts",
       "role": "application"
     },
     {
       "path": "src/platform/cloud/onboarding/survey/defaultSurveySchema.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/survey/surveySchema.test.ts",
       "role": "domain"
     },
     {
@@ -166,46 +114,6 @@
     {
       "path": "src/platform/cloud/onboarding/utils/**",
       "role": "domain"
-    },
-    {
-      "path": "src/platform/cloud/subscription/components/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/cloud/subscription/constants/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/checkoutAttributionLoader.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/paymentReturnUrl.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/paymentReturnUrl.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.ts",
-      "role": "application"
     },
     {
       "path": "src/platform/distribution/**",
@@ -220,16 +128,16 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/utils/textCaseUtil.test.ts",
+      "path": "src/utils/textCaseUtil.ts",
       "role": "domain"
     },
     {
-      "path": "src/utils/textCaseUtil.ts",
-      "role": "domain"
+      "path": "packages/shared-frontend-utils/src/piiUtil.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["telemetry"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
@@ -251,19 +159,6 @@
         "src/platform/cloud/oauth/oauthApi.test.ts",
         "src/platform/cloud/oauth/useOAuthPostLoginRedirect.test.ts",
         "src/platform/cloud/oauth/OAuthConsentView.test.ts"
-      ]
-    },
-    {
-      "name": "Subscription plans, checkout, and cancellation follow tier policy",
-      "checks": [
-        "src/platform/cloud/subscription/constants/tierPricing.test.ts",
-        "src/platform/cloud/subscription/utils/subscriptionTierRank.test.ts",
-        "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.test.ts",
-        "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.test.ts",
-        "src/platform/cloud/subscription/utils/retentionOffer.test.ts",
-        "src/platform/cloud/subscription/composables/useSubscription.test.ts",
-        "src/platform/cloud/subscription/launchCancellationFlow.test.ts",
-        "src/components/dialog/content/subscription/CancelSubscriptionDialogContent.test.ts"
       ]
     },
     {
@@ -289,7 +184,7 @@
       "checks": [
         "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.test.ts",
         "src/extensions/core/cloudFeedbackTopbarButton.test.ts",
-        "src/platform/cloud/notification/components/DesktopCloudNotificationController.test.ts",
+        "src/platform/cloud/notification/composables/useDesktopCloudNotification.test.ts",
         "src/platform/distribution/cloudPreviewUtil.test.ts"
       ]
     },

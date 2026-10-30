@@ -3,13 +3,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useLocalStorage } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUsePlacement
-} from '@/platform/telemetry/types'
-import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
+} from '@comfyorg/telemetry/types'
+import { AGENT_COST_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 
 import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
 
@@ -54,7 +54,7 @@ function onDismiss(): void {
     :data-placement="placement"
     :class="
       cn(
-        'flex items-start gap-3 bg-blue-selection text-base-foreground',
+        'flex items-start gap-3 bg-primary/30 text-foreground',
         PLACEMENT_CLASSES[placement]
       )
     "
@@ -65,10 +65,10 @@ function onDismiss(): void {
         variant="link"
         size="unset"
         as="a"
-        :href="AGENT_DOCS_URL"
+        :href="AGENT_COST_DOCS_URL"
         target="_blank"
         rel="noopener noreferrer"
-        class="inline p-0 text-sm/5 font-normal text-primary-background-hover hover:underline hover:underline-offset-4"
+        class="inline p-0 text-sm/5 font-normal text-foreground underline underline-offset-4"
         @click="emit('notice', { action: 'learn_more_clicked', placement })"
       >
         {{ $t('g.learnMore') }}
@@ -82,7 +82,7 @@ function onDismiss(): void {
       class="shrink-0"
       @click="onDismiss"
     >
-      <span class="icon-[lucide--x] size-5" />
+      <i aria-hidden="true" class="icon-[lucide--x] size-5" />
     </Button>
   </div>
 </template>

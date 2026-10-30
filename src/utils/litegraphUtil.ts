@@ -1,7 +1,7 @@
 import { every, filter, head, isEmpty, isEqual, map } from 'es-toolkit/compat'
 
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import {
   LGraphCanvas,
   LGraphGroup,
@@ -13,20 +13,23 @@ import type {
   ExportedSubgraph,
   ISerialisableNodeInput,
   ISerialisedGraph
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import type {
   IBaseWidget,
   IComboWidget,
   WidgetCallbackOptions
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
 import { useApp } from '@/scripts/appInstance'
-import { parseNodeLocatorId } from '@/types/nodeIdentification'
-import type { SerializedNodeId } from '@/types/nodeId'
-import { UNASSIGNED_NODE_ID, parseNodeId } from '@/types/nodeId'
-import type { WidgetId } from '@/types/widgetId'
-import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
+import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { UNASSIGNED_NODE_ID, parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import {
+  ensureUniqueWidgetNames,
+  widgetId
+} from '@comfyorg/graph-model/widgetId'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {

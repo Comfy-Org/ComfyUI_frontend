@@ -20,31 +20,135 @@
   ],
   "type": "module",
   "sideEffects": false,
+  "imports": {
+    "#package.json": "./package.json",
+    "#/*": {
+      "@comfyorg/account-core": "./src/*.ts",
+      "types": "./dist-types/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
   "exports": {
-    "./boundedOperation": "./src/core/boundedOperation.ts",
-    "./lazyIdentity": "./src/core/lazyIdentity.ts",
-    "./session": "./src/core/session.ts",
-    "./webSession": "./src/core/webSession.ts",
-    "./webSessionFlag": "./src/core/webSessionFlag.ts",
-    "./requestAuth": "./src/core/requestAuth.ts",
-    "./sessionTokenMint": "./src/core/sessionTokenMint.ts",
-    "./webSessionIdentity": "./src/core/webSessionIdentity.ts",
-    "./billing": "./src/core/billing/index.ts",
-    "./firebase": "./src/firebase/index.ts",
-    "./web": "./src/web/crossTabRefresh.ts",
-    "./testing": "./src/testing.ts",
-    "./customerRecovery": "./src/core/customerRecovery.ts",
-    "./signInSchemas": "./src/signInSchemas.ts",
-    "./turnstile": "./src/turnstile.ts",
-    "./turnstileScript": "./src/turnstileScript.ts",
-    "./firebaseAuthError": "./src/firebaseAuthError.ts",
-    "./provisioning": "./src/provisioning.ts",
-    "./redirect": "./src/redirect.ts",
-    "./sso": "./src/sso.ts",
-    "./workspaceLink": "./src/workspaceLink.ts",
-    "./telemetry": "./src/telemetry.ts",
-    "./webviewDetection": "./src/webviewDetection.ts",
-    "./oauthPkce": "./src/oauthPkce.ts",
+    "./boundedOperation": {
+      "@comfyorg/account-core": "./src/core/boundedOperation.ts",
+      "types": "./dist-types/core/boundedOperation.d.ts",
+      "default": "./src/core/boundedOperation.ts"
+    },
+    "./lazyIdentity": {
+      "@comfyorg/account-core": "./src/core/lazyIdentity.ts",
+      "types": "./dist-types/core/lazyIdentity.d.ts",
+      "default": "./src/core/lazyIdentity.ts"
+    },
+    "./session": {
+      "@comfyorg/account-core": "./src/core/session.ts",
+      "types": "./dist-types/core/session.d.ts",
+      "default": "./src/core/session.ts"
+    },
+    "./webSession": {
+      "@comfyorg/account-core": "./src/core/webSession.ts",
+      "types": "./dist-types/core/webSession.d.ts",
+      "default": "./src/core/webSession.ts"
+    },
+    "./webSessionFlag": {
+      "@comfyorg/account-core": "./src/core/webSessionFlag.ts",
+      "types": "./dist-types/core/webSessionFlag.d.ts",
+      "default": "./src/core/webSessionFlag.ts"
+    },
+    "./requestAuth": {
+      "@comfyorg/account-core": "./src/core/requestAuth.ts",
+      "types": "./dist-types/core/requestAuth.d.ts",
+      "default": "./src/core/requestAuth.ts"
+    },
+    "./sessionTokenMint": {
+      "@comfyorg/account-core": "./src/core/sessionTokenMint.ts",
+      "types": "./dist-types/core/sessionTokenMint.d.ts",
+      "default": "./src/core/sessionTokenMint.ts"
+    },
+    "./webSessionIdentity": {
+      "@comfyorg/account-core": "./src/core/webSessionIdentity.ts",
+      "types": "./dist-types/core/webSessionIdentity.d.ts",
+      "default": "./src/core/webSessionIdentity.ts"
+    },
+    "./billing": {
+      "@comfyorg/account-core": "./src/core/billing/index.ts",
+      "types": "./dist-types/core/billing/index.d.ts",
+      "default": "./src/core/billing/index.ts"
+    },
+    "./firebase": {
+      "@comfyorg/account-core": "./src/firebase/index.ts",
+      "types": "./dist-types/firebase/index.d.ts",
+      "default": "./src/firebase/index.ts"
+    },
+    "./web": {
+      "@comfyorg/account-core": "./src/web/crossTabRefresh.ts",
+      "types": "./dist-types/web/crossTabRefresh.d.ts",
+      "default": "./src/web/crossTabRefresh.ts"
+    },
+    "./testing": {
+      "@comfyorg/account-core": "./src/testing.ts",
+      "types": "./dist-types/testing.d.ts",
+      "default": "./src/testing.ts"
+    },
+    "./customerRecovery": {
+      "@comfyorg/account-core": "./src/core/customerRecovery.ts",
+      "types": "./dist-types/core/customerRecovery.d.ts",
+      "default": "./src/core/customerRecovery.ts"
+    },
+    "./signInSchemas": {
+      "@comfyorg/account-core": "./src/signInSchemas.ts",
+      "types": "./dist-types/signInSchemas.d.ts",
+      "default": "./src/signInSchemas.ts"
+    },
+    "./turnstile": {
+      "@comfyorg/account-core": "./src/turnstile.ts",
+      "types": "./dist-types/turnstile.d.ts",
+      "default": "./src/turnstile.ts"
+    },
+    "./turnstileScript": {
+      "@comfyorg/account-core": "./src/turnstileScript.ts",
+      "types": "./dist-types/turnstileScript.d.ts",
+      "default": "./src/turnstileScript.ts"
+    },
+    "./firebaseAuthError": {
+      "@comfyorg/account-core": "./src/firebaseAuthError.ts",
+      "types": "./dist-types/firebaseAuthError.d.ts",
+      "default": "./src/firebaseAuthError.ts"
+    },
+    "./provisioning": {
+      "@comfyorg/account-core": "./src/provisioning.ts",
+      "types": "./dist-types/provisioning.d.ts",
+      "default": "./src/provisioning.ts"
+    },
+    "./redirect": {
+      "@comfyorg/account-core": "./src/redirect.ts",
+      "types": "./dist-types/redirect.d.ts",
+      "default": "./src/redirect.ts"
+    },
+    "./sso": {
+      "@comfyorg/account-core": "./src/sso.ts",
+      "types": "./dist-types/sso.d.ts",
+      "default": "./src/sso.ts"
+    },
+    "./workspaceLink": {
+      "@comfyorg/account-core": "./src/workspaceLink.ts",
+      "types": "./dist-types/workspaceLink.d.ts",
+      "default": "./src/workspaceLink.ts"
+    },
+    "./telemetry": {
+      "@comfyorg/account-core": "./src/telemetry.ts",
+      "types": "./dist-types/telemetry.d.ts",
+      "default": "./src/telemetry.ts"
+    },
+    "./webviewDetection": {
+      "@comfyorg/account-core": "./src/webviewDetection.ts",
+      "types": "./dist-types/webviewDetection.d.ts",
+      "default": "./src/webviewDetection.ts"
+    },
+    "./oauthPkce": {
+      "@comfyorg/account-core": "./src/oauthPkce.ts",
+      "types": "./dist-types/oauthPkce.d.ts",
+      "default": "./src/oauthPkce.ts"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -148,7 +252,7 @@
   "scripts": {
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
-    "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "build": "pnpm run clean && vite build --logLevel error",
     "check:pack": "tsx scripts/checkPublishable.ts",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
     "prepack": "pnpm run build",
@@ -161,12 +265,14 @@
     "@comfyorg/ingest-types": "workspace:^"
   },
   "devDependencies": {
+    "@comfyorg/published-package-build": "workspace:*",
     "@comfyorg/test-utils": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "firebase": "catalog:",
     "happy-dom": "catalog:",
     "typescript": "catalog:",
+    "vite": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
   },

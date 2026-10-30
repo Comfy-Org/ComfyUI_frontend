@@ -8,20 +8,12 @@
       "role": "application"
     },
     {
-      "path": "src/composables/useFeatureFlags.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useFeatureFlags.ts",
       "role": "application"
     },
     {
       "path": "src/platform/remoteConfig/**",
       "role": "application"
-    },
-    {
-      "path": "src/platform/remoteConfig/refreshRemoteConfig.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/platform/remoteConfig/refreshRemoteConfig.ts",
@@ -40,15 +32,7 @@
       "role": "application"
     },
     {
-      "path": "src/utils/devFeatureFlagOverride.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/utils/devFeatureFlagOverride.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/utils/sessionFeatureFlagOverride.test.ts",
       "role": "infrastructure"
     },
     {
@@ -56,9 +40,12 @@
       "role": "infrastructure"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/utils/devFeatureFlagOverride.ts",
+    "src/utils/sessionFeatureFlagOverride.ts"
+  ],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["extension-runtime", "telemetry"],
   "characterizationScenarios": [
     {
       "name": "Remote config refresh loads /features with a bounded wait and records load state",

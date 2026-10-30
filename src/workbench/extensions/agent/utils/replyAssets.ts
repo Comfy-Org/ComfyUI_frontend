@@ -1,6 +1,6 @@
 import type { Token } from 'marked'
 
-import { isMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
+import { isMediaRoute } from '@comfyorg/api-client/sessionMediaUrl'
 import { api } from '@/scripts/api'
 import { isLoopbackHost } from '@/utils/hostWhitelist'
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -16,6 +16,22 @@ export interface ReplyAsset {
   label?: string
 }
 
+export type ReplyVisualAsset = ReplyAsset & {
+  kind: Exclude<ReplyAssetKind, 'audio'>
+}
+
+export type ReplyAudioAsset = ReplyAsset & { kind: 'audio' }
+
+export function isReplyVisualAsset(
+  asset: ReplyAsset
+): asset is ReplyVisualAsset {
+  return asset.kind !== 'audio'
+}
+
+export function isReplyAudioAsset(asset: ReplyAsset): asset is ReplyAudioAsset {
+  return asset.kind === 'audio'
+}
+
 export function isReplyAssetKind(value: MediaType): value is ReplyAssetKind {
   return (
     value === 'image' ||
@@ -25,19 +41,27 @@ export function isReplyAssetKind(value: MediaType): value is ReplyAssetKind {
   )
 }
 
+function parseUrl(href: string, base?: string): URL | null {
+  try {
+    return new URL(href, base)
+  } catch {
+    return null
+  }
+}
+
 /**
  * Moves a loopback ComfyUI media URL onto the page's API route and returns any
  * other URL unchanged.
  */
 export function resolveAgentAssetUrl(href: string): string {
   const url =
-    URL.parse(href) ??
-    (href.startsWith('//') ? URL.parse(href, window.location.origin) : null)
+    parseUrl(href) ??
+    (href.startsWith('//') ? parseUrl(href, window.location.origin) : null)
   if (!url) return href
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return href
   if (!isLoopbackHost(url.hostname)) return href
   if (!isMediaRoute(`${url.pathname}${url.search}`)) return href
-  const rehomed = URL.parse(
+  const rehomed = parseUrl(
     api.apiURL(`${url.pathname}${url.search}`),
     window.location.origin
   )

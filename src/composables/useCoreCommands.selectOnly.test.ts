@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 vi.mock(import('firebase/auth'))
 
@@ -20,6 +20,7 @@ const GRAPH_MUTATION_COMMANDS = [
   'Comfy.Canvas.PasteFromClipboard',
   'Comfy.Canvas.PasteFromClipboardWithConnect',
   'Comfy.Canvas.Resize',
+  'Comfy.Canvas.ShowSelectedLinks',
   'Comfy.Canvas.ToggleSelected.Pin',
   'Comfy.Canvas.ToggleSelectedNodes.Bypass',
   'Comfy.Canvas.ToggleSelectedNodes.Collapse',

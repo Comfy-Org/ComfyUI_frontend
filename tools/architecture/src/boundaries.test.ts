@@ -1,7 +1,9 @@
+import { matchesGlob } from 'node:path'
+
 import { assert, describe, expect, it } from 'vitest'
 
 import { buildBoundaries } from './boundaries'
-import { claimFiles, matchesModulePath } from './records'
+import { claimFiles } from './records'
 import type { DomainRecord } from './schema'
 
 function domain(
@@ -33,7 +35,7 @@ function fallowAllows(records: DomainRecord[], from: string, to: string) {
   const { zones, rules } = buildBoundaries({ records, claims }).boundaries
   const zoneOf = (file: string) =>
     zones.find(({ patterns }) =>
-      patterns.some((pattern) => matchesModulePath(file, pattern))
+      patterns.some((pattern) => matchesGlob(file, pattern))
     )?.name
   const rule = rules.find(({ from: zone }) => zone === zoneOf(from))
   const target = zoneOf(to)
@@ -72,6 +74,13 @@ describe('buildBoundaries', () => {
       name: 'unclassified code may not deep-import an enforced domain',
       records: [images()],
       from: 'src/legacy/a.ts',
+      to: 'src/images/app/store.ts',
+      allowed: false
+    },
+    {
+      name: 'unclassified package code may not deep-import an enforced domain',
+      records: [images()],
+      from: 'packages/widgets/src/a.ts',
       to: 'src/images/app/store.ts',
       allowed: false
     },

@@ -1,9 +1,9 @@
 import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
 import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useWorkflowStore } from '../../management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import { t } from '@/i18n'
@@ -39,6 +39,7 @@ export function useShareDialog() {
           preserveNewlines: true
         },
         footerProps: {
+          cancelText: t('g.cancel'),
           confirmText: t('shareNoOutputs.shareAnyway'),
           confirmVariant: 'secondary',
           onCancel: () => dialogStore.closeDialog(dialog),

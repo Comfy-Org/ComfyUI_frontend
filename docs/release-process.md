@@ -59,6 +59,11 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 2. `pr-backport.yaml` cherry-picks and creates a backport PR
 3. Conflicts produce a comment with details and an agent prompt
 
+Release labels alone do not start the backport. A merged PR with a
+`core/X.Y` or `cloud/X.Y` label but no `needs-backport` gets a comment saying
+the backport did not run. Each label is warned about once, and labels whose
+target already has an open or merged backport PR are left out.
+
 ## Release Sheriff Assignment
 
 The sheriff is a **fixed role**, declared in `.github/release-sheriff.json`:
@@ -164,6 +169,14 @@ and npm (`@comfyorg/comfyui-frontend-types`).
 `release-weekly-comfyui.yaml` runs every Monday — if the next `core/`
 branch has unreleased commits, it triggers a patch bump and drafts a PR to
 `Comfy-Org/ComfyUI` updating `requirements.txt`.
+
+Every run reuses one branch and PR (`automation/comfyui-frontend-bump`). If
+ComfyUI master, or that PR while it is still open, already pins a newer
+frontend than the run's target, the run leaves it unchanged rather than
+downgrading it, so a patch on an older line never replaces a pending bump to a
+newer minor. If master already pins the target and the open bump PR does not
+pin anything newer, the run closes that PR, since merging it could only
+downgrade or do nothing.
 
 ## Workflows
 

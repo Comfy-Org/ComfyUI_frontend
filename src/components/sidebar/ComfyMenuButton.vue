@@ -1,5 +1,9 @@
 <template>
-  <Menu :items="translatedItems" class="comfy-command-menu">
+  <Menu
+    :items="translatedItems"
+    class="comfy-command-menu"
+    @activate="onMenuItemActivate"
+  >
     <template #trigger="{ open }">
       <Button
         variant="textonly"
@@ -11,9 +15,8 @@
         :aria-label="t('sideToolbar.labels.menu')"
         :class="
           cn(
-            'flex h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 flex-col rounded-none p-2 hover:bg-interface-panel-hover-surface',
-            open &&
-              'bg-interface-panel-selected-surface hover:bg-interface-panel-selected-surface'
+            'flex h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 flex-col rounded-none p-2 hover:bg-accent',
+            open && 'bg-muted hover:bg-muted'
           )
         "
         @click="onLogoMenuClick"
@@ -38,26 +41,29 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import { snakeCase } from 'es-toolkit'
 
-import ComfyLogo from '@/components/icons/ComfyLogo.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import ComfyLogo from '@comfyorg/design-system/icon/ComfyLogo'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingPanelType } from '@/platform/settings/types'
-import { useTelemetry } from '@/platform/telemetry'
+import type { SettingPanelType } from '@comfyorg/settings-core/types'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
-import type { AppMenuItem, CommandMenuItem } from '@/stores/menuItemStore'
+import type { AppMenuItem } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerDialog'
+import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 
 const { t } = useI18n()
 const menuItemStore = useMenuItemStore()
+const commandStore = useCommandStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const settingsDialog = useSettingsDialog()
@@ -73,6 +79,32 @@ function onLogoMenuClick() {
   telemetry?.trackUiButtonClicked({
     button_id: 'sidebar_comfy_menu_opened',
     element_group: 'sidebar'
+  })
+}
+
+const EXTRA_ITEM_BUTTON_IDS: Partial<Record<string, string>> = {
+  'browse-templates': 'comfy_menu_browse_templates_clicked',
+  'manage-extensions': 'comfy_menu_manage_extensions_clicked'
+}
+
+function commandButtonId(commandId: string) {
+  if (commandStore.getCommand(commandId)?.source !== 'System')
+    return 'comfy_menu_extension_command_clicked'
+  return `comfy_menu_${snakeCase(commandId)}_clicked`
+}
+
+function menuItemButtonId(item: AppMenuItem) {
+  if ('commandId' in item) return commandButtonId(item.commandId)
+  if (item.key?.startsWith('theme-')) return 'comfy_menu_theme_clicked'
+  return item.key ? EXTRA_ITEM_BUTTON_IDS[item.key] : undefined
+}
+
+function onMenuItemActivate(item: AppMenuItem) {
+  const buttonId = menuItemButtonId(item)
+  if (!buttonId) return
+  telemetry?.trackUiButtonClicked({
+    button_id: buttonId,
+    element_group: 'comfy_menu'
   })
 }
 
@@ -103,10 +135,9 @@ const showManageExtensions = async () => {
 }
 
 const themeMenuItems = computed(() => {
-  return colorPaletteStore.palettes.map<CommandMenuItem>((palette) => ({
+  return colorPaletteStore.palettes.map<MenuItem>((palette) => ({
     key: `theme-${palette.id}`,
     label: palette.name,
-    commandId: `theme-${palette.id}`,
     checked: () => colorPaletteStore.activePaletteId === palette.id,
     command: async () => {
       await colorPaletteService.loadColorPalette(palette.id)
@@ -165,7 +196,6 @@ const translatedItems = computed<AppMenuItem[]>(() => {
 
   if (helpIndex !== -1) {
     items[helpIndex].icon = 'mdi mdi-help-circle-outline'
-    // If help is not the last item (i.e. we have extension commands), separate them
     const isLastItem = helpIndex !== items.length - 1
     helpItem = items.splice(
       helpIndex,

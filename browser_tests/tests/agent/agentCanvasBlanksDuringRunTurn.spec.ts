@@ -6,7 +6,7 @@ import type {
   DocResetFrame,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -24,6 +24,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
@@ -129,24 +130,6 @@ async function expectNodeSurvivedReplacement(page: Page): Promise<void> {
   ).toBeVisible()
 }
 
-/**
- * Drives a plain "run the workflow" turn up through a mid-turn `doc_reset`
- * whose post-reset resubscribes have their catch-up withheld per
- * `dropCatchUpAfterReset`, and asserts the canvas keeps its two nodes the
- * moment the reset lands. The host doc gains `RESET_LINEAGE_NODE_ID` right
- * after the reset, so only a delivered catch-up can put a third node on the
- * canvas. Shared by the permanent-drop run (`driveRunTurnThroughRun`) and
- * the transient one-off-drop recovery proof
- * (`driveRunTurnThroughTransientCatchUpDrop`) below -- they differ only in
- * how many of the resubscribes that follow the reset get their catch-up
- * withheld.
- *
- * `dropCatchUpAfterReset` is asked, for each `doc_subscribe` the mock
- * receives AFTER the reset, whether that resubscribe (1-indexed, in receipt
- * order) should have its catch-up withheld. The subscribe sent before the
- * reset (the initial workflow-picker subscribe) always gets its catch-up --
- * matching the baseline "two nodes visible" assertion below.
- */
 async function driveThroughDocReset(
   page: Page,
   dropCatchUpAfterReset: (resubscribeCountAfterReset: number) => boolean
@@ -170,8 +153,8 @@ async function driveThroughDocReset(
   })
   const send = (frame: AgentWsEvent | HostFrame): void => hostSocket.send(frame)
 
-  await page.route('**/api/agent/threads', (route) =>
-    route.fulfill(jsonRoute({ threads: [] }))
+  await page.route('**/api/agent/threads?*', (route) =>
+    route.fulfill(jsonRoute(emptyAgentThreadList()))
   )
   await page.route('**/api/agent/threads/*/messages', (route) => {
     if (route.request().method() === 'POST') {
@@ -260,12 +243,6 @@ async function driveThroughDocReset(
   await panel.getByRole('button', { name: SEND_LABEL }).click()
   await expect(panel.getByText('Run the workflow.').first()).toBeVisible()
 
-  // The panel doesn't bind (and so doesn't subscribe) the CRDT doc merely
-  // from selecting a workflow as the agent's target -- `boundWorkflowId`
-  // (`useAgentSession.ts`) only changes via `bindWorkflow`, which fires from
-  // this `agent_active_tab` push (`AgentPanelRoot.vue`'s `onAgentActiveTab`).
-  // The first real subscribe -- and so the seed's two nodes -- can only
-  // appear after this frame, not merely after picking the workflow tab.
   send({
     type: 'agent_active_tab',
     data: {
@@ -276,9 +253,6 @@ async function driveThroughDocReset(
     }
   })
 
-  // Baseline: the healthy first subscribe delivers the seed's two nodes,
-  // matching the user's report that the canvas held the workflow's nodes
-  // before the agent started working on the run.
   await expect(vueNodes.getNodeLocator('1')).toBeVisible()
   await expect(vueNodes.getNodeLocator('2')).toBeVisible()
 
@@ -305,17 +279,6 @@ async function driveThroughDocReset(
     }
   })
 
-  // "The moment the agent started working": a lineage break for the active
-  // document right as the run-only turn gets going. This used to be the one
-  // frame able to sweep already-rendered nodes off the canvas; now it only
-  // arms the next frame to replace the graph. From here on the resubscribe's
-  // catch-up is governed by `dropCatchUpAfterReset`.
-  //
-  // Stamped on the live element before the reset so the assertion below can
-  // tell a node that was never unmounted from one that was torn down and
-  // rebuilt. `toBeVisible` cannot: a remounted node is equally visible, and a
-  // remount is what restarts media playback (PM-1790). Vue does not manage
-  // this dataset key, so only a fresh element loses it.
   await page.evaluate((nodeId) => {
     const el = document.querySelector(`[data-node-id="${nodeId}"]`)
     if (el instanceof HTMLElement) el.dataset.identityProbe = 'before-reset'
@@ -357,11 +320,6 @@ async function driveThroughDocReset(
   await expect(vueNodes.getNodeLocator('1')).toBeVisible()
   await expect(vueNodes.getNodeLocator('2')).toBeVisible()
 
-  // The same element, not merely an equivalent one: a reset that went back to
-  // clearing would drop this node and its stamp with it. It does NOT yet say
-  // anything about `GraphCanvas`'s key -- nothing re-renders between the
-  // reset and here, so the stamp survives a randomised key too. That is what
-  // `expectNodeSurvivedReplacement` covers, once content actually lands.
   await expectNodeSurvivedReset(page)
 
   return { vueNodes, send }

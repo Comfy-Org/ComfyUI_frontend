@@ -12,33 +12,36 @@ import {
 import {
   LGraphEventMode,
   NodeSlotType
-} from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 import {
   createMissingMediaCandidate,
   createPromotedMediaRuntime,
   createPromotedMissingMediaCandidate,
   deferMediaVerification
-} from '@/platform/missingMedia/__fixtures__/promotedMedia'
-import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import * as missingModelScan from '@/platform/missingModel/missingModelScan'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { cloudReleaseModelOptions } from '@/platform/missingModel/releaseModelOptions'
+} from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
+import * as missingMediaScan from '@/platform/workflowErrors/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import * as missingModelScan from '@/platform/workflowErrors/missingModel/missingModelScan'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { cloudReleaseModelOptions } from '@/platform/workflowErrors/missingModel/releaseModelOptions'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 
-vi.mock(import('@/platform/missingModel/releaseModelOptions'), () => ({
-  cloudReleaseModelOptions: vi.fn(),
-  releaseModelOptions: vi.fn()
-}))
+vi.mock(
+  import('@/platform/workflowErrors/missingModel/releaseModelOptions'),
+  () => ({
+    cloudReleaseModelOptions: vi.fn(),
+    releaseModelOptions: vi.fn()
+  })
+)
 
 function stubAppRootGraph(graph: LGraph | undefined) {
   vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)

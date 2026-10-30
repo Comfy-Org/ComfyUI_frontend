@@ -12,14 +12,14 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 import type {
   RawJobListItem,
   zJobsListResponse
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+} from '@comfyorg/api-client/jobTypes'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const KSAMPLER_NODE = '3'
-const EXECUTING_CLASS = /outline-node-stroke-executing/
+const EXECUTING_CLASS = /outline-primary/
 
 const QUEUE_ROUTE = /\/api\/jobs\?[^/]*status=in_progress,pending/
 const HISTORY_ROUTE = /\/api\/jobs\?[^/]*status=completed/

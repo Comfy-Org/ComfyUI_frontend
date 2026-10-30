@@ -1,11 +1,11 @@
 import { computed } from 'vue'
 
-import type { PromptEditor } from '../../types/promptEditor'
+import type { PromptEditor } from '@/workbench/extensions/agent/types/promptEditor'
 import type {
   WorkflowReference,
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
-} from '../../types/workflowReference'
+} from '@/workbench/extensions/agent/types/workflowReference'
 
 interface WorkflowReferencePickerOptions {
   editor: () => PromptEditor | null

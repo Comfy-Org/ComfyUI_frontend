@@ -3,26 +3,26 @@ import { computed, onScopeDispose, ref, shallowReactive, shallowRef } from 'vue'
 
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
-import type { AgentInputMethod } from '@/platform/telemetry/types'
+import type { AgentInputMethod } from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
-import type { ComposerAttachment } from '../../types/composerAttachment'
-import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
-import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import type {
   ComposerInsertionPoint,
   ComposerPrompt,
   ComposerReference
-} from '../../types/composerPrompt'
-import { composerReferenceKey } from '../../types/composerPrompt'
+} from '@/workbench/extensions/agent/types/composerPrompt'
+import { composerReferenceKey } from '@/workbench/extensions/agent/types/composerPrompt'
 import type {
   PromptSnapshot,
   WorkflowReference
-} from '../../types/workflowReference'
-import { insertComposerReference } from '../../utils/composerPrompt'
-import { promptReferenceParts } from '../../utils/promptReferenceParts'
-import { createVideoThumbnail } from '../../utils/videoThumbnail'
-import type { AgentStarterPromptSource } from '../../utils/starterPrompts'
+} from '@/workbench/extensions/agent/types/workflowReference'
+import { insertComposerReference } from '@/workbench/extensions/agent/utils/composerPrompt'
+import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
+import { createVideoThumbnail } from '@/workbench/extensions/agent/utils/videoThumbnail'
+import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
 
 interface ComposerDraft extends PromptSnapshot {
   attachments: ComposerAttachment[]
@@ -39,6 +39,10 @@ function resetTextWhenReferencesCleared(
   references: ComposerReference[]
 ): string {
   return references.length === 0 && text.trim() === '' ? '' : text
+}
+
+function composerReferencePosition(reference: ComposerReference): string {
+  return `${composerReferenceKey(reference)}@${reference.textOffset}`
 }
 
 interface SubmittedDraft {
@@ -71,6 +75,12 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     prompt.value.references.flatMap((item) =>
       item.kind === 'node' ? [item.node] : []
     )
+  )
+  const hasDraft = computed(
+    () =>
+      draft.value.trim() !== '' ||
+      attachments.value.length > 0 ||
+      prompt.value.references.length > 0
   )
   const nodeScope = ref<string | null>(null)
   let skillScope: string | null = null
@@ -137,6 +147,28 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     starterPrompt: AgentStarterPromptSource | null
     snapshot: SubmittedDraft
   } | null>(null)
+  const rejectedDraft = shallowRef<{
+    prompt: ComposerPrompt
+    attachmentIds: string[]
+  } | null>(null)
+  const rejectedDraftUnchanged = computed(() => {
+    const rejected = rejectedDraft.value
+    if (!rejected) return false
+    const ids = attachmentIds.value
+    if (rejected.attachmentIds.length !== ids.length) return false
+    if (!rejected.attachmentIds.every((id, index) => id === ids[index]))
+      return false
+    const current = draftState.value
+    return (
+      rejected.prompt.text === current.text &&
+      rejected.prompt.references.length === current.references.length &&
+      rejected.prompt.references.every(
+        (reference, index) =>
+          composerReferencePosition(reference) ===
+          composerReferencePosition(current.references[index])
+      )
+    )
+  })
   let revision = 0
   let nextSubmissionId = 0
 
@@ -498,6 +530,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function startSubmission(snapshot: SubmittedDraft): number {
     resetPromptHistory()
+    rejectedDraft.value = null
     // Held with the snapshot, not dropped: a send that fails puts this draft
     // back in the composer, and the retry came from the same chip or edited
     // prompt the first attempt did.
@@ -542,7 +575,15 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function invalidateSubmission(): void {
     submission.value = null
+    rejectedDraft.value = null
     releaseUnusedAssets()
+  }
+
+  function markRejectedDraft(): void {
+    rejectedDraft.value = {
+      prompt: draftState.value,
+      attachmentIds: [...attachmentIds.value]
+    }
   }
 
   return {
@@ -552,12 +593,15 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     workflowReferences,
     prompt,
     nodes,
+    hasDraft,
     nodeScope,
     promptEpoch,
     promptOrigin,
     starterPrompt,
     insertionPoint,
     submission,
+    rejectedDraftUnchanged,
+    markRejectedDraft,
     setText,
     setInsertionPoint,
     resetPromptHistory,

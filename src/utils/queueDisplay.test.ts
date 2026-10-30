@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import type { JobState } from '@/types/queue'
 import type { BuildJobDisplayCtx } from '@/utils/queueDisplay'
 import { buildJobDisplay, iconForJobState } from '@/utils/queueDisplay'
@@ -226,5 +226,45 @@ describe('buildJobDisplay', () => {
       secondary: 'g.failed',
       showClear: true
     })
+  })
+})
+
+describe('buildJobDisplay while a model downloads', () => {
+  const download = {
+    name: 'my_style_v2.safetensors',
+    index: 1,
+    count: 1,
+    bytesDownloaded: 52428800,
+    bytesTotal: 152043520
+  }
+
+  it('names the file and its size so far of the whole', () => {
+    const display = buildJobDisplay(
+      createTask(),
+      'running',
+      createCtx({ modelDownload: download })
+    )
+
+    expect(display).toEqual({
+      iconName: 'icon-[lucide--download]',
+      primary: 'queue.downloadingModel(name=my_style_v2.safetensors)',
+      secondary: 'queue.downloadedOfTotal(downloaded=50 MB,total=145 MB)',
+      showClear: true
+    })
+  })
+
+  it('counts the file among several and shows only the size when the total is unknown', () => {
+    const display = buildJobDisplay(
+      createTask(),
+      'pending',
+      createCtx({
+        modelDownload: { ...download, index: 2, count: 3, bytesTotal: null }
+      })
+    )
+
+    expect(display.primary).toBe(
+      'queue.downloadingModelOf(name=my_style_v2.safetensors,index=2,count=3)'
+    )
+    expect(display.secondary).toBe('50 MB')
   })
 })

@@ -12,10 +12,6 @@
       "role": "application"
     },
     {
-      "path": "src/scripts/pnginfo.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/scripts/pnginfo.ts",
       "role": "integration"
     },
@@ -51,7 +47,6 @@
       "name": "3D and JSON files yield embedded metadata",
       "checks": [
         "src/scripts/metadata/gltf.test.ts",
-        "src/scripts/metadata/ply.test.ts",
         "src/scripts/metadata/json.test.ts"
       ]
     }

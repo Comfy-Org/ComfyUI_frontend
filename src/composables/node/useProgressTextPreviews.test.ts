@@ -4,14 +4,14 @@ import { effectScope } from 'vue'
 
 import { useProgressTextPreviews } from '@/composables/node/useProgressTextPreviews'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { ProgressTextWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ProgressTextWsMessage } from '@comfyorg/api-client/executionTypes'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 const { showTextPreview, removeTextPreview } = vi.hoisted(() => ({
@@ -42,11 +42,12 @@ function showCanvasNode() {
   return node
 }
 
-function createWorkflow(path = 'workflows/test.json') {
+function createWorkflow(path = 'workflows/test.json', instanceId?: string) {
   return fromPartial<LoadedComfyWorkflow>({
     activeState: { id: 'workflow-id' },
     initialState: { id: 'workflow-id' },
-    path
+    path,
+    instanceId
   })
 }
 
@@ -56,7 +57,7 @@ function progressTextListener() {
     .mock.calls.find(([type]) => type === 'progress_text')
   assert.exists(registration)
   const [, listener] = registration
-  assert.exists(listener)
+  if (typeof listener !== 'function') throw new Error('no listener')
   return listener
 }
 
@@ -133,6 +134,30 @@ describe('useProgressTextPreviews', () => {
         nodeId: toNodeId('1'),
         text: 'stale',
         prompt_id: 'job-9'
+      })
+
+      expect(showTextPreview).not.toHaveBeenCalled()
+    })
+
+    it('ignores text from a job queued by a background workflow', () => {
+      showCanvasNode()
+      useWorkflowStore().activeWorkflow = createWorkflow(
+        'workflows/visible.json',
+        'visible'
+      )
+      useExecutionStore().storeJob({
+        nodes: ['1'],
+        id: 'job-background',
+        promptOutput: {},
+        workflow: createWorkflow('workflows/background.json', 'background'),
+        mode: 'graph'
+      })
+      mountPreviews()
+
+      fireProgressText({
+        nodeId: toNodeId('1'),
+        text: 'elsewhere',
+        prompt_id: 'job-background'
       })
 
       expect(showTextPreview).not.toHaveBeenCalled()

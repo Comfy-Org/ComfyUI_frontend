@@ -5,7 +5,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { openErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import defaultWorkflow from '@e2e/assets/default.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 
 test.describe('Workflows sidebar', () => {
   test.use({
@@ -496,8 +496,6 @@ test.describe('Workflows sidebar', () => {
     )
 
     // Wait for nodes to be inserted after drag-drop with retryable assertion
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(nodeCount + defaultWorkflow.nodes.length)
+    await comfyPage.expectNodeCount(nodeCount + defaultWorkflow.nodes.length)
   })
 })

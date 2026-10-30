@@ -1,10 +1,10 @@
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
-import type { TaskResponse } from '@/platform/tasks/services/taskSchema'
-import { zTaskResponse } from '@/platform/tasks/services/taskSchema'
+import type { TaskResponse } from '@comfyorg/api-client/taskSchema'
+import { zTaskResponse } from '@comfyorg/api-client/taskSchema'
 import { api } from '@/scripts/api'
-import { toError } from '@/utils/errorUtil'
+import { toError } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const TASKS_ENDPOINT = '/tasks'
 

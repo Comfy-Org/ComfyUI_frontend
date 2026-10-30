@@ -1,0 +1,25 @@
+{
+  "1": {
+    "class_type": "DevToolsNodeWithDynamicGroup",
+    "inputs": {
+      "before": "over-limit",
+      "loras.0.lora_name": "A.safetensors",
+      "loras.0.strength": 0.8,
+      "loras.0.enabled": true,
+      "loras.1.lora_name": "B.safetensors",
+      "loras.1.strength": 1.0,
+      "loras.1.enabled": true,
+      "loras.2.lora_name": "C.safetensors",
+      "loras.2.strength": 0.5,
+      "loras.2.enabled": false,
+      "loras.3.lora_name": "A.safetensors",
+      "loras.3.strength": 0.2,
+      "loras.3.enabled": true,
+      "after": "restored"
+    }
+  },
+  "2": {
+    "class_type": "PreviewAny",
+    "inputs": { "source": ["1", 0] }
+  }
+}
