@@ -9,11 +9,13 @@ import { createI18n } from 'vue-i18n'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   DeploymentCompatibility,
+  WorkspaceDeployment,
   WorkspaceDeploymentList
 } from '@/platform/workspace/api/workspaceApi'
 
 import enMessages from '@/locales/en/main.json'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -21,9 +23,13 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { takeLeavePromptSkip } from '@/platform/workflow/management/leavePrompt'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import {
+  DEPLOYMENT_LISTING_BACKSTOP_MS,
+  DEPLOYMENT_START_POLL_MS
+} from '@/platform/workspace/api/deploymentListingTimeouts'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -36,6 +42,7 @@ import DeploymentSwitcher from './DeploymentSwitcher.vue'
 const mockWorkspaceApi = vi.hoisted(() => ({
   listDeployments: vi.fn(),
   pickDeployment: vi.fn(),
+  startDeployment: vi.fn(),
   clearDeployment: vi.fn(),
   setDefaultDeployment: vi.fn(),
   clearDefaultDeployment: vi.fn(),
@@ -65,6 +72,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
@@ -123,9 +131,17 @@ const listing: WorkspaceDeploymentList = {
   ]
 }
 
+function withStatus(
+  deployment: WorkspaceDeployment,
+  status: WorkspaceDeployment['status'],
+  canStart = status === 'stopped' || status === 'failed'
+): WorkspaceDeployment {
+  return { ...deployment, status, can_start: canStart }
+}
+
 const everyRowReady: WorkspaceDeploymentList = {
   ...listing,
-  items: listing.items.map((item) => ({ ...item, status: 'ready' }))
+  items: listing.items.map((item) => withStatus(item, 'ready'))
 }
 
 function workflowWith(...types: string[]): LGraph {
@@ -221,6 +237,7 @@ describe('DeploymentSwitcher', () => {
       title: 'Studio Build',
       name: 'production',
       detail: 'v2',
+      runOnDetail: 'v2',
       note: ''
     },
     {
@@ -228,6 +245,7 @@ describe('DeploymentSwitcher', () => {
       title: 'Studio Build',
       name: 'staging',
       detail: 'Stopped',
+      runOnDetail: 'Start',
       note: "Studio Build · staging isn't running. Start it on the Developer Platform, then pick it."
     },
     {
@@ -235,6 +253,7 @@ describe('DeploymentSwitcher', () => {
       title: 'Deployment dep-b9b9b9b9',
       name: '',
       detail: 'Stopped',
+      runOnDetail: 'Start',
       note: "Deployment dep-b9b9b9b9 isn't running. Start it on the Developer Platform, then pick it."
     }
   ]
@@ -243,18 +262,21 @@ describe('DeploymentSwitcher', () => {
     { title, name, detail }: (typeof rowColumns)[number],
     note = ''
   ) {
-    return new RegExp(`^${escapeRegExp(`${title}${name}${detail}${note}`)}$`)
+    const cells = [title, name, detail, note].map(escapeRegExp)
+    return new RegExp(`^${cells.join('\\s*')}$`)
   }
 
   it.for(rowColumns)(
-    'gives each row the same columns, the Build, the deployment, then the version when ready or else the status: $title $name $detail',
+    'gives each row the same columns, the Build, the deployment, then the version when ready or else what choosing it does: $title $name $runOnDetail',
     async (columns) => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
       const user = renderSwitcher()
       await openList(user)
       expect(
         screen.getByTestId(`deployment-row-${columns.row}`)
-      ).toHaveTextContent(columnsOf(columns, columns.note))
+      ).toHaveTextContent(
+        columnsOf({ ...columns, detail: columns.runOnDetail }, columns.note)
+      )
     }
   )
 
@@ -308,7 +330,11 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByRole('tooltip')).toBeNull()
   })
 
-  it.for([
+  it.for<{
+    status: WorkspaceDeployment['status']
+    text: string
+    name: string
+  }>([
     {
       status: 'ready',
       text: 'Running on Studio Build · production',
@@ -335,7 +361,7 @@ describe('DeploymentSwitcher', () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue({
         ...listing,
         picked_deployment_id: D2,
-        items: [{ ...listing.items[0], status }, ...listing.items.slice(1)]
+        items: [withStatus(listing.items[0], status), ...listing.items.slice(1)]
       })
       const user = renderSwitcher()
       const trigger = await screen.findByTestId('deployment-switcher-trigger')
@@ -377,7 +403,7 @@ describe('DeploymentSwitcher', () => {
     await waitFor(() =>
       expect(useDeploymentPickStore().state.phase).toBe('hidden')
     )
-    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1')
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1', [])
     expect(screen.queryByTestId('deployment-switcher')).toBeNull()
   })
 
@@ -402,9 +428,8 @@ describe('DeploymentSwitcher', () => {
     expect(screen.getByTestId(`deployment-row-${D2}`)).not.toHaveAttribute(
       'aria-disabled'
     )
-    expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveAttribute(
-      'aria-disabled',
-      'true'
+    expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveAccessibleName(
+      'Start Studio Build · staging on the Developer Platform'
     )
     expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
   })
@@ -439,14 +464,24 @@ describe('DeploymentSwitcher', () => {
     )
   })
 
-  it('switches only to a ready deployment, and a row that is not does nothing when chosen', async () => {
+  it('switches only to a ready deployment, and a stopped row opens its page on the Developer Platform in a new tab', async () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     mockWorkspaceApi.pickDeployment.mockReturnValue(new Promise(() => {}))
     const user = renderSwitcher()
     await openList(user)
 
     await user.click(screen.getByTestId(`deployment-row-${D1}`))
+    expect(openPage).toHaveBeenCalledWith(
+      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}`,
+      '_blank',
+      'noopener,noreferrer'
+    )
     expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+    expect(mockWorkspaceApi.startDeployment).not.toHaveBeenCalled()
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+
+    await openList(user)
 
     await user.click(screen.getByTestId(`deployment-row-${D2}`))
     expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
@@ -454,7 +489,7 @@ describe('DeploymentSwitcher', () => {
     })
   })
 
-  it.for([
+  it.for<{ status: WorkspaceDeployment['status']; reason: string }>([
     {
       status: 'stopped',
       reason:
@@ -478,7 +513,7 @@ describe('DeploymentSwitcher', () => {
     async ({ status, reason }) => {
       mockWorkspaceApi.listDeployments.mockResolvedValue({
         ...listing,
-        items: [listing.items[0], { ...listing.items[1], status }]
+        items: [listing.items[0], withStatus(listing.items[1], status)]
       })
       const user = renderSwitcher()
       await openList(user)
@@ -494,7 +529,7 @@ describe('DeploymentSwitcher', () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue({
       ...listing,
       picked_deployment_id: D1,
-      items: [listing.items[0], { ...listing.items[1], status: 'provisioning' }]
+      items: [listing.items[0], withStatus(listing.items[1], 'provisioning')]
     })
     const user = renderSwitcher()
     await openList(user)
@@ -706,7 +741,7 @@ describe('DeploymentSwitcher', () => {
   )
 
   it('disables the Reload item while a switch is in flight', async () => {
-    const readyStaging = { ...listing.items[1], status: 'ready' }
+    const readyStaging = withStatus(listing.items[1], 'ready')
     const boot = {
       ...listing,
       items: [listing.items[0], readyStaging],
@@ -1627,4 +1662,442 @@ describe('DeploymentSwitcher', () => {
       ).toBeNull()
     })
   })
+})
+
+describe('DeploymentSwitcher, starting a stopped deployment', () => {
+  const staging = listing.items[1]
+
+  function withStaging(
+    status: WorkspaceDeployment['status'],
+    canStart?: boolean
+  ): WorkspaceDeploymentList {
+    return {
+      ...listing,
+      items: [listing.items[0], withStatus(staging, status, canStart)]
+    }
+  }
+
+  function offerStart() {
+    vi.mocked(useFeatureFlags().flags).deploymentStartEnabled = true
+  }
+
+  function stagingRow() {
+    return screen.getByTestId(`deployment-row-${D1}`)
+  }
+
+  beforeEach(() => {
+    hoisted.rootGraph = undefined
+    sessionStorage.clear()
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    Object.defineProperty(window, 'location', {
+      value: { reload: vi.fn(), origin: 'http://localhost' },
+      writable: true,
+      configurable: true
+    })
+  })
+
+  it('offers Start on a stopped row, and choosing it starts the deployment instead of switching to it', async () => {
+    offerStart()
+    mockWorkspaceApi.listDeployments.mockResolvedValue(withStaging('stopped'))
+    mockWorkspaceApi.startDeployment.mockReturnValue(new Promise(() => {}))
+    const user = renderSwitcher()
+    await openList(user)
+
+    const start = screen.getByRole('menuitemradio', {
+      name: 'Start Studio Build · staging'
+    })
+    expect(within(start).getByText('Start')).toBeVisible()
+    await user.click(start)
+
+    expect(mockWorkspaceApi.startDeployment).toHaveBeenCalledWith('ws-1', D1)
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+    expect(screen.getByRole('menu')).toBeVisible()
+    expect(within(stagingRow()).getByText('Starting')).toBeVisible()
+  })
+
+  it('offers Start only on a row the listing says can start, whatever its status', async () => {
+    offerStart()
+    mockWorkspaceApi.listDeployments.mockResolvedValue(
+      withStaging('stopped', false)
+    )
+    const user = renderSwitcher()
+    await openList(user)
+
+    expect(
+      screen.queryByRole('menuitemradio', {
+        name: 'Start Studio Build · staging'
+      })
+    ).toBeNull()
+    expect(stagingRow()).toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('shows a started deployment as Starting, refreshes the open list every 5 s, and lets it be picked once ready', async () => {
+    offerStart()
+    let current = withStaging('stopped')
+    mockWorkspaceApi.listDeployments.mockImplementation(async () => current)
+    mockWorkspaceApi.startDeployment.mockImplementation(async () => {
+      current = withStaging('starting')
+      return { deployment_id: D1, status: 'starting' }
+    })
+    mockWorkspaceApi.pickDeployment.mockReturnValue(new Promise(() => {}))
+    const user = renderSwitcher()
+    await openList(user)
+
+    await user.click(
+      screen.getByRole('menuitemradio', {
+        name: 'Start Studio Build · staging'
+      })
+    )
+    await waitFor(() =>
+      expect(within(stagingRow()).getByText('Starting')).toBeVisible()
+    )
+    expect(stagingRow()).toHaveAttribute('aria-disabled', 'true')
+
+    current = withStaging('ready')
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_START_POLL_MS)
+    await waitFor(() =>
+      expect(within(stagingRow()).getByText('v1')).toBeVisible()
+    )
+    expect(stagingRow()).not.toHaveAttribute('aria-disabled')
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+
+    await user.click(stagingRow())
+    expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
+      deployment_id: D1
+    })
+  })
+
+  it("says why a Start failed with the server's own message, and starts again on Retry", async () => {
+    offerStart()
+    mockWorkspaceApi.listDeployments.mockResolvedValue(withStaging('stopped'))
+    mockWorkspaceApi.startDeployment
+      .mockRejectedValueOnce(
+        new WorkspaceApiError(
+          'The workspace has no credits left.',
+          402,
+          'PAYMENT_REQUIRED'
+        )
+      )
+      .mockReturnValueOnce(new Promise(() => {}))
+    const user = renderSwitcher()
+    await openList(user)
+
+    await user.click(
+      screen.getByRole('menuitemradio', {
+        name: 'Start Studio Build · staging'
+      })
+    )
+    const problem = await screen.findByTestId('deployment-row-problem')
+    expect(problem).toHaveTextContent(
+      "Studio Build · staging didn't start. The workspace has no credits left."
+    )
+    expect(problem).toHaveTextContent('Add credits, then retry.')
+    const retry = screen.getByRole('menuitemradio', {
+      name: 'Retry starting Studio Build · staging'
+    })
+    expect(retry).toHaveAccessibleDescription(
+      "Studio Build · staging didn't start. The workspace has no credits left. Add credits, then retry."
+    )
+
+    await user.click(retry)
+    expect(mockWorkspaceApi.startDeployment).toHaveBeenCalledTimes(2)
+    await waitFor(() =>
+      expect(screen.queryByTestId('deployment-row-problem')).toBeNull()
+    )
+    expect(within(stagingRow()).getByText('Starting')).toBeVisible()
+  })
+
+  function startStaging(user: ReturnType<typeof userEvent.setup>) {
+    return user.click(
+      screen.getByRole('menuitemradio', {
+        name: 'Start Studio Build · staging'
+      })
+    )
+  }
+
+  it('names the started deployment on the listing asked for after its Start', async () => {
+    offerStart()
+    let current = withStaging('stopped')
+    mockWorkspaceApi.listDeployments.mockImplementation(async () => current)
+    mockWorkspaceApi.startDeployment.mockImplementation(async () => {
+      current = withStaging('queued', false)
+      return { deployment_id: D1, status: 'queued' }
+    })
+    const user = renderSwitcher()
+    await openList(user)
+
+    await startStaging(user)
+
+    await waitFor(() =>
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith(
+        'ws-1',
+        [D1]
+      )
+    )
+  })
+
+  it('shows a started deployment that failed to come up as failed, and offers Start again', async () => {
+    offerStart()
+    let current = withStaging('stopped')
+    mockWorkspaceApi.listDeployments.mockImplementation(async () => current)
+    mockWorkspaceApi.startDeployment.mockImplementation(async () => {
+      current = withStaging('queued')
+      return { deployment_id: D1, status: 'queued' }
+    })
+    const user = renderSwitcher()
+    await openList(user)
+
+    await startStaging(user)
+    await waitFor(() =>
+      expect(within(stagingRow()).getByText('Starting')).toBeVisible()
+    )
+    current = withStaging('failed')
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_START_POLL_MS)
+
+    await waitFor(() =>
+      expect(within(stagingRow()).getByText('Start')).toBeVisible()
+    )
+    expect(stagingRow()).toHaveAccessibleDescription(
+      'Studio Build · staging failed. Start it again to run jobs on it.'
+    )
+    expect(screen.queryByTestId('deployment-row-problem')).toBeNull()
+  })
+
+  it('shows Starting until the listing asked for after the Start lands, whatever an older listing says', async () => {
+    offerStart()
+    const answers: ((list: WorkspaceDeploymentList) => void)[] = []
+    mockWorkspaceApi.listDeployments.mockResolvedValue(withStaging('stopped'))
+    let takeStart: (started: {
+      deployment_id: string
+      status: string
+    }) => void = () => {}
+    mockWorkspaceApi.startDeployment.mockReturnValue(
+      new Promise((resolve) => {
+        takeStart = resolve
+      })
+    )
+    const user = renderSwitcher()
+    await openList(user)
+    await startStaging(user)
+    mockWorkspaceApi.listDeployments.mockImplementation(
+      () => new Promise((resolve) => answers.push(resolve))
+    )
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_START_POLL_MS)
+    takeStart({ deployment_id: D1, status: 'queued' })
+    await waitFor(() => expect(answers).toHaveLength(2))
+    answers[0](withStaging('stopped'))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(within(stagingRow()).getByText('Starting')).toBeVisible()
+    expect(stagingRow()).toHaveAttribute('aria-disabled', 'true')
+
+    answers[1](withStaging('queued'))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(within(stagingRow()).getByText('Starting')).toBeVisible()
+    expect(screen.queryByTestId('deployment-row-problem')).toBeNull()
+  })
+
+  it.for([
+    {
+      sender: 'the concurrency cap',
+      code: 'CONCURRENCY_LIMIT',
+      message: 'Three deployments are already running.',
+      shown: true,
+      fix: 'Stop another deployment, then retry.'
+    },
+    {
+      sender: 'a rate limit',
+      code: 'RATE_LIMITED',
+      message: 'Too many attempts; try again later.',
+      shown: true,
+      fix: 'Retry, or check it on the Developer Platform.'
+    },
+    {
+      sender: 'a gateway',
+      code: undefined,
+      message: 'Request failed with status code 429',
+      shown: false,
+      fix: 'Retry, or check it on the Developer Platform.'
+    }
+  ])(
+    'tells a 429 from $sender apart by its code, and shows only a message the server wrote',
+    async ({ code, message, shown, fix }) => {
+      offerStart()
+      mockWorkspaceApi.listDeployments.mockResolvedValue(withStaging('stopped'))
+      mockWorkspaceApi.startDeployment.mockRejectedValue(
+        new WorkspaceApiError(message, 429, code)
+      )
+      const user = renderSwitcher()
+      await openList(user)
+
+      await startStaging(user)
+
+      const problem = await screen.findByTestId('deployment-row-problem')
+      expect(problem).toHaveTextContent(fix)
+      expect(problem.textContent.includes(message)).toBe(shown)
+    }
+  )
+
+  it.for([
+    {
+      failure: 'one that is not an API error',
+      error: new Error('sign-in failed'),
+      reported: true
+    },
+    {
+      failure: 'a 503',
+      error: new WorkspaceApiError(
+        'could not start',
+        503,
+        'SERVICE_UNAVAILABLE'
+      ),
+      reported: true
+    },
+    {
+      failure: 'a timeout',
+      error: new WorkspaceApiError('timeout of 30000ms exceeded'),
+      reported: true
+    },
+    {
+      failure: 'a refusal the person can act on',
+      error: new WorkspaceApiError('no credit', 402, 'PAYMENT_REQUIRED'),
+      reported: false
+    }
+  ])(
+    'reports a Start that failed with $failure only when the server gave no answer',
+    async ({ error, reported }) => {
+      offerStart()
+      mockWorkspaceApi.listDeployments.mockResolvedValue(withStaging('stopped'))
+      mockWorkspaceApi.startDeployment.mockRejectedValue(error)
+      const user = renderSwitcher()
+      await openList(user)
+
+      await startStaging(user)
+
+      await screen.findByTestId('deployment-row-problem')
+      const reports = vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([reportedError, context]) =>
+            reportedError === error &&
+            context.errorType === 'error_starting_deployment'
+        )
+      expect(reports).toHaveLength(reported ? 1 : 0)
+    }
+  )
+
+  it('waits for a slow listing before refreshing the open list again', async () => {
+    offerStart()
+    let current = withStaging('stopped')
+    mockWorkspaceApi.listDeployments.mockImplementation(async () => current)
+    mockWorkspaceApi.startDeployment.mockImplementation(async () => {
+      current = withStaging('starting')
+      return { deployment_id: D1, status: 'starting' }
+    })
+    const user = renderSwitcher()
+    await openList(user)
+    await startStaging(user)
+    await waitFor(() =>
+      expect(within(stagingRow()).getByText('Starting')).toBeVisible()
+    )
+    mockWorkspaceApi.listDeployments.mockReset()
+    mockWorkspaceApi.listDeployments.mockReturnValue(new Promise(() => {}))
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_START_POLL_MS * 3)
+
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers the Developer Platform when the server will not start it from this editor, and does not ask it again', async () => {
+    offerStart()
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    mockWorkspaceApi.listDeployments.mockResolvedValue(withStaging('stopped'))
+    mockWorkspaceApi.startDeployment.mockRejectedValue(
+      new WorkspaceApiError(
+        'starting a deployment needs a signed-in session, not an API key',
+        403
+      )
+    )
+    const user = renderSwitcher()
+    await openList(user)
+
+    await user.click(
+      screen.getByRole('menuitemradio', {
+        name: 'Start Studio Build · staging'
+      })
+    )
+    expect(
+      await screen.findByTestId('deployment-row-problem')
+    ).toHaveTextContent('Start it on the Developer Platform for now.')
+
+    await user.click(
+      screen.getByRole('menuitemradio', {
+        name: 'Start Studio Build · staging on the Developer Platform'
+      })
+    )
+    expect(openPage).toHaveBeenCalledWith(
+      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}`,
+      '_blank',
+      'noopener,noreferrer'
+    )
+    expect(mockWorkspaceApi.startDeployment).toHaveBeenCalledTimes(1)
+  })
+
+  it.for<{
+    status: WorkspaceDeployment['status']
+    start: string
+    offered: boolean
+    tooltip: string
+    notice: string
+  }>([
+    {
+      status: 'stopped',
+      start: 'offered',
+      offered: true,
+      tooltip:
+        "Running on Studio Build · staging. It's stopped, so jobs won't run. Open this menu to start it.",
+      notice:
+        "Studio Build · staging is stopped, so jobs won't run. Start it, or pick a ready deployment."
+    },
+    {
+      status: 'stopped',
+      start: 'not offered',
+      offered: false,
+      tooltip:
+        "Running on Studio Build · staging. It's stopped, so jobs won't run until it's started on the Developer Platform.",
+      notice:
+        "Studio Build · staging is stopped, so jobs won't run. Start it, or pick a ready deployment."
+    },
+    {
+      status: 'failed',
+      start: 'offered',
+      offered: true,
+      tooltip:
+        "Running on Studio Build · staging. It failed, so jobs won't run. Open this menu to start it again.",
+      notice:
+        "Studio Build · staging failed, so jobs won't run. Start it again, or pick a ready deployment."
+    }
+  ])(
+    'says jobs will not run on a $status deployment this browser is on, on hover and at the top of the list, with Start $start',
+    async ({ status, offered, tooltip, notice }) => {
+      if (offered) offerStart()
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...withStaging(status),
+        picked_deployment_id: D1,
+        pick_source: 'browser'
+      })
+      const user = renderSwitcher()
+      const trigger = await screen.findByTestId('deployment-switcher-trigger')
+
+      await user.hover(trigger)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(tooltip)
+      await openList(user)
+
+      expect(
+        screen.getByTestId('deployment-switcher-notice')
+      ).toHaveTextContent(notice)
+    }
+  )
 })

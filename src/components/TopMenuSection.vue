@@ -222,9 +222,9 @@ import {
   prefetchShareDialog
 } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
-import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerDialog'
 import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
-import { useManagerSurveyDialog } from '@/platform/customNodes/manager/composables/useManagerSurveyDialog'
+import { useManagerSurveyDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerSurveyDialog'
 import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
