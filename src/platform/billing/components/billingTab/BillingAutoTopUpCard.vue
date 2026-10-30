@@ -102,7 +102,7 @@ import { useBillingCapabilities } from '@/platform/billing/composables/useBillin
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 
 type Status = AutoReloadSettings['status']
-type ViewKey = Status | 'turnedOff'
+type ViewKey = Status | 'turnedOff' | 'maximumReached'
 
 interface Line {
   text: string
@@ -169,6 +169,12 @@ const STATUS = {
   paused_by_budget: {
     ...NEUTRAL,
     label: 'workspacePanel.billingTab.autoTopUp.status.limitReached',
+    dot: 'bg-warning-background',
+    action: MANAGE
+  },
+  maximumReached: {
+    ...NEUTRAL,
+    label: 'workspacePanel.billingTab.autoTopUp.status.maximumReached',
     dot: 'bg-warning-background',
     action: MANAGE
   },
@@ -269,15 +275,29 @@ function limitLines(settings: AutoReloadSettings): Line[] {
   ]
 }
 
-function pausedLine({ cycle_resets_at: resumesAt }: AutoReloadSettings): Line {
+const BUDGET_COPY = {
+  paused: {
+    dated: 'workspacePanel.billingTab.autoTopUp.paused',
+    undated: 'workspacePanel.billingTab.autoTopUp.pausedNoDate'
+  },
+  pausedByRemainder: {
+    dated: 'workspacePanel.billingTab.autoTopUp.pausedByRemainder',
+    undated: 'workspacePanel.billingTab.autoTopUp.pausedByRemainderNoDate'
+  },
+  maximumReached: {
+    dated: 'workspacePanel.billingTab.autoTopUp.maximumReached',
+    undated: 'workspacePanel.billingTab.autoTopUp.maximumReachedNoDate'
+  }
+} as const
+
+function budgetLine(
+  copy: keyof typeof BUDGET_COPY,
+  { cycle_resets_at: resetsAt }: AutoReloadSettings
+): Line {
+  const { dated, undated } = BUDGET_COPY[copy]
   return {
-    text:
-      resumesAt === null
-        ? t('workspacePanel.billingTab.autoTopUp.pausedNoDate')
-        : t('workspacePanel.billingTab.autoTopUp.paused', {
-            date: day(resumesAt)
-          }),
-    tooltip: limitTooltip(resumesAt)
+    text: resetsAt === null ? t(undated) : t(dated, { date: day(resetsAt) }),
+    tooltip: limitTooltip(resetsAt)
   }
 }
 
@@ -293,7 +313,14 @@ const LINES: Record<ViewKey, (settings: AutoReloadSettings) => Line[]> = {
   ],
   paused_by_budget: (settings) => [
     ...ruleLines(settings),
-    pausedLine(settings)
+    budgetLine(
+      settings.paused_by_budget_remainder ? 'pausedByRemainder' : 'paused',
+      settings
+    )
+  ],
+  maximumReached: (settings) => [
+    ...ruleLines(settings),
+    budgetLine('maximumReached', settings)
   ],
   on: (settings) => [...ruleLines(settings), ...limitLines(settings)]
 }
@@ -309,6 +336,12 @@ function viewKey(settings: AutoReloadSettings): ViewKey {
     settings.disabled_reason === 'consecutive_declines'
   ) {
     return 'turnedOff'
+  }
+  if (
+    settings.status === 'paused_by_budget' &&
+    settings.monthly_budget_is_default
+  ) {
+    return 'maximumReached'
   }
   return settings.status
 }
