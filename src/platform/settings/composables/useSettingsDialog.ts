@@ -10,6 +10,21 @@ import type {
 
 const DIALOG_KEY = 'global-settings'
 
+let navigationRequestCount = 0
+
+function nextNavigationRequest(
+  panel: SettingPanelType | undefined,
+  settingId: string | undefined
+): Partial<SettingDialogProps> | undefined {
+  if (!panel && !settingId) return undefined
+  navigationRequestCount += 1
+  return {
+    navigationRequestId: navigationRequestCount,
+    ...(panel ? { defaultPanel: panel } : {}),
+    ...(settingId ? { scrollToSettingId: settingId } : {})
+  }
+}
+
 // The redesigned Settings dialog is 1280px wide (DES 3253-16079).
 let settingDialogComponent: Component<SettingDialogProps> | undefined
 
@@ -39,17 +54,11 @@ export function useSettingsDialog() {
       })
       return
     }
-    // `showDialog` only raises an instance that already exists under this key,
-    // so a caller asking for a specific panel while Settings is open would
-    // otherwise keep whatever panel it was opened on. Push the requested
-    // destination into the live instance first; the dialog watches it.
-    if ((panel || settingId) && dialogStore.isDialogOpen(DIALOG_KEY)) {
+    const destination = nextNavigationRequest(panel, settingId)
+    if (destination && dialogStore.isDialogOpen(DIALOG_KEY)) {
       dialogStore.updateDialog({
         key: DIALOG_KEY,
-        contentProps: {
-          ...(panel ? { defaultPanel: panel } : {}),
-          ...(settingId ? { scrollToSettingId: settingId } : {})
-        }
+        contentProps: destination
       })
     }
     dialogStore.showDialog({
@@ -57,8 +66,7 @@ export function useSettingsDialog() {
       component: settingDialogComponent,
       props: {
         onClose: hide,
-        ...(panel ? { defaultPanel: panel } : {}),
-        ...(settingId ? { scrollToSettingId: settingId } : {})
+        ...destination
       },
       dialogComponentProps: {
         headless: true,

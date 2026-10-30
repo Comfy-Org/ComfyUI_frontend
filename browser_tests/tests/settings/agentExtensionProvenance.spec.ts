@@ -156,6 +156,29 @@ test.describe(
         })
       ).toBeVisible()
       await expect(page.locator('.about-container')).toBeHidden()
+
+      await test.step('Route back after the user navigates away again', async () => {
+        await comfyPage.settingDialog.goToAboutPanel()
+        await expect(page.locator('.about-container')).toBeVisible()
+
+        await page.evaluate(() => {
+          window.app!.registerExtension({
+            name: 'agent.cushions.rerouting',
+            provenance: { createdBy: 'comfy-agent' }
+          })
+        })
+        await comfyPage.toast
+          .withText('Your agent added agent.cushions.rerouting')
+          .getByRole('button', { name: 'Manage extensions' })
+          .click()
+
+        await expect(
+          comfyPage.settingDialog.contentArea.getByRole('switch', {
+            name: 'agent.cushions.rerouting'
+          })
+        ).toBeVisible()
+        await expect(page.locator('.about-container')).toBeHidden()
+      })
     })
 
     test('badges an attributed sidebar tab without covering its count', async ({

@@ -81,9 +81,10 @@ describe('useAgentExtensionNotices', () => {
     renderNotices()
     await nextTick()
 
-    // Announcing here would use an empty seen history and re-announce an
-    // extension the user has already been told about.
-    expect(useToast().toasts).toEqual([])
+    expect(
+      useToast().toasts,
+      'announcing on an empty seen history re-announces a seen extension'
+    ).toEqual([])
 
     await settingStore.load()
     await nextTick()

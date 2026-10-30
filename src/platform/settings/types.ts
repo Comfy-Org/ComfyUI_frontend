@@ -281,4 +281,6 @@ export interface SettingDialogProps {
   onClose: () => void
   defaultPanel?: SettingPanelType
   scrollToSettingId?: string
+  /** Increments once per explicit navigation request. */
+  navigationRequestId?: number
 }

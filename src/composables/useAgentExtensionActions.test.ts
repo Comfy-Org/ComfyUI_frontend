@@ -19,8 +19,6 @@ async function loadSettings(values: Partial<Settings> = {}) {
   const settingStore = useSettingStore()
   vi.mocked(api.getSettings).mockResolvedValue(values as Settings)
   await settingStore.load()
-  // Core registers this setting at boot; the change event only fires for a
-  // registered setting, which is what the extension-facing bridge consumes.
   settingStore.addSetting({
     id: 'Comfy.Extension.Disabled',
     name: 'Disabled extension names',
@@ -50,9 +48,10 @@ describe('useAgentExtensionActions', () => {
     expect(settingStore.settingValues['Comfy.Extension.Disabled']).toEqual([
       'agent.tools.sidebar'
     ])
-    // The canonical change event is what the extension-facing `<id>.change`
-    // bridge listens to, so a direct store assignment would silently drop it.
-    expect(changed).toHaveBeenCalledWith(
+    expect(
+      changed,
+      'the extension-facing `<id>.change` bridge consumes this event'
+    ).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'Comfy.Extension.Disabled' })
     )
     expect(reload).toHaveBeenCalledOnce()
@@ -64,8 +63,6 @@ describe('useAgentExtensionActions', () => {
     })
     vi.mocked(api.storeSetting).mockResolvedValue(new Response())
     const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
-    // Saved while the extension kept running: the runtime disabled set is
-    // snapshotted at load, so it is still registered and active.
     useExtensionStore().registerExtension(EXTENSION)
 
     await expect(

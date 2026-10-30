@@ -174,17 +174,8 @@ export const useSettingStore = defineStore('setting', () => {
   }
 
   /**
-   * Apply a setting value locally: clone, migrate, update the in-memory
-   * store, and fire onChange. Returns the migrated value, or `undefined`
-   * when the value is unchanged and was skipped.
-   *
-   * The store is updated before `onChange` runs so that handlers reading
-   * this setting — including handlers of other settings this one cascades
-   * into — observe the new value rather than the one it replaced.
-   *
-   * This does not persist. A caller that already has an acknowledged server
-   * write uses it to publish that value through the same local path `set()`
-   * takes; everyone else wants `set()`.
+   * Apply a setting value in memory and fire onChange, without persisting it.
+   * @returns The migrated value, or `undefined` when it was already current.
    */
   async function applySettingLocally<K extends keyof Settings>(
     key: K,

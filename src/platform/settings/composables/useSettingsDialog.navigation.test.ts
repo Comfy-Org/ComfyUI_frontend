@@ -8,11 +8,14 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const SettingDialogStub = { name: 'SettingDialogStub' }
 
-/** The panel the live dialog instance is currently told to show. */
-function requestedPanel() {
+function liveContentProps() {
   return useDialogStore().dialogStack.find(
     (dialog) => dialog.key === 'global-settings'
-  )?.contentProps.defaultPanel
+  )?.contentProps
+}
+
+function requestedPanel() {
+  return liveContentProps()?.defaultPanel
 }
 
 beforeEach(() => {
@@ -48,6 +51,19 @@ describe('useSettingsDialog panel routing', () => {
     expect(dialog.contentProps.defaultPanel).toBe('extension')
     expect(dialog.contentProps.scrollToSettingId).toBe(
       'Comfy.Extension.Disabled'
+    )
+  })
+
+  it('marks a repeat of the current panel as a fresh navigation request', () => {
+    const settingsDialog = useSettingsDialog()
+    settingsDialog.show('extension')
+    const firstRequestId = liveContentProps()?.navigationRequestId
+
+    settingsDialog.show('extension')
+
+    expect(requestedPanel()).toBe('extension')
+    expect(liveContentProps()?.navigationRequestId).toBeGreaterThan(
+      Number(firstRequestId)
     )
   })
 

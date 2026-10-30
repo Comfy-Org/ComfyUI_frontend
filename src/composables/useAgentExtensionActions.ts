@@ -24,9 +24,6 @@ export function useAgentExtensionActions() {
   const settingStore = useSettingStore()
 
   async function disableExtensionNow(extension: ComfyExtension) {
-    // The runtime disabled set is snapshotted at load, so a disable that was
-    // saved without a reload leaves the extension running. Only a runtime
-    // disable means there is nothing left to do here.
     if (!extensionStore.isExtensionEnabled(extension.name)) return false
 
     const disabled =
@@ -34,7 +31,6 @@ export function useAgentExtensionActions() {
     const alreadySaved = disabled.includes(extension.name)
     const nextDisabled = alreadySaved ? disabled : [...disabled, extension.name]
 
-    // A saved-but-unapplied name needs applying, not a duplicate write.
     if (!alreadySaved) {
       let response: Response
       try {
@@ -57,9 +53,6 @@ export function useAgentExtensionActions() {
         return false
       }
 
-      // Publish the acknowledged value through the settings owner so
-      // `onSettingChanged` and registered `onChange` handlers see it. The write
-      // above already persisted it, so this must not write to the server again.
       await settingStore.applySettingLocally(
         'Comfy.Extension.Disabled',
         nextDisabled
