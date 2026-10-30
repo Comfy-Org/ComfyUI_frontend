@@ -49,7 +49,6 @@ import { useDialogStore } from '@/stores/dialogStore'
 const INITIAL_INTERVAL_MS = 1000
 const MAX_INTERVAL_MS = 8000
 const ACTION_REQUIRED_INTERVAL_MS = 30_000
-const INITIAL_ACTION_HOLD_MS = 10_000
 // Twenty turns of the backend's 3 s PaymentIntent status cache.
 const ACTION_DISCOVERY_WINDOW_MS = 60_000
 const BACKOFF_MULTIPLIER = 1.5
@@ -163,7 +162,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const progressToasts = new Map<string, ProgressToast>()
   const progressToastsAwaitingFirstRead = new Set<string>()
   const dismissedProgressToasts = new Set<string>()
-  const heldInitialActionOps = new Set<string>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const inFlightPolls = new Map<string, Promise<void>>()
@@ -234,7 +232,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (previous?.kind === kind) return
     if (previous) {
       progressToasts.delete(opId)
-      if (toast.wasClosedByUser(previous.id)) {
+      if (toast.takeClosedByUser(previous.id)) {
         dismissedProgressToasts.add(opId)
       } else {
         toast.dismiss(previous.id)
@@ -358,7 +356,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (actionUrl !== null) heldInitialActionOps.add(opId)
     announceStart(operation, metadata)
 
     const terminal = new Promise<BillingOperation>((resolve) => {
@@ -452,13 +449,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
   }
 
-  function isHoldingInitialAction(operation: BillingOperation): boolean {
-    return (
-      heldInitialActionOps.has(operation.opId) &&
-      Date.now() - operation.startedAt < INITIAL_ACTION_HOLD_MS
-    )
-  }
-
   // The slow cadence is for an operation parked on the customer: a challenge
   // to complete elsewhere, or a failed attempt awaiting their retry. Once this
   // tab's own challenge completes, the state reads processing and nothing
@@ -468,7 +458,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     return (
       isBlockedOnCustomerPhase(operation.phase) ||
       operation.authenticationState === 'requires_action' ||
-      (operation.actionUrl !== null && !isHoldingInitialAction(operation)) ||
+      operation.actionUrl !== null ||
       (operation.authenticationState === 'failed_retryable' &&
         operation.authenticationRequiredSeen)
     )
@@ -596,8 +586,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function updateOperationActionUrl(opId: string, actionUrl: string | null) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
-    if (actionUrl === null && isHoldingInitialAction(operation)) return
-    heldInitialActionOps.delete(opId)
     const updated: BillingOperation = {
       ...operation,
       actionUrl,
@@ -1137,7 +1125,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     intervals.delete(opId)
     waitingWithoutActionSince.delete(opId)
     progressToastsAwaitingFirstRead.delete(opId)
-    heldInitialActionOps.delete(opId)
     dismissedProgressToasts.delete(opId)
 
     const progressToast = progressToasts.get(opId)

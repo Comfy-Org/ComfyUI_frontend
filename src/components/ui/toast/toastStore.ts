@@ -86,8 +86,8 @@ export const useToast = defineStore('toast', () => {
     return dismiss(id)
   }
 
-  function wasClosedByUser(id: ToastId): boolean {
-    return closedByUser.has(id)
+  function takeClosedByUser(id: ToastId): boolean {
+    return closedByUser.delete(id)
   }
 
   function dismissAll() {
@@ -105,7 +105,7 @@ export const useToast = defineStore('toast', () => {
     update,
     dismiss,
     close,
-    wasClosedByUser,
+    takeClosedByUser,
     dismissAll
   }
 })

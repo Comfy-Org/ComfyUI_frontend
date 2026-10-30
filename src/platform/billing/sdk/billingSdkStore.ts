@@ -300,7 +300,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     })
     const current = progressToasts.get(state.id)
     if (current?.kind === progress) return
-    if (current && toast.wasClosedByUser(current.id)) {
+    if (current && toast.takeClosedByUser(current.id)) {
       closedProgressToasts.add(state.id)
     }
     clearProgressToast(state.id)

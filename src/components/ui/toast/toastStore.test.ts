@@ -73,9 +73,10 @@ describe('useToast', () => {
     toast.dismiss(dismissed)
     toast.dismissAll()
 
-    expect(toast.wasClosedByUser(closed)).toBe(true)
-    expect(toast.wasClosedByUser(dismissed)).toBe(false)
-    expect(toast.wasClosedByUser(cleared)).toBe(false)
+    expect(toast.takeClosedByUser(closed)).toBe(true)
+    expect(toast.takeClosedByUser(closed)).toBe(false)
+    expect(toast.takeClosedByUser(dismissed)).toBe(false)
+    expect(toast.takeClosedByUser(cleared)).toBe(false)
   })
 
   it('dismisses every notification at once', () => {

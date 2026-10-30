@@ -240,7 +240,7 @@ describe('AppToaster', () => {
   it('automatically dismisses a timed notification', async () => {
     renderToaster()
 
-    useToast().info('Uploaded', { duration: 1000 })
+    const id = useToast().info('Uploaded', { duration: 1000 })
     await nextTick()
     expect(screen.getByTestId('toast')).toHaveTextContent('Uploaded')
 
@@ -248,6 +248,7 @@ describe('AppToaster', () => {
     await nextTick()
 
     expect(screen.queryByTestId('toast')).not.toBeInTheDocument()
+    expect(useToast().takeClosedByUser(id)).toBe(false)
   })
 
   it.for([
@@ -367,7 +368,7 @@ describe('AppToaster', () => {
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
     expect(screen.queryByText('Check settings')).not.toBeInTheDocument()
-    expect(useToast().wasClosedByUser(id)).toBe(true)
+    expect(useToast().takeClosedByUser(id)).toBe(true)
   })
 
   it('cannot swipe away a notification and keeps its text selectable', async () => {
