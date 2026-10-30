@@ -48,7 +48,6 @@ function stalledBodyResponse(): Response {
   })
 }
 
-/** A stalled body that errors once the request is aborted, as fetch does. */
 function abortingBodyResponse(signal: AbortSignal): Response {
   return new Response(
     new ReadableStream({
