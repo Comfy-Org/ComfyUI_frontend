@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -69,7 +70,9 @@ interface UseImageCropOptions {
 }
 
 function imageInputSlot(node: LGraphNode): number {
-  const slot = node.inputs.findIndex((input) => input.type === 'IMAGE')
+  const slot = node.inputs.findIndex((input) =>
+    LiteGraph.isValidConnection('IMAGE', input.type)
+  )
   return slot === -1 ? 0 : slot
 }
 

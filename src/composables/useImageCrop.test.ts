@@ -472,6 +472,18 @@ describe('useImageCrop', () => {
     expect(vm.imageUrl).toBe('https://example.com/a.png')
   })
 
+  it('shows the image from a union input before a later IMAGE input', async () => {
+    useLinkedCropNode([
+      { name: 'image', type: 'IMAGE,MASK' },
+      { name: 'reference', type: 'IMAGE' }
+    ])
+    connectImageInput(0)
+
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
   it('clears the preview when the image input is disconnected', async () => {
     useLinkedCropNode()
     connectImageInput()
