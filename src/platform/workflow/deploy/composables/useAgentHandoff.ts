@@ -9,6 +9,8 @@ import {
   buildAgentHandoffDocument,
   handoffFileName
 } from '@/platform/workflow/deploy/utils/agentHandoff'
+import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
+import type { AgentApp } from '@/platform/workflow/deploy/utils/agentApps'
 import { deriveBuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
 import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -59,21 +61,12 @@ export function useAgentHandoff(distribution: Distribution = DISTRIBUTION) {
     return snapshot().inputs
   }
 
-  async function copyBrief(): Promise<boolean> {
-    try {
-      const { graph, inputs } = snapshot()
-      const document = buildAgentHandoffDocument({
-        distribution,
-        inputs
-      })
-      if (!(await copyToClipboard(document, { toastOnSuccess: false }))) {
-        reportError(new Error('The clipboard refused the brief'), {
-          errorType: 'error_copying_deploy_agent_brief',
-          surface: 'platform'
-        })
-        return false
-      }
-      if (distribution !== 'desktop') {
+  function prepareHandoff() {
+    const { graph, inputs } = snapshot()
+    return {
+      brief: buildAgentHandoffDocument({ distribution, inputs }),
+      downloadWorkflow() {
+        if (distribution === 'desktop') return
         downloadBlob(
           inputs.workflowFileName,
           new Blob([JSON.stringify(graph, null, 2)], {
@@ -81,19 +74,46 @@ export function useAgentHandoff(distribution: Distribution = DISTRIBUTION) {
           })
         )
       }
+    }
+  }
+
+  function reportHandoffFailure(error: unknown, errorType: string) {
+    reportError(error, { errorType, surface: 'platform' })
+    toast.error(t('g.error'), {
+      description: t('deployToComfyApi.briefFailed'),
+      duration: 5000
+    })
+  }
+
+  async function copyBrief(): Promise<boolean> {
+    try {
+      const { brief, downloadWorkflow } = prepareHandoff()
+      if (!(await copyToClipboard(brief, { toastOnSuccess: false }))) {
+        reportError(new Error('The clipboard refused the brief'), {
+          errorType: 'error_copying_deploy_agent_brief',
+          surface: 'platform'
+        })
+        return false
+      }
+      downloadWorkflow()
       return true
     } catch (error) {
-      reportError(error, {
-        errorType: 'error_copying_deploy_agent_brief',
-        surface: 'platform'
-      })
-      toast.error(t('g.error'), {
-        description: t('deployToComfyApi.briefFailed'),
-        duration: 5000
-      })
+      reportHandoffFailure(error, 'error_copying_deploy_agent_brief')
       return false
     }
   }
 
-  return { captureInputs, copyBrief }
+  function openBriefIn(app: AgentApp): boolean {
+    try {
+      const { brief, downloadWorkflow } = prepareHandoff()
+      openAgentApp(app, brief)
+      downloadWorkflow()
+      return true
+    } catch (error) {
+      reportHandoffFailure(error, 'error_opening_deploy_agent_brief')
+      return false
+    }
+  }
+
+  return { captureInputs, copyBrief, openBriefIn }
 }

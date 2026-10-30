@@ -7,6 +7,7 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
+import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
@@ -24,6 +25,10 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
 
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()
+}))
+
+vi.mock(import('@/platform/workflow/deploy/utils/agentApps'), () => ({
+  openAgentApp: vi.fn()
 }))
 
 const GRAPH = { nodes: [{ id: 1, type: 'KSampler' }], links: [] }
@@ -112,6 +117,26 @@ describe('useAgentHandoff', () => {
           vi.mocked(useCopyToClipboard().copyToClipboard).mock.lastCall?.[0]
         )
       ).toContain(path)
+      expect(downloadBlob).toHaveBeenCalledTimes(downloads)
+    }
+  )
+
+  it.for([
+    { app: 'claude', distribution: 'localhost', downloads: 1 },
+    { app: 'chatGpt', distribution: 'desktop', downloads: 0 }
+  ] as const)(
+    'opens the brief in the $app desktop app, downloading the workflow $downloads times on $distribution',
+    ({ app, distribution, downloads }) => {
+      setActiveWorkflow()
+
+      expect(useAgentHandoff(distribution).openBriefIn(app)).toBe(true)
+
+      expect(openAgentApp).toHaveBeenCalledExactlyOnceWith(
+        app,
+        expect.stringContaining(
+          '# Turn `portrait-upscale` into a Comfy API Build'
+        )
+      )
       expect(downloadBlob).toHaveBeenCalledTimes(downloads)
     }
   )
