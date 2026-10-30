@@ -264,6 +264,15 @@ function valueShape(value: unknown): string {
   return typeof value
 }
 
+function diagnosticWidgetNames(widgets: readonly IBaseWidget[]): string[] {
+  const names = widgets
+    .slice(0, MAX_SHAPED_ELEMENTS)
+    .map((widget) => widget.name)
+  const omitted = widgets.length - names.length
+  if (omitted > 0) names.push(`+${omitted}`)
+  return names
+}
+
 function diagnosticStrings(
   value: unknown,
   path: readonly (string | number)[] = []
@@ -1420,13 +1429,15 @@ export class LiveGraphApplier {
         nodeId: node.id,
         type: node.type,
         name,
-        availableWidgetNames: node.widgets?.map((widget) => widget.name) ?? [],
+        availableWidgetNames: diagnosticWidgetNames(node.widgets ?? []),
         ...(overflowIndex === null
           ? {}
           : {
               overflowIndex,
-              serializableWidgetNames: serializableWidgets(node).map(
-                (widget) => widget.name
+              supportsDynamicWidgetOverflow:
+                supportsDynamicWidgetOverflow(node),
+              serializableWidgetNames: diagnosticWidgetNames(
+                serializableWidgets(node)
               )
             })
       }
