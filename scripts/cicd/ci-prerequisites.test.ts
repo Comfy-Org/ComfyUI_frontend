@@ -158,22 +158,46 @@ describe('merge-reports Playwright version', () => {
     )
   })
 
-  it.for(['html', 'json'])(
-    'merges the %s report with the locked version',
-    (reporter) => {
-      expect(pipeline.jobs['merge-reports'].steps).toContainEqual(
-        expect.objectContaining({
-          env: expect.objectContaining({
-            PLAYWRIGHT_VERSION:
-              '${{ steps.playwright-version.outputs.version }}'
-          }),
-          run: expect.stringContaining(
-            `pnpm dlx "@playwright/test@$PLAYWRIGHT_VERSION" merge-reports --reporter=${reporter} `
-          )
-        })
+  it('merges the HTML and JSON reports with the locked version', () => {
+    const step = pipeline.jobs['merge-reports'].steps?.find((candidate) =>
+      candidate.run?.includes('merge-reports')
+    )
+    if (!step?.run) throw new Error('Missing merge-reports step')
+    expect(step.env).toEqual({
+      PLAYWRIGHT_VERSION: '${{ steps.playwright-version.outputs.version }}'
+    })
+    const dir = mkdtempSync(join(tmpdir(), 'merge-reports-'))
+    try {
+      const calls = join(dir, 'calls')
+      writeFileSync(
+        join(dir, 'pnpm'),
+        `#!/bin/bash\necho "\${PLAYWRIGHT_JSON_OUTPUT_NAME:-} $*" >> "${calls}"\n`,
+        { mode: 0o755 }
       )
+      const result = spawnSync(
+        'bash',
+        ['--noprofile', '--norc', '-eo', 'pipefail', '-c', step.run],
+        {
+          cwd: dir,
+          env: {
+            PATH: `${dir}:${process.env.PATH}`,
+            PLAYWRIGHT_VERSION: '1.3.0'
+          },
+          encoding: 'utf8'
+        }
+      )
+      expect(result.status).toBe(0)
+      expect(readFileSync(calls, 'utf8')).toBe(
+        [
+          ' dlx @playwright/test@1.3.0 merge-reports --reporter=html ./all-blob-reports',
+          'playwright-report/report.json dlx @playwright/test@1.3.0 merge-reports --reporter=json ./all-blob-reports',
+          ''
+        ].join('\n')
+      )
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
     }
-  )
+  })
 
   it('matches the root importer in the repository lockfile', () => {
     const lockfile = readFileSync('pnpm-lock.yaml', 'utf8')
@@ -190,7 +214,7 @@ describe('merge-reports Playwright version', () => {
       .parse(parse(lockfile))
     expect(readLockedPlaywrightVersion(lockfile)).toEqual({
       status: 0,
-      output: `version=${root.importers['.'].devDependencies['@playwright/test'].version}\n`
+      output: `version=${root.importers['.'].devDependencies['@playwright/test'].version.replace(/\(.*/, '')}\n`
     })
   })
 })
