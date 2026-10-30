@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import { microUsdToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 import { i18n, loadLocale } from '@/i18n'
 import {
   authenticatedRemoteConfigState,
@@ -140,7 +141,7 @@ describe('AgentMessage credit usage', () => {
             ...createAssistantMessage(toTurnId('msg-russian-credit')),
             parts: [{ type: 'text', text: 'Done', state: 'done' }],
             streaming: false,
-            creditsUsed: 1.274
+            creditsUsed: microUsdToCredits(6038)
           }
         },
         global: { plugins: [i18n] }
