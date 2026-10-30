@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import AudioPreviewPlayer from '@/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue'
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({
@@ -13,8 +14,13 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} }
+  messages: {
+    en: { g: { audioPlaybackFailed: enMessages.g.audioPlaybackFailed } }
+  }
 })
+
+const notSupported = () =>
+  new DOMException('The operation is not supported.', 'NotSupportedError')
 
 function renderPlayer(modelValue?: string) {
   return render(AudioPreviewPlayer, {
@@ -89,10 +95,73 @@ describe('AudioPreviewPlayer', () => {
       expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
           kind: 'error',
-          description: 'g.audioPlaybackFailed'
+          description: enMessages.g.audioPlaybackFailed
         })
       )
       expect(useToast().toasts).toHaveLength(1)
+    })
+
+    it('dismisses the playback error toast after a successful retry', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play')
+        .mockRejectedValueOnce(notSupported())
+        .mockResolvedValueOnce(undefined)
+      const user = userEvent.setup()
+
+      renderPlayer('http://example.com/audio.mp3')
+      const button = screen.getByRole('button', { name: 'g.playPause' })
+
+      await user.click(button)
+      expect(useToast().toasts).toHaveLength(1)
+
+      await user.click(button)
+      expect(useToast().toasts).toEqual([])
+    })
+
+    it.for([
+      ['replaced', 'http://example.com/other.mp3'],
+      ['cleared', undefined]
+    ] as const)(
+      'ignores a pending rejection after the source is %s',
+      async ([, nextSource]) => {
+        const attempts: Array<(reason: unknown) => void> = []
+        vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(
+          () =>
+            new Promise<void>((_resolve, reject) => {
+              attempts.push(reject)
+            })
+        )
+        const user = userEvent.setup()
+
+        const { rerender } = renderPlayer('http://example.com/audio.mp3')
+        await user.click(screen.getByRole('button', { name: 'g.playPause' }))
+        await rerender({ modelValue: nextSource })
+        attempts[0](notSupported())
+        await Promise.resolve()
+
+        expect(useToast().toasts).toEqual([])
+        expect(
+          screen.getByRole('button', { name: 'g.playPause' })
+        ).toHaveAttribute('aria-pressed', 'false')
+      }
+    )
+
+    it('ignores a pending rejection after unmount', async () => {
+      const attempts: Array<(reason: unknown) => void> = []
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(
+        () =>
+          new Promise<void>((_resolve, reject) => {
+            attempts.push(reject)
+          })
+      )
+      const user = userEvent.setup()
+
+      const { unmount } = renderPlayer('http://example.com/audio.mp3')
+      await user.click(screen.getByRole('button', { name: 'g.playPause' }))
+      unmount()
+      attempts[0](notSupported())
+      await Promise.resolve()
+
+      expect(useToast().toasts).toEqual([])
     })
 
     it('stays silent when the current play attempt is aborted', async () => {

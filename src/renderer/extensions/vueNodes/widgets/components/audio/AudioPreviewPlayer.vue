@@ -20,6 +20,7 @@
           variant="textonly"
           size="unset"
           :aria-label="$t('g.playPause')"
+          :aria-pressed="isPlaying"
           class="size-6 rounded-sm"
           @click="togglePlayPause"
         >
@@ -122,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { whenever } from '@vueuse/core'
 
@@ -168,6 +169,11 @@ const showVolumeOne = computed(() => !isMuted.value && volume.value > 0)
 let playAttempt = 0
 const playbackErrorToastId = createToastId()
 
+onUnmounted(() => {
+  playAttempt++
+  toast.dismiss(playbackErrorToastId)
+})
+
 const togglePlayPause = async () => {
   const audio = audioRef.value
   if (!audio || !audio.src) {
@@ -184,6 +190,7 @@ const togglePlayPause = async () => {
   isPlaying.value = true
   try {
     await audio.play()
+    if (attempt === playAttempt) toast.dismiss(playbackErrorToastId)
   } catch (error) {
     if (attempt !== playAttempt) return
     isPlaying.value = false
@@ -289,10 +296,15 @@ const menuItems = computed(() => [
   }
 ])
 
+watch(modelValue, () => {
+  playAttempt++
+  isPlaying.value = false
+  toast.dismiss(playbackErrorToastId)
+})
+
 whenever(
   modelValue,
   () => {
-    playAttempt++
     isPlaying.value = false
     audioRef.value?.pause()
     void audioRef.value?.load()
