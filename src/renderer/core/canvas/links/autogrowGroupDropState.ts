@@ -4,26 +4,15 @@ import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-/**
- * Autogrow group drop state
- *
- * An autogrow group is promoted to a subgraph input as a whole, so while a link
- * is dragged from a subgraph input node, each group's hidden widget the link can
- * connect to is revealed as a drop row. The canvas owns that drag, so it drives
- * this state and the Vue widget grid only renders it.
- */
-
 interface AutogrowGroupDropTarget {
   nodeId: NodeId
   groupName: string
 }
 
 interface AutogrowGroupDropRow extends AutogrowGroupDropTarget {
-  /** Client position of the row's connection dot. */
-  clientPos: [number, number]
+  dotClientPos: [number, number]
 }
 
-/** Type of the link dragged from a subgraph input node, if any. */
 const ioInputDragType = ref<ISlotType>()
 const hoveredGroup = shallowRef<AutogrowGroupDropTarget | null>(null)
 
@@ -63,7 +52,7 @@ export function findAutogrowGroupDropRow(
   return {
     nodeId: toNodeId(nodeIdAttr),
     groupName,
-    clientPos: [rect.left + rect.width / 2, rect.top + rect.height / 2]
+    dotClientPos: [rect.left + rect.width / 2, rect.top + rect.height / 2]
   }
 }
 

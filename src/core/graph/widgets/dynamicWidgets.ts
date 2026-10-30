@@ -714,18 +714,12 @@ function autogrowInputDisconnected(input: INodeInputSlot, node: AutogrowNode) {
   node.size = [node.size[0], node.computeSize([...node.size])[1]]
 }
 
-/**
- * Whether a group is connected as a whole. Its link carries the group's own
- * type, which tells it apart from a link left on its slot while a graph
- * configures.
- */
 function isAutogrowGroupConnected(node: LGraphNode, groupName: string) {
   const index = node.inputs.findIndex((input) => input.name === groupName)
   if (index === -1 || !node.graph) return false
   return inputLink(node.graph, node.id, index)?.type === node.inputs[index].type
 }
 
-/** A connected group owns no children; a disconnected one regrows them. */
 function syncAutogrowGroup(node: AutogrowNode, groupName: string) {
   const children = node.inputs.filter((input) =>
     input.name.startsWith(`${groupName}.`)
@@ -742,7 +736,6 @@ function growAutogrowToMin(node: AutogrowNode, groupName: string) {
     addAutogrowGroup(i, groupName, node)
 }
 
-/** Disconnects and removes every child of an autogrow group. */
 function removeAutogrowChildren(node: AutogrowNode, groupName: string) {
   const prefix = `${groupName}.`
   for (let slot = node.inputs.length - 1; slot >= 0; slot--) {
@@ -908,10 +901,8 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
 }
 
 /**
- * Binds `input` of a subgraph node to the interior autogrow group it is
- * linked to, by applying the group's original input definition to the
- * subgraph node, which then owns and grows its own children.
- * @returns Whether `interiorInput` is an autogrow group.
+ * Makes `node` own the autogrow group `interiorInput` defines, through `input`.
+ * False if `interiorInput` is not an autogrow group.
  */
 export function bindPromotedAutogrowGroup(
   node: LGraphNode,
@@ -938,11 +929,7 @@ export function bindPromotedAutogrowGroup(
   return true
 }
 
-/**
- * Removes an autogrow group a subgraph node owns through `input`, along with
- * its children.
- * @returns Whether `input` was an autogrow group.
- */
+/** Removes the autogrow group `node` owns through `input`; false if none. */
 export function unbindPromotedAutogrowGroup(
   node: LGraphNode,
   input: INodeInputSlot

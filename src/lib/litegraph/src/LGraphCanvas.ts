@@ -3776,7 +3776,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             } else if (linkConnector.state.connectingTo === 'input') {
               if (autogrowGroupWidget && autogrowDropRow) {
                 const rect = this.canvas.getBoundingClientRect()
-                const [clientX, clientY] = autogrowDropRow.clientPos
+                const [clientX, clientY] = autogrowDropRow.dotClientPos
                 highlightPos = this.convertCanvasToOffset([
                   clientX - rect.left,
                   clientY - rect.top

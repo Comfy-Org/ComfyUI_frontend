@@ -14,10 +14,7 @@ class ShimWidget extends BaseWidget {
 
 export const AUTOGROW_GROUP_WIDGET_TYPE = 'autogrow_group'
 
-/**
- * Gives a socket-only input a label widget so it can take a widget row. An
- * autogrow group's widget is hidden and kept out of the API prompt.
- */
+/** Gives a socket-only input a label widget so it can take a widget row. */
 export function addShimWidget(
   node: LGraphNode,
   input: INodeInputSlot,
