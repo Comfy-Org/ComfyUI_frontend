@@ -12,10 +12,6 @@
       "role": "domain"
     },
     {
-      "path": "src/components/curve/CurveEditor.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/curve/CurveEditor.vue",
       "role": "presentation"
     },
@@ -32,16 +28,8 @@
       "role": "domain"
     },
     {
-      "path": "src/components/range/RangeEditor.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/range/RangeEditor.vue",
       "role": "presentation"
-    },
-    {
-      "path": "src/components/ui/toast/toastStore.test.ts",
-      "role": "application"
     },
     {
       "path": "src/components/ui/toast/toastStore.ts",
@@ -60,10 +48,6 @@
       "role": "application"
     },
     {
-      "path": "src/composables/useCurveEditor.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useCurveEditor.ts",
       "role": "application"
     },
@@ -76,20 +60,12 @@
       "role": "application"
     },
     {
-      "path": "src/composables/useRangeEditor.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useRangeEditor.ts",
       "role": "application"
     },
     {
       "path": "src/composables/useTreeExpansion.ts",
       "role": "application"
-    },
-    {
-      "path": "src/services/mediaCacheService.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/services/mediaCacheService.ts",
@@ -108,15 +84,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/utils/histogramUtil.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/histogramUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/treeUtil.test.ts",
       "role": "domain"
     },
     {
@@ -128,17 +96,19 @@
       "role": "domain"
     },
     {
-      "path": "src/utils/zodTypedSchema.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/utils/zodTypedSchema.ts",
       "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": ["agent", "billing", "bounding-boxes", "keybindings"],
+  "allowedConsumers": [
+    "agent",
+    "billing",
+    "bounding-boxes",
+    "extension-manager",
+    "keybindings"
+  ],
   "characterizationScenarios": [
     {
       "name": "Form controls preserve value binding, validation state, and accessible semantics",

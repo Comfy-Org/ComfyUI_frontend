@@ -340,7 +340,6 @@ test.describe('Output History', { tag: '@ui' }, () => {
   }) => {
     const ws = await getWebSocket()
 
-    // Complete one execution with 100 image outputs
     const { exec, jobId } = await startExecution(comfyPage, ws)
     exec.executed(
       jobId,
@@ -352,26 +351,22 @@ test.describe('Output History', { tag: '@ui' }, () => {
         )
       )
     )
+    await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(100)
     await exec.completeWithHistory(jobId, SAVE_IMAGE_NODE, 'image_000.png')
 
     await expect(comfyPage.appMode.outputHistory.historyItems).toHaveCount(100)
 
-    // First history item is visible before scrolling
     const firstItem = comfyPage.appMode.outputHistory.historyItems.first()
     await expect(firstItem).toBeInViewport()
 
-    // Scroll the history feed all the way to the right
     await comfyPage.appMode.outputHistory.outputs.evaluate((el) => {
       el.scrollLeft = el.scrollWidth
     })
 
-    // First history item is now off-screen
     await expect(firstItem).not.toBeInViewport()
 
-    // Start a new execution to get an in-progress item
     await startExecution(comfyPage, ws, exec)
 
-    // In-progress item is visible despite scrolling
     await expect(
       comfyPage.appMode.outputHistory.inProgressItems.first()
     ).toBeInViewport()

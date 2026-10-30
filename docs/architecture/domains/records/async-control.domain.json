@@ -12,15 +12,7 @@
       "role": "application"
     },
     {
-      "path": "src/utils/pagedList.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/utils/pagedList.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/utils/rafBatch.test.ts",
       "role": "application"
     },
     {

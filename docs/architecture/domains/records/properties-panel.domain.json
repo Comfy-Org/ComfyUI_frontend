@@ -8,23 +8,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/rightSidePanel/rightSidePanelTabTelemetry.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/components/rightSidePanel/rightSidePanelTabTelemetry.ts",
       "role": "application"
     },
     {
-      "path": "src/components/rightSidePanel/shared.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/components/rightSidePanel/shared.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/graph/useGraphHierarchy.test.ts",
       "role": "application"
     },
     {

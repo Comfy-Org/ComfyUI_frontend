@@ -275,6 +275,7 @@ const paywallBilling = vi.hoisted(() => ({
 const paywallHasFunds = ref<boolean | null>(false)
 const paywallAgentHasFunds = ref<boolean | undefined>()
 const paywallAgentScopedHasFunds = ref<boolean | undefined>()
+const paywallAgentScopedHasFundsAuthoritative = ref(false)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -399,7 +400,9 @@ beforeEach(() => {
               hasFunds: paywallHasFunds.value,
               agentHasFunds:
                 paywallAgentHasFunds.value ?? paywallHasFunds.value,
-              agentScopedHasFunds: paywallAgentScopedHasFunds.value
+              agentScopedHasFunds: paywallAgentScopedHasFunds.value,
+              agentScopedHasFundsAuthoritative:
+                paywallAgentScopedHasFundsAuthoritative.value
             })
       ),
       tier: computed(() => paywallBilling.tier),
@@ -527,6 +530,7 @@ beforeEach(() => {
   paywallHasFunds.value = false
   paywallAgentHasFunds.value = undefined
   paywallAgentScopedHasFunds.value = undefined
+  paywallAgentScopedHasFundsAuthoritative.value = false
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -719,6 +723,7 @@ describe('AgentPanelRoot first-use experience', () => {
   function placeFundedFreeUseNotice() {
     paywallHasFunds.value = true
     paywallAgentScopedHasFunds.value = true
+    paywallAgentScopedHasFundsAuthoritative.value = true
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
       fromPartial({
         variant: ref('top-banner'),
@@ -751,6 +756,17 @@ describe('AgentPanelRoot first-use experience', () => {
   ])('says nothing about free turns when $label', async ({ scoped }) => {
     placeFundedFreeUseNotice()
     paywallAgentScopedHasFunds.value = scoped
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    expect(reportFreeUseNotice).not.toHaveBeenCalled()
+  })
+
+  it('rejects a billing-disabled fallback that reports a grant without a rail', async () => {
+    placeFundedFreeUseNotice()
+    paywallAgentScopedHasFundsAuthoritative.value = false
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
@@ -2195,6 +2211,27 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
         surface: 'credits_exhausted'
       })
     )
+  })
+
+  it('stays hidden on a thread the agent started, with no user message', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-agent-started')
+    conversation.messages.push({
+      id: toTurnId('msg-agent-opening'),
+      role: 'assistant',
+      parts: [
+        { type: 'text', text: 'Want me to wire that up?', state: 'done' }
+      ],
+      streaming: false,
+      thinking: false
+    })
+    await nextTick()
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
   it('stays hidden while a restored thread has not loaded any messages', async () => {
@@ -8671,6 +8708,29 @@ describe('AgentPanelRoot workflow binding', () => {
     await waitFor(() => expect(bodies).toHaveLength(1))
   })
 
+  it.for(['workspace', 'legacy'] as const)(
+    'leaves the $ post-consent billing refresh to the dock host on first send',
+    async (billingType) => {
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      paywallBilling.type = billingType
+      paywallAgentHasFunds.value = true
+      Object.assign(useAgentConsentStore(), { accepted: false })
+      withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
+        Object.assign(useAgentConsentStore(), { accepted: true })
+        onAccept()
+      })
+      renderWithSelectedTarget()
+
+      paywallBilling.fetchStatus.mockClear()
+
+      await sendFromComposer('build me a workflow')
+
+      expect(withConsent).toHaveBeenCalledOnce()
+      expect(paywallBilling.fetchStatus).not.toHaveBeenCalled()
+    }
+  )
+
   it.for([
     { host: 'Desktop', desktop: true },
     { host: 'a browser tab on a local Core', desktop: false }
@@ -8987,6 +9047,26 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(screen.queryByTestId('agent-coach-hold-notice')).toBeNull()
     })
 
+    it('sends once when another tab finishes the tour during the hold', async () => {
+      const key = 'Comfy.AgentPanel.onboarded.account-a.workspace-hold'
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      renderWithSelectedTarget()
+      await sendHeldByCoach('build me a workflow')
+      expect(bodies).toHaveLength(0)
+
+      localStorage.setItem(key, 'true')
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key,
+          newValue: 'true',
+          storageArea: localStorage
+        })
+      )
+
+      await waitFor(() => expect(bodies).toHaveLength(1))
+    })
+
     it('sends once when a coach step never finds its target', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
@@ -9099,7 +9179,7 @@ describe('AgentPanelRoot workflow binding', () => {
     vi.mocked(useTelemetry())!.trackAgentStarterPromptClicked.mockClear()
     renderWithSelectedTarget()
 
-    const prompt = i18n.global.t('agent.suggestedPrompts.cloud.1')
+    const prompt = i18n.global.t('agent.suggestedPrompts.treatment.cloud.1')
     await userEvent.click(await screen.findByRole('button', { name: prompt }))
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })

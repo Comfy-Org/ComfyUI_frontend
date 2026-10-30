@@ -4,16 +4,26 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { DeploymentCompatibilityMark } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import type { DeploymentRowLabels } from '@/platform/workspace/composables/useDeploymentLabels'
 import {
   COMFY_CLOUD_ROW,
-  deploymentStatusTone,
   useDeploymentLabels
 } from '@/platform/workspace/composables/useDeploymentLabels'
+import type {
+  DeploymentRowAction,
+  DeploymentRowReason,
+  DeploymentStart,
+  DeploymentStartRefusal
+} from '@/platform/workspace/deploymentStartState'
+import {
+  deploymentRowAction,
+  deploymentRowReason
+} from '@/platform/workspace/deploymentStartState'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
 
 type DeploymentSectionKey = 'runOn' | 'current' | 'compatible' | 'incompatible'
 
@@ -22,9 +32,20 @@ interface MarkedRow {
   mark: DeploymentCompatibilityMark | null
 }
 
-interface DeploymentRow extends DeploymentRowLabels, MarkedRow {
+interface DeploymentStartProblem {
+  summary: string
+  message: string | null
+  fix: string
+}
+
+/** One row of the Run on menu, ready to render. */
+export interface DeploymentRow extends DeploymentRowLabels, MarkedRow {
   note: string | null
-  pickable: boolean
+  action: DeploymentRowAction
+  actionLabel: string | null
+  actionIcon: string | null
+  ariaLabel: string | undefined
+  problem: DeploymentStartProblem | null
 }
 
 interface DeploymentSection<Row> {
@@ -39,15 +60,40 @@ const SECTION_LABEL_KEYS: Record<DeploymentSectionKey, string> = {
   incompatible: 'deploymentSwitcher.incompatibleEnvironments'
 }
 
-const STOPPED_STATUSES = new Set(['stopped', 'failed'])
+const ACTION_KEYS: Partial<
+  Record<
+    DeploymentRowAction,
+    { label: string; ariaLabel: string; icon?: string }
+  >
+> = {
+  start: {
+    label: 'deploymentSwitcher.start',
+    ariaLabel: 'deploymentSwitcher.startLabel'
+  },
+  retry: {
+    label: 'deploymentSwitcher.retry',
+    ariaLabel: 'deploymentSwitcher.retryLabel'
+  },
+  open: {
+    label: 'deploymentSwitcher.start',
+    ariaLabel: 'deploymentSwitcher.startOnPlatformLabel',
+    icon: 'icon-[lucide--arrow-up-right]'
+  }
+}
 
-function reasonKey(deployment: WorkspaceDeployment): string | null {
-  const tone = deploymentStatusTone(deployment.status)
-  if (tone === 'ready') return null
-  if (tone === 'pending') return 'deploymentSwitcher.reason.starting'
-  return STOPPED_STATUSES.has(deployment.status)
-    ? 'deploymentSwitcher.reason.startElsewhere'
-    : 'deploymentSwitcher.reason.notReady'
+const FIX_KEYS: Record<DeploymentStartRefusal, string> = {
+  noCredits: 'deploymentSwitcher.startFix.noCredits',
+  tooManyRunning: 'deploymentSwitcher.startFix.tooManyRunning',
+  unavailable: 'deploymentSwitcher.startFix.unavailable',
+  failed: 'deploymentSwitcher.startFix.failed'
+}
+
+const REASON_KEYS: Record<DeploymentRowReason, string> = {
+  stopped: 'deploymentSwitcher.reason.stopped',
+  failed: 'deploymentSwitcher.reason.failed',
+  starting: 'deploymentSwitcher.reason.starting',
+  startElsewhere: 'deploymentSwitcher.reason.startElsewhere',
+  notReady: 'deploymentSwitcher.reason.notReady'
 }
 
 /**
@@ -76,15 +122,24 @@ export function sectionRows<Row extends MarkedRow>(
 
 /**
  * The Run on menu's rows under their headings, and the picked row's value.
- * Only a ready deployment can be picked, and any other row says why.
+ * Only a ready deployment can be picked. One the listing says can start
+ * offers Start, in place when the `deployment_start_enabled` flag is on and on
+ * the Developer Platform when it is off. Any row but the current one that
+ * cannot be picked says why.
  */
 export function useDeploymentRows() {
   const { t, locale } = useI18n()
-  const { deployments, pickedDeploymentId } = storeToRefs(
+  const { flags } = useFeatureFlags()
+  const { deployments, pickedDeployment, pickedDeploymentId } = storeToRefs(
     useDeploymentPickStore()
   )
+  const { starts } = storeToRefs(useDeploymentStartStore())
   const { deploymentRowLabels, deploymentFullLabel } = useDeploymentLabels()
   const { markFor } = useDeploymentCompatibility()
+
+  function text(key: string, label: string): string {
+    return t(key, { deployment: label }, { escapeParameter: false })
+  }
 
   function nodeList(nodeTypes: string[]): string {
     return new Intl.ListFormat(locale.value).format(nodeTypes)
@@ -123,55 +178,116 @@ export function useDeploymentRows() {
     return t('deploymentSwitcher.notCheckedAfterReason')
   }
 
-  function pickReason(
-    deployment: WorkspaceDeployment | null,
-    label: string
-  ): string | null {
-    const key =
-      deployment === null ||
-      deployment.deployment_id === pickedDeploymentId.value
-        ? null
-        : reasonKey(deployment)
-    if (key === null) return null
-    return t(key, { deployment: label }, { escapeParameter: false })
-  }
-
   function note(
     mark: DeploymentCompatibilityMark | null,
-    deployment: WorkspaceDeployment | null
+    label: string,
+    reason: string | null
   ): string | null {
-    const label = deploymentFullLabel(deployment)
-    const reason = pickReason(deployment, label)
     if (reason === null) return compatibilityNote(mark, label)
     const compatibility = compatibilityAfterReason(mark)
     return compatibility === null ? reason : `${reason} ${compatibility}`
   }
 
-  function row(deployment: WorkspaceDeployment | null): DeploymentRow {
-    const mark = markFor(deployment?.deployment_id ?? null)
+  function problemFor(
+    label: string,
+    start: DeploymentStart | undefined
+  ): DeploymentStartProblem | null {
+    if (start?.phase !== 'refused') return null
     return {
-      ...deploymentRowLabels(deployment),
-      mark,
-      note: note(mark, deployment),
-      pickable:
-        deployment === null ||
-        pendingServerFact('BE-24332', deployment.status === 'ready')
+      summary: text('deploymentSwitcher.startFailed', label),
+      message: start.message,
+      fix: t(FIX_KEYS[start.reason])
     }
   }
+
+  function actionFor(
+    action: DeploymentRowAction,
+    label: string
+  ): Pick<
+    DeploymentRow,
+    'action' | 'actionLabel' | 'actionIcon' | 'ariaLabel'
+  > {
+    const keys = ACTION_KEYS[action]
+    if (!keys) {
+      return {
+        action,
+        actionLabel: null,
+        actionIcon: null,
+        ariaLabel: undefined
+      }
+    }
+    return {
+      action,
+      actionLabel: t(keys.label),
+      actionIcon: keys.icon ?? null,
+      ariaLabel: text(keys.ariaLabel, label)
+    }
+  }
+
+  function cloudRow(): DeploymentRow {
+    const mark = markFor(null)
+    const label = deploymentFullLabel(null)
+    return {
+      ...deploymentRowLabels(null),
+      mark,
+      note: note(mark, label, null),
+      ...actionFor('pick', label),
+      problem: null
+    }
+  }
+
+  function deploymentRow(deployment: WorkspaceDeployment): DeploymentRow {
+    const labels = deploymentRowLabels(deployment)
+    const label = deploymentFullLabel(deployment)
+    const mark = markFor(deployment.deployment_id)
+    const start = starts.value.get(deployment.deployment_id)
+    const action = deploymentRowAction(deployment, start, {
+      startOffered: flags.deploymentStartEnabled
+    })
+    const isStarting = start?.phase === 'requested'
+    const reason =
+      deployment.deployment_id === pickedDeploymentId.value
+        ? null
+        : deploymentRowReason(deployment, action, start)
+    return {
+      ...labels,
+      detail: isStarting
+        ? t('deploymentSwitcher.status.starting')
+        : labels.detail,
+      tone: isStarting ? 'pending' : labels.tone,
+      mark,
+      note: note(
+        mark,
+        label,
+        reason === null ? null : text(REASON_KEYS[reason], label)
+      ),
+      ...actionFor(action, label),
+      problem: problemFor(label, start)
+    }
+  }
+
+  const rows = computed(() => [
+    cloudRow(),
+    ...deployments.value.map(deploymentRow)
+  ])
 
   const pickedValue = computed(
     () => pickedDeploymentId.value ?? COMFY_CLOUD_ROW
   )
 
   const sections = computed(() =>
-    sectionRows(
-      [row(null), ...deployments.value.map((d) => row(d))],
-      pickedValue.value
-    ).map((section) => ({
+    sectionRows(rows.value, pickedValue.value).map((section) => ({
       ...section,
       label: t(SECTION_LABEL_KEYS[section.key])
     }))
   )
 
-  return { sections, pickedValue }
+  const pickedRow = computed(() =>
+    pickedDeployment.value ? deploymentRow(pickedDeployment.value) : null
+  )
+  const isAnyStarting = computed(() =>
+    rows.value.some((row) => row.tone === 'pending')
+  )
+
+  return { sections, pickedValue, pickedRow, isAnyStarting }
 }
