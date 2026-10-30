@@ -27,8 +27,8 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -53,7 +53,7 @@ vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   datadogRum: { addAction: mockRumAddAction }
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -70,7 +70,7 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -1363,6 +1363,24 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
 
+    it('shows the sentence the server wrote when it refuses the checkout for now', async () => {
+      refuseForNoPaymentMethod()
+      vi.spyOn(billingApi, 'createTopupCheckout').mockRejectedValue(
+        new WorkspaceApiError(
+          'Credit purchases are paused right now. Try again later or contact support.',
+          403,
+          'TOPUP_PURCHASES_PAUSED'
+        )
+      )
+      stubCheckoutTab()
+
+      await userEvent.click((await payAndGetRefused()).continueButton)
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Credit purchases are paused right now. Try again later or contact support.'
+      )
+    })
+
     it('keeps the dialog open and explains a checkout that could not start', async () => {
       refuseForNoPaymentMethod()
       vi.spyOn(billingApi, 'createTopupCheckout').mockRejectedValue(
@@ -1805,6 +1823,27 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await waitFor(() =>
       expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
         description: expect.stringContaining('credit purchase is still open')
+      })
+    )
+  })
+
+  it('shows the sentence the server wrote when it rate-limits the purchase', async () => {
+    vi.mocked(mockBillingContext().topup).mockRejectedValue(
+      new WorkspaceApiError(
+        'Too many top-ups in a short time. Try again later or contact support.',
+        429,
+        'TOPUP_RATE_LIMITED'
+      )
+    )
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    await waitFor(() =>
+      expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
+        description:
+          'Too many top-ups in a short time. Try again later or contact support.'
       })
     )
   })

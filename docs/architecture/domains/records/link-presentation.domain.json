@@ -12,10 +12,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/linkBadges.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/lib/litegraph/src/canvas/linkBadges.ts",
       "role": "presentation"
     },
@@ -24,32 +20,16 @@
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/linkRevealState.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/lib/litegraph/src/canvas/linkRevealState.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/canvas/linkVisibility.test.ts",
-      "role": "application"
     },
     {
       "path": "src/lib/litegraph/src/canvas/linkVisibility.ts",
       "role": "application"
     },
     {
-      "path": "src/stores/linkPresentationStore.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/stores/linkPresentationStore.ts",
       "role": "application"
-    },
-    {
-      "path": "src/types/linkPresentation.ts",
-      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

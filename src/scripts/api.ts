@@ -2,6 +2,7 @@ import type {
   GetEmbeddingsResponse,
   GetExtensionsResponse,
   GetI18nResponse,
+  ModelDownloadData,
   PostAssetsFromWorkflowResponse
 } from '@comfyorg/ingest-types'
 import {
@@ -34,9 +35,9 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { components as ManagerComponents } from '@/platform/customNodes/manager/types/generatedManagerTypes'
 import type {
   AgentStatusWsMessage,
   AssetDownloadWsMessage,
@@ -74,8 +75,8 @@ import type {
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/workflowSchema'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   JobAssetsResult,
   JobDetail,
@@ -83,7 +84,8 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { getFetchRouteTemplate } from '@/utils/fetchRouteTemplate'
 import { retryingSend } from '@/utils/fetchWithRetry'
 import { NO_RETRY_POLICY } from '@/utils/retryPolicy'
 import type { RetryPolicy } from '@/utils/retryPolicy'
@@ -161,52 +163,6 @@ interface FetchApiOptions extends RequestInit {
   skipStatusRetry?: boolean
 }
 
-const FETCH_ROUTE_GROUPS = new Set([
-  'assets',
-  'embeddings',
-  'experiment',
-  'extensions',
-  'features',
-  'files',
-  'folder_paths',
-  'free',
-  'global_subgraphs',
-  'history',
-  'hub',
-  'internal',
-  'interrupt',
-  'jobs',
-  'logs',
-  'models',
-  'node_replacements',
-  'object_info',
-  'prompt',
-  'providers',
-  'queue',
-  'secrets',
-  'settings',
-  'system_stats',
-  'upload',
-  'user',
-  'userdata',
-  'users',
-  'video_metadata',
-  'view',
-  'view_metadata',
-  'workflow_templates',
-  'workflows',
-  'workspace'
-])
-
-function getFetchRouteTemplate(route: string): string {
-  const segments = (route.split(/[?#]/)[0] ?? '').split('/').filter(Boolean)
-  const routeSegments = segments[0] === 'api' ? segments.slice(1) : segments
-  const [routeGroup, ...resources] = routeSegments
-
-  if (!routeGroup || !FETCH_ROUTE_GROUPS.has(routeGroup)) return '/other'
-  return `/${routeGroup}${resources.length ? '/:resource' : ''}`
-}
-
 /**
  * Options for queuePrompt method
  */
@@ -276,6 +232,7 @@ interface BackendApiCalls {
   feature_flags: FeatureFlagsWsMessage
   agent_status: AgentStatusWsMessage
   asset_download: AssetDownloadWsMessage
+  model_download: ModelDownloadData
   asset_export: AssetExportWsMessage
   'assets.seed.completed': AssetSeedCompletedWsMessage
 }

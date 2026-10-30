@@ -59,7 +59,7 @@
             v-if="isHovered && item.value.leaf && $slots.preview"
             ref="preview"
             data-testid="tree-item-preview"
-            class="pointer-events-none fixed z-1001"
+            class="pointer-events-none fixed z-1"
             :style="previewStyle"
           >
             <slot name="preview" :node="item.value" />
@@ -170,12 +170,12 @@ const getTreeNodeIcon = (node: TreeExplorerNode<T>) => {
   } else if (node.icon) {
     return node.icon
   }
-  // node.icon is undefined
+
   if (node.leaf) {
-    return 'pi pi-file'
+    return 'icon-[lucide--file]'
   }
   const isExpanded = expandedKeys.value?.[node.key] ?? false
-  return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
+  return isExpanded ? 'icon-[lucide--folder-open]' : 'icon-[lucide--folder]'
 }
 const fillNodeInfo = (
   node: TreeExplorerNode<T>
@@ -250,7 +250,7 @@ const menuItems = computed<MenuItem[]>(() => {
     getAddFolderMenuItem(node),
     {
       label: t('g.rename'),
-      icon: 'pi pi-file-edit',
+      icon: 'icon-[lucide--file-pen-line]',
       command: () => {
         if (node) {
           renameCommand(node)
@@ -260,7 +260,7 @@ const menuItems = computed<MenuItem[]>(() => {
     },
     {
       label: t('g.delete'),
-      icon: 'pi pi-trash',
+      icon: 'icon-[lucide--trash-2]',
       command: async () => {
         if (node) {
           await deleteCommand(node)

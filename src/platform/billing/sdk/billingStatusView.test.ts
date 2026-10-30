@@ -22,6 +22,7 @@ const SCHEDULED_CHANGE = {
 const TOO_LARGE = BigInt(Number.MAX_SAFE_INTEGER) + 1n
 
 const DECODED: BillingStatusData = {
+  ended_at: null,
   is_active: true,
   has_funds: true,
   max_seats: 5,
@@ -116,6 +117,25 @@ describe('projectBillingStatus', () => {
     })
     expect(projected).toBeDefined()
     expect(projected?.renewal_invoice).toBeUndefined()
+  })
+
+  it('reads the period credit grant back as a number', () => {
+    const grant = { state: 'amount' as const, credits: 21_100n }
+
+    expect(
+      projectBillingStatus({ ...DECODED, period_credit_grant: grant })
+        ?.period_credit_grant
+    ).toStrictEqual({ state: 'amount', credits: 21_100 })
+  })
+
+  it('drops only a period credit grant whose credits a number cannot hold exactly', () => {
+    const projected = projectBillingStatus({
+      ...DECODED,
+      period_credit_grant: { state: 'amount', credits: TOO_LARGE }
+    })
+
+    expect(projected).toBeDefined()
+    expect(projected?.period_credit_grant).toBeUndefined()
   })
 
   it('carries a status with no credit stop and no scheduled change through untouched', () => {

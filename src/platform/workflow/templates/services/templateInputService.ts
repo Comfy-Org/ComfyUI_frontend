@@ -4,9 +4,9 @@ import { z } from 'zod'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
-import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/workflowSchema'
+import { isWidgetValue } from '@comfyorg/graph-model/widgets'
+import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { api } from '@/scripts/api'
 
 import { zTemplateInput } from '@/platform/workflow/templates/schemas/templateSchema'

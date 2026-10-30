@@ -23,7 +23,7 @@ import {
   useRemoteConfigCache
 } from '@/platform/remoteConfig/remoteConfig'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
@@ -40,7 +40,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isNightly: false
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const { cachedBillingControlEnabled, cachedV1PaymentRecovery } =
   useRemoteConfigCache()
@@ -604,6 +604,65 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
 
       expect(flags.deploymentCompatibilityMarksEnabled).toBe(false)
+    })
+  })
+
+  describe('runtimeLibraryModelsEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('turns on from remote config', () => {
+      remoteConfig.value = { runtime_library_models_enabled: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.runtimeLibraryModelsEnabled).toBe(true)
+    })
+
+    it('falls back to the server feature of the same key', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) =>
+          path === 'runtime_library_models_enabled' ? true : defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.runtimeLibraryModelsEnabled).toBe(true)
+    })
+
+    it('defaults to false when the remote flag is unset', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.runtimeLibraryModelsEnabled).toBe(false)
+    })
+  })
+
+  describe('modelUploadFolders', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('lists the folders the server accepts uploads into', () => {
+      remoteConfig.value = { model_upload_folders: ['checkpoints', 'loras'] }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.modelUploadFolders).toEqual(['checkpoints', 'loras'])
+    })
+
+    it('is empty when the server sends no list', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.modelUploadFolders).toEqual([])
     })
   })
 

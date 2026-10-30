@@ -83,6 +83,7 @@
               v-else-if="isVideoResult(activeItem)"
               :key="resultItemUrl(activeItem)"
               :result="activeItem"
+              :autoplay="autoplayVideo"
             />
             <ResultAudio
               v-else-if="isAudioResult(activeItem)"
@@ -171,6 +172,7 @@ const emit = defineEmits<{
 const props = defineProps<{
   allGalleryItems: AugmentedResultItem[]
   activeIndex: number
+  autoplayVideo?: boolean
 }>()
 
 /* Keeps the active video plus its neighbors buffered across gallery moves. */

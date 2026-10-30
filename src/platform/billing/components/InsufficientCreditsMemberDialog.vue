@@ -1,6 +1,7 @@
 <template>
   <AppDialogPanel
     size="compact"
+    class="w-90 max-w-full"
     data-testid="insufficient-credits-member-message"
     @close="onClose"
   >

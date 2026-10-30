@@ -83,6 +83,7 @@
     "copyMarkdown": "Copiar como markdown",
     "copyUnavailable": "Solo se puede copiar la conversación actual en esta versión",
     "creditTransitionNotice": "Has usado tus créditos gratuitos del agente. Las actividades posteriores del agente usarán los créditos de tu espacio de trabajo, que pueden incluir créditos de pago.",
+    "creditsUsed": "El agente usó {credits} crédito | El agente usó {credits} créditos",
     "currentTab": "Pestaña actual",
     "delete": "Eliminar",
     "deleteApproval": {
@@ -5858,13 +5859,11 @@
         "onHold": "No hay un método de pago predeterminado. Configura uno para reanudar la recarga automática.",
         "paused": "Se alcanzó el límite mensual. Se reanuda el {date}.",
         "pausedNoDate": "Se alcanzó el límite mensual.",
-        "rule": "Añade {amount} ({credits} créditos) cuando haya menos de {threshold} créditos.",
         "status": {
           "failed": "Error",
           "off": "Desactivada",
           "on": "Activada",
           "onHold": "En espera",
-          "paused": "En pausa",
           "turnedOff": "Desactivada"
         },
         "title": "Recarga automática",
@@ -5927,7 +5926,6 @@
         },
         "scheduledChange": "Cambia a {plan} el {date}.",
         "stayConfirm": {
-          "body": "Tu plan no cambiará a {plan} el {date}. Puedes programar un cambio de nuevo en cualquier momento.",
           "title": "¿Cancelar el cambio a {plan}?"
         },
         "unknown": {

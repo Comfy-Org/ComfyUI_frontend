@@ -18,8 +18,8 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useBillingPlans } from '@/platform/billing/subscription/composables/useBillingPlans'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import type {
@@ -212,6 +212,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   const error = ref<string | null>(null)
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
+  const statusReadAuthoritative = ref(true)
   let adoption: Promise<boolean> = Promise.resolve(false)
   const seatCapacity = shallowRef<SeatCapacity | null>(null)
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
@@ -241,7 +242,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       hasFunds: status.has_funds,
       agentHasFunds:
         status.scoped_effective_has_funds?.agent ?? status.has_funds,
-      agentScopedHasFunds: status.scoped_has_funds?.agent
+      agentScopedHasFunds: status.scoped_has_funds?.agent,
+      agentScopedHasFundsAuthoritative:
+        statusReadAuthoritative.value && status.billing_rail !== undefined
     }
   })
 
@@ -355,12 +358,13 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     return true
   }
 
-  function isStaleStatusRead(
+  function isStaleBillingRead(
+    billingResource: keyof typeof latestBillingReadIds,
     requestId: number,
     workspaceId: string | undefined
   ): boolean {
     return (
-      requestId !== latestBillingReadIds.status ||
+      requestId !== latestBillingReadIds[billingResource] ||
       workspaceId !== workspaceStore.activeWorkspace?.id
     )
   }
@@ -381,11 +385,15 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       const status = rail
         ? await readOnRail(rail.readStatus, 'getBillingStatus')
         : await billingApi.getBillingStatus()
-      if (status === undefined || isStaleStatusRead(requestId, workspaceId))
+      if (
+        status === undefined ||
+        isStaleBillingRead('status', requestId, workspaceId)
+      )
         return
 
       seatCapacity.value = seatCapacityFrom(status)
       statusData.value = status
+      statusReadAuthoritative.value = true
       if (workspaceId && status.billing_rail) {
         useWorkspaceBillingStateStore().setWorkspaceBillingRail(
           workspaceId,
@@ -395,6 +403,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       adoption = resumePendingOperation(status)
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
+        statusReadAuthoritative.value = false
         error.value =
           err instanceof Error ? err.message : 'Failed to fetch billing status'
       }
@@ -406,6 +415,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
 
   async function fetchBalance(): Promise<void> {
     const requestId = ++latestBillingReadIds.balance
+    const workspaceId = workspaceStore.activeWorkspace?.id
     const rail: BillingReadRail | null = useBillingReadRail()
     isLoading.value = true
     error.value = null
@@ -413,14 +423,16 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       const balance = rail
         ? await readOnRail(rail.readBalance, 'getBillingBalance')
         : await billingApi.getBillingBalance()
-      if (balance !== undefined && requestId === latestBillingReadIds.balance) {
+      if (
+        balance !== undefined &&
+        !isStaleBillingRead('balance', requestId, workspaceId)
+      ) {
         balanceData.value = balance
       }
     } catch (err) {
-      if (requestId === latestBillingReadIds.balance) {
-        error.value =
-          err instanceof Error ? err.message : 'Failed to fetch balance'
-      }
+      if (isStaleBillingRead('balance', requestId, workspaceId)) return
+      error.value =
+        err instanceof Error ? err.message : 'Failed to fetch balance'
       throw err
     } finally {
       if (requestId === latestBillingReadIds.balance) isLoading.value = false

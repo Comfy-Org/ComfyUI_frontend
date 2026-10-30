@@ -12,8 +12,11 @@ vi.mock<unknown>(import('@/components/dialog/GlobalDialog.vue'), () => ({
   default: { template: '<div />' }
 }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
+vi.mock<unknown>(import('@/composables/useAgentExtensionNotices'), () => ({
+  useAgentExtensionNotices: vi.fn()
+}))
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useConflictDetection'),
+  import('@/platform/customNodes/manager/composables/useConflictDetection'),
   () => ({
     useConflictDetection: () => ({
       initializeConflictDetection: vi.fn()

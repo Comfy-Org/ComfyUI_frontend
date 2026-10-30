@@ -1,3 +1,4 @@
+import type { Point2D, Vector3 } from '@comfyorg/shared-frontend-utils/geometry'
 import * as THREE from 'three'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
@@ -66,9 +67,7 @@ export class GizmoManager {
     if (!this.transformControls) return
     const transformControls = this.transformControls
     const controls = transformControls as unknown as {
-      _getPointer?: (event: PointerEvent) => {
-        x: number
-        y: number
+      _getPointer?: (event: PointerEvent) => Point2D & {
         button: number
       }
     }
@@ -183,11 +182,7 @@ export class GizmoManager {
     this.onTransformChange?.()
   }
 
-  applyTransform(
-    position: { x: number; y: number; z: number },
-    rotation: { x: number; y: number; z: number },
-    scale?: { x: number; y: number; z: number }
-  ): void {
+  applyTransform(position: Vector3, rotation: Vector3, scale?: Vector3): void {
     if (!this.targetObject) return
     this.targetObject.position.set(position.x, position.y, position.z)
     this.targetObject.rotation.set(rotation.x, rotation.y, rotation.z)
@@ -218,9 +213,9 @@ export class GizmoManager {
   }
 
   getInitialTransform(): {
-    position: { x: number; y: number; z: number }
-    rotation: { x: number; y: number; z: number }
-    scale: { x: number; y: number; z: number }
+    position: Vector3
+    rotation: Vector3
+    scale: Vector3
   } {
     return {
       position: {
@@ -242,9 +237,9 @@ export class GizmoManager {
   }
 
   getTransform(): {
-    position: { x: number; y: number; z: number }
-    rotation: { x: number; y: number; z: number }
-    scale: { x: number; y: number; z: number }
+    position: Vector3
+    rotation: Vector3
+    scale: Vector3
   } {
     if (!this.targetObject) {
       return {
