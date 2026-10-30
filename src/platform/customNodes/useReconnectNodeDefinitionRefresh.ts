@@ -82,7 +82,6 @@ export function useReconnectNodeDefinitionRefresh() {
   if (isCloud) return async () => {}
 
   const userBusy = useUserBusy()
-  // Outside a scope there is nothing to dispose, so the work never stops early.
   const scope = getCurrentScope()
   const isDisposed = () => scope?.active === false
   let inFlight: Promise<void> | null = null

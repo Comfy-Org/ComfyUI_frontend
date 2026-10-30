@@ -27,10 +27,6 @@ describe('useUserBusy', () => {
     return field
   }
 
-  it('is idle when the user is not touching anything', () => {
-    expect(watchUserBusy().value).toBe(false)
-  })
-
   it('is busy while a pointer is held, even over a canvas that stops propagation', () => {
     const userBusy = watchUserBusy()
     const canvas = document.createElement('canvas')

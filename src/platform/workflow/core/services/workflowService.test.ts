@@ -543,11 +543,6 @@ describe('useWorkflowService', () => {
     })
 
     describe('keepSavedBaseline', () => {
-      /**
-       * Opens a workflow holding an unsaved edit over a saved baseline, and
-       * loads graph data the way a real load does: reset the tracker to it and
-       * call the workflow clean.
-       */
       function openEditedWorkflow() {
         const saved = makeWorkflowData({ saved: true })
         const workflow = createModeTestWorkflow()
