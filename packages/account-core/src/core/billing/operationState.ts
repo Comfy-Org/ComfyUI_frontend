@@ -413,9 +413,13 @@ function reducePending(
   const terminal = terminalFromStatus(state, status)
   if (terminal !== undefined) return terminal
 
-  const authenticationState = echoesSettledChallenge(state, status)
+  const echoed = echoesSettledChallenge(state, status)
+  const authenticationState = echoed
     ? state.authenticationState
     : status.authentication_state
+  const authenticationDeadline = echoed
+    ? state.authenticationDeadline
+    : status.authentication_deadline
   const actionUrl = nextActionUrl(state, status, authenticationState)
   const declineReason = nextDeclineReason(state, status, authenticationState)
   const { plan: _previousPlan, ...rest } = state
@@ -425,7 +429,7 @@ function reducePending(
     ...(status.plan === undefined ? {} : { plan: status.plan }),
     challenge: nextChallenge(state, status),
     authenticationState,
-    authenticationDeadline: status.authentication_deadline,
+    authenticationDeadline,
     actionUrl,
     serverPhase: status.phase,
     declineReason,

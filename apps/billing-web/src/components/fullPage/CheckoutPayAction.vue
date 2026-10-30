@@ -9,6 +9,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { InlineOutcome, SubmitPhase } from '@/checkout/checkoutPage'
 import { isChallengeReopenable } from '@/checkout/checkoutPage'
+import { unbrokenDate } from '@/checkout/longDate'
 import { supportLinkFor } from '@/checkout/payVerdict'
 import type { PlanPurchase } from '@/checkout/summaryLedger'
 import CancelPaymentControl from '@/components/fullPage/CancelPaymentControl.vue'
@@ -107,12 +108,14 @@ function challengeFootnote(operation: PendingBillingOperation): string {
   if (Number.isNaN(deadline.getTime()))
     return t('checkout.fullPage.phase.challenge')
   return t('checkout.fullPage.phase.challengeVerifyBy', {
-    time: d(deadline, {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
-    })
+    time: unbrokenDate(
+      d(deadline, {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      })
+    )
   })
 }
 
