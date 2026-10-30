@@ -4149,16 +4149,6 @@
     "notCheckedNamed": "Could not check whether {deployment} can run this workflow."
   },
   "openOnCloud": {
-    "runThisWorkflowOn": "Run this workflow on",
-    "local": "Local",
-    "triggerLabel": "Runs on Local. Choose where it runs",
-    "checking": "Checking…",
-    "open": "Open",
-    "openLabel": "Open this workflow on Comfy Cloud in a new browser tab",
-    "openTooltip": "Opens this workflow in Comfy Cloud in a new browser tab. It stays open here too.",
-    "nodesMissing": "{count} node missing | {count} nodes missing",
-    "modelsMissing": "{count} model missing | {count} models missing",
-    "missingTooltip": "Comfy Cloud is missing some nodes or models, deploy these to run this workflow on the cloud.",
     "deploySetup": "Deploy your setup to Comfy Cloud",
     "deploySetupDialog": {
       "body": "This creates a deployment of your setup on Comfy Cloud. You manage it from Comfy Platform.",
@@ -4167,7 +4157,6 @@
       "pointNodes": "Bring your custom nodes and models"
     },
     "outOfMemoryTooltip": "Runs it on a GPU with more memory. Comfy Cloud builds and deploys your exact local setup, takes 20–30 min.",
-    "aboutDeploy": "About Deploy to Comfy API",
     "openedFromLocal": "Opened from ComfyUI on your computer",
     "openedFromLocalDetail": "Comfy Cloud has every node and model this workflow uses. Press Run when you're ready.",
     "handoffFailed": "Couldn't open the workflow from ComfyUI on your computer",
@@ -4178,8 +4167,21 @@
       "label": "Comfy Cloud check (prototype)",
       "checking": "Checking",
       "canOpen": "Can open",
-      "missing": "Can't open",
       "simulateOutOfMemory": "Simulate out of memory"
+    },
+    "cloudButton": {
+      "tooltip": "Run on Comfy Cloud",
+      "checking": "Checking Comfy Cloud…",
+      "dialogTitle": "Run on Comfy Cloud",
+      "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
+      "signedOut": "Sign in to check whether Comfy Cloud can run this workflow.",
+      "openOnCloud": "Open on Comfy Cloud",
+      "signIn": "Sign in",
+      "prototype": {
+        "nodePacksMissing": "Node packs missing",
+        "nodePacksAndModelsMissing": "Node packs and models missing",
+        "signedOut": "Signed out"
+      }
     }
   },
   "selectionToolbox": {

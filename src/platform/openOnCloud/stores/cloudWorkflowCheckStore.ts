@@ -10,9 +10,12 @@ import {
   prototypeCloudWorkflowChecker,
   reduceCloudWorkflowCheck
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { serializeRootGraph } from '@/platform/openOnCloud/serializeRootGraph'
 
-/** Whether Comfy Cloud can run the open workflow, rechecked on each call. */
+/**
+ * Whether Comfy Cloud can run the open workflow, rechecked on each call, and
+ * whether the modal for its answer shows.
+ */
 export const useCloudWorkflowCheckStore = defineStore(
   'cloudWorkflowCheck',
   () => {
@@ -25,12 +28,22 @@ export const useCloudWorkflowCheckStore = defineStore(
       state.value = reduceCloudWorkflowCheck(state.value, event)
     }
 
-    async function check(workflow: ComfyWorkflowJSON): Promise<void> {
+    async function check(): Promise<void> {
+      const workflow = serializeRootGraph()
+      if (!workflow) return
       const run = ++lastRun
       dispatch({ type: 'started', run })
       dispatch({ type: 'answered', run, verdict: await checker(workflow) })
     }
 
-    return { state, prototypeCheck, check }
+    function requestModal() {
+      dispatch({ type: 'modalRequested' })
+    }
+
+    function dismissModal() {
+      dispatch({ type: 'modalDismissed' })
+    }
+
+    return { state, prototypeCheck, check, requestModal, dismissModal }
   }
 )
