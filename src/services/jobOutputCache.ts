@@ -28,6 +28,7 @@ import { parseTaskOutput } from '@/stores/resultItemParsing'
 interface OutputsTask {
   readonly jobId: string
   readonly outputsCount: number | undefined
+  readonly isHistory: boolean
   readonly previewableOutputs: readonly AugmentedResultItem[]
   loadFullOutputs(): Promise<OutputsTask>
 }
@@ -76,7 +77,7 @@ export async function getOutputsForTask(
     return [...task.previewableOutputs]
   }
 
-  const cached = taskCache.get(requestId)
+  const cached = task.isHistory ? taskCache.get(requestId) : undefined
   if (cached) {
     return [...cached.previewableOutputs]
   }
@@ -89,7 +90,7 @@ export async function getOutputsForTask(
       return null
     }
 
-    taskCache.set(requestId, loadedTask)
+    if (task.isHistory) taskCache.set(requestId, loadedTask)
     return [...loadedTask.previewableOutputs]
   } catch (error) {
     if (latestTaskRequestId !== requestId) return null

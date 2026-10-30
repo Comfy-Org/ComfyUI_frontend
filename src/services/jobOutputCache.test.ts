@@ -138,6 +138,30 @@ describe('jobOutputCache', () => {
       expect(task.loadFullOutputs).toHaveBeenCalledTimes(1)
     })
 
+    it('does not serve a completed task the snapshot cached while it was running', async () => {
+      const jobId = uniqueId('running-task')
+      const previewOutput = createResultItem('preview')
+      const runningTask = new TaskItemImpl(
+        { ...createMockJob(jobId, 3), status: 'in_progress' },
+        {},
+        [previewOutput]
+      )
+
+      expect(await getOutputsForTask(runningTask)).toEqual([previewOutput])
+
+      const fullOutputs = [
+        createResultItem('full-1'),
+        createResultItem('full-2')
+      ]
+      const completedTask = new TaskItemImpl(
+        { ...createMockJob(jobId, 3), status: 'completed' },
+        {},
+        fullOutputs
+      )
+
+      expect(await getOutputsForTask(completedTask)).toEqual(fullOutputs)
+    })
+
     it('falls back to preview outputs on load error', async () => {
       const previewOutput = createResultItem('preview')
 

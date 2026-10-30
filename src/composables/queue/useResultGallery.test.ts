@@ -374,6 +374,37 @@ describe('useResultGallery', () => {
     expect(galleryActiveIndex.value).toBe(0)
   })
 
+  it('reloads a completed task after its running snapshot was opened', async () => {
+    const preview = createResultItem('preview.png')
+    const full = [
+      createResultItem('full-1.png'),
+      createResultItem('full-2.png')
+    ]
+    const jobId = 'completing-job'
+    const runningTask = new TaskItemImpl(
+      { ...createMockJob(jobId, 3), status: 'in_progress' },
+      {},
+      [preview]
+    )
+    const sources = ref([runningTask])
+    const { galleryItems, onViewItem } = useResultGallery(() => sources.value)
+
+    await onViewItem(createJobViewItem('job-completing', runningTask))
+    expect(galleryItems.value).toEqual([preview])
+
+    const completedTask = new TaskItemImpl(
+      { ...createMockJob(jobId, 3), status: 'completed' },
+      {},
+      full
+    )
+    completedTask.loadFullOutputs = async () => completedTask
+    sources.value = [completedTask]
+    await nextTick()
+    await nextTick()
+
+    expect(galleryItems.value).toEqual(full)
+  })
+
   it.for(['resolves', 'rejects'])(
     'does not open a slower gallery request that %s over a later HDR selection',
     async (outcome) => {
