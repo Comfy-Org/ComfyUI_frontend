@@ -261,9 +261,11 @@ describe('runArchitecture', () => {
   })
 
   it('reports invalid records as errors instead of throwing', () => {
-    const root = createRepository({ adrs: ['docs/adr/GONE-0001-gone.md'] })
+    const root = createRepository({
+      characterizationScenarios: [{ name: 'x', checks: ['src/gone.test.ts'] }]
+    })
     expect(runArchitecture(root, 'check')).toEqual({
-      errors: ['images references missing file docs/adr/GONE-0001-gone.md'],
+      errors: ['images references missing file src/gone.test.ts'],
       warnings: []
     })
   })
@@ -359,14 +361,16 @@ describe('main', () => {
   })
 
   it('writes the errors to --report when the check fails', () => {
-    const root = createRepository({ adrs: ['docs/adr/GONE-0001-gone.md'] })
+    const root = createRepository({
+      characterizationScenarios: [{ name: 'x', checks: ['src/gone.test.ts'] }]
+    })
     const reportDirectory = mkdtempSync(join(tmpdir(), 'architecture-report-'))
     roots.push(reportDirectory)
     const reportFile = join(reportDirectory, 'report.md')
     const { exitCode } = runMain(['--check', '--report', reportFile], root)
     expect(exitCode).toBe(1)
     expect(readFileSync(reportFile, 'utf8')).toBe(
-      '### Errors (1)\n\n- images references missing file docs/adr/GONE-0001-gone.md\n'
+      '### Errors (1)\n\n- images references missing file src/gone.test.ts\n'
     )
   })
 
