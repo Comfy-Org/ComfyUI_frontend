@@ -40,7 +40,10 @@
       "role": "infrastructure"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/utils/devFeatureFlagOverride.ts",
+    "src/utils/sessionFeatureFlagOverride.ts"
+  ],
   "characterizationScenarios": [
     {
       "name": "Remote config refresh loads /features with a bounded wait and records load state",

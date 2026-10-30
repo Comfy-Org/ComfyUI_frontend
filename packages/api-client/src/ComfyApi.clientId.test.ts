@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { ComfyApi } from '@/scripts/api'
+import { ComfyApi } from './ComfyApi'
+import type { ComfyApiPorts } from './ComfyApi'
+
+const ports: ComfyApiPorts = {
+  isCloud: false,
+  featureFlagOverride: () => undefined,
+  onFreeMemory: () => {}
+}
 
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -17,7 +24,7 @@ describe('ComfyApi initial client id', () => {
   it('reuses the client id stored in session storage', () => {
     storage.setItem('clientId', 'stored-client')
 
-    expect(new ComfyApi().initialClientId).toBe('stored-client')
+    expect(new ComfyApi(ports).initialClientId).toBe('stored-client')
   })
 
   it('constructs without a client id when session storage access is denied', () => {
@@ -26,7 +33,7 @@ describe('ComfyApi initial client id', () => {
       throw new DOMException('denied', 'SecurityError')
     })
 
-    const api = new ComfyApi()
+    const api = new ComfyApi(ports)
 
     expect(api.initialClientId).toBeNull()
     expect(api.apiURL('/prompt')).toBe('/api/prompt')

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthHeader } from './authTypes'
 
 import { authCredentialOf, notifyAuthCredential } from './authCredential'
 
