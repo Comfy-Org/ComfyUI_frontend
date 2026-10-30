@@ -37,8 +37,6 @@ const CORNER_DOT_CLASS =
 /** Minimum crop width/height in source image pixel space. */
 const MIN_CROP_SIZE = 16
 const CROP_BOX_BORDER = 1
-/** Slot the cropped image arrives on. */
-const IMAGE_INPUT_SLOT = 0
 
 /**
  * Next `isLoading` when `imageUrl` transitions. `null` means do not change
@@ -189,7 +187,12 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     const cropNode = node.value
     if (!cropNode) return null
 
-    const sourceNode = resolveInputSourceNode(cropNode, IMAGE_INPUT_SLOT)
+    const imageInputSlot = cropNode.inputs.findIndex(
+      (input) => input.type === 'IMAGE'
+    )
+    if (imageInputSlot === -1) return null
+
+    const sourceNode = resolveInputSourceNode(cropNode, imageInputSlot)
     if (!sourceNode) return null
 
     return nodeOutputStore.getNodeImageUrls(sourceNode)?.[0] ?? null
