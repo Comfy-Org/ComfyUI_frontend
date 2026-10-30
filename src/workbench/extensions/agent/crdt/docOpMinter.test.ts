@@ -2984,9 +2984,6 @@ describe('attachDocOpMinter', () => {
       widget('loras.$add').callback?.(undefined)
       await afterFlush()
 
-      // #21091, an accepted V1 residual (multi-player ADR-039): a retained
-      // value and a newer peer edit look alike here, so a local Add writes the
-      // default and the stamp decides. Stable row identity lifts this.
       expect(minted).toContainEqual({
         op: 'set_widget',
         node_id: node.id,

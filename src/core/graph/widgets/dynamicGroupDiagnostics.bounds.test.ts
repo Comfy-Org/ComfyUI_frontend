@@ -61,7 +61,7 @@ describe('DynamicGroup row bounds', () => {
     const { controller } = controllerWithMin(0)
     controller.value = 2
 
-    controller.value = 'three'
+    controller.value = '1'
     controller.value = Number.NaN
 
     expect(controller.value).toBe(2)
