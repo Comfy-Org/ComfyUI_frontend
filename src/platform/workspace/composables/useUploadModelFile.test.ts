@@ -147,6 +147,7 @@ describe('useUploadModelFile', () => {
       file: lora,
       modelType: 'loras'
     })
+    expect(useAssetDownloadStore().downloadList[0]?.source).toBe('upload')
     expect(useAssetDownloadStore().lastCompletedDownload).toMatchObject({
       taskId: TASK_ID,
       modelType: 'loras'
@@ -325,6 +326,7 @@ describe('useUploadModelFile', () => {
     expect(upload.state.value).toEqual({
       status: 'failed',
       file: lora,
+      taskId: TASK_ID,
       error: 'This file is not a valid .safetensors file.'
     })
   })
@@ -370,6 +372,7 @@ describe('useUploadModelFile', () => {
     expect(upload.state.value).toEqual({
       status: 'failed',
       file: lora,
+      taskId: TASK_ID,
       error: enMessages.progressToast.taskUnavailable
     })
   })
@@ -388,6 +391,7 @@ describe('useUploadModelFile', () => {
     expect(upload.state.value).toEqual({
       status: 'failed',
       file: lora,
+      taskId: TASK_ID,
       error: 'Upload canceled.'
     })
   })
@@ -426,6 +430,7 @@ describe('useUploadModelFile', () => {
     expect(upload.state.value).toEqual({
       status: 'failed',
       file: lora,
+      taskId: TASK_ID,
       error: 'Upload canceled.'
     })
 
@@ -454,6 +459,218 @@ describe('useUploadModelFile', () => {
     taskUpdate('completed', undefined, otherImport)
     await nextTick()
     expect(upload.state.value).toEqual({ status: 'saving', file: lora })
+  })
+
+  it('says the earlier upload could not be confirmed stopped, and sends nothing, when its cancel request fails', async () => {
+    const refused = new Error('Server returned 500')
+    vi.spyOn(taskService, 'cancelTask').mockResolvedValue({
+      ok: false,
+      error: refused
+    })
+    const { upload } = setup()
+    const server = pendingUpload()
+    upload.choose(lora)
+    const first = upload.upload()
+    server.finish({ ok: true, taskId: TASK_ID })
+    await first
+    taskUpdate('failed', 'Storage was busy.')
+    await nextTick()
+
+    await expect(upload.upload()).resolves.toBeNull()
+
+    expect(upload.state.value).toEqual({
+      status: 'failed',
+      file: lora,
+      taskId: TASK_ID,
+      error: enMessages.assetBrowser.fileUpload.notStopped
+    })
+    expect(modelFileUploadApi.uploadModelFile).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(
+      refused,
+      expect.objectContaining({
+        errorType: 'asset_download_cancellation_failure'
+      })
+    )
+  })
+
+  it('sends nothing while the failed task is still running after its cancel is refused, and finishes when it completes', async () => {
+    vi.spyOn(taskService, 'cancelTask').mockResolvedValue({
+      ok: true,
+      value: 'not-cancellable'
+    })
+    vi.spyOn(taskService, 'getTask').mockResolvedValue({
+      ok: true,
+      value: {
+        id: TASK_ID,
+        idempotency_key: 'upload-1',
+        task_name: 'task:upload_model',
+        payload: {},
+        status: 'running',
+        create_time: new Date().toISOString(),
+        update_time: new Date().toISOString()
+      }
+    })
+    const { upload } = setup()
+    const server = pendingUpload()
+    upload.choose(lora)
+    const first = upload.upload()
+    server.finish({ ok: true, taskId: TASK_ID })
+    await first
+    taskUpdate('failed', 'Storage was busy.')
+    await nextTick()
+
+    await expect(upload.upload()).resolves.toBeNull()
+
+    expect(modelFileUploadApi.uploadModelFile).toHaveBeenCalledOnce()
+    expect(upload.state.value).toEqual({
+      status: 'failed',
+      file: lora,
+      taskId: TASK_ID,
+      error: enMessages.assetBrowser.fileUpload.notStopped
+    })
+    taskUpdate('completed')
+    await nextTick()
+    expect(upload.state.value).toEqual({
+      status: 'done',
+      file: lora,
+      modelType: 'loras'
+    })
+  })
+
+  it('sends the file again when the canceled task was dismissed from the progress list', async () => {
+    const cancelTask = vi.spyOn(taskService, 'cancelTask')
+    const { upload } = setup()
+    const server = pendingUpload()
+    upload.choose(lora)
+    const first = upload.upload()
+    server.finish({ ok: true, taskId: TASK_ID })
+    await first
+    taskUpdate('cancelled')
+    await nextTick()
+
+    useAssetDownloadStore().clearDismissibleDownloads()
+    const retried = upload.upload()
+
+    await vi.waitFor(() =>
+      expect(modelFileUploadApi.uploadModelFile).toHaveBeenCalledTimes(2)
+    )
+    expect(cancelTask).not.toHaveBeenCalled()
+    expect(upload.state.value).toEqual({
+      status: 'uploading',
+      file: lora,
+      sent: 0
+    })
+    server.finish({ ok: false, reason: 'cancelled' })
+    await expect(retried).resolves.toBeNull()
+  })
+
+  it('cancels a failed task that was dismissed from the progress list, and sends again once the cancel is confirmed', async () => {
+    const cancelTask = vi
+      .spyOn(taskService, 'cancelTask')
+      .mockResolvedValue({ ok: true, value: 'cancelling' })
+    const { upload } = setup()
+    const server = pendingUpload()
+    upload.choose(lora)
+    const first = upload.upload()
+    server.finish({ ok: true, taskId: TASK_ID })
+    await first
+    taskUpdate('failed', 'Storage was busy.')
+    await nextTick()
+    const downloads = useAssetDownloadStore()
+
+    downloads.clearDismissibleDownloads()
+    const retried = upload.upload()
+
+    await vi.waitFor(() => expect(cancelTask).toHaveBeenCalledWith(TASK_ID))
+    await vi.waitFor(() =>
+      expect(downloads.downloadList[0]?.status).toBe('cancellation_pending')
+    )
+    expect(modelFileUploadApi.uploadModelFile).toHaveBeenCalledOnce()
+    expect(upload.state.value).toEqual({ status: 'stopping', file: lora })
+
+    taskUpdate('cancelled')
+    await vi.waitFor(() =>
+      expect(modelFileUploadApi.uploadModelFile).toHaveBeenCalledTimes(2)
+    )
+    expect(upload.state.value).toEqual({
+      status: 'uploading',
+      file: lora,
+      sent: 0
+    })
+    server.finish({ ok: false, reason: 'cancelled' })
+    await expect(retried).resolves.toBeNull()
+  })
+
+  it('stops Try again when Cancel is pressed while the earlier task is being canceled, and still finishes if that task completes', async () => {
+    let answerCancel!: (answer: 'cancelling') => void
+    vi.spyOn(taskService, 'cancelTask').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          answerCancel = (value) => resolve({ ok: true, value })
+        })
+    )
+    const { upload } = setup()
+    const server = pendingUpload()
+    upload.choose(lora)
+    const first = upload.upload()
+    server.finish({ ok: true, taskId: TASK_ID })
+    await first
+    taskUpdate('failed', 'Storage was busy.')
+    await nextTick()
+
+    const retry = upload.upload()
+    await vi.waitFor(() => expect(answerCancel).toBeTypeOf('function'))
+    upload.cancel()
+    answerCancel('cancelling')
+
+    await expect(retry).resolves.toBeNull()
+    expect(upload.state.value).toEqual({
+      status: 'failed',
+      file: lora,
+      taskId: TASK_ID,
+      error: 'Upload canceled.'
+    })
+    expect(modelFileUploadApi.uploadModelFile).toHaveBeenCalledOnce()
+
+    taskUpdate('completed')
+    await nextTick()
+    expect(upload.state.value).toEqual({
+      status: 'done',
+      file: lora,
+      modelType: 'loras'
+    })
+  })
+
+  it('stops Try again when Cancel is pressed while waiting for the earlier task to confirm its cancel', async () => {
+    vi.spyOn(taskService, 'cancelTask').mockResolvedValue({
+      ok: true,
+      value: 'cancelling'
+    })
+    const { upload } = setup()
+    const server = pendingUpload()
+    upload.choose(lora)
+    const first = upload.upload()
+    server.finish({ ok: true, taskId: TASK_ID })
+    await first
+    taskUpdate('failed', 'Storage was busy.')
+    await nextTick()
+
+    const retry = upload.upload()
+    await vi.waitFor(() =>
+      expect(useAssetDownloadStore().downloadList[0]?.status).toBe(
+        'cancellation_pending'
+      )
+    )
+    upload.cancel()
+
+    await expect(retry).resolves.toBeNull()
+    expect(upload.state.value).toEqual({
+      status: 'failed',
+      file: lora,
+      taskId: TASK_ID,
+      error: 'Upload canceled.'
+    })
+    expect(modelFileUploadApi.uploadModelFile).toHaveBeenCalledOnce()
   })
 
   it('stops the earlier transfer when another file is chosen', async () => {
