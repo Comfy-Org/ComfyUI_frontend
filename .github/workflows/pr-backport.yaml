@@ -709,6 +709,13 @@ jobs:
             exit 0
           fi
 
+          # Most merges carry no release label. Stop before the comment
+          # lookup so they cost one call against the shared token's limit.
+          if ! grep -qE '^(core|cloud)/[0-9]+\.[0-9]+$' <<<"${LABELS}"; then
+            echo "PR #${PR_NUMBER} has no release labels."
+            exit 0
+          fi
+
           WARNED=$(gh api --paginate \
             "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" --jq '.[]
               | select(.user.login == "github-actions[bot]")
