@@ -3689,6 +3689,42 @@ describe('ComfyApp', () => {
       ).toEqual(['blob:1'])
     })
 
+    it.for([
+      { label: 'shows', workflowId: workflowAId, expected: { text: ['out'] } },
+      { label: 'hides', workflowId: workflowBId, expected: undefined }
+    ])(
+      '$label an unowned output by whether its workflow_id matches the visible workflow',
+      ({ workflowId, expected }) => {
+        useNodeOutputStore().resetAllOutputsAndPreviews()
+        const graph = new LGraph()
+        graph.configure(serialisedGraph(workflowAId))
+        Reflect.set(app, 'rootGraphInternal', graph)
+        const addEventListener = vi.spyOn(api, 'addEventListener')
+        Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+        const executedHandler = addEventListener.mock.calls.find(
+          ([name]) => name === 'executed'
+        )?.[1] as EventListener | undefined
+
+        executedHandler?.(
+          new CustomEvent('executed', {
+            detail: {
+              node: '1',
+              display_node: '1',
+              prompt_id: 'unowned-job',
+              workflow_id: workflowId,
+              output: { text: ['out'] }
+            }
+          })
+        )
+
+        expect(
+          useNodeOutputStore().getNodeOutputByExecutionId(
+            createNodeExecutionId([1])
+          )
+        ).toEqual(expected)
+      }
+    )
+
     it('restores the failed run state when returning to a workflow tab', async () => {
       const workflowService = await useRealWorkflowService()
       const graph = new LGraph()

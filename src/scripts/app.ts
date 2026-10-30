@@ -757,6 +757,7 @@ export class ComfyApp implements IComfyApp {
 
     api.addEventListener('executed', ({ detail }) => {
       if (!useExecutionStore().belongsToActiveWorkflow(detail.prompt_id)) return
+      if (detail.workflow_id && detail.workflow_id !== this.rootGraph.id) return
       const nodeOutputStore = useNodeOutputStore()
       const executionId = tryNormalizeNodeExecutionId(
         detail.display_node || detail.node

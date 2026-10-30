@@ -69,6 +69,7 @@ export interface ExecutedWsMessage extends ExecutingWsMessage {
   display_node: NodeId
   output: NodeExecutionOutput
   merge?: boolean
+  workflow_id?: string
 }
 interface ExecutionWsMessageBase {
   prompt_id: JobId
