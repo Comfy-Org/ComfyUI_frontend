@@ -103,6 +103,7 @@ export type Settings = {
   'Comfy.Keybinding.NewBindings': Array<Keybinding>
   'Comfy.Keybinding.CurrentPreset': string
   'Comfy.Extension.Disabled': Array<string>
+  'Comfy.Extension.DisabledPacks': Array<string>
   'Comfy.LinkRenderMode': number
   'Comfy.Node.AutoSnapLinkToSlot': boolean
   'Comfy.Node.SnapHighlightsNode': boolean
