@@ -4,6 +4,7 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   toTurnId,
+  zAgentResolvedAsk,
   zPersistedThinkingEntry,
   zPersistedToolCallSummary
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -20,7 +21,8 @@ import {
   askIdOf,
   createAssistantMessage,
   isOpenAskPart,
-  toAskOrNoticePart
+  toAskOrNoticePart,
+  toResolvedAskPart
 } from './agentMessageParts'
 import { toolCanMutateCanvas } from './agentToolClassification'
 
@@ -447,6 +449,32 @@ function appendAssistantContent(
     message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
 }
 
+/**
+ * Puts each finished ask where it sat live: after the tool call it was asked
+ * during, ahead of the next tool call and of the reply text. An ask with no
+ * recorded position goes after the last tool call.
+ */
+function insertResolvedAsks(message: AssistantMessage, raw: unknown): void {
+  if (!Array.isArray(raw)) return
+  for (const entry of raw) {
+    const ask = zAgentResolvedAsk.safeParse(entry).data
+    const part = ask && toResolvedAskPart(ask)
+    if (!part) continue
+    const parts = [...message.parts]
+    const tools = parts.filter(({ type }) => type === 'tool').length
+    const after = Math.min(ask.after_tool_calls ?? tools, tools)
+    let seen = 0
+    const index = parts.findIndex((candidate) => {
+      if (candidate.type === 'text') return seen === after
+      if (candidate.type !== 'tool') return false
+      seen += 1
+      return seen === after + 1
+    })
+    parts.splice(index === -1 ? parts.length : index, 0, part)
+    message.parts = parts
+  }
+}
+
 function applyAssistantRow(
   row: AgentMessages[number],
   message: AssistantMessage,
@@ -455,6 +483,7 @@ function applyAssistantRow(
   const isLive = row.status === 'streaming'
   message.streaming = isLive
   appendAssistantContent(message, row, text, isLive)
+  insertResolvedAsks(message, row.resolved_asks)
 
   if (!isLive) return undefined
 

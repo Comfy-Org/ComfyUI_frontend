@@ -2078,6 +2078,48 @@ describe('useAgentConversationStore', () => {
     expect(store.isApprovalShown(turn, 'ask-1')).toBe(false)
   })
 
+  it('settling on persisted parts that hold a finished card keeps one card', () => {
+    const store = useAgentConversationStore()
+    const turn = { threadId: 'th', messageId: T1 }
+    const prompt = 'Replace your canvas?'
+    const card = {
+      type: 'askUser' as const,
+      askId: 'ask-1',
+      prompt,
+      options: [{ id: 'keep', label: 'Keep' }],
+      minSelections: 1,
+      maxSelections: 1,
+      allowOther: false,
+      resolution: { status: 'answered' as const, selected: ['keep'] }
+    }
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest({
+      type: 'agent_ask',
+      data: {
+        thread_id: 'th',
+        message_id: 't1',
+        ask_id: 'ask-1',
+        kind: 'ask_user',
+        prompt,
+        options: card.options,
+        min_selections: 1,
+        max_selections: 1,
+        allow_other: false
+      }
+    })
+    store.retireAsk('ask-1', card.resolution, 'th')
+
+    store.settleTurn(turn, [
+      card,
+      { type: 'text', text: 'persisted final', state: 'done' }
+    ])
+
+    const parts = store.messages.flatMap((message) => message.parts)
+    expect(parts.filter((part) => part.type === 'askUser')).toHaveLength(1)
+  })
+
   it.for([
     {
       name: 'the displayed turn',
