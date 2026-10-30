@@ -112,6 +112,8 @@ interface StepRun {
   masterPin: string
   openPrPin?: string
   staged?: boolean
+  openPrRepo?: string
+  fork?: string
 }
 
 function requirementsText(pin: string) {
@@ -122,7 +124,9 @@ function runCreatePrStep({
   target,
   masterPin,
   openPrPin,
-  staged = true
+  staged = true,
+  openPrRepo = 'Comfy-Org/ComfyUI',
+  fork = 'Comfy-Org/ComfyUI'
 }: StepRun) {
   const step = createPrSteps().find((s) => s.name === 'Create PR to ComfyUI')
   const script = (step?.run ?? '').replaceAll(
@@ -160,8 +164,8 @@ esac
     `#!/usr/bin/env bash
 echo "$*" >> "${ghCalls}"
 case "$*" in
-  *"pulls?state=open&head=Comfy-Org:automation/comfyui-frontend-bump"*)
-    ${openPrPin ? 'echo "17999 Comfy-Org/ComfyUI abc123"' : ':'} ;;
+  *"pulls?state=open&head=${fork.split('/')[0]}:automation/comfyui-frontend-bump"*)
+    ${openPrPin ? `echo "17999 ${openPrRepo} abc123"` : ':'} ;;
   *"contents/requirements.txt?ref=abc123"*) cat "${root}/open.txt" ;;
 esac
 `
@@ -175,7 +179,7 @@ esac
     env: {
       ...process.env,
       PATH: `${bin}:${process.env.PATH}`,
-      COMFYUI_FORK: 'Comfy-Org/ComfyUI',
+      COMFYUI_FORK: fork,
       GH_TOKEN: 'fake',
       GITHUB_OUTPUT: output,
       GITHUB_STEP_SUMMARY: path.join(root, 'summary')
@@ -185,9 +189,39 @@ esac
     status: result.status,
     pushed: existsSync(pushed),
     ghCalls: existsSync(ghCalls) ? readFileSync(ghCalls, 'utf8') : '',
-    output: existsSync(output) ? readFileSync(output, 'utf8') : ''
+    output: existsSync(output) ? readFileSync(output, 'utf8') : '',
+    log: result.stdout + result.stderr
   }
 }
+
+function runUpdateRequirementsStep(target: string, masterPin: string) {
+  const step = createPrSteps().find((s) => s.name === 'Update requirements.txt')
+  const script = (step?.run ?? '').replaceAll(
+    '${{ needs.resolve-version.outputs.target_version }}',
+    target
+  )
+  const dir = ownedTempDir('bump-update-')
+  const file = path.join(dir, 'requirements.txt')
+  writeFileSync(file, `torch\ncomfyui-frontend-package==${masterPin}\nnumpy\n`)
+  const result = spawnSync('bash', ['-euo', 'pipefail', '-c', script], {
+    cwd: dir,
+    encoding: 'utf8'
+  })
+  return { status: result.status, requirements: readFileSync(file, 'utf8') }
+}
+
+describe('Update requirements.txt step', () => {
+  it.for([
+    ['1.59.0', '1.59.0.dev2'],
+    ['1.58.2', '1.57.6'],
+    ['1.59.0.dev3', '1.59.0.dev2']
+  ])('pins exactly %s over %s', ([target, pin]) => {
+    expect(runUpdateRequirementsStep(target, pin)).toEqual({
+      status: 0,
+      requirements: `torch\ncomfyui-frontend-package==${target}\nnumpy\n`
+    })
+  })
+})
 
 describe('Create PR to ComfyUI step', () => {
   it('leaves an open PR that pins a newer frontend alone', () => {
@@ -231,7 +265,7 @@ describe('Create PR to ComfyUI step', () => {
     })
     expect(result).toMatchObject({ status: 0, pushed: false })
     expect(result.ghCalls).toMatch(
-      /--method PATCH repos\/Comfy-Org\/ComfyUI\/pulls\/17999 -f state=closed/
+      /--method POST repos\/Comfy-Org\/ComfyUI\/issues\/17999\/comments -f body=.*already pins comfyui-frontend-package==1\.58\.1[^]*--method PATCH repos\/Comfy-Org\/ComfyUI\/pulls\/17999 -f state=closed/
     )
     expect(result.output).toContain('skipped=true')
   })
@@ -245,6 +279,32 @@ describe('Create PR to ComfyUI step', () => {
     expect(result).toMatchObject({ status: 0, pushed: false })
     expect(result.ghCalls).not.toContain('PATCH')
     expect(result.output).toContain('skipped=true')
+  })
+
+  it('finds the open PR of a fork run by the fork owner', () => {
+    const result = runCreatePrStep({
+      target: '1.57.7',
+      masterPin: '1.57.6',
+      openPrPin: '1.58.1',
+      openPrRepo: 'someone/ComfyUI',
+      fork: 'someone/ComfyUI'
+    })
+    expect(result).toMatchObject({ status: 0, pushed: false })
+    expect(result.ghCalls).toContain(
+      'repos/someone/ComfyUI/contents/requirements.txt?ref=abc123'
+    )
+  })
+
+  it('fails clearly when the open PR has lost its head repository', () => {
+    const result = runCreatePrStep({
+      target: '1.58.2',
+      masterPin: '1.57.6',
+      openPrPin: '1.57.7',
+      openPrRepo: 'null'
+    })
+    expect(result.status).not.toBe(0)
+    expect(result.pushed).toBe(false)
+    expect(result.log).toContain('no head repository')
   })
 
   it('does not report a created PR when the guard skipped', () => {

@@ -377,11 +377,11 @@ jobs:
           echo "Updating comfyui-frontend-package to ${TARGET_VERSION}"
 
           # Update the comfyui-frontend-package version (POSIX-compatible)
-          sed -i.bak "s/comfyui-frontend-package==[0-9.][0-9.]*/comfyui-frontend-package==${TARGET_VERSION}/" requirements.txt
+          sed -i.bak "s/^comfyui-frontend-package==[^[:space:]#;]*/comfyui-frontend-package==${TARGET_VERSION}/" requirements.txt
           rm requirements.txt.bak
 
           # Verify the change was made
-          if ! grep -q "comfyui-frontend-package==${TARGET_VERSION}" requirements.txt; then
+          if ! grep -qxF "comfyui-frontend-package==${TARGET_VERSION}" requirements.txt; then
             echo "Failed to update requirements.txt"
             exit 1
           fi
@@ -451,6 +451,10 @@ jobs:
             --jq '.[0] | select(. != null) | "\(.number) \(.head.repo.full_name) \(.head.sha)"')
           if [ -n "$OPEN_HEAD" ]; then
             read -r OPEN_PR OPEN_REPO OPEN_SHA <<< "$OPEN_HEAD"
+            if [ "$OPEN_REPO" = "null" ]; then
+              echo "::error title=ComfyUI bump PR is orphaned::Open PR #${OPEN_PR} has no head repository (its fork was deleted). Close it, then rerun."
+              exit 1
+            fi
             gh api "repos/${OPEN_REPO}/contents/requirements.txt?ref=${OPEN_SHA}" --jq '.content' \
               | base64 -d > ../pending-requirements.txt
             PINNED_FILES+=(../pending-requirements.txt)
@@ -474,8 +478,10 @@ jobs:
             echo "No changes to commit: master already pins ${TARGET_VERSION}"
             if [ -n "$OPEN_PR" ]; then
               # Its pin is not newer (the guard checked), so merging it would downgrade or do nothing.
-              gh api --silent --method PATCH "repos/Comfy-Org/ComfyUI/pulls/${OPEN_PR}" -f state=closed
               MSG="Closed ComfyUI PR #${OPEN_PR}: master already pins ${TARGET_VERSION}."
+              gh api --silent --method POST "repos/Comfy-Org/ComfyUI/issues/${OPEN_PR}/comments" \
+                -f body="Closing: master already pins comfyui-frontend-package==${TARGET_VERSION}, so this older bump is no longer needed."
+              gh api --silent --method PATCH "repos/Comfy-Org/ComfyUI/pulls/${OPEN_PR}" -f state=closed
               echo "::notice title=Stale ComfyUI bump closed::${MSG}"
               echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
             fi
