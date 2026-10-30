@@ -1516,6 +1516,9 @@
     "jobAddedToQueue": "Job queued",
     "jobQueueing": "Job queuing",
     "completedIn": "Finished in {duration}",
+    "downloadingModel": "Downloading {name}",
+    "downloadingModelOf": "Downloading {name} ({index} of {count})",
+    "downloadedOfTotal": "{downloaded} of {total}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
       "openWorkflowNewTab": "Open workflow in new tab",

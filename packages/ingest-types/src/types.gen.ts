@@ -2829,6 +2829,60 @@ export type ModelFile = {
 }
 
 /**
+ * Server-to-client model_download frame on /ws. A Cloud job's model file download moved.
+ */
+export type ModelDownloadFrame = {
+  data: ModelDownloadData
+  type: 'model_download'
+}
+
+/**
+ * The `data` of a model_download WebSocket event: the latest state of one model file a Cloud job on a deployment downloads before ComfyUI starts it. Sent by the deployment's worker (services/comfy-deploy/containerruntime worker.py, _ModelNews) only when the job asked for live progress, for each file the job fetches and never for a file the release ships, all before the job's execution_start. A failed file ends the job: no other source is tried and the job is not retried, so its execution_error (or execution_interrupted, when a cancel was in flight) follows. New fields may be added; a client ignores the ones it does not read.
+ */
+export type ModelDownloadData = {
+  /**
+   * Bytes received so far. On done and cached, the file's size.
+   */
+  bytes_downloaded: number
+  /**
+   * The download's Content-Length, or null when the storage response sent none. On cached, the file's size; on done with no Content-Length, the bytes received.
+   */
+  bytes_total: number | null
+  /**
+   * How many files this job fetches; files the release ships are not counted.
+   */
+  count: number
+  /**
+   * The ComfyUI model folder the file goes in.
+   */
+  dir: string
+  /**
+   * The file's 1-based position among the files this job fetches.
+   */
+  index: number
+  /**
+   * The file name the workflow loads, as it appears in the model folder.
+   */
+  name: string
+  /**
+   * bytes_downloaded over bytes_total, from 0 to 1, rounded to four decimal places; null when bytes_total is null or 0. 1 on done and cached.
+   */
+  progress: number | null
+  /**
+   * The Cloud job id, stamped by platform-gateway on every frame it forwards.
+   */
+  prompt_id: string
+  /**
+   * Known values are downloading, done, cached and failed. downloading is sent as the download opens and then at most every 0.5 seconds while bytes arrive; done once the whole file arrived and matched its hash; cached once, instead of the others, when the worker already holds the file; failed when the download stopped. Treat it as an open string: a client shows the file as downloading only while the value is downloading, and reads any other value as the end of that file's download.
+   */
+  status: string
+  /**
+   * The job's workflow id, present when the job has one.
+   */
+  workflow_id?: string
+}
+
+/**
  * Workspace member with profile and role information.
  */
 export type Member = {

@@ -1783,6 +1783,30 @@ export const zModelFile = z.object({
 })
 
 /**
+ * The `data` of a model_download WebSocket event: the latest state of one model file a Cloud job on a deployment downloads before ComfyUI starts it. Sent by the deployment's worker (services/comfy-deploy/containerruntime worker.py, _ModelNews) only when the job asked for live progress, for each file the job fetches and never for a file the release ships, all before the job's execution_start. A failed file ends the job: no other source is tried and the job is not retried, so its execution_error (or execution_interrupted, when a cancel was in flight) follows. New fields may be added; a client ignores the ones it does not read.
+ */
+export const zModelDownloadData = z.object({
+  bytes_downloaded: z.int(),
+  bytes_total: z.int().nullable(),
+  count: z.int(),
+  dir: z.string(),
+  index: z.int(),
+  name: z.string(),
+  progress: z.number().nullable(),
+  prompt_id: z.string(),
+  status: z.string(),
+  workflow_id: z.string().optional()
+})
+
+/**
+ * Server-to-client model_download frame on /ws. A Cloud job's model file download moved.
+ */
+export const zModelDownloadFrame = z.object({
+  data: zModelDownloadData,
+  type: z.enum(['model_download'])
+})
+
+/**
  * Workspace member with profile and role information.
  */
 export const zMember = z.object({
