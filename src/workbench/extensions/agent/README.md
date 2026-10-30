@@ -34,7 +34,10 @@ The panel speaks one contract on the cloud and on the local agent:
   next reconnect in the window. A reconnect outside the window does nothing, so
   if none comes within it the store does nothing, and **Refresh Node
   Definitions** recovers definitions. A restart made while the panel is closed
-  is not observed.
+  is not observed here; outside the agent, `platform/customNodes/useReconnectNodeDefinitionRefresh.ts`
+  (wired in `GraphView.vue`, local only) checks `/object_info` on every
+  reconnect and, when it lists node types the page lacks, refreshes
+  definitions and reloads the open workflow if it holds one of them.
 - **Saved workflows, `GET /api/workflows`**. Saved tabs resolve through the
   saved-workflow index on every backend.
 - **Credential** (`services/agent/agentAuth.ts`). In the cloud, agent requests
