@@ -373,7 +373,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       (lastSentVersions.get(batch.workflowId) ?? -1) + 1
     )
     const shift = floor - Math.min(...counters)
-    if (shift > 0) {
+    if (shift > 0 && Number.isSafeInteger(Math.max(...counters) + shift)) {
       batch.ops = batch.ops.map((op) => liftCounter(op, shift))
       batch.wire = batch.wire.map((wire, index) => ({
         ...wire,

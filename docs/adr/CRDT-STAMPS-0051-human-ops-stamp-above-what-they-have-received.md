@@ -64,8 +64,13 @@ set, and every replica computes the same winner.
   now, as in the program's ADR-020: the per-participant state is not justified
   while one host admits every op.
 - _Ask the host to lift human batches, as it does for the agent._ Rejected for
-  unsent ops: the creator can stamp correctly itself, and this keeps ordering in
-  the op rather than the server. It stays an option for the frozen case below.
+  unsent ops: the creator can stamp correctly itself, this keeps ordering in the
+  op rather than the server, and the host lift needs replay-restoration
+  bookkeeping that an unsent op does not. It stays an option for the frozen case
+  below.
+- _Use the package's `DocDerivedLamportClockStore`._ Rejected. Its transaction is
+  asynchronous and writes a reservation into the document, which a follower must
+  not do.
 - _Keep the old stamp and let the draft repair the document._ Rejected. It turns
   an ordinary conflict into a lineage break.
 - _Mint nothing until the socket is back._ Rejected. The sender owns `op_id` and

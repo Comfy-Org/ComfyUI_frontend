@@ -570,7 +570,9 @@ function startAgentCrdtFollower(
 
   const sender = createOpSender({
     // A batch sent before the catch-up lands could not stamp above it, so a
-    // follower known to be behind holds its ops until it has caught up.
+    // follower known to be behind holds its ops until it has caught up. Only
+    // sync staleness counts: a failed projection leaves the document, and so
+    // its counters, up to date.
     sendOps: (target, tab, ops) =>
       !syncCanvasMayBeStale.value && client.sendOps(target, tab, ops),
     onOpsResult(listener) {

@@ -685,6 +685,18 @@ describe('createOpSender', () => {
     expect(sent[2].ops[0].base_version).toBe(94)
   })
 
+  it('leaves a batch as minted when lifting it would leave the safe integers', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(500 * 6)
+
+    observedCounter = Number.MAX_SAFE_INTEGER
+    transportUp = true
+    sender.retryTransport()
+
+    expect(sent[0].ops[0].base_version).toBe(41)
+  })
+
   it('never re-stamps a batch the wire already carried', () => {
     sender.enqueue([addNode(1)])
     const stamped = sent[0].ops[0].base_version
