@@ -41,6 +41,15 @@ function datesFromStatus(status: BillingStatusResponse | null) {
   }
 }
 
+function servesEndedSubscription(status: BillingStatusResponse | null) {
+  switch (status?.subscription_status) {
+    case 'ended':
+      return true
+    default:
+      return false
+  }
+}
+
 function fundsFromStatus(
   status: BillingStatusResponse | null,
   statusReadAuthoritative: boolean
@@ -129,7 +138,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     if (
       !legacyCanAccessSubscriptionFeatures.value &&
       !subscriptionTier.value &&
-      !status?.renewal_invoice
+      !status?.renewal_invoice &&
+      !servesEndedSubscription(status)
     ) {
       return null
     }

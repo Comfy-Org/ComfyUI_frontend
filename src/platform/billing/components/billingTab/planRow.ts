@@ -85,6 +85,15 @@ function endedDate(facts: PlanRowFacts): string | null {
   return facts.endedAt === undefined ? facts.endDate : facts.endedAt
 }
 
+function endedRow(facts: PlanRowFacts): PlanRowState {
+  return {
+    kind: 'ended',
+    planName: facts.planName,
+    cadence: toCadence(facts.duration),
+    endedAt: endedDate(facts)
+  }
+}
+
 function salesManagedRow(facts: PlanRowFacts): PlanRowState | null {
   if (facts.planKind !== 'sales_managed') return null
   switch (facts.billingStatus) {
@@ -111,12 +120,11 @@ export function derivePlanRow(facts: PlanRowFacts): PlanRowState {
     return { kind: 'activating', planName }
   }
   if (facts.subscriptionState === 'ended') {
-    return {
-      kind: 'ended',
-      planName,
-      cadence: toCadence(facts.duration),
-      endedAt: endedDate(facts)
-    }
+    return endedRow(facts)
+  }
+  switch (subscriptionStatus) {
+    case 'ended':
+      return endedRow(facts)
   }
   if (subscriptionStatus === null) {
     return { kind: 'noPlan', freeRuns: facts.freeRuns }
@@ -144,8 +152,6 @@ export function derivePlanRow(facts: PlanRowFacts): PlanRowState {
       return endDate
         ? { kind: 'ending', planName, cadence, endsAt: endDate }
         : UNKNOWN
-    case 'ended':
-      return { kind: 'ended', planName, cadence, endedAt: endedDate(facts) }
     default:
       return UNKNOWN
   }

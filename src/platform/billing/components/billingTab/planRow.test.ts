@@ -276,7 +276,22 @@ describe('derivePlanRow', () => {
         planName: null,
         endDate: '2026-09-01T00:00:00Z'
       },
-      expected: { kind: 'unknown' }
+      expected: {
+        kind: 'ended',
+        planName: null,
+        cadence: 'monthly',
+        endedAt: '2026-09-01T00:00:00Z'
+      }
+    },
+    {
+      case: 'an ended subscription_status with no plan name',
+      facts: { subscriptionStatus: 'ended', planName: null, duration: null },
+      expected: {
+        kind: 'ended',
+        planName: null,
+        cadence: null,
+        endedAt: null
+      }
     }
   ])('maps $case', ({ facts, expected }) => {
     expect(derivePlanRow({ ...baseFacts, ...facts })).toEqual(expected)
