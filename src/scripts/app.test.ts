@@ -434,7 +434,7 @@ describe('ComfyApp', () => {
               flags: {},
               order: 1,
               mode: 0,
-              properties: {},
+              properties: { configuredByWorkflow: true },
               widgets_values: ['sample_euler', false, null]
             },
             {
@@ -456,7 +456,21 @@ describe('ComfyApp', () => {
         app.canvasElRef.value = document.createElement('canvas')
         Reflect.set(app, 'rootGraphInternal', new LGraph())
 
+        const peerConfigurations: unknown[] = []
+        mockExtensionService.invokeExtensions.mockImplementation(
+          (method: string, node?: LGraphNode) => {
+            if (method === 'loadedGraphNode' && node?.id === toNodeId(1)) {
+              peerConfigurations.push(
+                app.rootGraph.getNodeById(toNodeId(2))?.properties
+                  .configuredByWorkflow
+              )
+            }
+            return []
+          }
+        )
         await app.loadGraphData(loadInput(fixture), false, true, null)
+        expect(peerConfigurations).toEqual([true])
+        mockExtensionService.invokeExtensions.mockReturnValue([])
         const graph = new LGraph()
         const individuallyLoaded = withGraphConfiguring(() =>
           fixture.nodes.map((info) =>
