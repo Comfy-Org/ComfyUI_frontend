@@ -2976,6 +2976,23 @@ describe('attachDocOpMinter', () => {
       ])
     })
 
+    it('mints an added row default over a peer value the document holds at that index', async () => {
+      const { node, widget } = seedGroup()
+      docWidgetValue = (nodeId, name) =>
+        nodeId === node.id && name === 'loras.1.lora_name' ? 'B' : undefined
+
+      widget('loras.1').callback?.(undefined)
+      widget('loras.$add').callback?.(undefined)
+      await afterFlush()
+
+      expect(minted).toContainEqual({
+        op: 'set_widget',
+        node_id: node.id,
+        widget: 'loras.1.lora_name',
+        value: 'A'
+      })
+    })
+
     function seedThreeRows() {
       const seeded = seedGroup()
       const { widget } = seeded
