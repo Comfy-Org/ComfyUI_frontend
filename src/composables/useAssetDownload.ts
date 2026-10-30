@@ -22,10 +22,18 @@ export interface FetchedAssetDownload {
 
 export type AssetDownload = DirectAssetDownload | FetchedAssetDownload
 
+function parseUrl(href: string): URL | null {
+  try {
+    return new URL(href, window.location.origin)
+  } catch {
+    return null
+  }
+}
+
 function isAppRoute(url: string): boolean {
   if (url.startsWith('blob:')) return false
-  const candidate = URL.parse(url, window.location.origin)
-  const apiBase = URL.parse(api.apiURL(''), window.location.origin)
+  const candidate = parseUrl(url)
+  const apiBase = parseUrl(api.apiURL(''))
   if (!candidate || !apiBase) return false
   return (
     candidate.origin === window.location.origin ||
@@ -34,7 +42,7 @@ function isAppRoute(url: string): boolean {
 }
 
 function toApiRoute(url: string): string {
-  const parsed = URL.parse(url, window.location.origin)
+  const parsed = parseUrl(url)
   return parsed ? `${parsed.pathname}${parsed.search}` : url
 }
 

@@ -12,7 +12,6 @@
       @mouseup="onMaskMouseUp"
       @keydown.stop="handleKeyDown"
     >
-      <!-- Top-right actions -->
       <div class="absolute top-4 right-4 z-10 flex gap-2">
         <Button
           v-if="hasContextMenu"
@@ -97,7 +96,6 @@
         </template>
       </div>
 
-      <!-- Filename caption -->
       <div
         v-if="activeItem"
         data-testid="lightbox-caption"
@@ -201,7 +199,6 @@ let revealQueued = false
 let mediaSeq = 0
 let captionHideTimer: ReturnType<typeof setTimeout> | undefined
 
-/* Reveals the caption while the pointer moves over the image or has focus, then auto-hides after 2s. While the new media is still loading the reveal is queued instead, so fast skips never flash the caption over an empty frame. */
 function showCaptionTransient() {
   if (!mediaReady.value) {
     revealQueued = true
@@ -224,7 +221,6 @@ function markMediaReady(seq: number) {
   }
 }
 
-/* Resolves once the newly mounted image has painted (or failed, whose fallback still names the file). Non-image media is ready immediately. */
 function awaitMediaReady(item: AugmentedResultItem, seq: number) {
   if (!isImageResult(item)) {
     markMediaReady(seq)
@@ -293,9 +289,11 @@ function onCaptionFocusIn() {
 }
 
 function onCaptionFocusOut(event: FocusEvent) {
+  const { currentTarget, relatedTarget } = event
   if (
-    event.relatedTarget instanceof Node &&
-    (event.currentTarget as HTMLElement | null)?.contains(event.relatedTarget)
+    currentTarget instanceof Node &&
+    relatedTarget instanceof Node &&
+    currentTarget.contains(relatedTarget)
   )
     return
   captionPinned.value = false
@@ -304,27 +302,37 @@ function onCaptionFocusOut(event: FocusEvent) {
 
 onBeforeUnmount(() => clearTimeout(captionHideTimer))
 
+let lastActiveUrl: string | undefined
+
 watch(
   () => props.activeIndex,
   (index) => {
-    galleryVisible.value = index !== -1
-    if (index !== -1) {
-      previouslyFocusedElement = document.activeElement as HTMLElement | null
-      mediaSeq += 1
-      const seq = mediaSeq
-      mediaReady.value = false
-      revealQueued = false
+    if (index === -1) {
+      galleryVisible.value = false
+      lastActiveUrl = undefined
       hideCaptionNow()
-      void nextTick(() => {
-        if (seq !== mediaSeq) return
-        const item = activeItem.value
-        if (item) awaitMediaReady(item, seq)
-        showCaptionTransient()
-        dialogRef.value?.focus()
-      })
-    } else {
-      hideCaptionNow()
+      return
     }
+    const item = activeItem.value
+    const url = item && resultItemUrl(item)
+    if (galleryVisible.value && url !== undefined && url === lastActiveUrl) {
+      return
+    }
+    galleryVisible.value = true
+    lastActiveUrl = url
+    previouslyFocusedElement = document.activeElement as HTMLElement | null
+    mediaSeq += 1
+    const seq = mediaSeq
+    mediaReady.value = false
+    revealQueued = false
+    hideCaptionNow()
+    void nextTick(() => {
+      if (seq !== mediaSeq) return
+      const nextItem = activeItem.value
+      if (nextItem) awaitMediaReady(nextItem, seq)
+      showCaptionTransient()
+      dialogRef.value?.focus()
+    })
   },
   { immediate: true }
 )

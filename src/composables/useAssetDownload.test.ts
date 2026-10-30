@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { api } from '@/scripts/api'
 
@@ -38,8 +46,7 @@ describe('createFileDownload', () => {
     async (url) => {
       distribution.isCloud = true
       const download = createFileDownload(url, 'a.png')
-      if (download.mode !== 'fetch')
-        throw new Error('expected a fetch download')
+      assert(download.mode === 'fetch')
 
       await download.fetch?.(url)
 
@@ -55,8 +62,7 @@ describe('createFileDownload', () => {
     async (url) => {
       distribution.isCloud = true
       const download = createFileDownload(url, 'a.png')
-      if (download.mode !== 'fetch')
-        throw new Error('expected a fetch download')
+      assert(download.mode === 'fetch')
 
       await download.fetch?.(url)
 
@@ -64,4 +70,35 @@ describe('createFileDownload', () => {
       expect(api.fetchApi).not.toHaveBeenCalled()
     }
   )
+
+  it('routes an API URL where the static URL.parse is missing', async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(URL, 'parse')
+    Object.defineProperty(URL, 'parse', {
+      configurable: true,
+      value: undefined
+    })
+    onTestFinished(() => {
+      if (descriptor) Object.defineProperty(URL, 'parse', descriptor)
+      else Reflect.deleteProperty(URL, 'parse')
+    })
+    distribution.isCloud = true
+
+    const download = createFileDownload(CONTENT_URL, 'a.png')
+    assert(download.mode === 'fetch')
+    await download.fetch?.(CONTENT_URL)
+
+    expect(api.apiURL(vi.mocked(api.fetchApi).mock.calls[0][0])).toBe(
+      CONTENT_URL
+    )
+  })
+
+  it('fetches an unparseable URL directly instead of throwing', async () => {
+    distribution.isCloud = true
+    const download = createFileDownload('http://[', 'a.png')
+    assert(download.mode === 'fetch')
+
+    await download.fetch?.('http://[')
+
+    expect(fetch).toHaveBeenCalledWith('http://[', { credentials: 'omit' })
+  })
 })

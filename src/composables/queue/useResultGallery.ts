@@ -67,6 +67,7 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     const index = galleryActiveIndex.value
     if (taskId === null || index === -1) return
     const targetTask = tasks.find((task) => task.jobId === taskId)
+    if (!targetTask) return
     const activeUrl = urlAt(galleryItems.value, index)
     const rerun = resolveItems(targetTask, tasks)
     if (rerun.length) {
@@ -74,7 +75,6 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
       galleryItems.value = rerun
       galleryActiveIndex.value = findActiveIndex(rerun, activeUrl)
     }
-    if (!targetTask) return
     const refreshId = openSequence
     void getOutputsForTask(targetTask).then((targetOutputs) => {
       if (targetOutputs === null || !isLiveRefreshCurrent(refreshId, taskId))

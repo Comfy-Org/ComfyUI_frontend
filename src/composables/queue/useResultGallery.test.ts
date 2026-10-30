@@ -308,6 +308,26 @@ describe('useResultGallery', () => {
     expect(galleryActiveIndex.value).toBe(0)
   })
 
+  it('keeps the open gallery when the viewed task leaves the source list', async () => {
+    const viewed = createResultItem('viewed.png')
+    const viewedTask = createTask(viewed)
+    const otherTask = createTask(createResultItem('other.png'))
+    const sources = ref([viewedTask, otherTask])
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => sources.value
+    )
+
+    await onViewItem(createJobViewItem('job-viewed', viewedTask))
+    expect(galleryItems.value).toEqual([viewed])
+
+    sources.value = [otherTask]
+    await nextTick()
+    await nextTick()
+
+    expect(galleryItems.value).toEqual([viewed])
+    expect(galleryActiveIndex.value).toBe(0)
+  })
+
   it.for(['resolves', 'rejects'])(
     'does not open a slower gallery request that %s over a later HDR selection',
     async (outcome) => {

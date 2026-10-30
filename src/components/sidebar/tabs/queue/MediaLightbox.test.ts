@@ -43,7 +43,8 @@ type MockResultItem = AugmentedResultItem & {
 describe('MediaLightbox', () => {
   const mockComfyImage = {
     name: 'ComfyImage',
-    template: '<div class="mock-comfy-image" data-testid="comfy-image"></div>',
+    template:
+      '<img class="mock-comfy-image" data-testid="comfy-image" :src="src" :alt="alt" />',
     props: ['src', 'contain', 'alt']
   }
 
@@ -221,11 +222,8 @@ describe('MediaLightbox', () => {
   describe('caption reveal and auto-hide', () => {
     const caption = () => screen.getByTestId('lightbox-caption')
 
-    /* Fires the load event the browser sends once the new image has painted; jsdom never loads images on its own. */
-    const finishImageLoad = () => {
-      /* oxlint-disable-next-line testing-library/no-node-access -- jsdom never fires img load; the event itself is the behavior under test. */
-      const img = screen.getByTestId('lightbox-content').querySelector('img')
-      if (img) img.dispatchEvent(new Event('load'))
+    const finishImageLoad = (filename: string) => {
+      screen.getByAltText(filename).dispatchEvent(new Event('load'))
     }
 
     it('reveals the caption again after it auto-hides', async () => {
@@ -234,7 +232,7 @@ describe('MediaLightbox', () => {
         const { user } = renderGallery()
         await screen.findByTestId('lightbox-content')
         await nextTick()
-        finishImageLoad()
+        finishImageLoad('image1.jpg')
         await nextTick()
         expect(caption()).toHaveClass('opacity-100')
 
@@ -256,7 +254,7 @@ describe('MediaLightbox', () => {
         const { user } = renderGallery()
         await screen.findByTestId('lightbox-content')
         await nextTick()
-        finishImageLoad()
+        finishImageLoad('image1.jpg')
         await nextTick()
         expect(caption()).toHaveClass('opacity-100')
 
@@ -278,7 +276,7 @@ describe('MediaLightbox', () => {
         const { rerender } = renderGallery({ activeIndex: 0 })
         await screen.findByTestId('lightbox-content')
         await nextTick()
-        finishImageLoad()
+        finishImageLoad('image1.jpg')
         await nextTick()
         await vi.advanceTimersByTimeAsync(2000)
         await nextTick()
@@ -294,7 +292,7 @@ describe('MediaLightbox', () => {
         expect(caption()).toHaveTextContent('image2.jpg')
         expect(caption()).toHaveClass('opacity-0')
 
-        finishImageLoad()
+        finishImageLoad('image2.jpg')
         await nextTick()
 
         expect(caption()).toHaveClass('opacity-100')
@@ -323,6 +321,32 @@ describe('MediaLightbox', () => {
         vi.useRealTimers()
       }
     })
+  })
+
+  it('keeps focus in the viewer when a consumer re-anchors to the same item', async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(MediaLightbox, {
+      global: { plugins: [i18n] },
+      props: { allGalleryItems: mockGalleryItems, activeIndex: 0 }
+    })
+    await nextTick()
+
+    const download = screen.getByLabelText('Download')
+    await user.click(download)
+    expect(download).toHaveFocus()
+
+    await rerender({
+      allGalleryItems: [
+        mockGalleryItems[2],
+        mockGalleryItems[0],
+        mockGalleryItems[1]
+      ],
+      activeIndex: 1
+    })
+    await nextTick()
+    await nextTick()
+
+    expect(download).toHaveFocus()
   })
 
   it('shows gallery when activeIndex changes from -1', async () => {
