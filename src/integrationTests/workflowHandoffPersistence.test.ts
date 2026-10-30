@@ -39,7 +39,6 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { resetStorageAvailable } from '@/platform/workflow/persistence/base/storageIO'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
@@ -409,8 +408,7 @@ describe('saved workflow handoff persistence', () => {
   it.for(['workspace', 'owner', 'leave-return'] as const)(
     'cancels UI Save As clone graph loading after %s scope revocation',
     async (change) => {
-      const { service, retainedDocument, graph } =
-        await prepareRetainedHandoff()
+      const { service, retainedDocument } = await prepareRetainedHandoff()
       const originalScope = { ownerId: 'user-a', workspaceId: 'workspace-a' }
       const scope = ref(originalScope)
       registerUserFileScopeProvider(() => scope.value)
@@ -420,9 +418,7 @@ describe('saved workflow handoff persistence', () => {
       }
       const drafts = useWorkflowDraftStoreV2()
       drafts.removeDraft(retainedDocument.path)
-      retainedDocument.changeTracker.activeState = zComfyWorkflow.parse(
-        graph.serialize()
-      )
+      retainedDocument.changeTracker.captureCanvasState()
       drafts.saveDraft(
         retainedDocument.path,
         JSON.stringify(retainedDocument.activeState),
