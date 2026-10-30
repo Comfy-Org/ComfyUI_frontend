@@ -4166,6 +4166,12 @@
       "pointApi": "Call it from your product as an autoscaling API",
       "pointNodes": "Bring your custom nodes and models"
     },
+    "agentMenu": {
+      "useLocalAgent": "Use local agent",
+      "openInClaude": "Open in Claude desktop",
+      "openInChatGpt": "Open in ChatGPT desktop",
+      "copyPrompt": "Copy prompt"
+    },
     "outOfMemoryTooltip": "Runs it on a GPU with more memory. Comfy Cloud builds and deploys your exact local setup, takes 20–30 min.",
     "aboutDeploy": "About Deploy to Comfy API",
     "openedFromLocal": "Opened from ComfyUI on your computer",
