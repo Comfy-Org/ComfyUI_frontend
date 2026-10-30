@@ -159,6 +159,32 @@ describe('jobOutputCache', () => {
       expect(await getOutputsForTask(completedTask)).toEqual(fullOutputs)
     })
 
+    it('keeps an incomplete full-output load retryable', async () => {
+      const previewOutput = createResultItem('preview')
+      const jobId = uniqueId('incomplete-load')
+      const task = new TaskItemImpl(createMockJob(jobId, 3), {}, [
+        previewOutput
+      ])
+
+      vi.mocked(api.getJobDetail).mockResolvedValueOnce(undefined)
+      expect(await getOutputsForTask(task)).toEqual([previewOutput])
+
+      const detail: JobDetail = {
+        ...createMockJob(jobId, 3),
+        outputs: {
+          'node-1': {
+            images: [{ filename: 'full.png', subfolder: '', type: 'output' }]
+          }
+        }
+      }
+      vi.mocked(api.getJobDetail).mockResolvedValue(detail)
+
+      const outputs = await getOutputsForTask(task)
+
+      expect(outputs?.map((item) => item.filename)).toEqual(['full.png'])
+      expect(api.getJobDetail).toHaveBeenCalledTimes(2)
+    })
+
     it('falls back to preview outputs on load error', async () => {
       const previewOutput = createResultItem('preview')
 

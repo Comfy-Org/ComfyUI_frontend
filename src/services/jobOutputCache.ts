@@ -87,7 +87,8 @@ export async function getOutputsForTask(
       return null
     }
 
-    if (task.isHistory) taskCache.set(requestId, loadedTask)
+    if (task.isHistory && loadedTask !== task)
+      taskCache.set(requestId, loadedTask)
     return [...loadedTask.previewableOutputs]
   } catch (error) {
     if (latestTaskRequestId !== requestId) return null
