@@ -51,9 +51,14 @@ It either lost, or won only through the whole-document path of
 
 The result for a value conflict: an edit the person made without seeing the
 agent's write wins it if that edit had not reached the wire when the outage
-began. A write made after the edit reached the document wins as usual. No actor
-has priority in the comparator, so the agent can still change a value the person
-set, and every replica computes the same winner.
+began. A write made after the edit reached the document wins as usual. Only the
+counter decides, apart from the existing tiebreak on an equal counter, so the
+agent can still change a value the person set, and every replica computes the
+same winner.
+
+This is what the follower has received, not what the host holds. An edit sent
+while an agent write is in flight back to this tab, inside one round trip, is
+concurrent and can lose. That is ordinary last-writer-wins, online or not.
 
 ## Alternatives considered
 
@@ -89,9 +94,10 @@ set, and every replica computes the same winner.
 ### Negative
 
 - A batch sent just before a connection dropped keeps its stamp, because it may
-  have landed. If it did not, it can still lose to a concurrent agent write. The
-  host reports that as `skipped`, the same as a replay, so the frontend cannot
-  tell (FRONT-2834).
+  have landed. If it did not, it can still lose to a concurrent agent write. That
+  and the one-round-trip case above read the same to the frontend: the host
+  reports a dropped write as `skipped`, like a replay, so the canvas can keep a
+  value the document refused (FRONT-2834).
 - `base_version` no longer equals the document sequence a batch was minted at.
   Nothing relied on that; the applier treats it as a counter.
 - A follower that never finishes catching up holds its edits. They stay reported

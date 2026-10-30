@@ -30,7 +30,7 @@ const bridgeState = vi.hoisted(() => {
     follower = {
       updatesApplied: 0,
       doc: {
-        getMap: () => ({ toJSON: () => ({}) })
+        getMap: () => ({ toJSON: () => ({}), get: () => undefined })
       }
     }
   }

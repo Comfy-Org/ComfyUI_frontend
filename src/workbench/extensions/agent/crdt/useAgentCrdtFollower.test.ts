@@ -67,7 +67,8 @@ const bridgeState = (() => {
     follower = {
       updatesApplied: 0,
       doc: {
-        getMap: () => ({ toJSON: () => ({}) })
+        share: new Map(),
+        getMap: () => ({ toJSON: () => ({}), get: () => undefined })
       }
     }
   }
@@ -1477,7 +1478,7 @@ describe('useAgentCrdtFollower', () => {
     // and clear applied state without arming a lineage replacement.
     const replacementFollower = {
       updatesApplied: 7,
-      doc: { getMap: () => ({ toJSON: () => ({}) }) }
+      doc: { getMap: () => ({ toJSON: () => ({}), get: () => undefined }) }
     }
     const initialFollower = bridge().follower
     bridge().subscribe.mockImplementationOnce((nextWorkflowId: string) => {
@@ -2477,7 +2478,9 @@ describe('useAgentCrdtFollower', () => {
 
     it('arms a lineage replacement on a doc_reset and rebinds the replacement document', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
-      const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
+      const replacementDoc = {
+        getMap: () => ({ toJSON: () => ({}), get: () => undefined })
+      }
 
       dispatchFrame('doc_reset', {
         workflowId: 'wf-1',

@@ -11,7 +11,8 @@ import type { Ref } from 'vue'
 
 import {
   observedDocCounter,
-  SCHEMA_VERSION
+  SCHEMA_VERSION,
+  SchemaVersionError
 } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
@@ -568,6 +569,7 @@ function startAgentCrdtFollower(
     noteSettledHumanOps(outcome)
   }
 
+  let counterReadFailureReported = false
   const sender = createOpSender({
     // A batch sent before the catch-up lands could not stamp above it, so a
     // follower known to be behind holds its ops until it has caught up. Only
@@ -596,7 +598,23 @@ function startAgentCrdtFollower(
     observedCounter: () => {
       try {
         return observedDocCounter(bridge.follower.doc)
-      } catch {
+      } catch (error) {
+        if (
+          !counterReadFailureReported &&
+          !(error instanceof SchemaVersionError)
+        ) {
+          counterReadFailureReported = true
+          reportError(error, {
+            surface: 'agent',
+            errorType: 'failure_reading_agent_doc_counter',
+            tags: {
+              feature_area: 'agent',
+              operation: 'sync',
+              outcome: 'degraded'
+            },
+            level: 'warning'
+          })
+        }
         return undefined
       }
     },
