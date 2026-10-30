@@ -129,7 +129,22 @@ function connectAgentHeldWorkflow() {
       .flatMap(([frame]) => sentWireOps(frame))
   }
 
-  return { graph, host, deliver, humanAdds }
+  async function humanWrites(write: () => void) {
+    const framesBefore = agentSocket.send.mock.calls.length
+    write()
+    await vi.waitFor(() =>
+      expect(agentSocket.send.mock.calls.length).toBeGreaterThan(framesBefore)
+    )
+    const sent = agentSocket.send.mock.calls
+      .slice(framesBefore)
+      .flatMap(([frame]) => sentWireOps(frame))
+    const { result, update } = host.applyWire(sent)
+    deliver(result)
+    if (update) deliver(update)
+    return { sent, verdict: result.data }
+  }
+
+  return { graph, host, deliver, humanAdds, humanWrites }
 }
 
 function openInAnotherTab(host: HostDoc) {
@@ -203,6 +218,30 @@ describe('PM-2003: a human adds Display Int (rgthree) while the agent holds the 
       onCanvas: DISPLAY_INT,
       inDocument: [{ type: DISPLAY_INT, widgets_values: { output: '' } }]
     })
+  })
+
+  // FRONT-3704: the form is declared once, at add_node, so a widget an extension
+  // mounts later is not in it and the host refuses the write as unknown_widget.
+  // The fix needs comfy-multi-player to accept an updated form; remove .fails then.
+  it.fails('accepts a human write to a widget an extension mounted after the add', async () => {
+    LiteGraph.registerNodeType(
+      DISPLAY_INT,
+      DisplayIntWithClientOnlyOutputWidget
+    )
+    const { host, humanAdds, humanWrites } = connectAgentHeldWorkflow()
+    const node = new DisplayIntWithClientOnlyOutputWidget()
+    await humanAdds(node)
+    const late = node.addWidget('text', 'late', '', () => {})
+
+    const { verdict } = await humanWrites(() => {
+      late.value = 'typed'
+    })
+
+    expect(verdict).toMatchObject({ ok: true })
+    expect(host.projection().nodes[0].widgets_values).toMatchObject({
+      late: 'typed'
+    })
+    expect(toastDescriptions()).toEqual([])
   })
 
   it('lands an agent write to the declared widget on the canvas', async () => {
