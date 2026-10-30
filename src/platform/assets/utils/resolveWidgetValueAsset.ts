@@ -14,16 +14,21 @@ export async function resolveWidgetValueAsset(
   widgetValue: string,
   { signal }: { signal?: AbortSignal } = {}
 ): Promise<AssetItem | null | undefined> {
-  const { filepath } = parseAnnotatedPath(widgetValue)
+  const { filepath, rootFolder } = parseAnnotatedPath(widgetValue)
   const { filename: hashFilename } = parseFilePath(
     /[\\/]$/.test(filepath) ? '' : filepath
   )
   const assetMatches = (asset: AssetItem) =>
     asset.hash ? asset.hash === hashFilename : asset.name === filepath
   const assetsStore = useAssetsStore()
+  const inputItems = toValue(assetsStore.inputAssets.items)
+  const outputItems = toValue(assetsStore.outputAssets.items)
+  const [ownRootItems, otherRootItems] =
+    rootFolder === 'input'
+      ? [inputItems, outputItems]
+      : [outputItems, inputItems]
   const storedAsset =
-    toValue(assetsStore.inputAssets.items).find(assetMatches) ??
-    toValue(assetsStore.outputAssets.items).find(assetMatches)
+    ownRootItems.find(assetMatches) ?? otherRootItems.find(assetMatches)
   if (storedAsset) return storedAsset
 
   if (!useFeatureFlags().flags.assetsEnabled) return undefined
