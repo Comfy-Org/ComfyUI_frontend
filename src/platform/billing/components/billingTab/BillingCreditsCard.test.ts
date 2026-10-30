@@ -255,6 +255,14 @@ describe('BillingCreditsCard', () => {
       meter: '16'
     },
     {
+      case: 'a plan without a served plan kind has no refill date',
+      facts: { servedPlanKind: null, renewalDate: '2026-10-01T00:00:00Z' },
+      amount: '844 of 1,000',
+      date: '',
+      used: '16% used',
+      meter: '16'
+    },
+    {
       case: 'a sales-managed plan the row cannot name has no refill date',
       facts: {
         planKind: 'unknown',

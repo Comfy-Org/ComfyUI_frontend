@@ -113,8 +113,7 @@ function planDateFor(facts: CreditsCardFacts): PlanCreditsState['planDate'] {
     default:
       return {
         kind: 'refills',
-        date:
-          facts.servedPlanKind === 'sales_managed' ? null : facts.renewalDate
+        date: facts.servedPlanKind === 'self_serve' ? facts.renewalDate : null
       }
   }
 }

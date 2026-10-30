@@ -1080,7 +1080,9 @@ describe('BillingTab', () => {
 
   it.for([
     { planKind: 'self_serve', date: 'Refills November 15, 2026' },
-    { planKind: 'sales_managed', date: null }
+    { planKind: 'sales_managed', date: null },
+    { planKind: 'none', date: null },
+    { planKind: null, date: null }
   ] as const)(
     'shows a $planKind paused-plan refill date only when self-serve',
     ({ planKind, date }) => {
