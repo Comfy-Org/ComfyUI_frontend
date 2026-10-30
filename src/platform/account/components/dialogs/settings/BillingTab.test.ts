@@ -606,7 +606,7 @@ describe('BillingTab', () => {
         /^https:\/\/platform\.test\/profile\/usage\?workspace=ws_1&correlation_id=.+$/
       )
     )
-    expect(usage).toContainHTML('icon-[lucide--external-link]')
+    expect(usage).toContainHTML('icon-[lucide--arrow-up-right]')
     expect(
       screen.queryByRole('link', { name: 'Open billing' })
     ).not.toBeInTheDocument()
