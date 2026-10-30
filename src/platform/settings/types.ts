@@ -25,6 +25,7 @@ export type Settings = {
   'Comfy.Workflow.ShowMissingMediaWarning': boolean
   'Comfy.Workflow.WarnBlueprintOverwrite': boolean
   'Comfy.Desktop.CloudNotificationShown': boolean
+  'Comfy.DeploymentSwitcher.Seen': boolean
   'Comfy.DisableFloatRounding': boolean
   'Comfy.DisableSliders': boolean
   'Comfy.DOMClippingEnabled': boolean
@@ -102,6 +103,7 @@ export type Settings = {
   'Comfy.Keybinding.NewBindings': Array<Keybinding>
   'Comfy.Keybinding.CurrentPreset': string
   'Comfy.Extension.Disabled': Array<string>
+  'Comfy.Extension.DisabledPacks': Array<string>
   'Comfy.LinkRenderMode': number
   'Comfy.Node.AutoSnapLinkToSlot': boolean
   'Comfy.Node.SnapHighlightsNode': boolean

@@ -88,9 +88,27 @@
         {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.label`) }}
       </h2>
       <div
-        class="flex items-center justify-end rounded-xl border border-card px-5 py-4"
+        class="flex items-center gap-4 rounded-xl border border-card px-5 py-4"
         data-testid="billing-handoff-card"
       >
+        <i18n-t
+          v-if="handoffAudience === 'owner'"
+          keypath="workspacePanel.billingTab.handoff.owner.line"
+          tag="p"
+          class="m-0 text-sm text-muted-foreground"
+        >
+          <template #platform>
+            <a
+              :href="handoffHref"
+              target="_blank"
+              rel="noopener"
+              class="text-muted-foreground underline"
+              @click="trackHandoff"
+            >
+              {{ $t('workspacePanel.billingTab.handoff.owner.platform') }}
+            </a>
+          </template>
+        </i18n-t>
         <Button
           as="a"
           :href="handoffHref"
@@ -98,7 +116,7 @@
           rel="noopener"
           variant="secondary"
           size="md"
-          class="shrink-0"
+          class="ml-auto shrink-0"
           @click="trackHandoff"
         >
           {{
@@ -108,6 +126,29 @@
         </Button>
       </div>
     </section>
+
+    <footer class="flex items-center gap-4" data-testid="billing-footer">
+      <Button
+        as="a"
+        :href="partnerNodesPricingHref"
+        target="_blank"
+        rel="noopener"
+        variant="muted-textonly"
+        size="md"
+      >
+        <i class="icon-[lucide--coins] size-3.5" aria-hidden="true" />
+        {{ $t('workspacePanel.billingTab.footer.partnerNodesPricing') }}
+      </Button>
+      <Button
+        variant="muted-textonly"
+        size="md"
+        :loading="isLoadingSupport"
+        @click="handleMessageSupport"
+      >
+        <i class="icon-[lucide--message-circle] size-3.5" aria-hidden="true" />
+        {{ $t('workspacePanel.billingTab.footer.messageSupport') }}
+      </Button>
+    </footer>
   </div>
 </template>
 
@@ -119,6 +160,8 @@ import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useExternalLink } from '@/composables/useExternalLink'
+import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue'
@@ -165,6 +208,11 @@ const { state: creditsCard } = useBillingCreditsCard(planRow)
 const planCreditNote = useTopUpPlanCreditCopy()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
+const { isLoadingSupport, handleMessageSupport } = useMessageSupport()
+const { buildDocsUrl, docsPaths } = useExternalLink()
+const partnerNodesPricingHref = computed(() =>
+  buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
+)
 
 const HANDOFF = {
   owner: { path: '/profile/billing', target: 'open_billing' },
