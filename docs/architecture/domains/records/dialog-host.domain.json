@@ -16,18 +16,6 @@
       "role": "application"
     },
     {
-      "path": "src/services/dialogService.concurrency.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/services/dialogService.errorCatalog.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/services/dialogService.options.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/services/dialogService.ts",
       "role": "application"
     },
@@ -40,10 +28,6 @@
       "role": "integration"
     },
     {
-      "path": "src/stores/dialogStore.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/stores/dialogStore.ts",
       "role": "application"
     }
@@ -53,6 +37,7 @@
   "allowedConsumers": [
     "agent",
     "bounding-boxes",
+    "extension-manager",
     "image-compositor",
     "settings"
   ],

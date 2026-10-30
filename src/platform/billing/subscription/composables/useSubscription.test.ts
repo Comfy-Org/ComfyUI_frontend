@@ -169,6 +169,7 @@ const mockReadStatus = vi.fn<BillingReadRail['readStatus']>()
 const buildStatus = (
   overrides: Partial<BillingStatusResponse> = {}
 ): BillingStatusResponse => ({
+  ended_at: null,
   is_active: true,
   has_funds: true,
   max_seats: 1,
@@ -1272,6 +1273,7 @@ describe('useSubscription', () => {
     })
 
     it('reports at the deadline without another lifecycle event', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({

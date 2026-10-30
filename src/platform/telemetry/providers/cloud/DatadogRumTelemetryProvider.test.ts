@@ -213,6 +213,25 @@ describe('DatadogRumTelemetryProvider', () => {
     })
   })
 
+  it('records status retries as RUM actions', () => {
+    const metadata = {
+      transport: 'axios',
+      method: 'GET',
+      host: 'cloud.comfy.org',
+      route: '/api/billing/balance',
+      attempts: 3,
+      final_status: 503,
+      outcome: 'exhausted'
+    } as const
+
+    new DatadogRumTelemetryProvider().trackFetchStatusRetry(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.FETCH_STATUS_RETRY,
+      metadata
+    )
+  })
+
   it('records fetch timeouts as RUM actions', () => {
     new DatadogRumTelemetryProvider().trackFetchTimeout({
       route: '/userdata/:resource',
