@@ -165,6 +165,19 @@ describe('desktopHostSession', () => {
       await expect(fetching).resolves.toBeUndefined()
     })
 
+    it('keeps a token fetched across the same session announced again', async () => {
+      const { bridge, push } = fakeBridge(SIGNED_IN)
+      await startDesktopHostSession(bridge)
+      const token = deferred<string | null>()
+      bridge.getWorkspaceToken.mockReturnValue(token.promise)
+
+      const fetching = desktopHostWorkspaceToken('ws-1')
+      push({ ...SIGNED_IN })
+      token.resolve('host-token')
+
+      await expect(fetching).resolves.toBe('host-token')
+    })
+
     it('ignores a sign-in result that a newer change overtook', async () => {
       const { bridge, push } = fakeBridge({ status: 'signed_out' })
       await startDesktopHostSession(bridge)

@@ -1,3 +1,4 @@
+import { isEqual } from 'es-toolkit'
 import { computed, shallowRef } from 'vue'
 
 import type {
@@ -38,7 +39,9 @@ function apply(state: DesktopHostAuthState): void {
     stopDesktopHostSession()
     return
   }
-  revision++
+  const sameAccount =
+    next.status === 'signed_in' && isEqual(next, session.value)
+  if (!sameAccount) revision++
   session.value = next
 }
 
