@@ -1279,6 +1279,45 @@ describe('BillingTab', () => {
       expect(addCreditsVariants()).toEqual(['inverted', 'inverted'])
     })
 
+    it.for([
+      { signal: 'subscription_status', subscriptionStatus: 'ended' as const },
+      { signal: 'subscription_state', subscriptionState: 'ended' as const }
+    ])(
+      'keeps the Credits card the one white Add credits on local ComfyUI when $signal is ended and out of credits',
+      async (scenario) => {
+        vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+        arrange({
+          ...scenario,
+          balance: zeroBalance,
+          subscription: {
+            ...activeSubscription,
+            isActive: false,
+            hasFunds: false
+          }
+        })
+
+        await screen.findByTestId('billing-auto-top-up-status')
+        expect(
+          within(screen.getByTestId('billing-local-credit-banner')).getByRole(
+            'button',
+            { name: 'Add credits' }
+          )
+        ).toHaveAttribute('data-variant', 'secondary')
+        expect(
+          within(screen.getByTestId('billing-credits-card')).getByRole(
+            'button',
+            { name: 'Add credits' }
+          )
+        ).toHaveAttribute('data-variant', 'inverted')
+        expect(
+          [
+            ...screen.queryAllByRole('button'),
+            ...screen.queryAllByRole('link')
+          ].filter((el) => el.dataset.variant === 'inverted')
+        ).toHaveLength(1)
+      }
+    )
+
     it('turns Add credits white at 0 while a top-up payment is processing and auto top-up is off', async () => {
       servedCheckouts(checkout('payment_processing'))
       arrange({ balance: zeroBalance })

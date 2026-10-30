@@ -24,7 +24,7 @@
     <BillingStatusBanner section="billing" />
     <BillingLocalCreditBanner
       :suppressed="suppressCreditBanner"
-      :add-credits-variant="addCreditsVariant"
+      :add-credits-variant="creditBannerAddCreditsVariant"
     />
     <section class="flex flex-col gap-3" data-testid="billing-plan-section">
       <h2 class="m-0 text-base font-medium text-foreground">
@@ -256,6 +256,10 @@ const addCreditsVariant = computed(() =>
     planActionIsPrimary:
       action.value === 'subscribe' || (action.value === 'choosePlan' && isCloud)
   })
+)
+
+const creditBannerAddCreditsVariant = computed(() =>
+  planRow.value.kind === 'ended' ? 'secondary' : addCreditsVariant.value
 )
 
 const salesVariant = computed(() =>
