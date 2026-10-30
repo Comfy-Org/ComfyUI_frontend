@@ -1,6 +1,7 @@
 import { until } from '@vueuse/core'
 import { delay } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
+import { computed, watch } from 'vue'
 import {
   createRouter,
   createWebHashHistory,
@@ -133,6 +134,11 @@ export async function createAppRouter(): Promise<Router> {
 }
 
 const PUBLIC_ROUTE_SIGN_IN_TIMEOUT_MS = 3_000
+const RECOVERING_SESSION_PHASES = new Set([
+  'reading',
+  'retry_wait',
+  'restoring'
+])
 
 function installCloudAuthGuards(router: Router): void {
   const { flags } = useFeatureFlags()
@@ -194,6 +200,32 @@ function installCloudAuthGuards(router: Router): void {
       void router.replace({ path, query, hash, force: true })
     })
   }
+  const watchedAccounts = new WeakSet<object>()
+  function rerouteWhenAccountLeaves(): void {
+    const authStore = useAuthStore()
+    if (watchedAccounts.has(authStore)) return
+    watchedAccounts.add(authStore)
+    const webSession = useCloudWebSessionStore()
+    const account = computed(() => {
+      if (authStore.isAuthenticated) return 'signed_in'
+      return RECOVERING_SESSION_PHASES.has(webSession.state.phase)
+        ? 'recovering'
+        : 'signed_out'
+    })
+    let hadAccount = false
+    watch(
+      account,
+      (state) => {
+        if (state === 'signed_in') hadAccount = true
+        if (state !== 'signed_out' || !hadAccount) return
+        hadAccount = false
+        const { path, query, hash, meta } = router.currentRoute.value
+        if (!flags.signedOutRerouteEnabled || !meta.requiresAuth) return
+        void router.replace({ path, query, hash, force: true })
+      },
+      { immediate: true }
+    )
+  }
   /** A lapsed SSO session goes back through its identity provider, once per tab per window. */
   function sendToSignIn(
     to: RouteLocationNormalized,
@@ -231,6 +263,7 @@ function installCloudAuthGuards(router: Router): void {
 
   router.beforeEach(async (to, from) => {
     rerouteWhenSignedOutElsewhere()
+    rerouteWhenAccountLeaves()
     const authStore = useAuthStore()
 
     if (!authStore.isInitialized) {
