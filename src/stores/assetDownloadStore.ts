@@ -82,6 +82,8 @@ export interface AssetDownload {
   assetId?: string
   error?: string
   modelType?: string
+  /** `upload` when the file came from the computer rather than a link. */
+  source?: 'upload'
   acknowledged?: boolean
   /**
    * Reconciliation attempts made since this download entered
@@ -115,11 +117,13 @@ const MAX_DISMISSED_DOWNLOADS = 256
 function generateDownloadTrackingPlaceholder(
   taskId: TaskId,
   modelType: string,
-  assetName: string
+  assetName: string,
+  source: AssetDownload['source']
 ): AssetDownload {
   return {
     taskId,
     modelType,
+    source,
     assetName,
     bytesTotal: 0,
     bytesDownloaded: 0,
@@ -127,6 +131,12 @@ function generateDownloadTrackingPlaceholder(
     status: 'created',
     lastUpdate: Date.now()
   }
+}
+
+function trackedFields(
+  existing: AssetDownload | undefined
+): Pick<AssetDownload, 'modelType' | 'source'> {
+  return { modelType: existing?.modelType, source: existing?.source }
 }
 
 function shouldIgnoreDownloadUpdate(
@@ -308,11 +318,17 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     }
   }
 
-  function trackDownload(taskId: TaskId, modelType: string, assetName: string) {
+  function trackDownload(
+    taskId: TaskId,
+    modelType: string,
+    assetName: string,
+    { source }: Pick<AssetDownload, 'source'> = {}
+  ) {
     const existing = downloads.value.get(taskId)
     if (existing) {
       if (existing.modelType) return
       existing.modelType = modelType
+      existing.source = source
       if (existing.status === 'completed') {
         lastCompletedDownload.value = {
           taskId,
@@ -330,7 +346,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     settledFailureTaskIds.delete(taskId)
     downloads.value.set(
       taskId,
-      generateDownloadTrackingPlaceholder(taskId, modelType, assetName)
+      generateDownloadTrackingPlaceholder(taskId, modelType, assetName, source)
     )
   }
 
@@ -397,7 +413,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       status: data.status,
       error: data.error,
       lastUpdate: Date.now(),
-      modelType: existing?.modelType
+      ...trackedFields(existing)
     }
 
     downloads.value.set(data.task_id, download)
