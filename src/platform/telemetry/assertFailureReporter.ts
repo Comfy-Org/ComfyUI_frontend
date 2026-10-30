@@ -1,4 +1,4 @@
-import { reportError } from './reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 const MAX_REPORTS_PER_SESSION = 20
 const REPORTABLE_OCCURRENCE_COUNTS = new Set([1, 10, 100, 1000])

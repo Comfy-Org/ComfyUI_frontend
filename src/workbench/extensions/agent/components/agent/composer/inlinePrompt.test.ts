@@ -2,8 +2,8 @@ import { DOMParser } from '@tiptap/pm/model'
 import { EditorState } from '@tiptap/pm/state'
 import { describe, expect, it } from 'vitest'
 
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
 import { parseWorkflowReferences } from '@/workbench/extensions/agent/utils/workflowReferenceText'

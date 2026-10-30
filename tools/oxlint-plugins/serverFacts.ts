@@ -90,7 +90,8 @@ const ROLE_FALLBACK_OPERATORS: ReadonlySet<string> = new Set(['??', '||'])
 const SERVER_MESSAGE_NAME = /message$/i
 // Text matching is reported where the receiver is a server execution or API
 // error; elsewhere `message` is usually a browser or library error.
-const SERVER_MESSAGE_FILE = /(?:^|\/)src\/platform\/errorCatalog\//
+const SERVER_MESSAGE_FILE =
+  /(?:^|\/)src\/platform\/workflowErrors\/errorCatalog\//
 
 export const GUIDANCE =
   "Render the server fact as received. If the UI needs a fact the API does not emit, open a backend ticket and wrap the interim expression in pendingServerFact('BE-xxxx', ...). See docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md"
@@ -838,7 +839,7 @@ export const noServerFactLiterals: Rule = {
 const FACT_CONSTRUCTOR = 'receiveServerFact'
 const FACT_PROVIDERS = [
   /(?:^|\/)src\/platform\/serverFacts\/serverFact\.ts$/,
-  /(?:^|\/)src\/platform\/workspace\/composables\/useBillingCapabilities\.ts$/,
+  /(?:^|\/)src\/platform\/billing\/composables\/useBillingCapabilities\.ts$/,
   /\.(?:test|spec|stories)\.ts$/,
   /(?:^|\/)__mocks__\//,
   /(?:^|\/)src\/storybook\//

@@ -429,3 +429,86 @@ export const MULTI_OUTPUT_SECOND: Asset = createOutputAsset({
   updated_at: '2026-09-18T00:00:01.000Z',
   last_access_time: '2026-09-18T00:00:01.000Z'
 })
+
+export const TEMP_STACK_JOB_ID = 'abababab-abab-4bab-abab-abababababab'
+
+export const TEMP_STACK_SAVED: Asset = createOutputAsset({
+  id: 'acacacac-acac-4cac-acac-acacacacacac',
+  name: 'stack_saved.png',
+  hash: 'blake3:acacacacacacacacacacacacacacacacacacacacacacacacacacacacacacacac',
+  job_id: TEMP_STACK_JOB_ID,
+  created_at: '2026-10-20T00:00:00.000Z',
+  updated_at: '2026-10-20T00:00:00.000Z',
+  last_access_time: '2026-10-20T00:00:00.000Z'
+})
+
+export const TEMP_STACK_PREVIEW: Asset = createOutputAsset({
+  id: 'adadadad-adad-4dad-adad-adadadadadad',
+  name: 'stack_temp.png',
+  hash: 'blake3:adadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadad',
+  job_id: TEMP_STACK_JOB_ID,
+  tags: ['output', 'temp'],
+  created_at: '2026-10-20T00:00:01.000Z',
+  updated_at: '2026-10-20T00:00:01.000Z',
+  last_access_time: '2026-10-20T00:00:01.000Z'
+})
+
+export const FLAT_TEMP_ASSET: Asset = createOutputAsset({
+  id: 'aeaeaeae-aeae-4eae-aeae-aeaeaeaeaeae',
+  name: 'flat_temp.png',
+  hash: 'blake3:aeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeae',
+  tags: ['output', 'temp'],
+  created_at: '2026-10-21T00:00:00.000Z',
+  updated_at: '2026-10-21T00:00:00.000Z',
+  last_access_time: '2026-10-21T00:00:00.000Z'
+})
+
+export const TEMP_FOLDER_JOB_ID = 'afafafaf-afaf-4faf-afaf-afafafafafaf'
+
+export const TEMP_FOLDER_SAVED: Asset = createOutputAsset({
+  id: 'b0b0b0b0-b0b0-40b0-b0b0-b0b0b0b0b0b0',
+  name: 'folder_saved.png',
+  hash: 'blake3:b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0',
+  job_id: TEMP_FOLDER_JOB_ID,
+  created_at: '2026-10-22T00:00:00.000Z',
+  updated_at: '2026-10-22T00:00:00.000Z',
+  last_access_time: '2026-10-22T00:00:00.000Z'
+})
+
+/** Names its folder only in `user_metadata.subfolder`; the job is the top-level `job_id`. */
+export const TEMP_FOLDER_PREVIEW: Asset = createOutputAsset({
+  id: 'b1b1b1b1-b1b1-41b1-b1b1-b1b1b1b1b1b1',
+  name: 'folder_temp.png',
+  hash: 'blake3:b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1',
+  job_id: TEMP_FOLDER_JOB_ID,
+  tags: ['output', 'temp'],
+  user_metadata: { subfolder: 'previews' },
+  created_at: '2026-10-22T00:00:01.000Z',
+  updated_at: '2026-10-22T00:00:01.000Z',
+  last_access_time: '2026-10-22T00:00:01.000Z'
+})
+
+/** Names its folder only in `user_metadata.subfolder`; the job is the top-level `job_id`. */
+export const TEMP_FOLDER_SINGLE: Asset = createOutputAsset({
+  id: 'b2b2b2b2-b2b2-42b2-b2b2-b2b2b2b2b2b2',
+  name: 'single_temp.png',
+  hash: 'blake3:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2',
+  job_id: 'b3b3b3b3-b3b3-43b3-b3b3-b3b3b3b3b3b3',
+  tags: ['output', 'temp'],
+  user_metadata: { subfolder: 'previews' },
+  created_at: '2026-10-23T00:00:00.000Z',
+  updated_at: '2026-10-23T00:00:00.000Z',
+  last_access_time: '2026-10-23T00:00:00.000Z'
+})
+
+/** No job; names its folder only in `user_metadata.subfolder`. */
+export const FLAT_FOLDER_TEMP_ASSET: Asset = createOutputAsset({
+  id: 'b5b5b5b5-b5b5-45b5-b5b5-b5b5b5b5b5b5',
+  name: 'flat_folder.png',
+  hash: 'blake3:b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5',
+  tags: ['output', 'temp'],
+  user_metadata: { subfolder: 'previews' },
+  created_at: '2026-10-24T00:00:00.000Z',
+  updated_at: '2026-10-24T00:00:00.000Z',
+  last_access_time: '2026-10-24T00:00:00.000Z'
+})

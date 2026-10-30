@@ -1,5 +1,5 @@
 # robots.txt for the Comfy Cloud billing app
-# Authenticated billing surface — the inverse of apps/website. Nothing here is
+# Authenticated billing surface. Nothing here is
 # intended for search or AI indexes, including the plan and pricing structure.
 
 User-agent: *

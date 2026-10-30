@@ -13,7 +13,7 @@ import { api as apiMock } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
-import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 beforeEach(() => {
@@ -126,14 +126,17 @@ vi.mock(import('@/composables/useProgressFavicon'), () => ({
 }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock<unknown>(
-  import('@/platform/missingMedia/missingMediaPipeline'),
+  import('@/platform/workflowErrors/missingMedia/missingMediaPipeline'),
   () => ({
     runMissingMediaPipeline: templateInputMock.runMissingMediaPipeline
   })
 )
-vi.mock<unknown>(import('@/platform/missingMedia/missingMediaScan'), () => ({
-  scanAllMediaCandidates: templateInputMock.scanCandidates
-}))
+vi.mock<unknown>(
+  import('@/platform/workflowErrors/missingMedia/missingMediaScan'),
+  () => ({
+    scanAllMediaCandidates: templateInputMock.scanCandidates
+  })
+)
 vi.mock<unknown>(
   import('@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'),
   () => ({
@@ -141,7 +144,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(
   import('@/platform/updates/common/useFrontendVersionMismatchWarning'),
   () => ({
@@ -197,13 +200,12 @@ vi.mock<unknown>(
   () => stubModule
 )
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/components/ManagerProgressToast.vue'),
+  import('@/platform/customNodes/manager/components/ManagerProgressToast.vue'),
 
   () => stubModule
 )
-vi.mock<unknown>(
-  import('@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'),
-  () => stubModule
+vi.mock(
+  import('@/platform/cloud/notification/composables/useDesktopCloudNotification')
 )
 vi.mock<unknown>(
   import('@/platform/assets/components/ModelImportProgressDialog.vue'),

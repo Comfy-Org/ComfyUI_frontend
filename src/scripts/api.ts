@@ -2,6 +2,7 @@ import type {
   GetEmbeddingsResponse,
   GetExtensionsResponse,
   GetI18nResponse,
+  ModelDownloadData,
   PostAssetsFromWorkflowResponse
 } from '@comfyorg/ingest-types'
 import {
@@ -34,9 +35,9 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { components as ManagerComponents } from '@/platform/customNodes/manager/types/generatedManagerTypes'
 import type {
   AgentStatusWsMessage,
   AssetDownloadWsMessage,
@@ -74,8 +75,8 @@ import type {
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/workflowSchema'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   JobAssetsResult,
   JobDetail,
@@ -83,7 +84,11 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { getFetchRouteTemplate } from '@/utils/fetchRouteTemplate'
+import { retryingSend } from '@/utils/fetchWithRetry'
+import { NO_RETRY_POLICY } from '@/utils/retryPolicy'
+import type { RetryPolicy } from '@/utils/retryPolicy'
 import {
   fetchHistory,
   fetchJobAssets,
@@ -154,52 +159,8 @@ interface FetchApiOptions extends RequestInit {
   onAuthScheme?: (scheme: AuthScheme) => void
   /** Reports the kind of credential sent, to tell a missing token from a wrong one. */
   onAuthCredential?: (credential: AuthCredential) => void
-}
-
-const FETCH_ROUTE_GROUPS = new Set([
-  'assets',
-  'embeddings',
-  'experiment',
-  'extensions',
-  'features',
-  'files',
-  'folder_paths',
-  'free',
-  'global_subgraphs',
-  'history',
-  'hub',
-  'internal',
-  'interrupt',
-  'jobs',
-  'logs',
-  'models',
-  'node_replacements',
-  'object_info',
-  'prompt',
-  'providers',
-  'queue',
-  'secrets',
-  'settings',
-  'system_stats',
-  'upload',
-  'user',
-  'userdata',
-  'users',
-  'video_metadata',
-  'view',
-  'view_metadata',
-  'workflow_templates',
-  'workflows',
-  'workspace'
-])
-
-function getFetchRouteTemplate(route: string): string {
-  const segments = (route.split(/[?#]/)[0] ?? '').split('/').filter(Boolean)
-  const routeSegments = segments[0] === 'api' ? segments.slice(1) : segments
-  const [routeGroup, ...resources] = routeSegments
-
-  if (!routeGroup || !FETCH_ROUTE_GROUPS.has(routeGroup)) return '/other'
-  return `/${routeGroup}${resources.length ? '/:resource' : ''}`
+  /** Send once, for callers that already retry on their own backoff. */
+  skipStatusRetry?: boolean
 }
 
 /**
@@ -271,6 +232,7 @@ interface BackendApiCalls {
   feature_flags: FeatureFlagsWsMessage
   agent_status: AgentStatusWsMessage
   asset_download: AssetDownloadWsMessage
+  model_download: ModelDownloadData
   asset_export: AssetExportWsMessage
   'assets.seed.completed': AssetSeedCompletedWsMessage
 }
@@ -445,6 +407,23 @@ export class PromptExecutionError extends Error {
   }
 }
 
+interface LaunchContext {
+  host: string
+  base: string
+  initialClientId: string | null
+}
+
+function readLaunchContext(): LaunchContext {
+  return {
+    host: location.host,
+    base: isCloud ? '' : location.pathname.split('/').slice(0, -1).join('/'),
+    initialClientId:
+      withClientIdStorage((storage) =>
+        storage.getItem(CLIENT_ID_STORAGE_KEY)
+      ) ?? null
+  }
+}
+
 export class ComfyApi extends EventTarget {
   private _registered = new Set()
   /**
@@ -456,12 +435,7 @@ export class ComfyApi extends EventTarget {
     EventListenerOrEventListenerObject,
     EventListener
   >()
-  api_host: string
-  api_base: string
-  /**
-   * The client id from the initial session storage.
-   */
-  initialClientId: string | null
+  private launchContext?: LaunchContext
   /**
    * The current client id from websocket status updates.
    */
@@ -481,6 +455,7 @@ export class ComfyApi extends EventTarget {
    * identity always wins and superseded attempts never open a leaked socket.
    */
   private socketGeneration = 0
+  private socketRetryDelayMs = 1_000
 
   private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
@@ -531,14 +506,44 @@ export class ComfyApi extends EventTarget {
   constructor() {
     super()
     this.user = ''
-    this.api_host = location.host
-    this.api_base = isCloud
-      ? ''
-      : location.pathname.split('/').slice(0, -1).join('/')
-    this.initialClientId =
-      withClientIdStorage((storage) =>
-        storage.getItem(CLIENT_ID_STORAGE_KEY)
-      ) ?? null
+  }
+
+  /**
+   * Snapshots the page host, base path, and stored client id. Runs on first
+   * use; the bootstrap calls it before routing can change the location.
+   */
+  captureLaunchContext(): void {
+    this.launchContext ??= readLaunchContext()
+  }
+
+  private get capturedLaunchContext(): LaunchContext {
+    this.launchContext ??= readLaunchContext()
+    return this.launchContext
+  }
+
+  get api_host(): string {
+    return this.capturedLaunchContext.host
+  }
+
+  set api_host(host: string) {
+    this.launchContext = { ...this.capturedLaunchContext, host }
+  }
+
+  get api_base(): string {
+    return this.capturedLaunchContext.base
+  }
+
+  set api_base(base: string) {
+    this.launchContext = { ...this.capturedLaunchContext, base }
+  }
+
+  /** The client id from the initial session storage. */
+  get initialClientId(): string | null {
+    return this.capturedLaunchContext.initialClientId
+  }
+
+  set initialClientId(initialClientId: string | null) {
+    this.launchContext = { ...this.capturedLaunchContext, initialClientId }
   }
 
   internalURL(route: string): string {
@@ -571,11 +576,16 @@ export class ComfyApi extends EventTarget {
     this.authProvider = provider
   }
 
-  private async getWebSessionSend(): Promise<WebSessionSend | undefined> {
+  private async getWebSessionSend(
+    retryPolicy?: RetryPolicy
+  ): Promise<WebSessionSend | undefined> {
     const requests = webSessionRequests()
     if (!requests) return undefined
     const scope = await requests.scope()
-    return scope && ((url, init) => requests.send(url, init, scope))
+    return (
+      scope &&
+      retryingSend((url, init) => requests.send(url, init, scope), retryPolicy)
+    )
   }
 
   /** Sends a same-origin request on the web session; undefined when this tab is not on it. */
@@ -627,15 +637,17 @@ export class ComfyApi extends EventTarget {
       onAuthHeader,
       onAuthScheme,
       onAuthCredential,
+      skipStatusRetry,
       ...requestOptions
     } = options ?? {}
+    const retryPolicy = skipStatusRetry ? NO_RETRY_POLICY : undefined
     const headers: HeadersInit = requestOptions.headers ?? {}
     let unifiedRetryOn401 = false
     let sendOnWebSession: WebSessionSend | undefined
 
     if (isCloud) {
       await this.authProvider.waitForInitialization()
-      sendOnWebSession = await this.getWebSessionSend()
+      sendOnWebSession = await this.getWebSessionSend(retryPolicy)
       if (sendOnWebSession) {
         onAuthHeader?.(true)
         onAuthScheme?.('web-session')
@@ -735,7 +747,8 @@ export class ComfyApi extends EventTarget {
           this.apiURL(route),
           init,
           unifiedRetryOn401,
-          retrySignalLifecycle
+          retrySignalLifecycle,
+          retryPolicy
         )
     return response.finally(() => {
       if (timeoutId !== undefined) clearTimeout(timeoutId)
@@ -921,14 +934,11 @@ export class ComfyApi extends EventTarget {
     return (await this.addSocketAuth(params)) ? params : null
   }
 
-  /**
-   * Creates and connects a WebSocket for realtime updates
-   * @param {boolean} isReconnect If the socket is connection is a reconnect attempt
-   */
   private async createSocket(isReconnect?: boolean) {
     if (this.socket) {
       return
     }
+    if (!isReconnect) this.socketRetryDelayMs = 1_000
     const generation = ++this.socketGeneration
 
     let opened = false
@@ -941,6 +951,8 @@ export class ComfyApi extends EventTarget {
     }
 
     if (isCloud && !(await this.addSocketAuth(params))) return
+    const sessionRequests =
+      isCloud && !params.has('token') ? webSessionRequests() : undefined
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
@@ -961,7 +973,9 @@ export class ComfyApi extends EventTarget {
     }, SERVER_FEATURE_FLAGS_TIMEOUT_MS)
 
     socket.addEventListener('open', () => {
+      if (this.socket !== socket) return
       opened = true
+      this.socketRetryDelayMs = 1_000
 
       socket.send(
         JSON.stringify({
@@ -978,7 +992,7 @@ export class ComfyApi extends EventTarget {
     socket.addEventListener('error', () => {
       if (this.socket !== socket) return
       socket.close()
-      if (!isReconnect && !opened) {
+      if (!sessionRequests && !isReconnect && !opened) {
         this._pollQueue()
       }
     })
@@ -987,11 +1001,20 @@ export class ComfyApi extends EventTarget {
       if (this.socket !== socket) return
       this.serverFeatureFlagsSettled.value = true
       clearTimeout(settleTimer)
+      const recoverSession = sessionRequests && !opened
+      const delayMs = recoverSession ? this.socketRetryDelayMs : 300
+      if (recoverSession) {
+        this.socketRetryDelayMs = Math.min(delayMs * 2, 60_000)
+      }
       setTimeout(async () => {
         if (this.socket !== socket) return
+        if (recoverSession) {
+          await sessionRequests.refreshSession()
+          if (this.socket !== socket) return
+        }
         this.socket = null
         await this.createSocket(true)
-      }, 300)
+      }, delayMs)
       if (opened) {
         this.dispatchCustomEvent('status', null)
         this.dispatchCustomEvent('reconnecting')
@@ -1269,9 +1292,27 @@ export class ComfyApi extends EventTarget {
    * Loads node object definitions for the graph
    * @returns The node definitions
    */
+  private nodeDefsPrefetch?: Promise<Response>
+
+  /** Start fetching `/object_info` so the next `getNodeDefs()` can reuse it. */
+  prefetchNodeDefs(): void {
+    this.nodeDefsPrefetch ??= this.fetchApi('/object_info', {
+      cache: 'no-store'
+    })
+    this.nodeDefsPrefetch.catch(() => undefined)
+  }
+
+  /** The `/object_info` response, the prefetched one when there is one, whatever its HTTP status. */
+  async fetchNodeDefs(): Promise<Response> {
+    const prefetched = this.nodeDefsPrefetch
+    this.nodeDefsPrefetch = undefined
+    const fetchFresh = () =>
+      this.fetchApi('/object_info', { cache: 'no-store' })
+    return await (prefetched?.catch(fetchFresh) ?? fetchFresh())
+  }
+
   async getNodeDefs(): Promise<Record<string, ComfyNodeDef>> {
-    const resp = await this.fetchApi('/object_info', { cache: 'no-store' })
-    return await resp.json()
+    return await (await this.fetchNodeDefs()).json()
   }
 
   /**
@@ -1621,8 +1662,10 @@ export class ComfyApi extends EventTarget {
    * Gets all setting values for the current user
    * @returns { Promise<string, unknown> } A dictionary of id -> value
    */
-  async getSettings(): Promise<Settings> {
-    const resp = await this.fetchApi('/settings')
+  async getSettings(
+    options?: Pick<FetchApiOptions, 'skipStatusRetry'>
+  ): Promise<Settings> {
+    const resp = await this.fetchApi('/settings', options)
 
     if (resp.status == 401) {
       // `statusText` is ALWAYS empty over HTTP/2 — the protocol carries no
