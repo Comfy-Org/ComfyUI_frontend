@@ -65,7 +65,7 @@ import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreS
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
-import { useReconnectNodeDefinitionRefresh } from '@/composables/useReconnectNodeDefinitionRefresh'
+import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'

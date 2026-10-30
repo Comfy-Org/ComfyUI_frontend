@@ -1,6 +1,6 @@
-import { useEventListener } from '@vueuse/core'
 import { delay } from 'es-toolkit'
-import { onScopeDispose } from 'vue'
+import { getCurrentScope } from 'vue'
+import type { ComputedRef } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
@@ -12,6 +12,8 @@ import { app } from '@/scripts/app'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
+
+import { useUserBusy } from './useUserBusy'
 
 const IDLE_POLL_MS = 100
 const IDLE_TIMEOUT_MS = 30_000
@@ -41,46 +43,9 @@ function canvasHasRebuildablePlaceholder(): boolean {
   return found
 }
 
-function isTextField(element: Element | null): boolean {
-  return (
-    element instanceof HTMLInputElement ||
-    element instanceof HTMLTextAreaElement ||
-    (element instanceof HTMLElement && element.isContentEditable)
-  )
-}
-
-function useUserBusy(): () => boolean {
-  let pointerHeld = false
-  useEventListener(
-    window,
-    'pointerdown',
-    () => {
-      pointerHeld = true
-    },
-    { capture: true }
-  )
-  useEventListener(
-    window,
-    ['pointerup', 'pointercancel'],
-    () => {
-      pointerHeld = false
-    },
-    { capture: true }
-  )
-  return () => pointerHeld || isTextField(document.activeElement)
-}
-
-function useScopeDisposed(): () => boolean {
-  let disposed = false
-  onScopeDispose(() => {
-    disposed = true
-  })
-  return () => disposed
-}
-
 async function rebuildWhenIdle(
   workflow: LoadedComfyWorkflow,
-  isUserBusy: () => boolean,
+  userBusy: ComputedRef<boolean>,
   isDisposed: () => boolean
 ): Promise<void> {
   const workflowStore = useWorkflowStore()
@@ -89,7 +54,7 @@ async function rebuildWhenIdle(
   const isIdle = () =>
     workflow.changeTracker.changeCount === 0 &&
     !workflow.changeTracker._restoringState &&
-    !isUserBusy()
+    !userBusy.value
   const deadline = Date.now() + IDLE_TIMEOUT_MS
   while (isActive() && canvasHasRebuildablePlaceholder()) {
     if (isIdle()) {
@@ -116,8 +81,10 @@ async function rebuildWhenIdle(
 export function useReconnectNodeDefinitionRefresh() {
   if (isCloud) return async () => {}
 
-  const isUserBusy = useUserBusy()
-  const isDisposed = useScopeDisposed()
+  const userBusy = useUserBusy()
+  // Outside a scope there is nothing to dispose, so the work never stops early.
+  const scope = getCurrentScope()
+  const isDisposed = () => scope?.active === false
   let inFlight: Promise<void> | null = null
   let reconnects = 0
 
@@ -134,7 +101,7 @@ export function useReconnectNodeDefinitionRefresh() {
     }
     if (isDisposed()) return
     const workflow = useWorkflowStore().activeWorkflow
-    if (workflow) await rebuildWhenIdle(workflow, isUserBusy, isDisposed)
+    if (workflow) await rebuildWhenIdle(workflow, userBusy, isDisposed)
   }
 
   async function refreshUntilSettled(): Promise<void> {
