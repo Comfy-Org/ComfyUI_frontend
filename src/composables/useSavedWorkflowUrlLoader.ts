@@ -14,6 +14,8 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { SavedFileSnapshot } from '@/services/savedWorkflowService'
+import { registerUserFileScopeProvider } from '@/stores/userFileIdentity'
 import { fetchSavedWorkflow } from '@/services/savedWorkflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { readSavedWorkflowLink } from '@/platform/navigation/savedWorkflowLink'
@@ -43,6 +45,12 @@ export function useSavedWorkflowUrlLoader() {
   const deploymentStore = useDeploymentPickStore()
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
+  registerUserFileScopeProvider(() => {
+    const context = readyContext()
+    return context
+      ? { ownerId: context.userId, workspaceId: context.workspaceId }
+      : null
+  })
   let pending: Promise<SavedWorkflowUrlLoadStatus> | null = null
   let pendingController: AbortController | null = null
   let disposed = false
@@ -62,9 +70,10 @@ export function useSavedWorkflowUrlLoader() {
     if (expected && !isEqual(readSavedWorkflowLink(linkQuery()), expected))
       return
     clearPreservedQuery(NAMESPACE)
-    if (!('workflow' in route.query)) return
+    if (!('workflow' in route.query) && !('savedFile' in route.query)) return
     const query = { ...route.query }
     delete query.workflow
+    delete query.savedFile
     try {
       await router.replace({ query })
     } catch (error) {
@@ -117,18 +126,25 @@ export function useSavedWorkflowUrlLoader() {
   }
 
   async function openSavedDocument(
-    path: string,
+    snapshot: SavedFileSnapshot,
+    context: { userId: string; workspaceId: string },
     isCurrent: () => boolean
   ): Promise<SavedWorkflowUrlLoadStatus> {
     if (!isCurrent()) return 'failed'
-    await workflowStore.loadWorkflows()
-    if (!isCurrent()) return 'failed'
-    const workflow = workflowStore.getWorkflowByPath(path)
-    if (!workflow || !workflow.isPersisted) {
-      toast.error(t('workflowService.privateLinkFileUnavailable'))
+    const workflow = workflowStore.hydrateSavedFile(snapshot, {
+      ownerId: context.userId,
+      workspaceId: context.workspaceId
+    })
+    if (!workflow) {
+      toast.error(t('workflowService.privateLinkFileMismatch'))
       return 'failed'
     }
-    if (!(await workflowService.openWorkflow(workflow, { isCurrent }))) {
+    if (
+      !(await workflowService.openWorkflow(workflow, {
+        isCurrent,
+        keepSavedBaseline: true
+      }))
+    ) {
       if (isCurrent()) toast.error(t('workflowService.privateLinkUnavailable'))
       return 'failed'
     }
@@ -136,27 +152,30 @@ export function useSavedWorkflowUrlLoader() {
   }
 
   async function readAndOpen(
-    workflowId: string,
+    savedFileId: string,
+    context: { userId: string; workspaceId: string },
     controller: AbortController,
     isCurrent: () => boolean
   ): Promise<SavedWorkflowUrlLoadStatus> {
-    const saved = await fetchSavedWorkflow(workflowId, controller.signal)
-    if (saved.ok) return openSavedDocument(saved.path, isCurrent)
+    const saved = await fetchSavedWorkflow(savedFileId, controller.signal)
+    if (!isCurrent()) return 'failed'
+    if (saved.ok) return openSavedDocument(saved, context, isCurrent)
     if (saved.reason === 'cancelled') return 'failed'
-    const message = {
-      unavailable: 'workflowService.privateLinkUnavailable',
-      file_unavailable: 'workflowService.privateLinkFileUnavailable',
-      file_mismatch: 'workflowService.privateLinkFileMismatch'
-    } as const
-    toast.error(t(message[saved.reason]))
+    toast.error(t('workflowService.privateLinkUnavailable'))
     return 'failed'
   }
 
   async function load(): Promise<SavedWorkflowUrlLoadStatus> {
     const link = readSavedWorkflowLink(linkQuery())
     if (link.status === 'absent') return 'not-present'
-    if (link.status === 'invalid') {
-      toast.error(t('workflowService.privateLinkInvalid'))
+    if (link.status === 'invalid' || link.status === 'legacy') {
+      toast.error(
+        t(
+          link.status === 'legacy'
+            ? 'workflowService.privateLinkLegacy'
+            : 'workflowService.privateLinkInvalid'
+        )
+      )
       await clearIntent()
       return 'failed'
     }
@@ -203,7 +222,7 @@ export function useSavedWorkflowUrlLoader() {
         toast.error(t('workflowService.privateLinkTargetMismatch'))
         return 'failed'
       }
-      return await readAndOpen(link.workflowId, controller, isCurrent)
+      return await readAndOpen(link.savedFileId, context, controller, isCurrent)
     } catch (error) {
       toast.error(t('workflowService.privateLinkUnavailable'))
       reportError(error, {

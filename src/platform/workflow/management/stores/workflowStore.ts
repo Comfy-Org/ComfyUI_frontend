@@ -1,7 +1,7 @@
 import { union } from 'es-toolkit/compat'
 import { createEventHook, until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref, shallowRef, watch } from 'vue'
+import { computed, markRaw, ref, shallowRef, toRaw, watch } from 'vue'
 import type { Raw } from 'vue'
 
 import { t } from '@/i18n'
@@ -20,6 +20,13 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
+import type { UserFileScope } from '@/stores/userFileIdentity'
+import {
+  currentUserFileScope,
+  receivedUserFileIdentity,
+  sameUserFileIdentity,
+  sameUserFileScope
+} from '@/stores/userFileIdentity'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
@@ -122,7 +129,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    */
   const activeWorkflow = ref<LoadedComfyWorkflow | null>(null)
   const isActive = (workflow: ComfyWorkflow) =>
-    activeWorkflow.value?.path === workflow.path
+    toRaw(activeWorkflow.value) === toRaw(workflow)
   /**
    * All workflows.
    */
@@ -192,6 +199,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     options: { isCurrent?: () => boolean } = {}
   ): Promise<LoadedComfyWorkflow> => {
     assertCurrentContext(options.isCurrent)
+    workflow.assertIdentityScope()
     if (isActive(workflow)) {
       if (workflow.isLoaded) return workflow as LoadedComfyWorkflow
       reportWorkflowStateAnomaly(
@@ -237,6 +245,72 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (tabActivationHistory.value.length > MAX_HISTORY_SIZE) {
       tabActivationHistory.value.shift()
     }
+  }
+
+  const hydrateSavedFile = (
+    snapshot: {
+      id: string
+      path: string
+      content: string
+      modified: number
+      size: number
+    },
+    scope: UserFileScope
+  ): ComfyWorkflow | null => {
+    if (!sameUserFileScope(scope, currentUserFileScope())) return null
+    const identity = receivedUserFileIdentity(snapshot.id, scope)
+    if (!identity) return null
+    const draftStore = useWorkflowDraftStoreV2()
+    const destinationDraft = draftStore.getDraft(snapshot.path)
+    if (
+      destinationDraft &&
+      !sameUserFileIdentity(destinationDraft.savedFileIdentity, identity)
+    )
+      return null
+    const existing = workflows.value.find((workflow) =>
+      sameUserFileIdentity(workflow.savedFileIdentity, identity)
+    )
+    const destination = getWorkflowByPath(snapshot.path)
+    if (
+      destination &&
+      destination !== existing &&
+      (destination.isLoaded || destination.isModified || isOpen(destination))
+    )
+      return null
+    const oldDraftPath = draftStore.findDraftPath(identity)
+    if (
+      oldDraftPath &&
+      oldDraftPath !== snapshot.path &&
+      !draftStore.moveDraft(
+        oldDraftPath,
+        snapshot.path,
+        snapshot.path.slice(ComfyWorkflow.basePath.length)
+      )
+    )
+      return null
+    const workflow =
+      existing ??
+      new ComfyWorkflow({ ...snapshot, savedFileIdentity: identity })
+    if (workflow.path !== snapshot.path) {
+      const oldPath = workflow.path
+      if (workflowLookup.value[oldPath] === workflow)
+        delete workflowLookup.value[oldPath]
+      workflow.updatePath(snapshot.path)
+      openWorkflowPaths.value = openWorkflowPaths.value.map((path) =>
+        path === oldPath ? snapshot.path : path
+      )
+      tabActivationHistory.value = tabActivationHistory.value.map((path) =>
+        path === oldPath ? snapshot.path : path
+      )
+    }
+    if (!workflow.isLoaded) {
+      workflow.content = snapshot.content
+      workflow.originalContent = snapshot.content
+      workflow.lastModified = snapshot.modified
+      workflow.size = snapshot.size
+    }
+    workflowLookup.value[snapshot.path] = workflow
+    return workflowLookup.value[snapshot.path]
   }
 
   const getUnconflictedPath = (basePath: string): string => {
@@ -431,6 +505,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     execute: executeSyncWorkflows
   } = useAsyncState(
     async (dir: string = '') => {
+      const scope = currentUserFileScope()
       await syncEntities(
         dir ? 'workflows/' + dir : 'workflows',
         workflowLookup.value,
@@ -438,9 +513,27 @@ export const useWorkflowStore = defineStore('workflow', () => {
           new ComfyWorkflow({
             path: file.path,
             modified: file.modified,
-            size: file.size
+            size: file.size,
+            id: file.id
           }),
         (existingWorkflow, file) => {
+          const identity = receivedUserFileIdentity(file.id)
+          if (existingWorkflow.savedFileIdentity && !identity) return
+          const identityChanged =
+            !sameUserFileIdentity(
+              existingWorkflow.savedFileIdentity,
+              identity
+            ) && !!(existingWorkflow.savedFileIdentity || identity)
+          if (identityChanged) {
+            if (
+              existingWorkflow.isLoaded ||
+              existingWorkflow.isModified ||
+              isOpen(existingWorkflow)
+            )
+              return
+            existingWorkflow.savedFileIdentity = identity
+            existingWorkflow.unload()
+          }
           const isActiveWorkflow =
             activeWorkflow.value?.path === existingWorkflow.path
 
@@ -459,7 +552,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
           }
 
           // Never unload the active workflow - it may contain unsaved in-memory edits.
-          if (isActiveWorkflow) {
+          if (isActiveWorkflow || existingWorkflow.isModified) {
             return
           }
 
@@ -472,13 +565,22 @@ export const useWorkflowStore = defineStore('workflow', () => {
         },
         /* exclude */ (workflow) => workflow.isTemporary,
         /* beforeDelete */ (workflow, path) => {
-          if (isActive(workflow)) return false
+          if (
+            isActive(workflow) ||
+            workflow.isModified ||
+            (workflow.savedFileIdentity && isOpen(workflow))
+          )
+            return false
           openWorkflowPaths.value = openWorkflowPaths.value.filter(
             (openPath) => openPath !== path
           )
           forgetNodeHistories(workflow)
           return true
-        }
+        },
+        () =>
+          scope === null
+            ? currentUserFileScope() === null
+            : sameUserFileScope(scope, currentUserFileScope())
       )
     },
     undefined,
@@ -797,6 +899,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     persistedWorkflows,
     modifiedWorkflows,
     getWorkflowByPath,
+    hydrateSavedFile,
     syncWorkflows,
     isSyncLoading,
     loadWorkflows,

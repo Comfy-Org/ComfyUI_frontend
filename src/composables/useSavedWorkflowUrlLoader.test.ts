@@ -1,7 +1,3 @@
-import type {
-  GetWorkflowContentResponse,
-  GetWorkflowResponse
-} from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, createApp, defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -44,20 +40,12 @@ const graph = {
   last_node_id: 0,
   last_link_id: 0
 }
-const metadata: GetWorkflowResponse = {
+const metadata = {
   id: workflowId,
-  name: 'My private workflow',
-  created_at: '2026-10-24T00:00:00Z',
-  updated_at: '2026-10-24T00:00:00Z',
-  created_by: 'user-1',
-  latest_version: 1
-}
-const content: GetWorkflowContentResponse = {
-  id: 'version-1',
-  version: 1,
-  created_at: '2026-10-24T00:00:00Z',
-  created_by: 'user-1',
-  workflow_json: graph
+  path,
+  content: JSON.stringify(graph),
+  modified: 1,
+  size: 1
 }
 
 function useSavedWorkflowUrlLoader() {
@@ -91,15 +79,15 @@ function deferredResponse() {
 }
 
 function preserveLink(query: {
-  workflow: string
+  savedFile: string
   workspace?: string
   deployment?: string
   environment?: string
 }) {
-  delete useRoute().query.workflow
+  delete useRoute().query.savedFile
   delete useRoute().query.workspace
   capturePreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW, query, [
-    'workflow',
+    'savedFile',
     'workspace',
     'deployment',
     'environment'
@@ -144,14 +132,14 @@ describe('private saved workflow navigation', () => {
       }
     })
     useDeploymentPickStore().bootOnComfyCloud()
-    vi.mocked(api.fetchApi).mockImplementation(async (url) =>
-      Response.json(url.endsWith('/content') ? content : metadata)
+    vi.mocked(api.fetchApi).mockImplementation(async () =>
+      Response.json(metadata)
     )
     vi.mocked(api.getUserData).mockImplementation(async () =>
       Response.json(graph)
     )
     vi.mocked(api.listUserDataFullInfo).mockResolvedValue([
-      { path: 'My private workflow.json', modified: 1, size: 1 }
+      { path: 'My private workflow.json', id: workflowId, modified: 1, size: 1 }
     ])
     vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
       async (workflow) => {
@@ -159,7 +147,10 @@ describe('private saved workflow navigation', () => {
         return true
       }
     )
-    Object.assign(useRoute().query, { workflow: workflowId, workspace: 'ws-1' })
+    Object.assign(useRoute().query, {
+      savedFile: workflowId,
+      workspace: 'ws-1'
+    })
   })
 
   it('opens the existing saved document and preserves an unsaved tab', async () => {
@@ -188,6 +179,7 @@ describe('private saved workflow navigation', () => {
 
   it('retains edits when the linked saved workflow is already open', async () => {
     const store = useWorkflowStore()
+    useSavedWorkflowUrlLoader()
     await store.loadWorkflows()
     const saved = store.getWorkflowByPath(path)
     if (!saved) throw new Error('saved fixture missing')
@@ -211,7 +203,7 @@ describe('private saved workflow navigation', () => {
       'deferred'
     )
     expect(api.fetchApi).not.toHaveBeenCalled()
-    expect(useRoute().query.workflow).toBe(workflowId)
+    expect(useRoute().query.savedFile).toBe(workflowId)
   })
 
   it('resumes a deferred link once auth and workspace readiness settle', async () => {
@@ -236,7 +228,10 @@ describe('private saved workflow navigation', () => {
     useTeamWorkspaceStore().initState = 'ready'
     await nextTick()
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
-    expect(api.fetchApi).toHaveBeenCalledTimes(2)
+    expect(api.fetchApi).toHaveBeenCalledExactlyOnceWith(
+      `/userdata-files/${workflowId}`,
+      { signal: expect.any(AbortSignal) }
+    )
   })
 
   it('coalesces readiness changes while its deferred attempt is settling', async () => {
@@ -251,7 +246,10 @@ describe('private saved workflow navigation', () => {
       expect(useWorkflowStore().activeWorkflow?.path).toBe(path)
     )
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
-    expect(api.fetchApi).toHaveBeenCalledTimes(2)
+    expect(api.fetchApi).toHaveBeenCalledExactlyOnceWith(
+      `/userdata-files/${workflowId}`,
+      { signal: expect.any(AbortSignal) }
+    )
   })
 
   it('does not start early when readiness settles before its startup step', async () => {
@@ -348,7 +346,10 @@ describe('private saved workflow navigation', () => {
 
     expect(first).toBe(second)
     expect(await first).toBe('loaded')
-    expect(api.fetchApi).toHaveBeenCalledTimes(2)
+    expect(api.fetchApi).toHaveBeenCalledExactlyOnceWith(
+      `/userdata-files/${workflowId}`,
+      { signal: expect.any(AbortSignal) }
+    )
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
     expect(
       useWorkflowStore().openWorkflows.map((workflow) => workflow.path)
@@ -368,12 +369,12 @@ describe('private saved workflow navigation', () => {
   ])(
     'does not apply or consume the same workflow with a replacement $label target',
     async ({ target }) => {
-      preserveLink({ workflow: workflowId, workspace: 'ws-1' })
+      preserveLink({ savedFile: workflowId, workspace: 'ws-1' })
       const response = deferredResponse()
       vi.mocked(api.fetchApi).mockReturnValueOnce(response.promise)
       const pending = useSavedWorkflowUrlLoader().openSavedWorkflowFromUrl()
       await nextTick()
-      preserveLink({ workflow: workflowId, ...target })
+      preserveLink({ savedFile: workflowId, ...target })
       response.resolve(Response.json(metadata))
 
       expect(await pending).toBe('failed')
@@ -382,13 +383,13 @@ describe('private saved workflow navigation', () => {
         getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workspace')
       ).toBe(target.workspace)
       expect(
-        getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow')
+        getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'savedFile')
       ).toBe(workflowId)
     }
   )
 
   it('preserves a plain link when a late listing requires a deployment reload', async () => {
-    preserveLink({ workflow: workflowId, workspace: 'ws-1' })
+    preserveLink({ savedFile: workflowId, workspace: 'ws-1' })
     const response = deferredResponse()
     vi.mocked(api.fetchApi).mockReturnValueOnce(response.promise)
     const pending = useSavedWorkflowUrlLoader().openSavedWorkflowFromUrl()
@@ -400,12 +401,12 @@ describe('private saved workflow navigation', () => {
     expect(await pending).toBe('failed')
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
     expect(
-      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow')
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'savedFile')
     ).toBe(workflowId)
   })
 
   it('keeps a plain link for reload when the late listing arrived before its startup step', async () => {
-    preserveLink({ workflow: workflowId, workspace: 'ws-1' })
+    preserveLink({ savedFile: workflowId, workspace: 'ws-1' })
     await loadLateDeployment()
 
     expect(await useSavedWorkflowUrlLoader().openSavedWorkflowFromUrl()).toBe(
@@ -413,7 +414,7 @@ describe('private saved workflow navigation', () => {
     )
     expect(api.fetchApi).not.toHaveBeenCalled()
     expect(
-      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow')
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'savedFile')
     ).toBe(workflowId)
   })
 
@@ -440,7 +441,7 @@ describe('private saved workflow navigation', () => {
     async ({ change }) => {
       const loggedIn = ref(true)
       useCurrentUser().isLoggedIn = computed(() => loggedIn.value)
-      preserveLink({ workflow: workflowId, workspace: 'ws-1' })
+      preserveLink({ savedFile: workflowId, workspace: 'ws-1' })
       const response = deferredResponse()
       vi.mocked(api.fetchApi).mockReturnValueOnce(response.promise)
       const pending = useSavedWorkflowUrlLoader().openSavedWorkflowFromUrl()
@@ -452,14 +453,14 @@ describe('private saved workflow navigation', () => {
       expect(await pending).toBe('failed')
       expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
       expect(
-        getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow')
+        getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'savedFile')
       ).toBeUndefined()
     }
   )
 
   it('does not replay a standard-environment link onto a late custom deployment', async () => {
     preserveLink({
-      workflow: workflowId,
+      savedFile: workflowId,
       workspace: 'ws-1',
       environment: 'standard'
     })
@@ -473,7 +474,7 @@ describe('private saved workflow navigation', () => {
     expect(await pending).toBe('failed')
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
     expect(
-      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow')
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'savedFile')
     ).toBeUndefined()
   })
 
@@ -510,15 +511,15 @@ describe('private saved workflow navigation', () => {
     )
   })
 
-  it('keeps the unsaved canvas active when the record and sidebar file disagree', async () => {
+  it('keeps the unsaved canvas active when a loaded unknown-ID path collides', async () => {
     const store = useWorkflowStore()
     const unsaved = store.createTemporary('Unsaved.json', graph)
     await store.openWorkflow(unsaved)
     const retained = store.activeWorkflow
     unsaved.isModified = true
-    vi.mocked(api.getUserData).mockResolvedValue(
-      Response.json({ ...graph, extra: { different: true } })
-    )
+    const collision = store.createTemporary('My private workflow.json', graph)
+    await collision.load()
+    collision.size = 1
 
     expect(await useSavedWorkflowUrlLoader().openSavedWorkflowFromUrl()).toBe(
       'failed'
@@ -545,7 +546,7 @@ describe('private saved workflow navigation', () => {
   )
 
   it('rejects a bad URL without fetching or opening a document', async () => {
-    Object.assign(useRoute().query, { workflow: '../private.json' })
+    Object.assign(useRoute().query, { savedFile: '../private.json' })
 
     expect(await useSavedWorkflowUrlLoader().openSavedWorkflowFromUrl()).toBe(
       'failed'

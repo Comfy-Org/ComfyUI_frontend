@@ -6,7 +6,7 @@ import { z } from 'zod'
 const targetId = z.string().refine(isWorkspaceId).optional()
 const savedWorkflowLinkSchema = z
   .object({
-    workflow: z.string().refine(isUuid),
+    savedFile: z.string().refine((id) => isUuid(id) && id === id.toLowerCase()),
     workspace: targetId,
     deployment: targetId,
     environment: z.literal('standard').optional()
@@ -23,9 +23,10 @@ const savedWorkflowLinkSchema = z
 type SavedWorkflowLink =
   | { status: 'absent' }
   | { status: 'invalid' }
+  | { status: 'legacy' }
   | {
       status: 'valid'
-      workflowId: string
+      savedFileId: string
       workspaceId: string | null
       deploymentId: string | null
       environment: 'standard' | null
@@ -34,13 +35,16 @@ type SavedWorkflowLink =
 export function readSavedWorkflowLink(
   query: LocationQueryRaw
 ): SavedWorkflowLink {
-  if (query.workflow === undefined) return { status: 'absent' }
+  if (query.savedFile !== undefined && query.workflow !== undefined)
+    return { status: 'invalid' }
+  if (query.workflow !== undefined) return { status: 'legacy' }
+  if (query.savedFile === undefined) return { status: 'absent' }
   const result = savedWorkflowLinkSchema.safeParse(query)
   if (!result.success) return { status: 'invalid' }
 
   return {
     status: 'valid',
-    workflowId: result.data.workflow,
+    savedFileId: result.data.savedFile,
     workspaceId: result.data.workspace ?? null,
     deploymentId: result.data.deployment ?? null,
     environment: result.data.environment ?? null

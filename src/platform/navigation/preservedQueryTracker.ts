@@ -10,7 +10,7 @@ import {
 export interface PreservedQueryDefinition {
   namespace: string
   keys: string[]
-  requiredKey?: string
+  requiredKey?: string | string[]
   /**
    * When set, keys present in the query are removed from the client-side URL
    * before navigation completes. Later guards, afterEach hooks, and views must
@@ -22,7 +22,7 @@ export interface PreservedQueryDefinition {
    */
   stripAfterCapture?: boolean
   replaceOnChange?: {
-    key: string
+    key: string | string[]
     targetKeys: string[]
     namespaces: string[]
   }
@@ -74,9 +74,11 @@ function clearReplacedIntent(
   query: LocationQuery,
   { namespace, rejectRepeated, replaceOnChange }: PreservedQueryDefinition
 ) {
-  if (!replaceOnChange || !Object.hasOwn(query, replaceOnChange.key)) return
+  if (!replaceOnChange) return
   const { key, targetKeys, namespaces } = replaceOnChange
-  const intentKeys = [key, ...targetKeys]
+  const identityKeys = Array.isArray(key) ? key : [key]
+  if (!identityKeys.some((key) => Object.hasOwn(query, key))) return
+  const intentKeys = [...identityKeys, ...targetKeys]
   const incoming = rejectRepeated
     ? withAmbiguityMarked(query, intentKeys)
     : query
@@ -105,7 +107,15 @@ export const installPreservedQueryTracker = (
         hydratePreservedQuery(namespace)
         const presentKeys = keys.filter((key) => queryKeys.has(key))
         if (presentKeys.length === 0) return
-        if (requiredKey && !queryKeys.has(requiredKey)) {
+        const requiredKeys = Array.isArray(requiredKey)
+          ? requiredKey
+          : requiredKey
+            ? [requiredKey]
+            : []
+        if (
+          requiredKeys.length &&
+          !requiredKeys.some((key) => queryKeys.has(key))
+        ) {
           clearPreservedQuery(namespace)
           return
         }

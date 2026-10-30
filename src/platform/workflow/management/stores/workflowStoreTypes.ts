@@ -1,3 +1,4 @@
+import type { UserFileScope } from '@/stores/userFileIdentity'
 import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type {
@@ -9,6 +10,16 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyWorkflow, LoadedComfyWorkflow } from './comfyWorkflow'
 
 export interface WorkflowStore {
+  hydrateSavedFile: (
+    snapshot: {
+      id: string
+      path: string
+      content: string
+      modified: number
+      size: number
+    },
+    scope: UserFileScope
+  ) => ComfyWorkflow | null
   activeWorkflow: LoadedComfyWorkflow | null
   attachWorkflow: (workflow: ComfyWorkflow, openIndex?: number) => void
   isActive: (workflow: ComfyWorkflow) => boolean

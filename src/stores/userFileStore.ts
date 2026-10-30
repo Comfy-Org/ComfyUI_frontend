@@ -3,6 +3,13 @@ import { computed, ref } from 'vue'
 
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { api } from '@/scripts/api'
+import {
+  currentUserFileScope,
+  receivedUserFileIdentity,
+  sameUserFileIdentity,
+  sameUserFileScope
+} from '@/stores/userFileIdentity'
+import type { UserFileIdentity } from '@/stores/userFileIdentity'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
@@ -55,13 +62,29 @@ export class UserFile {
     /**
      * File size in bytes. -1 for temporary files.
      */
-    public size: number
+    public size: number,
+    public savedFileIdentity?: UserFileIdentity
   ) {
     const details = getPathDetails(path)
     this.directory = details.directory
     this.fullFilename = details.fullFilename
     this.filename = details.filename
     this.suffix = details.suffix
+  }
+
+  isIdentityScopeCurrent(): boolean {
+    return (
+      !this.savedFileIdentity ||
+      sameUserFileScope(this.savedFileIdentity, currentUserFileScope())
+    )
+  }
+
+  assertIdentityScope(): void {
+    if (!this.isIdentityScopeCurrent())
+      throw new DOMException(
+        'Saved file belongs to another authenticated scope',
+        'SecurityError'
+      )
   }
 
   updatePath(newPath: string) {
@@ -103,17 +126,27 @@ export class UserFile {
   async load({
     force = false
   }: { force?: boolean } = {}): Promise<LoadedUserFile> {
-    if (this.isTemporary || (!force && this.isLoaded))
+    this.assertIdentityScope()
+    if (this.isTemporary || (!force && this.content !== null))
       return this as LoadedUserFile
 
     this.isLoading = true
-    const resp = await api.getUserData(this.path)
+    const resp = await api.getUserData(
+      this.path,
+      this.savedFileIdentity
+        ? { expected_id: this.savedFileIdentity.id }
+        : undefined
+    )
+    this.assertIdentityScope()
     if (resp.status !== 200) {
-      throw new Error(
-        `Failed to load file '${this.path}': ${resp.status} ${resp.statusText}`
+      throw new DOMException(
+        `Failed to load file '${this.path}': ${resp.status} ${resp.statusText}`,
+        resp.status === 404 ? 'NotFoundError' : 'InvalidStateError'
       )
     }
-    this.content = await resp.text()
+    const content = await resp.text()
+    this.assertIdentityScope()
+    this.content = content
     this.originalContent = this.content
     this.isLoading = false
     return this as LoadedUserFile
@@ -140,55 +173,72 @@ export class UserFile {
    * @param force Whether to force the save even if the file is not modified.
    */
   async save({ force = false }: { force?: boolean } = {}): Promise<UserFile> {
+    this.assertIdentityScope()
     if (this.isPersisted && !this.isModified && !force) return this
 
     const resp = await api.storeUserData(this.path, this.content, {
       overwrite: this.isPersisted,
       throwOnError: true,
-      full_info: true
+      full_info: true,
+      ...(this.savedFileIdentity && { expected_id: this.savedFileIdentity.id })
     })
 
-    // Note: Backend supports full_info=true feature after
-    // https://github.com/comfyanonymous/ComfyUI/pull/5446
     const updatedFile = (await resp.json()) as string | UserDataFullInfo
+    this.assertIdentityScope()
     if (typeof updatedFile === 'object') {
       this.lastModified = normalizeTimestamp(updatedFile.modified)
       this.size = updatedFile.size
+      this.savedFileIdentity ??= receivedUserFileIdentity(updatedFile.id)
     }
     this.originalContent = this.content
     return this
   }
 
   async delete(): Promise<void> {
+    this.assertIdentityScope()
     if (this.isTemporary) return
 
-    const resp = await api.deleteUserData(this.path)
+    const resp = await (this.savedFileIdentity
+      ? api.deleteUserData(this.path, {
+          expected_id: this.savedFileIdentity.id
+        })
+      : api.deleteUserData(this.path))
+    this.assertIdentityScope()
     if (resp.status !== 204) {
-      throw new Error(
-        `Failed to delete file '${this.path}': ${resp.status} ${resp.statusText}`
+      throw new DOMException(
+        `Failed to delete file '${this.path}': ${resp.status} ${resp.statusText}`,
+        resp.status === 404 ? 'NotFoundError' : 'InvalidStateError'
       )
     }
   }
 
   async rename(newPath: string): Promise<UserFile> {
+    this.assertIdentityScope()
     if (this.isTemporary) {
       this.updatePath(newPath)
       return this
     }
 
-    const resp = await api.moveUserData(this.path, newPath)
+    const resp = await (this.savedFileIdentity
+      ? api.moveUserData(this.path, newPath, {
+          overwrite: false,
+          expected_id: this.savedFileIdentity.id
+        })
+      : api.moveUserData(this.path, newPath))
+    this.assertIdentityScope()
     if (resp.status !== 200) {
-      throw new Error(
-        `Failed to rename file '${this.path}': ${resp.status} ${resp.statusText}`
+      throw new DOMException(
+        `Failed to rename file '${this.path}': ${resp.status} ${resp.statusText}`,
+        resp.status === 404 ? 'NotFoundError' : 'InvalidStateError'
       )
     }
-    this.updatePath(newPath)
-    // Note: Backend supports full_info=true feature after
-    // https://github.com/comfyanonymous/ComfyUI/pull/5446
     const updatedFile = (await resp.json()) as string | UserDataFullInfo
+    this.assertIdentityScope()
+    this.updatePath(newPath)
     if (typeof updatedFile === 'object') {
       this.lastModified = normalizeTimestamp(updatedFile.modified)
       this.size = updatedFile.size
+      this.savedFileIdentity ??= receivedUserFileIdentity(updatedFile.id)
     }
     return this
   }
@@ -222,15 +272,38 @@ export const useUserFileStore = defineStore('userFile', () => {
    * @param dir The directory to sync.
    */
   const syncFiles = async (dir: string = '') => {
+    const scope = currentUserFileScope()
     await syncEntities(
       dir,
       userFilesByPath.value,
-      (file) => new UserFile(file.path, file.modified, file.size),
+      (file) =>
+        new UserFile(
+          file.path,
+          file.modified,
+          file.size,
+          receivedUserFileIdentity(file.id, scope)
+        ),
       (existingFile, file) => {
+        const identity = receivedUserFileIdentity(file.id, scope)
+        if (existingFile.savedFileIdentity && !identity) return
+        if (
+          !sameUserFileIdentity(existingFile.savedFileIdentity, identity) &&
+          (existingFile.savedFileIdentity || identity)
+        ) {
+          if (existingFile.isLoaded || existingFile.isModified) return
+          existingFile.savedFileIdentity = identity
+        }
+        if (existingFile.isModified) return
         existingFile.lastModified = file.modified
         existingFile.size = file.size
         existingFile.unload()
-      }
+      },
+      undefined,
+      (file) => !file.savedFileIdentity || (!file.isModified && !file.isLoaded),
+      () =>
+        scope === null
+          ? currentUserFileScope() === null
+          : sameUserFileScope(scope, currentUserFileScope())
     )
   }
 

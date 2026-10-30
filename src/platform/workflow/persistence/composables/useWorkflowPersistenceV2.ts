@@ -42,6 +42,12 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
+import { fetchSavedWorkflow } from '@/services/savedWorkflowService'
+import {
+  currentUserFileScope,
+  sameUserFileScope,
+  registerUserFileScopeProvider
+} from '@/stores/userFileIdentity'
 import { api } from '@/scripts/api'
 import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
 import { app as comfyApp } from '@/scripts/app'
@@ -68,6 +74,33 @@ export function useWorkflowPersistenceV2() {
   let resolvedAuthSubject: string | null = null
   let authTransitionVersion = 0
   let authTransition = Promise.resolve()
+  registerUserFileScopeProvider(() => {
+    const workspaceId = teamWorkspaceStore.activeWorkspace?.id
+    return resolvedAuthSubject && workspaceId
+      ? { ownerId: resolvedAuthSubject, workspaceId }
+      : null
+  })
+
+  draftStore.setUnidentifiedDraftGuard(
+    (path) => !workflowStore.getWorkflowByPath(path)?.savedFileIdentity
+  )
+
+  draftStore.setSavedDraftLoader(async (identity, isCurrent) => {
+    const ownsContext = () =>
+      isCurrent?.() !== false &&
+      sameUserFileScope(identity, currentUserFileScope())
+    if (!ownsContext()) return false
+    const saved = await fetchSavedWorkflow(identity.id)
+    if (!saved.ok || !ownsContext()) return false
+    const workflow = workflowStore.hydrateSavedFile(saved, identity)
+    return (
+      !!workflow &&
+      useWorkflowService().openWorkflow(workflow, {
+        isCurrent: ownsContext,
+        keepSavedBaseline: true
+      })
+    )
+  })
 
   function stopPendingWorkspaceReadinessWatcher(): void {
     stopWorkspaceReadinessWatcher?.()
@@ -119,7 +152,8 @@ export function useWorkflowPersistenceV2() {
     // Save to V2 draft store
     const saved = draftStore.saveDraft(workflowPath, workflowJson, {
       name: activeWorkflow.key,
-      isTemporary: activeWorkflow.isTemporary
+      isTemporary: activeWorkflow.isTemporary,
+      savedFileIdentity: activeWorkflow.savedFileIdentity
     })
 
     if (!saved) {
@@ -252,7 +286,10 @@ export function useWorkflowPersistenceV2() {
 
     if (!isCurrent()) return false
     if (sessionPath) {
+      const draft = draftStore.getDraft(sessionPath)
       const saved = workflowStore.getWorkflowByPath(sessionPath)
+      if (draft && (draft.savedFileIdentity || saved?.savedFileIdentity))
+        return false
       if (saved) {
         await useWorkflowService().openWorkflow(saved, { isCurrent })
         return true
@@ -304,7 +341,8 @@ export function useWorkflowPersistenceV2() {
     discardStartupBlankDraft()
     return hasSharedWorkflowIntent() ||
       hasTemplateUrlIntent() ||
-      hasPreservedIntent(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow')
+      hasPreservedIntent(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow') ||
+      hasPreservedIntent(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'savedFile')
       ? 'url-intent'
       : 'fresh'
   }

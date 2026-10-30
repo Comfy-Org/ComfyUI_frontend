@@ -17,12 +17,15 @@ export async function syncEntities<T>(
   createEntity: (file: UserDataFullInfo & { path: string }) => T,
   updateEntity: (entity: T, file: UserDataFullInfo & { path: string }) => void,
   exclude: (file: T) => boolean = () => false,
-  beforeDelete: (entity: T, path: string) => boolean = () => true
+  beforeDelete: (entity: T, path: string) => boolean = () => true,
+  isCurrent: () => boolean = () => true
 ) {
   const files = (await api.listUserDataFullInfo(dir)).map((file) => ({
     ...file,
     path: dir ? `${dir}/${file.path}` : file.path
   }))
+
+  if (!isCurrent()) throw new DOMException('File scope changed', 'AbortError')
 
   for (const file of files) {
     const existingEntity = entityByPath[file.path]

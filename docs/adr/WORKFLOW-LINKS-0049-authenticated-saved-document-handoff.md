@@ -1,6 +1,6 @@
 # ADR-WORKFLOW-LINKS-0049: Authenticated saved-document handoff
 
-Date: 2026-10-24
+Date: 2026-10-30
 
 ## Status
 
@@ -8,94 +8,89 @@ Proposed
 
 ## Context
 
-A Run on Cloud handoff needs to open a private saved workflow in the chosen
-workspace and environment. A graph UUID in the fragment identifies tab state,
-while a public share URL publishes a separate snapshot. Neither identifies the
-private saved document. Normal sidebar documents are userdata files; the
-versioned workflow record exposes a name and content but no authoritative
-userdata filename.
+A Run on Cloud handoff must edit the exact private saved userdata document.
+A workflow record UUID, graph UUID, matching filename or equal content cannot
+establish that identity. Paths can change through rename and can be reused
+after deletion. Cached documents and persisted drafts can outlive either change.
 
 ## Decision
 
-Use `?workflow=<saved-workflow UUID>` for an authenticated private record.
-An optional `workspace=<id>` scopes navigation. Custom environments retain the
-existing `deployment=<id>` contract; `environment=standard` explicitly selects
-standard Cloud for this browser. The two environment selectors are mutually
-exclusive. Changing the browser selection never stops or deletes a deployment.
+Use `?savedFile=<userdata UUID>`, with the existing optional `workspace`,
+`deployment` or `environment=standard` target. Mixed `savedFile` and legacy
+`workflow` parameters are invalid. Legacy record links report unavailable and
+require a newly generated link; they never resolve by name or content.
 
-Link producers require the literal `private_workflow_links_enabled: true` from
-`/api/features` before emitting a private link. Operators advertise it after the
-matching frontend release and disable advertisement before rolling that release
-back, as specified by the [merged Cloud integration contract](https://github.com/Comfy-Org/cloud/blob/89174e97cec8a1d09687224e38d3cd58f296f783/docs/systems/06-frontend-cloud-integration.md).
-The browser loader verifies identity, workspace, environment and saved-document
-access when a link is opened.
+The authenticated `/api/userdata-files/{id}` endpoint supplies one exact
+owner/workspace/UUID row snapshot: canonical ID, actual workflow path, original
+UTF-8 content, modification time and byte size. The frontend validates that
+received snapshot and hydrates the normal saved document directly from its bytes.
+It never follows resolution with an unguarded path read or creates a temporary
+copy. A narrow runtime decoder represents this explicit new contract until its
+producer types are published. Existing generated packages remain the exact
+landed main version and are not regenerated from an unpublished producer branch.
 
-Deployment links switch to the named workspace once, preserving the target for
-the reload; the switch marker prevents another reload when that switch did not
-land. In the named workspace, consumed parameters are stripped before selecting
-the browser environment and reloading. Signed-out redirects preserve the intent,
-while API-key sessions cannot select a browser environment. Link selection waits
-for bounded boot deployment discovery so an existing selection can be retained;
-a listing refusal still lets the selection API return its authoritative answer.
-An explicit standard link records the browser's own selection, including when the
-workspace currently has no default.
+Carry the userdata UUID and authenticated owner/workspace through saved workflow
+objects and draft metadata. Graph IDs remain independent. Same-ID dirty documents
+retain their change tracker and undo state. A loaded/open/dirty path collision or
+persisted draft with unknown or different identity is preserved and refuses the
+link. Equal content never upgrades unknown identity. A same-ID server rename
+moves the document and draft aliases together; a conflicting destination remains
+untouched. Identified draft restoration resolves the UUID again through the same
+snapshot and normal service, including after a server rename.
 
-Preserve the workflow and its complete target together through authentication,
-workspace switches and deployment reloads. Resolve workspace/environment first,
-then fetch through the authenticated API. A late response cannot open after the
-identity, workspace or requested environment changes.
+Subsequent path reads, saves, deletes and moves use the mandatory-ID namespace
+`/api/userdata-files/{id}/path/{file}` (with `/move/{dest}` for rename). Cloud
+checks that UUID atomically with owner/workspace/path and returns 412 on stale
+identity without touching a replacement or creating an upsert. The API adapter
+selects this route when its caller supplies `expected_id`; it never relies on
+an optional query guard that an older backend could ignore. A rolled-back
+backend returns 404 for the new route before any mutation. A deliberate Save
+As creates a fresh identity. Missing metadata on local or older servers preserves
+ordinary path-based operations, but cannot certify a private saved-file link.
 
-A new workflow or changed explicit target replaces the previous intent; redirects
-that continue the same intent retain it. Only a deferred startup attempt arms a
-readiness retry. An unchanged plain link may survive a late deployment listing
-for replay after reload; sign-out, workspace changes and replaced links cannot
-resume the old request or consume a newer intent.
+Preserve the saved-file identity and complete target together across sign-in,
+workspace switches and environment reloads. A changed identity or explicit target
+replaces the preceding intent. Repeated/bare values remain invalid through
+redirect preservation. Deployment links switch workspace once, then remove
+consumed selection parameters before choosing the browser environment. Explicit
+standard selection uses that browser's own pick. API-key sessions cannot select
+a browser environment. An unchanged plain link can survive late deployment
+listing for replay; replaced links and revoked identity cannot resume it.
 
-Open through the normal workflow service after verifying the record's candidate
-userdata path and exact saved content. This preserves the saved document identity,
-existing dirty drafts and other open tabs. Until the server supplies a durable
-record-to-file association, missing or conflicting userdata fails explicitly;
-it does not silently create a copy or choose a same-named file.
+Loading preserves the existing context/current/post-await checks. Read responses
+cannot hydrate or paint after owner/workspace/environment revocation. Revoked
+canvas cleanup requires the exact activated document and captured graph state;
+it detaches the selection before clearing and restores the retained dirty tab
+through ordinary navigation. Persistence reads the frozen selected document
+while graph loading is in progress. Saved-baseline restoration wraps dirty
+workflow activation so the dirty graph cannot become its own clean baseline.
+
+The literal `private_saved_file_links_enabled: true` fact from `/api/features`
+is a CLI publication gate only. It defaults off in Cloud, is advertised only
+after compatible backend/frontend rollout, and is disabled before rollback.
+The browser has no capability kill switch. This change does not deploy or enable
+the capability. Old servers fail private snapshot reads safely, without a path
+fallback, repeated upload or substitution of the old record-link capability.
 
 ## Alternatives
 
-- Public sharing changes privacy and requires a separate user choice.
-- Graph fragments cannot distinguish saved copies with the same graph UUID.
-- Opening record JSON as a temporary document loses normal saved-file identity.
-- Trusting the record name without content verification can open unrelated data.
-- A new environment API duplicates the existing authenticated browser-selection
-  service, which already supports selecting standard Cloud.
+Public share links publish a separate snapshot and require a different privacy
+choice. Graph fragments identify tab state rather than saved files. Resolving a
+record name and comparing JSON cannot distinguish equal-content replacement
+files, and a preflight comparison cannot protect a later read or mutation.
+Temporary documents lose saved identity, drafts and normal save behavior.
 
 ## Consequences
 
-The ingest TypeScript types and Zod schemas are generated from the merged Cloud
-OpenAPI at `89174e97cec8a1d09687224e38d3cd58f296f783`, using the Cloud workflow's
-`openapi-project -fe` projection, pinned `@hey-api/openapi-ts` 0.97.3 and the
-repository formatter. The generated package is kept reproducible as a whole,
-including its public index.
+The producer and consumer rollout must precede capability advertisement. Historical
+record links must be regenerated. Unknown pre-upgrade dirty state may require
+manual sidebar recovery; preserving it costs an explicit refusal instead of
+risking silent association or data loss. UUID identity adds scope metadata to
+normal documents and drafts, while local ComfyUI remains path compatible.
 
-Record-only historical saves need to be saved into the Workflows sidebar before
-they can open as normal editable documents. This conservative fallback can also
-refuse an update racing the metadata/content reads; reopening from the sidebar
-or retrying after synchronization is safe. A future server-owned filename or
-record-ID association can replace the candidate-path verification without
-changing the URL contract.
-
-If a request is revoked after configuring the shared canvas, discard that canvas
-only while its graph state and document selection still belong to the load.
-Detach the selection before clearing, retain the previous tab's dirty draft and
-undo history, and reopen it through normal navigation. While loading, draft
-persistence reads the selected document's frozen state rather than the incoming
-canvas. Revoked requests cannot repaint content from the old context. The workflow service acknowledges the exact activated document before tracker restoration or preview work can reject; cleanup pairs that owner with the graph state captured before activation.
-
-Cross-domain cancellation coverage lives in
-[`src/integrationTests/workflowHandoffPersistence.test.ts`](../../src/integrationTests/workflowHandoffPersistence.test.ts).
-The domain catalog's inventory contract lets this test compose application,
-workflow, storage and workspace boundaries without granting those imports to a
-production domain.
-
-Startup coordination lives with the [app URL loaders](../../src/composables/useSavedWorkflowUrlLoader.ts).
-[Navigation](../../src/platform/navigation/savedWorkflowLink.ts) validates the query,
-and an [authenticated read adapter](../../src/services/savedWorkflowService.ts)
-verifies the saved record and userdata. These are navigation and integration
-responsibilities rather than workflow-format domain logic.
+Navigation parsing and preservation live in `src/platform/navigation`; snapshot
+reads and URL coordination remain app integration responsibilities. Normal
+workflow stores and persistence own identity-aware hydration and draft aliases.
+Cross-domain cancellation and baseline coverage remains in
+`src/integrationTests/workflowHandoffPersistence.test.ts`, alongside focused URL,
+API, store and draft suites and real-canvas browser handoff coverage.

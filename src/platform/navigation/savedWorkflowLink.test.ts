@@ -6,13 +6,13 @@ describe('saved workflow links', () => {
   it('reads a saved workflow in a named workspace without confusing it with a graph fragment', () => {
     expect(
       readSavedWorkflowLink({
-        workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+        savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
         workspace: 'workspace-1',
         deployment: 'dep-1'
       })
     ).toEqual({
       status: 'valid',
-      workflowId: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+      savedFileId: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
       workspaceId: 'workspace-1',
       deploymentId: 'dep-1',
       environment: null
@@ -22,11 +22,11 @@ describe('saved workflow links', () => {
   it('allows the authenticated active workspace when no target is named', () => {
     expect(
       readSavedWorkflowLink({
-        workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
+        savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
       })
     ).toEqual({
       status: 'valid',
-      workflowId: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+      savedFileId: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
       workspaceId: null,
       deploymentId: null,
       environment: null
@@ -36,17 +36,34 @@ describe('saved workflow links', () => {
   it('reads an explicitly selected standard environment', () => {
     expect(
       readSavedWorkflowLink({
-        workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+        savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
         workspace: 'ws-1',
         environment: 'standard'
       })
     ).toEqual({
       status: 'valid',
-      workflowId: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+      savedFileId: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
       workspaceId: 'ws-1',
       deploymentId: null,
       environment: 'standard'
     })
+  })
+
+  it('refuses legacy record links without reinterpreting their UUID', () => {
+    expect(
+      readSavedWorkflowLink({
+        workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
+      })
+    ).toEqual({ status: 'legacy' })
+  })
+
+  it('rejects mixed legacy and saved-file identities', () => {
+    expect(
+      readSavedWorkflowLink({
+        workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+        savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
+      })
+    ).toEqual({ status: 'invalid' })
   })
 
   it('does nothing for a URL without a saved workflow', () => {
@@ -56,34 +73,37 @@ describe('saved workflow links', () => {
   })
 
   it.for([
-    { workflow: null },
-    { workflow: '' },
-    { workflow: ['c327cae8-2acf-4bfa-bb88-97948a3c008b'] },
-    { workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b,another' },
-    { workflow: '../userdata/private.json' },
-    { workflow: 'https://untrusted.example/workflow.json' },
-    { workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b', workspace: null },
-    { workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b', workspace: '' },
-    { workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b', workspace: ['a', 'b'] },
-    { workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b', workspace: 'a,b' },
-    { workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b', deployment: 'dep-1' },
+    { savedFile: null },
+    { savedFile: '' },
+    { savedFile: ['c327cae8-2acf-4bfa-bb88-97948a3c008b'] },
+    { savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b,another' },
+    { savedFile: '../userdata/private.json' },
+    { savedFile: 'https://untrusted.example/workflow.json' },
+    { savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b', workspace: null },
+    { savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b', workspace: '' },
     {
-      workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+      savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+      workspace: ['a', 'b']
+    },
+    { savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b', workspace: 'a,b' },
+    { savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b', deployment: 'dep-1' },
+    {
+      savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
       environment: 'standard'
     },
     {
-      workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+      savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
       workspace: 'ws-1',
       environment: 'standard',
       deployment: 'dep-1'
     },
     {
-      workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+      savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
       workspace: 'ws-1',
       environment: 'other'
     },
     {
-      workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+      savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
       workspace: 'ws-1',
       deployment: ['a', 'b']
     }

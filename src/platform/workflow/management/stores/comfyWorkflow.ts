@@ -2,6 +2,11 @@ import { markRaw } from 'vue'
 
 import { assert } from '@/base/assert'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { UserFileIdentity } from '@/stores/userFileIdentity'
+import {
+  receivedUserFileIdentity,
+  sameUserFileIdentity
+} from '@/stores/userFileIdentity'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
@@ -68,6 +73,7 @@ export interface WorkflowChangeTracker {
 }
 
 interface WorkflowDraft {
+  savedFileIdentity?: UserFileIdentity
   data: string
   updatedAt: number
 }
@@ -200,13 +206,31 @@ export function reportWorkflowStateAnomaly(
  * The saved draft to overlay on a freshly loaded workflow, if there is a usable
  * one. A stale or unparseable draft is removed.
  */
+function requireMatchingDraftIdentity(
+  runtime: WorkflowRuntime,
+  workflow: ComfyWorkflow
+): void {
+  const draft = runtime.getDraft(workflow.path)
+  if (
+    draft &&
+    (draft.savedFileIdentity || workflow.savedFileIdentity) &&
+    !sameUserFileIdentity(draft.savedFileIdentity, workflow.savedFileIdentity)
+  ) {
+    throw new DOMException(
+      'Saved workflow draft identity does not match this document',
+      'InvalidStateError'
+    )
+  }
+}
+
 function readUsableDraft(
   runtime: WorkflowRuntime,
   workflow: ComfyWorkflow
 ): { state: ComfyWorkflowJSON; content: string } | null {
   const draft = runtime.getDraft(workflow.path)
   if (!draft) return null
-  if (draft.updatedAt < workflow.lastModified) {
+
+  if (!workflow.savedFileIdentity && draft.updatedAt < workflow.lastModified) {
     runtime.removeDraft(workflow.path)
     return null
   }
@@ -239,7 +263,7 @@ function parseStoredWorkflow(workflow: ComfyWorkflow): ComfyWorkflowJSON {
       workflow
     )
   }
-  throw new Error(
+  throw new TypeError(
     `Workflow content is ${parsed === undefined ? 'missing or empty' : 'not a JSON object'} for '${workflow.path}'`
   )
 }
@@ -265,7 +289,10 @@ function requireActiveStateForSave(
     method,
     workflow
   )
-  throw new Error(`Cannot save workflow '${workflow.path}' before it is loaded`)
+  throw new DOMException(
+    `Cannot save workflow '${workflow.path}' before it is loaded`,
+    'InvalidStateError'
+  )
 }
 
 export class ComfyWorkflow extends UserFile {
@@ -308,8 +335,19 @@ export class ComfyWorkflow extends UserFile {
    * @param options The path, modified, and size of the workflow.
    * Note: path is the full path, including the 'workflows/' prefix.
    */
-  constructor(options: { path: string; modified: number; size: number }) {
-    super(options.path, options.modified, options.size)
+  constructor(options: {
+    path: string
+    modified: number
+    size: number
+    id?: string
+    savedFileIdentity?: UserFileIdentity
+  }) {
+    super(
+      options.path,
+      options.modified,
+      options.size,
+      options.savedFileIdentity ?? receivedUserFileIdentity(options.id)
+    )
   }
 
   override get key() {
@@ -346,6 +384,8 @@ export class ComfyWorkflow extends UserFile {
   override async load({ force = false }: { force?: boolean } = {}): Promise<
     this & LoadedComfyWorkflow
   > {
+    this.assertIdentityScope()
+    requireMatchingDraftIdentity(workflowRuntime(), this)
     if (!force && this.isLoaded && this.changeTracker) {
       return this as this & LoadedComfyWorkflow
     }
@@ -366,8 +406,6 @@ export class ComfyWorkflow extends UserFile {
       this.changeTracker.activeState = draft.state
       this.content = draft.content
       this._isModified = true
-      // Saved-workflow draft overlay path; direct persisted-draft restores
-      // are touched in workflowDraftStoreV2.loadDraft().
       runtime.markDraftUsed(this.path)
     }
     return this as this & LoadedComfyWorkflow
@@ -382,11 +420,10 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override async save() {
+    requireMatchingDraftIdentity(workflowRuntime(), this)
     this.content = JSON.stringify(
       requireActiveStateForSave(this, 'ComfyWorkflow.save')
     )
-    // Force save to ensure the content is updated in remote storage incase
-    // the isModified state is screwed by changeTracker.
     const ret = await super.save({ force: true })
     this.changeTracker?.reset()
     this.isModified = false
@@ -394,11 +431,6 @@ export class ComfyWorkflow extends UserFile {
     return ret
   }
 
-  /**
-   * Save the workflow as a new file.
-   * @param path The path to save the workflow to. Note: with 'workflows/' prefix.
-   * @returns this
-   */
   override async saveAs(path: string) {
     this.content = JSON.stringify(
       requireActiveStateForSave(this, 'ComfyWorkflow.saveAs')

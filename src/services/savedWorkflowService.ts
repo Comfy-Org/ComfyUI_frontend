@@ -1,36 +1,49 @@
-import type { GetWorkflowResponse } from '@comfyorg/ingest-types'
-import {
-  zGetWorkflowContentResponse,
-  zGetWorkflowResponse
-} from '@comfyorg/ingest-types/zod'
-import { isEqual } from 'es-toolkit'
+import { z } from 'zod'
+import { validate as isUuid } from 'uuid'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { api } from '@/scripts/api'
 
+const savedFileSnapshotSchema = z.object({
+  id: z.string().refine((id) => isUuid(id) && id === id.toLowerCase()),
+  path: z
+    .string()
+    .refine(
+      (path) =>
+        path.startsWith('workflows/') &&
+        path.endsWith('.json') &&
+        path.split('/').at(-1) !== '.json' &&
+        path.split('/').at(-1) !== '.index.json' &&
+        !path.includes('\\') &&
+        !Array.from(path).some(
+          (character) => character < ' ' || character === '\u007f'
+        ) &&
+        !path
+          .split('/')
+          .some((part) => part === '' || part === '.' || part === '..')
+    ),
+  content: z.string(),
+  modified: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+  size: z.number().int().nonnegative()
+})
+
+export type SavedFileSnapshot = z.infer<typeof savedFileSnapshotSchema>
+
 type SavedWorkflowRead =
-  | {
-      ok: true
-      metadata: GetWorkflowResponse
-      workflow: ComfyWorkflowJSON
-      path: string
-    }
+  | ({ ok: true; workflow: ComfyWorkflowJSON } & SavedFileSnapshot)
   | {
       ok: false
       status: number | null
-      reason: 'unavailable' | 'file_unavailable' | 'file_mismatch' | 'cancelled'
+      reason: 'unavailable' | 'cancelled'
     }
 
 function failure(
-  reason: Exclude<
-    Extract<SavedWorkflowRead, { ok: false }>['reason'],
-    'cancelled'
-  >,
   status: number | null = null,
   cause?: unknown
 ): Extract<SavedWorkflowRead, { ok: false }> {
+  const reason = 'unavailable'
   reportError(cause ?? new Error('Unable to load the private saved workflow'), {
     surface: 'graph',
     errorType: 'error_loading_saved_workflow_link',
@@ -40,61 +53,28 @@ function failure(
 }
 
 export async function fetchSavedWorkflow(
-  workflowId: string,
+  id: string,
   signal?: AbortSignal
 ): Promise<SavedWorkflowRead> {
   try {
     signal?.throwIfAborted()
-    const path = `/workflows/${encodeURIComponent(workflowId)}`
-    const metadataResponse = await api.fetchApi(path, { signal })
-    if (!metadataResponse.ok)
-      return failure('unavailable', metadataResponse.status)
-    const metadataResult = zGetWorkflowResponse.safeParse(
-      await metadataResponse.json()
+    const response = await api.fetchApi(
+      `/userdata-files/${encodeURIComponent(id)}`,
+      { signal }
     )
-    if (!metadataResult.success || metadataResult.data.id !== workflowId)
-      return failure('unavailable')
-    const metadata = metadataResult.data
     signal?.throwIfAborted()
-
-    const contentResponse = await api.fetchApi(`${path}/content`, { signal })
-    if (!contentResponse.ok)
-      return failure('unavailable', contentResponse.status)
-    const contentResult = zGetWorkflowContentResponse.safeParse(
-      await contentResponse.json()
-    )
-    if (!contentResult.success) return failure('unavailable')
-    const content = contentResult.data
+    if (!response.ok) return failure(response.status)
+    const result = savedFileSnapshotSchema.safeParse(await response.json())
+    if (!result.success || result.data.id !== id) return failure()
     const workflow = await validateComfyWorkflow(
-      content.workflow_json,
+      JSON.parse(result.data.content),
       () => {}
     )
-    if (!workflow) return failure('unavailable')
-    const name = metadata.name
-    if (
-      !name ||
-      name.includes('\\') ||
-      Array.from(name).some(
-        (character) => character < ' ' || character === '\u007f'
-      ) ||
-      name
-        .split('/')
-        .some((part) => part === '' || part === '.' || part === '..')
-    )
-      return failure('file_unavailable')
-    const filePath = `workflows/${name}.json`
     signal?.throwIfAborted()
-    const fileResponse = await api.getUserData(filePath, { signal })
-    if (!fileResponse.ok)
-      return failure(
-        fileResponse.status === 404 ? 'file_unavailable' : 'unavailable',
-        fileResponse.status
-      )
-    if (!isEqual(await fileResponse.json(), content.workflow_json))
-      return failure('file_mismatch')
-    return { ok: true, metadata, workflow, path: filePath }
+    if (!workflow) return failure()
+    return { ok: true, ...result.data, workflow }
   } catch (cause) {
     if (signal?.aborted) return { ok: false, reason: 'cancelled', status: null }
-    return failure('unavailable', null, cause)
+    return failure(null, cause)
   }
 }

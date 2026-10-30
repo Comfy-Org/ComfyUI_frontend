@@ -333,13 +333,13 @@ describe('private workflow redirect intent', () => {
     installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
 
     await router.push(
-      '/?workflow=c327cae8-2acf-4bfa-bb88-97948a3c008b&workspace=ws-1&deployment=dep-1&keep=original#canvas'
+      '/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b&workspace=ws-1&deployment=dep-1&keep=original#canvas'
     )
     await router.push('/login')
     await router.push('/')
 
     expect(
-      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow')
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'savedFile')
     ).toBe('c327cae8-2acf-4bfa-bb88-97948a3c008b')
     expect(
       getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workspace')
@@ -395,19 +395,19 @@ describe('private workflow redirect intent', () => {
       const router = createTestRouter()
       installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
       await router.push(
-        `/?workflow=c327cae8-2acf-4bfa-bb88-97948a3c008b${previousTarget}`
+        `/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b${previousTarget}`
       )
       await router.push('/login')
 
       await router.push(
-        `/?workflow=5fa31309-9bc6-41a0-9f9e-e51ec9800619${nextTarget}`
+        `/?savedFile=5fa31309-9bc6-41a0-9f9e-e51ec9800619${nextTarget}`
       )
       await router.push('/login')
 
       expect(
         mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW)
       ).toEqual({
-        workflow: '5fa31309-9bc6-41a0-9f9e-e51ec9800619',
+        savedFile: '5fa31309-9bc6-41a0-9f9e-e51ec9800619',
         ...expectedTarget
       })
       expect({
@@ -459,12 +459,12 @@ describe('private workflow redirect intent', () => {
       const router = createTestRouter()
       installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
       await router.push(
-        `/?workflow=c327cae8-2acf-4bfa-bb88-97948a3c008b${previousTarget}`
+        `/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b${previousTarget}`
       )
       await router.push('/login')
 
       await router.push(
-        `/?workflow=c327cae8-2acf-4bfa-bb88-97948a3c008b${nextTarget}`
+        `/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b${nextTarget}`
       )
 
       const query =
@@ -474,7 +474,7 @@ describe('private workflow redirect intent', () => {
         ) ?? router.currentRoute.value.query
       expect(readSavedWorkflowLink(query)).toEqual({
         status: 'valid',
-        workflowId: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+        savedFileId: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
         workspaceId,
         deploymentId,
         environment
@@ -499,11 +499,11 @@ describe('private workflow redirect intent', () => {
     const router = createTestRouter()
     installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
 
-    await router.push('/?workflow=5fa31309-9bc6-41a0-9f9e-e51ec9800619')
+    await router.push('/?savedFile=5fa31309-9bc6-41a0-9f9e-e51ec9800619')
 
     expect(
       mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW)
-    ).toEqual({ workflow: '5fa31309-9bc6-41a0-9f9e-e51ec9800619' })
+    ).toEqual({ savedFile: '5fa31309-9bc6-41a0-9f9e-e51ec9800619' })
     expect(
       getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKSPACE, 'workspace')
     ).toBeUndefined()
@@ -516,22 +516,22 @@ describe('private workflow redirect intent', () => {
   })
 
   it.for([
-    { query: 'workflow=invalid', workflow: 'invalid' },
-    { query: 'workflow=first&workflow=second', workflow: 'first,second' },
-    { query: 'workflow', workflow: ',' },
-    { query: 'workflow=', workflow: undefined }
-  ])('replaces stale targets for $query', async ({ query, workflow }) => {
+    { query: 'savedFile=invalid', savedFile: 'invalid' },
+    { query: 'savedFile=first&savedFile=second', savedFile: 'first,second' },
+    { query: 'savedFile', savedFile: ',' },
+    { query: 'savedFile=', savedFile: undefined }
+  ])('replaces stale targets for $query', async ({ query, savedFile }) => {
     const router = createTestRouter()
     installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
     await router.push(
-      '/?workflow=c327cae8-2acf-4bfa-bb88-97948a3c008b&workspace=ws-old&deployment=dep-old'
+      '/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b&workspace=ws-old&deployment=dep-old'
     )
 
     await router.push(`/?${query}`)
 
     expect(
-      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow')
-    ).toBe(workflow)
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'savedFile')
+    ).toBe(savedFile)
     expect(
       getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workspace')
     ).toBeUndefined()
@@ -572,18 +572,18 @@ describe('private workflow redirect intent', () => {
       const router = createTestRouter()
       installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
       await router.push(
-        `/?workflow=c327cae8-2acf-4bfa-bb88-97948a3c008b${target}`
+        `/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b${target}`
       )
       await router.push('/login')
 
       await router.push(
-        `/?workflow=c327cae8-2acf-4bfa-bb88-97948a3c008b${nextTarget}`
+        `/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b${nextTarget}`
       )
 
       expect(
         mergePreservedQueryIntoQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW)
       ).toEqual({
-        workflow: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+        savedFile: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
         ...expectedTarget
       })
       expect({
@@ -601,11 +601,11 @@ describe('private workflow redirect intent', () => {
     })
     installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
 
-    await router.push('/?workflow=first&workflow=second')
+    await router.push('/?savedFile=first&savedFile=second')
     await router.push('/login')
 
     expect(
-      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow')
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'savedFile')
     ).toBe('first,second')
   })
 
@@ -617,7 +617,7 @@ describe('private workflow redirect intent', () => {
     installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
 
     await router.push(
-      '/?workflow=c327cae8-2acf-4bfa-bb88-97948a3c008b&workspace=ws-1&environment=standard'
+      '/?savedFile=c327cae8-2acf-4bfa-bb88-97948a3c008b&workspace=ws-1&environment=standard'
     )
     await router.push('/login')
     await router.push('/')

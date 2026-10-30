@@ -30,6 +30,7 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
+import { isUserFileIdentityCurrent } from '@/stores/userFileIdentity'
 import { useDialogService } from '@/services/dialogService'
 import { nodeTypesMayStillArrive } from '@/platform/customNodes/lateLoading/lateNodeTypes'
 import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/waitingNodes'
@@ -257,7 +258,8 @@ export const useWorkflowService = () => {
         JSON.stringify(activeState),
         {
           name: activeWorkflow.key,
-          isTemporary: activeWorkflow.isTemporary
+          isTemporary: activeWorkflow.isTemporary,
+          savedFileIdentity: activeWorkflow.savedFileIdentity
         }
       )
 
@@ -530,7 +532,11 @@ export const useWorkflowService = () => {
       keepSavedBaseline?: boolean
     } = {}
   ): Promise<boolean> => {
-    if (options.isCurrent?.() === false) return Promise.resolve(false)
+    if (
+      options.isCurrent?.() === false ||
+      !isUserFileIdentityCurrent(workflow.savedFileIdentity)
+    )
+      return Promise.resolve(false)
     if (closingWorkflowCounts.has(closingKey(workflow)))
       return Promise.resolve(false)
     if (
@@ -546,7 +552,10 @@ export const useWorkflowService = () => {
       useSubgraphNavigationStore().beginWorkflowNavigation()
     return queueWorkflowLoad(async () => {
       try {
-        if (options.isCurrent?.() === false) {
+        if (
+          options.isCurrent?.() === false ||
+          !isUserFileIdentityCurrent(workflow.savedFileIdentity)
+        ) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           return false
         }
@@ -555,7 +564,10 @@ export const useWorkflowService = () => {
         if (loadFromRemote) {
           await workflow.load()
         }
-        if (options.isCurrent?.() === false) {
+        if (
+          options.isCurrent?.() === false ||
+          !isUserFileIdentityCurrent(workflow.savedFileIdentity)
+        ) {
           if (loadFromRemote) discardSupersededLoad(workflow, wasModified)
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           return false

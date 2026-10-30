@@ -1,26 +1,12 @@
-import type {
-  GetWorkflowContentResponse,
-  GetWorkflowResponse
-} from '@comfyorg/ingest-types'
 import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
-import { reportError } from '@comfyorg/telemetry/reportError'
-
 import { fetchSavedWorkflow } from './savedWorkflowService'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 
-const workflowId = 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
-const metadata: GetWorkflowResponse = {
-  id: workflowId,
-  name: 'My private workflow',
-  created_at: '2026-10-24T00:00:00Z',
-  updated_at: '2026-10-24T00:00:00Z',
-  created_by: 'user-1',
-  latest_version: 1
-}
+const id = 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
 const graph = {
   version: 0.4,
   nodes: [],
@@ -28,156 +14,72 @@ const graph = {
   last_node_id: 0,
   last_link_id: 0
 }
-const content: GetWorkflowContentResponse = {
-  id: 'version-1',
-  version: 1,
-  created_at: '2026-10-24T00:00:00Z',
-  created_by: 'user-1',
-  workflow_json: graph
+const snapshot = {
+  id,
+  path: 'workflows/renamed.json',
+  content: JSON.stringify(graph),
+  modified: 123,
+  size: 87
 }
 
-describe('saved workflow reads', () => {
-  it('loads private record content through the authenticated API without publishing or saving anything', async () => {
-    vi.mocked(api.fetchApi)
-      .mockResolvedValueOnce(Response.json(metadata))
-      .mockResolvedValueOnce(Response.json(content))
-    vi.mocked(api.getUserData).mockResolvedValue(Response.json(graph))
-
-    const saved = await fetchSavedWorkflow(workflowId)
-
-    expect(saved).toEqual({
+describe('saved-file snapshot reads', () => {
+  it('uses the exact UUID-bound path and bytes without a path read or name association', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(Response.json(snapshot))
+    await expect(fetchSavedWorkflow(id)).resolves.toEqual({
       ok: true,
-      metadata,
-      workflow: graph,
-      path: 'workflows/My private workflow.json'
+      ...snapshot,
+      workflow: graph
     })
-    expect(vi.mocked(api.fetchApi).mock.calls.map(([url]) => url)).toEqual([
-      `/workflows/${workflowId}`,
-      `/workflows/${workflowId}/content`
-    ])
+    expect(api.fetchApi).toHaveBeenCalledExactlyOnceWith(
+      `/userdata-files/${id}`,
+      { signal: undefined }
+    )
+    expect(api.getUserData).not.toHaveBeenCalled()
     expect(api.storeUserData).not.toHaveBeenCalled()
   })
 
-  it('does not fetch private data after cancellation', async () => {
-    const controller = new AbortController()
-    controller.abort()
-
-    await expect(
-      fetchSavedWorkflow(workflowId, controller.signal)
-    ).resolves.toMatchObject({ ok: false, reason: 'cancelled' })
-    expect(api.fetchApi).not.toHaveBeenCalled()
-  })
-
-  it.for([401, 403, 404, 500])(
-    'propagates a private record access failure (%s) without loading a graph',
+  it.for([401, 403, 404, 412, 422, 500])(
+    'refuses an unavailable UUID snapshot (%s)',
     async (status) => {
       vi.mocked(api.fetchApi).mockResolvedValue(new Response(null, { status }))
-
-      await expect(fetchSavedWorkflow(workflowId)).resolves.toMatchObject({
+      await expect(fetchSavedWorkflow(id)).resolves.toMatchObject({
         ok: false,
         status
-      })
-      expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({
-          errorType: 'error_loading_saved_workflow_link'
-        })
-      )
-    }
-  )
-
-  it.for([
-    {
-      label: 'an unrelated record',
-      metadata: { ...metadata, id: 'another-record' }
-    },
-    { label: 'an invalid metadata response', metadata: { name: 'unknown' } }
-  ])('rejects $label', async (response) => {
-    vi.mocked(api.fetchApi).mockResolvedValue(Response.json(response.metadata))
-
-    await expect(fetchSavedWorkflow(workflowId)).resolves.toMatchObject({
-      ok: false
-    })
-  })
-
-  it.for([
-    { label: 'a malformed content response', body: {} },
-    {
-      label: 'an API graph without an editing canvas',
-      body: {
-        ...content,
-        workflow_json: { '1': { class_type: 'SaveImage', inputs: {} } }
-      }
-    },
-    {
-      label: 'an invalid editing graph',
-      body: { ...content, workflow_json: { version: 0.4, nodes: 'invalid' } }
-    },
-    {
-      label: 'an editing graph without a version',
-      body: { ...content, workflow_json: { nodes: [] } }
-    },
-    {
-      label: 'an editing graph with an incomplete node',
-      body: { ...content, workflow_json: { ...graph, nodes: [{}] } }
-    }
-  ])('rejects $label', async ({ body }) => {
-    vi.mocked(api.fetchApi)
-      .mockResolvedValueOnce(Response.json(metadata))
-      .mockResolvedValueOnce(Response.json(body))
-
-    await expect(fetchSavedWorkflow(workflowId)).resolves.toMatchObject({
-      ok: false
-    })
-  })
-
-  it.for([
-    '../escape',
-    '/absolute',
-    'folder\\private',
-    'https://untrusted.example/file',
-    ''
-  ])(
-    'refuses to infer an editable file from unsafe record name %s',
-    async (name) => {
-      vi.mocked(api.fetchApi)
-        .mockResolvedValueOnce(Response.json({ ...metadata, name }))
-        .mockResolvedValueOnce(Response.json(content))
-
-      await expect(fetchSavedWorkflow(workflowId)).resolves.toMatchObject({
-        ok: false,
-        reason: 'file_unavailable'
       })
       expect(api.getUserData).not.toHaveBeenCalled()
     }
   )
 
-  it('does not open an unrelated sidebar file that happens to have the same name', async () => {
-    vi.mocked(api.fetchApi)
-      .mockResolvedValueOnce(Response.json(metadata))
-      .mockResolvedValueOnce(Response.json(content))
-    vi.mocked(api.getUserData).mockResolvedValue(
-      Response.json({ ...graph, nodes: [{ id: 1, type: 'PrivateNode' }] })
-    )
-
-    await expect(fetchSavedWorkflow(workflowId)).resolves.toMatchObject({
-      ok: false,
-      reason: 'file_mismatch'
-    })
+  it.for([
+    { ...snapshot, id: '78ebcb5b-028d-45e8-9f9c-b20f433c364d' },
+    { ...snapshot, id: id.toUpperCase() },
+    { ...snapshot, path: 'workflows/../private.json' },
+    { ...snapshot, path: 'workflows/a\\b.json' },
+    { ...snapshot, path: 'settings.json' },
+    { ...snapshot, path: 'workflows/.index.json' },
+    { ...snapshot, path: 'workflows/folder/.json' },
+    { ...snapshot, path: 'workflows/test.txt' },
+    {
+      ...snapshot,
+      content: JSON.stringify({ '1': { class_type: 'SaveImage', inputs: {} } })
+    },
+    { ...snapshot, content: '{' },
+    { ...snapshot, modified: '2026-10-30T00:00:00Z' },
+    { ...snapshot, modified: 0.5 },
+    { ...snapshot, modified: Number.MAX_SAFE_INTEGER + 1 },
+    { ...snapshot, size: -1 }
+  ])('refuses an uncertified snapshot %j', async (body) => {
+    vi.mocked(api.fetchApi).mockResolvedValue(Response.json(body))
+    await expect(fetchSavedWorkflow(id)).resolves.toMatchObject({ ok: false })
+    expect(api.getUserData).not.toHaveBeenCalled()
   })
 
-  it('reports a record-only save without creating a file or temporary workflow', async () => {
-    vi.mocked(api.fetchApi)
-      .mockResolvedValueOnce(Response.json(metadata))
-      .mockResolvedValueOnce(Response.json(content))
-    vi.mocked(api.getUserData).mockResolvedValue(
-      new Response(null, { status: 404 })
-    )
-
-    await expect(fetchSavedWorkflow(workflowId)).resolves.toMatchObject({
-      ok: false,
-      reason: 'file_unavailable'
-    })
-    expect(api.storeUserData).not.toHaveBeenCalled()
+  it('does not read after cancellation', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    await expect(
+      fetchSavedWorkflow(id, controller.signal)
+    ).resolves.toMatchObject({ ok: false, reason: 'cancelled' })
+    expect(api.fetchApi).not.toHaveBeenCalled()
   })
 })

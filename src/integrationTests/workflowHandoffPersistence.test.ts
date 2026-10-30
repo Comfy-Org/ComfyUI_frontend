@@ -9,7 +9,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { createApp, defineComponent, markRaw, nextTick, ref } from 'vue'
+import { createApp, defineComponent, markRaw, nextTick, ref, toRaw } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
@@ -233,6 +233,46 @@ describe('saved workflow handoff persistence', () => {
     await nextTick()
     return { graph, service, retained, retainedDocument, incoming, saved }
   }
+
+  it.for([false, true])(
+    'preserves and refuses an unknown-ID startup draft colliding with a known saved file (temporary=%s)',
+    async (isTemporary) => {
+      const { retainedDocument, graph } = await prepareRetainedHandoff()
+      const identity = {
+        id: 'c327cae8-2acf-4bfa-bb88-97948a3c008b',
+        ownerId: 'user-a',
+        workspaceId: 'workspace-a'
+      }
+      const replacement = new ComfyWorkflow({
+        path: 'workflows/legacy-collision.json',
+        modified: 1,
+        size: 20,
+        savedFileIdentity: identity
+      })
+      useWorkflowStore().attachWorkflow(replacement)
+      const drafts = useWorkflowDraftStoreV2()
+      drafts.saveDraft(
+        replacement.path,
+        JSON.stringify(createWorkflowGraphData()),
+        { name: replacement.key, isTemporary }
+      )
+      const before = drafts.getDraft(replacement.path)
+      vi.mocked(singletonApp.loadGraphData).mockClear()
+      expect(
+        await drafts.loadPersistedWorkflow({
+          preferredPath: replacement.path,
+          fallbackToLatestDraft: true
+        })
+      ).toBe(false)
+      expect(singletonApp.loadGraphData).not.toHaveBeenCalled()
+      expect(toRaw(useWorkflowStore().activeWorkflow)).toBe(
+        toRaw(retainedDocument)
+      )
+      expect(graph.nodes[0]?.title).toBe('Keep my edits')
+      expect(drafts.getDraft(replacement.path)).toEqual(before)
+      expect(replacement.content).toBeNull()
+    }
+  )
 
   it.for([
     {

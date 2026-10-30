@@ -57,4 +57,4 @@ export type UserConfigResponse = {
 }
 
 export type UserData = string[][]
-export type UserDataFullInfo = Required<UserDataResponseFull>
+export type UserDataFullInfo = Required<UserDataResponseFull> & { id?: string }
