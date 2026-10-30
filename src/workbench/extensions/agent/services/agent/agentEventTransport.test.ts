@@ -647,6 +647,12 @@ describe('agentEventTransport text and tool parts', () => {
     }
   })
 
+  it('leaves the start time unset when the first frame seen is terminal', () => {
+    const message = drive([toolCall('run', 'success', 'call-1')])
+
+    expect(toolParts(message)[0].startedAtMs).toBeUndefined()
+  })
+
   it('preserves a parsed running frame skill through an unnamed completion', () => {
     const running = zAgentWsEvent.parse({
       type: 'agent_tool_call',
