@@ -20,12 +20,7 @@ export interface WidgetFormOptions {
   serializeWidgets?: boolean
   /** True when the payload was replayed from a previous save rather than built here. */
   replayed?: boolean
-  /**
-   * Whether core is the last thing that will write `widgets_values` for this node:
-   * `node.serializeFromStoreState === LGraphNode.prototype.serializeFromStoreState &&
-   * node.serialize === LGraphNode.prototype.serialize`. Required with no default so a new
-   * call site cannot omit the question; a hardcoded `true` reintroduces the defect.
-   */
+  /** True when the node uses core's base serialization implementations. */
   coreIsLastWriter: boolean
 }
 
@@ -95,16 +90,7 @@ function addressableOrder(
   return { order }
 }
 
-/**
- * Prove — or refuse to prove — that `serialised.widgets_values` describes `widgets`, and so
- * whether a `widgets_values_form` may be emitted for this node. See ADR-ECS-WIDGETS-0023.
- *
- * @param widgets the node's live widget list at serialization time
- * @param serialised the node payload as it stands after the extension serialize hook
- * @param producedValues the array `serialiseWidgetValues` returned before the hook ran, or
- *   `undefined` if it never ran; array identity against it is the proof
- * @param options see {@link WidgetFormOptions}
- */
+/** Proves whether core's final positional values match the live widget order. */
 export function proveWidgetForm(
   widgets: readonly WidgetForFormProof[] | undefined,
   serialised: {
@@ -130,10 +116,7 @@ export function proveWidgetForm(
   return { provable: true, refusal: null, order: addressed.order }
 }
 
-/**
- * True when a node's values are object-shaped with no form to interpret them — the population
- * a form would rescue, and which nothing can currently count.
- */
+/** True when object-shaped widget values have no form that interprets them. */
 export function needsFormButHasNone(serialised: {
   widgets_values?: unknown
   widgets_values_form?: unknown
