@@ -253,8 +253,6 @@ const cardBorderClass = computed(() =>
   index.value < 2 ? 'border-secondary' : 'border-smoke-500/20'
 )
 
-// The timer's own pending state IS "the card is being nudged" — tracking it in a
-// second ref would need three paired writes to keep one fact straight.
 const {
   isPending: nudged,
   start: startNudgeTimer,
