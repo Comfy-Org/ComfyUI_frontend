@@ -58,6 +58,34 @@ describe('AudioPreviewPlayer', () => {
     ).not.toBeChecked()
   })
 
+  describe('play/pause button', () => {
+    it('stays paused when the browser rejects playback', async () => {
+      // Safari rejects play() with this DOMException for unsupported sources
+      const play = vi
+        .spyOn(HTMLMediaElement.prototype, 'play')
+        .mockRejectedValue(
+          new DOMException(
+            'The operation is not supported.',
+            'NotSupportedError'
+          )
+        )
+      const pause = vi
+        .spyOn(HTMLMediaElement.prototype, 'pause')
+        .mockImplementation(() => {})
+      const user = userEvent.setup()
+
+      renderPlayer('http://example.com/audio.ogg')
+      pause.mockClear()
+      const button = screen.getByRole('button', { name: 'g.playPause' })
+
+      await user.click(button)
+      await user.click(button)
+
+      expect(play).toHaveBeenCalledTimes(2)
+      expect(pause).not.toHaveBeenCalled()
+    })
+  })
+
   describe('download button', () => {
     it('shows download button when audio is loaded', () => {
       renderPlayer('http://example.com/audio.mp3')

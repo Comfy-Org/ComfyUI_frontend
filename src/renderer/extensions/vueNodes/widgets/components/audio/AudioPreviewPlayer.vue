@@ -164,17 +164,25 @@ const showVolumeTwo = computed(() => !isMuted.value && volume.value > 0.5)
 const showVolumeOne = computed(() => !isMuted.value && volume.value > 0)
 
 // Playback controls
-const togglePlayPause = () => {
-  if (!audioRef.value || !audioRef.value.src) {
+const togglePlayPause = async () => {
+  const audio = audioRef.value
+  if (!audio || !audio.src) {
     return
   }
 
   if (isPlaying.value) {
-    audioRef.value.pause()
-  } else {
-    void audioRef.value.play()
+    audio.pause()
+    isPlaying.value = false
+    return
   }
-  isPlaying.value = !isPlaying.value
+
+  isPlaying.value = true
+  try {
+    await audio.play()
+  } catch (error) {
+    console.warn('Audio playback failed:', error)
+    isPlaying.value = false
+  }
 }
 
 const handleDownload = () => {
