@@ -125,6 +125,13 @@ function workspaceStoreSetup() {
     sidebarTab.value.registerSidebarTab(tab)
   }
 
+  function registerSidebarTabForExtension(
+    tab: SidebarTabExtension,
+    extensionName: string
+  ) {
+    sidebarTab.value.registerSidebarTab(tab, undefined, extensionName)
+  }
+
   /**
    * Unregisters a sidebar tab.
    * @param id The id of the sidebar tab to unregister.
@@ -168,6 +175,7 @@ function workspaceStoreSetup() {
     lastExecutionError: computed(() => executionErrorStore.lastExecutionError),
 
     registerSidebarTab,
+    registerSidebarTabForExtension,
     unregisterSidebarTab,
     getSidebarTabs,
     renderMarkdownToHtml

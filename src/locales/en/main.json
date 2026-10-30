@@ -75,6 +75,11 @@
     "textFailedToLoad": "Text failed to load",
     "liveSamplingPreview": "Live sampling preview",
     "extensionName": "Extension Name",
+    "extensionPath": "Extension Folder",
+    "extensionPaths": "Extensions by Folder",
+    "extensionPathToggle": "Extension folder {name}",
+    "extensionPathSaveRefused": "The extension change was not saved. Please try again.",
+    "extensionPathSaveUnconfirmed": "The extension change could not be confirmed. Reload the page before trying again.",
     "reloadToApplyChanges": "Reload to apply changes",
     "insert": "Insert",
     "systemInfo": "System Info",
@@ -230,6 +235,9 @@
     "custom": "Custom",
     "createdByAgent": "Created by agent",
     "agentCreated": "Agent-created",
+    "agentExtensionAdded": "Your agent added {name}",
+    "agentExtensionDisableFailed": "Couldn't disable the extension. Try again.",
+    "disableExtension": "Disable extension",
     "command": "Command",
     "keybinding": "Keybinding",
     "keybindings": "Keybindings",
@@ -1517,6 +1525,9 @@
     "jobAddedToQueue": "Job queued",
     "jobQueueing": "Job queuing",
     "completedIn": "Finished in {duration}",
+    "downloadingModel": "Downloading {name}",
+    "downloadingModelOf": "Downloading {name} ({index} of {count})",
+    "downloadedOfTotal": "{downloaded} of {total}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
       "openWorkflowNewTab": "Open workflow in new tab",
@@ -2737,6 +2748,7 @@
     "desktopHost": {
       "continueInBrowser": "Finish signing in in your browser",
       "signInFailed": "Sign-in didn't finish. Try again.",
+      "popupBlocked": "Allow pop-ups for this page to sign in.",
       "signOutFailed": "Comfy Desktop is still signed in. Finish or cancel any running install, then sign out again."
     },
     "showPassword": "Show password",
@@ -4109,6 +4121,7 @@
     },
     "triggerLabel": "Running on {deployment}. Choose where this editor runs",
     "triggerLabelNotReady": "{status} Choose where this editor runs",
+    "triggerLabelNew": "New. {label}",
     "currentTooltip": "Running on {deployment}",
     "stoppedTooltip": "Running on {deployment}. It's stopped, so jobs won't run until it's started on the Developer Platform.",
     "notReadyTooltip": "Running on {deployment}. It isn't ready, so jobs won't run until it is.",
@@ -4122,9 +4135,21 @@
     "defaultGoneOwner": "The workspace default was deleted, so members start on Comfy Cloud. Choose a new one under Workspace default.",
     "noDeployments": "This workspace has no deployments yet.",
     "createCustomDeployment": "Create a custom deployment",
-    "createCustomDeploymentTooltip": "Run the editor with your own custom nodes and models. Set it up on the Developer Platform.",
     "manageDeployments": "Manage deployments",
     "manageDeploymentsTooltip": "Manage your Builds and their deployments on the Developer Platform.",
+    "customDeployment": {
+      "title": "Create a custom deployment",
+      "body": "A custom deployment adds the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
+      "pointNodes": "Use custom nodes and models that aren't on Comfy Cloud",
+      "pointGpu": "Work in ComfyUI on the GPU you choose",
+      "pointApi": "Call it from your product as an autoscaling API",
+      "createOnPlatform": "Create on Platform"
+    },
+    "deployCustomNodes": {
+      "title": "Deploy Custom Nodes on Comfy Cloud",
+      "body": "Create a custom deployment that runs your custom nodes and models on Comfy Cloud, and appears under Run on for your workspace.",
+      "pointNodes": "Deploy the custom or private node packs your workflows need"
+    },
     "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
     "reload": "Reload",
@@ -4152,10 +4177,28 @@
     "reason": {
       "starting": "{deployment} is starting. Pick it once it's ready.",
       "startElsewhere": "{deployment} isn't running. Start it on the Developer Platform, then pick it.",
-      "notReady": "{deployment} isn't ready. Pick it once it's ready."
+      "notReady": "{deployment} isn't ready. Pick it once it's ready.",
+      "stopped": "{deployment} is stopped. Start it to run jobs on it.",
+      "failed": "{deployment} failed. Start it again to run jobs on it."
     },
     "missingNodesAfterReason": "It cannot run this workflow. It is missing {nodes}.",
-    "notCheckedAfterReason": "Could not check whether it can run this workflow."
+    "notCheckedAfterReason": "Could not check whether it can run this workflow.",
+    "start": "Start",
+    "retry": "Retry",
+    "startLabel": "Start {deployment}",
+    "startOnPlatformLabel": "Start {deployment} on the Developer Platform",
+    "retryLabel": "Retry starting {deployment}",
+    "startFailed": "{deployment} didn't start.",
+    "startFix": {
+      "noCredits": "Add credits, then retry.",
+      "tooManyRunning": "Stop another deployment, then retry.",
+      "unavailable": "Start it on the Developer Platform for now.",
+      "failed": "Retry, or check it on the Developer Platform."
+    },
+    "pickStopped": "{deployment} is stopped, so jobs won't run. Start it, or pick a ready deployment.",
+    "pickFailed": "{deployment} failed, so jobs won't run. Start it again, or pick a ready deployment.",
+    "stoppedStartTooltip": "Running on {deployment}. It's stopped, so jobs won't run. Open this menu to start it.",
+    "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again."
   },
   "selectionToolbox": {
     "executeButton": {
@@ -5959,6 +6002,7 @@
       "run": "Run",
       "answerFailed": "Could not send your answer. Reload the page and try again.",
       "answerUncertain": "Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.",
+      "answerAcceptedUnconfirmed": "Your answer reached the agent, but we could not confirm whether it was the answer applied. Reload the page to see where things stand.",
       "answerSuperseded": "This was already answered somewhere else, so that answer was used instead of yours."
     },
     "askUnavailable": "The agent is waiting on a step this panel can't show.",
@@ -6176,7 +6220,7 @@
     "workflowSyncFailedTitle": "This workflow can't sync",
     "workflowSyncFailedDetail": "This workflow was created with an incompatible document version. Your canvas has been left unchanged.",
     "workflowSyncFailedDetailCatalogMismatch": "A node in this workflow has changed since the agent last saw it. Your canvas has been left unchanged. Your next message sends your canvas so the agent can rebuild its copy of the workflow.",
-    "workflowSyncFailedDetailStaleClient": "This page is out of date, so the agent's changes can't be shown. Reload the page to see them.",
+    "workflowSyncFailedDetailStaleClient": "This page can't display the current version of this document, so the agent's changes can't be shown here. They are kept. Reloading may fix this; if it doesn't, the update hasn't reached your app yet.",
     "workflowSyncFailedDetailStaleHost": "This page is ahead of the agent service, so the agent's changes can't be shown here yet. Reload the page once the service finishes updating to see them.",
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
