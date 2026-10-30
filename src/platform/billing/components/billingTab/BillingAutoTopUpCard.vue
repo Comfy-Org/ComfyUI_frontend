@@ -8,10 +8,9 @@
       v-if="state.kind === 'loading'"
       class="rounded-xl border border-border px-5 py-4"
     >
-      <div class="flex flex-col gap-2.5">
+      <div class="flex flex-col gap-3">
         <Skeleton class="h-4 w-1/5" />
         <Skeleton class="h-4 w-1/2" />
-        <Skeleton class="h-4 w-1/3" />
       </div>
     </div>
     <p
