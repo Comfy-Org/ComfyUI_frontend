@@ -16,7 +16,7 @@
           </span>
           {{ ext.name }}
         </li>
-        <li v-for="path in changedExtensionPaths" :key="path">
+        <li v-for="path in extensionStore.changedExtensionPaths" :key="path">
           <span>
             {{
               extensionStore.isExtensionPathEnabledAtBoot(path) ? '[-]' : '[+]'
@@ -48,7 +48,7 @@
     </div>
     <ExtensionPathTable
       :paths="extensionStore.extensionPaths"
-      :enabled-by-path
+      :enabled-by-path="extensionStore.enabledByPath"
       :disabled="extensionStore.isSavingExtensionPaths"
       @set-enabled="handleExtensionPathEnabled"
     />
@@ -179,18 +179,6 @@ watch(
   { immediate: true }
 )
 
-const enabledByPath = computed(() => {
-  const disabledPaths = new Set(
-    extensionStore.getCurrentDisabledExtensionPaths()
-  )
-  return Object.fromEntries(
-    extensionStore.extensionPaths.map((path) => [
-      path,
-      !disabledPaths.has(path)
-    ])
-  )
-})
-
 const changedExtensions = computed(() => {
   return extensionStore.extensions.filter(
     (ext) =>
@@ -199,17 +187,10 @@ const changedExtensions = computed(() => {
   )
 })
 
-const changedExtensionPaths = computed(() => {
-  return extensionStore.extensionPaths.filter(
-    (path) =>
-      enabledByPath.value[path] !==
-      extensionStore.isExtensionPathEnabledAtBoot(path)
-  )
-})
-
 const hasChanges = computed(() => {
   return (
-    changedExtensions.value.length > 0 || changedExtensionPaths.value.length > 0
+    changedExtensions.value.length > 0 ||
+    extensionStore.changedExtensionPaths.length > 0
   )
 })
 
@@ -231,16 +212,19 @@ async function setExtensionEnabled(name: string, enabled: boolean) {
 
 async function handleExtensionPathEnabled(path: string, enabled: boolean) {
   const result = await extensionStore.setExtensionPathEnabled(path, enabled)
-  if (result === 'refused') {
-    toast.warning(t('g.warning'), {
-      description: t('g.extensionPathSaveRefused'),
-      duration: 5000
-    })
-  } else if (result === 'unconfirmed') {
-    toast.warning(t('g.warning'), {
-      description: t('g.extensionPathSaveUnconfirmed'),
-      duration: 5000
-    })
+  switch (result) {
+    case 'refused':
+      toast.warning(t('g.warning'), {
+        description: t('g.extensionPathSaveRefused'),
+        duration: 5000
+      })
+      break
+    case 'unconfirmed':
+      toast.warning(t('g.warning'), {
+        description: t('g.extensionPathSaveUnconfirmed'),
+        duration: 5000
+      })
+      break
   }
 }
 

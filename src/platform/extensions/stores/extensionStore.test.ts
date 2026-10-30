@@ -83,6 +83,30 @@ describe('extensionStore', () => {
       expect(store.isExtensionPathEnabledAtBoot('/extensions/b/')).toBe(false)
     })
 
+    it('maps each path to its current setting and lists those that differ from boot', () => {
+      const settingStore = useSettingStore()
+      const store = useExtensionStore()
+      store.loadExtensionPaths(
+        ['/extensions/a/', '/extensions/b/', '/extensions/c/'],
+        ['/extensions/b/']
+      )
+      settingStore.settingValues['Comfy.Extension.DisabledPacks'] = [
+        '/extensions/a/',
+        '/extensions/b/'
+      ]
+
+      expect(store.enabledByPath).toEqual({
+        '/extensions/a/': false,
+        '/extensions/b/': false,
+        '/extensions/c/': true
+      })
+      expect(store.changedExtensionPaths).toEqual(['/extensions/a/'])
+
+      settingStore.settingValues['Comfy.Extension.DisabledPacks'] = []
+
+      expect(store.changedExtensionPaths).toEqual(['/extensions/b/'])
+    })
+
     it('restores a refused extension path change before a successful retry', async () => {
       const settingStore = useSettingStore()
       const store = useExtensionStore()
