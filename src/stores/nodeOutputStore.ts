@@ -312,13 +312,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     setOutputsByLocatorId(nodeLocatorId, outputs, options)
   }
 
-  /**
-   * An `executed` output whose execution id resolves to no live node is
-   * dropped silently (BE-23369, PM-2275): the node may have been re-minted,
-   * replaced, or removed between the run starting and this output landing.
-   * Report it so a thin Sentry relay names which output and which id, instead
-   * of only "one Save Image node didn't render".
-   */
   function reportUnresolvedExecutionId(
     executionId: NodeExecutionId,
     outputs: ExecutedWsMessage['output'] | ResultItem
@@ -330,7 +323,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       context: {
         executionId,
         filenames: incomingImages
-          ?.map((image) => image.filename)
+          ?.filter(isResultItem)
+          .map((image) => image.filename)
           .filter((filename): filename is string => !!filename)
       }
     })

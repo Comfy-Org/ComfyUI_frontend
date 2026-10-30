@@ -285,7 +285,6 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
 describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved execution id', () => {
   beforeEach(() => {
     app.nodeOutputs = {}
-    vi.mocked(reportError).mockClear()
   })
 
   it('reports the execution id and output filenames instead of dropping the output silently', () => {
@@ -326,6 +325,26 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved executi
       expect.any(Error),
       expect.objectContaining({
         context: { executionId, filenames: undefined }
+      })
+    )
+  })
+
+  it('skips malformed image entries while reporting the unresolved output', () => {
+    vi.mocked(
+      graphTraversalUtil.executionIdToNodeLocatorId
+    ).mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs(fromAny([null, { filename: 'valid.png' }]))
+    )
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: { executionId, filenames: ['valid.png'] }
       })
     )
   })
