@@ -275,7 +275,12 @@ function mergeSnapshotThinking(
   offset: number
 ): AssistantMessage['parts'] {
   const stored = thinkingByRound(persistedParts)
-  const live = thinkingByRound(liveParts)
+  const live = storedRoundKeys(
+    thinkingByRound(liveParts),
+    toolCallIdsOf(liveParts),
+    toolCallIdsOf(persistedParts),
+    offset
+  )
   const persistedCallIds = new Set(toolCallIdsOf(persistedParts))
   const unplaced = new Set<ThinkingPart>()
   const replaced = new Map<number, ThinkingPart[]>()
@@ -317,6 +322,33 @@ function mergeSnapshotThinking(
   )
 }
 
+function storedRoundKeys<T>(
+  liveRounds: Map<RoundKey, T>,
+  liveCallIds: string[],
+  persistedCallIds: string[],
+  offset: number
+): Map<RoundKey, T> {
+  const persisted = new Set(persistedCallIds)
+  const live = new Set(liveCallIds)
+  const keyed = new Map<RoundKey, T>()
+  for (const [round, value] of liveRounds) {
+    if (round === FINAL_ROUND || persisted.has(round)) {
+      keyed.set(round, value)
+      continue
+    }
+    const position = liveCallIds.indexOf(round) + offset
+    const atPosition =
+      position < persistedCallIds.length
+        ? persistedCallIds.at(position)
+        : undefined
+    keyed.set(
+      atPosition !== undefined && !live.has(atPosition) ? atPosition : round,
+      value
+    )
+  }
+  return keyed
+}
+
 function toolCallIdsOf(parts: AssistantMessage['parts']): string[] {
   return parts.flatMap((part) => (part.type === 'tool' ? [part.callId] : []))
 }
@@ -328,11 +360,11 @@ function liveToolOffset(
   const live = toolCallIdsOf(liveParts)
   const persisted = toolCallIdsOf(persistedParts)
   if (live.length === 0) return persisted.length
-  const trailing = Math.max(0, persisted.length - live.length)
-  for (let offset = 0; offset <= trailing; offset += 1)
-    if (live.every((callId, index) => persisted[offset + index] === callId))
-      return offset
-  return trailing
+  for (const [index, callId] of live.entries()) {
+    const at = persisted.indexOf(callId)
+    if (at >= index) return at - index
+  }
+  return Math.max(0, persisted.length - live.length)
 }
 
 function preserveCanvasConfirmation(
