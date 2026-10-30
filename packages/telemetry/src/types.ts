@@ -33,7 +33,6 @@ import { BILLING_TELEMETRY_EVENTS } from '@comfyorg/account-core/billing'
 import type { BillingSource } from '@comfyorg/billing-contract'
 import type {
   AgentRunMode,
-  GetFeaturesResponses,
   SubscriptionTier,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
@@ -880,17 +879,6 @@ export type AgentStarterPromptId =
   | 'slot_4'
   | 'slot_5'
   | 'unregistered'
-export type AgentStarterPromptAssignment = NonNullable<
-  GetFeaturesResponses[200]['agent-starter-prompt-set']
->
-interface AgentStarterPromptExperimentMetadata {
-  /**
-   * Assignment of the prompt set that rendered. Optional consumers omit it
-   * for QA overrides, unsupported locales, and surfaces rendered before
-   * authenticated config.
-   */
-  '$feature/agent-starter-prompt-set': AgentStarterPromptAssignment
-}
 /**
  * Where the free-use notice was placed, for the DES-1221 placement experiment.
  *
@@ -925,10 +913,10 @@ export interface AgentCreditTransitionNoticeMetadata extends Record<
 > {
   action: 'shown' | 'dismissed'
 }
-export interface AgentStarterPromptClickedMetadata
-  extends
-    Record<string, unknown>,
-    Partial<AgentStarterPromptExperimentMetadata> {
+export interface AgentStarterPromptClickedMetadata extends Record<
+  string,
+  unknown
+> {
   prompt_id: AgentStarterPromptId
   /** Slot position, so a reorder is visible rather than silently re-labelling. */
   prompt_index: number
@@ -938,9 +926,8 @@ export interface AgentStarterPromptClickedMetadata
    * How many of that set the viewer could actually see. A panel narrower than
    * 460px hides everything past the third chip with a container query, so this
    * is 3 there and `prompt_count` elsewhere. Deliberately not folded into
-   * `prompt_count`: that field has to keep meaning "set size" for the
-   * starter-prompt set experiment to read it, and a reader cannot otherwise
-   * tell a shrunken set from a narrow panel.
+   * `prompt_count`: that field has to keep meaning "set size", and a reader
+   * cannot otherwise tell a shrunken set from a narrow panel.
    */
   visible_prompt_count: number
   /**
@@ -967,12 +954,7 @@ export interface AgentStarterPromptClickedMetadata
    */
   draft_was_empty: boolean
 }
-export interface AgentStarterPromptExposureMetadata
-  extends Record<string, unknown>, AgentStarterPromptExperimentMetadata {}
-export interface AgentMessageSentMetadata
-  extends
-    Record<string, unknown>,
-    Partial<AgentStarterPromptExperimentMetadata> {
+export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
   node_tag_count: number
   /**
@@ -1430,6 +1412,28 @@ export interface FetchTimeoutMetadata {
   timeout_ms: number
 }
 
+/** How a request that got a retryable status (429/502/503/504) ended. */
+export type FetchStatusRetryOutcome =
+  | 'recovered'
+  | 'exhausted'
+  | 'retry_after_too_long'
+  | 'timeout_budget'
+  | 'failed'
+
+/** One request that hit a retryable status in the shared status retry. */
+export interface FetchStatusRetryMetadata {
+  transport: 'fetch' | 'axios'
+  method: string
+  host: string
+  /** Route group only, as in `app:fetch_timeout`, e.g. `/billing/:resource`. */
+  route: string
+  /** Requests sent, including the first. */
+  attempts: number
+  /** The last status the request got, if any. */
+  final_status?: number
+  outcome: FetchStatusRetryOutcome
+}
+
 /**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
@@ -1574,9 +1578,6 @@ export interface TelemetryProvider {
   trackAgentStarterPromptClicked?(
     metadata: AgentStarterPromptClickedMetadata
   ): void
-  trackAgentStarterPromptExposure?(
-    metadata: AgentStarterPromptExposureMetadata
-  ): void
   trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
   trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
@@ -1617,6 +1618,7 @@ export interface TelemetryProvider {
 
   // Network error events
   trackFetchTimeout?(metadata: FetchTimeoutMetadata): void
+  trackFetchStatusRetry?(metadata: FetchStatusRetryMetadata): void
 }
 
 /**
@@ -1765,7 +1767,6 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
-  AGENT_STARTER_PROMPT_EXPOSURE: 'app:agent_starter_prompt_exposure',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
   AGENT_CREDIT_TRANSITION_NOTICE: 'app:agent_credit_transition_notice',
@@ -1799,6 +1800,7 @@ export const TelemetryEvents = {
 
   // Network
   FETCH_TIMEOUT: 'app:fetch_timeout',
+  FETCH_STATUS_RETRY: 'app:fetch_status_retry',
 
   WORKSPACE_SCOPE_MISMATCH: 'workspace_scope_mismatch'
 } as const
@@ -1905,4 +1907,5 @@ export type TelemetryEventProperties =
   | AgentPaywallCtaMetadata
   | AgentCreditTransitionNoticeMetadata
   | FetchTimeoutMetadata
+  | FetchStatusRetryMetadata
   | WorkspaceScopeMismatchMetadata

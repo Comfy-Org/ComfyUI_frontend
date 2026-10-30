@@ -171,7 +171,6 @@ defineExpose({
 
   position: absolute;
   bottom: var(--whats-new-popup-bottom);
-  z-index: 1000;
   pointer-events: auto;
 }
 

@@ -4,7 +4,7 @@ import { snapPoint } from '@/lib/litegraph/src/measure'
 import { captureWidgetRestorationSlots } from '@/lib/litegraph/src/node/widgetsView'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 export function createMissingNode(
