@@ -117,6 +117,7 @@ interface BillingOperation {
   businessAttemptStartedAt?: number
   actionUrl: string | null
   authenticationState: BillingAuthenticationState | null
+  authenticationDeadline?: string
   isAuthenticating: boolean
   canRetryAuthentication: boolean
   authenticationRequiredSeen: boolean
@@ -416,7 +417,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       updateOperationPhase(opId, response.phase ?? null)
       if (stopIfTimedOut(opId, operations.value.get(opId) ?? operation)) return
 
-      updateOperationActionUrl(opId, validateActionUrl(response.action_url))
+      updateOperationActionUrl(
+        opId,
+        validateActionUrl(response.action_url),
+        response.authentication_deadline
+      )
       scheduleNextPoll(opId)
     } catch {
       const currentOperation = operations.value.get(opId)
@@ -573,12 +578,17 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     syncProgressToastOnChange(operation, updated)
   }
 
-  function updateOperationActionUrl(opId: string, actionUrl: string | null) {
+  function updateOperationActionUrl(
+    opId: string,
+    actionUrl: string | null,
+    authenticationDeadline?: string
+  ) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
     const updated: BillingOperation = {
       ...operation,
       actionUrl,
+      authenticationDeadline,
       authenticationRequiredSeen:
         operation.authenticationRequiredSeen || actionUrl !== null
     }

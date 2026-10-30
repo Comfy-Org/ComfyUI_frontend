@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { PendingBillingOperation } from '@comfyorg/account-core/billing'
 import { CheckoutTermsNote } from '@comfyorg/account-ui/billing/checkout'
 import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -52,7 +53,7 @@ const emit = defineEmits<{
   continueVerification: []
 }>()
 
-const { t, te } = useI18n()
+const { d, t, te } = useI18n()
 
 /** A plan authorizes a charge each period; a top-up authorizes one. */
 const PURCHASE_COPY = {
@@ -101,6 +102,20 @@ function guardConsent(event: Event) {
   emit('consentMissing')
 }
 
+function challengeFootnote(operation: PendingBillingOperation): string {
+  const deadline = new Date(operation.authenticationDeadline ?? '')
+  if (Number.isNaN(deadline.getTime()))
+    return t('checkout.fullPage.phase.challenge')
+  return t('checkout.fullPage.phase.challengeVerifyBy', {
+    time: d(deadline, {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    })
+  })
+}
+
 /** The line above Pay for a phase in flight; empty at rest so the live region stays mounted. */
 const footnote = computed(() => {
   if (
@@ -109,7 +124,7 @@ const footnote = computed(() => {
     phase.kind === 'unknown'
   )
     return ''
-  if (phase.kind === 'challenge') return t('checkout.fullPage.phase.challenge')
+  if (phase.kind === 'challenge') return challengeFootnote(phase.operation)
   if (phase.kind === 'processing')
     return t('checkout.fullPage.phase.processing')
   const named = `checkout.fullPage.phase.methods.${phase.method}`

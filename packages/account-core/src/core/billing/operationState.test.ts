@@ -257,6 +257,42 @@ describe('reduceBillingOperation', () => {
     }
   )
 
+  it.for([
+    {
+      latest: '2026-10-30T15:40:00Z',
+      expected: '2026-10-30T15:40:00Z'
+    },
+    { latest: undefined, expected: undefined }
+  ])(
+    "carries only the latest poll's authentication deadline ($latest)",
+    ({ latest, expected }) => {
+      const served = polled(pending({ kind: 'topup' }), {
+        authentication_state: 'requires_action',
+        authentication_deadline: '2026-10-30T15:40:00Z'
+      })
+
+      const next = polled(served, {
+        authentication_state: 'requires_action',
+        ...(latest === undefined ? {} : { authentication_deadline: latest })
+      })
+
+      expect((next as PendingBillingOperation).authenticationDeadline).toBe(
+        expected
+      )
+    }
+  )
+
+  it('drops the authentication deadline once the server settles the operation', () => {
+    const served = polled(pending({ kind: 'topup' }), {
+      authentication_state: 'requires_action',
+      authentication_deadline: '2026-10-30T15:40:00Z'
+    })
+
+    const next = polled(served, { status: 'succeeded' })
+
+    expect(next).not.toHaveProperty('authenticationDeadline')
+  })
+
   it('reads a retryable failure served without a reason as a generic decline', () => {
     const failed = polled(pending(), {
       authentication_state: 'failed_retryable'

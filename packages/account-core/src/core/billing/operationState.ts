@@ -143,6 +143,8 @@ export type PendingBillingOperation = BillingOperationIdentity & {
   readonly actionUrl?: string
   readonly challenge?: EmbeddedChallenge
   readonly authenticationState?: BillingAuthenticationState
+  /** The server's deadline for the customer's authentication, as served; absent is no claim. */
+  readonly authenticationDeadline?: string
   readonly serverPhase?: BillingOperationServerPhase
   /** Set while the customer's last attempt was declined and they may try again. */
   readonly declineReason?: BillingDeclineReason
@@ -423,6 +425,7 @@ function reducePending(
     ...(status.plan === undefined ? {} : { plan: status.plan }),
     challenge: nextChallenge(state, status),
     authenticationState,
+    authenticationDeadline: status.authentication_deadline,
     actionUrl,
     serverPhase: status.phase,
     declineReason,
@@ -454,6 +457,7 @@ function settleChallenge(
     ...state,
     challenge,
     authenticationState: 'processing',
+    authenticationDeadline: undefined,
     actionUrl: undefined,
     declineReason: undefined
   }
