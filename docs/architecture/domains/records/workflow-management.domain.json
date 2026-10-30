@@ -64,10 +64,6 @@
       "role": "application"
     },
     {
-      "path": "src/platform/workflow/core/canvasTrackerOwnership.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/workflow/core/utils/pendingWarnings.test.ts",
       "role": "application"
     },
@@ -142,6 +138,10 @@
     {
       "path": "src/types/workflowMenuItem.ts",
       "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/core/canvasTrackerOwnership.ts",
+      "role": "application"
     },
     {
       "path": "src/utils/syncUtil.ts",

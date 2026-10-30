@@ -217,6 +217,14 @@ import {
 
 export { ANIM_PREVIEW_WIDGET } from '@/composables/node/useNodeAnimatedImage'
 
+async function beginGraphLoad(suppressWorkflowReset: boolean) {
+  const replaceCanvas = useWorkflowService().beforeLoadNewGraph(
+    suppressWorkflowReset
+  )
+  await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+  replaceCanvas()
+}
+
 function isMeshModelFile(file: File): boolean {
   const name = file.name.toLowerCase()
   return SUPPORTED_MESH_EXTENSIONS.has(name.slice(name.lastIndexOf('.')))
@@ -304,14 +312,6 @@ function createNodeOutputsMutationView(
       return deleted
     }
   })
-}
-
-async function beginGraphLoad(suppressWorkflowReset: boolean) {
-  const replaceCanvas = useWorkflowService().beforeLoadNewGraph(
-    suppressWorkflowReset
-  )
-  await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-  replaceCanvas()
 }
 
 export class ComfyApp implements IComfyApp {
