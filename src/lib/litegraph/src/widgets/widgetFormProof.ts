@@ -1,4 +1,7 @@
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+interface WidgetForFormProof {
+  name: string
+  serialize?: boolean
+}
 
 /**
  * Whether a node's serialized widget values can be *proven* to describe its own widget list.
@@ -28,7 +31,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
  */
 
 /** Why a node's widget values could not be proven. `null` reason means they were. */
-export type WidgetFormRefusal =
+type WidgetFormRefusal =
   /**
    * The node's class can still rewrite the payload after this point, so whatever we are
    * looking at is not final and proving anything about it would be premature.
@@ -107,7 +110,9 @@ function refuse(refusal: WidgetFormRefusal): WidgetFormProof {
  * every `LoadImage` serializes 2 (the upload button is too). Reading `options.serialize` here
  * would silently drop both and produce a form one slot short.
  */
-function serializingWidgets(widgets: readonly IBaseWidget[]): IBaseWidget[] {
+function serializingWidgets(
+  widgets: readonly WidgetForFormProof[]
+): WidgetForFormProof[] {
   return widgets.filter((widget) => widget.serialize !== false)
 }
 
@@ -157,7 +162,7 @@ function preconditionRefusal(
  * that reasons about provenance; everything after it reasons about names.
  */
 function provenValues(
-  widgets: readonly IBaseWidget[] | undefined,
+  widgets: readonly WidgetForFormProof[] | undefined,
   serialised: { widgets_values?: unknown; has_errors?: boolean },
   producedValues: unknown,
   options: WidgetFormOptions
@@ -188,7 +193,7 @@ function provenValues(
  * Phase 2: can every serializing widget's name serve as an address?
  */
 function addressableOrder(
-  serializing: readonly IBaseWidget[]
+  serializing: readonly WidgetForFormProof[]
 ): { order: string[] } | { refusal: WidgetFormRefusal } {
   const order: string[] = []
   const seen = new Set<string>()
@@ -221,7 +226,7 @@ function addressableOrder(
  *   check that keeps this a proof rather than an assumption.
  */
 export function proveWidgetForm(
-  widgets: readonly IBaseWidget[] | undefined,
+  widgets: readonly WidgetForFormProof[] | undefined,
   // `widgets_values` is deliberately `unknown` rather than the serialised-node type's
   // `WidgetValue[]`. Every interesting input here VIOLATES that type: an extension replaced
   // the array with an object, or deleted it. Typing the parameter as the shape we expect
