@@ -233,10 +233,33 @@ describe('sentryBeforeSend', () => {
     expect(result?.tags?.extension).toBeUndefined()
   })
 
+  it.for(['<anonymous>', '[native code]', '   '])(
+    'leaves origin untagged for an unidentifiable top frame %s',
+    (path) => {
+      const event = {
+        type: undefined,
+        exception: {
+          values: [
+            {
+              value: 'Application failed',
+              stacktrace: { frames: [{ filename: path }] }
+            }
+          ]
+        }
+      } satisfies ErrorEvent
+
+      const result = sentryBeforeSend(event, {})
+      expect(result).not.toBeNull()
+      expect(result?.tags?.error_origin).toBeUndefined()
+      expect(result?.tags?.extension).toBeUndefined()
+    }
+  )
+
   it.for([
     "Cannot destructure property 'useSessionCookie' of '(intermediate value)' as it is undefined.",
     "Cannot read properties of undefined (reading 'useWorkspaceAuthStore')",
-    "undefined is not an object (evaluating 'workspaceAuthStore.user')"
+    "undefined is not an object (evaluating 'workspaceAuthStore.user')",
+    'undefined has no properties'
   ])(
     'tags an immediate undefined follow-on from a stale chunk: %s',
     (value) => {
