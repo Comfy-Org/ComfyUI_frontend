@@ -170,6 +170,11 @@ and npm (`@comfyorg/comfyui-frontend-types`).
 branch has unreleased commits, it triggers a patch bump and drafts a PR to
 `Comfy-Org/ComfyUI` updating `requirements.txt`.
 
+Every run reuses one branch and PR (`automation/comfyui-frontend-bump`). If
+that PR is still open and already pins a newer frontend than the run's target,
+the run leaves it unchanged rather than downgrading it, so a patch on an older
+line never replaces a pending bump to a newer minor.
+
 ## Workflows
 
 | Workflow                         | Purpose                                          |

@@ -338,6 +338,14 @@ jobs:
           token: ${{ secrets.PR_GH_TOKEN }}
           path: comfyui
 
+      - name: Checkout bump guard
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            scripts/cicd/comfyui-bump-guard.sh
+          sparse-checkout-cone-mode: false
+          path: frontend-scripts
+
       - name: Sync with upstream
         working-directory: comfyui
         run: |
@@ -433,6 +441,25 @@ jobs:
           if [[ "$COMFYUI_FORK" != "Comfy-Org/ComfyUI" ]]; then
             HEAD_BRANCH="${FORK_OWNER}:${BRANCH}"
           fi
+
+          # The branch is shared across release lines. If its open PR already
+          # pins a newer frontend (say 1.58.1), a patch on an older line (1.57.6)
+          # must not replace it: Comfy-Org/ComfyUI#17375 merged that way.
+          TARGET_VERSION="${{ needs.resolve-version.outputs.target_version }}"
+          PENDING_VERSION=""
+          OPEN_PR=$(gh pr list --repo Comfy-Org/ComfyUI --head "$HEAD_BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$OPEN_PR" ]; then
+            PENDING_VERSION=$(gh api "repos/${COMFYUI_FORK}/contents/requirements.txt?ref=${BRANCH}" --jq '.content' \
+              | base64 -d | sed -n 's/^comfyui-frontend-package==\([0-9A-Za-z.]*\).*/\1/p')
+          fi
+          DECISION=$(../frontend-scripts/scripts/cicd/comfyui-bump-guard.sh "$TARGET_VERSION" "$PENDING_VERSION")
+          if [ "$DECISION" = "skip" ]; then
+            MSG="Open ComfyUI PR #${OPEN_PR} already pins ${PENDING_VERSION}, newer than ${TARGET_VERSION}; leaving it unchanged."
+            echo "::warning title=ComfyUI bump not replaced::${MSG}"
+            echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
           git checkout -B "$BRANCH"
           git add requirements.txt
 
