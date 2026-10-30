@@ -513,12 +513,11 @@ export function registerAgentPanelExtension(): void {
         return true
       }
 
+      const isResumingAccept = (): boolean =>
+        isAuthInitialized.value && (resumingAccept || resumePendingAccept())
+
       const loadConsentIfEligible = (): void => {
-        if (
-          isAuthInitialized.value &&
-          (resumingAccept || resumePendingAccept())
-        )
-          return
+        if (isResumingAccept()) return
         const { introduceBeforeSignIn } = agentPanelStore.onboarding
         if (
           !agentPanelStore.enabled ||
