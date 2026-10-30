@@ -507,6 +507,7 @@ type RetainedToolCall = Pick<
   'callId' | 'name' | 'state' | 'ok' | 'durationMs'
 > & {
   turnId: AssistantMessage['id']
+  startedAtMs: number | null
 }
 
 interface RetainedTurnThinking {
@@ -548,7 +549,8 @@ function toRetainedToolCall(
     name: part.name,
     state: part.state,
     ok: part.ok,
-    durationMs: part.durationMs
+    durationMs: part.durationMs,
+    startedAtMs: part.startedAtMs ?? null
   }
 }
 
@@ -661,7 +663,7 @@ function thinkingTrailer(
 }
 
 function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
-  const context = `Current conversation metadata retained in this tab only. Restored history may omit tool calls. The latest turn with tool calls is exempt from the ${MAX_TOOL_CALLS}-call cap applied to older turns; if the section still exceeds its size limit, the oldest calls are dropped first. Tool durations are backend-reported; missing ok or durationMs means no outcome or timing was observed. State is the retained UI state, not proof a request is still running. No arguments, responses, prompts or reasoning are included.`
+  const context = `Current conversation metadata retained in this tab only. Restored history may omit tool calls. The latest turn with tool calls is exempt from the ${MAX_TOOL_CALLS}-call cap applied to older turns; if the section still exceeds its size limit, the oldest calls are dropped first. Tool durations are backend-reported; missing ok or durationMs means no outcome or timing was observed. startedAtMs is this tab's clock (epoch ms) at the first frame for the call; null for calls restored from history. State is the retained UI state, not proof a request is still running. No arguments, responses, prompts or reasoning are included.`
   if (messages === undefined) {
     return { section: context, status: 'unavailable' }
   }

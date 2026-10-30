@@ -450,7 +450,8 @@ describe('collectCrdtDebugReport', () => {
         name: 'inspect_workflow',
         state: 'done',
         ok: true,
-        durationMs: 137
+        durationMs: 137,
+        startedAtMs: null
       },
       {
         turnId: 'turn-43',
@@ -458,13 +459,15 @@ describe('collectCrdtDebugReport', () => {
         name: 'edit_workflow',
         state: 'done',
         ok: false,
-        durationMs: 294
+        durationMs: 294,
+        startedAtMs: null
       },
       {
         turnId: 'turn-43',
         callId: 'call-unsettled',
         name: 'run_workflow',
-        state: 'streaming'
+        state: 'streaming',
+        startedAtMs: null
       }
     ])
     expect(report).not.toContain('private assistant response')
@@ -476,6 +479,33 @@ describe('collectCrdtDebugReport', () => {
       ['text', 'tool'],
       ['thinking', 'tool', 'tool']
     ])
+  })
+
+  it('reports each tool call start time, and null for restored calls', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('turn-started-at')),
+          parts: [
+            ...toolCalls('turn-started-at', 2).map((part, index) => ({
+              ...part,
+              startedAtMs: (index + 1) * 1000
+            })),
+            ...toolCalls('turn-started-at', 1, 2)
+          ]
+        }
+      ]
+    })
+
+    const [calls] = toolSectionJson(report) as { startedAtMs: unknown }[][]
+    expect(calls.map(({ startedAtMs }) => startedAtMs)).toEqual([
+      1000,
+      2000,
+      null
+    ])
+    expect(report).toContain("startedAtMs is this tab's clock")
   })
 
   function toolCalls(turn: string, count: number, offset = 0): ToolPart[] {
@@ -878,7 +908,8 @@ describe('collectCrdtDebugReport', () => {
         name: 'inspect_workflow',
         state: 'done',
         ok: true,
-        durationMs: 41
+        durationMs: 41,
+        startedAtMs: null
       }
     ])
     expect(report.length).toBeLessThan(70_000)

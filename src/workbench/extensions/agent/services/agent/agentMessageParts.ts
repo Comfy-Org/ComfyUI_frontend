@@ -30,6 +30,8 @@ export interface ToolPart {
   state: PartState
   ok?: boolean
   durationMs?: number
+  /** Client clock (Date.now()) at this call's first frame; absent on parts rebuilt from persisted history. */
+  startedAtMs?: number
   /** Whether a successful canvas write was observed on the bound canvas. */
   canvasConfirmed?: boolean
 }
