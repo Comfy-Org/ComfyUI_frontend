@@ -44,7 +44,7 @@
             :disabled="queuedCount === 0"
             @click="clearQueuedWorkflows"
           >
-            <i class="icon-[lucide--list-x] size-4" />
+            <i class="icon-[lucide--list-x]" />
           </Button>
         </div>
       </div>
@@ -100,7 +100,7 @@ import Tab from '@comfyorg/design-system/tab/Tab'
 import TabList from '@comfyorg/design-system/tab/TabList'
 import Button from '@comfyorg/design-system/button/Button'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'

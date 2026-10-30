@@ -14,7 +14,7 @@ import type {
   GapAxis,
   LayoutBox
 } from '@/components/graph/selectionGrid/selectionGridLayout'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const box = (
   id: string,

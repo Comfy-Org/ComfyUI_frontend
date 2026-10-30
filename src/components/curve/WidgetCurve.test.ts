@@ -5,11 +5,11 @@ import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import type { CurveData } from './types'
+import type { CurveData } from '@comfyorg/graph-model/curve'
 import WidgetCurve from './WidgetCurve.vue'
 
 const i18n = createI18n({

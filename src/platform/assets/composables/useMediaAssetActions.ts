@@ -6,8 +6,9 @@ import { useI18n } from 'vue-i18n'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -24,7 +25,8 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   getAssetDisplayName,
-  getAssetStoredFilename
+  getAssetStoredFilename,
+  getOutputSubfolder
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { getAssetType } from '@/platform/assets/utils/assetTypeUtil'
 import { getAssetFileUrl } from '@/platform/assets/utils/assetUrlUtil'
@@ -50,12 +52,13 @@ import type { AssetDownload } from './useAssetDownload'
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
 function createAssetWidgetPath(asset: AssetItem): string {
-  const metadata = getOutputAssetMetadata(asset.user_metadata)
-  const assetType = getAssetType(asset, 'input')
+  const assetType = isGeneratedTempOutput(asset)
+    ? 'temp'
+    : getAssetType(asset, 'input')
 
   return createAnnotatedPath({
     filename: getAssetStoredFilename(asset),
-    subfolder: metadata?.subfolder ?? '',
+    subfolder: getOutputSubfolder(asset.user_metadata) ?? '',
     type: isResultItemType(assetType) ? assetType : undefined
   })
 }
@@ -624,8 +627,10 @@ export function useMediaAssetActions() {
         const stored = getStoredOutputIdentity(asset)
         const variants = widgetValueVariants(
           asset.name,
-          stored?.type ?? getAssetType(asset, 'input'),
-          metadata?.subfolder,
+          isGeneratedTempOutput(asset)
+            ? 'temp'
+            : (stored?.type ?? getAssetType(asset, 'input')),
+          getOutputSubfolder(asset.user_metadata),
           asset.hash ?? stored?.hash
         )
         return [

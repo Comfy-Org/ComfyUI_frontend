@@ -5,7 +5,6 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { computed, nextTick } from 'vue'
 
 vi.mock(import('@/platform/billing/api/billingApi'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 /** Null is the legacy client; a rail is what the SDK store would hand back. */
 const railState = vi.hoisted(() => ({
@@ -44,7 +43,7 @@ const importUseBillingPlans = async () => {
     await Promise.all([
       import('@/platform/billing/subscription/composables/useBillingPlans'),
       import('@/platform/billing/api/billingApi'),
-      import('@/platform/telemetry/reportError')
+      import('@comfyorg/telemetry/reportError')
     ])
   return { useBillingPlans, billingApi, reportError }
 }

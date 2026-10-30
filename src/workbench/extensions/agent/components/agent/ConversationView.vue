@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
 import {
   useEventListener,
   useIntersectionObserver,
@@ -46,7 +47,7 @@ const emit = defineEmits<{
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
-  paywallAction: [action: AgentPaywallAction]
+  paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
 }>()
 
 const { t } = useI18n()
@@ -263,7 +264,9 @@ watch(
                 (askId: string, workflowId: string, workflowName?: string) =>
                   emit('openWorkflow', askId, workflowId, workflowName)
               "
-              @paywall-action="emit('paywallAction', $event)"
+              @paywall-action="
+                (action, surface) => emit('paywallAction', action, surface)
+              "
             />
           </template>
         </div>
@@ -280,7 +283,7 @@ watch(
       class="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full shadow-md ring-1 ring-muted-foreground"
       @click="scrollToLatest"
     >
-      <span class="icon-[lucide--chevron-down] size-4" />
+      <i aria-hidden="true" class="icon-[lucide--chevron-down]" />
     </Button>
   </div>
 </template>

@@ -6,7 +6,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/i18n'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false

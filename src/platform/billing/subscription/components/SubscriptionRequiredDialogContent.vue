@@ -10,7 +10,7 @@
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
-      <i class="pi pi-times text-xl" aria-hidden="true" />
+      <i class="icon-[lucide--x] size-5" aria-hidden="true" />
     </Button>
     <div class="flex flex-col items-center gap-3">
       <div
@@ -49,7 +49,7 @@
           @click="handleContactUs"
         >
           {{ $t('subscription.contactUs') }}
-          <i class="pi pi-comments" />
+          <i class="icon-[lucide--messages-square]" />
         </Button>
         <span class="text-sm text-muted-foreground">{{ $t('g.or') }}</span>
         <Button
@@ -58,7 +58,7 @@
           @click="handleViewEnterprise"
         >
           {{ $t('subscription.viewEnterprise') }}
-          <i class="pi pi-external-link" />
+          <i class="icon-[lucide--external-link]" />
         </Button>
       </div>
     </div>
@@ -75,7 +75,7 @@
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
-      <i class="pi pi-times" aria-hidden="true" />
+      <i class="icon-[lucide--x]" aria-hidden="true" />
     </Button>
 
     <div
@@ -161,9 +161,9 @@ import SubscribeButton from '@/platform/billing/subscription/components/Subscrib
 import SubscriptionBenefits from '@/platform/billing/subscription/components/SubscriptionBenefits.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 
 const { onClose, reason, paymentIntentSource, onChooseTeam } = defineProps<{
   onClose: () => void

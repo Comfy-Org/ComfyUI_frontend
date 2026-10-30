@@ -31,8 +31,8 @@ import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
-import type { CurveData } from '@/components/curve/types'
-import type { useExtensionService } from '@/services/extensionService'
+import type { CurveData } from '@comfyorg/graph-model/curve'
+import type { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
@@ -43,11 +43,11 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import * as keybindingServiceModule from '@/platform/keybindings/keybindingService'
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -65,14 +65,14 @@ import {
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
 import type { NodeReplacement } from '@/platform/workflowErrors/nodeReplacement/types'
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
+import type { NodeError } from '@comfyorg/api-client/types'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 import { createNode } from '@/utils/createNode'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -94,20 +94,23 @@ import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import { setTelemetryRegistry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
-import { PromptExecutionError, api } from '@/scripts/api'
+import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
+import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appRegistry'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createTestRootGraph,
   createTestSubgraph,
@@ -116,7 +119,7 @@ import {
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { zeroUuid } from '@/utils/uuid'
 import type { importA1111 } from './pnginfo'
@@ -147,6 +150,8 @@ const {
   mockValidateWorkflow: vi.fn<WorkflowValidation['validateWorkflow']>()
 }))
 
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
+
 vi.mock(
   import('@/platform/workflow/validation/composables/useWorkflowValidation'),
   () => ({
@@ -175,7 +180,7 @@ vi.mock(import('@/scripts/metadata/parser'), () => ({
 
 vi.mock(import('@/utils/eventUtils'), { spy: true })
 
-vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
 vi.mock(import('./pnginfo'), () => ({
   importA1111: mockImportA1111
@@ -191,7 +196,7 @@ vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   })
 }))
 
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
   useExtensionService: vi.fn(() =>
     fromPartial<ReturnType<typeof useExtensionService>>(mockExtensionService)
   )
@@ -513,14 +518,14 @@ describe('ComfyApp', () => {
       const [offer] = useToast().toasts
       expect(offer).toEqual(
         expect.objectContaining({
-          action: expect.objectContaining({ label: t('g.migrate') }),
+          actions: [expect.objectContaining({ label: t('g.migrate') })],
           kind: 'warning',
           title: t('toastMessages.migrateToLitegraphReroute')
         })
       )
       const reload = vi.spyOn(app, 'loadGraphData').mockResolvedValue(true)
 
-      await offer.action?.onClick()
+      await offer.actions[0]?.onClick()
 
       const [migrated] = reload.mock.calls[0]
       expect(migrated?.nodes.map((node) => node.type)).not.toContain('Reroute')
@@ -1774,6 +1779,32 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('redraws and refreshes the queue UI once after submitting a batch', async () => {
+      prepareEmptyPromptQueue()
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockResolvedValueOnce({ prompt_id: 'job-1' })
+        .mockResolvedValueOnce({ prompt_id: 'job-2' })
+      let resolveUpdate!: () => void
+      const updateQueue = vi.spyOn(app.ui.queue, 'update').mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveUpdate = resolve
+          })
+      )
+
+      // The queue UI refresh is fire-and-forget: queuePrompt resolves while the
+      // update is still pending, having already redrawn the canvas once.
+      await app.queuePrompt(0, 2)
+
+      expect(updateQueue).toHaveBeenCalledOnce()
+      expect(queuePrompt).toHaveBeenCalledTimes(2)
+      expect(mockCanvas.draw).toHaveBeenCalledOnce()
+
+      // Settle the detached update so the test leaves no pending promise.
+      resolveUpdate()
+    })
+
     it('attributes a queued job to the mode used when submission started', async () => {
       prepareEmptyPromptQueue()
       const workflow = useWorkflowStore().activeWorkflow
@@ -1899,6 +1930,55 @@ describe('ComfyApp', () => {
         now.mockRestore()
         setTelemetryRegistry(null)
       }
+    })
+
+    it('falls back to the error panel when the subscription dialog cannot open', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({
+          error: {
+            type: 'CLOUD_SUBSCRIPTION_REQUIRED',
+            message: 'A cloud subscription is required',
+            details: ''
+          }
+        })
+      )
+      vi.mocked(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).mockResolvedValueOnce(false)
+
+      await app.queuePrompt(0)
+
+      expect(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'subscription_required' })
+      expect(useExecutionErrorStore().lastPromptError).toMatchObject({
+        type: 'CLOUD_SUBSCRIPTION_REQUIRED'
+      })
+    })
+
+    it('still reports a rejected submission once the dialog takes over', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({
+          error: {
+            type: 'CLOUD_SUBSCRIPTION_REQUIRED',
+            message: 'You have enough credits for this workflow',
+            details: ''
+          },
+          node_errors: {}
+        })
+      )
+      vi.mocked(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).mockResolvedValueOnce(true)
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'subscription_required' })
+      expect(useExecutionErrorStore().lastPromptError).toBeNull()
     })
 
     it('records a rejected submission on the workflow that queued it', async () => {
@@ -2071,20 +2151,21 @@ describe('ComfyApp', () => {
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
         prompt_id: 'job-1'
       })
-      vi.spyOn(app.ui.queue, 'update').mockRejectedValue(
-        new Error('Queue UI refresh failed')
-      )
+      const refreshError = new Error('Queue UI refresh failed')
+      vi.spyOn(app.ui.queue, 'update').mockRejectedValue(refreshError)
 
       try {
-        await expect(
-          app.queuePrompt(0, 1, {
-            intent: { trigger_source: 'button' }
-          })
-        ).rejects.toThrow('Queue UI refresh failed')
+        await app.queuePrompt(0, 1, {
+          intent: { trigger_source: 'button' }
+        })
         expect(useExecutionStore().queuedJobs['job-1']).toMatchObject({
           workflowExecutionIntent: {
             trigger_source: 'button'
           }
+        })
+        expect(reportError).toHaveBeenCalledWith(refreshError, {
+          surface: 'graph',
+          errorType: 'queue_ui_update_failure'
         })
       } finally {
         setTelemetryRegistry(null)
@@ -3703,6 +3784,31 @@ describe('ComfyApp', () => {
       await app.loadApiJson({}, 'repeat')
 
       expect(useWorkflowStore().activeWorkflow).toBe(activeWorkflow)
+    })
+  })
+
+  describe('socket handlers', () => {
+    it('keeps a model download that arrives as the socket starts', async () => {
+      vi.spyOn(api, 'init').mockImplementation(async () => {
+        api.dispatchCustomEvent('model_download', {
+          status: 'downloading',
+          name: 'my_style_v2.safetensors',
+          dir: 'loras',
+          index: 1,
+          count: 1,
+          bytes_downloaded: 1,
+          bytes_total: 2,
+          progress: 0.5,
+          prompt_id: 'job-1'
+        })
+      })
+
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+
+      expect(api.init).toHaveBeenCalledOnce()
+      expect(useJobModelDownloadStore().downloadFor('job-1')?.progress).toBe(
+        0.5
+      )
     })
   })
 

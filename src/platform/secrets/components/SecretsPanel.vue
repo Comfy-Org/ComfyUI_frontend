@@ -17,7 +17,7 @@
         {{ $t('secrets.modelProviders') }}
       </h3>
       <Button @click="openCreateDialog">
-        <i class="pi pi-plus mr-1" />
+        <i class="mr-1 icon-[lucide--plus]" />
         {{ $t('secrets.addSecret') }}
       </Button>
     </div>
@@ -112,6 +112,7 @@ function confirmDelete(secret: SecretMetadata) {
       promptText: t('secrets.deleteConfirmMessage', { name: secret.name })
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.delete'),
       confirmVariant: 'destructive',
       onCancel: () => dialogStore.closeDialog(dialog),

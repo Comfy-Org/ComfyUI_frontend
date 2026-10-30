@@ -14,16 +14,16 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
+import { webSessionResourceHeader } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError as reportTelemetryError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError as reportTelemetryError } from '@comfyorg/telemetry/reportError'
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import type {
   CheckoutAttributionMetadata,
   ResubscribeClickMetadata,
   SubscriptionSuccessMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import type { BillingStatusResponse } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'

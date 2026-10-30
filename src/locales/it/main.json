@@ -83,6 +83,7 @@
     "copyMarkdown": "Copia come markdown",
     "copyUnavailable": "In questa versione è possibile copiare solo la conversazione corrente",
     "creditTransitionNotice": "Hai usato i tuoi crediti gratuiti dell'agente. Le ulteriori attività dell'agente usano i crediti del tuo workspace, che potrebbero includere crediti a pagamento.",
+    "creditsUsed": "L’agente ha utilizzato {credits} credito | L’agente ha utilizzato {credits} crediti",
     "currentTab": "Scheda corrente",
     "delete": "Elimina",
     "deleteApproval": {
@@ -5857,13 +5858,11 @@
         "onHold": "Nessun metodo di pagamento predefinito. Impostane uno per riprendere la ricarica automatica.",
         "paused": "Limite mensile raggiunto. Riprende il {date}.",
         "pausedNoDate": "Limite mensile raggiunto.",
-        "rule": "Aggiunge {amount} ({credits} crediti) quando i crediti scendono sotto {threshold}.",
         "status": {
           "failed": "Non riuscito",
           "off": "Disattivata",
           "on": "Attivata",
           "onHold": "In attesa",
-          "paused": "In pausa",
           "turnedOff": "Disattivata"
         },
         "title": "Ricarica automatica",
@@ -5926,7 +5925,6 @@
         },
         "scheduledChange": "Passaggio a {plan} il {date}.",
         "stayConfirm": {
-          "body": "Il tuo piano non passerà a {plan} il {date}. Puoi programmare di nuovo una modifica in qualsiasi momento.",
           "title": "Annullare la modifica al piano {plan}?"
         },
         "unknown": {

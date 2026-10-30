@@ -3,16 +3,19 @@ import { reactive, ref } from 'vue'
 
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { UUID } from '@/utils/uuid'
-import { parseNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   isWidgetId,
   parseWidgetId,
   widgetId as createWidgetId
-} from '@/types/widgetId'
-import type { WidgetId } from '@/types/widgetId'
-import type { WidgetValue } from '@/types/widgetValue'
-import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
+} from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
+import type {
+  WidgetState,
+  WidgetStateInit
+} from '@comfyorg/graph-model/widgetState'
 import {
   applyLegacyHiddenWrite,
   deriveWidgetVisibility,
@@ -21,10 +24,7 @@ import {
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/restoredWidgetValue'
 
 export interface WidgetRenderState {

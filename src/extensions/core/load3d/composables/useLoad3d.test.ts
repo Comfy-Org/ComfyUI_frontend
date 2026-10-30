@@ -1,7 +1,7 @@
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { nextTick, ref, shallowRef, effectScope } from 'vue'
-import type { EffectScope } from 'vue'
+import type { EffectScope, ShallowRef } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 import {
@@ -17,10 +17,11 @@ import Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
 import { load3dHost } from '@/extensions/core/load3d/load3dHost'
-import type { Size } from '@/lib/litegraph/src/interfaces'
+import { isKeepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
+import type { SizeTuple as Size } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
@@ -37,6 +38,7 @@ vi.mock(import('@comfyorg/viewport3d/load3d/createLoad3d'), () => ({
 
 vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   default: {
+    isSameResourceURL: vi.fn((a: string | null, b: string) => a === b),
     splitFilePath: vi.fn(),
     getResourceURL: vi.fn(),
     uploadFile: vi.fn(),
@@ -61,6 +63,18 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: vi.fn(() => false),
   persistThumbnail: vi.fn().mockResolvedValue(undefined)
 }))
+
+const identityTransform = {
+  position: { x: 0, y: 0, z: 0 },
+  rotation: { x: 0, y: 0, z: 0 },
+  scale: { x: 1, y: 1, z: 1 }
+}
+
+function gizmoManagerWithBase(base: typeof identityTransform) {
+  return fromPartial<ReturnType<Load3d['getGizmoManager']>>({
+    getInitialTransform: () => base
+  })
+}
 
 describe('useLoad3d', () => {
   let scope: EffectScope
@@ -110,9 +124,10 @@ describe('useLoad3d', () => {
         { name: 'width', value: 512, type: 'number' } as IWidget,
         { name: 'height', value: 512, type: 'number' } as IWidget
       ],
-      graph: {
-        setDirtyCanvas: vi.fn()
-      } as Partial<LGraph> as LGraph,
+      graph: fromPartial<LGraph>({
+        setDirtyCanvas: vi.fn(),
+        rootGraph: fromPartial<LGraph>({ id: 'root-graph' })
+      }),
       flags: {},
       onMouseEnter: undefined,
       onMouseLeave: undefined,
@@ -181,9 +196,13 @@ describe('useLoad3d', () => {
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 1, y: 1, z: 1 }
       }),
+      getGizmoManager: vi.fn(() => gizmoManagerWithBase(identityTransform)),
       getModelInfo: vi.fn().mockReturnValue(null),
       captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,test'),
       setAnimationTime: vi.fn(),
+      setConfigurationCleanup: vi.fn(),
+      hdriManager: fromPartial<Load3d['hdriManager']>({ loadedUrl: null }),
+      modelManager: fromPartial<Load3d['modelManager']>({ originalURL: null }),
       domElement: mockCanvas
     }
 
@@ -477,31 +496,182 @@ describe('useLoad3d', () => {
   })
 
   describe('when the node is replaced', () => {
-    it('moves the viewer to the replacement node and runs its queued callbacks', async () => {
-      const nodeRef = shallowRef(mockNode)
-      const composable = useLoad3d(nodeRef)
-      await composable.initializeLoad3d(document.createElement('div'))
-      const replacement = createMockLGraphNode({
+    function replacementNode(width = 512) {
+      return createMockLGraphNode({
         properties: mockNode.properties,
-        widgets: mockNode.widgets,
+        widgets: [
+          { name: 'width', value: width, type: 'number' } as IWidget,
+          { name: 'height', value: 512, type: 'number' } as IWidget
+        ],
         graph: mockNode.graph,
         flags: {}
       })
+    }
+
+    function reloadGraphInto(
+      nodeRef: ShallowRef<LGraphNode>,
+      replacement: LGraphNode
+    ) {
+      nodeRef.value.onRemoved?.()
+      nodeRef.value = replacement
+    }
+
+    async function replaceNode(
+      nodeRef: ShallowRef<LGraphNode>,
+      replacement: LGraphNode
+    ) {
+      reloadGraphInto(nodeRef, replacement)
+      await vi.waitFor(() =>
+        expect(nodeToLoad3dMap.get(replacement)).toBe(mockLoad3d)
+      )
+    }
+
+    it('keeps the Load3d for the replacement node and runs its queued callbacks', async () => {
+      const nodeRef = shallowRef(mockNode)
+      await useLoad3d(nodeRef).initializeLoad3d(document.createElement('div'))
+      const replacement = replacementNode()
       const queued = vi.fn()
       useLoad3d(replacement).waitForLoad3d(queued)
 
-      nodeRef.value = replacement
+      await replaceNode(nodeRef, replacement)
 
-      await vi.waitFor(() => expect(queued).toHaveBeenCalledWith(mockLoad3d))
-      expect(mockLoad3d.remove).toHaveBeenCalled()
+      expect(queued).toHaveBeenCalledWith(mockLoad3d)
+      expect(createLoad3d).toHaveBeenCalledOnce()
+      expect(mockLoad3d.remove).not.toHaveBeenCalled()
       expect(nodeToLoad3dMap.has(mockNode)).toBe(false)
-      expect(nodeToLoad3dMap.get(replacement)).toBe(mockLoad3d)
     })
 
-    it('releases the viewer when the node goes away', async () => {
+    it('returns the kept Load3d gizmo to the replacement node defaults', async () => {
+      const nodeRef = shallowRef(mockNode)
+      await useLoad3d(nodeRef).initializeLoad3d(document.createElement('div'))
+
+      await replaceNode(nodeRef, replacementNode())
+
+      expect(mockLoad3d.applyGizmoTransform).toHaveBeenLastCalledWith(
+        identityTransform.position,
+        identityTransform.rotation,
+        identityTransform.scale
+      )
+      expect(mockLoad3d.setGizmoEnabled).toHaveBeenLastCalledWith(false)
+      expect(mockLoad3d.setGizmoMode).toHaveBeenLastCalledWith('translate')
+    })
+
+    it('keeps the up-direction rotation of the kept model when the gizmo is untouched', async () => {
+      const upDirectionBase = {
+        ...identityTransform,
+        rotation: { x: Math.PI / 2, y: 0, z: 0 }
+      }
+      mockLoad3d.getGizmoManager = vi.fn(() =>
+        gizmoManagerWithBase(upDirectionBase)
+      )
+      const nodeRef = shallowRef(mockNode)
+      await useLoad3d(nodeRef).initializeLoad3d(document.createElement('div'))
+
+      await replaceNode(nodeRef, replacementNode())
+
+      expect(mockLoad3d.applyGizmoTransform).toHaveBeenLastCalledWith(
+        upDirectionBase.position,
+        upDirectionBase.rotation,
+        upDirectionBase.scale
+      )
+    })
+
+    it('leaves disposing the Load3d of a removed node to its widget', async () => {
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      mockNode.onRemoved?.()
+      expect(mockLoad3d.remove).not.toHaveBeenCalled()
+
+      composable.cleanup()
+      expect(mockLoad3d.remove).toHaveBeenCalledOnce()
+    })
+
+    it('disposes the kept Load3d when the reload drops its node', async () => {
+      const nodeRef = shallowRef<LGraphNode | null>(mockNode)
+      await useLoad3d(nodeRef).initializeLoad3d(document.createElement('div'))
+      mockNode.onRemoved?.()
+
+      nodeRef.value = null
+      await nextTick()
+
+      expect(mockLoad3d.remove).toHaveBeenCalledOnce()
+    })
+
+    it('creates a new Load3d for a node of another workflow loaded in its place', async () => {
+      const nodeRef = shallowRef(mockNode)
+      await useLoad3d(nodeRef).initializeLoad3d(document.createElement('div'))
+      const otherWorkflowNode = createMockLGraphNode({
+        properties: mockNode.properties,
+        widgets: mockNode.widgets,
+        graph: fromPartial<LGraph>({
+          rootGraph: fromPartial<LGraph>({ id: 'other-graph' })
+        }),
+        flags: {}
+      })
+
+      reloadGraphInto(nodeRef, otherWorkflowNode)
+      await vi.waitFor(() =>
+        expect(nodeToLoad3dMap.get(otherWorkflowNode)).toBeDefined()
+      )
+
+      expect(mockLoad3d.remove).toHaveBeenCalledOnce()
+      expect(createLoad3d).toHaveBeenCalledTimes(2)
+    })
+
+    it('sizes the kept Load3d from the replacement node', async () => {
+      const nodeRef = shallowRef(mockNode)
+      await useLoad3d(nodeRef).initializeLoad3d(document.createElement('div'))
+
+      await replaceNode(nodeRef, replacementNode(768))
+
+      const options = vi.mocked(createLoad3d).mock.calls[0][2]
+      expect(options?.getDimensions?.()).toEqual({ width: 768, height: 512 })
+    })
+
+    it('runs the replacement node ready callbacks keeping the loaded model', async () => {
+      const nodeRef = shallowRef(mockNode)
+      await useLoad3d(nodeRef).initializeLoad3d(document.createElement('div'))
+      const replacement = replacementNode()
+      const keptModelWhenReady = vi.fn()
+      useLoad3d(replacement).onLoad3dReady((instance) =>
+        keptModelWhenReady(isKeepingLoadedModel(instance))
+      )
+
+      await replaceNode(nodeRef, replacement)
+
+      expect(keptModelWhenReady).toHaveBeenCalledWith(true)
+    })
+
+    it('reuses the HDRI the kept Load3d already loaded', async () => {
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['3d', 'env.hdr'])
+      vi.mocked(api.apiURL).mockReturnValue('http://localhost/view?env.hdr')
+      mockNode.properties['Light Config'] = {
+        intensity: 5,
+        hdri: {
+          enabled: true,
+          hdriPath: '3d/env.hdr',
+          showAsBackground: false,
+          intensity: 1
+        }
+      }
+      const nodeRef = shallowRef(mockNode)
+      await useLoad3d(nodeRef).initializeLoad3d(document.createElement('div'))
+      expect(mockLoad3d.loadHDRI).toHaveBeenCalledOnce()
+      mockLoad3d.hdriManager = fromPartial<Load3d['hdriManager']>({
+        loadedUrl: 'http://localhost/view?env.hdr'
+      })
+
+      await replaceNode(nodeRef, replacementNode())
+
+      expect(mockLoad3d.loadHDRI).toHaveBeenCalledOnce()
+    })
+
+    it('releases the Load3d when its node leaves the graph', async () => {
       const nodeRef = shallowRef<LGraphNode | null>(mockNode)
       const composable = useLoad3d(nodeRef)
       await composable.initializeLoad3d(document.createElement('div'))
+      mockNode.graph = null
 
       nodeRef.value = null
       await nextTick()
@@ -543,7 +713,7 @@ describe('useLoad3d', () => {
         flags: {}
       })
 
-      nodeRef.value = replacement
+      reloadGraphInto(nodeRef, replacement)
       await vi.waitFor(() =>
         expect(nodeToLoad3dMap.get(replacement)).toBeDefined()
       )
@@ -577,7 +747,7 @@ describe('useLoad3d', () => {
         flags: {}
       })
 
-      nodeRef.value = replacement
+      reloadGraphInto(nodeRef, replacement)
       await vi.waitFor(() =>
         expect(nodeToLoad3dMap.get(replacement)).toBeDefined()
       )
@@ -606,10 +776,6 @@ describe('useLoad3d', () => {
           intensity: 1
         }
       }
-      const replacementViewer = { ...mockLoad3d }
-      vi.mocked(createLoad3d)
-        .mockImplementationOnce(() => mockLoad3d as Load3d)
-        .mockImplementationOnce(() => replacementViewer as Load3d)
       const nodeRef = shallowRef(mockNode)
       const composable = useLoad3d(nodeRef)
       const overtaken = composable.initializeLoad3d(
@@ -622,9 +788,9 @@ describe('useLoad3d', () => {
         graph: mockNode.graph,
         flags: {}
       })
-      nodeRef.value = replacement
+      reloadGraphInto(nodeRef, replacement)
       await vi.waitFor(() =>
-        expect(nodeToLoad3dMap.get(replacement)).toBe(replacementViewer)
+        expect(nodeToLoad3dMap.get(replacement)).toBe(mockLoad3d)
       )
 
       finishHdriLoad()
@@ -652,32 +818,22 @@ describe('useLoad3d', () => {
           intensity: 1
         }
       }
-      const replacementViewer = { ...mockLoad3d }
-      vi.mocked(createLoad3d)
-        .mockImplementationOnce(() => mockLoad3d as Load3d)
-        .mockImplementationOnce(() => replacementViewer as Load3d)
       const nodeRef = shallowRef(mockNode)
-      const composable = useLoad3d(nodeRef)
-      const overtaken = composable.initializeLoad3d(
+      const overtaken = useLoad3d(nodeRef).initializeLoad3d(
         document.createElement('div')
       )
       await vi.waitFor(() => expect(finishHdriLoad).toBeTypeOf('function'))
-      const replacement = createMockLGraphNode({
-        properties: {},
-        widgets: mockNode.widgets,
-        graph: mockNode.graph,
-        flags: {}
-      })
+      const replacement = replacementNode()
 
-      nodeRef.value = replacement
-      await vi.waitFor(() =>
-        expect(nodeToLoad3dMap.get(replacement)).toBe(replacementViewer)
-      )
+      await replaceNode(nodeRef, replacement)
+      const replacementHooks = replacement.onMouseEnter
       finishHdriLoad()
       await overtaken
 
       expect(nodeToLoad3dMap.has(mockNode)).toBe(false)
-      expect(nodeToLoad3dMap.get(replacement)).toBe(replacementViewer)
+      expect(nodeToLoad3dMap.get(replacement)).toBe(mockLoad3d)
+      expect(mockNode.onMouseEnter).toBeUndefined()
+      expect(replacement.onMouseEnter).toBe(replacementHooks)
     })
   })
 
@@ -1191,16 +1347,41 @@ describe('useLoad3d', () => {
   })
 
   describe('cleanup', () => {
-    it('should remove event listeners and clean up resources', async () => {
+    it('should remove event listeners and clean up resources once the node left the graph', async () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
 
       await composable.initializeLoad3d(containerRef)
+      mockNode.graph = null
 
       composable.cleanup()
 
       expect(mockLoad3d.removeEventListener).toHaveBeenCalled()
       expect(mockLoad3d.remove).toHaveBeenCalled()
+      expect(nodeToLoad3dMap.has(mockNode)).toBe(false)
+    })
+
+    it('disposes the Load3d when its widget unmounts while the node is still in a graph', async () => {
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      composable.cleanup()
+
+      expect(mockLoad3d.removeEventListener).toHaveBeenCalled()
+      expect(mockLoad3d.remove).toHaveBeenCalledOnce()
+    })
+
+    it('disposes the Load3d when its widget unmounts after a reload dropped its node', async () => {
+      const nodeRef = shallowRef<LGraphNode | null>(mockNode)
+      const composable = useLoad3d(nodeRef)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      nodeRef.value = null
+      scope.stop()
+      composable.cleanup()
+      await nextTick()
+
+      expect(mockLoad3d.remove).toHaveBeenCalledOnce()
       expect(nodeToLoad3dMap.has(mockNode)).toBe(false)
     })
 

@@ -13,7 +13,7 @@ import { useGapDragSession } from '@/components/graph/selectionGrid/useGapDragSe
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/components/graph/selectionGrid/useSelectionGrid'), {
   spy: true

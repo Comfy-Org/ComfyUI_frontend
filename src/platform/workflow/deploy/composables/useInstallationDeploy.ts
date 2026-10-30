@@ -3,13 +3,13 @@ import { ref } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { t } from '@/i18n'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { createInstallationBundle } from '@/platform/workflow/deploy/api/installationBundleApi'
 import type { BundleFailureReason } from '@/platform/workflow/deploy/api/installationBundleApi'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 
 type InstallationDeployState =
   | { status: 'idle' }

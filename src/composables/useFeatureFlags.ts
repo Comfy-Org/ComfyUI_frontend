@@ -12,7 +12,7 @@ import {
   useRemoteConfigCache
 } from '@/platform/remoteConfig/remoteConfig'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
@@ -171,13 +171,6 @@ export function useFeatureFlags() {
         false
       )
     },
-    get linearToggleEnabled() {
-      return resolveFlag(
-        ServerFeatureFlag.LINEAR_TOGGLE_ENABLED,
-        remoteConfig.value.linear_toggle_enabled,
-        isNightly
-      )
-    },
     get partnerNodeGovernanceEnabled() {
       return resolveFlag(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
@@ -190,6 +183,12 @@ export function useFeatureFlags() {
         ServerFeatureFlag.PARTNER_RUN_GATE_ENABLED,
         remoteConfig.value.partner_run_gate_enabled,
         true
+      )
+    },
+    get deploymentStartEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.DEPLOYMENT_START_ENABLED,
+        remoteConfig.value.deployment_start_enabled
       )
     },
     get partnerNodeTokenEnabled() {
@@ -237,6 +236,21 @@ export function useFeatureFlags() {
         ServerFeatureFlag.DEPLOYMENT_COMPATIBILITY_MARKS_ENABLED,
         remoteConfig.value.deployment_compatibility_marks_enabled,
         false
+      )
+    },
+    get runtimeLibraryModelsEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.RUNTIME_LIBRARY_MODELS_ENABLED,
+        remoteConfig.value.runtime_library_models_enabled,
+        false
+      )
+    },
+    /** The model folders an uploaded model file may go into; empty when uploads are off. */
+    get modelUploadFolders(): readonly string[] {
+      return resolveFlag<readonly string[]>(
+        ServerFeatureFlag.MODEL_UPLOAD_FOLDERS,
+        remoteConfig.value.model_upload_folders,
+        []
       )
     },
     get lateCustomNodesEnabled() {
@@ -400,7 +414,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.PRIVATE_MODELS_ENABLED]: flags.privateModelsEnabled,
       [ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED]:
         flags.onboardingSurveyEnabled,
-      [ServerFeatureFlag.LINEAR_TOGGLE_ENABLED]: flags.linearToggleEnabled,
       [ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED]:
         flags.partnerNodeGovernanceEnabled,
       [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,

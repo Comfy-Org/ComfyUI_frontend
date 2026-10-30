@@ -1,6 +1,6 @@
 import type { ShallowRef } from 'vue'
 
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type {
   LGraph,
@@ -10,35 +10,38 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { MissingModelPipelineResult } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { Keybinding } from '@/platform/keybindings/types'
+} from '@comfyorg/graph-model/workflowSchema'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import type {
   ExecutionErrorWsMessage,
   NodeExecutionOutput,
   ProgressWsMessage
-} from '@/platform/remote/comfyui/execution/types'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+} from '@comfyorg/api-client/executionTypes'
+import type { NodeError } from '@comfyorg/api-client/types'
 import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import type {
   ComfyWorkflow,
   LoadedComfyWorkflow
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
-import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import type { ComfyUI } from '@/scripts/ui'
 import type { ComfyAppMenu } from '@/scripts/ui/menu/index'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ComfyCommand } from '@/stores/commandStore'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
-import type { SerializedNodeId } from '@/types/nodeId'
-import type { AuthUserInfo } from '@/types/authTypes'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type { AuthUserInfo } from '@comfyorg/api-client/authTypes'
 import type {
   BottomPanelExtension,
   ExtensionManager,

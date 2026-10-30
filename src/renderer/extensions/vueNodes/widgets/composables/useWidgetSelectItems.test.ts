@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
@@ -207,6 +207,75 @@ describe('useWidgetSelectItems', () => {
         dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
+
+    it.for([
+      {
+        value: 'x.png [output]',
+        query: { filename: 'x.png', type: 'output' }
+      },
+      {
+        value: 'sub/x.png [output]',
+        query: { filename: 'x.png', type: 'output', subfolder: 'sub' }
+      },
+      {
+        value: 'a/b/x.png [temp]',
+        query: { filename: 'x.png', type: 'temp', subfolder: 'a/b' }
+      },
+      {
+        value: 'clipspace/x.png',
+        query: { filename: 'x.png', type: 'input', subfolder: 'clipspace' }
+      },
+      {
+        value: 'sub\\x.png [output]',
+        query: { filename: 'x.png', type: 'output', subfolder: 'sub' }
+      },
+      {
+        value: '12:30.png [output]',
+        query: { filename: '12:30.png', type: 'output' }
+      },
+      {
+        value: 'pasted/12:30.png [output]',
+        query: { filename: '12:30.png', type: 'output', subfolder: 'pasted' }
+      },
+      {
+        value: '12:30/x.png [output]',
+        query: { filename: 'x.png', type: 'output', subfolder: '12:30' }
+      }
+    ])(
+      'previews the fallback for $value from its root, subfolder and filename',
+      ({ value, query }) => {
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref(value) })
+        )
+
+        const previewUrl = dropdownItems.value[0].preview_url
+        assert(previewUrl)
+        const [path, search] = previewUrl.split('?')
+        expect(path).toBe('/api/view')
+        expect(Object.fromEntries(new URLSearchParams(search))).toEqual(query)
+      }
+    )
+
+    it.for([
+      '/x.png [output]',
+      '\\x.png [output]',
+      'sub/x.png/ [output]',
+      'sub//x.png [output]',
+      'D:\\x.png [output]',
+      '1:/x.png [output]',
+      'D:x.png [output]',
+      'C:sub/x.png [output]',
+      'sub/../x.png [output]'
+    ])(
+      'shows no fallback preview for %s, which is not a plain relative path',
+      (value) => {
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref(value) })
+        )
+
+        expect(dropdownItems.value[0].preview_url).toBe('')
+      }
+    )
 
     it('no fallback when modelValue is undefined', () => {
       const { dropdownItems } = useWidgetSelectItems(
@@ -497,6 +566,135 @@ describe('useWidgetSelectItems', () => {
       expect(dropdownItems.value).toHaveLength(1)
       expect(dropdownItems.value[0].name).toBe('single.png [output]')
       expect(mockResolveOutputAssetItems).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      ['tag temp', ['temp'], undefined],
+      ['tags output and temp', ['output', 'temp'], undefined],
+      [
+        'a type=temp preview URL',
+        ['output'],
+        '/api/view?filename=t.png&type=temp'
+      ]
+    ] as const)(
+      'annotates an output listed from an asset with %s with the temp root',
+      async ([, tags, previewUrl]) => {
+        mockMediaAssets.items.value = [
+          fromPartial({
+            id: 'temp-asset',
+            name: 't.png',
+            hash: 'blake3:aa7ecf08.png',
+            preview_url: previewUrl,
+            tags: [...tags]
+          })
+        ]
+
+        const { dropdownItems, filterSelected } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref('') })
+        )
+        filterSelected.value = 'outputs'
+        await nextTick()
+
+        expect(dropdownItems.value.map((item) => item.name)).toEqual([
+          'blake3:aa7ecf08.png [temp]'
+        ])
+      }
+    )
+
+    it.for([
+      [
+        'an input asset tagged temp',
+        ['input', 'temp'],
+        undefined,
+        'blake3:ab12cd34.png [output]'
+      ],
+      [
+        'a model asset tagged temp',
+        ['models', 'temp'],
+        undefined,
+        'blake3:ab12cd34.png [output]'
+      ],
+      [
+        'an output tagged temp whose preview URL says input',
+        ['output', 'temp'],
+        '/api/view?filename=probe.png&type=input',
+        'blake3:ab12cd34.png [output]'
+      ],
+      [
+        'a generated output tagged temp',
+        ['output', 'temp'],
+        undefined,
+        'blake3:ab12cd34.png [temp]'
+      ]
+    ] as const)(
+      'lists %s at its prior output root unless it is a generated output',
+      async ([, tags, preview_url, name]) => {
+        mockMediaAssets.items.value = [
+          fromPartial({
+            id: 'probe-asset',
+            name: 'probe.png',
+            hash: 'blake3:ab12cd34.png',
+            tags: [...tags],
+            preview_url
+          })
+        ]
+
+        const { dropdownItems, filterSelected } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref('') })
+        )
+        filterSelected.value = 'outputs'
+        await nextTick()
+
+        expect(dropdownItems.value.map((item) => item.name)).toEqual([name])
+      }
+    )
+
+    it('prefixes the subfolder of a temp output with no job whose metadata names only the subfolder', async () => {
+      mockMediaAssets.items.value = [
+        fromPartial({
+          id: 'flat-temp-asset',
+          name: 'flat_temp.png',
+          hash: 'blake3:ff34ab12.png',
+          tags: ['output', 'temp'],
+          user_metadata: { subfolder: 'previews' }
+        })
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({ values: () => [], modelValue: ref('') })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'previews/blake3:ff34ab12.png [temp]'
+      ])
+    })
+
+    it('prefixes the subfolder onto a temp image output listed by hash', async () => {
+      mockMediaAssets.items.value = [
+        fromPartial({
+          id: 'temp-asset',
+          name: 't.png',
+          hash: 'blake3:aa7ecf08.png',
+          tags: ['output', 'temp'],
+          user_metadata: {
+            jobId: 'job-temp',
+            nodeId: '4',
+            subfolder: 'previews'
+          }
+        })
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({ values: () => [], modelValue: ref('') })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'previews/blake3:aa7ecf08.png [temp]'
+      ])
     })
 
     it('resolves two multi-output jobs independently', async () => {
@@ -873,7 +1071,7 @@ describe('useWidgetSelectItems', () => {
       expect(dropdownItems.value[0].name).toBe('plain.glb [output]')
     })
 
-    it('does not prefix the subfolder for non-mesh kinds even when present', async () => {
+    it('prefixes the subfolder for image outputs too', async () => {
       mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-image-1',
@@ -899,7 +1097,7 @@ describe('useWidgetSelectItems', () => {
       await nextTick()
 
       expect(dropdownItems.value).toHaveLength(1)
-      expect(dropdownItems.value[0].name).toBe('photo.png [output]')
+      expect(dropdownItems.value[0].name).toBe('sub/photo.png [output]')
     })
   })
 

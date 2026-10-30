@@ -31,7 +31,7 @@
           data-testid="compositor-download-psd"
           @click="onDownloadPsd"
         >
-          <i class="icon-[lucide--download] size-4" />
+          <i class="icon-[lucide--download]" />
         </Button>
       </div>
     </div>
@@ -53,13 +53,15 @@
       data-testid="compositor-open-button"
       @click="openEditor"
     >
-      <i class="icon-[lucide--layers] size-4" />
+      <i class="icon-[lucide--layers]" />
       {{ t('compositor.open') }}
     </Button>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { CompactSize } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -73,7 +75,7 @@ import { useCompositorPsdDownload } from '@/renderer/extensions/compositor/compo
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const { nodeId } = defineProps<{
   nodeId: NodeId
@@ -84,7 +86,7 @@ const nodeOutputStore = useNodeOutputStore()
 const { openCompositorEditor } = useCompositorEditor()
 const { exporting, downloadPsd } = useCompositorPsdDownload()
 
-const naturalSize = ref<{ w: number; h: number } | null>(null)
+const naturalSize = ref<CompactSize | null>(null)
 const outputUrl = ref<string | null>(null)
 
 const litegraphNode = useLiveGraphNode(() =>

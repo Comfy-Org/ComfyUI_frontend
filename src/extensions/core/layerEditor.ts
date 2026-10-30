@@ -7,7 +7,7 @@ export const layerEditorExtension: ComfyExtension = {
   commands: [
     {
       id: 'Comfy.LayerEditor.OpenLayerEditor',
-      icon: 'pi pi-images',
+      icon: 'icon-[lucide--images]',
       label: 'Open Layer Editor for Selected Node',
       function: async () => {
         const selectedNodes = selectedCanvasNodes(app.canvas)

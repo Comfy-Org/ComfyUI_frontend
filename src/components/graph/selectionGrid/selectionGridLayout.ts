@@ -1,6 +1,6 @@
 import { clamp, median } from 'es-toolkit'
 
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 export const DEFAULT_TIDY_GAP = 12
 export const MIN_TIDY_GAP = 0

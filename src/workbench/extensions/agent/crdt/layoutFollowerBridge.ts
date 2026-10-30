@@ -1,5 +1,5 @@
 import { assert } from '@/base/assert'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type {
   DocFrameClient,

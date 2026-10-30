@@ -1,8 +1,8 @@
-import type { INodeSlot } from '@/lib/litegraph/src/interfaces'
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import type { INodeSlot } from '@comfyorg/graph-model/interfaces'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { useLinkStore } from '@/stores/linkStore'
-import type { GraphScope } from '@/types/graphScopeId'
-import type { NodeId } from '@/types/nodeId'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { isSlotObject } from '@/utils/typeGuardUtil'
 
 function coerceINodeSlot(input: INodeInputSlot): INodeSlot {

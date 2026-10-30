@@ -4,6 +4,7 @@
     <!-- User Info Section -->
     <div class="mb-4 flex flex-col items-center px-0 py-3">
       <UserAvatar
+        :label="$t('auth.login.userAvatar')"
         class="mb-1"
         :photo-url="userPhotoUrl"
         icon-class="size-6"
@@ -53,7 +54,7 @@
               </span>
             </div>
             <i
-              class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
+              class="icon-[lucide--chevron-down] size-3.5 text-muted-foreground"
             />
           </Button>
         </PopoverTrigger>
@@ -63,7 +64,7 @@
           :side-offset="16"
           prioritize-position
           dismiss-on-viewport-change
-          class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
+          class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
           data-testid="workspace-switcher-panel"
         >
           <WorkspaceSwitcherPopover
@@ -170,7 +171,7 @@
       :data-dd-action-name="BILLING_ACTION_NAME.managePlanPopover"
       @click="handleOpenManagePlanSettings"
     >
-      <i class="icon-[lucide--credit-card] size-4 text-muted-foreground" />
+      <i class="icon-[lucide--credit-card] text-muted-foreground" />
       <span class="flex-1 text-sm text-foreground">{{
         $t('subscription.managePlan')
       }}</span>
@@ -183,7 +184,7 @@
       data-testid="plans-credits-menu-item"
       @click="handleOpenPlanCreditsSettings"
     >
-      <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
+      <i class="icon-[lucide--coins] text-muted-foreground" />
       <span class="flex-1 text-sm text-foreground">{{
         $t('subscription.plansAndCredits')
       }}</span>
@@ -253,7 +254,7 @@ import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
-import UserAvatar from '@/components/common/UserAvatar.vue'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/platform/account/components/WorkspaceSwitcherPopover.vue'
 import Button from '@comfyorg/design-system/button/Button'
@@ -267,10 +268,11 @@ import {
 
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
 import SubscribeButton from '@/platform/billing/subscription/components/SubscribeButton.vue'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useAccountUI } from '@/platform/account/composables/useAccountUI'
@@ -449,6 +451,6 @@ const handleCreateWorkspace = () => {
 }
 
 onMounted(() => {
-  if (!accountActionsOnly) void fetchBalance()
+  if (!accountActionsOnly) void refreshBalanceInBackground(fetchBalance)
 })
 </script>

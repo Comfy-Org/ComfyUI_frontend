@@ -9,7 +9,7 @@ import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import TidyUpButton from '@/components/graph/selectionToolbox/TidyUpButton.vue'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 

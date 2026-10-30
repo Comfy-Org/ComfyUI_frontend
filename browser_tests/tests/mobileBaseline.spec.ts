@@ -11,7 +11,7 @@ test.describe(
     test('@mobile empty canvas', async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.ConfirmClear', false)
       await comfyPage.command.executeCommand('Comfy.ClearWorkflow')
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
       await expectElementScreenshot(comfyPage.canvas, 'mobile-empty-canvas.png')
     })
 

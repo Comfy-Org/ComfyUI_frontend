@@ -19,7 +19,7 @@
           rel="noopener noreferrer"
           @click="handleLearnMore"
         >
-          <i class="icon-[lucide--external-link] size-4"></i>
+          <i class="icon-[lucide--external-link]"></i>
           {{ $t('releaseToast.whatsNew') }}
         </a>
       </template>
@@ -51,12 +51,12 @@ import { default as DOMPurify } from 'dompurify'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NotificationPopup from '@/components/common/NotificationPopup.vue'
+import NotificationPopup from '@comfyorg/design-system/common/NotificationPopup'
 import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import Button from '@comfyorg/design-system/button/Button'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { isDesktop } from '@/platform/distribution/types'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'

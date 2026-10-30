@@ -7,7 +7,7 @@ import type {
   GraphOrSubgraph,
   Subgraph,
   SubgraphInput
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import { once } from 'es-toolkit'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 
@@ -19,28 +19,28 @@ import { LLink } from '@/lib/litegraph/src/LLink'
 
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
-import type { ISlotType } from '@/lib/litegraph/src/interfaces'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import type {
   ISubgraphInput,
   INodeInputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
 import type {
   ExportedSubgraphInstance,
   ISerialisedNode
-} from '@/lib/litegraph/src/types/serialisation'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/serialisation'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type {
   IBaseWidget,
   IWidgetLocator,
   TWidgetValue
-} from '@/lib/litegraph/src/types/widgets'
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
+import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
@@ -55,10 +55,10 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import type { NodeState } from '@/types/nodeState'
-import type { WidgetId } from '@/types/widgetId'
-import { widgetId } from '@/types/widgetId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
@@ -1074,6 +1074,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
 type RegisteredSubgraphNode = SubgraphNode
 
-declare module '../types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface SubgraphNode extends RegisteredSubgraphNode {}
 }

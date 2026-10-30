@@ -10,14 +10,14 @@ import {
   persistPendingSubscriptionCheckoutAttempt,
   withPendingCheckoutAttemptId
 } from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
-import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
+import { webSessionResourceHeader } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
   BillingFailureError,

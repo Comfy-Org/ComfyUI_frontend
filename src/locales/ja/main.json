@@ -83,6 +83,7 @@
     "copyMarkdown": "Markdownとしてコピー",
     "copyUnavailable": "このバージョンでは、現在の会話のみコピーできます",
     "creditTransitionNotice": "無料のエージェントクレジットを使い切りました。以降のエージェント操作ではワークスペースのクレジットが使用され、有料クレジットが含まれる場合があります。",
+    "creditsUsed": "エージェントは {credits} クレジットを使用しました | エージェントは {credits} クレジットを使用しました",
     "currentTab": "現在のタブ",
     "delete": "削除",
     "deleteApproval": {
@@ -5857,13 +5858,11 @@
         "onHold": "デフォルトの支払い方法がありません。設定して自動チャージを再開してください。",
         "paused": "月間上限に達しました。{date} に再開します。",
         "pausedNoDate": "月間上限に達しました。",
-        "rule": "クレジットが {threshold} 未満になると、{amount}（{credits} クレジット）を追加します。",
         "status": {
           "failed": "失敗",
           "off": "オフ",
           "on": "オン",
           "onHold": "保留中",
-          "paused": "一時停止中",
           "turnedOff": "オフ"
         },
         "title": "自動チャージ",
@@ -5926,7 +5925,6 @@
         },
         "scheduledChange": "{date}に{plan}へ変更されます。",
         "stayConfirm": {
-          "body": "{date}にプランが{plan}へ変更されることはありません。いつでも再度変更を予約できます。",
           "title": "{plan} への変更をキャンセルしますか？"
         },
         "unknown": {

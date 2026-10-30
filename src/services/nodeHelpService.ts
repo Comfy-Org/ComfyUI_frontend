@@ -1,7 +1,7 @@
 import { api } from '@/scripts/api'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
-import { extractCustomNodeName } from '@/workbench/utils/nodeHelpUtil'
+import { extractCustomNodeName } from '@/platform/customNodes/manager/utils/packUtils'
 
 class NodeHelpService {
   async fetchNodeHelp(node: ComfyNodeDefImpl, locale: string): Promise<string> {

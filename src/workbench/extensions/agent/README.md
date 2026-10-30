@@ -34,7 +34,10 @@ The panel speaks one contract on the cloud and on the local agent:
   next reconnect in the window. A reconnect outside the window does nothing, so
   if none comes within it the store does nothing, and **Refresh Node
   Definitions** recovers definitions. A restart made while the panel is closed
-  is not observed.
+  is not observed here; outside the agent, `platform/customNodes/useReconnectNodeDefinitionRefresh.ts`
+  (wired in `GraphView.vue`, local only) checks `/object_info` on every
+  reconnect and, when it lists node types the page lacks, refreshes
+  definitions and reloads the open workflow if it holds one of them.
 - **Saved workflows, `GET /api/workflows`**. Saved tabs resolve through the
   saved-workflow index on every backend.
 - **Credential** (`services/agent/agentAuth.ts`). In the cloud, agent requests
@@ -47,9 +50,9 @@ The panel speaks one contract on the cloud and on the local agent:
 
 ## Activation and consent
 
-The dock is visible only when the server's `agent` feature reports
-`state: "ready"`, the panel has an open intent, and the current user and
-workspace have accepted Agent consent. Cloud and ComfyUI (`--enable-agent`)
+The dock is visible when the server's `agent` feature reports
+`state: "ready"` and the panel has an open intent; sending still requires
+Agent consent for the current user and workspace. Cloud and ComfyUI (`--enable-agent`)
 publish the same feature, and ComfyUI pushes `agent_status` when it changes;
 while it is `starting` or `failed` the entry button shows that, inert. Builds
 with `VITE_AGENT_STANDALONE=true` (the local agent harness) ignore the feature
@@ -57,15 +60,78 @@ and, in development mode, force the panel on; consent is still required. A
 plain `pnpm dev` shows the panel only when the ComfyUI it proxies publishes the
 feature. A restored open intent cannot bypass consent.
 
-On first use, click **Agent**, then **Start using Comfy Agent**.
+Cloud and Desktop share one onboarding rule (ADR-AGENT-CONSENT-0045). On the
+first two launches the panel opens by itself, with the consent card over it
+until the user answers. After that, **Agent** asks for consent before it opens
+a closed panel, and Send asks before the first message. Signed-out users see
+the card before sign-in.
+
+```mermaid
+flowchart TD
+  launch([Launch]) --> agreed{Agreed for this account and workspace?}
+  agreed -- yes --> done[No card; Agent and Send just work]
+  agreed -- no --> window{Launch 1 or 2?}
+  window -- no --> noCard[No automatic card]
+  window -- yes --> answered{Skipped on this device?}
+  answered -- yes --> noCard
+  answered -- no --> card[Panel opens with the consent card]
+  card -- Agree --> saved[Consent saved; panel open]
+  card -- Skip --> noCard
+  card -- Escape or outside click --> again[Card again on the next of launches 1 and 2]
+  noCard --> ask[Agent on a closed panel, or Send: the card first]
+```
+
+On launches 1 and 2 the panel also opens by itself for a user who has agreed;
+after that it keeps whatever open state the user left it in.
+
 Acceptance is stored through the hosted Global Settings API under
-`Comfy.AgentPanel.ConsentAccepted` for the authenticated user and workspace.
-Agent opens after the save succeeds. Skip, Escape and outside clicks dismiss
-without accepting. Skip stores an account preference that suppresses future
-automatic offers; Escape and outside clicks do not. An explicit Send can offer
-consent again. Failed loads or saves keep the panel closed and allow retry.
+`Comfy.AgentPanel.ConsentAccepted` for the authenticated user and workspace. Skip, Escape and outside clicks dismiss without accepting.
+Skip is remembered on the device for the account and workspace (or for
+signed-out use) and ends the automatic card; Escape and outside clicks do not.
+Failed loads or saves allow retry and do not permit sending. A manual request
+to open a closed panel waits for successful consent; automatic activation can
+open the panel before consent.
 Switching user or workspace invalidates the cached acceptance and loads the
 new scope. Desktop/Local sign-in continuation authenticates before saving.
+
+### Consent offer telemetry
+
+`agent_consent_not_offered` names why an automatic offer was not made.
+
+| `reason`              | Why                                         | Retried                |
+| --------------------- | ------------------------------------------- | ---------------------- |
+| `first_run_screen`    | Getting Started or another first-run screen | When it closes         |
+| `tour_active`         | Another onboarding tour                     | When it ends           |
+| `dialog_open`         | Another dialog                              | When it closes         |
+| `boot_undecided`      | The startup decision did not settle         | No, for this page load |
+| `storage_unavailable` | localStorage cannot be written              | No, for this page load |
+
+`agent_consent_offer_exited` covers every other ending. Split queries by
+`exit`; a total is not a quantity.
+
+| `exit`                       | Meaning                                          | Kind                |
+| ---------------------------- | ------------------------------------------------ | ------------------- |
+| `consent_already_accepted`   | Consent is already stored for this scope         | Correct, not needed |
+| `card_already_seen`          | The card was already on screen this page load    | Correct, not needed |
+| `activation_window_complete` | Past launch 2, or the launch count is unreadable | Correct, not needed |
+| `consent_unresolved`         | The stored consent read has not settled          | Owed, not made      |
+| `consent_read_failed`        | The stored consent read failed                   | Owed, not made      |
+| `offer_in_flight`            | Another offer attempt has not finished           | Owed, not made      |
+| `startup_probe_failed`       | The first-run startup probe failed               | Owed, not made      |
+| `scope_changed_before_read`  | The account or workspace changed before the read | Owed, not made      |
+| `scope_probe_failed`         | Resolving the account or workspace failed        | Owed, not made      |
+| `scope_changed_after_read`   | The account or workspace changed during the read | Owed, not made      |
+| `card_closed_before_mount`   | The card closed before it rendered               | Owed, not made      |
+
+There is no exit for "the agent flag is off": it would fire on every page load
+outside the rollout, and every event already carries
+`$feature/agent-in-app-experience`.
+
+Outside the request stage, exits are deduplicated per page load by
+(`stage`, `exit`, `retry_armed`). The request stage records each attempt
+without deduplication, including automatic retries after a pre-display hold.
+Compare counts within the same stage, exit and retry state; do not sum across
+stages.
 
 ## First-use tour
 
@@ -73,6 +139,15 @@ After consent succeeds, the first Agent open starts a four-card tour of the
 panel, composer, graph and chat history. **Next** advances through the cards;
 **Done** on the last card, **Skip** on any card and Escape once a card is on
 screen all dismiss the tour and mark it complete.
+
+A card placed beside its target carries an arrow pointing at it; cards placed
+anywhere else never do. The arrow is also hidden when it would not actually
+point at the target: when a narrow viewport has shifted the card onto its
+target, or when the target's center lies outside the span the arrow can reach
+along the card's edge. The rest of the
+screen, the highlighted area included, does not respond while a card is up; a
+click there briefly outlines the card and moves focus to it
+so the user finds the controls instead of clicking the highlight.
 
 Completion is device-local in `localStorage`, scoped to the authenticated user
 and active workspace; with either unresolved there is no scope to record, so no

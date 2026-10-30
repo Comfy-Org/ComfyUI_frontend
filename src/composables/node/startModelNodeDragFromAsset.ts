@@ -2,7 +2,7 @@ import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
 import type { ResolveModelNodeError } from '@/platform/assets/utils/resolveModelNodeFromAsset'
-import type { NodeAddSource } from '@/platform/telemetry/types'
+import type { NodeAddSource } from '@comfyorg/telemetry/types'
 import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
 
 /**

@@ -17,7 +17,6 @@ import RetentionOfferStep from './RetentionOfferStep.vue'
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/api/billingApi'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 type TerminalOperation = Awaited<
   ReturnType<ReturnType<typeof useBillingOperationStore>['startOperation']>

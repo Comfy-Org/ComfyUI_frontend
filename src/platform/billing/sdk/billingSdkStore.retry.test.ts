@@ -15,7 +15,7 @@ import {
 
 import { useBillingSdkStore } from './billingSdkStore'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))

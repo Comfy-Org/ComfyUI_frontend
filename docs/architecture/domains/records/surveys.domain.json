@@ -8,19 +8,11 @@
       "role": "application"
     },
     {
-      "path": "src/platform/surveys/ErrorPanelSurveyCta.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/surveys/ErrorPanelSurveyCta.vue",
       "role": "presentation"
     },
     {
       "path": "src/platform/surveys/NightlySurveyController.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/surveys/NightlySurveyPopover.test.ts",
       "role": "presentation"
     },
     {
@@ -32,10 +24,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/surveys/TypeformEmbed.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/surveys/TypeformEmbed.vue",
       "role": "presentation"
     },
@@ -44,16 +32,8 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/surveys/surveyRegistry.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/surveys/surveyRegistry.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/platform/surveys/useTypeformEmbed.test.ts",
-      "role": "presentation"
     },
     {
       "path": "src/platform/surveys/useTypeformEmbed.ts",

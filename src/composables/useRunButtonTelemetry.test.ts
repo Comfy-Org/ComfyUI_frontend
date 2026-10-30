@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { getWorkspaceTelemetryContext } from '@/platform/billing/telemetry/workspaceTelemetryContext'
 
 const state = vi.hoisted(() => ({
@@ -18,7 +18,7 @@ const state = vi.hoisted(() => ({
   agentPanelOpen: false
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/billing/telemetry/workspaceTelemetryContext'))
 
 vi.mock<unknown>(

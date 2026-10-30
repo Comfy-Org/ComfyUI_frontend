@@ -1,4 +1,4 @@
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { createInputSpecInterpreter } from '@/schemas/nodeDef/inputSpecInterpreter'
 import type { InputSpecDiagnosticSink } from '@/schemas/nodeDef/inputSpecInterpreter'
 

@@ -5,11 +5,11 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { CancellationSurveyExit } from '@/platform/billing/subscription/utils/cancellationSurvey'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import CancellationSurveyStep from './CancellationSurveyStep.vue'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const REASON_QUESTION_ID = 'f5b2934c-a2aa-4e9d-83d2-bbb346b2a196'
 const COMMENT_QUESTION_ID = '3a3166fb-c479-439b-8c8a-65dde9f2147a'

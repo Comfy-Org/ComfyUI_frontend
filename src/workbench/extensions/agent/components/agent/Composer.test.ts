@@ -20,10 +20,10 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
@@ -34,7 +34,7 @@ setupInlinePromptEditorDom()
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 const fetchApi = vi.mocked(api.fetchApi)
 const telemetryProvider = useTelemetry()

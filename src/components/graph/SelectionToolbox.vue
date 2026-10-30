@@ -14,36 +14,129 @@
       >
         <TooltipProvider :delay-duration="1000">
           <div class="flex h-8 gap-1">
-            <LinkSelectionActions v-if="hasLinkSelection" />
+            <template v-if="hasLinkSelection">
+              <ToolboxButton
+                v-if="linksHidden"
+                :label="$t('commands.Comfy_Canvas_ShowSelectedLinks.label')"
+                icon="icon-[lucide--eye]"
+                @click="commandStore.execute('Comfy.Canvas.ShowSelectedLinks')"
+              />
+              <ToolboxButton
+                v-else
+                :label="$t('commands.Comfy_Canvas_HideSelectedLinks.label')"
+                icon="icon-[lucide--eye-off]"
+                @click="commandStore.execute('Comfy.Canvas.HideSelectedLinks')"
+              />
+              <ToolboxButton
+                :label="$t('commands.Comfy_Canvas_DeleteSelectedLinks.label')"
+                icon="icon-[lucide--trash-2]"
+                @click="
+                  commandStore.execute('Comfy.Canvas.DeleteSelectedLinks')
+                "
+              />
+            </template>
             <template v-else>
-              <DeleteButton v-if="showDelete" />
-              <VerticalDivider
-                v-if="canOpenNodeInfo && showAnyPrimaryActions"
+              <ToolboxButton
+                v-if="isDeletable"
+                :label="$t('commands.Comfy_Canvas_DeleteSelectedItems.label')"
+                icon="icon-[lucide--trash-2]"
+                @click="
+                  commandStore.execute('Comfy.Canvas.DeleteSelectedItems')
+                "
               />
-              <InfoButton v-if="canOpenNodeInfo" />
-
-              <ColorPickerButton v-if="showColorPicker" />
-              <TidyUpButton v-if="showTidyUp" v-model:lift="lift" />
-              <FrameNodes v-if="showFrameNodes" />
-              <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
-              <ConfigureSubgraph v-if="showSubgraphButtons" />
-              <PublishSubgraphButton v-if="showSubgraphButtons" />
-              <MaskEditorButton v-if="showMaskEditor" />
-              <VerticalDivider
-                v-if="showAnyPrimaryActions && showAnyControlActions"
+              <VerticalDivider v-if="canOpenNodeInfo && hasAnySelection" />
+              <ToolboxButton
+                v-if="canOpenNodeInfo"
+                :label="$t('g.info')"
+                icon="icon-[lucide--info]"
+                @click="onInfoClick"
               />
 
-              <BypassButton v-if="showBypass" />
-              <RefreshSelectionButton v-if="showRefresh" />
-              <Load3DViewerButton v-if="showLoad3DViewer" />
+              <ColorPickerButton v-if="hasAnySelection" />
+              <TidyUpButton v-if="hasMultipleSelection" v-model:lift="lift" />
+              <ToolboxButton
+                v-if="hasMultipleSelection"
+                :label="$t('g.frameNodes')"
+                icon="icon-[lucide--frame]"
+                @click="frameNodes"
+              />
+              <ToolboxButton
+                v-if="isSingleSubgraph"
+                :label="$t('commands.Comfy_Graph_UnpackSubgraph.label')"
+                icon="icon-[lucide--expand]"
+                @click="commandStore.execute('Comfy.Graph.UnpackSubgraph')"
+              />
+              <ToolboxButton
+                v-else-if="hasAnySelection"
+                :label="$t('commands.Comfy_Graph_ConvertToSubgraph.label')"
+                icon="icon-[lucide--shrink]"
+                size="icon"
+                @click="commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
+              />
+              <template v-if="isSingleSubgraph">
+                <ToolboxButton
+                  :label="$t('commands.Comfy_Graph_EditSubgraphWidgets.label')"
+                  icon="icon-[lucide--settings-2]"
+                  @click="rightSidePanelStore.openPanel('subgraph')"
+                />
+                <ToolboxButton
+                  :label="$t('commands.Comfy_PublishSubgraph.label')"
+                  icon="icon-[lucide--book-open]"
+                  @click="commandStore.execute('Comfy.PublishSubgraph')"
+                />
+              </template>
+              <ToolboxButton
+                v-if="isSingleImageNode"
+                :label="$t('commands.Comfy_MaskEditor_OpenMaskEditor.label')"
+                icon="icon-[comfy--mask]"
+                @click="commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')"
+              />
+              <VerticalDivider v-if="hasAnySelection && showBypass" />
 
-              <ExtensionCommandButton
+              <ToolboxButton
+                v-if="showBypass"
+                :label="
+                  $t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label')
+                "
+                icon="icon-[lucide--redo-dot]"
+                class="hover:bg-secondary"
+                @click="
+                  commandStore.execute(
+                    'Comfy.Canvas.ToggleSelectedNodes.Bypass'
+                  )
+                "
+              />
+              <ToolboxButton
+                v-if="hasAnySelection && isRefreshable"
+                :label="$t('g.refreshNode')"
+                icon="icon-[lucide--refresh-cw]"
+                @click="refreshSelected"
+              />
+              <ToolboxButton
+                v-if="hasAny3DNodeSelected"
+                :label="$t('commands.Comfy_3DViewer_Open3DViewer.label')"
+                icon="icon-[lucide--pencil]"
+                @click="commandStore.execute('Comfy.3DViewer.Open3DViewer')"
+              />
+
+              <ToolboxButton
                 v-for="command in extensionToolboxCommands"
                 :key="command.id"
-                :command
+                :label="
+                  st(
+                    `commands.${normalizeI18nKey(command.id)}.label`,
+                    command.label ?? ''
+                  )
+                "
+                :icon="command.icon"
+                @click="commandStore.execute(command.id)"
               />
-              <ExecuteButton v-if="showExecute" />
-              <NodeOptionsButton />
+              <ExecuteButton v-if="hasOutputNodesSelected" />
+              <ToolboxButton
+                :label="$t('g.moreOptions')"
+                icon="icon-[lucide--more-vertical]"
+                @click="toggleNodeOptions"
+              />
             </template>
           </div>
         </TooltipProvider>
@@ -55,32 +148,28 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
-import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
-import ConfigureSubgraph from '@/components/graph/selectionToolbox/ConfigureSubgraph.vue'
-import ConvertToSubgraphButton from '@/components/graph/selectionToolbox/ConvertToSubgraphButton.vue'
-import DeleteButton from '@/components/graph/selectionToolbox/DeleteButton.vue'
-import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
-import ExtensionCommandButton from '@/components/graph/selectionToolbox/ExtensionCommandButton.vue'
-import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
-import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewerButton.vue'
-import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
-import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
 import TidyUpButton from '@/components/graph/selectionToolbox/TidyUpButton.vue'
-import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
+import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
+import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
+import ToolboxButton from '@/components/graph/selectionToolbox/ToolboxButton.vue'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
+import { useFrameNodes } from '@/composables/graph/useFrameNodes'
+import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
+import { useRefreshableSelection } from '@/composables/useRefreshableSelection'
+import { st } from '@/i18n'
+import { areSelectedLinksHidden } from '@/lib/litegraph/src/canvas/linkSelection'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useExtensionService } from '@/services/extensionService'
-import { useCommandStore } from '@/stores/commandStore'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
-import type { ComfyCommandImpl } from '@/stores/commandStore'
+import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
-import FrameNodes from './selectionToolbox/FrameNodes.vue'
-import LinkSelectionActions from './selectionToolbox/LinkSelectionActions.vue'
-import NodeOptionsButton from './selectionToolbox/NodeOptionsButton.vue'
 import VerticalDivider from '@comfyorg/design-system/common/VerticalDivider'
 
 const commandStore = useCommandStore()
@@ -88,6 +177,9 @@ const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
 const linkSelectionStore = useLinkSelectionStore()
+const rightSidePanelStore = useRightSidePanelStore()
+const { frameNodes } = useFrameNodes()
+const { isRefreshable, refreshSelected } = useRefreshableSelection()
 
 const toolboxRef = ref<HTMLElement | undefined>()
 const lift = ref(0)
@@ -110,6 +202,7 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 })
 
 const {
+  selectedItems,
   hasAnySelection,
   hasGroupedNodesSelection,
   hasMultipleSelection,
@@ -118,14 +211,9 @@ const {
   isSingleImageNode,
   hasAny3DNodeSelected,
   hasOutputNodesSelected,
-  canOpenNodeInfo
+  canOpenNodeInfo,
+  openNodeInfo
 } = useSelectionState()
-
-const showColorPicker = computed(() => hasAnySelection.value)
-const showConvertToSubgraph = computed(() => hasAnySelection.value)
-const showTidyUp = computed(() => hasMultipleSelection.value)
-const showFrameNodes = computed(() => hasMultipleSelection.value)
-const showSubgraphButtons = computed(() => isSingleSubgraph.value)
 
 const showBypass = computed(
   () =>
@@ -134,27 +222,28 @@ const showBypass = computed(
     hasMultipleSelection.value ||
     hasGroupedNodesSelection.value
 )
-const showLoad3DViewer = computed(() => hasAny3DNodeSelected.value)
-const showMaskEditor = computed(() => isSingleImageNode.value)
-
 const hasLinkSelection = computed(
   () => !hasAnySelection.value && linkSelectionStore.selection !== null
 )
 
-const showDelete = computed(() => hasAnySelection.value)
-const showRefresh = computed(() => hasAnySelection.value)
-const showExecute = computed(() => hasOutputNodesSelected.value)
-
-const showAnyPrimaryActions = computed(
-  () =>
-    showColorPicker.value ||
-    showConvertToSubgraph.value ||
-    showTidyUp.value ||
-    showFrameNodes.value ||
-    showSubgraphButtons.value
+const isDeletable = computed(() =>
+  selectedItems.value.some((item) => item.removable !== false)
 )
 
-const showAnyControlActions = computed(() => showBypass.value)
+const linksHidden = computed(() => {
+  if (!linkSelectionStore.selection) return false
+  const graph = canvasStore.canvas?.graph
+  return !!graph && areSelectedLinksHidden(graph)
+})
+
+function onInfoClick() {
+  if (!openNodeInfo()) return
+
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'selection_toolbox_node_info_opened',
+    element_group: 'selection_toolbox'
+  })
+}
 </script>
 
 <style scoped>

@@ -59,10 +59,6 @@ async function addNode(page: Page, nodeType: string): Promise<string> {
 }
 
 test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-  })
-
   test('Select dropdown is not clipped in app mode panel', async ({
     comfyPage
   }) => {

@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
+import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 
@@ -33,7 +33,7 @@ const { hasError, overlayMessage, overlayTitle } = useErrorOverlayState()
           aria-hidden="true"
           :class="
             cn(
-              'mt-0.5 size-4 shrink-0',
+              'mt-0.5',
               hasError
                 ? 'icon-[lucide--circle-x] text-destructive'
                 : 'icon-[lucide--triangle-alert] text-warning'

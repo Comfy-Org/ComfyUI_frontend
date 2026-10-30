@@ -20,9 +20,9 @@ import { useAuthStore } from '@/stores/authStore'
 
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import {
   clearCheckoutJourney,
   getActiveCheckoutJourney,
@@ -414,16 +414,16 @@ vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
 function latestPaymentRecoveryAction() {
   const toast = useToast().toasts.at(-1)
-  assert(toast?.kind === 'warning' && toast.action)
-  return toast.action.onClick
+  assert(toast?.kind === 'warning' && toast.actions[0])
+  return toast.actions[0].onClick
 }
 
 const i18n = createI18n({
@@ -1227,7 +1227,7 @@ describe('useSubscriptionCheckout', () => {
       )
       expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          action: { label: 'Try again', onClick: expect.any(Function) },
+          actions: [{ label: 'Try again', onClick: expect.any(Function) }],
           description: 'Payment popup blocked',
           kind: 'warning',
           title: 'Warning'
@@ -1376,7 +1376,10 @@ describe('useSubscriptionCheckout', () => {
         'SUBSCRIPTION_PAYMENT_REQUIRED'
       )
       expect(useToast().toasts).toEqual([
-        expect.objectContaining({ action: expect.any(Object), kind: 'warning' })
+        expect.objectContaining({
+          actions: [expect.any(Object)],
+          kind: 'warning'
+        })
       ])
 
       checkout.handleBackToPricing()
@@ -1404,7 +1407,10 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'yearly'
       })
       expect(useToast().toasts).toEqual([
-        expect.objectContaining({ action: expect.any(Object), kind: 'warning' })
+        expect.objectContaining({
+          actions: [expect.any(Object)],
+          kind: 'warning'
+        })
       ])
 
       unmount()
@@ -1566,12 +1572,12 @@ describe('useSubscriptionCheckout', () => {
     describe('payment recovery on the SDK rail', () => {
       const RAIL_PORTAL = 'https://billing.stripe.com/rail-portal'
 
-      /** Only `billing_status` is read, but the response requires six more. */
       function railStatus(
         billing_status: BillingStatus
       ): BillingStatusResponse {
         return {
           billing_status,
+          ended_at: null,
           has_funds: true,
           is_active: true,
           max_seats: 1,
@@ -4443,7 +4449,7 @@ describe('useSubscriptionCheckout', () => {
 
       expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          action: { label: 'Try again', onClick: expect.any(Function) },
+          actions: [{ label: 'Try again', onClick: expect.any(Function) }],
           description: 'Payment popup blocked',
           kind: 'warning',
           title: 'Warning'

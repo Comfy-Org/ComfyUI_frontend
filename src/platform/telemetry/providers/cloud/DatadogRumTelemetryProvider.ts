@@ -23,6 +23,7 @@ import type {
   AuthMetadata,
   BootstrapCompleteMetadata,
   ExecutionOutcomeMetadata,
+  FetchStatusRetryMetadata,
   FetchTimeoutMetadata,
   ImageLoadFailureMetadata,
   TelemetryProvider,
@@ -30,8 +31,8 @@ import type {
   UnifiedAuthRetryMetadata,
   WorkspaceScopeMismatchMetadata,
   WorkspaceTelemetryContext
-} from '@/platform/telemetry/types'
-import { TelemetryEvents } from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
   private isWatchingLogout = false
@@ -57,6 +58,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
 
   trackFetchTimeout(metadata: FetchTimeoutMetadata): void {
     datadogRum.addAction(TelemetryEvents.FETCH_TIMEOUT, metadata)
+  }
+
+  trackFetchStatusRetry(metadata: FetchStatusRetryMetadata): void {
+    datadogRum.addAction(TelemetryEvents.FETCH_STATUS_RETRY, metadata)
   }
 
   trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {

@@ -6,20 +6,20 @@ import type {
 import axios, { AxiosHeaders } from 'axios'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { RetrySignalLifecycle } from '@/platform/auth/apiAuthProvider'
+import type { RetrySignalLifecycle } from '@comfyorg/api-client/apiAuthProvider'
 import {
   presentForRefusal,
   presentForResponse
 } from '@/platform/auth/sso/ssoRequired'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   UnifiedAuthRetryFailureReason,
   UnifiedAuthRetryMetadata
-} from '@/platform/telemetry/types'
-import { fetchWithRetry } from '@/utils/fetchWithRetry'
-import type { RetryPolicy } from '@/utils/retryPolicy'
+} from '@comfyorg/telemetry/types'
+import { fetchWithRetry } from '@comfyorg/api-client/fetchWithRetry'
+import type { RetryPolicy } from '@comfyorg/api-client/retryPolicy'
 
 let cachedUnifiedFlags:
   | { readonly unifiedCloudAuthEnabled: boolean }

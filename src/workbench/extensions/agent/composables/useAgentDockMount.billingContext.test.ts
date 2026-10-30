@@ -33,10 +33,10 @@ import { useBillingContext as useSharedBillingContext } from '@/platform/billing
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/useErrorHandling'))
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
+  ended_at: null,
   is_active: true,
   max_seats: 73,
   occupied_seats: 72,
@@ -165,6 +165,7 @@ describe('useAgentDockMount with the real billing context', () => {
     mockPlans.value = []
     const subscription = useSubscription()
     subscription.subscriptionStatus.value = {
+      ended_at: null,
       is_active: true,
       has_funds: true,
       max_seats: 0,

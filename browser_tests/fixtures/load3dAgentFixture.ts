@@ -3,12 +3,12 @@ import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
-import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import {
   zComfyApiWorkflow,
   zComfyWorkflow
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import { toNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/workflowSchema'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import load3dWorkflow from '@e2e/assets/3d/load3d_node.json' with { type: 'json' }
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'

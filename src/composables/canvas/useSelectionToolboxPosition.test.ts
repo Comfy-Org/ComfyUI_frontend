@@ -5,7 +5,7 @@ import type { Ref } from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
-import type { Rect } from '@/lib/litegraph/src/interfaces'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import {
   LGraph,
   LGraphGroup,

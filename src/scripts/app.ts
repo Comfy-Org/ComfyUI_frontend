@@ -13,8 +13,6 @@ import {
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 
-import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -38,20 +36,17 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { ISerialisedGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  TWidgetValue
-} from '@/lib/litegraph/src/types/widgets'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { normalizeExecutionTriggerSource } from '@comfyorg/telemetry/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
 import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
@@ -61,11 +56,15 @@ import type {
   WorkflowExecutionIntent,
   WorkflowOpenSource,
   WorkflowQueueIntent
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  getDefaultWorkflow,
+  initDefaultWorkflow
+} from '@/platform/workflow/core/services/defaultWorkflowService'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -76,10 +75,10 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON,
   WorkflowJSON04
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import { toNodeId } from '@/types/nodeId'
-import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/workflowSchema'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { zNodePackMetadata } from '@comfyorg/graph-model/workflowSchema'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   buildSubgraphExecutionPaths,
   collectSubgraphDefinitions,
@@ -89,35 +88,36 @@ import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/wor
 import type {
   ExecutionErrorWsMessage,
   NodeExecutionOutput
-} from '@/platform/remote/comfyui/execution/types'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+} from '@comfyorg/api-client/executionTypes'
+import type { NodeError } from '@comfyorg/api-client/types'
 import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/types/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId
-} from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
@@ -125,7 +125,6 @@ import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type {
   ComfyApp as IComfyApp,
@@ -137,8 +136,8 @@ import type {
   QueuePromptOptions
 } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { getErrorMessage } from '@/utils/errorUtil'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
@@ -158,7 +157,7 @@ import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMed
 import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 
-import { getWorkflowMode } from '@/utils/appMode'
+import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
@@ -186,11 +185,12 @@ import {
 } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
-import { PromptExecutionError, api } from './api'
-import type { ComfyApi } from './api'
-import { defaultGraph } from './defaultGraph'
+import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
+import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
+import { api } from './api'
 import { importA1111 } from './pnginfo'
 import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
+import { syncPromotedComboHostOptions } from '@/core/graph/widgets/syncPromotedComboHostOptions'
 import type { ComfyUI } from './ui'
 import type { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
@@ -233,34 +233,6 @@ export function sanitizeNodeName(string: string) {
   }
   return string.replace(/[&<>"'`=]/g, function fromEntityMap(s) {
     return entityMap[s as keyof typeof entityMap]
-  })
-}
-
-function syncPromotedComboHostOptions(rootGraph: LGraph): void {
-  const widgetValueStore = useWidgetValueStore()
-  forEachNode(rootGraph, (node) => {
-    if (!node.isSubgraphNode()) return
-    for (const input of node.inputs) {
-      if (!input.widgetId) continue
-
-      const source = promotedInputSource(node, input)
-      if (!source) continue
-
-      const resolution = resolveConcretePromotedWidget(
-        node,
-        source.nodeId,
-        source.widgetName
-      )
-      if (resolution.status !== 'resolved') continue
-
-      const sourceWidget = resolution.resolved.widget
-      if (sourceWidget.type !== 'combo') continue
-
-      const state = widgetValueStore.getWidget(input.widgetId)
-      if (!state) continue
-
-      state.options = { ...sourceWidget.options }
-    }
   })
 }
 
@@ -815,7 +787,7 @@ export class ComfyApp implements IComfyApp {
         exceptionMessage: detail.exception_message
       })
       if (precondition) {
-        useAccountPreconditionDialog().open(precondition, {
+        void useAccountPreconditionDialog().open(precondition, {
           nodeType: detail.node_type
         })
       }
@@ -846,6 +818,8 @@ export class ComfyApp implements IComfyApp {
     api.addEventListener('feature_flags', () => {
       void useNodeReplacementStore().load()
     })
+
+    useJobModelDownloadStore()
 
     void api.init()
   }
@@ -892,6 +866,8 @@ export class ComfyApp implements IComfyApp {
     this.canvasContainer = document.getElementById('graph-canvas-container')!
 
     this.canvasElRef.value = canvasEl
+
+    const defaultWorkflowReady = initDefaultWorkflow()
 
     await bootstrapTracer.settle('bootstrap/sync-workflows', () =>
       useWorkspaceStore().workflow.syncWorkflows()
@@ -1000,6 +976,8 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
       useExtensionService().invokeExtensionsAsync('setup')
     )
+
+    await defaultWorkflowReady
 
     this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,
@@ -1255,7 +1233,7 @@ export class ComfyApp implements IComfyApp {
         typeof graphData !== 'object' ||
         Array.isArray(graphData)
       ) {
-        graphData = defaultGraph
+        graphData = getDefaultWorkflow()
         reset_invalid_values = true
       }
 
@@ -1738,7 +1716,6 @@ export class ComfyApp implements IComfyApp {
       batchCount
     })
 
-    // Only have one action process the items so each one gets a unique seed correctly
     if (this.processingQueue) {
       return false
     }
@@ -1750,7 +1727,6 @@ export class ComfyApp implements IComfyApp {
     executionErrorStore.clearRunErrors()
     let queueResultOverride: boolean | null = null
 
-    // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
     const teamWorkspaceStore = useTeamWorkspaceStore()
     try {
       await teamWorkspaceStore.waitForWorkspaceSwitch()
@@ -1779,17 +1755,10 @@ export class ComfyApp implements IComfyApp {
         workspaceGenerationBeforeAuthentication !==
           executionWorkspaceGeneration) &&
       (isCloud || workspaceIdBeforeAuthentication !== null)
-    // Desktop host auth is the only credential while active: a stored
-    // personal key may belong to another account and never rides along.
     const desktopHostAuth = isDesktopHostSignedIn()
     const comfyOrgApiKey = desktopHostAuth
       ? null
       : useApiKeyAuthStore().getApiKey()
-    // An API-key session mints no workspace JWT: the key itself is the
-    // execution credential and the server resolves its bound workspace. Only a
-    // key-authenticated session may pass without a token — a Firebase session
-    // whose token mint failed must still fail closed rather than fall back to
-    // a stored key and charge the key's workspace.
     const isApiKeySessionExecution =
       !desktopHostAuth &&
       !useAuthStore().currentUser &&
@@ -1845,8 +1814,6 @@ export class ComfyApp implements IComfyApp {
             }
           }
 
-          // Allow widgets to run callbacks before a prompt has been queued
-          // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
@@ -1854,9 +1821,6 @@ export class ComfyApp implements IComfyApp {
             applyPromotedWidgetControl(node, 'beforeQueued')
           })
 
-          // Capture workflow and mode before await — both may change if the
-          // user switches tabs or toggles app/graph mode while the request is
-          // in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
           const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
@@ -1962,6 +1926,9 @@ export class ComfyApp implements IComfyApp {
               ...workflowExecutionIntent,
               ...(workflowContext && { workflowContext })
             })
+            if (error instanceof PromptExecutionError) {
+              queueResultOverride = !error.response.node_errors
+            }
             const hasPromptNodeErrors =
               error instanceof PromptExecutionError &&
               Object.keys(error.response.node_errors ?? {}).length > 0
@@ -1975,28 +1942,24 @@ export class ComfyApp implements IComfyApp {
                   exceptionMessage: promptError.message
                 })
               : undefined
-            // Account preconditions (sign-in, subscription, credits) open their
-            // own modal and must stay out of the error panel and error count.
             if (promptPrecondition) {
-              useAccountPreconditionDialog().open(promptPrecondition)
-              console.error(error)
-              break
+              const opened =
+                await useAccountPreconditionDialog().open(promptPrecondition)
+              if (opened) {
+                console.error(error)
+                break
+              }
             }
             if (
               error instanceof PromptExecutionError &&
               promptError?.type === 'missing_node_type'
             ) {
-              // Re-scan the full graph instead of using the server's single-node response.
               rescanAndSurfaceMissingNodes(this.rootGraph)
             } else if (
               error instanceof PromptExecutionError &&
               error.status === 403 &&
               !hasPromptNodeErrors
             ) {
-              // User is authenticated but not authorized (e.g. not whitelisted).
-              // Show a clear message instead of a generic error or sign-in prompt.
-              // The response may be middleware JSON {"message": "..."} or the
-              // standard {"error": {"message": "..."}} shape, so check both.
               const raw: Record<string, unknown> = error.response
               const rawError =
                 raw.error && typeof raw.error === 'object'
@@ -2026,17 +1989,12 @@ export class ComfyApp implements IComfyApp {
             console.error(error)
 
             if (error instanceof PromptExecutionError) {
-              // Keep the legacy result before empty node errors are normalized.
               const nodeErrors = error.response.node_errors
-              queueResultOverride = !nodeErrors
               executionErrorStore.recordNodeErrors(
                 nodeErrors ?? null,
                 queuedRunErrorKey
               )
 
-              // Store prompt-level error separately only when no node-specific errors exist,
-              // because node errors already carry the full context. Prompt-level errors
-              // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
               if (
                 (!nodeErrors || Object.keys(nodeErrors).length === 0) &&
                 promptError
@@ -2057,8 +2015,6 @@ export class ComfyApp implements IComfyApp {
 
           queuedCount++
 
-          // Allow widgets to run callbacks after a prompt has been queued
-          // e.g. random seed after every gen
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
           })
@@ -2066,11 +2022,16 @@ export class ComfyApp implements IComfyApp {
             applyPromotedWidgetControl(node, 'afterQueued')
           }
           useFreeTierQuota().trackRun()
-          this.canvas.draw(true, true)
-          await this.ui.queue.update()
         }
 
         if (queuedCount > 0) {
+          this.canvas.draw(true, true)
+          void this.ui.queue.update().catch((error) => {
+            reportError(error, {
+              surface: 'graph',
+              errorType: 'queue_ui_update_failure'
+            })
+          })
           api.dispatchCustomEvent('promptQueued', {
             number,
             batchCount: queuedCount,

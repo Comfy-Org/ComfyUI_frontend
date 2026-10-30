@@ -8,12 +8,9 @@
         <div class="flex items-center gap-2">
           <i
             :class="
-              cn(
-                'size-4 shrink-0',
-                banner.muted
-                  ? 'icon-[lucide--circle-alert] text-muted-foreground'
-                  : 'icon-[lucide--triangle-alert] text-warning'
-              )
+              banner.muted
+                ? 'icon-[lucide--circle-alert] text-muted-foreground'
+                : 'icon-[lucide--triangle-alert] text-warning'
             "
           />
           <span class="text-sm text-foreground">{{ banner.title }}</span>
@@ -82,9 +79,9 @@
 
 <script setup lang="ts">
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useLongDate } from '@/platform/billing/composables/useLongDate'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -116,15 +113,24 @@ type BannerAction =
   | 'updatePayment'
 
 const { section } = defineProps<{
-  section?: 'planCredits' | 'members' | 'allowlist'
+  section?: 'planCredits' | 'members' | 'allowlist' | 'billing'
 }>()
 
-const { t, d } = useI18n()
+const { t } = useI18n()
+const { longDate } = useLongDate()
 const { renewalDate, subscription } = useBillingContext()
 const { permissions, canReactivatePlan, workspaceType } = useBillingUI()
 const { canTopUp, topUpDenial, canManageBilling, runDeniedPaymentPastDue } =
   useBillingCapabilities()
-const { kind, audience, dismiss } = useBillingBanner()
+const {
+  kind: overallKind,
+  lifecycleKind,
+  audience,
+  dismiss
+} = useBillingBanner()
+const kind = computed(() =>
+  section === 'billing' ? lifecycleKind.value : overallKind.value
+)
 const { formatTierName } = useWorkspaceTierLabel()
 const { isResubscribing, handleResubscribe } = useResubscribe()
 const {
@@ -144,11 +150,6 @@ const canManage = computed(() => permissions.value.canManageSubscription)
 const isEnterprisePlan = computed(
   () => subscription.value?.tier === 'ENTERPRISE'
 )
-function longDate(raw: string | null | undefined): string {
-  const date = raw ? new Date(raw) : null
-  if (!date || Number.isNaN(date.getTime())) return ''
-  return d(date, { year: 'numeric', month: 'long', day: 'numeric' })
-}
 const cycleResetDate = computed(() => longDate(renewalDate.value))
 const planEndDate = computed(() => longDate(subscription.value?.endDate))
 const planName = computed(() => formatTierName(subscription.value?.tier, false))
@@ -186,15 +187,18 @@ const PLAN_LIFECYCLE_KINDS: ReadonlySet<BillingBannerKind> = new Set([
   'planChange'
 ])
 
-// A personal workspace's Members tab carries its own upgrade pitch, so the
-// plan lifecycle notices stay on the Plan & Credits tab.
-const isHiddenOnSection = computed(
-  () =>
+const isLifecycleKind = computed(
+  () => kind.value !== null && PLAN_LIFECYCLE_KINDS.has(kind.value)
+)
+
+const isHiddenOnSection = computed(() => {
+  if (section === 'billing') return !isLifecycleKind.value
+  return (
     section === 'members' &&
     workspaceType.value === 'personal' &&
-    kind.value !== null &&
-    PLAN_LIFECYCLE_KINDS.has(kind.value)
-)
+    isLifecycleKind.value
+  )
+})
 
 // Sales-managed plans (Enterprise, and unrecognized tiers, which fail closed
 // to sales) return through sales; only a strict ENTERPRISE tier is named.
@@ -362,15 +366,19 @@ const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
   planChange: planChangeView
 }
 
-const banner = computed<BannerView | null>(() =>
-  kind.value && !isHiddenOnSection.value ? bannerViews[kind.value]() : null
-)
+const banner = computed<BannerView | null>(() => {
+  if (!kind.value || isHiddenOnSection.value) return null
+  const view = bannerViews[kind.value]()
+  return view && section === 'billing'
+    ? { ...view, action: null, dismissible: false }
+    : view
+})
 
 function handleAddCredits() {
   void showTopUpCreditsDialog()
 }
 function handleResubscribePlan() {
-  subscriptionDialog.show({
+  void subscriptionDialog.show({
     planMode: audience.value === 'personal' ? 'personal' : 'team',
     reason: 'settings_billing_panel'
   })

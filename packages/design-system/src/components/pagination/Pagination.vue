@@ -39,7 +39,7 @@
           class="text-sm"
           :aria-label="previousLabel"
         >
-          <i class="icon-[lucide--chevron-left] size-4" />
+          <i class="icon-[lucide--chevron-left]" />
           {{ previousLabel }}
         </Button>
       </PaginationPrev>
@@ -71,7 +71,7 @@
           :aria-label="nextLabel"
         >
           {{ nextLabel }}
-          <i class="icon-[lucide--chevron-right] size-4" />
+          <i class="icon-[lucide--chevron-right]" />
         </Button>
       </PaginationNext>
     </div>

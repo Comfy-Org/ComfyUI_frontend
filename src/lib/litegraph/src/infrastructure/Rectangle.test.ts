@@ -2,7 +2,10 @@
 import { test as baseTest, describe, expect, vi } from 'vitest'
 
 import { Rectangle } from '@/lib/litegraph/src/litegraph'
-import type { Point, Size } from '@/lib/litegraph/src/litegraph'
+import type {
+  PointTuple as Point,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 // TODO: If there's a common test context, use it here
 // For now, we'll define a simple context for Rectangle tests

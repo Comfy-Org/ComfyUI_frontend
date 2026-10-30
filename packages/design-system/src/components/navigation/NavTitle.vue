@@ -15,8 +15,10 @@
       v-if="collapsible"
       :class="
         cn(
-          'pi text-xs text-muted-foreground transition-transform duration-200',
-          isCollapsed ? 'pi-chevron-right' : 'pi-chevron-down'
+          'size-3 text-muted-foreground transition-transform duration-200',
+          isCollapsed
+            ? 'icon-[lucide--chevron-right]'
+            : 'icon-[lucide--chevron-down]'
         )
       "
     />

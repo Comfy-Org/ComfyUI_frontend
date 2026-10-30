@@ -10,7 +10,7 @@ import type {
   LayoutBox
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
-import type { Rect } from '@/lib/litegraph/src/interfaces'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

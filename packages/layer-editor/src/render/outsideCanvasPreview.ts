@@ -1,3 +1,4 @@
+import type { CompactSize as CanvasSize } from '@comfyorg/shared-frontend-utils/geometry'
 import { clamp } from 'es-toolkit'
 
 import type { Transform } from '#/node'
@@ -10,11 +11,6 @@ export interface OutsideCanvasPreviewLayer {
   bitmap: Bitmap
   opacity: number
   transform: Transform
-}
-
-interface CanvasSize {
-  w: number
-  h: number
 }
 
 function extendsOutsideCanvas(
