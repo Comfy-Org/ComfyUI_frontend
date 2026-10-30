@@ -2282,6 +2282,52 @@ describe('useAgentConversationStore', () => {
       expect(reconciledParts(store)).toEqual(persisted)
     })
 
+    it.for([
+      {
+        reloadedAt: 'inside the stored head',
+        live: 'audio output node and then connect the sampler',
+        expected: ['Wiring the audio output node and then connect the sampler']
+      },
+      {
+        reloadedAt: 'past the stored head',
+        live: 'then connect the sampler',
+        expected: ['Wiring the audio output node', 'then connect the sampler']
+      }
+    ])(
+      'joins a capped stored round with the live rest of it when reloaded $reloadedAt',
+      ({ live, expected }) => {
+        const store = useAgentConversationStore()
+        store.setThreadId('th')
+        store.hydrate(liveSnapshot())
+        store.ingest(thinking(SNAPSHOT_ROW_ID, live))
+        store.ingest(toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success'))
+        store.ingest(done(SNAPSHOT_ROW_ID))
+
+        store.reconcileSettledTurn(
+          { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+          [
+            {
+              type: 'thinking',
+              text: 'Wiring the audio output node',
+              state: 'done'
+            },
+            storedTool(),
+            { type: 'text', text: 'Added it.', state: 'done' }
+          ]
+        )
+
+        expect(reconciledParts(store)).toEqual([
+          ...expected.map((text) => ({
+            type: 'thinking',
+            text,
+            state: 'done'
+          })),
+          storedTool(),
+          { type: 'text', text: 'Added it.', state: 'done' }
+        ])
+      }
+    )
+
     it('keeps the longer live thinking when stored thinking is truncated', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')

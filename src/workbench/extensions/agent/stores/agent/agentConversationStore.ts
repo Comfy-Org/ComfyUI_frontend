@@ -237,24 +237,73 @@ function interleaveLocalParts(
   return mergedParts
 }
 
-interface AnchoredThinking {
-  part: ThinkingPart
-  index: number
-  toolCount: number
-}
+const FINAL_ROUND = Symbol('final round')
+type RoundKey = string | typeof FINAL_ROUND
+const MIN_ROUND_OVERLAP = 16
 
-function anchorThinking(parts: AssistantMessage['parts']): AnchoredThinking[] {
-  const anchored: AnchoredThinking[] = []
-  let toolCount = 0
+function thinkingByRound(
+  parts: AssistantMessage['parts']
+): Map<RoundKey, { index: number; part: ThinkingPart }[]> {
+  const rounds = new Map<RoundKey, { index: number; part: ThinkingPart }[]>()
+  let pending: { index: number; part: ThinkingPart }[] = []
   for (const [index, part] of parts.entries()) {
-    if (part.type === 'tool') toolCount += 1
-    if (part.type === 'thinking') anchored.push({ part, index, toolCount })
+    if (part.type === 'thinking') pending.push({ index, part })
+    if (part.type !== 'tool' || pending.length === 0) continue
+    rounds.set(part.callId, [...(rounds.get(part.callId) ?? []), ...pending])
+    pending = []
   }
-  return anchored
+  if (pending.length > 0) rounds.set(FINAL_ROUND, pending)
+  return rounds
 }
 
-interface AnchoredLiveThinking extends AnchoredLocalPart {
-  part: ThinkingPart
+function joinRound(stored: string, live: string): string[] {
+  if (live.startsWith(stored)) return [live]
+  if (stored.includes(live)) return [stored]
+  for (
+    let overlap = Math.min(stored.length, live.length);
+    overlap >= MIN_ROUND_OVERLAP;
+    overlap -= 1
+  )
+    if (stored.endsWith(live.slice(0, overlap)))
+      return [stored + live.slice(overlap)]
+  return [stored, live]
+}
+
+function mergeSnapshotThinking(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts']
+): AssistantMessage['parts'] {
+  const stored = thinkingByRound(persistedParts)
+  const live = thinkingByRound(liveParts)
+  const replaced = new Map<number, ThinkingPart[]>()
+  const insertBefore = new Map<string, ThinkingPart[]>()
+  let finalLive: ThinkingPart[] = []
+  for (const [round, liveRound] of live) {
+    const storedRound = stored.get(round)
+    const liveText = liveRound.map(({ part }) => part.text).join('')
+    if (storedRound !== undefined) {
+      const last = storedRound[storedRound.length - 1]
+      replaced.set(
+        last.index,
+        joinRound(last.part.text, liveText).map((text) => ({
+          ...last.part,
+          text
+        }))
+      )
+      continue
+    }
+    const parts = liveRound.map(({ part }) => part)
+    if (round === FINAL_ROUND) finalLive = parts
+    else insertBefore.set(round, parts)
+  }
+  const merged = persistedParts.flatMap((part, index) => [
+    ...(part.type === 'tool' ? (insertBefore.get(part.callId) ?? []) : []),
+    ...(replaced.get(index) ?? [part])
+  ])
+  if (finalLive.length === 0) return merged
+  const lastTool = merged.findLastIndex((part) => part.type === 'tool')
+  merged.splice(lastTool + 1, 0, ...finalLive)
+  return merged
 }
 
 function toolCallIdsOf(parts: AssistantMessage['parts']): string[] {
@@ -273,46 +322,6 @@ function liveToolOffset(
     if (live.every((callId, index) => persisted[offset + index] === callId))
       return offset
   return trailing
-}
-
-function sameThinkingRound(stored: ThinkingPart, live: ThinkingPart): boolean {
-  return stored.text.includes(live.text) || live.text.includes(stored.text)
-}
-
-function liveThinkingAnchors(
-  liveParts: AssistantMessage['parts']
-): AnchoredLiveThinking[] {
-  return anchorLocalParts(liveParts).flatMap((anchor) =>
-    anchor.part.type === 'thinking' ? [{ ...anchor, part: anchor.part }] : []
-  )
-}
-
-function mergeSnapshotThinking(
-  liveParts: AssistantMessage['parts'],
-  persistedParts: AssistantMessage['parts'],
-  offset: number
-): AssistantMessage['parts'] {
-  const merged = [...persistedParts]
-  const stored = anchorThinking(persistedParts)
-  const claimed = new Set<number>()
-  const unmatchedLive: AnchoredLocalPart[] = []
-  for (const anchor of liveThinkingAnchors(liveParts).reverse()) {
-    const toolCount = anchor.toolCount + offset
-    const candidate = stored.findLast(
-      (entry) => entry.toolCount === toolCount && !claimed.has(entry.index)
-    )
-    if (
-      candidate === undefined ||
-      !sameThinkingRound(candidate.part, anchor.part)
-    ) {
-      unmatchedLive.unshift({ ...anchor, toolCount })
-      continue
-    }
-    claimed.add(candidate.index)
-    if (anchor.part.text.length > candidate.part.text.length)
-      merged[candidate.index] = anchor.part
-  }
-  return interleaveLocalParts(merged, unmatchedLive)
 }
 
 function preserveCanvasConfirmation(
@@ -335,12 +344,11 @@ function preserveCanvasConfirmation(
 
 function reconcileSnapshotParts(
   liveParts: AssistantMessage['parts'],
-  persistedParts: AssistantMessage['parts'],
-  offset: number
+  persistedParts: AssistantMessage['parts']
 ): AssistantMessage['parts'] {
   return preserveCanvasConfirmation(
     liveParts,
-    mergeSnapshotThinking(liveParts, persistedParts, offset)
+    mergeSnapshotThinking(liveParts, persistedParts)
   )
 }
 
@@ -995,7 +1003,7 @@ export const useAgentConversationStore = defineStore(
       const offset = liveToolOffset(liveParts, persistedParts)
       finishWithPersistedParts(
         reconciled,
-        reconcileSnapshotParts(liveParts, persistedParts, offset),
+        reconcileSnapshotParts(liveParts, persistedParts),
         offset
       )
       messages.value[index] = reconciled
