@@ -40,6 +40,7 @@ export class AgentPanel {
   public readonly dockedPanelShell: Locator
   public readonly fileInput: Locator
   public readonly historyButton: Locator
+  public readonly hostFenceNotice: Locator
   public readonly loadFailedMessage: Locator
   public readonly loadRetryButton: Locator
   public readonly nodeSelectionBanner: Locator
@@ -105,6 +106,7 @@ export class AgentPanel {
     this.historyButton = this.root.getByRole('button', {
       name: enMessages.agent.showChatHistory
     })
+    this.hostFenceNotice = this.root.getByTestId('agent-host-fence-notice')
     this.loadFailedMessage = this.dockedPanelShell.getByText(
       enMessages.agent.loadFailed
     )

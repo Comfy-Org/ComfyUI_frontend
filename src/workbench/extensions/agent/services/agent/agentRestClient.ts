@@ -43,7 +43,8 @@ import {
   zAgentThreads,
   zAgentTurnAccepted,
   zAttachmentRejection,
-  zCloudWorkflowIndex
+  zCloudWorkflowIndex,
+  zLoopbackOnlyRefusal
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AgentAnswerReceipt,
@@ -185,6 +186,27 @@ export class AgentApiError extends Error {
     this.retryAfterSeconds = retryAfterSeconds
     this.operation = operation
   }
+}
+
+/**
+ * The local agent host's loopback fence refused this request: ComfyUI is not
+ * being viewed on the machine the agent runs on, by a local address.
+ *
+ * Deliberately *not* an auth rejection even though it arrives as a 403. No
+ * credential would have changed the answer, and the fence answers before the
+ * agent sees the request at all, so counting it in
+ * `agent_api_auth_rejected` - whose population is otherwise credentials the
+ * backend would not take - buries a configuration refusal inside an auth
+ * signal and tells the user nothing. That is what was measured against a host
+ * started `--listen` and viewed by its LAN address: every panel-open request
+ * reported as an auth failure while the panel showed its ordinary empty state.
+ */
+export function isLoopbackOnlyRefusal(error: unknown): error is AgentApiError {
+  return (
+    error instanceof AgentApiError &&
+    error.status === 403 &&
+    zLoopbackOnlyRefusal.safeParse(error.body).success
+  )
 }
 
 export class AgentResponseUnreadableError extends Error {
@@ -603,6 +625,8 @@ export function createAgentRestClient() {
       route
     )
     if (
+      // Ordered first so the refusal never reaches `reportAuthRejection`.
+      !isLoopbackOnlyRefusal(apiError) &&
       isAuthRejectionStatus(response.status) &&
       reportAuthRejection({
         status: response.status,
