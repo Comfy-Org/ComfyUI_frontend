@@ -131,13 +131,13 @@ function connectAgentHeldWorkflow() {
 
   async function humanWrites(write: () => void) {
     const framesBefore = agentSocket.send.mock.calls.length
+    const sentOps = () =>
+      agentSocket.send.mock.calls
+        .slice(framesBefore)
+        .flatMap(([frame]) => sentWireOps(frame))
     write()
-    await vi.waitFor(() =>
-      expect(agentSocket.send.mock.calls.length).toBeGreaterThan(framesBefore)
-    )
-    const sent = agentSocket.send.mock.calls
-      .slice(framesBefore)
-      .flatMap(([frame]) => sentWireOps(frame))
+    await vi.waitFor(() => expect(sentOps()).not.toEqual([]))
+    const sent = sentOps()
     const { result, update } = host.applyWire(sent)
     deliver(result)
     if (update) deliver(update)
@@ -220,10 +220,7 @@ describe('PM-2003: a human adds Display Int (rgthree) while the agent holds the 
     })
   })
 
-  // FRONT-3704: the form is declared once, at add_node, so a widget an extension
-  // mounts later is not in it and the host refuses the write as unknown_widget.
-  // The fix needs comfy-multi-player to accept an updated form; remove .fails then.
-  it.fails('accepts a human write to a widget an extension mounted after the add', async () => {
+  it('FRONT-3704 known gap: refuses a human write to a widget mounted after add_node, because the form is fixed at add time', async () => {
     LiteGraph.registerNodeType(
       DISPLAY_INT,
       DisplayIntWithClientOnlyOutputWidget
@@ -233,15 +230,18 @@ describe('PM-2003: a human adds Display Int (rgthree) while the agent holds the 
     await humanAdds(node)
     const late = node.addWidget('text', 'late', '', () => {})
 
-    const { verdict } = await humanWrites(() => {
+    const { sent, verdict } = await humanWrites(() => {
       late.value = 'typed'
     })
 
-    expect(verdict).toMatchObject({ ok: true })
-    expect(host.projection().nodes[0].widgets_values).toMatchObject({
-      late: 'typed'
+    expect(sent).toEqual([
+      expect.objectContaining({ op: 'set_widget', widget: 'late' })
+    ])
+    expect(verdict).toMatchObject({
+      ok: false,
+      failed: { code: 'unknown_widget' }
     })
-    expect(toastDescriptions()).toEqual([])
+    expect(host.projection().nodes[0].widgets_values).toEqual({ output: '' })
   })
 
   it('lands an agent write to the declared widget on the canvas', async () => {
