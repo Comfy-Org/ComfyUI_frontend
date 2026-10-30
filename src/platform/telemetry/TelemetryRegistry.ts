@@ -612,6 +612,7 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackFetchTimeout?.(metadata))
   }
 
+  // fallow-ignore-next-line unused-class-member
   trackFetchStatusRetry(metadata: FetchStatusRetryMetadata): void {
     this.dispatch((provider) => provider.trackFetchStatusRetry?.(metadata))
   }
