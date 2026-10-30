@@ -59,12 +59,14 @@ const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
 // mid-flow. The operation is terminal-failed only because it never completed —
 // its replacement is proceeding normally, so there is nothing to report.
 const CHECKOUT_SUPERSEDED_REASON = 'checkout_superseded'
-// The poller adopts only operations the legacy rail issued; the SDK rail settles its own.
 const FAILURE_DETAIL_CODES: [string, string[]][] = [
   ['billingOperation.insufficientFundsDetail', ['insufficient_funds']],
   ['billingOperation.expiredCardDetail', ['expired_card']],
   ['billingOperation.incorrectCvcDetail', ['incorrect_cvc', 'invalid_cvc']],
-  ['billingOperation.incorrectNumberDetail', ['incorrect_number']],
+  [
+    'billingOperation.incorrectNumberDetail',
+    ['incorrect_number', 'invalid_number']
+  ],
   ['billingOperation.noPaymentMethodDetail', ['reset_now_no_payment_method']],
   [
     'billingOperation.topupMethodIncompatibleDetail',
@@ -124,6 +126,7 @@ const FAILURE_DETAIL_KEYS = new Map(
   )
 )
 
+// The poller adopts only operations the legacy rail issued; the SDK rail settles its own.
 function trackLegacyBillingEvent(event: BillingTelemetryEvent) {
   useTelemetry()?.trackBillingEvent({ ...event, billing_client: 'legacy' })
 }

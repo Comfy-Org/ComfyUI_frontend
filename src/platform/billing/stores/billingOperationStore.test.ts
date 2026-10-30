@@ -1820,6 +1820,12 @@ describe('billingOperationStore', () => {
         detail: 'billingOperation.incorrectNumberDetail'
       },
       {
+        type: 'topup' as const,
+        errorMessage: 'invalid_number',
+        summary: 'billingOperation.topupFailed',
+        detail: 'billingOperation.incorrectNumberDetail'
+      },
+      {
         type: 'subscription' as const,
         errorMessage: 'reset_now_no_payment_method',
         summary: 'billingOperation.subscriptionFailed',
