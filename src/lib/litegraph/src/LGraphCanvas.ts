@@ -2566,7 +2566,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           recoverFromFailedFrame(cause)
         }
       }
-      isFirstFrame = false
 
       const window = this.getCanvasWindow()
       if (this.is_rendering) {
@@ -2578,6 +2577,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           window.requestAnimationFrame(renderFrame.bind(this))
         }
       }
+      isFirstFrame = false
     }
 
     try {

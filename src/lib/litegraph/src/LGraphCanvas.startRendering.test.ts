@@ -158,15 +158,21 @@ describe('LGraphCanvas.startRendering', () => {
   })
 
   it('finishes constructing when scheduling the first frame throws', () => {
+    const schedulerFailure = new TypeError('patched scheduler')
     vi.spyOn(LGraphCanvas.prototype, 'draw').mockImplementation(() => {})
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => {
-      throw new TypeError('patched scheduler')
+      throw schedulerFailure
     })
 
     const canvas = createCanvas()
 
     expect(canvas.is_rendering).toBe(false)
-    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      schedulerFailure,
+      expect.objectContaining({
+        errorType: 'error_rendering_canvas_initial_frame'
+      })
+    )
   })
 
   it('keeps scheduling frames when the first frame succeeds', () => {
