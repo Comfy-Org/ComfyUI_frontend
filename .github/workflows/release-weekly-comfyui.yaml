@@ -471,7 +471,15 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m "Bump comfyui-frontend-package to ${{ needs.resolve-version.outputs.target_version }}"
           else
-            echo "No changes to commit"
+            echo "No changes to commit: master already pins ${TARGET_VERSION}"
+            if [ -n "$OPEN_PR" ]; then
+              # Its pin is not newer (the guard checked), so merging it would downgrade or do nothing.
+              gh api --silent --method PATCH "repos/Comfy-Org/ComfyUI/pulls/${OPEN_PR}" -f state=closed
+              MSG="Closed ComfyUI PR #${OPEN_PR}: master already pins ${TARGET_VERSION}."
+              echo "::notice title=Stale ComfyUI bump closed::${MSG}"
+              echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 

@@ -174,7 +174,8 @@ Every run reuses one branch and PR (`automation/comfyui-frontend-bump`). If
 ComfyUI master, or that PR while it is still open, already pins a newer
 frontend than the run's target, the run leaves it unchanged rather than
 downgrading it, so a patch on an older line never replaces a pending bump to a
-newer minor.
+newer minor. If master already pins the target, the run closes any open bump
+PR instead, since merging it could only downgrade or do nothing.
 
 ## Workflows
 

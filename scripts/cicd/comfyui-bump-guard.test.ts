@@ -111,13 +111,19 @@ interface StepRun {
   target: string
   masterPin: string
   openPrPin?: string
+  staged?: boolean
 }
 
 function requirementsText(pin: string) {
   return `torch\ncomfyui-frontend-package==${pin}\n`
 }
 
-function runCreatePrStep({ target, masterPin, openPrPin }: StepRun) {
+function runCreatePrStep({
+  target,
+  masterPin,
+  openPrPin,
+  staged = true
+}: StepRun) {
   const step = createPrSteps().find((s) => s.name === 'Create PR to ComfyUI')
   const script = (step?.run ?? '').replaceAll(
     '${{ needs.resolve-version.outputs.target_version }}',
@@ -138,19 +144,21 @@ function runCreatePrStep({ target, masterPin, openPrPin }: StepRun) {
     Buffer.from(requirementsText(openPrPin ?? '0.0.0')).toString('base64')
   )
   const pushed = path.join(root, 'pushed')
+  const ghCalls = path.join(root, 'gh-calls')
   writeFileSync(
     path.join(bin, 'git'),
     `#!/usr/bin/env bash
 case "$1" in
   show) cat "${root}/master.txt" ;;
   push) touch "${pushed}" ;;
-  diff) exit 1 ;;
+  diff) exit ${staged ? 1 : 0} ;;
 esac
 `
   )
   writeFileSync(
     path.join(bin, 'gh'),
     `#!/usr/bin/env bash
+echo "$*" >> "${ghCalls}"
 case "$*" in
   *"pulls?state=open&head=Comfy-Org:automation/comfyui-frontend-bump"*)
     ${openPrPin ? 'echo "17999 Comfy-Org/ComfyUI abc123"' : ':'} ;;
@@ -176,6 +184,7 @@ esac
   return {
     status: result.status,
     pushed: existsSync(pushed),
+    ghCalls: existsSync(ghCalls) ? readFileSync(ghCalls, 'utf8') : '',
     output: existsSync(output) ? readFileSync(output, 'utf8') : ''
   }
 }
@@ -211,6 +220,31 @@ describe('Create PR to ComfyUI step', () => {
     expect(
       runCreatePrStep({ target: '1.58.2', masterPin: '1.57.6' })
     ).toMatchObject({ status: 0, pushed: true })
+  })
+
+  it('closes an open PR that pins older than master already does', () => {
+    const result = runCreatePrStep({
+      target: '1.58.1',
+      masterPin: '1.58.1',
+      openPrPin: '1.57.6',
+      staged: false
+    })
+    expect(result).toMatchObject({ status: 0, pushed: false })
+    expect(result.ghCalls).toMatch(
+      /--method PATCH repos\/Comfy-Org\/ComfyUI\/pulls\/17999 -f state=closed/
+    )
+    expect(result.output).toContain('skipped=true')
+  })
+
+  it('does nothing when master already pins the target and no PR is open', () => {
+    const result = runCreatePrStep({
+      target: '1.58.1',
+      masterPin: '1.58.1',
+      staged: false
+    })
+    expect(result).toMatchObject({ status: 0, pushed: false })
+    expect(result.ghCalls).not.toContain('PATCH')
+    expect(result.output).toContain('skipped=true')
   })
 
   it('does not report a created PR when the guard skipped', () => {
