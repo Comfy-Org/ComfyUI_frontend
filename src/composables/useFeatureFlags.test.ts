@@ -741,6 +741,30 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('modelUploadFolders', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('lists the folders the server accepts uploads into', () => {
+      remoteConfig.value = { model_upload_folders: ['checkpoints', 'loras'] }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.modelUploadFolders).toEqual(['checkpoints', 'loras'])
+    })
+
+    it('is empty when the server sends no list', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.modelUploadFolders).toEqual([])
+    })
+  })
+
   describe('dev override via localStorage', () => {
     it('resolveFlag returns localStorage override over remoteConfig and server value', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)

@@ -461,6 +461,35 @@ export type ValidationResult = {
 }
 
 /**
+ * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
+ */
+export type ModelUploadStarted = {
+  /**
+   * Names this upload in `POST /api/assets/uploads/{upload_id}/complete`.
+   */
+  upload_id: string
+  /**
+   * Signed URL for exactly one staged object; works until `expires_at`.
+   */
+  upload_url: string
+  method: 'PUT'
+  /**
+   * Every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
+   */
+  headers: {
+    [key: string]: string
+  }
+  /**
+   * When `upload_url` stops working (15 minutes after the answer).
+   */
+  expires_at: string
+  /**
+   * The largest file an upload accepts, 2147483648 (2 GiB).
+   */
+  max_size_bytes: number
+}
+
+/**
  * Details of a single validation error encountered during asset operations.
  */
 export type ValidationError = {
@@ -9830,6 +9859,123 @@ export type CreateAssetDownloadResponses = {
 export type CreateAssetDownloadResponse =
   CreateAssetDownloadResponses[keyof CreateAssetDownloadResponses]
 
+export type StartModelUploadData = {
+  body: {
+    /**
+     * A bare file name ending in `.safetensors` (any case), at most 255 bytes, no path, no leading dot.
+     */
+    filename: string
+    /**
+     * The file's size, 1 to 2147483648 (2 GiB).
+     */
+    size_bytes: number
+    /**
+     * Exactly `models` plus one model folder from `model_upload_folders` in GET /api/features (`loras`, `checkpoints`, `vae`, `embeddings`, ...); another folder is `400 UNSUPPORTED_MODEL_TYPE`.
+     */
+    tags: Array<string>
+  }
+  path?: never
+  query?: never
+  url: '/api/assets/uploads'
+}
+
+export type StartModelUploadErrors = {
+  /**
+   * `INVALID_BODY` (bad filename, size or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`: a pickle format such as `.ckpt`, `.pt` or `.bin` can run code when loaded), `UNSUPPORTED_MODEL_TYPE` (`models` plus a folder not in `model_upload_folders` of GET /api/features) or `FILE_TOO_LARGE` (over 2 GiB; the message is "Files can be up to 2 GB.")
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), or a refused session write (see `SessionWriteForbidden`)
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * Private-model eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
+}
+
+export type StartModelUploadError =
+  StartModelUploadErrors[keyof StartModelUploadErrors]
+
+export type StartModelUploadResponses = {
+  /**
+   * Signed upload URL for one staged object
+   */
+  201: ModelUploadStarted
+}
+
+export type StartModelUploadResponse =
+  StartModelUploadResponses[keyof StartModelUploadResponses]
+
+export type CompleteModelUploadData = {
+  body: {
+    /**
+     * The `filename` sent to start the upload.
+     */
+    filename: string
+    /**
+     * The `tags` sent to start the upload.
+     */
+    tags: Array<string>
+  }
+  path: {
+    /**
+     * The `upload_id` from `POST /api/assets/uploads`.
+     */
+    upload_id: string
+  }
+  query?: never
+  url: '/api/assets/uploads/{upload_id}/complete'
+}
+
+export type CompleteModelUploadErrors = {
+  /**
+   * `INVALID_BODY` (bad filename or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`), `UNSUPPORTED_MODEL_TYPE` (a folder not in `model_upload_folders`) or `FILE_TOO_LARGE` (the stored object is over 2 GiB; the message is "Files can be up to 2 GB.")
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), or a refused session write (see `SessionWriteForbidden`)
+   */
+  403: ErrorResponse
+  /**
+   * `UPLOAD_NOT_FOUND`: no uploaded object for this `upload_id` under this caller and workspace (not uploaded yet, cleaned up, or someone else's)
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * Private-model eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
+}
+
+export type CompleteModelUploadError =
+  CompleteModelUploadErrors[keyof CompleteModelUploadErrors]
+
+export type CompleteModelUploadResponses = {
+  /**
+   * Accepted; a task stores the file as an asset
+   */
+  202: AssetDownloadResponse
+}
+
+export type CompleteModelUploadResponse =
+  CompleteModelUploadResponses[keyof CompleteModelUploadResponses]
+
 export type CreateAssetExportData = {
   body: {
     /**
@@ -12704,6 +12850,10 @@ export type GetFeaturesResponses = {
      * Maximum upload size in bytes
      */
     max_upload_size?: number
+    /**
+     * The model types (folder names, sorted) a model file uploaded from disk may be: the list POST /api/assets/uploads checks, which answers any other with 400 UNSUPPORTED_MODEL_TYPE. Present only while runtime_library_models_enabled is on for the caller.
+     */
+    model_upload_folders?: Array<string>
     /**
      * Whether new free-tier subscriptions are enabled for this caller. Current servers always emit a boolean; clients should tolerate absence when talking to older servers that predate this declared field.
      */

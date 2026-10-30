@@ -4101,6 +4101,25 @@ export const zAssetMetadataResponse = z.object({
 })
 
 /**
+ * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
+ */
+export const zModelUploadStarted = z.object({
+  upload_id: z.uuid(),
+  upload_url: z.string(),
+  method: z.enum(['PUT']),
+  headers: z.record(z.string(), z.string()),
+  expires_at: z.iso.datetime(),
+  max_size_bytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+/**
  * Acknowledgement of an async asset download task; clients poll GET /api/tasks/{task_id} for status.
  */
 export const zAssetDownloadResponse = z.object({
@@ -5152,6 +5171,38 @@ export const zCreateAssetDownloadResponse = z.union([
   zAssetDownloadResponse
 ])
 
+export const zStartModelUploadBody = z.object({
+  filename: z.string(),
+  size_bytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  tags: z.array(z.string())
+})
+
+/**
+ * Signed upload URL for one staged object
+ */
+export const zStartModelUploadResponse = zModelUploadStarted
+
+export const zCompleteModelUploadBody = z.object({
+  filename: z.string(),
+  tags: z.array(z.string())
+})
+
+export const zCompleteModelUploadPath = z.object({
+  upload_id: z.string()
+})
+
+/**
+ * Accepted; a task stores the file as an asset
+ */
+export const zCompleteModelUploadResponse = zAssetDownloadResponse
+
 export const zCreateAssetExportBody = z.object({
   asset_ids: z.array(z.string()).optional(),
   include_previews: z.boolean().optional().default(false),
@@ -5661,6 +5712,7 @@ export const zGetFeaturesResponse = z.object({
     })
     .optional(),
   max_upload_size: z.int().optional(),
+  model_upload_folders: z.array(z.string()).optional(),
   new_free_tier_subscriptions: z.boolean().optional(),
   sso_enabled: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),
