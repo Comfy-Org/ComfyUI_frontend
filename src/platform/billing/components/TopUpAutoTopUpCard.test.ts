@@ -11,7 +11,7 @@ import {
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
-import TopUpAutoTopUpLink from './TopUpAutoTopUpLink.vue'
+import TopUpAutoTopUpCard from './TopUpAutoTopUpCard.vue'
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@comfyorg/telemetry'))
@@ -23,7 +23,7 @@ vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
 function renderLink({ enabled, owner }: { enabled: boolean; owner: boolean }) {
   useBillingCapabilities().autoTopUpEnabled = autoTopUpEnabledFact(enabled)
   useBillingCapabilities().canManageAutoTopUp = canManageAutoTopUpFact(owner)
-  render(TopUpAutoTopUpLink, {
+  render(TopUpAutoTopUpCard, {
     global: {
       plugins: [
         createI18n({
@@ -36,13 +36,15 @@ function renderLink({ enabled, owner }: { enabled: boolean; owner: boolean }) {
   })
 }
 
-describe('TopUpAutoTopUpLink', () => {
-  it('links an owner with auto top-up served to the billing site', () => {
+describe('TopUpAutoTopUpCard', () => {
+  it('offers an owner with auto top-up served to set it up on the billing site', () => {
     renderLink({ enabled: true, owner: true })
 
     expect(
-      screen.getByRole('link', { name: 'Auto top-up settings' })
-    ).toHaveAttribute(
+      screen.getByText('Refills credits when your balance runs low.')
+    ).toBeInTheDocument()
+
+    expect(screen.getByRole('link', { name: 'Set up' })).toHaveAttribute(
       'href',
       expect.stringContaining('https://platform.test/profile/billing')
     )
@@ -54,9 +56,7 @@ describe('TopUpAutoTopUpLink', () => {
   ])('shows nothing when $name', ({ enabled, owner }) => {
     renderLink({ enabled, owner })
 
-    expect(
-      screen.queryByRole('link', { name: 'Auto top-up settings' })
-    ).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Set up' })).toBeNull()
   })
 
   it('reports the hand-off to the billing site', async () => {
@@ -64,15 +64,13 @@ describe('TopUpAutoTopUpLink', () => {
     vi.mocked(useTelemetry).mockReturnValue({ trackBillingEvent } as never)
     renderLink({ enabled: true, owner: true })
 
-    await userEvent.click(
-      screen.getByRole('link', { name: 'Auto top-up settings' })
-    )
+    await userEvent.click(screen.getByRole('link', { name: 'Set up' }))
 
     expect(trackBillingEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         operation: 'platform_handoff',
         target: 'auto_top_up',
-        action: 'manage'
+        action: 'turn_on'
       })
     )
   })

@@ -68,16 +68,19 @@
     </p>
 
     <div class="flex flex-col gap-8 p-8">
-      <Button
-        :disabled="!isValidAmount || loading"
-        :loading
-        variant="primary"
-        size="lg"
-        @click="handleBuy"
-      >
-        {{ $t('credits.topUp.buyCredits') }}
-      </Button>
-      <div class="flex items-center justify-center gap-6">
+      <div class="flex flex-col gap-4">
+        <TopUpAutoTopUpCard />
+        <Button
+          :disabled="!isValidAmount || loading"
+          :loading
+          variant="primary"
+          size="lg"
+          @click="handleBuy"
+        >
+          {{ $t('credits.topUp.buyCredits') }}
+        </Button>
+      </div>
+      <div class="flex items-center justify-center gap-1">
         <a
           :href="pricingUrl"
           target="_blank"
@@ -86,7 +89,6 @@
           {{ $t('credits.topUp.viewPricing') }}
           <i class="icon-[lucide--external-link]" />
         </a>
-        <TopUpAutoTopUpLink />
       </div>
     </div>
   </Card>
@@ -102,7 +104,7 @@ import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import TopUpAmountFields from './TopUpAmountFields.vue'
-import TopUpAutoTopUpLink from './TopUpAutoTopUpLink.vue'
+import TopUpAutoTopUpCard from './TopUpAutoTopUpCard.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'

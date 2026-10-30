@@ -3042,7 +3042,11 @@
       "verifyTitle": "Verify your payment",
       "startOver": "Start over",
       "viewPricing": "View pricing details",
-      "autoTopUpSettings": "Auto top-up settings",
+      "autoTopUp": {
+        "title": "Auto top-up",
+        "body": "Refills credits when your balance runs low.",
+        "setUp": "Set up"
+      },
       "youPay": "Amount (USD)",
       "youGet": "Credits",
       "buyCredits": "Continue to payment",

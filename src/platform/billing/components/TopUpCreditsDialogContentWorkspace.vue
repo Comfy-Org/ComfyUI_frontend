@@ -295,6 +295,7 @@
             {{ $t('credits.topUp.paymentProcessingBody') }}
           </p>
         </div>
+        <TopUpAutoTopUpCard v-if="step === 'amount'" />
         <Button
           v-if="step === 'confirm' && topupActionUrl && canTopUp"
           variant="primary"
@@ -345,7 +346,7 @@
       </div>
       <div
         v-if="step === 'amount'"
-        class="flex items-center justify-center gap-6"
+        class="flex items-center justify-center gap-1"
       >
         <a
           :href="pricingUrl"
@@ -355,7 +356,6 @@
           {{ $t('credits.topUp.viewPricing') }}
           <i class="icon-[lucide--external-link]" />
         </a>
-        <TopUpAutoTopUpLink />
       </div>
     </div>
   </Card>
@@ -382,7 +382,7 @@ import {
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import TopUpAmountFields from './TopUpAmountFields.vue'
-import TopUpAutoTopUpLink from './TopUpAutoTopUpLink.vue'
+import TopUpAutoTopUpCard from './TopUpAutoTopUpCard.vue'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
