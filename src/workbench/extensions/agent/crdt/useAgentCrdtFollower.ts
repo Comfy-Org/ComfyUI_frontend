@@ -577,10 +577,6 @@ function startAgentCrdtFollower(
 
   let counterReadFailureReported = false
   const sender = createOpSender({
-    // A batch sent before the catch-up lands could not stamp above it, so a
-    // follower known to be behind holds its ops until it has caught up. A
-    // projection that is deferred or failed does not count: the document, and
-    // so its counters, is already up to date.
     sendOps: (target, tab, ops) =>
       !followerDocIsBehind() && client.sendOps(target, tab, ops),
     onOpsResult(listener) {

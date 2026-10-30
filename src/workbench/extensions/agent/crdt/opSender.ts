@@ -234,8 +234,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // observed sequence reads 0 between a subscribe and its ack, so only the
   // cursor keeps a re-bound workflow's stamps past ones this actor used there.
   const lastMintedVersions = new Map<string, number>()
-  // The highest counter handed to the transport per workflow. A held batch is
-  // re-stamped on its way out, so its stamps can pass the ones minted behind it.
   const lastSentVersions = new Map<string, number>()
   let detached = false
   let suspended = false
@@ -360,13 +358,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     armResultTimeout(batch)
   }
 
-  /**
-   * A Lamport counter is taken at send, above everything received so far. An
-   * unsent batch has been on no wire, so no host can hold its old bytes and
-   * lifting it cannot reuse an `op_id` with a changed payload. One shift moves
-   * the whole batch, keeping its internal order. Once sent, a batch is frozen:
-   * a resend must be byte-identical to stay idempotent.
-   */
   function stampAboveObserved(batch: InFlight): void {
     if (batch.sends > 0 || batch.sendMayHaveLeft) return
     const counters = batch.ops.map((op) => op.base_version)
@@ -399,6 +390,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       return deps.sendOps(batch.workflowId, deps.tab, batch.wire)
     } catch (error) {
       batch.sendMayHaveLeft = true
+      recordSentCounters(batch)
       if (!batch.reportedThrow) {
         batch.reportedThrow = true
         reportError(error, {

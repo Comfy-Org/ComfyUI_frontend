@@ -16,7 +16,6 @@ import type { GraphOperation } from './graphOperations'
 
 export const WIRE_MAX_OPS_PER_BATCH = 256
 export const WIRE_MAX_BATCH_BYTES = 4 * 1024 * 1024
-/** Room for a counter to grow when an unsent batch is re-stamped at send. */
 const STAMP_LIFT_HEADROOM = WIRE_MAX_OPS_PER_BATCH * 2 * 16
 
 export interface MintContext {
