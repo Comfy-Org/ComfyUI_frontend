@@ -26,7 +26,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useApp } from '@/scripts/appInstance'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import type { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
@@ -146,10 +146,8 @@ async function keepingSavedBaseline<T>(
     const tracker = workflow.changeTracker
     if (tracker && savedState && workflow.originalContent === savedContent) {
       tracker.initialState = savedState
-      workflow.isModified = !ChangeTracker.graphEqual(
-        savedState,
-        tracker.activeState
-      )
+      const Tracker = tracker.constructor as typeof ChangeTracker
+      workflow.isModified = !Tracker.graphEqual(savedState, tracker.activeState)
     }
   }
 }
