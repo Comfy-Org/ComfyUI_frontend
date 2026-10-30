@@ -113,7 +113,10 @@ export function createLocalWebAuthBridge(
   const listeners = new Set<(state: DesktopHostAuthState) => void>()
   let refreshing: Promise<OAuthTokens | undefined> | undefined
   let tokenUnreachable = false
-  let retryingUnreachableToken = false
+  let unreachableTokenRetry:
+    | { round: number; timer: ReturnType<typeof setTimeout> | undefined }
+    | undefined
+  let unreachableTokenRetryRound = 0
   let signingIn:
     | {
         popup: LocalWebPopup
@@ -283,7 +286,13 @@ export function createLocalWebAuthBridge(
     return refreshing
   }
 
+  function stopUnreachableTokenRetry(): void {
+    clearTimeout(unreachableTokenRetry?.timer)
+    unreachableTokenRetry = undefined
+  }
+
   function markTokenReachable(): void {
+    stopUnreachableTokenRetry()
     if (!tokenUnreachable) return
     tokenUnreachable = false
     emit()
@@ -291,30 +300,35 @@ export function createLocalWebAuthBridge(
 
   function markTokenUnreachable(): void {
     tokenUnreachable = true
-    if (retryingUnreachableToken) return
-    retryingUnreachableToken = true
-    retryUnreachableToken(0)
+    if (unreachableTokenRetry) return
+    unreachableTokenRetry = {
+      round: ++unreachableTokenRetryRound,
+      timer: undefined
+    }
+    retryUnreachableToken(unreachableTokenRetry.round, 0)
   }
 
-  function retryUnreachableToken(attempt: number): void {
-    if (
-      attempt >= UNREACHABLE_TOKEN_RETRY_DELAYS_MS.length ||
-      !tokenUnreachable
-    ) {
-      retryingUnreachableToken = false
+  function retryUnreachableToken(round: number, attempt: number): void {
+    if (unreachableTokenRetry?.round !== round) return
+    if (attempt >= UNREACHABLE_TOKEN_RETRY_DELAYS_MS.length) {
+      stopUnreachableTokenRetry()
       return
     }
-    setTimeout(() => {
+    unreachableTokenRetry.timer = setTimeout(() => {
       void freshTokens()
         .catch(() => undefined)
         .then((tokens) => {
+          if (unreachableTokenRetry?.round !== round) return
           if (tokens) {
-            retryingUnreachableToken = false
             markTokenReachable()
             return
           }
-          if (!activeTokens()) tokenUnreachable = false
-          retryUnreachableToken(attempt + 1)
+          if (!activeTokens()) {
+            tokenUnreachable = false
+            stopUnreachableTokenRetry()
+            return
+          }
+          retryUnreachableToken(round, attempt + 1)
         })
     }, UNREACHABLE_TOKEN_RETRY_DELAYS_MS[attempt])
   }
@@ -464,8 +478,12 @@ export function createLocalWebAuthBridge(
     async getWorkspaceToken(workspaceId) {
       const tokens = await freshTokens()
       if (!tokens) {
-        if (activeTokens()) markTokenUnreachable()
-        else tokenUnreachable = false
+        if (activeTokens()) {
+          markTokenUnreachable()
+        } else {
+          tokenUnreachable = false
+          stopUnreachableTokenRetry()
+        }
         return null
       }
       markTokenReachable()
