@@ -6,7 +6,8 @@ const FOLLOW_ON_WINDOW_SECONDS = 5
 const UNDEFINED_FOLLOW_ON_PATTERNS = [
   /^Cannot destructure property .+ as it is undefined\.?$/,
   /^Cannot read propert(?:y|ies) of undefined\b/,
-  /^undefined is not an object \(evaluating .+\)$/
+  /^undefined is not an object \(evaluating .+\)$/,
+  /^undefined has no properties$/
 ]
 
 function isUndefinedFollowOn(event: ErrorEvent): boolean {
