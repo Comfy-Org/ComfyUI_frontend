@@ -205,6 +205,39 @@ describe('useBillingSdkStore', () => {
     expect(toast.toasts).toEqual([])
   })
 
+  it('does not bring back a progress toast the customer closed', () => {
+    useBillingSdkStore()
+    const toast = useToast()
+
+    harness.publish(pendingTopup({ actionUrl: 'https://verify.example/op-1' }))
+    toast.close(toast.toasts[0].id)
+    harness.publish(pendingTopup())
+
+    expect(toast.toasts).toEqual([])
+  })
+
+  it('does not treat a teardown of all toasts as the customer closing one', () => {
+    useBillingSdkStore()
+    const toast = useToast()
+
+    harness.publish(pendingTopup({ actionUrl: 'https://verify.example/op-1' }))
+    toast.dismissAll()
+    harness.publish(pendingTopup())
+
+    expect(toast.toasts).toEqual([expect.objectContaining({ kind: 'loading' })])
+  })
+
+  it('still shows the verification prompt after the customer closed the processing toast', () => {
+    useBillingSdkStore()
+    const toast = useToast()
+
+    harness.publish(pendingTopup())
+    toast.close(toast.toasts[0].id)
+    harness.publish(pendingTopup({ actionUrl: 'https://verify.example/op-1' }))
+
+    expect(toast.toasts).toEqual([expect.objectContaining({ kind: 'warning' })])
+  })
+
   it('keeps a subscribe in step with its progress toast, as the poller did', () => {
     useBillingSdkStore()
     const toast = useToast()

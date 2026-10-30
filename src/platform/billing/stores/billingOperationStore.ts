@@ -161,6 +161,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const waitingWithoutActionSince = new Map<string, number>()
   const progressToasts = new Map<string, ProgressToast>()
   const progressToastsAwaitingFirstRead = new Set<string>()
+  const dismissedProgressToasts = new Set<string>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const inFlightPolls = new Map<string, Promise<void>>()
@@ -230,10 +231,19 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const previous = progressToasts.get(opId)
     if (previous?.kind === kind) return
     if (previous) {
-      toast.dismiss(previous.id)
       progressToasts.delete(opId)
+      if (toast.takeClosedByUser(previous.id)) {
+        dismissedProgressToasts.add(opId)
+      } else {
+        toast.dismiss(previous.id)
+      }
     }
-    if (kind === undefined) return
+    if (
+      kind === undefined ||
+      (kind === 'processing' && dismissedProgressToasts.has(opId))
+    ) {
+      return
+    }
 
     const messageKey =
       type === 'subscription'
@@ -1115,6 +1125,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     intervals.delete(opId)
     waitingWithoutActionSince.delete(opId)
     progressToastsAwaitingFirstRead.delete(opId)
+    dismissedProgressToasts.delete(opId)
 
     const progressToast = progressToasts.get(opId)
     if (progressToast) {
