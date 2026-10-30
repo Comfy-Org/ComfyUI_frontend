@@ -59,7 +59,7 @@ export function findAutogrowGroupDropRow(
     row?.closest<HTMLElement>('[data-node-id]')?.dataset['nodeId']
   if (!row || !groupName || !nodeIdAttr) return null
 
-  const dot = row.querySelector('[data-autogrow-group-dot]') ?? row
+  const dot = row.querySelector('.slot-dot') ?? row
   const rect = dot.getBoundingClientRect()
   return {
     nodeId: toNodeId(nodeIdAttr),
