@@ -86,24 +86,26 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock(
   import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
-  () => {
-    const consent = fromPartial<ReturnType<typeof useAgentConsent>>({
-      withConsent: vi.fn(
-        async (
-          _trigger: AgentConsentTrigger,
-          onAccept: () => void,
-          hooks?: ConsentOfferHooks
-        ) => {
-          if (hooks?.canShow?.() === false) return
-          hooks?.onShown?.()
-          onAccept()
-        }
-      )
-    })
-    const CONSENT_DIALOG_KEY = 'agent-consent' as const
-    return { CONSENT_DIALOG_KEY, useAgentConsent: () => consent }
-  }
+  { spy: true }
 )
+
+const mockedConsent = fromPartial<ReturnType<typeof useAgentConsent>>({
+  withConsent: vi.fn(
+    async (
+      _trigger: AgentConsentTrigger,
+      onAccept: () => void,
+      hooks?: ConsentOfferHooks
+    ) => {
+      if (hooks?.canShow?.() === false) return
+      hooks?.onShown?.()
+      onAccept()
+    }
+  ),
+  resumeAcceptAfterReload: vi.fn(async () => {})
+})
+let realResumeAcceptAfterReload: ReturnType<
+  typeof useAgentConsent
+>['resumeAcceptAfterReload']
 
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
@@ -235,6 +237,8 @@ describe('AgentPanel extension flag gate', () => {
     currentUser.value = { id: 'account-a' }
     isAuthInitialized.value = true
     consentStore = useAgentConsentStore()
+    realResumeAcceptAfterReload = useAgentConsent().resumeAcceptAfterReload
+    vi.mocked(useAgentConsent).mockReturnValue(mockedConsent)
     workspaceStore = useTeamWorkspaceStore()
     Object.assign(workspaceStore, {
       activeWorkspaceId: 'workspace-a',
@@ -2238,6 +2242,151 @@ describe('AgentPanel extension flag gate', () => {
     await extension!.afterLoadGraph!(fromPartial({ rootGraph: graph }))
 
     expect(composer.nodes).toEqual([{ id: '12', title: 'Original title' }])
+  })
+
+  describe('an accept the sign-in reload interrupted', () => {
+    const PENDING_KEY = 'Comfy.AgentPanel.PendingSignInAccept'
+    const resume = () => vi.mocked(useAgentConsent().resumeAcceptAfterReload)
+    const storePending = (savedAt = Date.now()) =>
+      sessionStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({ draft: 'make it blue', savedAt })
+      )
+
+    beforeEach(() => {
+      sessionStorage.clear()
+      storePending()
+      setAgentReady(true)
+    })
+
+    afterEach(() => {
+      useAgentConsentIntroductionStore().isContinuingSignIn = false
+      sessionStorage.removeItem(PENDING_KEY)
+    })
+
+    it('is finished before consent is read', async () => {
+      let finishResume = () => {}
+      resume().mockImplementationOnce(
+        () => new Promise<void>((resolve) => (finishResume = resolve))
+      )
+
+      await loadEntryAndSetup()
+      Object.assign(consentStore, { identity: 'account-a/workspace-b' })
+      await nextTick()
+      expect(resume()).toHaveBeenCalledExactlyOnceWith('make it blue')
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+      expect(consentStore.load).not.toHaveBeenCalled()
+
+      finishResume()
+      await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalledOnce())
+      expect(resume()).toHaveBeenCalledOnce()
+    })
+
+    it('is resumed before the Agent is ready', async () => {
+      setAgentReady(false)
+
+      await loadEntryAndSetup()
+
+      expect(resume()).toHaveBeenCalledOnce()
+    })
+
+    it('is dropped on sign-out before the Agent is ready', async () => {
+      setAgentReady(false)
+      currentUser.value = null
+
+      await loadEntryAndSetup()
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+    })
+
+    it('waits for the signed-in account to resolve', async () => {
+      vi.mocked(useCurrentUser()).isLoggedIn = computed(() => true)
+      currentUser.value = null
+
+      await loadEntryAndSetup()
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+
+      currentUser.value = { id: 'account-a' }
+      await nextTick()
+
+      expect(resume()).toHaveBeenCalledOnce()
+    })
+
+    it('waits for a workspace switch to finish', async () => {
+      Object.assign(workspaceStore, { isSwitching: true })
+      Object.assign(consentStore, { identity: null })
+
+      await loadEntryAndSetup()
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(consentStore.load).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+
+      Object.assign(workspaceStore, { isSwitching: false })
+      Object.assign(consentStore, { identity: 'account-a/workspace-a' })
+      await nextTick()
+
+      expect(resume()).toHaveBeenCalledOnce()
+    })
+
+    it('is kept while auth has not settled on signed out', async () => {
+      currentUser.value = null
+      isAuthInitialized.value = false
+
+      await loadEntryAndSetup()
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+    })
+
+    it('is only looked at when the page starts, so one written in this page waits for the reload', async () => {
+      currentUser.value = null
+      await loadEntryAndSetup()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+
+      storePending()
+      currentUser.value = { id: 'account-a' }
+      await nextTick()
+      Object.assign(consentStore, { identity: 'account-a/workspace-b' })
+      await nextTick()
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+    })
+
+    it('drops it when another account takes over during the switch wait, through the real resume', async () => {
+      resume().mockImplementation(realResumeAcceptAfterReload)
+      vi.mocked(consentStore.ensureScope).mockResolvedValue(
+        'account-b/workspace-a'
+      )
+      vi.mocked(consentStore.accept).mockResolvedValue(true)
+      Object.assign(workspaceStore, { isSwitching: true })
+      Object.assign(consentStore, { identity: null })
+
+      await loadEntryAndSetup()
+      currentUser.value = { id: 'account-b' }
+      await nextTick()
+      Object.assign(workspaceStore, { isSwitching: false })
+      Object.assign(consentStore, { identity: 'account-b/workspace-a' })
+      await nextTick()
+      await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalled())
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(consentStore.accept).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+    })
+
+    it('ignores and drops one older than ten minutes', async () => {
+      storePending(Date.now() - 11 * 60 * 1000)
+
+      await loadEntryAndSetup()
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+    })
   })
 
   it('does not self-register when its module is imported', () => {

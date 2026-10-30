@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -74,6 +75,71 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
       expect(postedMessages).toEqual([])
     })
   })
+
+  for (const { name, whileSignInPending } of [
+    {
+      name: 'with the sign-in dialog open',
+      whileSignInPending: async (_page: Page) => {}
+    },
+    {
+      name: 'after the sign-in dialog was closed by an outside click',
+      whileSignInPending: async (page: Page) => {
+        await page.mouse.click(5, 5)
+        await expect(page.getByTestId('desktop-host-sso')).toHaveCount(0)
+      }
+    }
+  ]) {
+    test(`keeps a signed-out accept and its draft across the sign-in reload ${name}`, async ({
+      comfyPage,
+      agentPanel,
+      desktopConsentSignIn,
+      agentConsentWrites,
+      postedMessages
+    }) => {
+      const signIn = comfyPage.page.getByTestId('desktop-host-sso')
+      const message = 'Keep this Desktop draft across the sign-in reload'
+
+      await test.step('Agree while signed out and start sign-in', async () => {
+        await expect(agentPanel.consentDialog).toBeVisible()
+        await agentPanel.consentRejectButton.click()
+        await agentPanel.composer.fill(message)
+        await agentPanel.sendButton.click()
+        await agentPanel.consentDialog
+          .getByRole('button', {
+            name: enMessages.agent.consent.agreeAndContinue
+          })
+          .click()
+        await signIn.click()
+        await expect.poll(() => desktopConsentSignIn.requests).toBe(1)
+        expect(agentConsentWrites).toEqual([])
+      })
+
+      await test.step(`While the browser sign-in is pending, ${name}`, () =>
+        whileSignInPending(comfyPage.page))
+
+      await test.step('Desktop finishes sign-in in the browser and reloads the page', async () => {
+        desktopConsentSignIn.finishInBrowser()
+        await comfyPage.workflow.reloadAndWaitForApp()
+      })
+
+      await test.step('Consent is saved once and the draft waits for Send', async () => {
+        await expect.poll(() => agentConsentWrites).toEqual([true])
+        await expect(agentPanel.composer).toHaveText(message)
+      })
+
+      await test.step('Send posts the restored draft once, with no card', async () => {
+        expect(postedMessages).toEqual([])
+        await agentPanel.sendButton.click()
+        await expect.poll(() => postedMessages.length).toBe(1)
+        expect(JSON.parse(postedMessages[0])).toMatchObject({
+          content: message
+        })
+        await expect(agentPanel.consentDialog).toHaveCount(0)
+        expect(agentConsentWrites).toEqual([true])
+        expect(postedMessages).toHaveLength(1)
+      })
+    })
+  }
 
   test('sends the original signed-out submission once after sign-in and confirmed consent persistence', async ({
     comfyPage,
