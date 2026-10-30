@@ -1051,11 +1051,6 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
-  // Leaving for a new chat and reopening the conversation while the settled
-  // read is still out clears the snapshot registration, so the read's own
-  // result is discarded on arrival. The hydrate it deferred is then the only
-  // thing left that can settle the row it restored -- dropping that request
-  // strands the reopened turn as streaming and keeps the composer locked.
   it('honors a hydrate deferred behind an in-flight settled snapshot read', async () => {
     vi.useFakeTimers()
     try {
