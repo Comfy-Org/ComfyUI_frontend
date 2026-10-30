@@ -435,6 +435,108 @@ describe('billingOperationStore', () => {
         useBillingOperationStore().clearOperation('op-2')
       })
 
+      describe('with a checkout link from the subscribe response', () => {
+        const checkoutUrl = 'https://checkout.example/add-card'
+
+        function pendingPhase(
+          phase: 'awaiting_payment_method' | 'in_progress',
+          withUrl = false
+        ): BillingOpStatusResponse {
+          return {
+            ...pending('op-1', withUrl),
+            phase
+          }
+        }
+
+        it('keeps the link and the action toast when polls omit action_url', async () => {
+          vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(
+            pendingPhase('awaiting_payment_method')
+          )
+          const store = useBillingOperationStore()
+          void store.startOperation(
+            'op-1',
+            'subscription',
+            undefined,
+            checkoutUrl
+          )
+
+          await vi.advanceTimersByTimeAsync(0)
+          await vi.advanceTimersByTimeAsync(31_000)
+
+          expect(store.getOperation('op-1')?.actionUrl).toBe(checkoutUrl)
+          expect(useToast().warning).toHaveBeenCalledOnce()
+          expect(useToast().loading).not.toHaveBeenCalled()
+        })
+
+        it('shows the 3DS link once a poll serves it and does not bring the checkout link back', async () => {
+          vi.mocked(billingApi.getBillingOpStatus)
+            .mockResolvedValueOnce(pendingPhase('awaiting_payment_method'))
+            .mockResolvedValueOnce(pendingPhase('in_progress', true))
+            .mockResolvedValue(pendingPhase('awaiting_payment_method'))
+          const store = useBillingOperationStore()
+          void store.startOperation(
+            'op-1',
+            'subscription',
+            undefined,
+            checkoutUrl
+          )
+
+          await vi.advanceTimersByTimeAsync(0)
+          await vi.advanceTimersByTimeAsync(31_000)
+          expect(store.getOperation('op-1')?.actionUrl).toBe(actionUrl)
+
+          await vi.advanceTimersByTimeAsync(31_000)
+          expect(store.getOperation('op-1')).toMatchObject({
+            actionUrl: null,
+            paymentMethodUrl: null
+          })
+        })
+
+        it('drops the link once the server reports the operation moved on', async () => {
+          vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(
+            pendingPhase('in_progress')
+          )
+          const store = useBillingOperationStore()
+          void store.startOperation(
+            'op-1',
+            'subscription',
+            undefined,
+            checkoutUrl
+          )
+
+          await vi.advanceTimersByTimeAsync(0)
+
+          expect(store.getOperation('op-1')).toMatchObject({
+            actionUrl: null,
+            paymentMethodUrl: null
+          })
+        })
+
+        it('clears the link when the operation settles', async () => {
+          vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue({
+            id: 'op-1',
+            status: 'succeeded',
+            started_at: new Date().toISOString(),
+            completed_at: new Date().toISOString()
+          })
+          const store = useBillingOperationStore()
+          void store.startOperation(
+            'op-1',
+            'subscription',
+            undefined,
+            checkoutUrl
+          )
+
+          await vi.advanceTimersByTimeAsync(0)
+
+          expect(store.getOperation('op-1')).toMatchObject({
+            status: 'succeeded',
+            actionUrl: null,
+            paymentMethodUrl: null
+          })
+        })
+      })
+
       it('does not bring back a verification toast the customer closed, and still announces the next operation', async () => {
         vi.mocked(billingApi.getBillingOpStatus)
           .mockResolvedValueOnce(pending('op-1', true))

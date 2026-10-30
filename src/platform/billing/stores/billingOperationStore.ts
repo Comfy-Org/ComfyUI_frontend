@@ -116,6 +116,9 @@ interface BillingOperation {
   operationStartedAt: number
   businessAttemptStartedAt?: number
   actionUrl: string | null
+  // The subscribe response's add-a-card link. Polls never serve it, so it is
+  // kept apart from the polled actionUrl and shown while no 3DS link exists.
+  paymentMethodUrl: string | null
   authenticationState: BillingAuthenticationState | null
   isAuthenticating: boolean
   canRetryAuthentication: boolean
@@ -327,6 +330,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operationStartedAt: metadata?.attemptStartedAt ?? now,
       businessAttemptStartedAt: metadata?.attemptStartedAt,
       actionUrl,
+      paymentMethodUrl: actionUrl,
       authenticationState: null,
       isAuthenticating: false,
       canRetryAuthentication: false,
@@ -586,11 +590,19 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function updateOperationActionUrl(opId: string, actionUrl: string | null) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
+    const leftAwaitingPaymentMethod =
+      operation.phase !== null && operation.phase !== 'awaiting_payment_method'
+    const paymentMethodUrl =
+      actionUrl !== null || leftAwaitingPaymentMethod
+        ? null
+        : operation.paymentMethodUrl
+    const shownUrl = actionUrl ?? paymentMethodUrl
     const updated: BillingOperation = {
       ...operation,
-      actionUrl,
+      actionUrl: shownUrl,
+      paymentMethodUrl,
       authenticationRequiredSeen:
-        operation.authenticationRequiredSeen || actionUrl !== null
+        operation.authenticationRequiredSeen || shownUrl !== null
     }
     operations.value = new Map(operations.value).set(opId, updated)
     syncProgressToastAfterRead(operation, updated)
@@ -840,7 +852,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       canRetryAuthentication: false,
       isAuthenticating: false,
       errorMessage: null,
-      actionUrl: null
+      actionUrl: null,
+      paymentMethodUrl: null
     })
     cleanup(opId)
 
@@ -1109,6 +1122,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       status,
       errorMessage,
       actionUrl: null,
+      paymentMethodUrl: null,
       authenticationState: null,
       canRetryAuthentication: false,
       isAuthenticating: false
