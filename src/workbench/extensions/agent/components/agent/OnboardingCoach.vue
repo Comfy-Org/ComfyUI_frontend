@@ -13,6 +13,7 @@ import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import {
+  CARD_GAP,
   SPOTLIGHT_PAD,
   clampSpotlight,
   unionRect
@@ -30,7 +31,6 @@ import {
 const TARGET_MISSING_AFTER_MS = 8000
 const COACH_HOVER_ATTRIBUTE = 'data-coach-hover'
 const NUDGE_MS = 1200
-const CARD_GAP = 16
 const ARROW_CORNER_CLEARANCE = 20
 
 const { steps, storageKey, holdNotice } = defineProps<{
@@ -253,18 +253,15 @@ const cardBorderClass = computed(() =>
   index.value < 2 ? 'border-secondary' : 'border-smoke-500/20'
 )
 
-const nudged = ref(false)
-const { start: startNudgeTimer, stop: stopNudgeTimer } = useTimeoutFn(
-  () => (nudged.value = false),
-  NUDGE_MS,
-  { immediate: false }
-)
-watch([index, active], () => {
-  stopNudgeTimer()
-  nudged.value = false
-})
+// The timer's own pending state IS "the card is being nudged" — tracking it in a
+// second ref would need three paired writes to keep one fact straight.
+const {
+  isPending: nudged,
+  start: startNudgeTimer,
+  stop: stopNudgeTimer
+} = useTimeoutFn(() => undefined, NUDGE_MS, { immediate: false })
+watch([index, active], stopNudgeTimer)
 function nudgeCard(): void {
-  nudged.value = true
   startNudgeTimer()
   card.value?.focus()
 }
