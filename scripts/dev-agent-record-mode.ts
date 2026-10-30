@@ -18,9 +18,6 @@ import {
 } from './dev-agent-supervisor'
 
 const execFileAsync = promisify(execFile)
-// The ports the cloud repo's own local stack publishes.
-const PG_PORT = 54331
-const REDIS_PORT = 6379
 const CLOUD_QUICKSTART =
   'start the cloud stack first: `cloud up` from the cloud checkout, or scripts/start-all.sh'
 const TEMPORAL_INSTALL =
@@ -108,14 +105,17 @@ async function containerFor(
   return names[0]
 }
 
-async function pgExecCommand(override: string): Promise<string> {
+async function pgExecCommand(
+  override: string,
+  portNumber: number
+): Promise<string> {
   if (override) return override
-  const name = await containerFor(PG_PORT, 'Postgres', 'postgres')
+  const name = await containerFor(portNumber, 'Postgres', 'postgres')
   return `docker exec -i ${name} psql -U postgres -d postgres -At -c`
 }
 
-async function redisExecCommand(): Promise<string> {
-  const name = await containerFor(REDIS_PORT, 'Redis', 'redis')
+async function redisExecCommand(portNumber: number): Promise<string> {
+  const name = await containerFor(portNumber, 'Redis', 'redis')
   return `docker exec -i ${name} redis-cli`
 }
 
@@ -165,10 +165,10 @@ function recordEnv(options: Options, catalogPath: string, secret: string) {
     AGENT_PORT: String(options.agentPort),
     AGENT_TARGET: options.target,
     AGENT_WIDGET_CATALOG_PATH: catalogPath,
-    DB_CONNECTION_STRING: `postgresql://postgres:postgres@127.0.0.1:${PG_PORT}/postgres?sslmode=disable`,
+    DB_CONNECTION_STRING: `postgresql://postgres:postgres@127.0.0.1:${options.pgPort}/postgres?sslmode=disable`,
     DOC_HOST_ENDPOINT: `http://127.0.0.1:${options.docHostPort}`,
     HEALTH_PORT: String(options.healthPort),
-    REDIS_URL: `redis://localhost:${REDIS_PORT}/1`,
+    REDIS_URL: `redis://localhost:${options.redisPort}/1`,
     // AGENT_TASK_QUEUE stays at its default so the agent's own worker serves it.
     ...(options.engine === 'temporal'
       ? {
@@ -184,8 +184,8 @@ export async function runRecord(options: Options): Promise<number> {
     'start.sh',
     'dochost/start.sh'
   ])
-  await assertListening(PG_PORT, 'Postgres')
-  await assertListening(REDIS_PORT, 'Redis')
+  await assertListening(options.pgPort, 'Postgres')
+  await assertListening(options.redisPort, 'Redis')
   if (options.engine === 'temporal') await assertTemporalCli()
 
   const dataDir = await mkdtemp(resolve(tmpdir(), 'comfy-agent-record-'))
@@ -197,8 +197,8 @@ export async function runRecord(options: Options): Promise<number> {
   let redisExec: string
   try {
     catalogPath = await writeCatalog(options.catalog, dataDir)
-    pgExec = await pgExecCommand(options.pgExec)
-    redisExec = options.redisExec || (await redisExecCommand())
+    pgExec = await pgExecCommand(options.pgExec, options.pgPort)
+    redisExec = options.redisExec || (await redisExecCommand(options.redisPort))
     await seedIdentity(pgExec)
   } catch (error) {
     await rm(dataDir, { force: true, recursive: true })

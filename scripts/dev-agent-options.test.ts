@@ -40,8 +40,10 @@ describe('parseOptions', () => {
       healthPort: 6287,
       help: false,
       pgExec: '',
+      pgPort: 54331,
       record: false,
       redisExec: '',
+      redisPort: 6379,
       target: 'local',
       temporalPort: 7234,
       temporalUiPort: 8234
@@ -74,8 +76,12 @@ describe('parseOptions', () => {
         '7400',
         '--pg-exec',
         'psql -At -c',
+        '--pg-port',
+        '55431',
         '--redis-exec',
-        'redis-cli -p 6379'
+        'redis-cli -p 6389',
+        '--redis-port',
+        '6389'
       ])
     ).toMatchObject({
       record: true,
@@ -92,7 +98,9 @@ describe('parseOptions', () => {
       temporalPort: 7400,
       temporalUiPort: 8400,
       pgExec: 'psql -At -c',
-      redisExec: 'redis-cli -p 6379'
+      pgPort: 55431,
+      redisExec: 'redis-cli -p 6389',
+      redisPort: 6389
     })
   })
 
@@ -117,6 +125,14 @@ describe('parseOptions', () => {
     {
       args: ['--frontend-port', '0'],
       message: '--frontend-port must be an integer'
+    },
+    {
+      args: ['--pg-port', '0'],
+      message: '--pg-port must be an integer'
+    },
+    {
+      args: ['--redis-port', '65536'],
+      message: '--redis-port must be an integer'
     },
     {
       args: ['--agent-port', '6207'],
