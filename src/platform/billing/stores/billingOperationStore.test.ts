@@ -560,15 +560,28 @@ describe('billingOperationStore', () => {
             )
             .mockResolvedValue(pendingPhase('awaiting_payment_method'))
           const store = useBillingOperationStore()
-          void store.startOperation('op-1', 'subscription', { resumed: true })
+          const terminal = store.startOperation('op-1', 'subscription', {
+            resumed: true
+          })
 
           void store.startOperation('op-1', 'subscription', {
             paymentMethodUrl: checkoutUrl
           })
           resolveRead(pendingPhase('awaiting_payment_method'))
+          await vi.advanceTimersByTimeAsync(0)
+
+          expect(store.getOperation('op-1')?.actionUrl).toBe(checkoutUrl)
+
+          vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue({
+            id: 'op-1',
+            status: 'succeeded',
+            started_at: new Date().toISOString(),
+            completed_at: new Date().toISOString()
+          })
           await vi.advanceTimersByTimeAsync(31_000)
 
           expect(billingApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
+          await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
         })
 
         it('does not keep the link when the poll reports no phase', async () => {

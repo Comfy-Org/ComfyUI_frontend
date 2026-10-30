@@ -167,6 +167,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const inFlightPolls = new Map<string, Promise<void>>()
+  const generations = new Map<string, symbol>()
 
   useEventListener(document, 'visibilitychange', () => {
     if (document.visibilityState === 'visible') pollPendingOperations()
@@ -331,13 +332,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     ) {
       return
     }
-    const before = { ...operation }
-    Object.assign(operation, {
+    const updated: BillingOperation = {
+      ...operation,
       actionUrl: paymentMethodUrl,
       paymentMethodUrl,
       authenticationRequiredSeen: true
-    })
-    syncProgressToastAfterRead(before, operation)
+    }
+    operations.value = new Map(operations.value).set(operation.opId, updated)
+    syncProgressToastAfterRead(operation, updated)
   }
 
   function createPendingOperation(
@@ -401,6 +403,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       initialActionUrl
     )
 
+    generations.set(opId, Symbol(opId))
     operations.value = new Map(operations.value).set(opId, operation)
     intervals.set(opId, INITIAL_INTERVAL_MS)
 
@@ -439,6 +442,13 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     await request
   }
 
+  function isStalePoll(opId: string, generation: symbol | undefined) {
+    return (
+      generations.get(opId) !== generation ||
+      operations.value.get(opId)?.status !== 'pending'
+    )
+  }
+
   async function pollOnce(opId: string) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
@@ -452,10 +462,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       return
     }
 
+    const generation = generations.get(opId)
     try {
       const response = await billingApi.getBillingOpStatus(opId)
-      const currentOperation = operations.value.get(opId)
-      if (currentOperation !== operation) return
+      if (isStalePoll(opId, generation)) return
       if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
         if (stopIfTimedOut(opId, operation)) return
         scheduleNextPoll(opId)
@@ -487,7 +497,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       scheduleNextPoll(opId)
     } catch {
       const currentOperation = operations.value.get(opId)
-      if (currentOperation !== operation) return
+      if (!currentOperation || isStalePoll(opId, generation)) return
       if (stopIfTimedOut(opId, currentOperation)) return
       scheduleNextPoll(opId)
     }
@@ -1208,6 +1218,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function clearOperation(opId: string) {
     cleanup(opId)
+    generations.delete(opId)
     const newMap = new Map(operations.value)
     newMap.delete(opId)
     operations.value = newMap
