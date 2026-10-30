@@ -155,6 +155,17 @@ class AgentOfflineEditScenario {
     }
   }
 
+  agentRewritesFirstPrompt(): void {
+    this.host.apply([
+      {
+        op: 'set_widget',
+        node_id: NODE_IDS[0],
+        widget: 'text',
+        value: 'agent prompt written during the outage'
+      }
+    ])
+  }
+
   restoreAgent(): void {
     this.hostSocket.answerSubscribesWith(() => this.host.initialSync())
     this.hostSocket.endAgentOutage()

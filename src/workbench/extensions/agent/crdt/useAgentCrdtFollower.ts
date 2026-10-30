@@ -9,7 +9,10 @@ import {
 } from 'vue'
 import type { Ref } from 'vue'
 
-import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
+import {
+  observedDocCounter,
+  SCHEMA_VERSION
+} from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -467,6 +470,7 @@ function startAgentCrdtFollower(
   function clearSyncStaleness(): void {
     syncCanvasMayBeStale.value = false
     catchUpAwaitingProjectionFor = null
+    sender.retryTransport()
   }
 
   function clearCanvasStaleness(): void {
@@ -565,7 +569,10 @@ function startAgentCrdtFollower(
   }
 
   const sender = createOpSender({
-    sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
+    // A batch sent before the catch-up lands could not stamp above it, so a
+    // follower known to be behind holds its ops until it has caught up.
+    sendOps: (target, tab, ops) =>
+      !syncCanvasMayBeStale.value && client.sendOps(target, tab, ops),
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
         // `docFrameClient` already validated this into a DocOpsResult, which
@@ -584,6 +591,13 @@ function startAgentCrdtFollower(
     },
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,
+    observedCounter: () => {
+      try {
+        return observedDocCounter(bridge.follower.doc)
+      } catch {
+        return undefined
+      }
+    },
     onBatchSettled: settleHumanOps
   })
   const coalescer = createOpCoalescer((operations) => {

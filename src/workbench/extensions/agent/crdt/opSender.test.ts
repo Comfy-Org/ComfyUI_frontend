@@ -163,6 +163,7 @@ describe('createOpSender', () => {
   let transportThrows: boolean
   let boundWorkflow: string | null
   let observedSequence: number
+  let observedCounter: number | undefined
   let sender: ReturnType<typeof createOpSender>
   const unsubscribe = vi.fn(() => {
     resultListener = null
@@ -186,6 +187,7 @@ describe('createOpSender', () => {
     transportThrows = false
     boundWorkflow = WORKFLOW
     observedSequence = 41
+    observedCounter = undefined
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
         if (transportThrows) throw new Error('frame serialization failed')
@@ -201,6 +203,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => observedSequence,
+      observedCounter: () => observedCounter,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
   })
@@ -635,6 +638,64 @@ describe('createOpSender', () => {
     expect(sent[1].ops[0].op_id).not.toBe(firstOpId)
   })
 
+  it('stamps a new op above the highest counter in the document', () => {
+    observedCounter = 90
+
+    sender.enqueue([addNode(1)])
+
+    expect(sent[0].ops[0]).toMatchObject({
+      base_version: 91,
+      stamp: [91, ACTOR]
+    })
+  })
+
+  it('stamps a held batch above what arrived while it waited, keeping its op_id', () => {
+    transportUp = false
+    sender.enqueue([addNode(1), addNode(2)])
+    vi.advanceTimersByTime(500 * 6)
+    const [held] = sender.pendingOps()
+    const heldIds = held.ops.map((op) => op.op_id)
+
+    observedCounter = 90
+    transportUp = true
+    sender.retryTransport()
+
+    expect(sent[0].ops.map((op) => op.op_id)).toEqual(heldIds)
+    expect(sent[0].ops.map((op) => op.base_version)).toEqual([91, 92])
+    expect(sent[0].ops.map((op) => op.stamp)).toEqual([
+      [91, ACTOR],
+      [92, ACTOR]
+    ])
+  })
+
+  it('keeps later held batches above the one sent before them', () => {
+    transportUp = false
+    sender.enqueue([addNode(1), addNode(2)])
+    vi.advanceTimersByTime(500 * 6)
+    sender.enqueue([addNode(3)])
+
+    observedCounter = 90
+    transportUp = true
+    sender.retryTransport()
+    ackInFlight()
+
+    expect(sent[1].ops[0].base_version).toBe(93)
+    sender.enqueue([addNode(4)])
+    ackInFlight()
+    expect(sent[2].ops[0].base_version).toBe(94)
+  })
+
+  it('never re-stamps a batch the wire already carried', () => {
+    sender.enqueue([addNode(1)])
+    const stamped = sent[0].ops[0].base_version
+
+    observedCounter = 90
+    vi.advanceTimersByTime(10_000)
+
+    expect(sent).toHaveLength(2)
+    expect(sent[1].ops[0].base_version).toBe(stamped)
+  })
+
   it('settles a held batch undeliverable when its doc is unbound', () => {
     transportUp = false
     sender.enqueue([addNode(1)])
@@ -915,6 +976,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled
     })
     localSender.enqueue([addNode(1)])
@@ -946,6 +1008,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -974,6 +1037,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -1014,6 +1078,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: () => {
         if (shouldFail) throw new Error('listener boom')
       }
@@ -1048,6 +1113,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -1104,6 +1170,7 @@ describe('createOpSender', () => {
         tab: TAB,
         actor: () => ACTOR,
         baseVersion: () => 41,
+        observedCounter: () => undefined,
         onBatchSettled
       })
 
@@ -1137,6 +1204,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -1161,6 +1229,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -1322,6 +1391,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: (outcome) => {
         localSettled.push(outcome)
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
@@ -1361,6 +1431,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: (outcome) => {
         localSettled.push(outcome)
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1)) {
@@ -1399,6 +1470,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: (outcome) => {
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
           localSender.admit([addNode(3)])
@@ -1446,6 +1518,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: (outcome) => localSettled.push(outcome)
     })
     const operation = addNode(1)
@@ -1501,6 +1574,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: (outcome) => {
         localSettled.push(outcome)
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 2)) {
@@ -1529,6 +1603,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
     localSender.enqueue([addNode(1)])
@@ -1605,6 +1680,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: (outcome) => {
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 2))
           throw new Error('listener boom')

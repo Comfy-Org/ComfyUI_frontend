@@ -3021,6 +3021,49 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('holds a human edit until the reconnect catch-up has landed', async () => {
+    vi.useFakeTimers()
+    const edit: GraphOperation = {
+      op: 'set_widget',
+      node_id: '1',
+      widget: 'cfg',
+      value: 4.5
+    }
+    const { enqueue, unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', {
+      ok: true,
+      workflow_id: 'wf-1',
+      seq: 1
+    })
+    agentSocket.drop()
+    clientState.sendOps.mockClear()
+
+    enqueue([edit])
+    await Promise.resolve()
+    agentSocket.open()
+    dispatchFrame('doc_subscribed', {
+      ok: true,
+      workflow_id: 'wf-1',
+      seq: 44
+    })
+    vi.advanceTimersByTime(10_000)
+
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 44,
+      catchUp: true
+    })
+
+    expect(clientState.sendOps).toHaveBeenCalledOnce()
+    expect(clientState.sendOps.mock.calls[0][2][0]).toMatchObject({
+      op: 'set_widget',
+      widget: 'cfg'
+    })
+    unmount()
+  })
+
   it('a refused subscription settles the transmitted in-flight batch unconfirmed immediately, without waiting the resend (residual of #16637)', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')

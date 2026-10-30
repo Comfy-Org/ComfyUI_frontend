@@ -56,6 +56,7 @@ describe('createOpCoalescer over the op sender', () => {
       tab: 'tab-1',
       actor: () => 'human:test-user:tab-1',
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
     coalescer = createOpCoalescer(sender.admit, sender.flush)

@@ -89,8 +89,15 @@ export interface OpSenderDeps {
   tab: string
   /** `human:<user>:<tab>` (vocabulary §7). */
   actor(): string
-  /** The follower's last observed doc sequence (stamps `base_version`). */
+  /** The follower's last observed doc sequence (a floor for `base_version`). */
   baseVersion(): number
+  /**
+   * The highest Lamport counter in the document the follower holds, or
+   * undefined when it has none. Stamps stay above it: comparing under the
+   * applier's `[base_version, actor, op_id]` key, an op below a counter this
+   * client has already received would lose to a write its author can see.
+   */
+  observedCounter(): number | undefined
   /**
    * Terminal per-batch report: 'acknowledged' carries the host's result;
    * 'unacknowledged' means one resend after silence also drew no result;
@@ -185,6 +192,11 @@ interface WireBatch {
   wire: DocOp[]
 }
 
+function liftCounter(op: Op, shift: number): Op {
+  const counter = op.base_version + shift
+  return { ...op, base_version: counter, stamp: [counter, op.actor] }
+}
+
 function toWireBatch(workflowId: string, chunk: readonly SizedOp[]): WireBatch {
   return {
     workflowId,
@@ -221,6 +233,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // observed sequence reads 0 between a subscribe and its ack, so only the
   // cursor keeps a re-bound workflow's stamps past ones this actor used there.
   const lastMintedVersions = new Map<string, number>()
+  // The highest counter handed to the transport per workflow. A held batch is
+  // re-stamped on its way out, so its stamps can pass the ones minted behind it.
+  const lastSentVersions = new Map<string, number>()
   let detached = false
   let suspended = false
   let pumping = false
@@ -241,8 +256,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const mayReportSettlementFailure = createReportBudget()
   const mayReportSerializationFailure = createReportBudget()
 
+  function observedFloor(): number {
+    return (deps.observedCounter() ?? -1) + 1
+  }
+
   function mintBaseVersion(workflowId: string | null): number {
-    const observed = deps.baseVersion()
+    const observed = Math.max(deps.baseVersion(), observedFloor())
     if (workflowId === null) return observed
     const lastMinted = lastMintedVersions.get(workflowId)
     return lastMinted === undefined
@@ -334,11 +353,45 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       return
     }
     batch.awaitingTransport = false
+    recordSentCounters(batch)
     batch.sends++
     armResultTimeout(batch)
   }
 
+  /**
+   * A Lamport counter is taken at send, above everything received so far. An
+   * unsent batch has been on no wire, so no host can hold its old bytes and
+   * lifting it cannot reuse an `op_id` with a changed payload. One shift moves
+   * the whole batch, keeping its internal order. Once sent, a batch is frozen:
+   * a resend must be byte-identical to stay idempotent.
+   */
+  function stampAboveObserved(batch: InFlight): void {
+    if (batch.sends > 0 || batch.ops.length === 0) return
+    const counters = batch.ops.map((op) => op.base_version)
+    const floor = Math.max(
+      observedFloor(),
+      (lastSentVersions.get(batch.workflowId) ?? -1) + 1
+    )
+    const shift = floor - Math.min(...counters)
+    if (shift > 0) {
+      batch.ops = batch.ops.map((op) => liftCounter(op, shift))
+      batch.wire = batch.wire.map((wire, index) => ({
+        ...wire,
+        base_version: batch.ops[index].base_version,
+        stamp: batch.ops[index].stamp
+      }))
+    }
+  }
+
+  function recordSentCounters(batch: InFlight): void {
+    const highest = Math.max(...batch.ops.map((op) => op.base_version))
+    lastSentVersions.set(batch.workflowId, highest)
+    const lastMinted = lastMintedVersions.get(batch.workflowId) ?? -1
+    lastMintedVersions.set(batch.workflowId, Math.max(lastMinted, highest))
+  }
+
   function trySend(batch: InFlight): boolean {
+    stampAboveObserved(batch)
     try {
       return deps.sendOps(batch.workflowId, deps.tab, batch.wire)
     } catch (error) {
@@ -689,7 +742,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     },
     abortAll() {
       const resetWorkflowId = deps.workflowId()
-      if (resetWorkflowId !== null) lastMintedVersions.delete(resetWorkflowId)
+      if (resetWorkflowId !== null) {
+        lastMintedVersions.delete(resetWorkflowId)
+        lastSentVersions.delete(resetWorkflowId)
+      }
       drainOutstanding(
         guardedSettlementNotifier(
           'failure_settling_agent_op_sender_abort',
