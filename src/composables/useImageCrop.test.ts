@@ -448,6 +448,16 @@ describe('useImageCrop', () => {
     expect(vm.imageUrl).toBe('https://example.com/a.png')
   })
 
+  it('shows the image connected after mount to a first input not typed IMAGE', async () => {
+    useLinkedCropNode([{ name: 'image', type: '*' }])
+    const vm = await mountHarness()
+
+    connectImageInput(0)
+    await flushTicks()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
   it('shows the upstream image when the image input is not the first input, as after reopening a dynamic-input node', async () => {
     useLinkedCropNode([
       { name: 'model', type: 'COMFY_DYNAMICCOMBO_V3' },

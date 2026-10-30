@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 import { computed, ref, watch } from 'vue'
 
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -65,6 +66,11 @@ interface UseImageCropOptions {
   containerEl: Ref<HTMLDivElement | null>
   modelValue: Ref<Bounds>
   onEditEnd?: () => void
+}
+
+function imageInputSlot(node: LGraphNode): number {
+  const slot = node.inputs.findIndex((input) => input.type === 'IMAGE')
+  return slot === -1 ? 0 : slot
 }
 
 export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
@@ -187,12 +193,10 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     const cropNode = node.value
     if (!cropNode) return null
 
-    const imageInputSlot = cropNode.inputs.findIndex(
-      (input) => input.type === 'IMAGE'
+    const sourceNode = resolveInputSourceNode(
+      cropNode,
+      imageInputSlot(cropNode)
     )
-    if (imageInputSlot === -1) return null
-
-    const sourceNode = resolveInputSourceNode(cropNode, imageInputSlot)
     if (!sourceNode) return null
 
     return nodeOutputStore.getNodeImageUrls(sourceNode)?.[0] ?? null
