@@ -86,6 +86,8 @@ export interface SubscriptionInfo {
    * disabled, absent when the server does not report it.
    */
   agentScopedHasFunds?: boolean
+  /** True only when the billing status names the rail that supplied the grant. */
+  agentScopedHasFundsAuthoritative?: boolean
 }
 
 /**

@@ -7,7 +7,11 @@ import { createScopedReader } from './scopedReader'
 
 export const BILLING_STATUS_ROUTE = '/billing/status'
 
-export type BillingStatusData = z.infer<typeof zBillingStatusResponse>
+const BillingStatusBodySchema = zBillingStatusResponse.extend({
+  ended_at: zBillingStatusResponse.shape.ended_at.optional()
+})
+
+export type BillingStatusData = z.infer<typeof BillingStatusBodySchema>
 
 export type BillingStatusScope = BillingScope
 
@@ -49,7 +53,7 @@ export function createBillingStatusReader(
     transport,
     scopeSource,
     route: BILLING_STATUS_ROUTE,
-    parse: (body) => zBillingStatusResponse.safeParse(body),
+    parse: (body) => BillingStatusBodySchema.safeParse(body),
     project: ({ data }, scope) => ({
       status: 'ok',
       value: { status: data, scope, readAt: now() }
