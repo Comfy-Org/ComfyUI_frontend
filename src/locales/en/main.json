@@ -4190,13 +4190,13 @@
     },
     "cloudButton": {
       "tooltip": "Run on Comfy Cloud",
+      "checking": "Checking Comfy Cloud…",
       "uploading": "Uploading {models} · {percent}%",
       "models": "{count} model | {count} models"
     },
     "runDialog": {
       "title": "Run on Comfy Cloud",
       "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
-      "checking": "Checking whether Comfy Cloud has every node and model this workflow uses…",
       "signedOut": "Sign in to check whether Comfy Cloud can run this workflow.",
       "openOnCloud": "Open on Comfy Cloud",
       "signIn": "Sign in"

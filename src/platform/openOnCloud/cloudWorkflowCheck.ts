@@ -130,7 +130,6 @@ export function prototypeCloudWorkflowChecker(
   return () => {
     const verdict = prototypeVerdict(pick())
     if (!verdict) return new Promise(() => {})
-    if (pauseMs === 0) return Promise.resolve(verdict)
     return new Promise((resolve) => setTimeout(() => resolve(verdict), pauseMs))
   }
 }

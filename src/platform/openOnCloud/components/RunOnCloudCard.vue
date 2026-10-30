@@ -18,7 +18,6 @@
         <Button
           variant="inverted"
           size="lg"
-          :disabled="state.kind === 'checking'"
           data-testid="run-on-cloud-primary"
           @click="runPrimary"
         >
@@ -47,10 +46,7 @@ import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDia
 
 const { state } = defineProps<{
   titleId?: string
-  state: Extract<
-    RunOnCloudModalState,
-    { kind: 'ready' | 'checking' | 'signedOut' }
-  >
+  state: Extract<RunOnCloudModalState, { kind: 'ready' | 'signedOut' }>
 }>()
 
 const emit = defineEmits<{
@@ -65,7 +61,6 @@ const { showSignInDialog } = useAuthDialogs()
 
 const BODY_KEYS = {
   ready: 'openOnCloud.runDialog.ready',
-  checking: 'openOnCloud.runDialog.checking',
   signedOut: 'openOnCloud.runDialog.signedOut'
 } as const
 
@@ -73,8 +68,6 @@ const body = computed(() => t(BODY_KEYS[state.kind]))
 
 function runPrimary() {
   switch (state.kind) {
-    case 'checking':
-      return
     case 'ready':
       void openWorkflowOnCloud()
       break

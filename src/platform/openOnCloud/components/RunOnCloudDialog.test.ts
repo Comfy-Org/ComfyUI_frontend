@@ -59,74 +59,53 @@ describe('RunOnCloudDialog', () => {
     heading: string
     body: string
     primary: string
-    enabled: boolean
   }>([
     {
       scenario: 'compatible',
       heading: 'Run on Comfy Cloud',
       body: READY_BODY,
-      primary: 'Open on Comfy Cloud',
-      enabled: true
+      primary: 'Open on Comfy Cloud'
     },
     {
       scenario: 'nodePacksMissing',
       heading: 'Deploy your setup to Comfy Cloud',
       body: DEPLOY_BODY,
-      primary: 'Build with your agent',
-      enabled: true
+      primary: 'Build with your agent'
     },
     {
       scenario: 'nodePacksAndModelsMissing',
       heading: 'Deploy your setup to Comfy Cloud',
       body: DEPLOY_BODY,
-      primary: 'Build with your agent',
-      enabled: true
+      primary: 'Build with your agent'
     },
     {
       scenario: 'modelsMissing',
       heading: 'Upload 2 models',
       body: 'Upload these models to run this workflow on Comfy Cloud.',
-      primary: 'Upload',
-      enabled: true
-    },
-    {
-      scenario: 'checking',
-      heading: 'Run on Comfy Cloud',
-      body: 'Checking whether Comfy Cloud has every node and model this workflow uses…',
-      primary: 'Open on Comfy Cloud',
-      enabled: false
+      primary: 'Upload'
     },
     {
       scenario: 'signedOut',
       heading: 'Run on Comfy Cloud',
       body: 'Sign in to check whether Comfy Cloud can run this workflow.',
-      primary: 'Sign in',
-      enabled: true
+      primary: 'Sign in'
     }
   ])(
     'opens the modal for $scenario',
-    async ({ scenario, heading, body, primary, enabled }) => {
+    async ({ scenario, heading, body, primary }) => {
       await renderAnswered(scenario)
 
       expect(screen.getByRole('heading')).toHaveTextContent(heading)
       expect(screen.getByText(body)).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: primary })).toHaveProperty(
-        'disabled',
-        !enabled
-      )
+      expect(screen.getByRole('button', { name: primary })).toBeEnabled()
     }
   )
 
-  it('switches the open modal to the answer when it arrives', async () => {
+  it('shows no modal while Comfy Cloud is checking', () => {
     startCheck('compatible')
     renderDialog()
-    const open = screen.getByRole('button', { name: 'Open on Comfy Cloud' })
-    expect(open).toBeDisabled()
 
-    await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS)
-
-    expect(screen.getByText(READY_BODY)).toBeInTheDocument()
-    expect(open).toBeEnabled()
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument()
   })
 
   it('switches at once when the panel picks another scenario', async () => {
@@ -136,18 +115,6 @@ describe('RunOnCloudDialog', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument()
-  })
-
-  it('switches the open modal to Deploy your setup when a node pack turns out missing', async () => {
-    startCheck('nodePacksMissing')
-    renderDialog()
-    expect(screen.getByRole('heading')).toHaveTextContent('Run on Comfy Cloud')
-
-    await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS)
-
-    expect(screen.getByRole('heading')).toHaveTextContent(
-      'Deploy your setup to Comfy Cloud'
-    )
   })
 
   it.for<{ scenario: PrototypeScenario; primary: string; ran: () => void }>([

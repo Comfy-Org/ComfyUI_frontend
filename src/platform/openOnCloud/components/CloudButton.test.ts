@@ -8,7 +8,10 @@ import {
   PROTOTYPE_CHECK_MS,
   PROTOTYPE_GAPS
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
-import { openRunOnCloudDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
+import {
+  closeRunOnCloudDialog,
+  openRunOnCloudDialog
+} from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import {
   PROTOTYPE_UPLOAD_MS,
@@ -20,7 +23,8 @@ import CloudButton from './CloudButton.vue'
 
 vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@/platform/openOnCloud/openRunOnCloudDialog'), () => ({
-  openRunOnCloudDialog: vi.fn(async () => {})
+  openRunOnCloudDialog: vi.fn(async () => {}),
+  closeRunOnCloudDialog: vi.fn(() => true)
 }))
 vi.mock(import('@/platform/openOnCloud/serializeRootGraph'), () => ({
   serializeRootGraph: vi.fn(() => defaultGraph)
@@ -31,8 +35,6 @@ const i18n = createI18n({
   locale: 'en',
   messages: { en: enMessages }
 })
-
-const READY = { phase: 'answered', verdict: { kind: 'canOpen' } }
 
 function renderButton() {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
@@ -45,25 +47,75 @@ function cloudButton() {
 }
 
 describe('CloudButton', () => {
-  it('checks Comfy Cloud when the pointer reaches it, so a click opens the answer', async () => {
+  it('shows that it is checking while Comfy Cloud answers', async () => {
+    const user = renderButton()
+    expect(cloudButton()).toHaveAccessibleName('Run on Comfy Cloud')
+
+    await user.hover(cloudButton())
+
+    expect(cloudButton()).toHaveAccessibleName('Checking Comfy Cloud…')
+    expect(cloudButton()).toHaveAttribute('aria-busy', 'true')
+
+    await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS)
+
+    expect(cloudButton()).toHaveAccessibleName('Run on Comfy Cloud')
+    expect(cloudButton()).not.toHaveAttribute('aria-busy')
+  })
+
+  it('opens the modal at once when Comfy Cloud has answered', async () => {
     const user = renderButton()
 
     await user.hover(cloudButton())
     await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS)
     await user.click(cloudButton())
 
-    expect(useCloudWorkflowCheckStore().state).toEqual(READY)
     expect(openRunOnCloudDialog).toHaveBeenCalledOnce()
   })
 
-  it('checks Comfy Cloud when a key presses it', async () => {
+  it('a click while checking opens the modal when the answer arrives', async () => {
+    const user = renderButton()
+
+    await user.hover(cloudButton())
+    await user.click(cloudButton())
+
+    expect(openRunOnCloudDialog).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS)
+
+    expect(openRunOnCloudDialog).toHaveBeenCalledOnce()
+  })
+
+  it('a key press checks Comfy Cloud, then opens the modal with the answer', async () => {
     const user = renderButton()
 
     await user.tab()
     await user.keyboard('{Enter}')
 
-    expect(useCloudWorkflowCheckStore().state.phase).toBe('checking')
+    expect(cloudButton()).toHaveAccessibleName('Checking Comfy Cloud…')
+    expect(openRunOnCloudDialog).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS)
+
     expect(openRunOnCloudDialog).toHaveBeenCalledOnce()
+  })
+
+  it('closes the open modal while Comfy Cloud checks again, then reopens it with the answer', async () => {
+    const user = renderButton()
+    const checkStore = useCloudWorkflowCheckStore()
+    await user.hover(cloudButton())
+    await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS)
+    await user.click(cloudButton())
+
+    checkStore.prototypeScenario = 'checking'
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(closeRunOnCloudDialog).toHaveBeenCalledOnce()
+    expect(cloudButton()).toHaveAccessibleName('Checking Comfy Cloud…')
+
+    checkStore.prototypeScenario = 'signedOut'
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(openRunOnCloudDialog).toHaveBeenCalledTimes(2)
   })
 
   it('keeps a running check when the button is clicked', async () => {
@@ -74,7 +126,7 @@ describe('CloudButton', () => {
     await user.click(cloudButton())
     await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS / 2)
 
-    expect(useCloudWorkflowCheckStore().state).toEqual(READY)
+    expect(cloudButton()).toHaveAccessibleName('Run on Comfy Cloud')
   })
 
   it('shows how far an upload has got, then goes back to Run on Comfy Cloud', async () => {

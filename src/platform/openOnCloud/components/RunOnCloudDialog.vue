@@ -15,7 +15,7 @@
     @dismiss="emit('dismiss')"
   />
   <RunOnCloudCard
-    v-else
+    v-else-if="state.kind !== 'checking'"
     :title-id
     :state
     @done="emit('done')"

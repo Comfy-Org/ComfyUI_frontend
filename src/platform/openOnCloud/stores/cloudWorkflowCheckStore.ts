@@ -9,13 +9,14 @@ import type {
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import {
   prototypeCloudWorkflowChecker,
+  prototypeVerdict,
   reduceCloudWorkflowCheck
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 /**
  * Whether Comfy Cloud can run the open workflow, rechecked on each call and
- * again, without a pause, when the prototype panel changes its answer.
+ * answered at once when the prototype panel changes its answer.
  */
 export const useCloudWorkflowCheckStore = defineStore(
   'cloudWorkflowCheck',
@@ -28,9 +29,8 @@ export const useCloudWorkflowCheckStore = defineStore(
       uploadedModels: uploadedModels.value
     })
     const checker = prototypeCloudWorkflowChecker(pick)
-    const recheckNow = prototypeCloudWorkflowChecker(pick, 0)
     let lastRun = 0
-    let lastWorkflow: ComfyWorkflowJSON | null = null
+    let hasChecked = false
 
     function dispatch(event: CloudWorkflowCheckEvent) {
       state.value = reduceCloudWorkflowCheck(state.value, event)
@@ -46,8 +46,15 @@ export const useCloudWorkflowCheckStore = defineStore(
     }
 
     function check(workflow: ComfyWorkflowJSON): Promise<void> {
-      lastWorkflow = workflow
+      hasChecked = true
       return run(workflow, checker)
+    }
+
+    function answerFromPanel() {
+      const run = ++lastRun
+      dispatch({ type: 'started', run })
+      const verdict = prototypeVerdict(pick())
+      if (verdict) dispatch({ type: 'answered', run, verdict })
     }
 
     function markUploaded(names: readonly string[]) {
@@ -59,7 +66,7 @@ export const useCloudWorkflowCheckStore = defineStore(
     }
 
     watch([prototypeScenario, uploadedModels], () => {
-      if (lastWorkflow) void run(lastWorkflow, recheckNow)
+      if (hasChecked) answerFromPanel()
     })
 
     return {

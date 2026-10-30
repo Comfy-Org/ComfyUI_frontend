@@ -2,6 +2,14 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const RUN_ON_CLOUD_DIALOG_KEY = 'global-run-on-comfy-cloud'
 
+/** Closes the Run on Comfy Cloud modal, reporting whether it was open. */
+export function closeRunOnCloudDialog(): boolean {
+  const dialogStore = useDialogStore()
+  if (!dialogStore.isDialogOpen(RUN_ON_CLOUD_DIALOG_KEY)) return false
+  dialogStore.closeDialog({ key: RUN_ON_CLOUD_DIALOG_KEY })
+  return true
+}
+
 /** Opens the one modal that Comfy Cloud's answer for the workflow picks. */
 export async function openRunOnCloudDialog(): Promise<void> {
   const { default: RunOnCloudDialog } =
