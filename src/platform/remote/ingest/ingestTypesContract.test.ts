@@ -1,11 +1,11 @@
 import type {
-  AgentPostMessageRequest,
+  AgentAskConflict,
   ErrorResponse,
   ExchangeTokenResponse,
   HubProfile
 } from '@comfyorg/ingest-types'
 import {
-  zAgentPostMessageRequest,
+  zAgentAskConflict,
   zBillingStatusResponse,
   zErrorResponse,
   zExchangeTokenResponse,
@@ -15,8 +15,8 @@ import { describe, expect, expectTypeOf, it } from 'vitest'
 import type { z } from 'zod'
 
 expectTypeOf<
-  z.infer<typeof zAgentPostMessageRequest>
->().toEqualTypeOf<AgentPostMessageRequest>()
+  z.infer<typeof zAgentAskConflict>
+>().toEqualTypeOf<AgentAskConflict>()
 expectTypeOf<z.infer<typeof zErrorResponse>>().toEqualTypeOf<ErrorResponse>()
 expectTypeOf<
   z.infer<typeof zExchangeTokenResponse>
@@ -27,8 +27,8 @@ describe('ingest API schemas', () => {
   it.for([
     {
       consumer: 'agent',
-      schema: zAgentPostMessageRequest,
-      body: { content: 'Add a KSampler' }
+      schema: zAgentAskConflict,
+      body: { error: 'ask already resolved', status: 'expired' }
     },
     {
       consumer: 'authentication',
