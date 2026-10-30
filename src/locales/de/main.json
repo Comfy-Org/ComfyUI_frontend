@@ -83,6 +83,7 @@
     "copyMarkdown": "Als Markdown kopieren",
     "copyUnavailable": "In dieser Version kann nur die aktuelle Unterhaltung kopiert werden",
     "creditTransitionNotice": "Sie haben Ihre kostenlosen Agent-Credits verbraucht. Weitere Agent-Aktivitäten verwenden die Credits Ihres Workspaces, die kostenpflichtige Credits enthalten können.",
+    "creditsUsed": "Der Agent hat {credits} Credit verwendet | Der Agent hat {credits} Credits verwendet",
     "currentTab": "Aktueller Tab",
     "delete": "Löschen",
     "deleteApproval": {

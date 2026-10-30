@@ -8,16 +8,8 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/updates/common/releaseService.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/updates/common/releaseService.ts",
       "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/updates/common/releaseStore.test.ts",
-      "role": "application"
     },
     {
       "path": "src/platform/updates/common/releaseStore.ts",
