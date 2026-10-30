@@ -19,9 +19,8 @@ vi.mock(import('@/extensions/core/index'), () => ({
   registerCoreExtensions: async () => {
     const { LGraphCanvas, LGraphNode } =
       await import('@/lib/litegraph/src/litegraph')
-    const { useExtensionStore } = await import(
-      '@/platform/extensions/stores/extensionStore'
-    )
+    const { useExtensionStore } =
+      await import('@/platform/extensions/stores/extensionStore')
     coreLoad.onConfigure = LGraphNode.prototype.onConfigure
     coreLoad.processMouseDown = LGraphCanvas.prototype.processMouseDown
     coreLoad.processMouseMove = LGraphCanvas.prototype.processMouseMove

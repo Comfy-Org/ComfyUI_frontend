@@ -14,18 +14,18 @@ describe('shouldLoadCustomNodeScript', () => {
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
     'skips the inlined Cloud extension %s in cloud builds',
     (extension) => {
-      expect(shouldLoadCustomNodeScript(extension, { isCloudBuild: true })).toBe(
-        false
-      )
+      expect(
+        shouldLoadCustomNodeScript(extension, { isCloudBuild: true })
+      ).toBe(false)
     }
   )
 
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
     'keeps the legacy path %s available outside cloud builds',
     (extension) => {
-      expect(shouldLoadCustomNodeScript(extension, { isCloudBuild: false })).toBe(
-        true
-      )
+      expect(
+        shouldLoadCustomNodeScript(extension, { isCloudBuild: false })
+      ).toBe(true)
     }
   )
 
