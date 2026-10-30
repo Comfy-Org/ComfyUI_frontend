@@ -81,6 +81,7 @@ import type {
   TabCountMetadata,
   TelemetryDispatcher,
   TelemetryProvider,
+  FetchStatusRetryMetadata,
   FetchTimeoutMetadata,
   TemplateFilterMetadata,
   TemplateLibraryClosedMetadata,
@@ -600,5 +601,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackFetchTimeout(metadata: FetchTimeoutMetadata): void {
     this.dispatch((provider) => provider.trackFetchTimeout?.(metadata))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackFetchStatusRetry(metadata: FetchStatusRetryMetadata): void {
+    this.dispatch((provider) => provider.trackFetchStatusRetry?.(metadata))
   }
 }
