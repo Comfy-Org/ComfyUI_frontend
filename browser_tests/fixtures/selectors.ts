@@ -176,14 +176,9 @@ export const TestIds = {
   },
   selectionToolbox: {
     root: 'selection-toolbox',
-    colorPickerButton: 'color-picker-button',
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
-    colorRed: 'red',
-    convertSubgraph: 'convert-to-subgraph-button',
-    bypass: 'bypass-button',
-    hideLinks: 'hide-links-button',
-    deleteLinks: 'delete-links-button'
+    colorRed: 'red'
   },
   helpCenter: {
     button: 'help-center-button',
@@ -346,6 +341,7 @@ export const TestIds = {
   searchBoxV2: {
     resultItem: 'result-item',
     filterOption: 'filter-option',
+    typeFilterPopover: 'type-filter-popover',
     filterChip: 'filter-chip',
     chipDelete: 'chip-delete',
     noResults: 'no-results',

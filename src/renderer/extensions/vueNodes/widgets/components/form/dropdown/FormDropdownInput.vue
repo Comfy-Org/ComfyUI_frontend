@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Loader from '@/components/loader/Loader.vue'
-import { WidgetInputBaseClass } from '../../layout'
+import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
 import type { FormDropdownInputProps } from './types'
 
 const {
@@ -69,7 +69,7 @@ defineExpose({ focus, showPicker })
 <template>
   <div
     :class="
-      cn(WidgetInputBaseClass, 'flex text-base leading-none', {
+      cn(WidgetInputBaseClass, 'flex text-xs leading-none', {
         'cursor-not-allowed opacity-50 outline-node-border': disabled
       })
     "
@@ -100,7 +100,7 @@ defineExpose({ focus, showPicker })
         class="icon-[lucide--chevron-down]"
         :class="
           cn(
-            'mr-2 size-4 shrink-0 text-muted-foreground transition-transform duration-200',
+            'mr-2 text-muted-foreground transition-transform duration-200',
             isOpen && 'rotate-180'
           )
         "
@@ -117,11 +117,7 @@ defineExpose({ focus, showPicker })
       "
     >
       <Loader v-if="isUploading" size="sm" />
-      <i
-        v-else
-        class="icon-[lucide--folder-search] size-4"
-        aria-hidden="true"
-      />
+      <i v-else class="icon-[lucide--folder-search]" aria-hidden="true" />
       <input
         ref="fileInputRef"
         type="file"

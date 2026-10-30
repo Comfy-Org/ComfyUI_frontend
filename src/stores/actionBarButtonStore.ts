@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import type { ActionBarButton } from '@/types/comfy'
 
-import { useExtensionStore } from './extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 
 export const useActionBarButtonStore = defineStore('actionBarButton', () => {
   const extensionStore = useExtensionStore()

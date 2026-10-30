@@ -10,7 +10,7 @@
           :disabled="interactionLocked"
           @click="emit('back')"
         >
-          <i class="pi pi-arrow-left text-base" />
+          <i class="icon-[lucide--arrow-left]" />
         </CheckoutButton>
         <CheckoutTitle :class="layout.title">
           {{ copy.confirmPayment }}
@@ -87,7 +87,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { StripePaymentPhase } from '../stripe/stripePaymentPhase'
+import type { StripePaymentPhase } from '#/billing/stripe/stripePaymentPhase'
 import CheckoutButton from './CheckoutButton.vue'
 import CheckoutPromotionCode from './CheckoutPromotionCode.vue'
 import CheckoutSavedMethods from './CheckoutSavedMethods.vue'

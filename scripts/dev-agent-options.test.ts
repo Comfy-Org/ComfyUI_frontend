@@ -41,6 +41,8 @@ describe('parseOptions', () => {
       help: false,
       pgExec: '',
       record: false,
+      redisExec: '',
+      target: 'local',
       temporalPort: 7234,
       temporalUiPort: 8234
     })
@@ -50,6 +52,8 @@ describe('parseOptions', () => {
     expect(
       parseOptions([
         '--record',
+        '--target',
+        'cloud',
         '--catalog',
         'fixtures/conversation.json',
         '--cloud-repo',
@@ -69,10 +73,13 @@ describe('parseOptions', () => {
         '--temporal-port',
         '7400',
         '--pg-exec',
-        'psql -At -c'
+        'psql -At -c',
+        '--redis-exec',
+        'redis-cli -p 6379'
       ])
     ).toMatchObject({
       record: true,
+      target: 'cloud',
       catalog: resolve('fixtures/conversation.json'),
       cloudRepo: resolve('../cloud-dev'),
       airBin: resolve('bin/air'),
@@ -84,7 +91,8 @@ describe('parseOptions', () => {
       engine: 'temporal',
       temporalPort: 7400,
       temporalUiPort: 8400,
-      pgExec: 'psql -At -c'
+      pgExec: 'psql -At -c',
+      redisExec: 'redis-cli -p 6379'
     })
   })
 
@@ -97,6 +105,14 @@ describe('parseOptions', () => {
     {
       args: ['--engine', 'remote'],
       message: '--engine must be inline or temporal'
+    },
+    {
+      args: ['--target', 'remote'],
+      message: '--target must be local or cloud'
+    },
+    {
+      args: ['--target', 'cloud'],
+      message: '--target cloud applies to --record only'
     },
     {
       args: ['--frontend-port', '0'],

@@ -1,35 +1,19 @@
 import { computed, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isCloud } from '@/platform/distribution/types'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
-import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
-import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+import type {
+  WorkspaceRole,
+  WorkspaceType
+} from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-type BillingCapabilities = ReturnType<typeof useBillingCapabilities>
-
-interface ServedPermissionFacts {
-  canLeaveWorkspace: BillingCapabilities['canLeaveWorkspace']['value']
-  canManageSubscription: BillingCapabilities['canManageSubscription']['value']
-  canDowngradeToPersonal: BillingCapabilities['canDowngradeToPersonal']['value']
-}
-
-/** Permission flags for workspace actions */
 interface WorkspacePermissions {
   canViewOtherMembers: boolean
   canViewPendingInvites: boolean
-  canLeaveWorkspace: boolean
-  canAccessWorkspaceMenu: boolean
-  canManageSubscription: boolean
-  canManageSubscriptionLifecycle: boolean
-  canDowngradeToPersonal: boolean
 }
 
-/** UI configuration for workspace role */
 interface WorkspaceUIConfig {
   showMembersList: boolean
   showPendingTab: boolean
@@ -39,53 +23,8 @@ interface WorkspaceUIConfig {
   membersGridCols: string
   pendingGridCols: string
   headerGridCols: string
-  showEditWorkspaceMenuItem: boolean
   workspaceMenuAction: 'delete' | null
   workspaceMenuDisabledTooltip: string | null
-}
-
-function getPermissions(
-  type: WorkspaceType,
-  role: WorkspaceRole,
-  {
-    canLeaveWorkspace,
-    canManageSubscription,
-    canDowngradeToPersonal
-  }: ServedPermissionFacts
-): WorkspacePermissions {
-  const billingPermissions = {
-    canManageSubscription,
-    canManageSubscriptionLifecycle: canManageSubscription,
-    canDowngradeToPersonal
-  }
-
-  if (role === 'member') {
-    return {
-      canViewOtherMembers: true,
-      canViewPendingInvites: false,
-      canLeaveWorkspace,
-      canAccessWorkspaceMenu: canLeaveWorkspace,
-      ...billingPermissions
-    }
-  }
-
-  if (type === 'personal') {
-    return {
-      canViewOtherMembers: false,
-      canViewPendingInvites: false,
-      canLeaveWorkspace,
-      canAccessWorkspaceMenu: canLeaveWorkspace,
-      ...billingPermissions
-    }
-  }
-
-  return {
-    canViewOtherMembers: true,
-    canViewPendingInvites: true,
-    canLeaveWorkspace,
-    canAccessWorkspaceMenu: true,
-    ...billingPermissions
-  }
 }
 
 function getUIConfig(
@@ -102,7 +41,6 @@ function getUIConfig(
       membersGridCols: 'grid-cols-[1fr_auto]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[1fr_auto]',
-      showEditWorkspaceMenuItem: false,
       workspaceMenuAction: null,
       workspaceMenuDisabledTooltip: null
     }
@@ -118,7 +56,6 @@ function getUIConfig(
       membersGridCols: 'grid-cols-1',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-1',
-      showEditWorkspaceMenuItem: true,
       workspaceMenuAction: null,
       workspaceMenuDisabledTooltip: null
     }
@@ -133,24 +70,17 @@ function getUIConfig(
     membersGridCols: 'grid-cols-[50%_40%_10%]',
     pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
     headerGridCols: 'grid-cols-[50%_40%_10%]',
-    showEditWorkspaceMenuItem: true,
     workspaceMenuAction: 'delete',
     workspaceMenuDisabledTooltip:
       'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
   }
 }
 
-/**
- * Internal implementation of UI configuration composable.
- */
 function useWorkspaceUIInternal() {
   const store = useTeamWorkspaceStore()
-  const { canAccessSubscriptionFeatures, isTeamPlan, subscription } =
-    useBillingContext()
   const { flags } = useFeatureFlags()
 
   const isInPersonalWorkspace = computed(() => store.isInPersonalWorkspace)
-  const isWorkspaceSubscribed = computed(() => store.isWorkspaceSubscribed)
 
   const workspaceType = computed<WorkspaceType>(
     () => store.activeWorkspace?.type ?? 'personal'
@@ -170,38 +100,6 @@ function useWorkspaceUIInternal() {
     { immediate: true }
   )
 
-  const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const {
-    canReactivate,
-    canSubscribeSelfServe,
-    snapshotAuthoritative,
-    canLeaveWorkspace,
-    canManageSubscription,
-    canDowngradeToPersonal
-  } = useBillingCapabilities()
-
-  const permissions = computed<WorkspacePermissions>(() =>
-    getPermissions(workspaceType.value, workspaceRole.value, {
-      canLeaveWorkspace: canLeaveWorkspace.value,
-      canManageSubscription: canManageSubscription.value,
-      canDowngradeToPersonal: canDowngradeToPersonal.value
-    })
-  )
-
-  const canReactivatePlan = computed(() =>
-    isCloud && shouldUseWorkspaceBilling.value
-      ? canReactivate.value
-      : permissions.value.canManageSubscriptionLifecycle
-  )
-
-  const canOpenPricingSurface = computed(() => {
-    if (!isCloud || !shouldUseWorkspaceBilling.value)
-      return permissions.value.canManageSubscription
-    return snapshotAuthoritative.value
-      ? canSubscribeSelfServe.value
-      : permissions.value.canManageSubscription
-  })
-
   const uiConfig = computed<WorkspaceUIConfig>(() => {
     const base = getUIConfig(workspaceType.value, workspaceRole.value)
     const showCreditsColumn =
@@ -218,13 +116,10 @@ function useWorkspaceUIInternal() {
     }
   })
 
-  const isSubscriptionCancelled = computed(
-    () => subscription.value?.isCancelled ?? false
-  )
-
-  const isTeamPlanCancelled = computed(
-    () => isTeamPlan.value && isSubscriptionCancelled.value
-  )
+  const permissions = computed<WorkspacePermissions>(() => ({
+    canViewOtherMembers: uiConfig.value.showMembersList,
+    canViewPendingInvites: uiConfig.value.showPendingTab
+  }))
 
   const isWorkspaceMenuInHeader = computed(
     () => flags.unifiedBillingSettingsEnabled
@@ -232,23 +127,12 @@ function useWorkspaceUIInternal() {
 
   return {
     permissions,
-    canReactivatePlan,
-    canOpenPricingSurface,
     uiConfig,
     workspaceType,
     workspaceRole,
     isInPersonalWorkspace,
-    isWorkspaceSubscribed,
-    canAccessSubscriptionFeatures,
-    isSubscriptionCancelled,
-    isTeamPlanCancelled,
     isWorkspaceMenuInHeader
   }
 }
 
-/**
- * UI configuration composable derived from workspace state.
- * Controls what UI elements are visible/enabled based on role and workspace type.
- * Uses createSharedComposable to ensure tab state is shared across components.
- */
 export const useWorkspaceUI = createSharedComposable(useWorkspaceUIInternal)

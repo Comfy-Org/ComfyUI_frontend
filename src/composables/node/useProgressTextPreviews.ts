@@ -1,13 +1,13 @@
 import { useEventListener } from '@vueuse/core'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
-import type { ProgressTextWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ProgressTextWsMessage } from '@comfyorg/api-client/executionTypes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import type { QueuedJob } from '@/stores/executionStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { parseNodeId } from '@/types/nodeId'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 
 export function useProgressTextPreviews() {
   const executionStore = useExecutionStore()
@@ -26,8 +26,7 @@ export function useProgressTextPreviews() {
     const { nodeId, text, prompt_id } = e.detail
     if (!text || !nodeId) return
 
-    const activeJobId = executionStore.activeJobId
-    if (prompt_id && activeJobId && prompt_id !== activeJobId) return
+    if (!executionStore.belongsToActiveWorkflow(prompt_id)) return
 
     const executionId = String(nodeId)
     const currentId = executionId.includes(':')

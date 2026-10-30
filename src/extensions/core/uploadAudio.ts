@@ -6,28 +6,26 @@ import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IStringWidget
-} from '@/lib/litegraph/src/types/widgets'
-import { reportError } from '@/platform/telemetry/reportError'
+import type { IBaseWidget, IStringWidget } from '@comfyorg/graph-model/widgets'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   getResourceURL,
   splitFilePath
 } from '@/renderer/extensions/vueNodes/widgets/utils/audioUtils'
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/types/domWidget'
 import { useAudioService } from '@/services/audioService'
 import type { NodeLocatorId } from '@/types'
-import { widgetId } from '@/types/widgetId'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
-import { api } from '../../scripts/api'
-import { app } from '../../scripts/app'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { ComfyExtension } from '@/types/comfy'
 
 function updateUIWidget(
   audioUIWidget: DOMWidget<HTMLAudioElement, string>,
@@ -101,7 +99,7 @@ async function uploadFile(
 
 // AudioWidget MUST be registered first, as AUDIOUPLOAD depends on AUDIO_UI to be
 // present.
-app.registerExtension({
+export const audioWidgetExtension: ComfyExtension = {
   name: 'Comfy.AudioWidget',
   async beforeRegisterNodeDef(
     nodeType: typeof LGraphNode,
@@ -202,9 +200,9 @@ app.registerExtension({
       updateUIWidget(audioUIWidget, api.apiURL(resourceUrl))
     }
   }
-})
+}
 
-app.registerExtension({
+export const uploadAudioExtension: ComfyExtension = {
   name: 'Comfy.UploadAudio',
   async beforeRegisterNodeDef(
     _nodeType: typeof LGraphNode,
@@ -316,9 +314,9 @@ app.registerExtension({
       }
     }
   }
-})
+}
 
-app.registerExtension({
+export const recordAudioExtension: ComfyExtension = {
   name: 'Comfy.RecordAudio',
 
   getCustomWidgets() {
@@ -514,4 +512,4 @@ app.registerExtension({
 
     await useAudioService().registerWavEncoder()
   }
-})
+}

@@ -1,168 +1,20 @@
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 import { api } from './api'
 import { getFromAvifFile } from './metadata/avif'
 import { getFromFlacFile } from './metadata/flac'
+import { getFromLatentFile } from './metadata/latent'
 import { getFromPngFile } from './metadata/png'
+import { getFromWebpFile } from './metadata/webp'
 
-// Original functions left in for backwards compatibility
-export function getPngMetadata(file: File): Promise<Record<string, string>> {
-  return getFromPngFile(file)
-}
-
-export function getFlacMetadata(file: File): Promise<Record<string, string>> {
-  return getFromFlacFile(file)
-}
-
-export function getAvifMetadata(file: File): Promise<Record<string, string>> {
-  return getFromAvifFile(file)
-}
-
-function parseExifData(exifData: Uint8Array) {
-  // Check for the correct TIFF header (0x4949 for little-endian or 0x4D4D for big-endian)
-  const isLittleEndian = String.fromCharCode(...exifData.slice(0, 2)) === 'II'
-
-  // Function to read 16-bit and 32-bit integers from binary data
-  function readInt(
-    offset: number,
-    isLittleEndian: boolean,
-    length: 2 | 4
-  ): number {
-    const arr = exifData.slice(offset, offset + length)
-    const view = new DataView(arr.buffer, arr.byteOffset, arr.byteLength)
-    return length === 2
-      ? view.getUint16(0, isLittleEndian)
-      : view.getUint32(0, isLittleEndian)
-  }
-
-  // Read the offset to the first IFD (Image File Directory)
-  const ifdOffset = readInt(4, isLittleEndian, 4)
-
-  function parseIFD(offset: number): Record<number, string | undefined> {
-    const numEntries = readInt(offset, isLittleEndian, 2)
-    const result: Record<number, string | undefined> = {}
-
-    for (let i = 0; i < numEntries; i++) {
-      const entryOffset = offset + 2 + i * 12
-      const tag = readInt(entryOffset, isLittleEndian, 2)
-      const type = readInt(entryOffset + 2, isLittleEndian, 2)
-      const numValues = readInt(entryOffset + 4, isLittleEndian, 4)
-      const valueOffset = readInt(entryOffset + 8, isLittleEndian, 4)
-
-      // Read the value(s) based on the data type
-      let value
-      if (type === 2) {
-        // ASCII string
-        value = new TextDecoder('utf-8').decode(
-          exifData.subarray(valueOffset, valueOffset + numValues - 1)
-        )
-      }
-
-      result[tag] = value
-    }
-
-    return result
-  }
-
-  // Parse the first IFD
-  const ifdData = parseIFD(ifdOffset)
-  return ifdData
-}
-
-export function getWebpMetadata(file: File) {
-  return new Promise<Record<string, string>>((r) => {
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const webp = new Uint8Array(event.target?.result as ArrayBuffer)
-      const dataView = new DataView(webp.buffer)
-
-      // Check that the WEBP signature is present
-      if (
-        dataView.getUint32(0) !== 0x52494646 ||
-        dataView.getUint32(8) !== 0x57454250
-      ) {
-        console.error('Not a valid WEBP file')
-        r({})
-        return
-      }
-
-      // Start searching for chunks after the WEBP signature
-      let offset = 12
-      const txt_chunks: Record<string, string> = {}
-      // Loop through the chunks in the WEBP file
-      while (offset < webp.length) {
-        const chunk_length = dataView.getUint32(offset + 4, true)
-        const chunk_type = String.fromCharCode(
-          ...webp.slice(offset, offset + 4)
-        )
-        if (chunk_type === 'EXIF') {
-          let exifOffset = offset + 8
-          let exifLength = chunk_length
-          if (
-            String.fromCharCode(...webp.slice(exifOffset, exifOffset + 6)) ==
-            'Exif\0\0'
-          ) {
-            exifOffset += 6
-            exifLength -= 6
-          }
-          const data = parseExifData(
-            webp.slice(exifOffset, exifOffset + exifLength)
-          )
-          for (const key in data) {
-            const value = data[Number(key)]
-            if (typeof value === 'string') {
-              const index = value.indexOf(':')
-              txt_chunks[value.slice(0, index)] = value.slice(index + 1)
-            }
-          }
-          break
-        }
-
-        // RIFF spec requires odd-sized chunks to be padded with a single byte
-        // https://developers.google.com/speed/webp/docs/riff_container#riff_file_format
-        offset += 8 + chunk_length + (chunk_length % 2)
-      }
-
-      r(txt_chunks)
-    }
-    reader.onerror = () => r({})
-    reader.onabort = () => r({})
-    reader.readAsArrayBuffer(file)
-  })
-}
-
-export function getLatentMetadata(
-  file: File
-): Promise<Record<string, string> | undefined> {
-  return new Promise((r) => {
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      try {
-        const safetensorsData = new Uint8Array(
-          event.target?.result as ArrayBuffer
-        )
-        const dataView = new DataView(safetensorsData.buffer)
-        const headerSize = dataView.getUint32(0, true)
-        const offset = 8
-        const header = JSON.parse(
-          new TextDecoder().decode(
-            safetensorsData.slice(offset, offset + headerSize)
-          )
-        )
-        r(header.__metadata__)
-      } catch {
-        r(undefined)
-      }
-    }
-    reader.onerror = () => r(undefined)
-    reader.onabort = () => r(undefined)
-    const slice = file.slice(0, 1024 * 1024 * 4)
-    reader.readAsArrayBuffer(slice)
-  })
-}
+export const getAvifMetadata = getFromAvifFile
+export const getFlacMetadata = getFromFlacFile
+export const getLatentMetadata = getFromLatentFile
+export const getPngMetadata = getFromPngFile
+export const getWebpMetadata = getFromWebpFile
 
 interface NodeConnection {
   node: LGraphNode

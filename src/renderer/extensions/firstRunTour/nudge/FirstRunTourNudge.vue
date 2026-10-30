@@ -4,7 +4,7 @@
       v-if="isPositioned && ringStyle"
       aria-hidden="true"
       data-testid="first-run-nudge-ring"
-      class="pointer-events-none fixed z-1000 rounded-lg outline-2 -outline-offset-2 outline-white"
+      class="pointer-events-none fixed rounded-lg outline-2 -outline-offset-2 outline-white"
       :style="ringStyle"
     />
     <div
@@ -14,7 +14,7 @@
       data-testid="first-run-nudge"
       :class="
         cn(
-          'fixed z-1000 w-80 animate-in animation-duration-500 fade-in-0',
+          'fixed w-80 animate-in animation-duration-500 fade-in-0',
           !isPositioned && 'invisible'
         )
       "
@@ -24,7 +24,7 @@
         data-testid="first-run-nudge-cursor"
         :class="
           cn(
-            'absolute icon-[lucide--mouse-pointer-2] size-4 text-foreground drop-shadow-md',
+            'absolute icon-[lucide--mouse-pointer-2] text-foreground drop-shadow-md',
             cursorEdgeClass(placement)
           )
         "
@@ -42,7 +42,7 @@
             :aria-label="t('g.close')"
             @click="dismissNudge"
           >
-            <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+            <i class="icon-[lucide--x]" aria-hidden="true" />
           </Button>
         </div>
 
@@ -91,20 +91,20 @@ import {
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import Button from '@comfyorg/design-system/button/Button'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { cursorEdgeClass } from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import type { SpotlightStep } from '@/platform/onboarding/onboardingTours'
 import { useCoachmarkTarget } from '@/platform/onboarding/useCoachmarkTarget'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-import { useFirstRunTourController } from '../tour/useFirstRunTourController'
+import { useFirstRunTourController } from '@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'
 
 const NUDGE_IMAGE = '/assets/images/og-image.png'
 

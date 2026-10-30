@@ -5,30 +5,33 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromAny } from '@total-typescript/shoehorn'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { computed, nextTick, ref } from 'vue'
 import type { PropType } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import {
-  LGraphEventMode,
-  TitleMode
-} from '@/lib/litegraph/src/types/globalEnums'
+import { LGraphEventMode, TitleMode } from '@comfyorg/graph-model/globalEnums'
 import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
+import { toSelectableKey } from '@/core/selection/selectionState'
+import { setSelectedIn } from '@/core/selection/selectionStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -78,7 +81,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
     rootGraph: { id: 'graph-test', getNodeById: vi.fn() },
     canvas: { setDirty: vi.fn() },
     nodeOutputs: {},
-    nodePreviewImages: {}
+    nodePreviewImages: {},
+    getPreviewFormatParam: () => '',
+    getRandParam: () => ''
   }
 }))
 
@@ -185,7 +190,9 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
             '<div data-testid="node-widgets">{{ processedWidgetModel.processedWidgets.map((widget) => widget.widgetId).join(",") }}</div>'
         },
         NodeContent: {
-          template: '<div data-testid="node-content" />'
+          props: ['media'],
+          template:
+            '<div data-testid="node-content">{{ media?.urls?.join(",") }}</div>'
         },
         SlotConnectionDot: true
       }
@@ -210,6 +217,21 @@ const mockRerouteNodeData: NodeState = {
   title: '',
   type: 'Reroute',
   titleMode: TitleMode.NO_TITLE
+}
+
+function selectMockNode() {
+  const graph: Record<string, unknown> = {
+    id: mockNodeData.graphId,
+    getNodeById: () => null,
+    subgraphs: new Map()
+  }
+  graph.rootGraph = graph
+  useCanvasStore().currentGraph = fromAny(graph)
+  setSelectedIn(
+    graphScopeOf(fromAny(graph)),
+    toSelectableKey('node', mockNodeData.id),
+    true
+  )
 }
 
 describe('LGraphNode', () => {
@@ -420,9 +442,7 @@ describe('LGraphNode', () => {
   })
 
   it('should apply selected styling when selected prop is true', async () => {
-    const canvasStore = useCanvasStore()
-    canvasStore.selectedNodeIds.clear()
-    canvasStore.selectedNodeIds.add(mockNodeData.id)
+    selectMockNode()
 
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)
@@ -496,6 +516,42 @@ describe('LGraphNode', () => {
 
     expect(screen.getByTestId('node-content')).toBeInTheDocument()
   })
+
+  it.for([
+    { label: 'numeric', rawId: '9' },
+    {
+      label: 'insert_workflow-remapped',
+      rawId: 'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+    }
+  ])(
+    'renders an executed output stored under the $label node locator',
+    ({ rawId }) => {
+      const fakeRootGraph: Record<string, unknown> = {
+        id: 'graph-test',
+        getNodeById: () => null,
+        subgraphs: new Map()
+      }
+      fakeRootGraph.rootGraph = fakeRootGraph
+      useCanvasStore().currentGraph = fromAny(fakeRootGraph)
+      const nodeId = toNodeId(rawId)
+      mockData.mockLgraphNode = {
+        id: nodeId,
+        graph: fakeRootGraph,
+        isSubgraphNode: () => false
+      }
+      useNodeOutputStore().nodeOutputs[createNodeLocatorId(null, nodeId)] = {
+        images: [{ filename: 'output.png', type: 'output' }]
+      }
+
+      renderLGraphNode({
+        nodeData: { ...mockNodeData, id: nodeId, graphId: 'graph-test' }
+      })
+
+      expect(screen.getByTestId('node-content')).toHaveTextContent(
+        'filename=output.png'
+      )
+    }
+  )
 
   it('restores only the core LoadAudio input player on disconnect', async () => {
     const isAudioLinked = ref(true)
@@ -592,8 +648,7 @@ describe('LGraphNode', () => {
   })
 
   it('should widen the selection outline rounding when the node has an error', () => {
-    const canvasStore = useCanvasStore()
-    canvasStore.selectedNodeIds.add(mockNodeData.id)
+    selectMockNode()
     useExecutionErrorStore().recordNodeErrors({
       [mockNodeData.id]: nodeError([
         validationError('required_input_missing', 'positive')

@@ -1,7 +1,5 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Vue Nodes Zoom', { tag: '@vue-nodes' }, () => {
   test(
@@ -25,7 +23,8 @@ test.describe('Vue Nodes Zoom', { tag: '@vue-nodes' }, () => {
         { x: nodeMidpointX, y: nodeMidpointY }
       )
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await expectElementScreenshot(
+        comfyPage.canvas,
         'zoomed-in-ctrl-shift.png'
       )
     }

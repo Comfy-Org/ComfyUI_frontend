@@ -2,23 +2,29 @@ import type {
   LGraphNode,
   SubgraphInputNode,
   SubgraphOutput
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
-import { linkIdReservations, mintLinkId } from '../idAllocation'
+import {
+  linkIdReservations,
+  mintLinkId
+} from '@/lib/litegraph/src/idAllocation'
 import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
-import type { RerouteId } from '@/types/rerouteId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { SubgraphInputEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphInputEventMap'
-import type { Point, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type {
+  PointTuple as Point,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 import { SubgraphSlot } from './SubgraphSlotBase'
 import { isNodeSlot, isSubgraphOutput } from './subgraphTypeGuards'
@@ -257,6 +263,6 @@ export class SubgraphInput extends SubgraphSlot {
 
 type RegisteredSubgraphInput = SubgraphInput
 
-declare module '../types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface SubgraphInput extends RegisteredSubgraphInput {}
 }

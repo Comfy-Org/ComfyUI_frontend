@@ -30,10 +30,6 @@ test.describe(
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     test('slow empty-canvas click clears selection without panning', async ({
       comfyPage
     }) => {

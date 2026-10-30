@@ -11,6 +11,7 @@ import type { ArchitectureException, DomainRecord } from './schema'
 const DOMAINS_DIRECTORY = 'docs/architecture/domains'
 const RECORDS_DIRECTORY = `${DOMAINS_DIRECTORY}/records`
 const LEDGER_PATH = `${DOMAINS_DIRECTORY}/exceptions.json`
+const PACKAGES_DIRECTORY = 'packages'
 const SOURCE_FILE = /\.(ts|tsx|vue)$/
 
 export interface ArchitectureWarning {
@@ -27,19 +28,45 @@ export interface ArchitectureConfiguration {
   warnings: ArchitectureWarning[]
 }
 
-function listSourceFiles(repositoryRoot: string): Outcome<string[]> {
-  const entries = listDirectory(repositoryRoot, 'src', true)
-  if (!entries.ok) return entries
+function sourceRoots(repositoryRoot: string): Outcome<string[]> {
+  if (!existsSync(join(repositoryRoot, PACKAGES_DIRECTORY)))
+    return { ok: true, value: ['src'] }
+  const packages = listDirectory(repositoryRoot, PACKAGES_DIRECTORY, false)
+  if (!packages.ok) return packages
   return {
     ok: true,
-    value: entries.value
-      .map((filename) => `src/${filename}`)
+    value: [
+      'src',
+      ...packages.value
+        .map((name) => `${PACKAGES_DIRECTORY}/${name}/src`)
+        .filter((root) => existsSync(join(repositoryRoot, root)))
+    ]
+  }
+}
+
+function listSourceFiles(repositoryRoot: string): Outcome<string[]> {
+  const roots = sourceRoots(repositoryRoot)
+  if (!roots.ok) return roots
+  const listed = roots.value.map((root) => ({
+    root,
+    entries: listDirectory(repositoryRoot, root, true)
+  }))
+  const errors = listed.flatMap(({ entries }) =>
+    entries.ok ? [] : entries.errors
+  )
+  if (errors.length) return { ok: false, errors }
+  return {
+    ok: true,
+    value: listed
+      .flatMap(({ root, entries }) =>
+        entries.ok ? entries.value.map((filename) => `${root}/${filename}`) : []
+      )
       .filter((filename) => SOURCE_FILE.test(filename))
       .sort()
   }
 }
 
-export function matchesModulePath(filename: string, path: string): boolean {
+function matchesModulePath(filename: string, path: string): boolean {
   return path.endsWith('/**')
     ? filename.startsWith(path.slice(0, -2))
     : filename === path
@@ -64,6 +91,69 @@ export const modulesBySpecificity = (records: DomainRecord[]): Claim[] =>
   records
     .flatMap((record) => record.modules.map((module) => ({ record, module })))
     .toSorted((a, b) => specificity(b.module.path) - specificity(a.module.path))
+
+const TEST_FILE = /\.test\.tsx?$/
+
+function isFileModule({ module }: Claim) {
+  return !module.path.endsWith('/**') && !TEST_FILE.test(module.path)
+}
+
+function withoutExtension(path: string) {
+  return path.replace(/\.[^./]+$/, '')
+}
+
+function subjectOf(
+  test: string,
+  fileModules: Claim[],
+  sourceStems: Set<string>
+): Claim | undefined {
+  const stem = test.replace(TEST_FILE, '')
+  if (sourceStems.has(stem))
+    return fileModules.find(
+      ({ module }) => withoutExtension(module.path) === stem
+    )
+  return fileModules
+    .filter(({ module }) =>
+      test.startsWith(`${withoutExtension(module.path)}.`)
+    )
+    .toSorted((a, b) => b.module.path.length - a.module.path.length)[0]
+}
+
+function sourceStemsOf(sourceFiles: string[]) {
+  return new Set(
+    sourceFiles
+      .filter((file) => !TEST_FILE.test(file))
+      .map((file) => withoutExtension(file))
+  )
+}
+
+function withSubjectTests(
+  records: DomainRecord[],
+  sourceFiles: string[],
+  sourceStems: Set<string>
+): DomainRecord[] {
+  const named = new Set(
+    records.flatMap(({ modules }) => modules.map(({ path }) => path))
+  )
+  const fileModules = modulesBySpecificity(records).filter(isFileModule)
+  const implied = new Map<Module, Module[]>()
+  for (const test of sourceFiles) {
+    if (!TEST_FILE.test(test) || named.has(test)) continue
+    const subject = subjectOf(test, fileModules, sourceStems)
+    if (!subject) continue
+    implied.set(subject.module, [
+      ...(implied.get(subject.module) ?? []),
+      { path: test, role: subject.module.role }
+    ])
+  }
+  return records.map((record) => ({
+    ...record,
+    modules: record.modules.flatMap((module) => [
+      module,
+      ...(implied.get(module) ?? [])
+    ])
+  }))
+}
 
 export const contains = (outer: string, inner: string) =>
   outer !== inner &&
@@ -177,15 +267,35 @@ function stalePathWarnings(
  * and role: removing it hands its files to that path unchanged.
  */
 function redundantPathWarnings(
-  records: { filename: string; record: DomainRecord }[]
+  records: { filename: string; record: DomainRecord }[],
+  sourceFiles: string[],
+  sourceStems: Set<string>
 ): ArchitectureWarning[] {
   const modules = modulesBySpecificity(records.map(({ record }) => record))
+  const fileModules = modules.filter(isFileModule)
+  const named = new Set(modules.map(({ module }) => module.path))
+  const prefixSubjects = new Set(
+    sourceFiles
+      .filter(
+        (test) =>
+          TEST_FILE.test(test) &&
+          !named.has(test) &&
+          !sourceStems.has(test.replace(TEST_FILE, ''))
+      )
+      .map((test) => subjectOf(test, fileModules, sourceStems)?.module)
+  )
   return records.flatMap(({ filename, record }) =>
     record.modules.flatMap((module) => {
       const outer = modules.find((enclosing) =>
         contains(enclosing.module.path, module.path)
       )
-      return outer && sameRole(outer, { record, module })
+      const subject =
+        TEST_FILE.test(module.path) &&
+        subjectOf(module.path, fileModules, sourceStems)
+      return outer &&
+        !subject &&
+        !prefixSubjects.has(module) &&
+        sameRole(outer, { record, module })
         ? [
             {
               message: `${record.id} path repeats the role of the enclosing ${outer.module.path}: ${module.path}. Remove it from ${filename}.`,
@@ -194,6 +304,30 @@ function redundantPathWarnings(
           ]
         : []
     })
+  )
+}
+
+function redundantTestWarnings(
+  records: { filename: string; record: DomainRecord }[],
+  sourceStems: Set<string>
+): ArchitectureWarning[] {
+  const fileModules = modulesBySpecificity(
+    records.map(({ record }) => record)
+  ).filter(isFileModule)
+  return records.flatMap(({ filename, record }) =>
+    record.modules
+      .filter(({ path }) => TEST_FILE.test(path))
+      .flatMap((module) => {
+        const subject = subjectOf(module.path, fileModules, sourceStems)
+        return subject && sameRole(subject, { record, module })
+          ? [
+              {
+                message: `${record.id} path repeats the role of its subject ${subject.module.path}: ${module.path}. Remove it from ${filename}.`,
+                file: filename
+              }
+            ]
+          : []
+      })
   )
 }
 
@@ -253,12 +387,14 @@ export function loadArchitectureConfiguration(
         outcome.ok ? [] : outcome.errors
       )
     }
-  const records = recordFiles.value.map(({ record }) => record)
+  const namedRecords = recordFiles.value.map(({ record }) => record)
+  const sourceStems = sourceStemsOf(sourceFiles.value)
+  const records = withSubjectTests(namedRecords, sourceFiles.value, sourceStems)
   const { exceptions } = ledger.value
   const claims = claimFiles(records, sourceFiles.value)
   const errors = [
-    ...referenceErrors(records),
-    ...overlapErrors(records),
+    ...referenceErrors(namedRecords),
+    ...overlapErrors(namedRecords),
     ...referencedFileErrors(repositoryRoot, records, claims),
     ...duplicates(exceptions.map(({ id }) => id)).map(
       (id) => `Exception id ${id} is declared more than once`
@@ -275,7 +411,12 @@ export function loadArchitectureConfiguration(
       unclassifiedFiles: sourceFiles.value.filter((file) => !claims.has(file)),
       warnings: [
         ...stalePathWarnings(recordFiles.value, sourceFiles.value, claims),
-        ...redundantPathWarnings(recordFiles.value)
+        ...redundantPathWarnings(
+          recordFiles.value,
+          sourceFiles.value,
+          sourceStems
+        ),
+        ...redundantTestWarnings(recordFiles.value, sourceStems)
       ]
     }
   }

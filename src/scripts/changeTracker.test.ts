@@ -1,8 +1,9 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
+  afterEach,
   assert,
   beforeEach,
   describe,
@@ -22,15 +23,19 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
-import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
+import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
+import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
@@ -1921,6 +1926,95 @@ describe('ChangeTracker', () => {
     })
   })
 
+  describe('graphEqual', () => {
+    beforeEach(() => {
+      resetReportedWorkflowStateAnomaliesForTests()
+    })
+
+    it.for([
+      ['first', null, createState(), { hasFirst: false, hasSecond: true }],
+      ['second', createState(), undefined, { hasFirst: true, hasSecond: false }]
+    ] as const)(
+      'reports and returns false when the %s state is missing',
+      ([, a, b, context]) => {
+        expect(ChangeTracker.graphEqual(a, b)).toBe(false)
+
+        expect(mockAssert).toHaveBeenCalledWith(
+          false,
+          'ChangeTracker.graphEqual() called with a missing state',
+          { method: 'ChangeTracker.graphEqual', ...context }
+        )
+      }
+    )
+
+    it('does not report when both states are present', () => {
+      const state = createState(1)
+
+      expect(ChangeTracker.graphEqual(state, structuredClone(state))).toBe(true)
+      expect(ChangeTracker.graphEqual(state, createState(2))).toBe(false)
+
+      expect(mockAssert).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('updateModified', () => {
+    beforeEach(() => {
+      resetReportedWorkflowStateAnomaliesForTests()
+    })
+
+    function storeWorkflowFor(tracker: ChangeTracker) {
+      const workflow = fromPartial<ComfyWorkflow>({
+        path: tracker.workflow.path,
+        isLoaded: false,
+        isPersisted: true,
+        isTemporary: false,
+        changeTracker: null,
+        initialState: null,
+        activeState: null,
+        originalContent: null,
+        isModified: false
+      })
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      return workflow
+    }
+
+    it('marks the workflow modified when its state differs from the initial state', () => {
+      const tracker = createTracker(createState(1))
+      const workflow = storeWorkflowFor(tracker)
+      tracker.activeState = createState(2)
+
+      tracker.updateModified()
+
+      expect(workflow.isModified).toBe(true)
+      expect(mockAssert).not.toHaveBeenCalled()
+    })
+
+    it('leaves isModified alone and reports when the tracker has no initial state', () => {
+      const tracker = createTracker(createState(1))
+      const workflow = storeWorkflowFor(tracker)
+      tracker.initialState = fromAny<ComfyWorkflowJSON, null>(null)
+
+      expect(() => tracker.updateModified()).not.toThrow()
+
+      expect(workflow.isModified).toBe(false)
+      expect(mockAssert).toHaveBeenCalledWith(
+        false,
+        'ChangeTracker has no initial state',
+        {
+          method: 'ChangeTracker.updateModified',
+          isLoaded: false,
+          hasChangeTracker: false,
+          hasInitialState: false,
+          hasActiveState: false,
+          isPersisted: true,
+          isTemporary: false,
+          originalContentKind: 'unavailable',
+          isActive: true
+        }
+      )
+    })
+  })
+
   describe('deactivate', () => {
     it('captures canvas state then stores viewport/outputs', () => {
       const tracker = createTracker(createState(1))
@@ -2076,6 +2170,12 @@ describe('ChangeTracker', () => {
   })
 
   describe('node-history widgets', () => {
+    const addedNodes: LGraphNode[] = []
+
+    afterEach(() => {
+      for (const node of addedNodes.splice(0)) app.rootGraph.remove(node)
+    })
+
     const regionA = { x: 0, y: 0, width: 64, height: 64 }
     const regionB = { x: 32, y: 32, width: 128, height: 128 }
 
@@ -2127,6 +2227,71 @@ describe('ChangeTracker', () => {
     function loadedState(): unknown {
       return vi.mocked(app.loadGraphData).mock.calls.at(-1)?.[0]
     }
+
+    function addImageCropNode() {
+      const node = new LGraphNode('ImageCropV2')
+      node.id = toNodeId(8)
+      node.serialize_widgets = true
+      app.rootGraph.add(node)
+      addedNodes.push(node)
+      vi.mocked(app.rootGraph.serialize).mockRestore()
+      const crop = useBoundingBoxWidget()(node, {
+        type: 'BOUNDING_BOX',
+        name: 'crop_region',
+        component: 'ImageCrop'
+      })
+      const field = (name: string) => {
+        const widget = node.widgets?.find((w) => w.name === name)
+        if (!widget) throw new Error(`missing widget ${name}`)
+        return widget
+      }
+      const cropBounds = () => {
+        if (!isBoundsObject(crop.value)) throw new Error('crop is not bounds')
+        return crop.value
+      }
+      return { crop, cropBounds, field }
+    }
+
+    function inVueNodesMode(enabled: boolean) {
+      const previous = LiteGraph.vueNodesMode
+      LiteGraph.vueNodesMode = enabled
+      onTestFinished(() => {
+        LiteGraph.vueNodesMode = previous
+      })
+    }
+
+    async function serializedGraph() {
+      return requireValidWorkflow(app.rootGraph.serialize())
+    }
+
+    it('keeps an image crop edit and its widget undo out of graph history in Vue nodes mode', async () => {
+      inVueNodesMode(true)
+      const { crop, cropBounds, field } = addImageCropNode()
+      const tracker = createTracker(await serializedGraph())
+      const editCrop = (x: number) => {
+        crop.value = { ...cropBounds(), x }
+        crop.callback?.(crop.value)
+        tracker.captureCanvasState()
+      }
+
+      editCrop(25)
+      expect(field('x').value).toBe(25)
+      editCrop(0)
+
+      expect(tracker.undoQueue).toEqual([])
+    })
+
+    it('records a graph undo step for a crop field edited on the classic canvas', async () => {
+      inVueNodesMode(false)
+      const { cropBounds, field } = addImageCropNode()
+      const tracker = createTracker(await serializedGraph())
+
+      field('x').callback?.(25)
+      tracker.captureCanvasState()
+
+      expect(cropBounds().x).toBe(25)
+      expect(tracker.undoQueue).toHaveLength(1)
+    })
 
     it('records no graph undo step for a node-history value edit', () => {
       const { id } = addBoundingBoxesNode()

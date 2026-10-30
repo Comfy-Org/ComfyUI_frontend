@@ -37,7 +37,7 @@ import type {
   SessionSnapshot
 } from '@comfyorg/account-core/session'
 
-import type { BillingClient } from '../billingClient'
+import type { BillingClient } from '#/billing/billingClient'
 
 export const NOW = 1_000_000
 
@@ -105,6 +105,7 @@ const STATUS_DATA: BillingStatusData = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   scheduled_change: null,
   team_credit_stop: null
 }
@@ -126,6 +127,7 @@ export const CAPABILITIES = {
   can_edit_workspace: false,
   can_manage_auto_top_up: false,
   can_manage_subscription: false,
+  can_open_plans: false,
   can_run_workflows: false,
   can_upgrade: false,
   can_subscribe_self_serve: true,

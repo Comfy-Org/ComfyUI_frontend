@@ -1,4 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
 import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
 import {
@@ -8,10 +9,13 @@ import {
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useApp } from '@/scripts/appInstance'
+import { isDOMWidget } from '@/scripts/domWidget'
 import type { DOMWidgetOptions } from '@/types/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 
 function addMultilineWidget(
   node: LGraphNode,
@@ -24,31 +28,46 @@ function addMultilineWidget(
     opts.placeholder || name
   )
 
-  // Declared separately (rather than reading `widget.options` from the
-  // outer closure below) because `addDOMWidget` can invoke `setValue`
-  // synchronously, while restoring a saved value, before the `widget`
-  // binding it returns is initialized.
+  let owner: IBaseWidget | undefined
+  let ownState: WidgetState | undefined
+  /**
+   * Resolves the store entry under the widget's current name and adopts it as
+   * its own, or returns undefined once the widget has left its node and the
+   * entry belongs to another widget. The widget is found by its element
+   * because `addDOMWidget` can invoke `setValue` synchronously, while restoring
+   * a saved value, before the `widget` binding it returns is initialized.
+   */
+  function adoptOwnEntry():
+    | { id: WidgetId; state: WidgetState | undefined }
+    | undefined {
+    owner ??= node.widgets?.find(
+      (widget) => isDOMWidget(widget) && widget.element === inputEl
+    )
+    const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
+    const id = widgetId(graphId, node.id, owner?.name ?? name)
+    const state = widgetStore.getWidget(id)
+    const listed = owner !== undefined && node.widgets?.includes(owner) === true
+    const takenByAnother =
+      !listed && ownState !== undefined && state !== ownState
+    if (takenByAnother) return undefined
+    ownState = state
+    return { id, state }
+  }
+
   const widgetOptions: DOMWidgetOptions<string> = {
     getValue(): string {
-      const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
-      const widgetState = widgetStore.getWidget(
-        widgetId(graphId, node.id, name)
-      )
-
-      return typeof widgetState?.value === 'string'
-        ? widgetState.value
-        : inputEl.value
+      const value = adoptOwnEntry()?.state?.value
+      return typeof value === 'string' ? value : inputEl.value
     },
     setValue(v: string) {
       inputEl.value = v
-      const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
-      const id = widgetId(graphId, node.id, name)
-      const widgetState = widgetStore.getWidget(id)
-      if (widgetState) {
-        widgetState.value = v
+      const entry = adoptOwnEntry()
+      if (entry === undefined) return
+      if (entry.state) {
+        entry.state.value = v
         return
       }
-      widgetStore.registerWidget(id, {
+      ownState = widgetStore.registerWidget(entry.id, {
         type: 'customtext',
         value: v,
         options: widgetOptions

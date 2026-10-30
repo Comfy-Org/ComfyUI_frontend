@@ -1,0 +1,28 @@
+# UI Component Guidelines
+
+## Adding New Components
+
+```bash
+pnpm dlx shadcn-vue@latest add <component-name> --yes --path packages/design-system/src/components
+```
+
+Then replace the generated `cn` import with `import { cn } from '@comfyorg/tailwind-utils'`. The package `./*` export publishes it; add a `lib/` export only for non-component modules.
+
+After adding, create `ComponentName.stories.ts` with a `Default` story, an `argTypes` control for every enum prop, and a story per scenario listed under "One Story Per Scenario" in `docs/guidance/storybook.md` (a state that sets one prop, such as `Disabled`, is a control, not a story).
+
+## Reka UI Wrapper Components
+
+- Use reactive props destructuring with rest: `const { class: className, ...restProps } = defineProps<Props>()`
+- Use `useForwardProps(restProps)` for prop forwarding, or `computed()` if adding defaults
+- Import siblings directly (`./Component.vue`), not from barrel (`'.'`)
+- Use `cn()` for class merging with `className`
+- Use Iconify icons: `<i class="icon-[lucide--check]" />`
+- Use core semantic tokens such as `bg-secondary`, `text-muted-foreground`, and `border-border`
+- Generic UI primitives must not create or consume feature-, screen-, or component-specific color tokens
+- Before adding a token, search `../css/theme.css` for an existing semantic role
+- Add a token only for a reusable role that the core theme cannot express. Do not add a token family for each component
+- Tailwind 4 CSS variables use parentheses: `h-(--my-var)` not `h-[--my-var]`
+
+## Tooltips
+
+- Read `tooltip/README.md` before adding a tooltip: one app-level provider, `Button` `tooltip`/`tooltip-side` props, and the fragment-root and `as-child` nesting rules

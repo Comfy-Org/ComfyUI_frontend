@@ -1,0 +1,126 @@
+{
+  "id": "account",
+  "capability": "Account UI integration",
+  "description": "Host coordinators and mixed account views compose authentication, billing, and workspace membership. This record contains only previously cataloged modules moved into platform/account by ADR-BILLING-0049; new account helpers remain unclassified.",
+  "modules": [
+    {
+      "path": "src/platform/account/auth/WorkspaceAuthGate.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/account/components/CurrentUserPopoverWorkspace.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/account/components/SubscriptionPanelContentWorkspace.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/account/components/WorkspaceSwitcherPopover.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/account/components/dialogs/InviteMemberDialogContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/account/components/dialogs/TeamWorkspacesDialogContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/account/components/dialogs/settings/MembersPanelContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/account/components/dialogs/settings/PlanCreditsPanelContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/account/components/dialogs/settings/WorkspaceMembersPanelContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/account/components/dialogs/settings/WorkspaceMenuButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/account/composables/__mocks__/useWorkspaceDialogs.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/account/composables/useCreateWorkspaceUrlLoader.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/account/composables/useInviteUrlLoader.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/account/composables/useMembersPanel.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/account/composables/useWorkspaceDialogs.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/account/composables/useWorkspaceMenuItems.ts",
+      "role": "presentation"
+    }
+  ],
+  "publicEntryPoints": [
+    "src/platform/account/auth/WorkspaceAuthGate.vue",
+    "src/platform/account/components/CurrentUserPopoverWorkspace.vue",
+    "src/platform/account/components/WorkspaceSwitcherPopover.vue",
+    "src/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue",
+    "src/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue",
+    "src/platform/account/composables/useCreateWorkspaceUrlLoader.ts",
+    "src/platform/account/composables/useInviteUrlLoader.ts",
+    "src/platform/account/composables/useWorkspaceDialogs.ts"
+  ],
+  "allowedDependencies": ["billing", "ingest-api", "server-facts", "workspace"],
+  "allowedConsumers": ["app-host", "authentication", "settings"],
+  "characterizationScenarios": [
+    {
+      "name": "Account bootstrap waits for identity, workspace selection, and billing capabilities",
+      "checks": ["src/platform/account/auth/WorkspaceAuthGate.test.ts"]
+    },
+    {
+      "name": "Account menus and settings compose membership controls with billing actions",
+      "checks": [
+        "src/platform/account/components/CurrentUserPopoverWorkspace.test.ts",
+        "src/platform/account/components/SubscriptionPanelContentWorkspace.test.ts",
+        "src/platform/account/components/WorkspaceSwitcherPopover.test.ts",
+        "src/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.test.ts",
+        "src/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.test.ts",
+        "src/platform/account/composables/useMembersPanel.test.ts",
+        "src/platform/account/composables/useWorkspaceMenuItems.test.ts"
+      ]
+    },
+    {
+      "name": "Account dialog routing preserves the host workspace creation callback",
+      "checks": ["src/platform/account/composables/useWorkspaceDialogs.test.ts"]
+    },
+    {
+      "name": "Account coordinators apply workspace creation and invitation deep links",
+      "checks": [
+        "src/platform/account/composables/useCreateWorkspaceUrlLoader.test.ts",
+        "src/platform/account/composables/useInviteUrlLoader.test.ts"
+      ]
+    }
+  ],
+  "adrs": ["docs/adr/BILLING-0049-billing-and-workspace-ownership.md"],
+  "compatibilityPromises": [
+    "Account UI integrates billing and membership; neither lower domain depends on account coordinators.",
+    "Hosts import characterized account views, URL coordinators, and dialog routing."
+  ],
+  "deepImports": "enforced"
+}

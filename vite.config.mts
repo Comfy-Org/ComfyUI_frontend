@@ -12,12 +12,14 @@ import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
 import typegpuPlugin from 'unplugin-typegpu/vite'
+import { existsSync } from 'fs'
 import { resolve } from 'path'
 import { defineConfig } from 'vitest/config'
 import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
+import { cloudflareAccessHeaders } from './build/cloudflareAccess.ts'
 import {
   createDevAgentConfig,
   devServerAgentRoutes
@@ -61,17 +63,22 @@ const CRITICAL_COVERAGE_DIRS = [
   'src/platform/assets/schemas',
   'src/platform/assets/services',
   'src/platform/assets/utils',
-  'src/platform/errorCatalog',
+  'src/platform/extensions',
+  'src/platform/billing/api',
+  'src/platform/billing/composables',
+  'src/platform/billing/stores',
+  'src/platform/billing/utils',
   'src/platform/keybindings',
-  'src/platform/missingMedia',
-  'src/platform/missingModel',
   'src/platform/navigation',
-  'src/platform/nodeReplacement',
   'src/platform/remote',
   'src/platform/remoteConfig',
   'src/platform/secrets',
   'src/platform/settings',
   'src/platform/workflow',
+  'src/platform/workflowErrors/errorCatalog',
+  'src/platform/workflowErrors/missingMedia',
+  'src/platform/workflowErrors/missingModel',
+  'src/platform/workflowErrors/nodeReplacement',
   'src/platform/workspace/api',
   'src/platform/workspace/auth',
   'src/platform/workspace/composables',
@@ -82,10 +89,10 @@ const CRITICAL_COVERAGE_DIRS = [
   'src/services',
   'src/stores',
   'src/utils',
-  'src/workbench/extensions/manager/composables',
-  'src/workbench/extensions/manager/services',
-  'src/workbench/extensions/manager/stores',
-  'src/workbench/extensions/manager/utils',
+  'src/platform/customNodes/manager/composables',
+  'src/platform/customNodes/manager/services',
+  'src/platform/customNodes/manager/stores',
+  'src/platform/customNodes/manager/utils',
   'src/workbench/utils'
 ]
 
@@ -100,11 +107,30 @@ const CRITICAL_COVERAGE_THRESHOLDS = {
   lines: 70
 }
 
-// WebGL2 / pixel-processing passes that need a real rendering context,
-// which happy-dom does not provide. TODO: cover via browser tests.
-const LAYER_EDITOR_GPU_COVERAGE_EXCLUDE = [
-  'src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts'
-]
+// Keep this high-coverage surface separate from the lower general floor.
+const AGENT_PANEL_COVERAGE_ROOT = 'src/workbench/extensions/agent'
+const AGENT_PANEL_COVERAGE_GLOB = `${AGENT_PANEL_COVERAGE_ROOT}/**/*.{ts,vue}`
+
+// Fail closed if the coverage root moves instead of matching zero files.
+if (!existsSync(resolve(import.meta.dirname, AGENT_PANEL_COVERAGE_ROOT))) {
+  throw new Error(
+    `Agent coverage bucket root '${AGENT_PANEL_COVERAGE_ROOT}' does not exist. ` +
+      'If the directory moved, update AGENT_PANEL_COVERAGE_ROOT — otherwise the ' +
+      'coverage floor for the agent surface silently passes on zero files.'
+  )
+}
+
+// Re-measured 2026-10-22 on a full `pnpm test:coverage` run against this tree:
+// 95.88% statements / 91.70% branches / 96.69% functions / 97.51% lines. The
+// floor sits ~3 points under each, which is about one large untested file of
+// headroom: tight enough that a real regression trips it, loose enough that
+// ordinary churn does not.
+const AGENT_PANEL_COVERAGE_THRESHOLDS = {
+  statements: 93,
+  branches: 88,
+  functions: 94,
+  lines: 95
+}
 
 const NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE = [
   'src/lib/litegraph/imgs/**',
@@ -223,9 +249,94 @@ const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
 const devAgentConfig = createDevAgentConfig(process.env, DISTRIBUTION)
 
-const cloudProxyConfig =
-  DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
+const accessHeaders = cloudflareAccessHeaders(
+  process.env,
+  DEV_SERVER_COMFYUI_URL
+)
 
+if (accessHeaders && process.env.VITE_REMOTE_DEV === 'true') {
+  throw new Error(
+    'Cloudflare Access credentials cannot be used with VITE_REMOTE_DEV; bind the authenticated proxy to loopback.'
+  )
+}
+
+// Cloudflare routes on the Host header, so a token is only usable on a request
+// that carries the backend's host rather than the dev server's.
+const backendProxyConfig: ProxyOptions = {
+  ...(DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}),
+  ...(accessHeaders
+    ? {
+        headers: accessHeaders,
+        changeOrigin: true,
+        secure: true,
+        bypass: rejectForeignCaller
+      }
+    : {})
+}
+
+// The agent proxy adds the session token, so only the dev server's own pages may use it.
+function isCrossOrigin(req: IncomingMessage): boolean {
+  const origin = req.headers.origin
+  if (origin === undefined) return false
+  try {
+    return new URL(origin).host !== req.headers.host
+  } catch {
+    return true
+  }
+}
+
+// A foreign page cannot read a cross-origin response without CORS headers, but
+// the request still reaches the gated backend with our service token attached,
+// so a CORS-simple `POST /api/interrupt` from another localhost port drives a
+// real side effect on it. `Origin` covers those writes; browsers omit it on a
+// simple GET, so `Sec-Fetch-Site` covers the rest. A caller that sends neither
+// is not a browser page and is left alone, which is the policy `/api/agent`
+// already applies to its own token.
+function isForeignCaller(req: IncomingMessage): boolean {
+  if (isCrossOrigin(req)) return true
+  const site = req.headers['sec-fetch-site']
+  return typeof site === 'string' && site !== 'same-origin' && site !== 'none'
+}
+
+// Refuses the caller before the Access token is attached. Vite turns a `false`
+// bypass result into a bare 404, so the 403 and its reason are written here
+// first; the already-ended response makes Vite's status assignment a no-op.
+// `res` is undefined on a WebSocket upgrade, which `authenticatedWsGuard`
+// owns, so this leaves that path untouched.
+function rejectForeignCaller(
+  req: IncomingMessage,
+  res: ServerResponse | undefined
+): false | null {
+  if (!accessHeaders || !res || !isForeignCaller(req)) return null
+  res.statusCode = 403
+  res.end('The authenticated dev proxy serves the dev server origin only')
+  return false
+}
+
+// `bypass` is a single slot, so a route that already owns one has to run the
+// credential guard itself rather than inheriting it from `backendProxyConfig`.
+function guardedBypass(
+  bypass: NonNullable<ProxyOptions['bypass']>
+): NonNullable<ProxyOptions['bypass']> {
+  return (req, res, options) =>
+    rejectForeignCaller(req, res) === false ? false : bypass(req, res, options)
+}
+
+// Browsers do not apply the same-origin policy to WebSocket handshakes, so any
+// page can open ws://localhost:5173/ws. Once the service token rides on that
+// upgrade the dev server is an authenticated relay to the gated backend, so
+// reject a cross-origin upgrade the same way `/api/agent` does. Only applied
+// where credentials are actually attached, leaving the unconfigured checkout's
+// `/ws` proxy exactly as it was.
+const authenticatedWsGuard: Pick<ProxyOptions, 'configure'> = accessHeaders
+  ? {
+      configure: (proxy) => {
+        proxy.on('proxyReqWs', (_proxyReq, req, socket) => {
+          if (isCrossOrigin(req)) socket.destroy()
+        })
+      }
+    }
+  : {}
 function handleGcsRedirect(
   proxyRes: IncomingMessage,
   req: IncomingMessage,
@@ -296,7 +407,7 @@ function handleGcsRedirect(
 
 const gcsRedirectProxyConfig: ProxyOptions = {
   target: DEV_SERVER_COMFYUI_URL,
-  ...cloudProxyConfig,
+  ...backendProxyConfig,
   selfHandleResponse: true,
   configure: (proxy) => {
     proxy.on('proxyRes', handleGcsRedirect)
@@ -315,6 +426,9 @@ export default defineConfig({
   server: {
     host: devAgentConfig.host,
     allowedHosts: process.env.AMP_ORB ? true : undefined,
+    warmup: {
+      clientFiles: ['./src/main.ts', './src/views/GraphView.vue']
+    },
     watch: {
       ignored: [
         './browser_tests/**',
@@ -334,7 +448,7 @@ export default defineConfig({
     proxy: {
       '/internal': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       ...(DISTRIBUTION === 'cloud'
@@ -346,13 +460,13 @@ export default defineConfig({
 
       ...devServerAgentRoutes(devAgentConfig.proxy, {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       }),
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig,
-        bypass: (req, res, _options) => {
+        ...backendProxyConfig,
+        bypass: guardedBypass((req, res, _options) => {
           if (!res) return null
 
           // Return empty array for extensions API as these modules
@@ -370,49 +484,50 @@ export default defineConfig({
           }
 
           return null
-        }
+        })
       },
 
       '/oauth': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig,
-        bypass: (req) => {
+        ...backendProxyConfig,
+        bypass: guardedBypass((req) => {
           const path = (req.url ?? '').split('?')[0]
           if (path === '/oauth/consent' || path.startsWith('/oauth/consent/')) {
             return req.url
           }
           return null
-        }
+        })
       },
 
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
         ws: true,
-        ...cloudProxyConfig
+        ...backendProxyConfig,
+        ...authenticatedWsGuard
       },
 
       '/workflow_templates': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       '/extensions': {
         target: DEV_SERVER_COMFYUI_URL,
         changeOrigin: true,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       '/docs': {
         target: DEV_SERVER_COMFYUI_URL,
         changeOrigin: true,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       ...(!DISABLE_TEMPLATES_PROXY
         ? {
             '/templates': {
               target: DEV_SERVER_COMFYUI_URL,
-              ...cloudProxyConfig
+              ...backendProxyConfig
             }
           }
         : {}),
@@ -779,14 +894,6 @@ export default defineConfig({
               name: 'vendor-markdown',
               test: /[\\/]node_modules[\\/](marked|dompurify)[\\/]/,
               priority: 12
-            },
-
-            // Catch-all for remaining node_modules
-            {
-              name: 'vendor-other',
-              test: /[\\/]node_modules[\\/]/,
-              priority: 0,
-              minSize: 10000
             }
           ]
         }
@@ -881,6 +988,9 @@ export default defineConfig({
           exclude: ISOLATED_STORE_TESTS,
           include: [
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            'packages/api-client/src/**/*.test.ts',
+            'packages/settings-core/src/**/*.test.ts',
+            'packages/telemetry/src/**/*.test.ts',
             'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             ...FRONTEND_SCRIPT_TESTS
           ]
@@ -928,12 +1038,14 @@ export default defineConfig({
         'src/locales/**',
         'src/assets/**',
         'packages/**',
-        ...LAYER_EDITOR_GPU_COVERAGE_EXCLUDE,
         ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
       ],
       thresholds: process.env.VITEST_SHARD
         ? undefined
-        : { [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS }
+        : {
+            [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS,
+            [AGENT_PANEL_COVERAGE_GLOB]: AGENT_PANEL_COVERAGE_THRESHOLDS
+          }
     },
     exclude: [
       'src/__ecs_matrix__/**',

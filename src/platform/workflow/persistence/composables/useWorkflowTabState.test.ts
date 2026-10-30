@@ -110,4 +110,26 @@ describe('useWorkflowTabState', () => {
       expect(result!.paths).toEqual(['workflows/test.json'])
     })
   })
+
+  it('restores pointers after a browser restart before the websocket assigns a client id', async () => {
+    const { useWorkflowTabState } = await import('./useWorkflowTabState')
+    const writer = useWorkflowTabState()
+    writer.setActivePath('workflows/b.json')
+    writer.setOpenPaths(['workflows/a.json', 'workflows/b.json'], 1)
+
+    sessionStorage.clear()
+    vi.resetModules()
+    const { api } = await import('@/scripts/api')
+    api.clientId = undefined
+    api.initialClientId = null
+    const { useWorkflowTabState: useRestartedTabState } =
+      await import('./useWorkflowTabState')
+    const reader = useRestartedTabState()
+
+    expect(reader.getActivePath()).toBe('workflows/b.json')
+    expect(reader.getOpenPaths()).toEqual({
+      paths: ['workflows/a.json', 'workflows/b.json'],
+      activeIndex: 1
+    })
+  })
 })

@@ -5,9 +5,9 @@ import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { LinkId } from '@/types/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
@@ -24,10 +24,10 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
-import type { WidgetId } from '@/types/widgetId'
-import { widgetId } from '@/types/widgetId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>

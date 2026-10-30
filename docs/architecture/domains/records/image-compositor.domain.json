@@ -4,10 +4,6 @@
   "description": "Layered image composition and layer editing: layer state, editing orchestration, rendering, PSD export, dialogs, extension registrations, Vue-node adaptation, and LiteGraph widget integration.",
   "modules": [
     {
-      "path": "src/extensions/core/imageCompositor.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/imageCompositor.ts",
       "role": "integration"
     },
@@ -22,10 +18,6 @@
     {
       "path": "src/renderer/extensions/compositor/**",
       "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
-      "role": "presentation"
     },
     {
       "path": "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
@@ -48,43 +40,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/renderer/extensions/layerEditor/composables/layerPanelDnd.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/renderer/extensions/layerEditor/composables/layerPanelDnd.ts",
       "role": "domain"
     },
     {
-      "path": "src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/engine/editor/editor.selection.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/engine/editor/editor.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/engine/editor/editor.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/engine/render/**",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/psdExport.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/renderer/extensions/layerEditor/psdExport.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/psdMapping.test.ts",
       "role": "infrastructure"
     },
     {
@@ -94,10 +54,14 @@
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
       "role": "integration"
+    },
+    {
+      "path": "packages/layer-editor/src/**",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["dialog-host"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
@@ -116,19 +80,19 @@
     {
       "name": "Layer editor engine keeps the scene document, undo history, layer kinds, and transform tools consistent",
       "checks": [
-        "src/renderer/extensions/layerEditor/engine/document.test.ts",
-        "src/renderer/extensions/layerEditor/engine/history.test.ts",
-        "src/renderer/extensions/layerEditor/engine/commands/structure.test.ts",
-        "src/renderer/extensions/layerEditor/engine/kinds/kinds.test.ts",
-        "src/renderer/extensions/layerEditor/engine/tools/tools.test.ts",
-        "src/renderer/extensions/layerEditor/engine/editor/editor.test.ts"
+        "packages/layer-editor/src/document.test.ts",
+        "packages/layer-editor/src/history.test.ts",
+        "packages/layer-editor/src/commands/structure.test.ts",
+        "packages/layer-editor/src/kinds/kinds.test.ts",
+        "packages/layer-editor/src/tools/tools.test.ts",
+        "packages/layer-editor/src/editor/editor.test.ts"
       ]
     },
     {
       "name": "Layer editor renders the stack, bakes and places content, and exports PSD files",
       "checks": [
-        "src/renderer/extensions/layerEditor/engine/render/renderStack.test.ts",
-        "src/renderer/extensions/layerEditor/engine/render/place.test.ts",
+        "packages/layer-editor/src/render/renderStack.test.ts",
+        "packages/layer-editor/src/render/place.test.ts",
         "src/renderer/extensions/layerEditor/psdExport.test.ts",
         "src/renderer/extensions/layerEditor/psdMapping.test.ts",
         "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.test.ts"

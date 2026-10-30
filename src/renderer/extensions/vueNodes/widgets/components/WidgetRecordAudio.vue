@@ -57,7 +57,7 @@
         class="flex size-8 shrink-0 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handlePlayRecording"
       >
-        <i class="icon-[lucide--play] size-4" />
+        <i class="icon-[lucide--play]" />
       </button>
 
       <button
@@ -66,7 +66,7 @@
         class="flex size-8 shrink-0 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handleStopPlayback"
       >
-        <i class="icon-[lucide--square] size-4" />
+        <i class="icon-[lucide--square]" />
       </button>
     </div>
     <audio
@@ -86,16 +86,16 @@ import { useIntervalFn } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import Button from '@/components/ui/button/Button.vue'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
+import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { app } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-import { useAudioPlayback } from '../composables/audio/useAudioPlayback'
-import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
-import { useAudioWaveform } from '../composables/audio/useAudioWaveform'
+import { useAudioPlayback } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioPlayback'
+import { useAudioRecorder } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'
+import { useAudioWaveform } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioWaveform'
 import { formatTime } from '@/utils/formatUtil'
 
 const { t } = useI18n()
@@ -154,10 +154,9 @@ const { isPlaying, audioElementKey } = playback
 // Computed for waveform animation
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 
-const litegraphNode = computed(() => {
-  if (!props.nodeId || !app.canvas.graph) return null
-  return app.canvas.graph.getNodeById(props.nodeId) as LGraphNode | null
-})
+const litegraphNode = useLiveGraphNode(() =>
+  props.nodeId ? app.canvas.graph?.getNodeById(props.nodeId) : null
+)
 
 function handleRecordingComplete(blob: Blob) {
   // Create a widget-owned blob URL (independent of useAudioRecorder's

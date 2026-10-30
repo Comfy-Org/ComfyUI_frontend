@@ -9,13 +9,13 @@ import {
   LGraphNode,
   isComboWidget
 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   scanNodeModelCandidates,
   verifyAssetSupportedCandidates
-} from '@/platform/missingModel/missingModelScan'
+} from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { t } from '@/i18n'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -57,7 +57,8 @@ vi.mock(import('@/i18n'))
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     isAssetBrowserEligible: vi.fn(() => false),
-    shouldUseWidgetAssetPicker: vi.fn(() => false)
+    shouldUseWidgetAssetPicker: vi.fn(() => false),
+    onAssetsChanged: vi.fn(() => () => {})
   }
 }))
 

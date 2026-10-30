@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 import type { PreviewSubscribeResponse } from '@comfyorg/ingest-types'
 
-import type { BillingPlansResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingPlansResponse } from '@comfyorg/billing-core'
 
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'

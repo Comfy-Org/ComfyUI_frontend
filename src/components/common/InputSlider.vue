@@ -7,14 +7,14 @@
       :max
       :step
       :disabled
-      :aria-label="ariaLabel"
-      :aria-labelledby="ariaLabelledby"
+      :aria-label
+      :aria-labelledby
       v-bind="$attrs"
       @update:model-value="
         (value) => value && emit('update:modelValue', value[0])
       "
     />
-    <NumberField
+    <FormNumberField
       :model-value
       class="w-32"
       :format-options="{ maximumFractionDigits: 3 }"
@@ -23,21 +23,16 @@
       :step
       step-snapping
       :disabled
+      :aria-label
+      :aria-labelledby
       @update:model-value="(value) => emit('update:modelValue', value)"
-    >
-      <NumberFieldDecrement />
-      <NumberFieldInput :aria-label :aria-labelledby="ariaLabelledby" />
-      <NumberFieldIncrement />
-    </NumberField>
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import Slider from '@/components/ui/slider/Slider.vue'
-import NumberField from '@/components/ui/number-field/NumberField.vue'
-import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
-import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
-import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
+import FormNumberField from '@/components/common/FormNumberField.vue'
 
 defineProps<{
   modelValue: number

@@ -4,9 +4,9 @@
  * every other service takes a Bearer workspace token. Firebase and API-key
  * principals keep the single header they send today, whatever the target.
  */
-import packageManifest from '../../package.json' with { type: 'json' }
+import { name, version } from '#package.json' with { type: 'json' }
 
-import type { WebSession } from './sessionContracts.js'
+import type { WebSession } from './sessionContracts'
 
 export type RequestTarget = 'ingest' | 'resource'
 
@@ -38,18 +38,25 @@ export interface RequestAuthOptions {
   readonly getWorkspaceToken: (
     workspaceId: string | undefined
   ) => Promise<string>
+  /**
+   * The Desktop per-installation id, sent as `X-Comfy-Install-Id`; null on
+   * plain web.
+   */
+  readonly getInstallId?: () => string | null | undefined
 }
 
-export const COMFY_CLIENT = `${packageManifest.name}/${packageManifest.version}`
+export const COMFY_CLIENT = `${name}/${version}`
 
 const SAFE_METHODS: ReadonlySet<string> = new Set(['GET', 'HEAD', 'OPTIONS'])
 
 function sessionHeaders(
   session: WebSession,
-  { method, workspaceId }: RequestAuthInput
+  { method, workspaceId }: RequestAuthInput,
+  installId?: string | null
 ): Record<string, string> {
   return {
     'X-Comfy-Client': COMFY_CLIENT,
+    ...(installId ? { 'X-Comfy-Install-Id': installId } : {}),
     ...(workspaceId === undefined
       ? {}
       : { 'X-Comfy-Workspace-ID': workspaceId }),
@@ -60,7 +67,8 @@ function sessionHeaders(
 }
 
 export function createRequestAuthorizer({
-  getWorkspaceToken
+  getWorkspaceToken,
+  getInstallId
 }: RequestAuthOptions): RequestAuthorizer {
   return async function authorize(
     principal,
@@ -79,7 +87,7 @@ export function createRequestAuthorizer({
           return { headers: { Authorization: `Bearer ${token}` } }
         }
         return {
-          headers: sessionHeaders(principal.session, input),
+          headers: sessionHeaders(principal.session, input, getInstallId?.()),
           credentials: 'include'
         }
     }

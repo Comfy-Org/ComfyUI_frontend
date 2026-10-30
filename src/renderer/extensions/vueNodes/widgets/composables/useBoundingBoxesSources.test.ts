@@ -9,7 +9,7 @@ import {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { BoundingBox } from '@/types/boundingBoxes'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 
 import { useBoundingBoxesSources } from './useBoundingBoxesSources'
 

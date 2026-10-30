@@ -23,7 +23,7 @@
       :aria-label="tooltipText"
       @click="handleCopy"
     >
-      <i class="pi pi-copy" />
+      <i class="icon-[lucide--copy]" />
     </Button>
   </div>
 </template>
@@ -35,7 +35,7 @@ import type { Ref } from 'vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 import { electronAPI } from '@/utils/envUtil'
 import { isDesktop } from '@/platform/distribution/types'

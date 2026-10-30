@@ -14,8 +14,8 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
-import { reportError } from '@/platform/telemetry/reportError'
+import { resolveDeployEnv } from '@comfyorg/telemetry/rumContext'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -25,7 +25,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
-import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { CrdtLogLevel } from './crdtDebugGate'
 import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
 import type {
@@ -701,7 +701,7 @@ function fmtTime(at: number): string {
       data-testid="crdt-dev-panel-restore"
       @click="restore"
     >
-      <span class="icon-[lucide--eye] size-3" />
+      <i aria-hidden="true" class="icon-[lucide--eye] size-3" />
       {{ S.restore }}
     </button>
 
@@ -756,7 +756,7 @@ function fmtTime(at: number): string {
           data-testid="crdt-dev-panel-dismiss"
           @click="dismiss"
         >
-          <span class="icon-[lucide--eye-off] size-4" />
+          <i aria-hidden="true" class="icon-[lucide--eye-off]" />
         </button>
         <button
           ref="closeButton"
@@ -766,7 +766,7 @@ function fmtTime(at: number): string {
           data-testid="crdt-dev-panel-close"
           @click="setOpen(false)"
         >
-          <span class="icon-[lucide--x] size-4" />
+          <i aria-hidden="true" class="icon-[lucide--x]" />
         </button>
       </header>
 
@@ -1130,10 +1130,11 @@ function fmtTime(at: number): string {
             :data-testid="`crdt-dev-panel-include-${String(source.key)}`"
             @click="reportSources[source.key] = !reportSources[source.key]"
           >
-            <span
+            <i
+              aria-hidden="true"
               :class="
                 cn(
-                  'size-3 shrink-0',
+                  'size-3',
                   reportSources[source.key]
                     ? 'icon-[lucide--check]'
                     : 'icon-[lucide--minus] opacity-50'

@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { toRootGraphId } from '@/types/graphScopeId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
@@ -19,8 +19,6 @@ import type { WireOpEnvelope } from '@e2e/fixtures/agentWireFrame'
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { attachDocOpMinter } from './docOpMinter'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const DISPLAY_INT = 'Display Int (rgthree)'
 const WORKFLOW_ID = 'wf-pm-2003'
@@ -101,9 +99,14 @@ function connectAgentHeldWorkflow() {
     getGraph: () => graph,
     boundRootGraphId: () => toRootGraphId(graph.id),
     docInputNames: (nodeId) => follower.docInputNames(nodeId),
+    docWidgetValue: (nodeId, widgetName) =>
+      follower.docWidgetValue(nodeId, widgetName),
     docPromotedWidgets: (nodeId) => follower.docPromotedWidgets(nodeId),
     mayWritePromotedHost: (nodeId) => follower.mayWritePromotedHost(nodeId),
-    onWidgetWriteRefused: () => follower.notifyWidgetWriteRefused()
+    docHasSubgraphDefinition: (definitionId) =>
+      follower.docHasSubgraphDefinition(definitionId),
+    onWidgetWriteRefused: (nodeId, widgetName) =>
+      follower.notifyWidgetWriteRefused(nodeId, widgetName)
   })
   onTestFinished(() => minter.detach())
 

@@ -199,6 +199,17 @@ export const RECORDED_EXPECTATIONS: Partial<Record<string, ExpectedTurn[]>> = {
       ]
     }
   ],
+  'agent-rec-core-only-standard-node': [
+    {
+      text: "Added a node (#786984514593295) node to your canvas — it's a core node, so this keeps the workflow standard-only. It's in place as the starting point; let me know what you'd like to wire into it next (a CLIP source and a terminal output) to build out the rest.",
+      groups: [
+        [
+          { label: 'Show node', count: 1, failed: false },
+          { label: 'Add node', count: 1, failed: false }
+        ]
+      ]
+    }
+  ],
   'agent-rec-clarifying-question': [
     {
       text: "I'm on the \"Text to image\" tab now, but I don't have any record of your usual sampler settings — nothing saved from earlier in our conversation, and this is the first workflow I've seen from you. Rather than guess and quietly change your image, tell me the values and I'll set them (and remember them for next time). Right now the sampler is on: Steps: 20 CFG: 7 Sampler: euler Scheduler: normal Denoise: 1.0 Seed: 0, randomized each run Just say what you want them changed to — e.g. \"30 steps, cfg 4.5, dpmpp_2m karras\" — or tell me the name of a workflow where I can read them off, and I'll copy them across. One other thing worth flagging: this graph is missing a negative prompt and an image-size input into the sampler, so it won't run as-is. I can add both while I'm in there.",

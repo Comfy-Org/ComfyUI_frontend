@@ -29,7 +29,7 @@
           rel="noopener noreferrer"
           @click="closePopup"
         >
-          <i class="icon-[lucide--external-link] size-4" />
+          <i class="icon-[lucide--external-link]" />
           {{ $t('whatsNewPopup.learnMore') }}
         </a>
         <div class="flex items-center gap-4">
@@ -52,14 +52,14 @@ import { default as DOMPurify } from 'dompurify'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
-import Button from '@/components/ui/button/Button.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import Button from '@comfyorg/design-system/button/Button'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
-import type { ReleaseNote } from '../common/releaseService'
-import { useReleaseStore } from '../common/releaseStore'
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 
 const { buildDocsUrl } = useExternalLink()
 const releaseStore = useReleaseStore()
@@ -171,7 +171,6 @@ defineExpose({
 
   position: absolute;
   bottom: var(--whats-new-popup-bottom);
-  z-index: 1000;
   pointer-events: auto;
 }
 

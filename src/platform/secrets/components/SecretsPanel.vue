@@ -17,13 +17,13 @@
         {{ $t('secrets.modelProviders') }}
       </h3>
       <Button @click="openCreateDialog">
-        <i class="pi pi-plus mr-1" />
+        <i class="mr-1 icon-[lucide--plus]" />
         {{ $t('secrets.addSecret') }}
       </Button>
     </div>
 
     <div v-if="loading" class="flex items-center justify-center py-8">
-      <Spinner class="size-8" />
+      <AppSpinner class="size-8" />
     </div>
 
     <div
@@ -69,12 +69,12 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import Button from '@/components/ui/button/Button.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { useSecrets } from '../composables/useSecrets'
-import type { SecretMetadata } from '../types'
+import { useSecrets } from '@/platform/secrets/composables/useSecrets'
+import type { SecretMetadata } from '@/platform/secrets/types'
 import SecretFormDialog from './SecretFormDialog.vue'
 import SecretListItem from './SecretListItem.vue'
 
@@ -112,6 +112,7 @@ function confirmDelete(secret: SecretMetadata) {
       promptText: t('secrets.deleteConfirmMessage', { name: secret.name })
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.delete'),
       confirmVariant: 'destructive',
       onCancel: () => dialogStore.closeDialog(dialog),

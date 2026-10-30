@@ -1,8 +1,8 @@
-import { useExtensionService } from '@/services/extensionService'
+import type { ComfyExtension } from '@/types/comfy'
 
 const INTERNAL_WIDGETS = new Set(['last_incoming'])
 
-useExtensionService().registerExtension({
+export const createBoundingBoxesExtension: ComfyExtension = {
   name: 'Comfy.CreateBoundingBoxes',
 
   nodeCreated(node) {
@@ -15,4 +15,4 @@ useExtensionService().registerExtension({
       if (INTERNAL_WIDGETS.has(widget.name)) widget.hidden = true
     }
   }
-})
+}

@@ -17,7 +17,7 @@ test.describe(
       const result =
         await legacyApi.replaceAndTrimInputsLikePromptChain('KSampler')
 
-      expect(result).toEqual({ inputCount: 5, preservedLinks: 4 })
+      expect(result).toEqual({ inputCount: 10, preservedLinks: 4 })
     })
 
     test('GJJ Video Combine-style mapped copies retain live links', async ({

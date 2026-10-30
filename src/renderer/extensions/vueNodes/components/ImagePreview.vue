@@ -59,7 +59,7 @@
           :aria-label="$t('g.downloadImages')"
           @click="handleExportOutputs"
         >
-          <i class="icon-[lucide--folder-down] size-4" />
+          <i class="icon-[lucide--folder-down]" />
         </Button>
       </div>
     </div>
@@ -151,7 +151,7 @@
           :aria-label="$t('hdrViewer.openInHdrViewer')"
           @click="openHdrViewer(currentImageUrl)"
         >
-          <i class="icon-[lucide--sun] size-4" />
+          <i class="icon-[lucide--sun]" />
         </Button>
 
         <!-- Layer Editor Button -->
@@ -164,7 +164,7 @@
           :aria-label="$t('g.openLayerEditor')"
           @click="handleOpenLayerEditor"
         >
-          <i class="icon-[lucide--layers] size-4" />
+          <i class="icon-[lucide--layers]" />
         </Button>
 
         <!-- Download Button -->
@@ -177,7 +177,7 @@
           :aria-label="$t('g.downloadImage')"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] size-4" />
+          <i class="icon-[lucide--download]" />
         </Button>
 
         <!-- Back to Grid Button -->
@@ -190,7 +190,7 @@
           :aria-label="$t('g.viewGrid')"
           @click="viewMode = 'grid'"
         >
-          <i class="icon-[lucide--layout-grid] size-4" />
+          <i class="icon-[lucide--layout-grid]" />
         </Button>
       </div>
     </div>
@@ -252,16 +252,16 @@ import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import Button from '@/components/ui/button/Button.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import Button from '@comfyorg/design-system/button/Button'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { getHdrPreviewUrl, isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'

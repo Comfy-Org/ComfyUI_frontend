@@ -1,7 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { ref } from 'vue'
 
-import type { useAuthActions as realUseAuthActions } from '../useAuthActions'
+import type { useAuthActions as realUseAuthActions } from '@/composables/auth/useAuthActions'
 
 const actions: ReturnType<typeof realUseAuthActions> = {
   logout: vi.fn(async () => undefined),

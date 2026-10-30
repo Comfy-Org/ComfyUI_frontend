@@ -8,7 +8,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 // LGraphNode import re-triggers the LGraph<->Subgraph cycle.
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { wasWidgetRefused } from '@/lib/litegraph/src/node/widgetsView'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -20,6 +20,24 @@ import type {
   DOMWidgetOptions
 } from '@/types/domWidget'
 import { generateUUID } from '@/utils/formatUtil'
+
+function readDomWidgetValue<V extends object | string>(
+  options: DOMWidgetOptions<V>
+): V {
+  const { getValue } = options
+  return (
+    (typeof getValue === 'function' ? getValue.call(options) : null) ??
+    ('' as V)
+  )
+}
+
+function writeDomWidgetValue<V extends object | string>(
+  options: DOMWidgetOptions<V>,
+  value: V
+): void {
+  const { setValue } = options
+  if (typeof setValue === 'function') setValue.call(options, value)
+}
 
 export const isDOMWidget = <T extends HTMLElement, V extends object | string>(
   widget: IBaseWidget
@@ -63,11 +81,11 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   }
 
   override get value(): V {
-    return this.options.getValue?.() ?? ('' as V)
+    return readDomWidgetValue(this.options)
   }
 
   override set value(v: V) {
-    this.options.setValue?.(v)
+    writeDomWidgetValue(this.options, v)
     this.callback?.(this.value)
   }
 
@@ -287,10 +305,10 @@ LGraphNode.prototype.addDOMWidget = function <
   // property to be on instance instead of prototype.
   Object.defineProperty(widget, 'value', {
     get(this: DOMWidgetImpl<T, V>): V {
-      return this.options.getValue?.() ?? ('' as V)
+      return readDomWidgetValue(this.options)
     },
     set(this: DOMWidgetImpl<T, V>, v: V) {
-      this.options.setValue?.(v)
+      writeDomWidgetValue(this.options, v)
       this.callback?.(this.value)
     }
   })

@@ -7,8 +7,8 @@ import { t } from '@/i18n'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import type { ComfyNode } from '@comfyorg/graph-model/workflowSchema'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { ComfyWidgets } from '@/scripts/widgets'
@@ -16,7 +16,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import type { GroupNodeLink, GroupNodeWorkflowData } from './groupNode'
 
@@ -26,12 +26,9 @@ const {
   GroupNodeConfig,
   GroupNodeHandler,
   findUnconsumedWidgetIndex,
-  replaceLegacySeparators
+  replaceLegacySeparators,
+  groupNodeExtension
 } = await import('./groupNode')
-const groupNodeExtension = vi
-  .mocked(app.registerExtension)
-  .mock.calls.find(([extension]) => extension.name === 'Comfy.GroupNode')?.[0]
-if (!groupNodeExtension) throw new Error('Comfy.GroupNode was not registered')
 
 function makeNode(type: string): ComfyNode {
   return {
@@ -725,7 +722,7 @@ describe('GroupNodeHandler.convertToNodes', () => {
     vi.mocked(app.registerNodeDef).mockImplementation(async (id, def) => {
       await useLitegraphService().registerNodeDef(id, def)
     })
-    await groupNodeExtension!.addCustomNodeDefs?.(REAL_NODE_DEFS, app)
+    await groupNodeExtension.addCustomNodeDefs?.(REAL_NODE_DEFS, app)
     for (const [name, def] of Object.entries(REAL_NODE_DEFS)) {
       await useLitegraphService().registerNodeDef(name, def)
     }

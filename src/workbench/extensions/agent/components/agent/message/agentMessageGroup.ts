@@ -5,11 +5,12 @@ import type {
   DeleteApprovalPart,
   MessagePart,
   NoticePart,
+  PausedPart,
   PaywallPart,
   RunApprovalPart,
   TabLinkPart,
   TextPart
-} from '../../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 export type AgentMessageGroup =
   | { kind: 'text'; parts: TextPart[] }
@@ -20,6 +21,7 @@ export type AgentMessageGroup =
   | { kind: 'runApproval'; part: RunApprovalPart }
   | { kind: 'askUser'; part: AskUserPart }
   | { kind: 'deleteApproval'; part: DeleteApprovalPart }
+  | { kind: 'paused'; part: PausedPart }
 
 type TextGroup = Extract<AgentMessageGroup, { kind: 'text' }>
 type InterruptingPart = Exclude<MessagePart, TextPart | ActivityPart>
@@ -84,6 +86,8 @@ function cardGroup(
       return { kind: 'askUser', part }
     case 'deleteApproval':
       return { kind: 'deleteApproval', part }
+    case 'paused':
+      return { kind: 'paused', part }
     case 'paywall':
       return { kind: 'paywall', part }
     case 'notice':

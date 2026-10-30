@@ -1,14 +1,13 @@
-import { describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it } from 'vitest'
 
 import { ContextMenu, LiteGraph } from '@/lib/litegraph/src/litegraph'
-vi.mock(import('@/scripts/app'))
+import type { ComfyApp } from '@/scripts/app'
 
-const { app } = await import('@/scripts/app')
-await import('./contextMenuFilter')
-const ext = vi.mocked(app.registerExtension).mock.calls[0][0]
+import { contextMenuFilterExtension } from './contextMenuFilter'
 
 describe('Comfy.ContextMenuFilter', () => {
-  void ext.init?.(app)
+  void contextMenuFilterExtension.init?.(fromPartial<ComfyApp>({}))
   const wrapped = LiteGraph.ContextMenu
 
   it.for([

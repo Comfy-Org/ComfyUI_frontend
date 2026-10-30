@@ -4,49 +4,45 @@
   "description": "Detects node types missing from the registry, records them per workflow, fetches server-provided node replacements, and swaps missing nodes for their replacements while preserving links and widget values. Detection and replacement are one record because the scan classifies missing nodes by replaceability and replacement clears the missing-node state it resolves.",
   "modules": [
     {
-      "path": "src/platform/nodeReplacement/**",
+      "path": "src/platform/workflowErrors/nodeReplacement/**",
       "role": "application"
     },
     {
-      "path": "src/platform/nodeReplacement/cnrIdUtil.test.ts",
+      "path": "src/platform/workflowErrors/nodeReplacement/cnrIdUtil.ts",
       "role": "domain"
     },
     {
-      "path": "src/platform/nodeReplacement/cnrIdUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/nodeReplacement/components/**",
+      "path": "src/platform/workflowErrors/nodeReplacement/components/**",
       "role": "presentation"
     },
     {
-      "path": "src/platform/nodeReplacement/nodeReplacementService.ts",
+      "path": "src/platform/workflowErrors/nodeReplacement/nodeReplacementService.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/nodeReplacement/types.ts",
+      "path": "src/platform/workflowErrors/nodeReplacement/types.ts",
       "role": "domain"
     }
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["telemetry"],
   "characterizationScenarios": [
     {
       "name": "Missing nodes are scanned, recorded, and matched to available replacements",
       "checks": [
-        "src/platform/nodeReplacement/missingNodeScan.test.ts",
-        "src/platform/nodeReplacement/missingNodesErrorStore.test.ts",
-        "src/platform/nodeReplacement/nodeReplacementStore.test.ts",
-        "src/platform/nodeReplacement/cnrIdUtil.test.ts"
+        "src/platform/workflowErrors/nodeReplacement/missingNodeScan.test.ts",
+        "src/platform/workflowErrors/nodeReplacement/missingNodesErrorStore.test.ts",
+        "src/platform/workflowErrors/nodeReplacement/nodeReplacementStore.test.ts",
+        "src/platform/workflowErrors/nodeReplacement/cnrIdUtil.test.ts"
       ]
     },
     {
       "name": "Replacing a node preserves links and widget values and clears its missing state",
       "checks": [
-        "src/platform/nodeReplacement/useNodeReplacement.test.ts",
-        "src/platform/nodeReplacement/components/SwapNodesCard.test.ts",
-        "src/platform/nodeReplacement/components/SwapNodeGroupRow.test.ts",
+        "src/platform/workflowErrors/nodeReplacement/useNodeReplacement.test.ts",
+        "src/platform/workflowErrors/nodeReplacement/components/SwapNodesCard.test.ts",
+        "src/platform/workflowErrors/nodeReplacement/components/SwapNodeGroupRow.test.ts",
         "browser_tests/tests/nodeReplacement.spec.ts"
       ]
     }

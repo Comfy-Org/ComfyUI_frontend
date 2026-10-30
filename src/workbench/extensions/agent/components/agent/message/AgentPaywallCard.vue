@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
-import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import {
+  DEFAULT_AGENT_PAYWALL_PRESENTATION,
+  toAgentPaywallRemediation
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
@@ -31,12 +34,9 @@ const bodyKey = computed(() => bodyKeys[presentation.kind])
 const showUpgrade = computed(
   () => presentation.kind === 'subscribed' && presentation.showUpgrade
 )
-const showSubscribe = computed(
-  () => presentation.kind === 'subscriptionRequired'
-)
-const showAddCredits = computed(
-  () => presentation.kind === 'subscribed' || presentation.kind === 'local'
-)
+const remediation = computed(() => toAgentPaywallRemediation(presentation))
+const showSubscribe = computed(() => remediation.value === 'subscribe')
+const showAddCredits = computed(() => remediation.value === 'addCredits')
 </script>
 
 <template>
@@ -46,9 +46,9 @@ const showAddCredits = computed(
     class="flex w-full flex-col justify-center gap-2 overflow-hidden p-4 shadow-sm"
   >
     <div class="flex w-full items-start gap-2">
-      <span
+      <i
         aria-hidden="true"
-        class="mt-0.5 icon-[lucide--gauge] size-5 shrink-0 text-destructive"
+        class="mt-0.5 icon-[lucide--gauge] size-5 text-destructive"
       />
       <div class="min-w-0 flex-1 text-sm/5">
         <p class="m-0">

@@ -1,4 +1,4 @@
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 /**

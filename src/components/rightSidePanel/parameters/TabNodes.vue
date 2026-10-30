@@ -5,10 +5,13 @@ import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseTog
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
-import type { NodeWidgetsListList } from '../shared'
+import {
+  computedSectionDataList,
+  searchWidgetsAndNodes
+} from '@/components/rightSidePanel/shared'
+import type { NodeWidgetsListList } from '@/components/rightSidePanel/shared'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 

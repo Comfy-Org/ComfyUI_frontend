@@ -7,22 +7,33 @@ import type {
   Reroute,
   SubgraphInputNode,
   SubgraphOutputNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
-import type { LinkSegment, Point, Positionable } from '../interfaces'
-import { isInRectangle } from '../measure'
+import type {
+  LinkSegment,
+  Positionable
+} from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import { isInRectangle } from '@/lib/litegraph/src/measure'
 
-import { LinkMarkerShape, LinkRenderType } from '../types/globalEnums'
-import type { CanvasPointerEvent } from '../types/events'
+import {
+  LinkMarkerShape,
+  LinkRenderType
+} from '@comfyorg/graph-model/globalEnums'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import {
   findRerouteAtPoint,
   queryRenderedLinkSegmentsAtPoint
 } from './hitTesting'
-import { queryHiddenLinkBadgeAtPoint } from './linkBadgeRenderer'
+import {
+  queryHiddenLinkBadgeAtPoint,
+  queryHiddenLinkStackAtPoint
+} from './linkBadgeRenderer'
 
 export type PointerTarget =
   | { kind: 'node'; node: LGraphNode }
   | { kind: 'linkBadge'; link: LLink }
+  | { kind: 'linkBadgeStack'; stackKey: string }
   | { kind: 'subgraphIO'; ioNode: SubgraphInputNode | SubgraphOutputNode }
   | { kind: 'reroute'; reroute: Reroute; part: 'body' | 'input' | 'output' }
   | { kind: 'link'; segment: LinkSegment }
@@ -42,6 +53,9 @@ export function resolvePointerTarget(
     return { kind: 'node', node }
 
   const point: Point = [e.canvasX, e.canvasY]
+
+  const stack = queryHiddenLinkStackAtPoint(canvas, graph, ...point)
+  if (stack) return { kind: 'linkBadgeStack', stackKey: stack.stackKey }
 
   const badgeLink = queryHiddenLinkBadgeAtPoint(
     canvas,

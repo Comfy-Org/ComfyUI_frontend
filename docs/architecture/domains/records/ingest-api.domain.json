@@ -1,0 +1,68 @@
+{
+  "id": "ingest-api",
+  "capability": "Shared ingest transport contracts",
+  "description": "The error, URL, web-session adapter, and capability-revision contracts extracted from the workspace and billing clients. Also the generated @comfyorg/ingest-types API types and Zod schemas. ComfyUI backend wire schemas remain in comfyui-api. Other ingest transport files remain unclassified.",
+  "modules": [
+    {
+      "path": "src/platform/remote/ingest/ingestApiError.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/remote/ingest/ingestApiUrl.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/remote/ingest/webSessionAdapter.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/remote/ingest/capabilityRevision.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "packages/ingest-types/src/**",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [
+    "src/platform/remote/ingest/ingestApiError.ts",
+    "src/platform/remote/ingest/ingestApiUrl.ts",
+    "src/platform/remote/ingest/webSessionAdapter.ts",
+    "src/platform/remote/ingest/capabilityRevision.ts"
+  ],
+  "allowedDependencies": [],
+  "allowedConsumers": [
+    "account",
+    "authentication",
+    "billing",
+    "error-reporting",
+    "telemetry",
+    "workspace"
+  ],
+  "characterizationScenarios": [
+    {
+      "name": "Ingest errors preserve HTTP status, operation, and workspace-access refusal identity",
+      "checks": ["src/platform/workspace/api/workspaceApi.test.ts"]
+    },
+    {
+      "name": "Ingest URLs select the cloud API or configured local ingest host",
+      "checks": ["src/platform/workspace/api/workspaceApiUrl.test.ts"]
+    },
+    {
+      "name": "The web-session adapter preserves Axios request and response behavior",
+      "checks": ["src/platform/workspace/api/webSessionAdapter.test.ts"]
+    },
+    {
+      "name": "Mutation responses publish capability revisions without publishing query revisions",
+      "checks": ["src/platform/billing/api/capabilityRevision.test.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/AUTH-SESSION-0037-shared-web-session-on-a-host-only-cookie.md"
+  ],
+  "compatibilityPromises": [
+    "WorkspaceApiError and NoWorkspaceAccessError retain shared runtime identity across billing and workspace clients.",
+    "Approved consumers import only the characterized public contracts; other ingest modules are not opened by this record."
+  ],
+  "deepImports": "enforced"
+}

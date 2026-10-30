@@ -170,7 +170,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -219,7 +219,7 @@ jobs:
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
         with:
-          name: snapshot-updates-chromium-${{ matrix.shardIndex }}
+          name: snapshot-updates-chromium-${{ matrix.shardIndex }}-${{ job.check_run_id }}
           path: snapshot-updates/
           retention-days: 7
           if-no-files-found: ignore
@@ -245,7 +245,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -293,7 +293,7 @@ jobs:
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
         with:
-          name: snapshot-updates-cloud-${{ matrix.shardIndex }}
+          name: snapshot-updates-cloud-${{ matrix.shardIndex }}-${{ job.check_run_id }}
           path: snapshot-updates/
           retention-days: 7
           if-no-files-found: ignore
@@ -306,7 +306,7 @@ jobs:
     if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -355,7 +355,7 @@ jobs:
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
         with:
-          name: snapshot-updates-${{ matrix.browser }}
+          name: snapshot-updates-${{ matrix.browser }}-${{ job.check_run_id }}
           path: snapshot-updates/
           retention-days: 7
           if-no-files-found: ignore
@@ -469,7 +469,7 @@ jobs:
       }}
     uses: ./.github/workflows/ci-tests-e2e-coverage-package.yaml
     with:
-      source_sha: ${{ github.event.pull_request.head.sha || github.sha }}
+      source_sha: ${{ github.sha }}
       # A shard that died partway still uploads a tracefile, and one that
       # produced none fails its own upload, so the matrix verdict is what
       # makes the merge trustworthy for trend reporting.

@@ -5,16 +5,32 @@
  * server for the actor that asked, so the response is cached under the scope it
  * was resolved for and no plan is filtered, ranked, or priced here.
  */
-import { zGetBillingPlansResponse } from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import {
+  zGetBillingPlansResponse,
+  zPlanFeatureItem
+} from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
-import type { BillingResult, BillingTransport } from './billingContracts.js'
-import type { BillingScope, BillingScopeSource } from './billingScope.js'
-import { createScopedReader } from './scopedReader.js'
+import type { BillingResult, BillingTransport } from './billingContracts'
+import type { BillingScope, BillingScopeSource } from './billingScope'
+import { createScopedReader } from './scopedReader'
 
 export const PLANS_ROUTE = '/billing/plans'
 
-export type BillingPlansData = z.infer<typeof zGetBillingPlansResponse>
+const CompatiblePlanSchema = z.looseObject({
+  feature_items: z
+    .array(z.unknown())
+    .transform((items) =>
+      items.filter((item) => zPlanFeatureItem.safeParse(item).success)
+    )
+    .optional()
+})
+
+const BillingPlansBodySchema = z
+  .looseObject({ plans: z.array(CompatiblePlanSchema) })
+  .pipe(zGetBillingPlansResponse)
+
+export type BillingPlansData = z.infer<typeof BillingPlansBodySchema>
 
 export type PlansScope = BillingScope
 
@@ -62,7 +78,7 @@ export function createPlansReader(options: PlansReaderOptions): PlansReader {
     transport,
     scopeSource,
     route: PLANS_ROUTE,
-    parse: (body) => zGetBillingPlansResponse.safeParse(body),
+    parse: (body) => BillingPlansBodySchema.safeParse(body),
     timeoutMs: (readOptions) => readOptions?.timeoutMs,
     project: ({ data }, scope) => ({
       status: 'ok',

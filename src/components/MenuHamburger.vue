@@ -1,7 +1,7 @@
 <template>
   <div
     v-show="workspaceState.focusMode"
-    class="no-drag fixed top-0 right-0 z-9999 flex"
+    class="no-drag fixed top-0 right-0 z-overlay flex"
   >
     <Button
       :tooltip="$t('menu.showMenu')"
@@ -12,7 +12,7 @@
       @click="exitFocusMode"
       @contextmenu="showNativeSystemMenu"
     >
-      <i class="pi pi-bars" />
+      <i class="icon-[lucide--menu]" />
     </Button>
     <div class="window-actions-spacer" />
   </div>
@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import { watchEffect } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'

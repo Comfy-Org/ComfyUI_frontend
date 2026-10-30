@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { fakeWebSessionUser } from '../testing.js'
+import { fakeWebSessionUser } from '#/testing'
 import type {
   RequestAuthorization,
   RequestPrincipal,
   RequestTarget
-} from './requestAuth.js'
-import { COMFY_CLIENT, createRequestAuthorizer } from './requestAuth.js'
+} from './requestAuth'
+import { COMFY_CLIENT, createRequestAuthorizer } from './requestAuth'
 
 const SESSION: RequestPrincipal = {
   kind: 'session',
@@ -257,5 +257,80 @@ describe('createRequestAuthorizer', () => {
 
   it('names the SDK package and its version as the client', () => {
     expect(COMFY_CLIENT).toMatch(/^@comfyorg\/account-core\/\d+\.\d+\.\d+/)
+  })
+
+  describe('X-Comfy-Install-Id (Desktop install attribution)', () => {
+    it('adds the install id to session ingest requests when available', async () => {
+      const authorizeWithId = createRequestAuthorizer({
+        getWorkspaceToken: async () => 'jwt',
+        getInstallId: () => 'install-xyz'
+      })
+
+      const read = await authorizeWithId(SESSION, {
+        target: 'ingest',
+        method: 'GET',
+        workspaceId: 'ws-1'
+      })
+      expect(read.headers['X-Comfy-Install-Id']).toBe('install-xyz')
+
+      const write = await authorizeWithId(SESSION, {
+        target: 'ingest',
+        method: 'POST',
+        workspaceId: 'ws-1'
+      })
+      expect(write.headers['X-Comfy-Install-Id']).toBe('install-xyz')
+    })
+
+    it.for<{ value: string | null | undefined }>([
+      { value: null },
+      { value: undefined },
+      { value: '' }
+    ])(
+      'omits the header when getInstallId yields $value',
+      async ({ value }) => {
+        const authorizeWithId = createRequestAuthorizer({
+          getWorkspaceToken: async () => 'jwt',
+          getInstallId: () => value
+        })
+        const result = await authorizeWithId(SESSION, {
+          target: 'ingest',
+          method: 'POST',
+          workspaceId: 'ws-1'
+        })
+        expect(result.headers).not.toHaveProperty('X-Comfy-Install-Id')
+      }
+    )
+
+    it('omits the header when no getInstallId option is provided', async () => {
+      const result = await authorize(SESSION, {
+        target: 'ingest',
+        method: 'POST',
+        workspaceId: 'ws-1'
+      })
+      expect(result.headers).not.toHaveProperty('X-Comfy-Install-Id')
+    })
+
+    it('never rides resource, firebase, or apiKey requests', async () => {
+      const authorizeWithId = createRequestAuthorizer({
+        getWorkspaceToken: async () => 'jwt',
+        getInstallId: () => 'install-xyz'
+      })
+      const resource = await authorizeWithId(SESSION, {
+        target: 'resource',
+        method: 'POST',
+        workspaceId: 'ws-1'
+      })
+      const firebase = await authorizeWithId(FIREBASE, {
+        target: 'ingest',
+        method: 'POST'
+      })
+      const apiKey = await authorizeWithId(API_KEY, {
+        target: 'ingest',
+        method: 'POST'
+      })
+      for (const result of [resource, firebase, apiKey]) {
+        expect(result.headers).not.toHaveProperty('X-Comfy-Install-Id')
+      }
+    })
   })
 })

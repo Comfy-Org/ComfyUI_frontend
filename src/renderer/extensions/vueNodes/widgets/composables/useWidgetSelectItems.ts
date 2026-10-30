@@ -5,7 +5,7 @@ import type { MaybeRefOrGetter, Ref } from 'vue'
 import { t } from '@/i18n'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import {
   filterItemByBaseModels,
   filterItemByOwnership
@@ -15,7 +15,8 @@ import {
   getAssetDisplayFilename,
   getAssetDisplayName,
   getAssetFilename,
-  getAssetUrlFilename
+  getAssetUrlFilename,
+  getOutputSubfolder
 } from '@/platform/assets/utils/assetMetadataUtils'
 import type {
   FilterOption,
@@ -23,11 +24,14 @@ import type {
 } from '@/platform/assets/types/filterTypes'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
+import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { AssetKind } from '@/types/widgetTypes'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
 import type { PagedList } from '@/utils/pagedList'
 
 function getDisplayLabel(
@@ -50,13 +54,33 @@ function assetKindToMediaType(kind: AssetKind): string {
 
 function getMediaUrl(
   filename: string,
-  type: 'input' | 'output',
-  assetKind: AssetKind | undefined
+  type: string,
+  assetKind: AssetKind | undefined,
+  subfolder?: string
 ): string {
   if (!['image', 'video', 'audio'].includes(assetKind ?? '')) return ''
   const params = new URLSearchParams({ filename, type })
+  if (subfolder) params.set('subfolder', subfolder)
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
+}
+
+function isPlainRelativePath(filepath: string): boolean {
+  return (
+    !/^[^\\/]:/.test(filepath) &&
+    filepath
+      .split(/[\\/]/)
+      .every((segment) => segment !== '' && segment !== '.' && segment !== '..')
+  )
+}
+
+function getAnnotatedValueMediaUrl(
+  value: string,
+  assetKind: AssetKind | undefined
+): string {
+  if (!isPlainRelativePath(parseAnnotatedPath(value).filepath)) return ''
+  const { filename, subfolder, type } = parseImageWidgetValue(value)
+  return getMediaUrl(filename, type, assetKind, subfolder)
 }
 
 export interface UseWidgetSelectItemsOptions {
@@ -222,16 +246,14 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
       const filenameForUrl = getAssetUrlFilename(asset)
-      const subfolder =
-        kind === 'mesh'
-          ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
-          : undefined
+      const subfolder = getOutputSubfolder(asset.user_metadata)
       const pathWithSubfolder = subfolder
         ? `${subfolder}/${filenameForUrl}`
         : filenameForUrl
-      const annotatedPath = `${pathWithSubfolder} [output]`
+      const rootFolder = isGeneratedTempOutput(asset) ? 'temp' : 'output'
+      const annotatedPath = `${pathWithSubfolder} [${rootFolder}]`
       if (missing.has(annotatedPath)) continue
-      const displayLabel = `${getAssetDisplayFilename(asset)} [output]`
+      const displayLabel = `${getAssetDisplayFilename(asset)} [${rootFolder}]`
       items.push({
         id: `output-${asset.id}`,
         preview_url:
@@ -277,18 +299,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     if (existsInInputs || existsInOutputs) return undefined
 
-    const isOutput = currentValue.endsWith(' [output]')
-    const strippedValue = isOutput
-      ? currentValue.replace(' [output]', '')
-      : currentValue
-
     return {
       id: `missing-${currentValue}`,
-      preview_url: getMediaUrl(
-        strippedValue,
-        isOutput ? 'output' : 'input',
-        kind
-      ),
+      preview_url: getAnnotatedValueMediaUrl(currentValue, kind),
       name: currentValue,
       label: getDisplayLabel(currentValue, labelFn)
     }

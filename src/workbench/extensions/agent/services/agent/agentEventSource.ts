@@ -1,6 +1,6 @@
 import { useTimeoutFn } from '@vueuse/core'
 
-import type { AgentEventSource } from '../../composables/agent/useAgentSession'
+import type { AgentEventSource } from '@/workbench/extensions/agent/composables/agent/useAgentSession'
 
 export interface AgentEventSocket extends AgentEventSource {
   send(frame: string): boolean
@@ -62,34 +62,49 @@ export function createAgentEventSource({
     reconnectTimer.start()
   }
 
+  async function readAuth(): Promise<AuthRead> {
+    try {
+      return { ok: true, params: await getAuthParams() }
+    } catch {
+      return { ok: false }
+    }
+  }
+
   async function connect(): Promise<void> {
     if (listeners.size === 0 || socket !== null || connecting) return
     connecting = true
     const generation = connectGeneration
-    let auth: AuthRead
-    try {
-      auth = { ok: true, params: await getAuthParams() }
-    } catch {
-      auth = { ok: false }
-    } finally {
-      connecting = false
-    }
-    if (generation !== connectGeneration) {
-      void connect()
-      return
-    }
+    const auth = await readAuth()
+    // A stale read must leave the latch alone: `disconnect()` already cleared it and
+    // bumped the generation, so by now it belongs to a newer `connect()`.
+    if (generation !== connectGeneration) return
+    // Released here rather than in `readAuth`, because everything from this point to
+    // `open()` is synchronous. Clearing it before this continuation ran left a window
+    // in which a `subscribe()` could start a second read in the same generation; both
+    // would reach `open()`, and the second would overwrite `socket` without closing
+    // the first, leaving an orphan whose handlers all bail on `socket !== current`.
+    connecting = false
     if (listeners.size === 0) return
-    if (!auth.ok) {
+    // A credential that cannot be read right now — a rejected refresh, or a
+    // token the provider has not minted yet — is retried on the backoff rather
+    // than leaving the source dead until something else calls `reconnect()`.
+    if (!auth.ok || auth.params === null) {
       notifyStatus(false)
       scheduleReconnect()
       return
     }
-    if (auth.params === null) return
     open(eventUrl(auth.params))
   }
 
   function open(url: string): void {
-    const current = new WebSocket(url)
+    let current: WebSocket
+    try {
+      current = new WebSocket(url)
+    } catch {
+      notifyStatus(false)
+      scheduleReconnect()
+      return
+    }
     socket = current
     let openedAt: number | null = null
     current.addEventListener('open', () => {
@@ -99,7 +114,6 @@ export function createAgentEventSource({
     })
     current.addEventListener('message', (event) => {
       if (socket !== current) return
-      failedConnects = 0
       let frame: unknown = event.data
       if (typeof event.data === 'string') {
         try {
@@ -115,6 +129,9 @@ export function createAgentEventSource({
     })
     current.addEventListener('close', () => {
       if (socket !== current) return
+      // Only a connection that lasted clears the backoff. A server that
+      // accepts the upgrade, writes a frame and hangs up must not reset it, or
+      // the panel reconnects in a tight loop that never widens.
       if (openedAt !== null && Date.now() - openedAt >= maxReconnectDelayMs)
         failedConnects = 0
       socket = null
@@ -125,6 +142,9 @@ export function createAgentEventSource({
 
   function disconnect(): void {
     connectGeneration++
+    // An auth read that never settles would otherwise latch `connecting` and
+    // make every later `connect()` — `reconnect()` included — a no-op.
+    connecting = false
     reconnectTimer.stop()
     const current = socket
     socket = null

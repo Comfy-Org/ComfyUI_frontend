@@ -30,7 +30,7 @@
           :aria-label="$t('g.copyToClipboard')"
           @click="copyCommandLineArgs"
         >
-          <i class="pi pi-clipboard" />
+          <i class="icon-[lucide--clipboard]" />
         </Button>
       </div>
     </Message>
@@ -60,15 +60,15 @@ import { onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Message from '@/components/ui/message/Message.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { ServerConfig } from '@/constants/serverConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   FormItem as FormItemType,
   ServerConfigValue
-} from '@/platform/settings/types'
+} from '@comfyorg/settings-core/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { electronAPI } from '@/utils/envUtil'

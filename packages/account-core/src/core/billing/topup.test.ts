@@ -1,33 +1,34 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SessionClient, SessionSnapshot } from '../session.js'
-import type { AccountCredential } from '../sessionContracts.js'
-import { createBalanceWatch } from './balanceWatch.js'
-import { sessionBillingScopeSource } from './billingScope.js'
+import type { SessionClient, SessionSnapshot } from '#/core/session'
+import type { AccountCredential } from '#/core/sessionContracts'
+import { createBalanceWatch } from './balanceWatch'
+import { sessionBillingScopeSource } from './billingScope'
 import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import { createCapabilitiesReader } from './capabilities.js'
-import { driveEmbeddedChallenge } from './challengeDriver.js'
-import { createCreditsReader } from './credits.js'
+} from './billingContracts'
+import { createCapabilitiesReader } from './capabilities'
+import { driveEmbeddedChallenge } from './challengeDriver'
+import { createCreditsReader } from './credits'
 import {
   createBillingOperationLifecycle,
   operationRoute
-} from './operationLifecycle.js'
-import { OPERATION_POLL_TIMING } from './operationPolicy.js'
-import type { BillingOpStatus } from './operationState.js'
-import type { BillingStatusData } from './status.js'
-import { createBillingStatusReader } from './status.js'
-import type { HostedTopupCheckoutResult, TopupResult } from './topup.js'
+} from './operationLifecycle'
+import { OPERATION_POLL_TIMING } from './operationPolicy'
+import type { BillingOpStatus } from './operationState'
+import type { BillingStatusData } from './status'
+import { createBillingStatusReader } from './status'
+import type { HostedTopupCheckoutResult, TopupResult } from './topup'
 import {
+  INTERACTIVE_TOPUP_ROUTE,
   TOPUP_CHECKOUT_ROUTE,
   TOPUP_QUOTE_ROUTE,
   TOPUP_ROUTE,
   createTopupCommand
-} from './topup.js'
+} from './topup'
 
 const NOW = 1_000_000
 
@@ -83,6 +84,7 @@ const STATUS_DATA: BillingStatusData = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   scheduled_change: null,
   team_credit_stop: null
 }
@@ -104,6 +106,7 @@ const CAPABILITIES = {
   can_edit_workspace: false,
   can_manage_auto_top_up: false,
   can_manage_subscription: false,
+  can_open_plans: false,
   can_run_workflows: false,
   can_upgrade: false,
   can_subscribe_self_serve: false,
@@ -241,6 +244,7 @@ function harness(
   )
   answer('POST', TOPUP_ROUTE, httpOk(topupResponse()))
   answer('POST', TOPUP_CHECKOUT_ROUTE, httpOk(checkoutResponse()))
+  answer('POST', INTERACTIVE_TOPUP_ROUTE, httpOk(topupResponse()))
   answer(
     'GET',
     operationRoute('op-1'),
@@ -253,6 +257,7 @@ function harness(
     capabilities,
     credits,
     session,
+    transport,
     calls,
     answer,
     routes,
@@ -576,6 +581,130 @@ describe('createTopupCommand', () => {
   })
 })
 
+describe('createInteractiveTopup', () => {
+  const NEW_CARD = {
+    confirmationToken: 'ctoken_1',
+    returnUrl: 'https://billing.comfy.org/v1/top-up?amount_cents=1000'
+  }
+
+  it.for([
+    {
+      name: 'a new card with its return URL',
+      payment: NEW_CARD,
+      sent: {
+        confirmation_token: 'ctoken_1',
+        return_url: NEW_CARD.returnUrl
+      }
+    },
+    {
+      name: 'only the saved card the customer chose',
+      payment: { savedPaymentMethodId: 'pm_chosen' },
+      sent: { saved_payment_method_id: 'pm_chosen' }
+    }
+  ])(
+    'pays once with $name under the caller key, never asking to save or default',
+    async ({ payment, sent }) => {
+      const { command, calls, routes } = harness()
+
+      await expect(
+        settle(
+          command.createInteractiveTopup({
+            amountCents: 1000,
+            payment,
+            idempotencyKey: 'attempt-key'
+          })
+        )
+      ).resolves.toMatchObject({ status: 'ok', creditsReconciled: true })
+
+      expect(postedBodies(calls)).toEqual([
+        {
+          body: {
+            amount_cents: 1000,
+            idempotency_key: 'attempt-key',
+            ...sent
+          },
+          idempotencyKey: 'attempt-key'
+        }
+      ])
+      expect(routes()).not.toContain(`POST ${TOPUP_ROUTE}`)
+    }
+  )
+
+  it('resends the same key it was given after an unknown outcome', async () => {
+    const { command, answer, calls } = harness()
+    answer(
+      'POST',
+      INTERACTIVE_TOPUP_ROUTE,
+      httpStatus(503),
+      httpOk(topupResponse())
+    )
+    const pay = () =>
+      command.createInteractiveTopup({
+        amountCents: 1000,
+        payment: { savedPaymentMethodId: 'pm_chosen' },
+        idempotencyKey: 'attempt-key'
+      })
+
+    await expect(settle(pay())).resolves.toMatchObject({
+      code: 'REQUEST_FAILED',
+      httpStatus: 503
+    })
+    await expect(settle(pay())).resolves.toMatchObject({ status: 'ok' })
+
+    expect(
+      postedBodies(calls).map(({ idempotencyKey }) => idempotencyKey)
+    ).toEqual(['attempt-key', 'attempt-key'])
+  })
+
+  it('maps a 404 to NOT_AVAILABLE and never falls back to the on-file route', async () => {
+    const { command, answer, routes } = harness()
+    answer('POST', INTERACTIVE_TOPUP_ROUTE, httpStatus(404))
+
+    await expect(
+      settle(
+        command.createInteractiveTopup({
+          amountCents: 1000,
+          payment: NEW_CARD,
+          idempotencyKey: 'attempt-key'
+        })
+      )
+    ).resolves.toEqual({ status: 'error', code: 'NOT_AVAILABLE' })
+    expect(routes()).not.toContain(`POST ${TOPUP_ROUTE}`)
+  })
+
+  it('refuses when the server resolved can_top_up false, without a POST', async () => {
+    const { command, routes } = harness({
+      capabilities: {
+        capabilities: { ...CAPABILITIES, can_top_up: false }
+      }
+    })
+
+    await expect(
+      settle(
+        command.createInteractiveTopup({
+          amountCents: 1000,
+          payment: NEW_CARD,
+          idempotencyKey: 'attempt-key'
+        })
+      )
+    ).resolves.toMatchObject({ status: 'error', code: 'ACCESS_DENIED' })
+    expect(routes()).toEqual(['GET /billing/capabilities'])
+  })
+
+  it('rejects a request outside the generated contract without sending anything', async () => {
+    const { command, calls } = harness()
+
+    await expect(
+      command.createInteractiveTopup({
+        amountCents: 499,
+        payment: NEW_CARD,
+        idempotencyKey: 'attempt-key'
+      })
+    ).resolves.toEqual({ status: 'error', code: 'INVALID_AMOUNT' })
+    expect(calls).toEqual([])
+  })
+})
+
 describe('createHostedTopupCheckout', () => {
   it('returns the hosted session with the pre-purchase baseline and observes no operation', async () => {
     const { hosted, lifecycle, routes, calls } = harness()
@@ -618,6 +747,25 @@ describe('createHostedTopupCheckout', () => {
       denial: 'tier_not_self_serve'
     })
     expect(routes()).toEqual(['GET /billing/capabilities'])
+  })
+
+  it('sends no POST once the caller aborts during the pre-purchase reads', async () => {
+    const { command, transport, routes } = harness()
+    const scope = new AbortController()
+    const answerRead = vi.mocked(transport).getMockImplementation()
+    vi.mocked(transport).mockImplementation(async (request) => {
+      if (request.route === '/billing/balance') scope.abort()
+      return answerRead ? answerRead(request) : NO_RESPONSE
+    })
+
+    await expect(
+      command.createHostedTopupCheckout({
+        amountCents: 1000,
+        returnUrl: RETURN_URL,
+        signal: scope.signal
+      })
+    ).resolves.toEqual({ status: 'error', code: 'REQUEST_FAILED' })
+    expect(routes()).not.toContain(`POST ${TOPUP_CHECKOUT_ROUTE}`)
   })
 
   it('rejects an amount or return URL outside the generated contract without sending anything', async () => {
@@ -760,6 +908,25 @@ describe('quoteTopup', () => {
     await expect(command.quoteTopup({ amountCents: 2500 })).resolves.toEqual({
       status: 'error',
       code
+    })
+  })
+
+  it('carries the payment configuration the server quotes for a pay-once card form', async () => {
+    const { command, answer } = harness()
+    answer(
+      'POST',
+      TOPUP_QUOTE_ROUTE,
+      httpOk({ ...QUOTE, payment_method_configuration_id: 'pmc_topup' })
+    )
+
+    await expect(command.quoteTopup({ amountCents: 2500 })).resolves.toEqual({
+      status: 'ok',
+      value: {
+        amountCents: 2500,
+        credits: 5275,
+        expiresAt: EXPIRES_AT,
+        paymentMethodConfigurationId: 'pmc_topup'
+      }
     })
   })
 

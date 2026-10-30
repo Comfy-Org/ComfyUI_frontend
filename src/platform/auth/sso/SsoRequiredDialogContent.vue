@@ -1,5 +1,5 @@
 <template>
-  <DialogPanel class="w-full max-w-lg" @close="dismiss">
+  <AppDialogPanel unpadded @close="dismiss">
     <template #title>
       {{ t('auth.sso.required.title') }}
     </template>
@@ -26,14 +26,14 @@
         {{ t('auth.sso.continueWithSso') }}
       </Button>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { useContinueWithSso } from '@/platform/auth/sso/useContinueWithSso'
 import { useDialogStore } from '@/stores/dialogStore'

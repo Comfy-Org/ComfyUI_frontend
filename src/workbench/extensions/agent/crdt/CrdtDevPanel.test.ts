@@ -6,8 +6,11 @@ import { nextTick } from 'vue'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
 
-import { toTurnId, zAgentWsEvent } from '../schemas/agentApiSchema'
-import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
+import {
+  toTurnId,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 
 vi.mock(import('@/scripts/api'))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -15,7 +18,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
-vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError
+}))
 
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
@@ -26,6 +31,7 @@ import type { AgentCrdtStatus } from './agentCrdtStatus'
 const STATUS: AgentCrdtStatus = {
   enabled: true,
   connected: true,
+  canvasMayBeStale: false,
   terminal: null,
   workflowId: 'doc-1',
   updatesApplied: 4,
