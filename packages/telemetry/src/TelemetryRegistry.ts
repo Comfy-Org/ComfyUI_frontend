@@ -14,6 +14,7 @@ import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentCreditTransitionNoticeMetadata,
+  AgentCreditUsageExposureMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentEntryButtonClickedMetadata,
@@ -494,6 +495,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
     this.dispatch((provider) => provider.trackAgentFreeUseExposure?.(metadata))
+  }
+
+  trackAgentCreditUsageExposure(
+    metadata: AgentCreditUsageExposureMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentCreditUsageExposure?.(metadata)
+    )
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {

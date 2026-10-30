@@ -67,6 +67,39 @@ function createGraphLoadHookApp(app: ComfyApp, method: string) {
   }
 }
 
+function createSetupHookApp(app: ComfyApp, extensionName: string): ComfyApp {
+  const manager = Object(app.extensionManager) as ComfyApp['extensionManager']
+  const extensionManager = new Proxy(manager, {
+    get(target, property) {
+      if (property === 'registerSidebarTab') {
+        return (tab: Parameters<typeof target.registerSidebarTab>[0]) => {
+          const attributedManager = target as typeof target & {
+            registerSidebarTabForExtension?: (
+              tab: Parameters<typeof target.registerSidebarTab>[0],
+              extensionName: string
+            ) => void
+          }
+          return attributedManager.registerSidebarTabForExtension
+            ? attributedManager.registerSidebarTabForExtension(
+                tab,
+                extensionName
+              )
+            : target.registerSidebarTab(tab)
+        }
+      }
+      const value: unknown = Reflect.get(target, property, target)
+      return typeof value === 'function' ? value.bind(target) : value
+    }
+  })
+  return new Proxy(app, {
+    get(target, property) {
+      if (property === 'extensionManager') return extensionManager
+      const value: unknown = Reflect.get(target, property, target)
+      return typeof value === 'function' ? value.bind(target) : value
+    }
+  })
+}
+
 type StartupHook =
   | 'init'
   | 'addCustomNodeDefs'
@@ -269,7 +302,7 @@ export const useExtensionService = () => {
                   useApp(),
                   ext,
                   method,
-                  () => fn.call(ext, ...args, app)
+                  () => fn.call(ext, ...args, createSetupHookApp(app, ext.name))
                 )
               } finally {
                 legacyMenuCompat.setCurrentExtension(null)
@@ -315,7 +348,13 @@ export const useExtensionService = () => {
         if (typeof fn !== 'function') continue
         if (method === 'setup')
           legacyMenuCompat.setCurrentExtension(extension.name)
-        await fn.call(extension, ...args, useApp())
+        await fn.call(
+          extension,
+          ...args,
+          method === 'setup'
+            ? createSetupHookApp(useApp(), extension.name)
+            : useApp()
+        )
       } catch (error) {
         failures.push({ extension, method, error })
       } finally {

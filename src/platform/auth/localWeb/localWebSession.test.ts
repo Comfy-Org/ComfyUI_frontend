@@ -4,6 +4,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   desktopHostUser,
   isDesktopHostSessionActive,
+  requestDesktopHostSignIn,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import type { LocalWebAuthEnvironment } from '@/platform/auth/localWeb/localWebAuthBridge'
@@ -139,6 +140,20 @@ describe('startLocalWebSession', () => {
         errorType: 'local_web_sign_in_failed',
         surface: 'auth'
       })
+    )
+  })
+
+  it('opens every sign-in in a new window, never one a related tab has named', async () => {
+    vi.mocked(useFeatureFlags().flags).localWebSsoEnabled = true
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+
+    await startLocalWebSession({ onPopupBlocked: () => {} })
+    await requestDesktopHostSignIn()
+
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      'about:blank',
+      '_blank',
+      expect.any(String)
     )
   })
 
