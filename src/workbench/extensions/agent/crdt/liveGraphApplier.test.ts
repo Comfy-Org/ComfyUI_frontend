@@ -450,27 +450,21 @@ describe('LiveGraphApplier', () => {
       widgets.set('totally_unknown_widget', 99)
     })
 
-    expect(reportError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message:
-          "Node 1 (TestPlainWidgets) has no widget 'totally_unknown_widget'"
-      }),
-      expect.objectContaining({
-        errorType: 'agent_graph_widget_missing',
-        context: expect.objectContaining({
-          availableWidgetNames: ['known', 'addedAfterCatalog']
-        })
-      })
-    )
-    // Not an `_extra_N` alias, so there is no overflow reading to report.
-    expect(reportError).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        context: expect.not.objectContaining({
-          overflowIndex: expect.anything()
-        })
-      })
-    )
+    const [, options] =
+      vi
+        .mocked(reportError)
+        .mock.calls.find(
+          ([error]) =>
+            error instanceof Error &&
+            error.message ===
+              "Node 1 (TestPlainWidgets) has no widget 'totally_unknown_widget'"
+        ) ?? []
+    expect(options).toMatchObject({
+      errorType: 'agent_graph_widget_missing',
+      context: { availableWidgetNames: ['known', 'addedAfterCatalog'] }
+    })
+    expect(options?.context).not.toHaveProperty('overflowIndex')
+    expect(options?.context).not.toHaveProperty('serializableWidgetCount')
   })
 
   /**
