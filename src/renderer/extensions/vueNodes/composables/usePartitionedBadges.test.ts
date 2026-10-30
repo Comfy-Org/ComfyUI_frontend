@@ -80,18 +80,28 @@ describe('usePartitionedBadges', () => {
     useSettingStore().settingValues['Comfy.NodeBadge.ShowApiPricing'] = true
   })
 
-  it('partitions derived rows into core chips and pricing entries', () => {
+  it('groups derived badges without splitting pricing text', () => {
     makeNode('CustomNode', { apiNode: true })
     addNodeDef('CustomNode', 'custom_nodes.testpack')
 
     const partitioned = usePartitionedBadges(nodeData('CustomNode'))
 
     expect(partitioned.value).toEqual({
-      hasComfyBadge: false,
-      hasComfyCloudBadge: false,
-      core: [{ text: '#5' }, { text: 'BETA' }, { text: 'testpack' }],
-      extension: [],
-      pricing: [{ required: '$0.05', rest: 'x 3 Runs' }]
+      groups: [
+        {
+          kind: 'core',
+          badges: [{ text: '#5' }, { text: 'BETA' }, { text: 'testpack' }]
+        },
+        {
+          kind: 'credits',
+          badges: [
+            {
+              text: '$0.05 x 3 Runs',
+              cssIcon: 'icon-[lucide--coins] order-first bg-credit'
+            }
+          ]
+        }
+      ]
     })
   })
 
@@ -101,8 +111,13 @@ describe('usePartitionedBadges', () => {
 
     const partitioned = usePartitionedBadges(nodeData('CoreNode'))
 
-    expect(partitioned.value.core.some((chip) => chip.text === '#5')).toBe(true)
-    expect(partitioned.value.hasComfyBadge).toBe(true)
+    expect(partitioned.value.groups).toEqual([
+      { kind: 'core', badges: [{ text: '#5' }, { text: 'BETA' }] },
+      {
+        kind: 'source',
+        badges: [{ text: '', cssIcon: 'icon-[comfy--comfy-c] size-3' }]
+      }
+    ])
   })
 
   it('shows no logo when the core node has pricing', () => {
@@ -111,9 +126,9 @@ describe('usePartitionedBadges', () => {
 
     const partitioned = usePartitionedBadges(nodeData('CoreNode'))
 
-    expect(partitioned.value.hasComfyBadge).toBe(false)
-    expect(partitioned.value.pricing).toEqual([
-      { required: '$0.05', rest: 'x 3 Runs' }
+    expect(partitioned.value.groups.map((group) => group.kind)).toEqual([
+      'core',
+      'credits'
     ])
   })
 
@@ -123,11 +138,15 @@ describe('usePartitionedBadges', () => {
 
     const partitioned = usePartitionedBadges(nodeData('ComfyCloudNode'))
 
-    expect(partitioned.value.hasComfyBadge).toBe(true)
-    expect(partitioned.value.hasComfyCloudBadge).toBe(true)
-    expect(partitioned.value.pricing).toEqual([
-      { required: '$0.05', rest: 'x 3 Runs' }
-    ])
+    expect(partitioned.value.groups).toContainEqual({
+      kind: 'source',
+      badges: [
+        { text: '', cssIcon: 'icon-[comfy--comfy-c] size-3 text-brand-yellow' }
+      ]
+    })
+    expect(partitioned.value.groups.at(-1)?.badges[0]?.text).toBe(
+      '$0.05 x 3 Runs'
+    )
   })
 
   it('shows no logo for a partner node from another api module', () => {
@@ -136,8 +155,10 @@ describe('usePartitionedBadges', () => {
 
     const partitioned = usePartitionedBadges(nodeData('KlingNode'))
 
-    expect(partitioned.value.hasComfyBadge).toBe(false)
-    expect(partitioned.value.hasComfyCloudBadge).toBe(false)
+    expect(partitioned.value.groups.map((group) => group.kind)).toEqual([
+      'core',
+      'credits'
+    ])
   })
 
   it('appends non-empty node.badges extension badges after derived rows', () => {
@@ -149,33 +170,44 @@ describe('usePartitionedBadges', () => {
 
     const partitioned = usePartitionedBadges(nodeData('CustomNode'))
 
-    expect(partitioned.value.core).toEqual([{ text: '#5' }])
-    expect(partitioned.value.extension).toEqual([
-      expect.objectContaining({ text: 'EXT' })
+    expect(partitioned.value.groups).toEqual([
+      { kind: 'core', badges: [{ text: '#5' }] },
+      {
+        kind: 'extension',
+        badges: [expect.objectContaining({ text: 'EXT' })]
+      }
     ])
   })
 
   it('reacts to a core node definition registered after creation', () => {
     makeNode('CoreNode')
     const partitioned = usePartitionedBadges(nodeData('CoreNode'))
-    expect(partitioned.value.hasComfyBadge).toBe(false)
+    expect(partitioned.value.groups.map((group) => group.kind)).toEqual([
+      'core'
+    ])
 
     addNodeDef('CoreNode', 'nodes')
 
-    expect(partitioned.value.hasComfyBadge).toBe(true)
+    expect(partitioned.value.groups.map((group) => group.kind)).toEqual([
+      'core',
+      'source'
+    ])
   })
 
   it('re-partitions when a badge source changes', () => {
     makeNode('CustomNode')
     const partitioned = usePartitionedBadges(nodeData('CustomNode'))
-    expect(partitioned.value.core).toEqual([{ text: '#5' }])
+    expect(partitioned.value.groups).toEqual([
+      { kind: 'core', badges: [{ text: '#5' }] }
+    ])
 
     addNodeDef('CustomNode', 'custom_nodes.testpack')
 
-    expect(partitioned.value.core).toEqual([
-      { text: '#5' },
-      { text: 'BETA' },
-      { text: 'testpack' }
+    expect(partitioned.value.groups).toEqual([
+      {
+        kind: 'core',
+        badges: [{ text: '#5' }, { text: 'BETA' }, { text: 'testpack' }]
+      }
     ])
   })
 })

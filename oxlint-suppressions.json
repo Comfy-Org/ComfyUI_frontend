@@ -638,11 +638,6 @@
       "count": 2
     }
   },
-  "src/platform/customNodes/customNodeScripts.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/platform/extensions/stores/extensionStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 2

@@ -41,6 +41,12 @@
     @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
+    <NodeBadges
+      v-if="!isRerouteNode && !isTransparentHeaderless"
+      v-bind="badges"
+      class="absolute right-0 bottom-full"
+      :style="badgesStyle"
+    />
     <NodeBloodDrips
       v-if="
         !isRerouteNode &&
@@ -112,7 +118,6 @@
         <NodeHeader
           :node-data
           :collapsed="isCollapsed"
-          :price-badges="badges.pricing"
           @collapse="handleCollapse"
           @update:title="handleHeaderTitleUpdate"
         />
@@ -185,12 +190,6 @@
           <LivePreview
             v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
             :image-url="latestPreviewUrl"
-          />
-          <NodeBadges
-            v-if="!isTransparentHeaderless"
-            v-bind="badges"
-            :pricing="undefined"
-            class="mt-auto"
           />
         </div>
       </template>
@@ -727,6 +726,10 @@ const nodeMedia = computed(() => {
 
 // Drag and drop support
 const isDraggingOver = ref(false)
+
+const badgesStyle = computed(() => ({
+  marginBottom: `${4 + (hasAnyError.value || isDraggingOver.value ? 4 : 0) + (isEmphasized.value || executing.value ? 3 : 0)}px`
+}))
 
 function handleDragOver(event: DragEvent) {
   const node = resolveLGraphNode()
