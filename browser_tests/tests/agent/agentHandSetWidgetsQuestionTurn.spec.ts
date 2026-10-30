@@ -6,6 +6,8 @@ import {
   draftValues
 } from '@e2e/fixtures/agentHandSetWidgetsFixture'
 
+const REFUSALS_OUTLASTING_RETRY_BUDGET = 4
+
 const annotation = [
   {
     type: 'issue',
@@ -72,7 +74,7 @@ test.describe(
       'keeps widgets set by hand while the agent is offline',
       { annotation },
       async ({ handSetWidgets }) => {
-        test.setTimeout(90_000)
+        test.setTimeout(180_000)
         const { hostSocket } = handSetWidgets
 
         await test.step('The agent builds a KSampler and a Load Image', () =>
@@ -84,12 +86,13 @@ test.describe(
         await test.step('The user sets cfg and steps by hand while offline', async () => {
           handSetWidgets.holdCatchUp()
           await hostSocket.beginAgentOutage()
+          await handSetWidgets.setWidgetsByHand()
           await expect
             .poll(() => hostSocket.refusedConnectionCount(), {
-              timeout: 30_000
+              timeout: 90_000,
+              message: 'the page keeps trying while the agent is down'
             })
-            .toBeGreaterThan(0)
-          await handSetWidgets.setWidgetsByHand()
+            .toBeGreaterThanOrEqual(REFUSALS_OUTLASTING_RETRY_BUDGET)
           expect(hostSocket.connectionCount()).toBe(connections)
         })
 

@@ -46,7 +46,7 @@ const SAMPLER_WIDGETS = [
 const LOAD_IMAGE_WIDGETS = ['image', 'upload']
 const AGENT_IMAGE = 'agent-1.png'
 
-export interface HandSetValues {
+interface HandSetValues {
   cfg: unknown
   steps: unknown
 }
@@ -158,8 +158,6 @@ function done(messageId: string): AgentWsEvent {
 }
 
 class AgentHandSetWidgetsScenario {
-  public readonly question = QUESTION
-
   private readonly comfyPage: ComfyPage
   private readonly panel: AgentPanel
 
