@@ -208,13 +208,20 @@ describe('invokeExtensionsAsync', () => {
     }
   )
 
-  // The second row is the case a time-scoped marker cannot serve: an extension
-  // wrapper that awaits before delegating resumes the real handler long after
-  // the call's synchronous entry ended, and an unmarked nested graph would
-  // queue behind the very hook awaiting it.
   it.for([
-    { variant: 'directly', wrap: false },
-    { variant: 'through an async forwarding wrapper', wrap: true }
+    {
+      variant: 'directly',
+      wrap: (handleFile: HookApp['handleFile']) => handleFile
+    },
+    {
+      variant: 'through an async forwarding wrapper',
+      wrap:
+        (handleFile: HookApp['handleFile']) =>
+        async (...args: Parameters<HookApp['handleFile']>) => {
+          await Promise.resolve()
+          return handleFile(...args)
+        }
+    }
   ])(
     'marks a graph-bearing file started $variant through the hook app as hook-originated',
     async ({ wrap }) => {
@@ -227,14 +234,7 @@ describe('invokeExtensionsAsync', () => {
       const handleFile = vi.fn(async (handled: File) =>
         consumeGraphLoadHookOrigin(handled) ? false : void 0
       )
-      vi.spyOn(app, 'handleFile').mockImplementation(
-        wrap
-          ? async (...args) => {
-              await Promise.resolve()
-              return handleFile(args[0])
-            }
-          : handleFile
-      )
+      vi.spyOn(app, 'handleFile').mockImplementation(wrap(handleFile))
       let nested: Promise<unknown> | undefined
       register({
         name: 'hook-file-loader',
@@ -297,8 +297,6 @@ describe('invokeExtensionsAsync', () => {
     await dispatch
 
     expect(originForIndependentFile).toBe(false)
-    // The hook's own file stays marked across the await, which is what a
-    // marker scoped to the call's synchronous entry could not do.
     expect(originForHookFileAfterAwait).toBe(true)
   })
 

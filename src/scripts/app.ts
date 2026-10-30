@@ -1202,9 +1202,6 @@ export class ComfyApp implements IComfyApp {
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
-      // Inside the try because `beforeLoadGraph` has already run: deactivating
-      // the outgoing graph captures it, which can reach a custom node's
-      // serializer, and a throw there owes this load an error terminal.
       useWorkflowService().beforeLoadNewGraph(clean)
       ChangeTracker.isLoadingGraph = true
       useExecutionErrorStore().setActiveGraph(null)
@@ -1365,8 +1362,7 @@ export class ComfyApp implements IComfyApp {
       }
     } catch (error) {
       // This try wraps everything between `beforeLoadGraph` and
-      // `rootGraph.configure`: the outgoing-workflow preflight, asset-scan
-      // resets, `clean()`, workflow
+      // `rootGraph.configure`: asset-scan resets, `clean()`, workflow
       // cloning, `validateWorkflow`, reroute-migration inspection, a
       // malformed subgraph definition, a `beforeConfigureGraph` extension
       // hook throwing, or a node-replacement load failure. Any of those
@@ -2071,9 +2067,6 @@ export class ComfyApp implements IComfyApp {
       onNodeCreated?: (node: LGraphNode) => void
     }
   ) {
-    // Claim the mark before the first await. It is keyed on this file, so it
-    // stays scoped to the hook that started this call even if a forwarding
-    // wrapper on `handleFile` awaited before delegating here.
     const fromGraphLoadHook = consumeGraphLoadHookOrigin(file)
     const previousDiscovery = this.fileLoadDiscoveryQueue
     let releaseDiscovery!: () => void

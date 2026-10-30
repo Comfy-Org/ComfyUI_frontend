@@ -22,6 +22,11 @@ vi.mock(import('./ui/toggleSwitch'), () => ({
   toggleSwitch: vi.fn(() => document.createElement('div'))
 }))
 
+function giveDialogDoublesRemovableElements(ui: ComfyUI) {
+  ui.dialog.element = document.createElement('div')
+  ui.settings.element = document.createElement('dialog')
+}
+
 describe('ComfyUI file input', () => {
   beforeEach(() => {
     vi.stubGlobal(
@@ -77,11 +82,7 @@ describe('ComfyUI file input', () => {
       trackRunButton: vi.fn(),
       enterFocusMode: vi.fn()
     })
-    // The real constructor registers a window resize listener under the
-    // instance's lifetime signal; the dialog doubles are bare classes, so
-    // `dispose()` needs removable elements before it can abort that.
-    ui.dialog.element = document.createElement('div')
-    ui.settings.element = document.createElement('dialog')
+    giveDialogDoublesRemovableElements(ui)
     onTestFinished(() => ui.dispose())
     const fileInput = document.getElementById(
       'comfy-file-input'

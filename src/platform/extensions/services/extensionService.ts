@@ -39,51 +39,27 @@ const graphLoadEntrypoints = [
   'loadApiJson'
 ] satisfies (keyof ComfyApp)[]
 
-/**
- * One token per in-flight `handleFile` call a graph-load hook started, keyed by
- * the file it was started with.
- *
- * Provenance rides on the argument rather than on a window of time. An
- * extension may install an async forwarding wrapper on `app.handleFile` that
- * awaits before it delegates, and anything scoped to the synchronous entry of
- * the call has already ended by then: the real handler would see an
- * independent caller and queue the nested graph behind the hook that is
- * waiting for it, stalling every later load. Keying on the file also leaves
- * independent callers alone, because their file was never marked.
- */
-const graphLoadHookOriginFiles = new WeakMap<File, Set<object>>()
+const hookOriginTokensByFile = new WeakMap<File, Set<object>>()
 
-/**
- * True once, for a `handleFile` call a graph-load hook started with this file.
- * Reading clears the mark, so a later independent call carrying the same file
- * is not refused.
- *
- * Only `handleFile` needs this, because that entrypoint still accepts non-graph
- * media from a hook and so cannot be refused at the proxy.
- */
+/** Returns true once per hook-originated `handleFile` call for this file. */
 export function consumeGraphLoadHookOrigin(file: File): boolean {
-  const pending = graphLoadHookOriginFiles.get(file)
+  const pending = hookOriginTokensByFile.get(file)
   const token: object | undefined = pending?.values().next().value
   if (!pending || token === undefined) return false
   pending.delete(token)
-  if (pending.size === 0) graphLoadHookOriginFiles.delete(file)
+  if (pending.size === 0) hookOriginTokensByFile.delete(file)
   return true
 }
 
-/**
- * Marks `file` as hook-originated. The returned release drops the mark if it
- * was never consumed, so a wrapper that swallows the call cannot leave the file
- * marked for whoever hands it over next.
- */
 function markGraphLoadHookOrigin(file: File): () => void {
   const token = {}
-  const pending = graphLoadHookOriginFiles.get(file) ?? new Set<object>()
+  const pending = hookOriginTokensByFile.get(file) ?? new Set<object>()
   pending.add(token)
-  graphLoadHookOriginFiles.set(file, pending)
+  hookOriginTokensByFile.set(file, pending)
   return () => {
-    const current = graphLoadHookOriginFiles.get(file)
+    const current = hookOriginTokensByFile.get(file)
     if (!current?.delete(token)) return
-    if (current.size === 0) graphLoadHookOriginFiles.delete(file)
+    if (current.size === 0) hookOriginTokensByFile.delete(file)
   }
 }
 
