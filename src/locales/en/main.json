@@ -3638,6 +3638,7 @@
     "billingTab": {
       "autoTopUp": {
         "actions": {
+          "addPaymentMethod": "Add payment method",
           "manage": "Manage",
           "turnOn": "Turn on",
           "updatePayment": "Update payment"
@@ -3648,6 +3649,8 @@
         "limitTooltip": "Counts only auto top-up charges. Resets {date}.",
         "limitTooltipNoDate": "Counts only auto top-up charges.",
         "off": "Refills credits when your balance runs low",
+        "noPaymentMethod": "Auto top-up needs a payment method. Add one to turn it on.",
+        "noDefaultPaymentMethod": "Auto top-up needs a default payment method. Set one to turn it on.",
         "onHold": "No default payment method. Set one to resume auto top-up.",
         "paused": "Monthly limit reached. Resumes {date}.",
         "pausedNoDate": "Monthly limit reached.",

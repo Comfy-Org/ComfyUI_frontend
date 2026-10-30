@@ -9,7 +9,11 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import type { AutoReloadSettings } from '@comfyorg/billing-core'
+import type {
+  AutoReloadSettings,
+  SavedPaymentMethod
+} from '@comfyorg/billing-core'
+import type { BillingResult } from '@comfyorg/account-core/billing'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { activateBillingScope } from '@/platform/billing/__tests__/activateBillingScope'
@@ -19,6 +23,7 @@ import {
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
 import BillingAutoTopUpCard from './BillingAutoTopUpCard.vue'
 import BillingLocalCreditBanner from './BillingLocalCreditBanner.vue'
@@ -606,5 +611,128 @@ describe('BillingAutoTopUpCard', () => {
       ).toHaveTextContent('On')
     )
     expect(billingApi.getBillingAutoReload).toHaveBeenCalledTimes(2)
+  })
+
+  describe('when auto top-up is frozen for a missing default payment method', () => {
+    const frozen: AutoTopUpSetup = {
+      state: 'frozen',
+      reason: 'default_payment_method_missing'
+    }
+    const savedCard: SavedPaymentMethod = {
+      id: 'pm_1',
+      type: 'card',
+      is_default: false
+    }
+    function serveSavedMethods(
+      methods: Promise<BillingResult<SavedPaymentMethod[]>>
+    ) {
+      activateBillingScope('actor-a', 'workspace-a')
+      vi.mocked(useBillingSdkStore().readPaymentMethods).mockReturnValue(
+        methods
+      )
+    }
+
+    const TODAY = {
+      line: 'Refills credits when your balance runs low',
+      action: 'Turn on'
+    }
+
+    it.for<{
+      name: string
+      setup: AutoTopUpSetup | null
+      methods: Promise<BillingResult<SavedPaymentMethod[]>>
+      line: string
+      action: string
+    }>([
+      {
+        name: 'asks to add one when nothing is saved',
+        setup: frozen,
+        methods: Promise.resolve({ status: 'ok', value: [] }),
+        line: 'Auto top-up needs a payment method. Add one to turn it on.',
+        action: 'Add payment method'
+      },
+      {
+        name: 'asks to set a default when cards are saved',
+        setup: frozen,
+        methods: Promise.resolve({ status: 'ok', value: [savedCard] }),
+        line: 'Auto top-up needs a default payment method. Set one to turn it on.',
+        action: 'Update payment'
+      },
+      {
+        name: 'keeps the off card while the saved list is loading',
+        setup: frozen,
+        methods: new Promise(() => {}),
+        ...TODAY
+      },
+      {
+        name: 'keeps the off card when the saved list fails',
+        setup: frozen,
+        methods: Promise.resolve({ status: 'error', code: 'REQUEST_FAILED' }),
+        ...TODAY
+      },
+      {
+        name: 'keeps the off card when not frozen',
+        setup: null,
+        methods: Promise.resolve({ status: 'ok', value: [] }),
+        ...TODAY
+      }
+    ])('$name', async ({ setup, methods, line, action }) => {
+      serveSavedMethods(methods)
+      renderCard(notConfigured, setup)
+
+      const link = await screen.findByRole('link', { name: action })
+      await vi.waitFor(() =>
+        expect(
+          screen
+            .getAllByTestId('billing-auto-top-up-line')
+            .map((node) => node.textContent.trim())
+        ).toEqual([line])
+      )
+      expect(
+        screen.getByTestId('billing-auto-top-up-status')
+      ).toHaveTextContent('Off')
+      expect(link).toContainHTML(
+        action === TODAY.action
+          ? 'icon-[lucide--external-link]'
+          : 'icon-[lucide--arrow-up-right]'
+      )
+      expect(useBillingSdkStore().readPaymentMethods).toHaveBeenCalledTimes(
+        setup ? 1 : 0
+      )
+    })
+
+    it('reports a no-card click as update_payment', async () => {
+      serveSavedMethods(Promise.resolve({ status: 'ok', value: [] }))
+      renderCard(notConfigured, frozen)
+      const link = await screen.findByRole('link', {
+        name: 'Add payment method'
+      })
+      const clickedId = correlationIdOf(link)
+
+      await clickWithoutNavigating(link)
+
+      expect(trackedEvents()).toHaveBeenCalledWith({
+        operation: 'platform_handoff',
+        stage: 'opened',
+        outcome: 'pending',
+        target: 'auto_top_up',
+        action: 'update_payment',
+        correlation_id: clickedId
+      })
+    })
+
+    it('leaves a card that is on unchanged', async () => {
+      serveSavedMethods(Promise.resolve({ status: 'ok', value: [] }))
+      renderCard(configured, frozen)
+
+      expect(
+        await screen.findByRole('link', { name: 'Manage' })
+      ).toBeInTheDocument()
+      expect(
+        screen
+          .getAllByTestId('billing-auto-top-up-line')
+          .map((node) => node.textContent.trim())
+      ).toEqual([RULE, 'Monthly limit: $50 of $200 used'])
+    })
   })
 })

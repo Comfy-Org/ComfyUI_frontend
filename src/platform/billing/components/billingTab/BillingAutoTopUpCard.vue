@@ -88,6 +88,7 @@
 <script setup lang="ts">
 import type { AutoTopUpCardAction } from '@comfyorg/account-core/billing'
 import { cn } from '@comfyorg/tailwind-utils'
+import { computedAsync } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -101,9 +102,15 @@ import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBilli
 import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTopUpCardViewed'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
 type Status = AutoReloadSettings['status']
-type ViewKey = Status | 'turnedOff' | 'maximumReached'
+type ViewKey =
+  | Status
+  | 'turnedOff'
+  | 'maximumReached'
+  | 'noPaymentMethod'
+  | 'noDefaultPaymentMethod'
 
 interface Line {
   text: string
@@ -178,6 +185,23 @@ const STATUS = {
     label: 'workspacePanel.billingTab.autoTopUp.status.maximumReached',
     dot: 'bg-warning-background',
     action: MANAGE
+  },
+  noPaymentMethod: {
+    ...NEUTRAL,
+    label: 'workspacePanel.billingTab.autoTopUp.status.off',
+    dot: 'bg-muted-foreground',
+    action: {
+      ...UPDATE_PAYMENT,
+      label: 'workspacePanel.billingTab.autoTopUp.actions.addPaymentMethod',
+      variant: 'secondary',
+      icon: OPEN
+    }
+  },
+  noDefaultPaymentMethod: {
+    ...NEUTRAL,
+    label: 'workspacePanel.billingTab.autoTopUp.status.off',
+    dot: 'bg-muted-foreground',
+    action: { ...UPDATE_PAYMENT, variant: 'secondary', icon: OPEN }
   },
   on: {
     ...NEUTRAL,
@@ -308,6 +332,12 @@ const LINES: Record<ViewKey, (settings: AutoReloadSettings) => Line[]> = {
     { text: t('workspacePanel.billingTab.autoTopUp.turnedOff') }
   ],
   off: () => [{ text: t('workspacePanel.billingTab.autoTopUp.off') }],
+  noPaymentMethod: () => [
+    { text: t('workspacePanel.billingTab.autoTopUp.noPaymentMethod') }
+  ],
+  noDefaultPaymentMethod: () => [
+    { text: t('workspacePanel.billingTab.autoTopUp.noDefaultPaymentMethod') }
+  ],
   on_hold: (settings) => [
     ...ruleLines(settings),
     { text: t('workspacePanel.billingTab.autoTopUp.onHold') }
@@ -330,8 +360,25 @@ function isStatus(status: string): status is Status {
   return zAutoReloadSettings.shape.status.safeParse(status).success
 }
 
+const needsDefaultPaymentMethod = computed(
+  () =>
+    autoTopUpSetup.value?.state === 'frozen' &&
+    autoTopUpSetup.value.reason === 'default_payment_method_missing'
+)
+
+const savedPaymentMethods = computedAsync(async () => {
+  if (!needsDefaultPaymentMethod.value) return null
+  const result = await useBillingSdkStore().readPaymentMethods()
+  return result.status === 'ok' ? result.value : null
+}, null)
+
 function viewKey(settings: AutoReloadSettings): ViewKey {
   if (!isStatus(settings.status)) return 'off'
+  if (settings.status === 'off' && savedPaymentMethods.value) {
+    return savedPaymentMethods.value.length === 0
+      ? 'noPaymentMethod'
+      : 'noDefaultPaymentMethod'
+  }
   if (
     settings.status === 'failed' &&
     settings.disabled_reason === 'consecutive_declines'
