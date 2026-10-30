@@ -2812,7 +2812,8 @@ describe('attachDocOpMinter', () => {
         errorType: 'agent_crdt_widget_owner_unresolved',
         context: expect.objectContaining({
           graphId: staleGraph.id,
-          nodeId: stale.id
+          nodeId: stale.id,
+          widget: stale.widgets![0].name
         })
       }),
       expect.objectContaining({
