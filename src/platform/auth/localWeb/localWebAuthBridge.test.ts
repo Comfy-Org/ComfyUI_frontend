@@ -1,5 +1,5 @@
 import { codeChallengeS256 } from '@comfyorg/account-core/oauthPkce'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import type {
@@ -630,6 +630,63 @@ describe('getWorkspaceToken', () => {
     expect(states).toEqual([])
 
     await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBe(WS1_TOKEN)
+  })
+
+  describe('after a token read finds the endpoint unreachable', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    it('says it is signed in again once the endpoint answers, with no other token read', async () => {
+      const { bridge, env, states } = await signedIn(30)
+      const renewed = accessToken({ sub: 'user-1', workspace_id: 'ws-1', n: 2 })
+      env.fetchImpl.mockImplementation(
+        async () => new Response(null, { status: 503 })
+      )
+      await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBeNull()
+
+      env.fetchImpl.mockImplementation(async () =>
+        tokenResponse(renewed, 'refresh-2')
+      )
+      await vi.advanceTimersByTimeAsync(5_000)
+
+      expect(states.at(-1)).toMatchObject({
+        status: 'signed_in',
+        userId: 'user-1',
+        workspaceId: 'ws-1'
+      })
+    })
+
+    it('stops retrying after a bounded number of attempts while the endpoint stays down', async () => {
+      const { bridge, env } = await signedIn(30)
+      env.fetchImpl.mockImplementation(
+        async () => new Response(null, { status: 503 })
+      )
+      await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBeNull()
+
+      await vi.advanceTimersByTimeAsync(60 * 60_000)
+      const attempts = env.fetchImpl.mock.calls.length
+      await vi.advanceTimersByTimeAsync(60 * 60_000)
+
+      expect(attempts).toBeGreaterThan(1)
+      expect(env.fetchImpl.mock.calls.length).toBe(attempts)
+    })
+
+    it('stops retrying once the refresh token turns out to be dead', async () => {
+      const { bridge, env, states } = await signedIn(30)
+      env.fetchImpl.mockImplementation(
+        async () => new Response(null, { status: 503 })
+      )
+      await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBeNull()
+
+      env.fetchImpl.mockImplementation(async () => oauthError('invalid_grant'))
+      await vi.advanceTimersByTimeAsync(5_000)
+      const attempts = env.fetchImpl.mock.calls.length
+      await vi.advanceTimersByTimeAsync(60 * 60_000)
+
+      expect(states).toEqual([{ status: 'signed_out' }])
+      expect(env.fetchImpl.mock.calls.length).toBe(attempts)
+    })
   })
 })
 

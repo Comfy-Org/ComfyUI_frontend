@@ -29,6 +29,9 @@ const REFRESH_MARGIN_MS = 60_000
 const CALLBACK_PATH = '/oauth/local-callback.html'
 const CALLBACK_MESSAGE_TYPE = 'comfy-local-web-sign-in'
 const POPUP_POLL_MS = 500
+const UNREACHABLE_TOKEN_RETRY_DELAYS_MS = [
+  5_000, 10_000, 20_000, 40_000, 60_000, 60_000, 60_000, 60_000
+]
 const TAB_WORKSPACE_KEY = 'Comfy.LocalWebSignIn.TabWorkspace'
 const CALLBACK_PARAMS = [
   'code',
@@ -110,6 +113,7 @@ export function createLocalWebAuthBridge(
   const listeners = new Set<(state: DesktopHostAuthState) => void>()
   let refreshing: Promise<OAuthTokens | undefined> | undefined
   let tokenUnreachable = false
+  let retryingUnreachableToken = false
   let signingIn:
     | {
         popup: LocalWebPopup
@@ -279,6 +283,42 @@ export function createLocalWebAuthBridge(
     return refreshing
   }
 
+  function markTokenReachable(): void {
+    if (!tokenUnreachable) return
+    tokenUnreachable = false
+    emit()
+  }
+
+  function markTokenUnreachable(): void {
+    tokenUnreachable = true
+    if (retryingUnreachableToken) return
+    retryingUnreachableToken = true
+    retryUnreachableToken(0)
+  }
+
+  function retryUnreachableToken(attempt: number): void {
+    if (
+      attempt >= UNREACHABLE_TOKEN_RETRY_DELAYS_MS.length ||
+      !tokenUnreachable
+    ) {
+      retryingUnreachableToken = false
+      return
+    }
+    setTimeout(() => {
+      void freshTokens()
+        .catch(() => undefined)
+        .then((tokens) => {
+          if (tokens) {
+            retryingUnreachableToken = false
+            markTokenReachable()
+            return
+          }
+          if (!activeTokens()) tokenUnreachable = false
+          retryUnreachableToken(attempt + 1)
+        })
+    }, UNREACHABLE_TOKEN_RETRY_DELAYS_MS[attempt])
+  }
+
   env.tokens.subscribe(emit)
 
   const callbackUri = new URL(CALLBACK_PATH, env.issuer).href
@@ -424,13 +464,11 @@ export function createLocalWebAuthBridge(
     async getWorkspaceToken(workspaceId) {
       const tokens = await freshTokens()
       if (!tokens) {
-        tokenUnreachable = activeTokens() !== undefined
+        if (activeTokens()) markTokenUnreachable()
+        else tokenUnreachable = false
         return null
       }
-      if (tokenUnreachable) {
-        tokenUnreachable = false
-        emit()
-      }
+      markTokenReachable()
       const identity = readAccessTokenIdentity(tokens.accessToken)
       return identity?.workspaceId === workspaceId ? tokens.accessToken : null
     },
