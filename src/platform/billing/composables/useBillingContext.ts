@@ -28,6 +28,7 @@ import type {
   BillingActions,
   BillingContext,
   BillingPortalOutcome,
+  BillingStatusReadOptions,
   CancelRail,
   BillingState,
   SubscriptionInfo
@@ -342,9 +343,11 @@ function useBillingContextInternal(): BillingContext {
 
   // Passive reads do nothing while unknown; the watcher above re-initializes
   // once the workspace type loads.
-  async function fetchStatus(): Promise<void> {
+  async function fetchStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<void> {
     if (type.value === 'unknown') return
-    return activeContext.value.fetchStatus()
+    return activeContext.value.fetchStatus(options)
   }
 
   async function fetchBalance(): Promise<void> {

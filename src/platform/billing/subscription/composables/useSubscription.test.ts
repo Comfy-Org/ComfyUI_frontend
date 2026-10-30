@@ -686,6 +686,30 @@ describe('useSubscription', () => {
       expect(mockGetBillingStatus).toHaveBeenCalledTimes(1)
     })
 
+    it('starts a new read for a fresh caller and keeps its answer over the shared read', async () => {
+      let resolveStartup!: (status: BillingStatusResponse) => void
+      mockGetBillingStatus.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveStartup = resolve
+        })
+      )
+      mockGetBillingStatus.mockResolvedValueOnce(
+        buildStatus({ is_active: true, renewal_date: 'after-consent' })
+      )
+      const { fetchStatusDirect, subscriptionStatus } =
+        useSubscriptionWithScope()
+
+      const startup = fetchStatusDirect()
+      await fetchStatusDirect({ fresh: true })
+      resolveStartup(
+        buildStatus({ is_active: true, renewal_date: 'before-consent' })
+      )
+      await startup
+
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(2)
+      expect(subscriptionStatus.value?.renewal_date).toBe('after-consent')
+    })
+
     it('does not downgrade known-good status on a failed fetch', async () => {
       mockGetBillingStatus.mockResolvedValueOnce({
         is_active: true,
