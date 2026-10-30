@@ -239,6 +239,13 @@ export function useFeatureFlags() {
         false
       )
     },
+    get runtimeLibraryModelsEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.RUNTIME_LIBRARY_MODELS_ENABLED,
+        remoteConfig.value.runtime_library_models_enabled,
+        false
+      )
+    },
     get lateCustomNodesEnabled() {
       return resolveFlag(
         ServerFeatureFlag.LATE_CUSTOM_NODES_ENABLED,

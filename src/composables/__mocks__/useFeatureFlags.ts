@@ -28,6 +28,7 @@ const defaultFlags: FeatureFlags = {
   comfyHubProfileGateEnabled: false,
   deploymentCompatibilityMarksEnabled: false,
   lateCustomNodesEnabled: false,
+  runtimeLibraryModelsEnabled: false,
   hostedBillingDestination: 'stripe',
   hostedBillingWebEnabled: false,
   showSignInButton: undefined,

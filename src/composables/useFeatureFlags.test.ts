@@ -706,6 +706,41 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('runtimeLibraryModelsEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('turns on from remote config', () => {
+      remoteConfig.value = { runtime_library_models_enabled: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.runtimeLibraryModelsEnabled).toBe(true)
+    })
+
+    it('falls back to the server feature of the same key', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) =>
+          path === 'runtime_library_models_enabled' ? true : defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.runtimeLibraryModelsEnabled).toBe(true)
+    })
+
+    it('defaults to false when the remote flag is unset', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.runtimeLibraryModelsEnabled).toBe(false)
+    })
+  })
+
   describe('dev override via localStorage', () => {
     it('resolveFlag returns localStorage override over remoteConfig and server value', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)

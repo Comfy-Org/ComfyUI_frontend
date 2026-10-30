@@ -5032,6 +5032,7 @@ export const zListAssetsQuery = z.object({
     .default('created_at'),
   order: z.enum(['asc', 'desc']).optional().default('desc'),
   include_public: z.boolean().optional().default(true),
+  workspace_library: z.boolean().optional().default(false),
   hash: z.string().optional(),
   after: z.string().optional()
 })

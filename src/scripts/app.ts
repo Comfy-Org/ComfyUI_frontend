@@ -13,8 +13,6 @@ import {
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 
-import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -126,7 +124,6 @@ import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type {
   ComfyApp as IComfyApp,
@@ -192,6 +189,7 @@ import type { ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
 import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
+import { syncPromotedComboHostOptions } from '@/core/graph/widgets/syncPromotedComboHostOptions'
 import type { ComfyUI } from './ui'
 import type { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
@@ -234,34 +232,6 @@ export function sanitizeNodeName(string: string) {
   }
   return string.replace(/[&<>"'`=]/g, function fromEntityMap(s) {
     return entityMap[s as keyof typeof entityMap]
-  })
-}
-
-function syncPromotedComboHostOptions(rootGraph: LGraph): void {
-  const widgetValueStore = useWidgetValueStore()
-  forEachNode(rootGraph, (node) => {
-    if (!node.isSubgraphNode()) return
-    for (const input of node.inputs) {
-      if (!input.widgetId) continue
-
-      const source = promotedInputSource(node, input)
-      if (!source) continue
-
-      const resolution = resolveConcretePromotedWidget(
-        node,
-        source.nodeId,
-        source.widgetName
-      )
-      if (resolution.status !== 'resolved') continue
-
-      const sourceWidget = resolution.resolved.widget
-      if (sourceWidget.type !== 'combo') continue
-
-      const state = widgetValueStore.getWidget(input.widgetId)
-      if (!state) continue
-
-      state.options = { ...sourceWidget.options }
-    }
   })
 }
 

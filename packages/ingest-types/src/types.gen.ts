@@ -9266,6 +9266,19 @@ export type ListAssetsData = {
      */
     include_public?: boolean
     /**
+     * List the workspace's model library: every member's private model
+     * rows in this workspace, not only the caller's, and none of the
+     * public catalog. A browser that runs on a picked deployment gets the
+     * whole library, not only the Release's models, so its loader
+     * dropdowns can offer a model the deployment downloads for the job.
+     * Needs `models` among the tags (`tags_all` or `include_tags`), else
+     * 400 `INVALID_TAG_FILTER`. Honoured only while the
+     * `runtime_library_models_enabled` flag is on for the caller;
+     * otherwise ignored and the listing is the default one.
+     *
+     */
+    workspace_library?: boolean
+    /**
      * Filter assets by content hash, in the canonical `blake3:<hex>`
      * form. Matches regardless of which of this asset store's two
      * internal hash storage formats the matching row was written

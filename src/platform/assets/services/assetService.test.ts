@@ -859,6 +859,135 @@ describe(assetService.getAssetModels, () => {
   })
 })
 
+describe(assetService.getWorkspaceLibraryModels, () => {
+  function libraryRow(id: string, filename: string): AssetItem {
+    return {
+      id,
+      name: filename,
+      tags: ['models', 'loras'],
+      size: 152043520,
+      mime_type: 'application/octet-stream',
+      created_at: '2026-10-29T00:00:00Z',
+      updated_at: '2026-10-29T00:00:00Z',
+      user_metadata: { filename }
+    }
+  }
+
+  it("lists every member's private models in the folder from the workspace library listing", async () => {
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(
+        buildAssetListResponse(
+          [
+            libraryRow(
+              '3f0b6c1e-0000-4000-8000-000000000001',
+              'my_style_v2.safetensors'
+            )
+          ],
+          { hasMore: true, nextCursor: 'page-2', total: 2 }
+        )
+      )
+      .mockResolvedValueOnce(
+        buildAssetListResponse(
+          [
+            libraryRow(
+              '3f0b6c1e-0000-4000-8000-000000000002',
+              'teammate_style.safetensors'
+            )
+          ],
+          { total: 2 }
+        )
+      )
+
+    const names = await assetService.getWorkspaceLibraryModels('loras')
+
+    expect(names).toEqual([
+      'my_style_v2.safetensors',
+      'teammate_style.safetensors'
+    ])
+    const [first, second] = vi
+      .mocked(api.fetchApi)
+      .mock.calls.map(([url]) => new URL(url, 'http://localhost').searchParams)
+    expect(first.get('include_tags')).toBe('models,loras')
+    expect(first.get('include_public')).toBe('false')
+    expect(first.get('workspace_library')).toBe('true')
+    expect(second.get('after')).toBe('page-2')
+    expect(second.get('workspace_library')).toBe('true')
+  })
+
+  it('leaves out a row whose loader name is not a safe file name', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-000000000003',
+          '../escape.safetensors'
+        ),
+        libraryRow('3f0b6c1e-0000-4000-8000-000000000004', 'kept.safetensors')
+      ])
+    )
+
+    await expect(
+      assetService.getWorkspaceLibraryModels('loras')
+    ).resolves.toEqual(['kept.safetensors'])
+  })
+
+  it('names a model by its loader path when its file name differs', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([
+        {
+          ...libraryRow(
+            '3f0b6c1e-0000-4000-8000-000000000005',
+            'My Style (final).safetensors'
+          ),
+          loader_path: 'my_style_final.safetensors'
+        }
+      ])
+    )
+
+    await expect(
+      assetService.getWorkspaceLibraryModels('loras')
+    ).resolves.toEqual(['my_style_final.safetensors'])
+  })
+
+  it('lists a loader name once when two members added a model under it', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-00000000000c',
+          'my_style_v2.safetensors'
+        ),
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-00000000000d',
+          'teammate_style.safetensors'
+        ),
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-00000000000e',
+          'my_style_v2.safetensors'
+        )
+      ])
+    )
+
+    await expect(
+      assetService.getWorkspaceLibraryModels('loras')
+    ).resolves.toEqual([
+      'my_style_v2.safetensors',
+      'teammate_style.safetensors'
+    ])
+  })
+
+  it('fails when the listing fails, so the dropdown can report it', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildResponse(
+        { code: 'INVALID_TAG_FILTER', message: 'bad tags' },
+        { ok: false, status: 400 }
+      )
+    )
+
+    await expect(
+      assetService.getWorkspaceLibraryModels('loras')
+    ).rejects.toThrow('400')
+  })
+})
+
 describe(assetService.onModelsScanned, () => {
   it('invokes the callback when the scan event fires and unsubscribes cleanly', () => {
     const callback = vi.fn()
