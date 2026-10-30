@@ -124,6 +124,7 @@ function useBillingContextInternal(): BillingContext {
     return workspaceBillingRef.value
   }
 
+  let freshStatusReadOwed = false
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -274,6 +275,10 @@ function useBillingContextInternal(): BillingContext {
 
       try {
         await initialize()
+        if (freshStatusReadOwed && type.value !== 'unknown') {
+          freshStatusReadOwed = false
+          await activeContext.value.fetchStatus({ fresh: true })
+        }
       } catch (err) {
         console.error('Failed to initialize billing context:', err)
       }
@@ -346,7 +351,10 @@ function useBillingContextInternal(): BillingContext {
   async function fetchStatus(
     options?: BillingStatusReadOptions
   ): Promise<void> {
-    if (type.value === 'unknown') return
+    if (type.value === 'unknown') {
+      freshStatusReadOwed ||= options?.fresh === true
+      return
+    }
     return activeContext.value.fetchStatus(options)
   }
 

@@ -906,7 +906,6 @@ function useSubscriptionInternal() {
     const shared = sharedStatusRead(ownerId, workspaceId, pendingAttemptId)
     if (shared) {
       if (!options?.fresh) return shared
-      // Replacing the read would drop its answer, so let it land first.
       return shared
         .catch(() => null)
         .then(() => fetchSubscriptionStatus(options))

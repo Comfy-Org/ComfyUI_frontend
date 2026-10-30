@@ -224,13 +224,16 @@ export function useLegacyBilling(): BillingState & BillingActions {
         statusReadAuthoritative.value = status?.billing_rail !== undefined
       return { ok: true }
     } catch (cause) {
-      if (requestId === latestStatusReadId)
+      if (requestId === latestStatusReadId) {
         statusReadAuthoritative.value = false
-      error.value =
-        cause instanceof Error ? cause.message : 'Failed to fetch subscription'
+        error.value =
+          cause instanceof Error
+            ? cause.message
+            : 'Failed to fetch subscription'
+      }
       return { ok: false, cause }
     } finally {
-      isLoading.value = false
+      if (requestId === latestStatusReadId) isLoading.value = false
     }
   }
 

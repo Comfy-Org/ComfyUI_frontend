@@ -648,6 +648,24 @@ describe('useBillingContext', () => {
       expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
     })
 
+    it('runs a fresh read asked for while unknown once routing is known', async () => {
+      const loaded = holdWorkspaceUnloaded('personal')
+      mockBillingRail.value = 'legacy_stripe'
+      const context = useBillingContext()
+      vi.clearAllMocks()
+
+      await context.fetchStatus({ fresh: true })
+      expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
+
+      loaded.value = true
+
+      await vi.waitFor(() => {
+        expect(useSubscription().fetchStatusDirect).toHaveBeenCalledWith({
+          fresh: true
+        })
+      })
+    })
+
     it('makes no billing call while unknown, then routes to workspace billing for a team', async () => {
       const loaded = holdWorkspaceUnloaded('team')
       const context = useBillingContext()
