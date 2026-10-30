@@ -238,6 +238,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       scheduledChange: status.scheduled_change ?? null,
       renewalDate: status.renewal_date ?? null,
       endDate: status.cancel_at ?? null,
+      endedAt: status.ended_at,
       isCancelled: status.subscription_status === 'canceled',
       hasFunds: status.has_funds,
       agentHasFunds:

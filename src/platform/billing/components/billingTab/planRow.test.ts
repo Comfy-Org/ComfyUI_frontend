@@ -174,6 +174,48 @@ describe('derivePlanRow', () => {
       }
     },
     {
+      case: 'an ended plan with a served ended_at over cancel_at',
+      facts: {
+        subscriptionStatus: 'ended',
+        endedAt: '2026-08-20T00:00:00Z',
+        endDate: '2026-09-01T00:00:00Z'
+      },
+      expected: {
+        kind: 'ended',
+        planName: 'Pro',
+        cadence: 'monthly',
+        endedAt: '2026-08-20T00:00:00Z'
+      }
+    },
+    {
+      case: 'an ended plan whose ended_at is served as null',
+      facts: {
+        subscriptionStatus: 'ended',
+        endedAt: null,
+        endDate: '2026-09-01T00:00:00Z'
+      },
+      expected: {
+        kind: 'ended',
+        planName: 'Pro',
+        cadence: 'monthly',
+        endedAt: null
+      }
+    },
+    {
+      case: 'an ended subscription_state with no plan name',
+      facts: {
+        subscriptionState: 'ended',
+        subscriptionStatus: null,
+        planName: null
+      },
+      expected: {
+        kind: 'ended',
+        planName: null,
+        cadence: 'monthly',
+        endedAt: null
+      }
+    },
+    {
       case: 'a served ended subscription_state',
       facts: { subscriptionState: 'ended', subscriptionStatus: null },
       expected: {

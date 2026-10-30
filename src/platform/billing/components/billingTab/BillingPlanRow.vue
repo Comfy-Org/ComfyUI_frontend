@@ -95,6 +95,9 @@ const title = computed(() => {
   if (state.kind === 'unknown') {
     return t('workspacePanel.billingTab.plan.unknown.title')
   }
+  if (state.kind === 'ended') {
+    return state.planName ?? t('workspacePanel.billingTab.plan.unknown.title')
+  }
   if (state.kind === 'salesManaged') {
     return (
       state.planName ?? t('workspacePanel.billingTab.plan.salesManaged.title')

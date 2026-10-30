@@ -33,6 +33,14 @@ type RuntimeLegacyBalance = Omit<
 }
 type StatusReadResult = { ok: true } | { ok: false; cause: unknown }
 
+function datesFromStatus(status: BillingStatusResponse | null) {
+  return {
+    renewalDate: status?.renewal_date ?? null,
+    endDate: status?.cancel_at ?? null,
+    endedAt: status?.ended_at
+  }
+}
+
 function fundsFromStatus(
   status: BillingStatusResponse | null,
   statusReadAuthoritative: boolean
@@ -132,8 +140,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
       duration: subscriptionDuration.value,
       planSlug: null,
       scheduledChange: null,
-      renewalDate: status?.renewal_date ?? null,
-      endDate: status?.cancel_at ?? null,
+      ...datesFromStatus(status),
       isCancelled: isCancelled.value,
       ...fundsFromStatus(status, statusReadAuthoritative.value)
     }

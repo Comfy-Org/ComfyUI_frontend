@@ -1088,6 +1088,21 @@ describe('BillingTab', () => {
     ).toBeInTheDocument()
   })
 
+  it('titles an ended plan with no served plan name as Your plan', () => {
+    arrange({
+      subscriptionStatus: null,
+      subscriptionState: 'ended',
+      subscription: { ...activeSubscription, isActive: false, tier: null }
+    })
+
+    expect(
+      screen.getByRole('heading', { name: 'Your plan' })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+      'This plan has ended.'
+    )
+  })
+
   it('renders an unrecognised plan as Your plan', () => {
     arrange({ subscription: { ...activeSubscription, tier: null } })
 
