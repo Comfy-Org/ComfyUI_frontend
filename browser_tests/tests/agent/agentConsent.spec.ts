@@ -83,7 +83,7 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     })
 
     await test.step('Accept saves consent before opening Agent', async () => {
-      // Regression: https://linear.app/comfyorg/issue/PM-2398/refresh-billing-after-agent-consent-from-the-top-bar-or-first-load
+      await agentBilling.waitForInitialStatusResponse()
       const billingRequestsBeforeAccept = agentBilling.statusRequestCount
       agentBilling.setFundingState('exhausted')
       const billingRefresh = page.waitForResponse(
