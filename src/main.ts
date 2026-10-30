@@ -49,9 +49,10 @@ bootstrapTracer.armWatchdog()
 // Load remote config before the Firebase app resolves below, so getFirebaseConfig()
 // resolves against the server's runtime values instead of the build-time defaults.
 await bootstrapTracer.settle('startup/remote-config', async () => {
-  const { refreshRemoteConfig } =
+  const { loadRemoteConfigUntilReady, refreshRemoteConfig } =
     await import('@/platform/remoteConfig/refreshRemoteConfig')
-  await refreshRemoteConfig({ useAuth: false })
+  if (isCloud) await loadRemoteConfigUntilReady()
+  else await refreshRemoteConfig({ useAuth: false })
 })
 
 markStoresPending()
