@@ -697,6 +697,19 @@ describe('createOpSender', () => {
     expect(sent[0].ops[0].base_version).toBe(41)
   })
 
+  it('never re-stamps a batch whose send threw', () => {
+    transportThrows = true
+    sender.enqueue([addNode(1)])
+    transportThrows = false
+    transportUp = false
+    observedCounter = 90
+    vi.advanceTimersByTime(500)
+    transportUp = true
+    vi.advanceTimersByTime(500)
+
+    expect(sent[0].ops[0].base_version).toBe(41)
+  })
+
   it('never re-stamps a batch the wire already carried', () => {
     sender.enqueue([addNode(1)])
     const stamped = sent[0].ops[0].base_version

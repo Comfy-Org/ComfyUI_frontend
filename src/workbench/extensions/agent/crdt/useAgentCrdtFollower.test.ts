@@ -64,6 +64,7 @@ const bridgeState = (() => {
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
     isSubscribeBaselineIntegrated = false
+    isCatchingUp = false
     follower = {
       updatesApplied: 0,
       doc: {
@@ -3068,6 +3069,28 @@ describe('useAgentCrdtFollower', () => {
       op: 'set_widget',
       widget: 'cfg'
     })
+    unmount()
+  })
+
+  it('holds a human edit made before a fresh subscribe has caught up', async () => {
+    vi.useFakeTimers()
+    const { enqueue, unmount } = mountFollower('wf-1')
+    bridge().isCatchingUp = true
+    clientState.sendOps.mockClear()
+
+    enqueue([{ op: 'set_widget', node_id: '1', widget: 'cfg', value: 4.5 }])
+    await Promise.resolve()
+    vi.advanceTimersByTime(10_000)
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+
+    bridge().isCatchingUp = false
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 44,
+      catchUp: true
+    })
+
+    expect(clientState.sendOps).toHaveBeenCalledOnce()
     unmount()
   })
 

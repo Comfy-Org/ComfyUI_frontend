@@ -221,6 +221,7 @@ interface InFlight extends WireBatch {
   resent: boolean
   parked: boolean
   awaitingTransport: boolean
+  sendMayHaveLeft: boolean
   timer: ReturnType<typeof setTimeout> | null
 }
 
@@ -257,7 +258,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const mayReportSerializationFailure = createReportBudget()
 
   function observedFloor(): number {
-    return (deps.observedCounter() ?? -1) + 1
+    const floor = (deps.observedCounter() ?? -1) + 1
+    return Number.isSafeInteger(floor) ? floor : 0
   }
 
   function mintBaseVersion(workflowId: string | null): number {
@@ -366,7 +368,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
    * a resend must be byte-identical to stay idempotent.
    */
   function stampAboveObserved(batch: InFlight): void {
-    if (batch.sends > 0 || batch.ops.length === 0) return
+    if (batch.sends > 0 || batch.sendMayHaveLeft) return
     const counters = batch.ops.map((op) => op.base_version)
     const floor = Math.max(
       observedFloor(),
@@ -385,7 +387,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function recordSentCounters(batch: InFlight): void {
     const highest = Math.max(...batch.ops.map((op) => op.base_version))
-    lastSentVersions.set(batch.workflowId, highest)
+    const lastSent = lastSentVersions.get(batch.workflowId) ?? -1
+    lastSentVersions.set(batch.workflowId, Math.max(lastSent, highest))
     const lastMinted = lastMintedVersions.get(batch.workflowId) ?? -1
     lastMintedVersions.set(batch.workflowId, Math.max(lastMinted, highest))
   }
@@ -395,6 +398,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     try {
       return deps.sendOps(batch.workflowId, deps.tab, batch.wire)
     } catch (error) {
+      batch.sendMayHaveLeft = true
       if (!batch.reportedThrow) {
         batch.reportedThrow = true
         reportError(error, {
@@ -501,6 +505,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           resent: false,
           parked: false,
           awaitingTransport: false,
+          sendMayHaveLeft: false,
           timer: null
         }
         transmit(inFlight, 0)

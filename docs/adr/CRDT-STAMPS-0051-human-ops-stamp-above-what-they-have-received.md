@@ -45,9 +45,10 @@ It either lost, or won only through the whole-document path of
    internal order is kept, and later batches stay above it.
 3. **An op the wire has carried is frozen.** A resend is byte-identical, which is
    what keeps it idempotent.
-4. **A follower known to be behind does not send.** From a socket drop, sequence
-   gap or reset until the catch-up lands, the sender holds, because a stamp taken
-   before the catch-up cannot be above it.
+4. **A follower known to be behind does not send.** From a subscribe, socket
+   drop, sequence gap or reset until the catch-up has been integrated, the sender
+   holds, because a stamp taken before the catch-up cannot be above it. A deferred
+   or failed projection does not hold it: the document is already current.
 
 The result for a value conflict: an edit the person made without seeing the
 agent's write wins it if that edit had not reached the wire when the outage

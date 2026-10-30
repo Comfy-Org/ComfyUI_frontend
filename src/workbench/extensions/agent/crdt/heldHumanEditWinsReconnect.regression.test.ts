@@ -103,7 +103,6 @@ describe('a human edit across a reconnect, against the real applier', () => {
 
   afterEach(() => {
     sender.detach()
-    vi.useRealTimers()
   })
 
   it('wins a register the agent wrote during the outage', () => {

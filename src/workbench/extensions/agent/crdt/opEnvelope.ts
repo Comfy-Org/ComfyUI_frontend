@@ -16,6 +16,8 @@ import type { GraphOperation } from './graphOperations'
 
 export const WIRE_MAX_OPS_PER_BATCH = 256
 export const WIRE_MAX_BATCH_BYTES = 4 * 1024 * 1024
+/** Room for a counter to grow when an unsent batch is re-stamped at send. */
+const STAMP_LIFT_HEADROOM = WIRE_MAX_OPS_PER_BATCH * 2 * 16
 
 export interface MintContext {
   actor: Actor
@@ -212,7 +214,8 @@ export function chunkWireOps(ops: readonly SizedOp[]): SizedOp[][] {
     }
     const overOps = current.length + 1 > WIRE_MAX_OPS_PER_BATCH
     const overBytes =
-      current.length > 0 && currentBytes + sized.bytes > WIRE_MAX_BATCH_BYTES
+      current.length > 0 &&
+      currentBytes + sized.bytes > WIRE_MAX_BATCH_BYTES - STAMP_LIFT_HEADROOM
     if (overOps || overBytes) flush()
     current.push(sized)
     currentBytes += sized.bytes

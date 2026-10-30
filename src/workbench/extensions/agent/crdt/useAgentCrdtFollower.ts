@@ -471,7 +471,13 @@ function startAgentCrdtFollower(
   function clearSyncStaleness(): void {
     syncCanvasMayBeStale.value = false
     catchUpAwaitingProjectionFor = null
-    sender.retryTransport()
+  }
+
+  function followerDocIsBehind(): boolean {
+    return (
+      bridge.isCatchingUp ||
+      (syncCanvasMayBeStale.value && catchUpAwaitingProjectionFor === null)
+    )
   }
 
   function clearCanvasStaleness(): void {
@@ -572,11 +578,11 @@ function startAgentCrdtFollower(
   let counterReadFailureReported = false
   const sender = createOpSender({
     // A batch sent before the catch-up lands could not stamp above it, so a
-    // follower known to be behind holds its ops until it has caught up. Only
-    // sync staleness counts: a failed projection leaves the document, and so
-    // its counters, up to date.
+    // follower known to be behind holds its ops until it has caught up. A
+    // projection that is deferred or failed does not count: the document, and
+    // so its counters, is already up to date.
     sendOps: (target, tab, ops) =>
-      !syncCanvasMayBeStale.value && client.sendOps(target, tab, ops),
+      !followerDocIsBehind() && client.sendOps(target, tab, ops),
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
         // `docFrameClient` already validated this into a DocOpsResult, which
@@ -874,6 +880,7 @@ function startAgentCrdtFollower(
     if (!update.catchUp) return
     if (outcome.applied) clearSyncStaleness()
     else catchUpAwaitingProjectionFor = update.workflowId
+    sender.retryTransport()
   }
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
