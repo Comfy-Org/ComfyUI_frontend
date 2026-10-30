@@ -1,10 +1,7 @@
 import { Semaphore, delay, withTimeout } from 'es-toolkit'
 
 import { t } from '@/i18n'
-import type {
-  ExecutionError,
-  JobDetail
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { ExecutionError, JobDetail } from '@comfyorg/api-client/jobTypes'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { TaskItemImpl } from '@/stores/queueStore'

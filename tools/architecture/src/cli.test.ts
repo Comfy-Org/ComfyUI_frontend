@@ -74,7 +74,19 @@ describe('loadArchitectureConfiguration', () => {
     {
       name: 'a glob other than a trailing /**',
       overrides: { modules: [{ path: 'src/images/*.ts', role: 'domain' }] },
-      error: 'must be a src/ file or a src/ directory ending in /**'
+      error: 'must be a file or a directory ending in /** under src/'
+    },
+    {
+      name: 'a claim on all of src',
+      overrides: { modules: [{ path: 'src/**', role: 'domain' }] },
+      error: 'must be a file or a directory ending in /** under src/'
+    },
+    {
+      name: 'a package path outside the package src directory',
+      overrides: {
+        modules: [{ path: 'packages/widgets/vite.config.ts', role: 'domain' }]
+      },
+      error: 'must be a file or a directory ending in /** under src/'
     },
     {
       name: 'an unknown domain reference',
@@ -512,24 +524,36 @@ describe('buildCatalog', () => {
     ])
   })
 
-  it('reports source coverage from directory and exact module paths', () => {
+  it('reports coverage of src and package src code from directory and exact module paths', () => {
     const root = createRepository(
-      {},
+      {
+        modules: [
+          ...record.modules,
+          { path: 'packages/widgets/src/index.ts', role: 'domain' }
+        ]
+      },
       {
         'src/zeta.tsx': '',
         'src/imageViewer.test.ts': '',
         'src/images/nested/deep.vue': '<template />',
         'src/README.md': '',
-        'apps/desktop/main.ts': ''
+        'apps/desktop/main.ts': '',
+        'packages/widgets/src/index.ts': '',
+        'packages/widgets/src/legacy.ts': '',
+        'packages/widgets/vite.config.ts': ''
       }
     )
     const catalog = buildCatalog(loadValidConfiguration(root), [])
-    expect(catalog.domains[0].sourceFileCount).toBe(4)
+    expect(catalog.domains[0].sourceFileCount).toBe(5)
     expect(catalog.coverage).toEqual({
-      total: 6,
-      classified: 4,
-      unclassified: 2,
-      unclassifiedFiles: ['src/imageViewer.test.ts', 'src/zeta.tsx']
+      total: 8,
+      classified: 5,
+      unclassified: 3,
+      unclassifiedFiles: [
+        'packages/widgets/src/legacy.ts',
+        'src/imageViewer.test.ts',
+        'src/zeta.tsx'
+      ]
     })
   })
 })

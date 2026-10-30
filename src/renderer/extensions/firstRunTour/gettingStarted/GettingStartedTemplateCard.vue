@@ -14,7 +14,7 @@
 import { computed } from 'vue'
 
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import type { TemplateInfo } from '@comfyorg/api-client/templateTypes'
 
 import GettingStartedCard from './GettingStartedCard.vue'
 

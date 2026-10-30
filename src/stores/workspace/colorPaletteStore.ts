@@ -11,7 +11,7 @@ import type {
   ColorPalettes,
   CompletedPalette,
   Palette
-} from '@/schemas/colorPaletteSchema'
+} from '@comfyorg/settings-core/colorPaletteSchema'
 import { paletteColorScheme } from '@/utils/colorPaletteTheme'
 
 export const useColorPaletteStore = defineStore('colorPalette', () => {

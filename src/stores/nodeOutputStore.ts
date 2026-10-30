@@ -13,8 +13,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type {
   ExecutedWsMessage,
   ResultItem
-} from '@/platform/remote/comfyui/execution/types'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
+} from '@comfyorg/api-client/executionTypes'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { clone } from '@/scripts/utils'

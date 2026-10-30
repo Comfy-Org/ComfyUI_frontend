@@ -21,7 +21,7 @@
       },
       {
         "name": "comfyui-api/domain/public",
-        "patterns": ["src/platform/remote/comfyui/execution/types.ts"]
+        "patterns": ["packages/api-client/src/executionTypes.ts"]
       },
       {
         "name": "ingest-api/domain/public",
@@ -46,6 +46,13 @@
       {
         "name": "node-definition/domain/public",
         "patterns": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"]
+      },
+      {
+        "name": "remote-config/infrastructure/public",
+        "patterns": [
+          "src/utils/devFeatureFlagOverride.ts",
+          "src/utils/sessionFeatureFlagOverride.ts"
+        ]
       },
       {
         "name": "server-facts/domain/public",
@@ -525,23 +532,25 @@
       {
         "name": "authentication/domain",
         "patterns": [
-          "src/platform/auth/apiAuthProvider.ts",
-          "src/platform/auth/authCredential.ts",
-          "src/platform/auth/authCredential.test.ts",
           "src/platform/auth/authRejection.ts",
           "src/platform/auth/authRejection.test.ts",
           "src/platform/auth/localWeb/accessTokenIdentity.ts",
-          "src/platform/auth/session/sessionMediaUrl.ts",
-          "src/platform/auth/session/sessionMediaUrl.test.ts",
           "src/platform/auth/sso/ssoRequiredDialogKey.ts",
           "src/platform/auth/sso/ssoReturnPath.ts",
           "src/platform/auth/sso/ssoReturnPath.test.ts",
           "src/platform/workspace/stores/workspaceAuthError.ts",
           "src/schemas/signInSchema.ts",
           "src/schemas/signInSchema.test.ts",
-          "src/types/authTypes.ts",
           "src/utils/hostWhitelist.ts",
-          "src/utils/hostWhitelist.test.ts"
+          "src/utils/hostWhitelist.test.ts",
+          "packages/account-core/src/signInSchemas.ts",
+          "packages/account-core/src/signInSchemas.test.ts",
+          "packages/api-client/src/apiAuthProvider.ts",
+          "packages/api-client/src/authCredential.ts",
+          "packages/api-client/src/authCredential.test.ts",
+          "packages/api-client/src/sessionMediaUrl.ts",
+          "packages/api-client/src/sessionMediaUrl.test.ts",
+          "packages/api-client/src/authTypes.ts"
         ]
       },
       {
@@ -574,7 +583,9 @@
           "src/stores/authStore.test.ts",
           "src/stores/userStore.ts",
           "src/stores/userStore.test.ts",
-          "src/storybook/mocks/useCurrentUser.ts"
+          "src/storybook/mocks/useCurrentUser.ts",
+          "packages/account-ui/src/auth/turnstileGate.ts",
+          "packages/account-ui/src/auth/turnstileGate.test.ts"
         ]
       },
       {
@@ -586,14 +597,14 @@
           "src/platform/auth/firebaseIdentityPopupWatch.test.ts",
           "src/platform/auth/session/interactiveSignInMarker.ts",
           "src/platform/auth/session/ssoReentryStorage.ts",
-          "src/platform/auth/session/webSessionFetch.ts",
-          "src/platform/auth/session/webSessionFetch.test.ts",
           "src/platform/auth/sso/ssoTelemetry.ts",
           "src/platform/auth/unified/**",
           "src/platform/workspace/stores/legacyWorkspaceTokenRail.ts",
           "src/platform/workspace/stores/legacyWorkspaceTokenRail.lifecycle.test.ts",
           "src/platform/workspace/stores/legacyWorkspaceTokenRail.test.ts",
-          "src/types/axios-augmentation.d.ts"
+          "src/types/axios-augmentation.d.ts",
+          "packages/api-client/src/webSessionFetch.ts",
+          "packages/api-client/src/webSessionFetch.test.ts"
         ]
       },
       {
@@ -645,7 +656,14 @@
           "src/platform/billing/components/subscriptionPanelWorkspace.logic.ts",
           "src/platform/billing/subscription/constants/**",
           "src/platform/billing/utils/checkoutJourney.ts",
-          "src/platform/billing/utils/checkoutJourney.test.ts"
+          "src/platform/billing/utils/checkoutJourney.test.ts",
+          "packages/account-core/src/core/billing/**",
+          "packages/account-ui/src/billing/catalog.ts",
+          "packages/account-ui/src/billing/catalog.test.ts",
+          "packages/billing-contract/src/**",
+          "packages/billing-core/src/**",
+          "packages/shared-frontend-utils/src/creditsUtil.ts",
+          "packages/shared-frontend-utils/src/creditsUtil.test.ts"
         ]
       },
       {
@@ -875,7 +893,9 @@
           "src/extensions/core/load3d/composables/useCameraInfo.test.ts",
           "src/extensions/core/load3d/cameraAngle/**",
           "src/extensions/core/load3d/cameraInfo/widgetBridge.ts",
-          "src/extensions/core/load3d/cameraInfo/widgetBridge.test.ts"
+          "src/extensions/core/load3d/cameraInfo/widgetBridge.test.ts",
+          "packages/viewport3d/src/cameraAngle/**",
+          "packages/viewport3d/src/cameraInfo/**"
         ]
       },
       {
@@ -985,7 +1005,9 @@
         "patterns": [
           "src/platform/auth/cloudApiAuthProvider.ts",
           "src/platform/cloud/onboarding/auth.ts",
-          "src/platform/cloud/onboarding/auth.test.ts"
+          "src/platform/cloud/onboarding/auth.test.ts",
+          "packages/shared-frontend-utils/src/piiUtil.ts",
+          "packages/shared-frontend-utils/src/piiUtil.test.ts"
         ]
       },
       {
@@ -1025,7 +1047,7 @@
         "name": "color-palettes/domain",
         "patterns": [
           "src/constants/coreColorPalettes.ts",
-          "src/schemas/colorPaletteSchema.ts"
+          "packages/settings-core/src/colorPaletteSchema.ts"
         ]
       },
       {
@@ -1043,7 +1065,8 @@
           "src/types/algoliasearch-lite.d.ts",
           "src/types/algoliaTypes.ts",
           "src/types/comfyRegistryTypes.ts",
-          "src/types/searchServiceTypes.ts"
+          "src/types/searchServiceTypes.ts",
+          "packages/registry-types/src/**"
         ]
       },
       {
@@ -1071,9 +1094,12 @@
       {
         "name": "comfyui-api/domain",
         "patterns": [
-          "src/schemas/resultItemTypeSchema.ts",
           "src/utils/createAnnotatedPath.ts",
-          "src/utils/createAnnotatedPath.test.ts"
+          "src/utils/createAnnotatedPath.test.ts",
+          "packages/api-client/src/executionTypes.ts",
+          "packages/api-client/src/executionTypes.test.ts",
+          "packages/api-client/src/resultItemTypeSchema.ts",
+          "packages/api-client/src/types.ts"
         ]
       },
       {
@@ -1085,7 +1111,9 @@
           "src/utils/histogramUtil.test.ts",
           "src/utils/treeUtil.ts",
           "src/utils/treeUtil.test.ts",
-          "src/utils/validationUtil.ts"
+          "src/utils/validationUtil.ts",
+          "packages/shared-frontend-utils/src/colorUtil.ts",
+          "packages/shared-frontend-utils/src/colorUtil.test.ts"
         ]
       },
       {
@@ -1122,7 +1150,8 @@
           "src/components/loader/**",
           "src/components/range/RangeEditor.vue",
           "src/components/range/RangeEditor.test.ts",
-          "src/utils/gridUtil.ts"
+          "src/utils/gridUtil.ts",
+          "packages/design-system/src/**"
         ]
       },
       {
@@ -1152,7 +1181,11 @@
       },
       {
         "name": "error-handling/domain",
-        "patterns": ["src/utils/errorUtil.ts", "src/utils/errorUtil.test.ts"]
+        "patterns": [
+          "src/utils/errorUtil.ts",
+          "src/utils/errorUtil.test.ts",
+          "packages/shared-frontend-utils/src/errorUtil.ts"
+        ]
       },
       {
         "name": "error-handling/application",
@@ -1176,7 +1209,8 @@
           "src/platform/telemetry/vueDirectiveErrorDiagnostics.ts",
           "src/platform/telemetry/vueDirectiveErrorDiagnostics.test.ts",
           "src/utils/preloadErrorUtil.ts",
-          "src/utils/preloadErrorUtil.test.ts"
+          "src/utils/preloadErrorUtil.test.ts",
+          "packages/telemetry/src/redactTelemetryUrls.ts"
         ]
       },
       {
@@ -1186,7 +1220,10 @@
           "src/platform/telemetry/assertFailureReporter.test.ts",
           "src/platform/telemetry/assetLoadErrorReporting.ts",
           "src/platform/telemetry/assetLoadErrorReporting.test.ts",
-          "src/platform/telemetry/reportError.sentry.test.ts"
+          "src/platform/telemetry/reportError.sentry.test.ts",
+          "packages/telemetry/src/__mocks__/reportError.ts",
+          "packages/telemetry/src/reportError.ts",
+          "packages/telemetry/src/reportError.test.ts"
         ]
       },
       {
@@ -1200,7 +1237,8 @@
           "src/platform/telemetry/initSentry.ts",
           "src/platform/telemetry/initSentry.test.ts",
           "src/platform/telemetry/manualRefreshTracker.ts",
-          "src/platform/telemetry/manualRefreshTracker.test.ts"
+          "src/platform/telemetry/manualRefreshTracker.test.ts",
+          "packages/telemetry/src/rumContext.ts"
         ]
       },
       {
@@ -1261,7 +1299,10 @@
       },
       {
         "name": "extension-manager/domain",
-        "patterns": ["src/platform/customNodes/manager/utils/**"]
+        "patterns": [
+          "src/platform/customNodes/manager/utils/**",
+          "packages/api-client/src/generatedManagerTypes.ts"
+        ]
       },
       {
         "name": "extension-manager/infrastructure",
@@ -1309,11 +1350,10 @@
         "patterns": [
           "src/scripts/api.ts",
           "src/scripts/api.cancel.test.ts",
-          "src/scripts/api.clientId.test.ts",
-          "src/scripts/api.eventListeners.test.ts",
           "src/scripts/api.featureFlags.test.ts",
           "src/scripts/api.fetchApi.test.ts",
           "src/scripts/api.folderPaths.test.ts",
+          "src/scripts/api.freeMemory.test.ts",
           "src/scripts/api.getEmbeddings.test.ts",
           "src/scripts/api.getExtensions.test.ts",
           "src/scripts/api.getNodeDefs.test.ts",
@@ -1325,11 +1365,14 @@
           "src/scripts/api.sessionOverride.test.ts",
           "src/scripts/api.socketReset.test.ts",
           "src/scripts/api.storeUserData.test.ts",
-          "src/scripts/apiTimeouts.ts",
           "src/platform/customNodes/customNodeScripts.ts",
           "src/platform/customNodes/customNodeScripts.test.ts",
           "src/platform/extensions/services/extensionLoader.ts",
-          "src/platform/extensions/services/extensionLoader.test.ts"
+          "src/platform/extensions/services/extensionLoader.test.ts",
+          "packages/api-client/src/ComfyApi.ts",
+          "packages/api-client/src/ComfyApi.clientId.test.ts",
+          "packages/api-client/src/ComfyApi.eventListeners.test.ts",
+          "packages/api-client/src/apiTimeouts.ts"
         ]
       },
       {
@@ -1621,7 +1664,8 @@
           "src/types/nodeIdentification.test.ts",
           "src/types/nodeState.ts",
           "src/types/rerouteId.test.ts",
-          "src/types/slotId.test.ts"
+          "src/types/slotId.test.ts",
+          "packages/graph-model/src/**"
         ]
       },
       {
@@ -1760,7 +1804,8 @@
         "name": "image-compositor/domain",
         "patterns": [
           "src/renderer/extensions/layerEditor/composables/layerPanelDnd.ts",
-          "src/renderer/extensions/layerEditor/composables/layerPanelDnd.test.ts"
+          "src/renderer/extensions/layerEditor/composables/layerPanelDnd.test.ts",
+          "packages/layer-editor/src/**"
         ]
       },
       {
@@ -1812,7 +1857,10 @@
       },
       {
         "name": "ingest-api/domain",
-        "patterns": ["src/platform/remote/ingest/ingestApiError.ts"]
+        "patterns": [
+          "src/platform/remote/ingest/ingestApiError.ts",
+          "packages/ingest-types/src/**"
+        ]
       },
       {
         "name": "ingest-api/infrastructure",
@@ -1827,7 +1875,6 @@
         "patterns": [
           "src/composables/queue/jobTabs.ts",
           "src/composables/queue/jobTabs.test.ts",
-          "src/platform/remote/comfyui/jobs/jobTypes.ts",
           "src/stores/resultItemParsing.ts",
           "src/stores/resultItemParsing.test.ts",
           "src/types/queue.ts",
@@ -1836,7 +1883,8 @@
           "src/utils/queueUtil.ts",
           "src/utils/resultItem.ts",
           "src/utils/resultItemUrl.ts",
-          "src/utils/resultItemUrl.test.ts"
+          "src/utils/resultItemUrl.test.ts",
+          "packages/api-client/src/jobTypes.ts"
         ]
       },
       {
@@ -1862,9 +1910,13 @@
       {
         "name": "job-queue/infrastructure",
         "patterns": [
+          "src/platform/remote/comfyui/jobs/**",
           "src/platform/workflow/cloud/**",
           "src/services/jobOutputCache.ts",
-          "src/services/jobOutputCache.test.ts"
+          "src/services/jobOutputCache.test.ts",
+          "packages/api-client/src/fetchJobs.ts",
+          "packages/api-client/src/fetchJobs.test.ts",
+          "packages/api-client/src/__mocks__/fetchJobs.ts"
         ]
       },
       {
@@ -1887,6 +1939,13 @@
         ]
       },
       {
+        "name": "keybindings/application",
+        "patterns": [
+          "packages/keybindings/src/commandStore.ts",
+          "packages/keybindings/src/keybindingStore.ts"
+        ]
+      },
+      {
         "name": "keybindings/presentation",
         "patterns": [
           "src/platform/keybindings/components/**",
@@ -1904,7 +1963,8 @@
         "name": "light-authoring/application",
         "patterns": [
           "src/extensions/core/load3d/composables/useLightInfo.ts",
-          "src/extensions/core/load3d/composables/useLightInfo.test.ts"
+          "src/extensions/core/load3d/composables/useLightInfo.test.ts",
+          "packages/viewport3d/src/lightInfo/**"
         ]
       },
       {
@@ -1963,7 +2023,7 @@
           "src/extensions/core/slotDefaultTypes.test.ts",
           "src/lib/litegraph/src/canvas/RenderLink.ts",
           "src/lib/litegraph/src/infrastructure/LinkConnectorEventMap.ts",
-          "src/types/searchBoxTypes.ts"
+          "packages/settings-core/src/searchBoxTypes.ts"
         ]
       },
       {
@@ -2053,7 +2113,8 @@
           "src/renderer/extensions/maskEditor/composables/**",
           "src/renderer/extensions/maskEditor/stores/**",
           "src/scripts/clipspace.ts",
-          "src/scripts/clipspace.test.ts"
+          "src/scripts/clipspace.test.ts",
+          "packages/mask-editor/src/**"
         ]
       },
       {
@@ -2271,6 +2332,13 @@
         ]
       },
       {
+        "name": "node-badges/domain",
+        "patterns": [
+          "packages/shared-frontend-utils/src/nodePricing.ts",
+          "packages/shared-frontend-utils/src/nodePricing.test.ts"
+        ]
+      },
+      {
         "name": "node-badges/application",
         "patterns": [
           "src/composables/node/useNodePricing.ts",
@@ -2291,7 +2359,8 @@
           "src/constants/essentialsNodes.ts",
           "src/types/nodeDefAugmentation.ts",
           "src/types/nodeSource.ts",
-          "src/workbench/utils/**"
+          "src/workbench/utils/**",
+          "packages/object-info-parser/src/**"
         ]
       },
       {
@@ -2747,17 +2816,17 @@
         "patterns": [
           "src/constants/serverConfig.ts",
           "src/platform/settings/constants/agent.ts",
-          "src/platform/settings/constants/canvasNavigation.ts",
-          "src/platform/settings/constants/canvasNavigation.test.ts",
-          "src/platform/settings/types.ts",
-          "src/types/serverArgs.ts"
+          "src/types/serverArgs.ts",
+          "packages/settings-core/src/canvasNavigation.ts",
+          "packages/settings-core/src/types.ts"
         ]
       },
       {
         "name": "settings/application",
         "patterns": [
           "src/stores/serverConfigStore.ts",
-          "src/stores/serverConfigStore.test.ts"
+          "src/stores/serverConfigStore.test.ts",
+          "packages/settings-core/src/settingStore.ts"
         ]
       },
       {
@@ -2957,7 +3026,14 @@
       },
       {
         "name": "tasks/infrastructure",
-        "patterns": ["src/platform/tasks/**"]
+        "patterns": [
+          "src/platform/tasks/**",
+          "packages/api-client/src/taskSchema.ts"
+        ]
+      },
+      {
+        "name": "telemetry/domain",
+        "patterns": ["packages/telemetry/src/types.ts"]
       },
       {
         "name": "telemetry/application",
@@ -3004,7 +3080,8 @@
         "patterns": [
           "src/testing/**",
           "src/types/vitest.d.ts",
-          "src/vitestSetup.test.ts"
+          "src/vitestSetup.test.ts",
+          "packages/test-utils/src/**"
         ]
       },
       {
@@ -3060,6 +3137,33 @@
       {
         "name": "video-edit/presentation",
         "patterns": ["src/components/videoEdit/**"]
+      },
+      {
+        "name": "viewport-3d/application",
+        "patterns": [
+          "packages/viewport3d/src/load3d/CameraManager.ts",
+          "packages/viewport3d/src/load3d/CameraManager.test.ts",
+          "packages/viewport3d/src/load3d/ControlsManager.ts",
+          "packages/viewport3d/src/load3d/ControlsManager.test.ts",
+          "packages/viewport3d/src/load3d/EventManager.ts",
+          "packages/viewport3d/src/load3d/EventManager.test.ts",
+          "packages/viewport3d/src/load3d/LightingManager.ts",
+          "packages/viewport3d/src/load3d/LightingManager.test.ts",
+          "packages/viewport3d/src/load3d/SceneManager.ts",
+          "packages/viewport3d/src/load3d/SceneManager.test.ts",
+          "packages/viewport3d/src/load3d/ViewHelperManager.ts",
+          "packages/viewport3d/src/load3d/ViewHelperManager.test.ts",
+          "packages/viewport3d/src/load3d/Viewport3d.ts",
+          "packages/viewport3d/src/load3d/Viewport3d.test.ts",
+          "packages/viewport3d/src/load3d/createViewport3d.ts",
+          "packages/viewport3d/src/load3d/interfaces.ts",
+          "packages/viewport3d/src/load3d/load3dContextMenuGuard.ts",
+          "packages/viewport3d/src/load3d/load3dContextMenuGuard.test.ts",
+          "packages/viewport3d/src/load3d/load3dRenderLoop.ts",
+          "packages/viewport3d/src/load3d/load3dRenderLoop.test.ts",
+          "packages/viewport3d/src/load3d/load3dViewport.ts",
+          "packages/viewport3d/src/load3d/load3dViewport.test.ts"
+        ]
       },
       {
         "name": "viewport-3d/presentation",
@@ -3479,9 +3583,13 @@
       {
         "name": "workflow-templates/domain",
         "patterns": [
-          "src/platform/workflow/templates/schemas/templateSchema.ts",
-          "src/platform/workflow/templates/types/**",
-          "src/platform/workflow/templates/utils/**"
+          "src/platform/workflow/templates/utils/**",
+          "packages/shared-frontend-utils/src/templateRanking.ts",
+          "packages/shared-frontend-utils/src/templateRanking.test.ts",
+          "packages/shared-frontend-utils/src/templateSearch.ts",
+          "packages/shared-frontend-utils/src/templateSearch.test.ts",
+          "packages/api-client/src/templateSchema.ts",
+          "packages/api-client/src/templateTypes.ts"
         ]
       },
       {
@@ -3508,7 +3616,9 @@
         "name": "workspace/domain",
         "patterns": [
           "src/platform/workspace/workspaceConstants.ts",
-          "src/platform/workspace/workspaceTypes.ts"
+          "src/platform/workspace/workspaceTypes.ts",
+          "packages/account-core/src/workspaceLink.ts",
+          "packages/account-core/src/workspaceLink.test.ts"
         ]
       },
       {
@@ -3591,12 +3701,20 @@
         "patterns": ["src/composables/sidebarTabs/**"]
       },
       {
+        "name": "authentication/application/outer-1",
+        "patterns": ["packages/account-core/src/**"]
+      },
+      {
         "name": "authentication/infrastructure/outer-1",
         "patterns": [
           "src/config/**",
           "src/platform/auth/localWeb/**",
           "src/platform/auth/partnerNode/**"
         ]
+      },
+      {
+        "name": "authentication/presentation/outer-1",
+        "patterns": ["packages/account-ui/src/auth/**"]
       },
       {
         "name": "billing/domain/outer-1",
@@ -3613,6 +3731,10 @@
           "src/platform/billing/utils/**",
           "src/services/__mocks__/**"
         ]
+      },
+      {
+        "name": "billing/presentation/outer-1",
+        "patterns": ["packages/account-ui/src/billing/**"]
       },
       {
         "name": "bottom-panel/integration/outer-1",
@@ -3658,6 +3780,10 @@
           "src/platform/cloud/oauth/**",
           "src/platform/telemetry/providers/**"
         ]
+      },
+      {
+        "name": "comfyui-api/domain/outer-1",
+        "patterns": ["src/platform/remote/comfyui/**"]
       },
       {
         "name": "design-system/domain/outer-1",
@@ -3743,12 +3869,12 @@
         "patterns": ["src/composables/queue/**"]
       },
       {
-        "name": "job-queue/infrastructure/outer-1",
-        "patterns": ["src/platform/remote/comfyui/jobs/**"]
-      },
-      {
         "name": "job-queue/presentation/outer-1",
         "patterns": ["src/components/actionbar/**", "src/components/queue/**"]
+      },
+      {
+        "name": "keybindings/domain/outer-1",
+        "patterns": ["packages/keybindings/src/**"]
       },
       {
         "name": "keybindings/application/outer-1",
@@ -3769,6 +3895,10 @@
       {
         "name": "missing-media/application/outer-1",
         "patterns": ["src/platform/workflowErrors/missingMedia/**"]
+      },
+      {
+        "name": "model-3d/application/outer-1",
+        "patterns": ["packages/viewport3d/src/load3d/**"]
       },
       {
         "name": "model-3d/presentation/outer-1",
@@ -3845,6 +3975,10 @@
       {
         "name": "telemetry/domain/outer-1",
         "patterns": ["src/platform/telemetry/utils/**"]
+      },
+      {
+        "name": "telemetry/application/outer-1",
+        "patterns": ["packages/telemetry/src/**"]
       },
       {
         "name": "telemetry/integration/outer-1",
@@ -3935,10 +4069,6 @@
         "patterns": ["src/platform/cloud/onboarding/**"]
       },
       {
-        "name": "comfyui-api/domain/outer-2",
-        "patterns": ["src/platform/remote/comfyui/**"]
-      },
-      {
         "name": "extension-manager/application/outer-2",
         "patterns": ["src/platform/customNodes/manager/**"]
       },
@@ -3957,6 +4087,10 @@
       {
         "name": "release-notes/presentation/outer-2",
         "patterns": ["src/platform/updates/**"]
+      },
+      {
+        "name": "viewport-3d/application/outer-2",
+        "patterns": ["packages/viewport3d/src/**"]
       },
       {
         "name": "workbench-shell/presentation/outer-2",
@@ -3980,7 +4114,7 @@
       },
       {
         "name": "unclassified",
-        "patterns": ["src/**"]
+        "patterns": ["src/**", "packages/*/src/**"]
       }
     ],
     "rules": [
@@ -3999,6 +4133,7 @@
           "workspace/presentation",
           "billing/domain/outer-1",
           "billing/application/outer-1",
+          "billing/presentation/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4026,6 +4161,7 @@
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "billing/presentation/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4035,7 +4171,7 @@
         "allow": [
           "comfyui-api/domain/public",
           "comfyui-api/domain",
-          "comfyui-api/domain/outer-2",
+          "comfyui-api/domain/outer-1",
           "unclassified"
         ]
       },
@@ -4067,8 +4203,10 @@
           "error-handling/domain",
           "error-handling/application",
           "keybindings/domain",
+          "keybindings/application",
           "design-system/domain/outer-1",
           "error-handling/application/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -4085,11 +4223,13 @@
           "error-handling/domain",
           "error-handling/application",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "error-handling/application/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -4102,6 +4242,17 @@
           "node-definition/domain",
           "extension-manager/domain/outer-1",
           "node-definition/domain/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "remote-config/infrastructure/public",
+        "allow": [
+          "remote-config/infrastructure/public",
+          "remote-config/domain",
+          "remote-config/application",
+          "remote-config/infrastructure",
+          "remote-config/application/outer-1",
           "unclassified"
         ]
       },
@@ -4136,6 +4287,7 @@
           "workspace/presentation",
           "billing/domain/outer-1",
           "billing/application/outer-1",
+          "billing/presentation/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4163,6 +4315,7 @@
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "billing/presentation/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4182,6 +4335,7 @@
           "workflow-management/domain",
           "app-host/domain/outer-1",
           "design-system/domain/outer-1",
+          "keybindings/domain/outer-1",
           "unclassified"
         ]
       },
@@ -4210,6 +4364,7 @@
           "extension-runtime/application",
           "extension-runtime/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/infrastructure",
@@ -4217,9 +4372,11 @@
           "workflow-management/application",
           "workflow-management/infrastructure",
           "app-host/domain/outer-1",
+          "authentication/application/outer-1",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "extension-runtime/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -4249,6 +4406,7 @@
           "extension-runtime/application",
           "extension-runtime/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/infrastructure",
@@ -4256,9 +4414,11 @@
           "workflow-management/application",
           "workflow-management/infrastructure",
           "app-host/domain/outer-1",
+          "authentication/application/outer-1",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "extension-runtime/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -4287,6 +4447,7 @@
           "extension-runtime/application",
           "extension-runtime/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "workbench-shell/domain",
           "workbench-shell/application",
@@ -4296,10 +4457,13 @@
           "workflow-management/presentation",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
+          "authentication/application/outer-1",
+          "authentication/presentation/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "dialog-host/presentation/outer-1",
           "extension-runtime/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "workflow-management/presentation/outer-1",
           "workbench-shell/presentation/outer-2",
@@ -4342,6 +4506,7 @@
           "extension-runtime/presentation",
           "extension-runtime/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "workbench-shell/domain",
@@ -4357,12 +4522,15 @@
           "agent/integration/outer-1",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
+          "authentication/application/outer-1",
           "authentication/infrastructure/outer-1",
+          "authentication/presentation/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "dialog-host/presentation/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "workflow-management/presentation/outer-1",
           "workbench-shell/presentation/outer-2",
@@ -4388,8 +4556,10 @@
           "error-reporting/domain",
           "extension-manager/domain",
           "keybindings/domain",
+          "telemetry/domain",
           "app-host/domain/outer-1",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -4407,12 +4577,16 @@
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "app-host/domain/outer-1",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
         ]
@@ -4430,12 +4604,16 @@
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "app-host/domain/outer-1",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
         ]
@@ -4453,14 +4631,18 @@
           "extension-manager/domain",
           "extension-manager/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
+          "telemetry/domain",
           "telemetry/application",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
         ]
@@ -4485,8 +4667,10 @@
           "extension-manager/presentation",
           "extension-manager/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
@@ -4494,8 +4678,10 @@
           "app-host/presentation/outer-1",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "telemetry/integration/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
@@ -4586,6 +4772,8 @@
           "ingest-api/domain/public",
           "authentication/domain",
           "keybindings/domain",
+          "telemetry/domain",
+          "keybindings/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -4600,11 +4788,16 @@
           "authentication/application",
           "authentication/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
+          "authentication/application/outer-1",
           "authentication/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -4618,11 +4811,16 @@
           "authentication/application",
           "authentication/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
+          "authentication/application/outer-1",
           "authentication/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -4636,10 +4834,16 @@
           "authentication/application",
           "authentication/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
+          "telemetry/domain",
           "telemetry/application",
+          "authentication/application/outer-1",
+          "authentication/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -4658,14 +4862,20 @@
           "authentication/presentation",
           "authentication/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
+          "authentication/application/outer-1",
           "authentication/infrastructure/outer-1",
+          "authentication/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "telemetry/integration/outer-1",
           "unclassified"
         ]
@@ -4678,8 +4888,10 @@
           "billing/domain",
           "design-system/domain",
           "keybindings/domain",
+          "telemetry/domain",
           "billing/domain/outer-1",
           "design-system/domain/outer-1",
+          "keybindings/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -4698,14 +4910,18 @@
           "design-system/application",
           "design-system/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
           "design-system/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4724,14 +4940,18 @@
           "design-system/application",
           "design-system/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
           "design-system/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4749,14 +4969,19 @@
           "design-system/application",
           "design-system/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
+          "telemetry/domain",
           "telemetry/application",
           "billing/domain/outer-1",
           "billing/application/outer-1",
+          "billing/presentation/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4779,18 +5004,23 @@
           "design-system/infrastructure",
           "design-system/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "billing/presentation/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "telemetry/integration/outer-1",
           "billing/application/outer-2",
           "unclassified"
@@ -4802,6 +5032,8 @@
           "keybindings/application/public",
           "bottom-panel/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -4812,7 +5044,9 @@
           "keybindings/application/public",
           "bottom-panel/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -4961,6 +5195,7 @@
         "allow": [
           "canvas-renderer/domain",
           "keybindings/domain",
+          "keybindings/domain/outer-1",
           "unclassified"
         ]
       },
@@ -4972,8 +5207,10 @@
           "canvas-renderer/application",
           "canvas-renderer/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "canvas-renderer/application/outer-1",
           "canvas-renderer/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -4986,8 +5223,10 @@
           "canvas-renderer/application",
           "canvas-renderer/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "canvas-renderer/application/outer-1",
           "canvas-renderer/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -5000,8 +5239,10 @@
           "canvas-renderer/application",
           "canvas-renderer/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "canvas-renderer/application/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -5017,11 +5258,13 @@
           "canvas-renderer/presentation",
           "canvas-renderer/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "canvas-renderer/application/outer-1",
           "canvas-renderer/infrastructure/outer-1",
           "canvas-renderer/integration/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -5030,6 +5273,7 @@
         "from": "cloud/domain",
         "allow": [
           "cloud/domain",
+          "telemetry/domain",
           "cloud/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
@@ -5041,12 +5285,14 @@
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "cloud/application/outer-3",
           "unclassified"
         ]
@@ -5057,12 +5303,14 @@
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "cloud/application/outer-3",
           "unclassified"
         ]
@@ -5073,10 +5321,12 @@
           "cloud/domain",
           "cloud/application",
           "cloud/presentation",
+          "telemetry/domain",
           "telemetry/application",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "cloud/presentation/outer-2",
           "cloud/application/outer-3",
           "unclassified"
@@ -5090,6 +5340,7 @@
           "cloud/infrastructure",
           "cloud/presentation",
           "cloud/integration",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
@@ -5097,6 +5348,7 @@
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "telemetry/integration/outer-1",
           "cloud/presentation/outer-2",
           "cloud/application/outer-3",
@@ -5142,7 +5394,7 @@
         "allow": [
           "comfyui-api/domain/public",
           "comfyui-api/domain",
-          "comfyui-api/domain/outer-2",
+          "comfyui-api/domain/outer-1",
           "unclassified"
         ]
       },
@@ -5191,6 +5443,7 @@
           "dialog-host/domain",
           "error-reporting/domain",
           "keybindings/domain",
+          "keybindings/domain/outer-1",
           "unclassified"
         ]
       },
@@ -5204,6 +5457,8 @@
           "error-reporting/application",
           "error-reporting/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -5220,9 +5475,11 @@
           "error-reporting/application",
           "error-reporting/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "dialog-host/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -5251,6 +5508,7 @@
           "app-host/domain",
           "error-reporting/domain",
           "runtime-guards/domain",
+          "telemetry/domain",
           "app-host/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
@@ -5268,10 +5526,12 @@
           "error-reporting/application",
           "error-reporting/infrastructure",
           "runtime-guards/domain",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "app-host/domain/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -5287,10 +5547,12 @@
           "error-reporting/application",
           "error-reporting/infrastructure",
           "runtime-guards/domain",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "app-host/domain/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -5370,6 +5632,7 @@
           "app-host/domain/outer-1",
           "design-system/domain/outer-1",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "unclassified"
         ]
       },
@@ -5394,12 +5657,14 @@
           "extension-runtime/application",
           "extension-runtime/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "system-info/domain",
           "system-info/application",
           "app-host/domain/outer-1",
           "design-system/domain/outer-1",
           "extension-manager/domain/outer-1",
           "extension-runtime/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
@@ -5425,6 +5690,7 @@
           "extension-runtime/application",
           "extension-runtime/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "system-info/domain",
           "system-info/application",
@@ -5437,6 +5703,7 @@
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
           "extension-runtime/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
@@ -5472,6 +5739,7 @@
           "extension-runtime/presentation",
           "extension-runtime/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "system-info/domain",
@@ -5486,6 +5754,7 @@
           "extension-manager/presentation/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
@@ -5498,7 +5767,10 @@
           "extension-manager/domain",
           "extension-runtime/domain",
           "keybindings/domain",
+          "remote-config/domain",
+          "telemetry/domain",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -5507,6 +5779,7 @@
         "from": "extension-runtime/application",
         "allow": [
           "keybindings/application/public",
+          "remote-config/infrastructure/public",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -5516,12 +5789,20 @@
           "extension-runtime/application",
           "extension-runtime/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "remote-config/domain",
+          "remote-config/application",
+          "remote-config/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "extension-manager/domain/outer-1",
           "extension-runtime/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
+          "remote-config/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
         ]
@@ -5530,6 +5811,7 @@
         "from": "extension-runtime/infrastructure",
         "allow": [
           "keybindings/application/public",
+          "remote-config/infrastructure/public",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -5539,12 +5821,20 @@
           "extension-runtime/application",
           "extension-runtime/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "remote-config/domain",
+          "remote-config/application",
+          "remote-config/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "extension-manager/domain/outer-1",
           "extension-runtime/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
+          "remote-config/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
         ]
@@ -5561,13 +5851,20 @@
           "extension-runtime/application",
           "extension-runtime/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
+          "remote-config/domain",
+          "remote-config/application",
+          "telemetry/domain",
           "telemetry/application",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
           "extension-runtime/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
+          "remote-config/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
         ]
@@ -5577,6 +5874,7 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/integration/public",
+          "remote-config/infrastructure/public",
           "webcam-capture/integration/public",
           "error-reporting/domain",
           "error-reporting/application",
@@ -5591,8 +5889,13 @@
           "extension-runtime/presentation",
           "extension-runtime/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
+          "remote-config/domain",
+          "remote-config/application",
+          "remote-config/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
@@ -5600,8 +5903,11 @@
           "extension-manager/presentation/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
+          "remote-config/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "telemetry/integration/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
@@ -5609,7 +5915,12 @@
       },
       {
         "from": "first-run-tour/domain",
-        "allow": ["first-run-tour/domain", "keybindings/domain", "unclassified"]
+        "allow": [
+          "first-run-tour/domain",
+          "keybindings/domain",
+          "keybindings/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "first-run-tour/application",
@@ -5618,7 +5929,9 @@
           "first-run-tour/domain",
           "first-run-tour/application",
           "keybindings/domain",
+          "keybindings/application",
           "first-run-tour/application/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -5632,9 +5945,11 @@
           "first-run-tour/application",
           "first-run-tour/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "first-run-tour/application/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "first-run-tour/presentation/outer-2",
           "unclassified"
@@ -5783,9 +6098,9 @@
           "error-reporting/domain",
           "graph-model/domain",
           "node-definition/domain",
+          "comfyui-api/domain/outer-1",
           "graph-model/domain/outer-1",
           "node-definition/domain/outer-1",
-          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
@@ -5802,9 +6117,9 @@
           "graph-model/application",
           "graph-model/infrastructure",
           "node-definition/domain",
+          "comfyui-api/domain/outer-1",
           "graph-model/domain/outer-1",
           "node-definition/domain/outer-1",
-          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
@@ -5821,9 +6136,9 @@
           "graph-model/application",
           "graph-model/infrastructure",
           "node-definition/domain",
+          "comfyui-api/domain/outer-1",
           "graph-model/domain/outer-1",
           "node-definition/domain/outer-1",
-          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
@@ -5841,10 +6156,10 @@
           "graph-model/infrastructure",
           "graph-model/integration",
           "node-definition/domain",
+          "comfyui-api/domain/outer-1",
           "graph-model/domain/outer-1",
           "graph-model/integration/outer-1",
           "node-definition/domain/outer-1",
-          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
@@ -5919,7 +6234,9 @@
           "extension-manager/infrastructure",
           "help-center/application",
           "keybindings/domain",
+          "keybindings/application",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
@@ -5934,9 +6251,11 @@
           "help-center/application",
           "help-center/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
@@ -6054,7 +6373,12 @@
       },
       {
         "from": "job-queue/domain",
-        "allow": ["job-queue/domain", "keybindings/domain", "unclassified"]
+        "allow": [
+          "job-queue/domain",
+          "keybindings/domain",
+          "keybindings/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "job-queue/application",
@@ -6064,8 +6388,9 @@
           "job-queue/application",
           "job-queue/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "job-queue/application/outer-1",
-          "job-queue/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -6078,8 +6403,9 @@
           "job-queue/application",
           "job-queue/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "job-queue/application/outer-1",
-          "job-queue/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -6092,9 +6418,11 @@
           "job-queue/application",
           "job-queue/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "job-queue/application/outer-1",
           "job-queue/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -6110,11 +6438,12 @@
           "job-queue/presentation",
           "job-queue/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "job-queue/application/outer-1",
-          "job-queue/infrastructure/outer-1",
           "job-queue/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -6126,6 +6455,25 @@
           "error-handling/domain",
           "keybindings/domain",
           "design-system/domain/outer-1",
+          "keybindings/domain/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "keybindings/application",
+        "allow": [
+          "keybindings/application/public",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "error-handling/domain",
+          "error-handling/application",
+          "keybindings/domain",
+          "keybindings/application",
+          "design-system/domain/outer-1",
+          "error-handling/application/outer-1",
+          "keybindings/domain/outer-1",
+          "keybindings/application/outer-1",
           "unclassified"
         ]
       },
@@ -6139,10 +6487,12 @@
           "error-handling/domain",
           "error-handling/application",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "error-handling/application/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -6159,11 +6509,13 @@
           "error-handling/domain",
           "error-handling/application",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "error-handling/application/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -6191,15 +6543,22 @@
       },
       {
         "from": "linear-mode/domain",
-        "allow": ["keybindings/domain", "linear-mode/domain", "unclassified"]
+        "allow": [
+          "keybindings/domain",
+          "linear-mode/domain",
+          "keybindings/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "linear-mode/application",
         "allow": [
           "keybindings/application/public",
           "keybindings/domain",
+          "keybindings/application",
           "linear-mode/domain",
           "linear-mode/application",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -6209,10 +6568,12 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "linear-mode/domain",
           "linear-mode/application",
           "linear-mode/presentation",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "linear-mode/presentation/outer-1",
           "unclassified"
@@ -6343,16 +6704,23 @@
       },
       {
         "from": "minimap/domain",
-        "allow": ["keybindings/domain", "minimap/domain", "unclassified"]
+        "allow": [
+          "keybindings/domain",
+          "minimap/domain",
+          "keybindings/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "minimap/application",
         "allow": [
           "keybindings/application/public",
           "keybindings/domain",
+          "keybindings/application",
           "minimap/domain",
           "minimap/application",
           "minimap/infrastructure",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "minimap/infrastructure/outer-1",
           "unclassified"
@@ -6363,9 +6731,11 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/domain",
+          "keybindings/application",
           "minimap/domain",
           "minimap/application",
           "minimap/infrastructure",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "minimap/infrastructure/outer-1",
           "unclassified"
@@ -6376,10 +6746,12 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "minimap/domain",
           "minimap/application",
           "minimap/presentation",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -6438,6 +6810,7 @@
           "model-3d/domain",
           "model-3d/application",
           "model-3d/infrastructure",
+          "model-3d/application/outer-1",
           "unclassified"
         ]
       },
@@ -6447,6 +6820,7 @@
           "model-3d/domain",
           "model-3d/application",
           "model-3d/infrastructure",
+          "model-3d/application/outer-1",
           "unclassified"
         ]
       },
@@ -6457,6 +6831,7 @@
           "model-3d/application",
           "model-3d/infrastructure",
           "model-3d/integration",
+          "model-3d/application/outer-1",
           "model-3d/presentation/outer-1",
           "unclassified"
         ]
@@ -6511,12 +6886,21 @@
         ]
       },
       {
+        "from": "node-badges/domain",
+        "allow": ["node-badges/domain", "unclassified"]
+      },
+      {
         "from": "node-badges/application",
-        "allow": ["node-badges/application", "unclassified"]
+        "allow": [
+          "node-badges/domain",
+          "node-badges/application",
+          "unclassified"
+        ]
       },
       {
         "from": "node-badges/integration",
         "allow": [
+          "node-badges/domain",
           "node-badges/application",
           "node-badges/integration",
           "unclassified"
@@ -6539,7 +6923,9 @@
           "extension-manager/domain",
           "keybindings/domain",
           "node-library/domain",
+          "telemetry/domain",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -6551,15 +6937,19 @@
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "node-library/domain",
           "node-library/application",
           "node-library/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "node-library/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
         ]
@@ -6571,15 +6961,19 @@
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "node-library/domain",
           "node-library/application",
           "node-library/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "node-library/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
         ]
@@ -6591,16 +6985,20 @@
           "extension-manager/domain",
           "extension-manager/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "node-library/domain",
           "node-library/application",
           "node-library/presentation",
+          "telemetry/domain",
           "telemetry/application",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "node-library/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
         ]
@@ -6615,6 +7013,7 @@
           "extension-manager/presentation",
           "extension-manager/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "node-library/domain",
@@ -6622,14 +7021,17 @@
           "node-library/infrastructure",
           "node-library/presentation",
           "node-library/integration",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "node-library/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "telemetry/integration/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
@@ -6800,8 +7202,10 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/domain",
+          "keybindings/application",
           "release-notes/application",
           "release-notes/infrastructure",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -6811,8 +7215,10 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/domain",
+          "keybindings/application",
           "release-notes/application",
           "release-notes/infrastructure",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -6824,6 +7230,7 @@
       {
         "from": "remote-config/application",
         "allow": [
+          "remote-config/infrastructure/public",
           "remote-config/domain",
           "remote-config/application",
           "remote-config/infrastructure",
@@ -6834,6 +7241,7 @@
       {
         "from": "remote-config/infrastructure",
         "allow": [
+          "remote-config/infrastructure/public",
           "remote-config/domain",
           "remote-config/application",
           "remote-config/infrastructure",
@@ -6879,7 +7287,9 @@
           "canvas-renderer/domain",
           "keybindings/domain",
           "selection-toolbox/domain",
+          "telemetry/domain",
           "app-host/domain/outer-1",
+          "keybindings/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -6895,17 +7305,21 @@
           "canvas-renderer/application",
           "canvas-renderer/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "properties-panel/application",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
+          "telemetry/domain",
           "telemetry/application",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
           "canvas-renderer/application/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "properties-panel/presentation/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -6925,12 +7339,14 @@
           "canvas-renderer/presentation",
           "canvas-renderer/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "properties-panel/application",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
           "selection-toolbox/integration",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
@@ -6940,10 +7356,12 @@
           "canvas-renderer/application/outer-1",
           "canvas-renderer/infrastructure/outer-1",
           "canvas-renderer/integration/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "properties-panel/presentation/outer-1",
           "selection-toolbox/integration/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "telemetry/integration/outer-1",
           "test-support/integration/outer-1",
           "unclassified"
@@ -6964,6 +7382,8 @@
           "dialog-host/domain",
           "keybindings/domain",
           "settings/domain",
+          "telemetry/domain",
+          "keybindings/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -6978,15 +7398,20 @@
           "dialog-host/domain",
           "dialog-host/application",
           "keybindings/domain",
+          "keybindings/application",
           "settings/domain",
           "settings/application",
           "settings/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
+          "authentication/application/outer-1",
           "authentication/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "settings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -7000,15 +7425,20 @@
           "dialog-host/domain",
           "dialog-host/application",
           "keybindings/domain",
+          "keybindings/application",
           "settings/domain",
           "settings/application",
           "settings/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
+          "authentication/application/outer-1",
           "authentication/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "settings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -7023,15 +7453,21 @@
           "dialog-host/domain",
           "dialog-host/application",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "settings/domain",
           "settings/application",
           "settings/presentation",
+          "telemetry/domain",
           "telemetry/application",
+          "authentication/application/outer-1",
+          "authentication/presentation/outer-1",
           "dialog-host/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "settings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -7051,6 +7487,7 @@
           "dialog-host/application",
           "dialog-host/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "settings/domain",
@@ -7058,14 +7495,19 @@
           "settings/infrastructure",
           "settings/presentation",
           "settings/integration",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
+          "authentication/application/outer-1",
           "authentication/infrastructure/outer-1",
+          "authentication/presentation/outer-1",
           "dialog-host/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "settings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "telemetry/integration/outer-1",
           "unclassified"
         ]
@@ -7138,6 +7580,7 @@
           "keybindings/domain",
           "subgraphs/domain",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "subgraphs/domain/outer-1",
           "unclassified"
         ]
@@ -7149,9 +7592,11 @@
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "subgraphs/domain",
           "subgraphs/application",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "subgraphs/domain/outer-1",
           "extension-manager/application/outer-2",
@@ -7165,12 +7610,14 @@
           "extension-manager/domain",
           "extension-manager/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "subgraphs/domain",
           "subgraphs/application",
           "subgraphs/presentation",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "subgraphs/domain/outer-1",
           "extension-manager/application/outer-2",
@@ -7187,6 +7634,7 @@
           "extension-manager/presentation",
           "extension-manager/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "subgraphs/domain",
@@ -7195,6 +7643,7 @@
           "subgraphs/integration",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "subgraphs/domain/outer-1",
           "extension-manager/application/outer-2",
@@ -7244,20 +7693,34 @@
         "allow": ["tasks/infrastructure", "unclassified"]
       },
       {
+        "from": "telemetry/domain",
+        "allow": [
+          "ingest-api/domain/public",
+          "node-replacement/domain",
+          "remote-config/domain",
+          "telemetry/domain",
+          "telemetry/domain/outer-1",
+          "unclassified"
+        ]
+      },
+      {
         "from": "telemetry/application",
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
+          "remote-config/infrastructure/public",
           "node-replacement/domain",
           "node-replacement/infrastructure",
           "remote-config/domain",
           "remote-config/application",
           "remote-config/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "node-replacement/application/outer-1",
           "remote-config/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -7266,16 +7729,19 @@
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
+          "remote-config/infrastructure/public",
           "node-replacement/domain",
           "node-replacement/infrastructure",
           "remote-config/domain",
           "remote-config/application",
           "remote-config/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "node-replacement/application/outer-1",
           "remote-config/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -7284,18 +7750,21 @@
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
+          "remote-config/infrastructure/public",
           "node-replacement/domain",
           "node-replacement/infrastructure",
           "node-replacement/presentation",
           "remote-config/domain",
           "remote-config/application",
           "remote-config/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
           "node-replacement/application/outer-1",
           "remote-config/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "telemetry/integration/outer-1",
           "unclassified"
         ]
@@ -7356,14 +7825,29 @@
         ]
       },
       {
+        "from": "viewport-3d/application",
+        "allow": [
+          "viewport-3d/application",
+          "viewport-3d/application/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "viewport-3d/presentation",
-        "allow": ["viewport-3d/presentation", "unclassified"]
+        "allow": [
+          "viewport-3d/application",
+          "viewport-3d/presentation",
+          "viewport-3d/application/outer-2",
+          "unclassified"
+        ]
       },
       {
         "from": "viewport-3d/integration",
         "allow": [
+          "viewport-3d/application",
           "viewport-3d/presentation",
           "viewport-3d/integration",
+          "viewport-3d/application/outer-2",
           "unclassified"
         ]
       },
@@ -7461,8 +7945,10 @@
         "allow": [
           "extension-manager/domain",
           "keybindings/domain",
+          "telemetry/domain",
           "workbench-shell/domain",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -7474,14 +7960,18 @@
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/infrastructure",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
         ]
@@ -7493,14 +7983,18 @@
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/infrastructure",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
         ]
@@ -7512,15 +8006,19 @@
           "extension-manager/domain",
           "extension-manager/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
+          "telemetry/domain",
           "telemetry/application",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/presentation",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "workbench-shell/presentation/outer-2",
           "unclassified"
@@ -7536,8 +8034,10 @@
           "extension-manager/presentation",
           "extension-manager/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
@@ -7548,8 +8048,10 @@
           "workbench-shell/integration",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "telemetry/integration/outer-1",
           "extension-manager/application/outer-2",
           "workbench-shell/presentation/outer-2",
@@ -7580,6 +8082,7 @@
           "keybindings/domain",
           "workflow-errors/domain",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "unclassified"
         ]
       },
@@ -7590,9 +8093,11 @@
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "workflow-errors/domain",
           "workflow-errors/application",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "workflow-errors/application/outer-1",
           "extension-manager/application/outer-2",
@@ -7606,12 +8111,14 @@
           "extension-manager/domain",
           "extension-manager/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "workflow-errors/domain",
           "workflow-errors/application",
           "workflow-errors/presentation",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "workflow-errors/application/outer-1",
           "workflow-errors/presentation/outer-1",
@@ -7629,6 +8136,7 @@
           "extension-manager/presentation",
           "extension-manager/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "workflow-errors/domain",
@@ -7637,6 +8145,7 @@
           "workflow-errors/integration",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "workflow-errors/application/outer-1",
           "workflow-errors/presentation/outer-1",
@@ -7677,7 +8186,9 @@
         "allow": [
           "error-reporting/domain",
           "keybindings/domain",
+          "telemetry/domain",
           "workflow-management/domain",
+          "keybindings/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -7690,13 +8201,17 @@
           "error-reporting/application",
           "error-reporting/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -7708,13 +8223,17 @@
           "error-reporting/application",
           "error-reporting/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -7725,13 +8244,17 @@
           "error-reporting/domain",
           "error-reporting/application",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
+          "telemetry/domain",
           "telemetry/application",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
         ]
@@ -7745,8 +8268,10 @@
           "error-reporting/application",
           "error-reporting/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
@@ -7755,8 +8280,10 @@
           "workflow-management/infrastructure",
           "workflow-management/presentation",
           "workflow-management/integration",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "telemetry/integration/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
@@ -7767,7 +8294,9 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/domain",
+          "keybindings/application",
           "workflow-persistence/infrastructure",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
@@ -7780,10 +8309,12 @@
           "keybindings/application/public",
           "keybindings/integration/public",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "workflow-persistence/infrastructure",
           "workflow-persistence/integration",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
@@ -7823,6 +8354,7 @@
       {
         "from": "workflow-templates/domain",
         "allow": [
+          "telemetry/domain",
           "workflow-templates/domain",
           "telemetry/domain/outer-1",
           "unclassified"
@@ -7831,11 +8363,13 @@
       {
         "from": "workflow-templates/infrastructure",
         "allow": [
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "workflow-templates/domain",
           "workflow-templates/infrastructure",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "workflow-templates/application/outer-1",
           "unclassified"
         ]
@@ -7843,10 +8377,12 @@
       {
         "from": "workflow-templates/presentation",
         "allow": [
+          "telemetry/domain",
           "telemetry/application",
           "workflow-templates/domain",
           "workflow-templates/presentation",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "workflow-templates/application/outer-1",
           "unclassified"
         ]
@@ -7953,6 +8489,7 @@
           "extension-runtime/presentation",
           "extension-runtime/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "workbench-shell/domain",
@@ -7968,12 +8505,15 @@
           "agent/integration/outer-1",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
+          "authentication/application/outer-1",
           "authentication/infrastructure/outer-1",
+          "authentication/presentation/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "dialog-host/presentation/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "workflow-management/presentation/outer-1",
           "workbench-shell/presentation/outer-2",
@@ -7996,8 +8536,10 @@
           "error-reporting/domain",
           "extension-manager/domain",
           "keybindings/domain",
+          "telemetry/domain",
           "app-host/domain/outer-1",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -8015,14 +8557,18 @@
           "extension-manager/domain",
           "extension-manager/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
+          "telemetry/domain",
           "telemetry/application",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
         ]
@@ -8066,6 +8612,29 @@
         ]
       },
       {
+        "from": "authentication/application/outer-1",
+        "allow": [
+          "ingest-api/domain/public",
+          "ingest-api/infrastructure/public",
+          "keybindings/application/public",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "keybindings/domain",
+          "keybindings/application",
+          "telemetry/domain",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "authentication/application/outer-1",
+          "authentication/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
+          "keybindings/application/outer-1",
+          "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
         "from": "authentication/infrastructure/outer-1",
         "allow": [
           "ingest-api/domain/public",
@@ -8075,11 +8644,39 @@
           "authentication/application",
           "authentication/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
+          "authentication/application/outer-1",
           "authentication/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "authentication/presentation/outer-1",
+        "allow": [
+          "account/presentation/public",
+          "ingest-api/domain/public",
+          "keybindings/application/public",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/presentation",
+          "keybindings/domain",
+          "keybindings/application",
+          "keybindings/presentation",
+          "telemetry/domain",
+          "telemetry/application",
+          "authentication/application/outer-1",
+          "authentication/presentation/outer-1",
+          "keybindings/domain/outer-1",
+          "keybindings/application/outer-1",
+          "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -8091,8 +8688,10 @@
           "billing/domain",
           "design-system/domain",
           "keybindings/domain",
+          "telemetry/domain",
           "billing/domain/outer-1",
           "design-system/domain/outer-1",
+          "keybindings/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -8111,14 +8710,18 @@
           "design-system/application",
           "design-system/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
           "design-system/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -8137,14 +8740,48 @@
           "design-system/application",
           "design-system/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
           "design-system/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
+          "billing/application/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "billing/presentation/outer-1",
+        "allow": [
+          "ingest-api/domain/public",
+          "keybindings/application/public",
+          "server-facts/domain/public",
+          "billing/domain",
+          "billing/application",
+          "billing/presentation",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/presentation",
+          "keybindings/domain",
+          "keybindings/application",
+          "keybindings/presentation",
+          "telemetry/domain",
+          "telemetry/application",
+          "billing/domain/outer-1",
+          "billing/application/outer-1",
+          "billing/presentation/outer-1",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
+          "keybindings/domain/outer-1",
+          "keybindings/application/outer-1",
+          "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -8157,9 +8794,11 @@
           "bottom-panel/infrastructure",
           "bottom-panel/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "bottom-panel/integration/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -8201,8 +8840,10 @@
           "canvas-renderer/application",
           "canvas-renderer/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "canvas-renderer/application/outer-1",
           "canvas-renderer/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -8215,8 +8856,10 @@
           "canvas-renderer/application",
           "canvas-renderer/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "canvas-renderer/application/outer-1",
           "canvas-renderer/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -8232,11 +8875,13 @@
           "canvas-renderer/presentation",
           "canvas-renderer/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "canvas-renderer/application/outer-1",
           "canvas-renderer/infrastructure/outer-1",
           "canvas-renderer/integration/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -8245,6 +8890,7 @@
         "from": "cloud/domain/outer-1",
         "allow": [
           "cloud/domain",
+          "telemetry/domain",
           "cloud/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
@@ -8256,12 +8902,14 @@
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "cloud/application/outer-3",
           "unclassified"
         ]
@@ -8272,13 +8920,24 @@
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "cloud/application/outer-3",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "comfyui-api/domain/outer-1",
+        "allow": [
+          "comfyui-api/domain/public",
+          "comfyui-api/domain",
+          "comfyui-api/domain/outer-1",
           "unclassified"
         ]
       },
@@ -8310,8 +8969,10 @@
           "error-reporting/domain",
           "error-reporting/application",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "dialog-host/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -8339,6 +9000,7 @@
           "app-host/domain/outer-1",
           "design-system/domain/outer-1",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "unclassified"
         ]
       },
@@ -8362,6 +9024,7 @@
           "extension-runtime/application",
           "extension-runtime/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "system-info/domain",
           "system-info/application",
@@ -8374,6 +9037,7 @@
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
           "extension-runtime/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
@@ -8383,6 +9047,7 @@
         "from": "extension-runtime/infrastructure/outer-1",
         "allow": [
           "keybindings/application/public",
+          "remote-config/infrastructure/public",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -8392,12 +9057,20 @@
           "extension-runtime/application",
           "extension-runtime/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "remote-config/domain",
+          "remote-config/application",
+          "remote-config/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "extension-manager/domain/outer-1",
           "extension-runtime/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
+          "remote-config/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
         ]
@@ -8414,13 +9087,20 @@
           "extension-runtime/application",
           "extension-runtime/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
+          "remote-config/domain",
+          "remote-config/application",
+          "telemetry/domain",
           "telemetry/application",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
           "extension-runtime/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
+          "remote-config/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
         ]
@@ -8432,7 +9112,9 @@
           "first-run-tour/domain",
           "first-run-tour/application",
           "keybindings/domain",
+          "keybindings/application",
           "first-run-tour/application/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -8488,9 +9170,9 @@
           "error-reporting/domain",
           "graph-model/domain",
           "node-definition/domain",
+          "comfyui-api/domain/outer-1",
           "graph-model/domain/outer-1",
           "node-definition/domain/outer-1",
-          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
@@ -8508,10 +9190,10 @@
           "graph-model/infrastructure",
           "graph-model/integration",
           "node-definition/domain",
+          "comfyui-api/domain/outer-1",
           "graph-model/domain/outer-1",
           "graph-model/integration/outer-1",
           "node-definition/domain/outer-1",
-          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
@@ -8539,22 +9221,9 @@
           "job-queue/application",
           "job-queue/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "job-queue/application/outer-1",
-          "job-queue/infrastructure/outer-1",
-          "keybindings/application/outer-1",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "job-queue/infrastructure/outer-1",
-        "allow": [
-          "keybindings/application/public",
-          "job-queue/domain",
-          "job-queue/application",
-          "job-queue/infrastructure",
-          "keybindings/domain",
-          "job-queue/application/outer-1",
-          "job-queue/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -8567,10 +9236,23 @@
           "job-queue/application",
           "job-queue/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "job-queue/application/outer-1",
           "job-queue/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "keybindings/domain/outer-1",
+        "allow": [
+          "design-system/domain",
+          "error-handling/domain",
+          "keybindings/domain",
+          "design-system/domain/outer-1",
+          "keybindings/domain/outer-1",
           "unclassified"
         ]
       },
@@ -8584,8 +9266,10 @@
           "error-handling/domain",
           "error-handling/application",
           "keybindings/domain",
+          "keybindings/application",
           "design-system/domain/outer-1",
           "error-handling/application/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -8595,10 +9279,12 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "linear-mode/domain",
           "linear-mode/application",
           "linear-mode/presentation",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "linear-mode/presentation/outer-1",
           "unclassified"
@@ -8618,9 +9304,11 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/domain",
+          "keybindings/application",
           "minimap/domain",
           "minimap/application",
           "minimap/infrastructure",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "minimap/infrastructure/outer-1",
           "unclassified"
@@ -8635,10 +9323,21 @@
         ]
       },
       {
+        "from": "model-3d/application/outer-1",
+        "allow": [
+          "model-3d/domain",
+          "model-3d/application",
+          "model-3d/infrastructure",
+          "model-3d/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
         "from": "model-3d/presentation/outer-1",
         "allow": [
           "model-3d/domain",
           "model-3d/application",
+          "model-3d/application/outer-1",
           "model-3d/presentation/outer-1",
           "unclassified"
         ]
@@ -8665,15 +9364,19 @@
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "node-library/domain",
           "node-library/application",
           "node-library/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "node-library/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
         ]
@@ -8719,6 +9422,7 @@
       {
         "from": "remote-config/application/outer-1",
         "allow": [
+          "remote-config/infrastructure/public",
           "remote-config/domain",
           "remote-config/application",
           "remote-config/infrastructure",
@@ -8746,12 +9450,14 @@
           "canvas-renderer/presentation",
           "canvas-renderer/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "properties-panel/application",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
           "selection-toolbox/integration",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
@@ -8761,10 +9467,12 @@
           "canvas-renderer/application/outer-1",
           "canvas-renderer/infrastructure/outer-1",
           "canvas-renderer/integration/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "properties-panel/presentation/outer-1",
           "selection-toolbox/integration/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "telemetry/integration/outer-1",
           "test-support/integration/outer-1",
           "unclassified"
@@ -8780,15 +9488,20 @@
           "dialog-host/domain",
           "dialog-host/application",
           "keybindings/domain",
+          "keybindings/application",
           "settings/domain",
           "settings/application",
           "settings/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
+          "authentication/application/outer-1",
           "authentication/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "settings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -8824,6 +9537,7 @@
           "keybindings/domain",
           "subgraphs/domain",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "subgraphs/domain/outer-1",
           "unclassified"
         ]
@@ -8850,7 +9564,29 @@
           "ingest-api/domain/public",
           "node-replacement/domain",
           "remote-config/domain",
+          "telemetry/domain",
           "telemetry/domain/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "telemetry/application/outer-1",
+        "allow": [
+          "ingest-api/domain/public",
+          "ingest-api/infrastructure/public",
+          "remote-config/infrastructure/public",
+          "node-replacement/domain",
+          "node-replacement/infrastructure",
+          "remote-config/domain",
+          "remote-config/application",
+          "remote-config/infrastructure",
+          "telemetry/domain",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "node-replacement/application/outer-1",
+          "remote-config/application/outer-1",
+          "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "unclassified"
         ]
       },
@@ -8859,18 +9595,21 @@
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
+          "remote-config/infrastructure/public",
           "node-replacement/domain",
           "node-replacement/infrastructure",
           "node-replacement/presentation",
           "remote-config/domain",
           "remote-config/application",
           "remote-config/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
           "node-replacement/application/outer-1",
           "remote-config/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "telemetry/integration/outer-1",
           "unclassified"
         ]
@@ -8952,9 +9691,11 @@
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "workflow-errors/domain",
           "workflow-errors/application",
           "extension-manager/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "workflow-errors/application/outer-1",
           "extension-manager/application/outer-2",
@@ -8968,12 +9709,14 @@
           "extension-manager/domain",
           "extension-manager/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "workflow-errors/domain",
           "workflow-errors/application",
           "workflow-errors/presentation",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "workflow-errors/application/outer-1",
           "workflow-errors/presentation/outer-1",
@@ -8988,13 +9731,17 @@
           "error-reporting/domain",
           "error-reporting/application",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
+          "telemetry/domain",
           "telemetry/application",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
         ]
@@ -9003,6 +9750,7 @@
         "from": "workflow-persistence/domain/outer-1",
         "allow": [
           "keybindings/domain",
+          "keybindings/domain/outer-1",
           "workflow-persistence/domain/outer-1",
           "unclassified"
         ]
@@ -9020,11 +9768,13 @@
       {
         "from": "workflow-templates/application/outer-1",
         "allow": [
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "workflow-templates/domain",
           "workflow-templates/infrastructure",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "workflow-templates/application/outer-1",
           "unclassified"
         ]
@@ -9055,14 +9805,18 @@
           "design-system/application",
           "design-system/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
           "design-system/domain/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -9077,21 +9831,14 @@
           "cloud/domain",
           "cloud/application",
           "cloud/presentation",
+          "telemetry/domain",
           "telemetry/application",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "cloud/presentation/outer-2",
           "cloud/application/outer-3",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "comfyui-api/domain/outer-2",
-        "allow": [
-          "comfyui-api/domain/public",
-          "comfyui-api/domain",
-          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
@@ -9116,12 +9863,14 @@
           "extension-runtime/application",
           "extension-runtime/infrastructure",
           "keybindings/domain",
+          "keybindings/application",
           "system-info/domain",
           "system-info/application",
           "app-host/domain/outer-1",
           "design-system/domain/outer-1",
           "extension-manager/domain/outer-1",
           "extension-runtime/infrastructure/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "extension-manager/application/outer-2",
           "unclassified"
@@ -9134,8 +9883,10 @@
           "first-run-tour/domain",
           "first-run-tour/application",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "first-run-tour/application/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "first-run-tour/presentation/outer-2",
           "unclassified"
@@ -9163,10 +9914,20 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "release-notes/application",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "release-notes/presentation/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "viewport-3d/application/outer-2",
+        "allow": [
+          "viewport-3d/application",
+          "viewport-3d/application/outer-2",
           "unclassified"
         ]
       },
@@ -9177,15 +9938,19 @@
           "extension-manager/domain",
           "extension-manager/presentation",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
+          "telemetry/domain",
           "telemetry/application",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/presentation",
           "extension-manager/domain/outer-1",
           "extension-manager/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "extension-manager/application/outer-2",
           "workbench-shell/presentation/outer-2",
           "unclassified"
@@ -9196,7 +9961,9 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/domain",
+          "keybindings/application",
           "workflow-persistence/infrastructure",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
@@ -9213,12 +9980,14 @@
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "cloud/application/outer-3",
           "unclassified"
         ]
@@ -9242,6 +10011,7 @@
           "keybindings/application/public",
           "keybindings/integration/public",
           "node-definition/domain/public",
+          "remote-config/infrastructure/public",
           "server-facts/domain/public",
           "webcam-capture/integration/public",
           "agent/domain",
@@ -9369,6 +10139,7 @@
           "job-queue/presentation",
           "job-queue/integration",
           "keybindings/domain",
+          "keybindings/application",
           "keybindings/presentation",
           "keybindings/integration",
           "light-authoring/application",
@@ -9411,6 +10182,7 @@
           "navigation/application",
           "navigation/infrastructure",
           "navigation/integration",
+          "node-badges/domain",
           "node-badges/application",
           "node-badges/integration",
           "node-definition/domain",
@@ -9474,6 +10246,7 @@
           "system-info/application",
           "system-info/presentation",
           "tasks/infrastructure",
+          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
@@ -9485,6 +10258,7 @@
           "video-edit/domain",
           "video-edit/infrastructure",
           "video-edit/presentation",
+          "viewport-3d/application",
           "viewport-3d/presentation",
           "viewport-3d/integration",
           "vue-node-renderer/domain",
@@ -9536,10 +10310,13 @@
           "assets/application/outer-1",
           "assets/presentation/outer-1",
           "assets/integration/outer-1",
+          "authentication/application/outer-1",
           "authentication/infrastructure/outer-1",
+          "authentication/presentation/outer-1",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "billing/presentation/outer-1",
           "bottom-panel/integration/outer-1",
           "bounding-boxes/application/outer-1",
           "browser-export/infrastructure/outer-1",
@@ -9549,6 +10326,7 @@
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
+          "comfyui-api/domain/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "dialog-host/presentation/outer-1",
@@ -9566,13 +10344,14 @@
           "graph-model/integration/outer-1",
           "hdr-viewer/domain/outer-1",
           "job-queue/application/outer-1",
-          "job-queue/infrastructure/outer-1",
           "job-queue/presentation/outer-1",
+          "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "linear-mode/presentation/outer-1",
           "media-metadata/infrastructure/outer-1",
           "minimap/infrastructure/outer-1",
           "missing-media/application/outer-1",
+          "model-3d/application/outer-1",
           "model-3d/presentation/outer-1",
           "navigation/domain/outer-1",
           "node-definition/domain/outer-1",
@@ -9592,6 +10371,7 @@
           "support-feedback/application/outer-1",
           "surveys/application/outer-1",
           "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
           "telemetry/integration/outer-1",
           "test-support/integration/outer-1",
           "version-compatibility/application/outer-1",
@@ -9612,11 +10392,11 @@
           "billing/application/outer-2",
           "browser-interaction/domain/outer-2",
           "cloud/presentation/outer-2",
-          "comfyui-api/domain/outer-2",
           "extension-manager/application/outer-2",
           "first-run-tour/presentation/outer-2",
           "graph-layout/domain/outer-2",
           "release-notes/presentation/outer-2",
+          "viewport-3d/application/outer-2",
           "workbench-shell/presentation/outer-2",
           "workflow-persistence/application/outer-2",
           "workflow-sharing/domain/outer-2",

@@ -9,8 +9,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import { attachRetryableStatusRetry } from '@/utils/axiosRetryableStatus'
-import { DEFAULT_RETRY_POLICY } from '@/utils/retryPolicy'
-import { clearStatusRetryBudget } from '@/utils/statusRetryTelemetry'
+import { DEFAULT_RETRY_POLICY } from '@comfyorg/api-client/retryPolicy'
+import { clearStatusRetryBudget } from '@comfyorg/api-client/statusRetryTelemetry'
 
 vi.mock(import('@comfyorg/telemetry'))
 

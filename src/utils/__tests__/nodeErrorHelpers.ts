@@ -1,5 +1,5 @@
-import type { NodeError } from '@/platform/remote/comfyui/types'
-import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { NodeError } from '@comfyorg/api-client/types'
+import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
 export function runtimeError(

@@ -21,6 +21,8 @@ export enum ServerFeatureFlag {
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   DEPLOYMENT_COMPATIBILITY_MARKS_ENABLED = 'deployment_compatibility_marks_enabled',
   LATE_CUSTOM_NODES_ENABLED = 'late_custom_nodes_enabled',
+  RUNTIME_LIBRARY_MODELS_ENABLED = 'runtime_library_models_enabled',
+  MODEL_UPLOAD_FOLDERS = 'model_upload_folders',
   HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',

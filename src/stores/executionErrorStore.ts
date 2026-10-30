@@ -23,8 +23,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
 import { useDialogService } from '@/services/dialogService'
-import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
-import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
+import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
+import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId

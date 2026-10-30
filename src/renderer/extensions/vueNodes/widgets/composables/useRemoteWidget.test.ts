@@ -14,8 +14,8 @@ import {
 import type {
   WebSessionRequestScope,
   WebSessionRequests
-} from '@/platform/auth/session/webSessionFetch'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { api } from '@/scripts/api'
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
