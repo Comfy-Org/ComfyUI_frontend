@@ -457,7 +457,8 @@ jobs:
           fi
           DECISION=$(../frontend-scripts/scripts/cicd/comfyui-bump-guard.sh "$TARGET_VERSION" "${PINNED_FILES[@]}")
           if [ "$DECISION" = "skip" ]; then
-            MSG="ComfyUI master or open PR #${OPEN_PR:-none} already pins a frontend newer than ${TARGET_VERSION}; not replacing it."
+            PINS=$(grep -h '^comfyui-frontend-package==' "${PINNED_FILES[@]}" | paste -sd ' ')
+            MSG="Not replacing the ComfyUI bump: ${TARGET_VERSION} is older than a current pin (master, then open PR ${OPEN_PR:-none}: ${PINS})."
             echo "::warning title=ComfyUI bump not replaced::${MSG}"
             echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
             echo "skipped=true" >> "$GITHUB_OUTPUT"
