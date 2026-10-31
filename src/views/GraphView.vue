@@ -136,7 +136,9 @@ useDesktopCloudNotification()
 if (isCloud) {
   const { markFor } = useDeploymentCompatibility()
   onBeforeUnmount(
-    setMissingNodesNotice((nodeTypes) => noticeMissingNodes(nodeTypes, markFor))
+    setMissingNodesNotice(
+      (nodeTypes) => void noticeMissingNodes(nodeTypes, markFor)
+    )
   )
 }
 

@@ -69,7 +69,8 @@ function deployment(id: string): WorkspaceDeployment {
     build_name: 'Acme Studio pipeline',
     release_id: `rel-${id}`,
     status: 'ready',
-    created_at: '2026-10-01T00:00:00Z'
+    created_at: '2026-10-01T00:00:00Z',
+    can_start: false
   }
 }
 
