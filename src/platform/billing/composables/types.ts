@@ -118,9 +118,14 @@ export type BillingPortalOutcome =
       reason: 'routing_unavailable' | 'blocked' | 'missing_url' | 'failed'
     }
 
+export interface BillingStatusReadOptions {
+  /** Read after any read already in flight, instead of joining it. */
+  fresh?: boolean
+}
+
 export interface BillingActions {
   initialize: () => Promise<void>
-  fetchStatus: () => Promise<void>
+  fetchStatus: (options?: BillingStatusReadOptions) => Promise<void>
   fetchBalance: () => Promise<void>
   subscribe: (
     planSlug: string,
