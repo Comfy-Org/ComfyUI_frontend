@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/vue'
+import { createI18n } from 'vue-i18n'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import MaskEditorContent from '@/renderer/extensions/maskEditor/components/MaskEditorContent.vue'
@@ -138,7 +139,14 @@ class MockResizeObserver {
 const fakeNode = { id: 1, title: 'test-node' } as unknown as LGraphNode
 
 const renderContent = () =>
-  render(MaskEditorContent, { props: { node: fakeNode } })
+  render(MaskEditorContent, {
+    props: { node: fakeNode },
+    global: {
+      plugins: [
+        createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+      ]
+    }
+  })
 
 let originalResizeObserver: typeof ResizeObserver | undefined
 
