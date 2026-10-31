@@ -556,6 +556,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
    */
   const boundWorkflowId = ref<string | null>(rememberedWorkflowId)
 
+  const unadoptedMintBinding = new Map<string, string | null>()
+
   /**
    * H8 reporting state, kept beside the binding it describes: the workflow
    * last reported for the current thread (suppresses the ack's re-report of a
@@ -788,6 +790,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       uiTreatment,
       { retryable: false }
     )
+  }
+
+  function forgetBinding(): void {
+    boundWorkflowId.value = null
+    rememberedWorkflowId = null
+    unadoptedMintBinding.clear()
   }
 
   function initializeWorkflowContext(hasThread: boolean): void {
@@ -1173,28 +1181,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function refusesTarget(
+    text: string,
+    originContext: WorkflowTurnContext | undefined,
+    wfContext: WorkflowTurnContext | undefined,
+    origin: TurnOrigin
+  ): boolean {
+    const refused =
+      workflowTargetChanged(originContext, wfContext) ||
+      lacksCanvasForRemint(wfContext, origin)
+    if (refused) recordUnavailableTarget(text)
+    return refused
+  }
+
   function postTurn(
     threadId: string,
-    text: string,
-    origin: TurnOrigin,
-    wfContext: WorkflowTurnContext | undefined,
-    attachments?: SentAttachment[],
-    tags?: SentTag[],
-    workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    input: PostMessageInput,
+    wfContext: WorkflowTurnContext | undefined
   ): Promise<AgentTurnAccepted> {
-    const input = buildPostInput(
-      threadId,
-      text,
-      origin,
-      wfContext,
-      attachments,
-      tags,
-      workflowReferences,
-      selectionWorkflowId,
-      clientMessageId
-    )
     if (wfContext?.id === undefined) return rest.postMessage(threadId, input)
     return rest.postMessage(threadId, { ...input, workflowId: wfContext.id })
   }
@@ -1275,8 +1279,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tabs: OpenTabsSnapshot | undefined
   ): boolean {
     if (wfContext === undefined || wfContext.id !== undefined) return false
+    if (mintAlreadyRequested(wfContext.tabPath, boundWorkflowId)) return false
     if (boundWorkflowId === null) return true
-    return draft !== undefined && isOpenInATab(boundWorkflowId, tabs)
+    if (draft === undefined) return false
+    return hasContent(draft) || isOpenInATab(boundWorkflowId, tabs)
+  }
+
+  function hasContent(draft: DraftSnapshot): boolean {
+    const { nodes, groups } = draft.content
+    return [nodes, groups].some(
+      (items) => Array.isArray(items) && items.length > 0
+    )
   }
 
   function isOpenInATab(
@@ -1284,6 +1297,39 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tabs: OpenTabsSnapshot | undefined
   ): boolean {
     return (tabs?.open_tabs ?? []).some((tab) => tab.workflow_id === workflowId)
+  }
+
+  function mintAlreadyRequested(
+    tabPath: string,
+    boundWorkflowId: string | null
+  ): boolean {
+    return (
+      unadoptedMintBinding.has(tabPath) &&
+      unadoptedMintBinding.get(tabPath) === boundWorkflowId
+    )
+  }
+
+  function rememberMint(
+    input: PostMessageInput,
+    wfContext: WorkflowTurnContext | undefined,
+    workflowId: string | undefined
+  ): void {
+    if (!input.currentTabUnbound || wfContext === undefined) return
+    const adoptedOrHeld =
+      workflowId !== undefined &&
+      bindingStore.tabPathFor(workflowId) !== undefined
+    if (!adoptedOrHeld)
+      unadoptedMintBinding.set(wfContext.tabPath, boundWorkflowId.value)
+  }
+
+  function lacksCanvasForRemint(
+    wfContext: WorkflowTurnContext | undefined,
+    origin: TurnOrigin
+  ): boolean {
+    if (wfContext === undefined || wfContext.id !== undefined) return false
+    if (boundWorkflowId.value === null) return false
+    const readCanvas = workflow?.draft
+    return readCanvas !== undefined && readCanvas(origin) === undefined
   }
 
   function buildTargetFields(
@@ -1518,12 +1564,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
       const wfContext = workflow?.current(origin)
-      if (workflowTargetChanged(originContext, wfContext)) {
-        recordUnavailableTarget(text)
-        return false
-      }
+      if (refusesTarget(text, originContext, wfContext, origin)) return false
       sentContext = wfContext
-      const ack = await postTurn(
+      const input = buildPostInput(
         threadAtSend,
         text,
         origin,
@@ -1534,6 +1577,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         selectionWorkflowId,
         clientMessageId
       )
+      const ack = await postTurn(threadAtSend, input, wfContext)
       accepted = true
       if (!observeAcceptedTurn(generation, onAccepted)) return false
       acceptTurn(
@@ -1545,6 +1589,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         workflowReferences,
         skillScopeAtSend
       )
+      rememberMint(input, wfContext, ack.workflow_id)
       return true
     } catch (error) {
       // Before the generation guard: the binding store is page-global and
@@ -2107,8 +2152,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.reset()
     pruneSkillTurns()
     onThreadActivated?.(null)
-    boundWorkflowId.value = null
-    rememberedWorkflowId = null
+    forgetBinding()
     pendingWorkflowBind = null
     malformedStreamReports.clear()
     localStorage.removeItem(threadStorageKey)
@@ -2140,8 +2184,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       promptEditState.value = { phase: 'idle' }
       load.stashedTurn = conversationStore.activeTurnId !== null
       conversationStore.stashActiveTurn()
-      boundWorkflowId.value = null
-      rememberedWorkflowId = null
+      forgetBinding()
       pendingWorkflowBind = null
       malformedStreamReports.clear()
       conversationStore.setThreadId(threadId)
@@ -2888,8 +2931,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.reset()
     pruneSkillTurns()
     onThreadActivated?.(null)
-    boundWorkflowId.value = null
-    rememberedWorkflowId = null
+    forgetBinding()
     localStorage.removeItem(threadStorageKey)
   }
 
