@@ -1141,16 +1141,21 @@ describe('agentEventTransport thinking drafts', () => {
     expect(thinkingTexts(message)).toEqual(['Earlier.', 'Later'])
   })
 
-  it('never leaves a draft behind when no final thinking arrives', () => {
-    expect(
-      thinkingTexts(
-        drive([thinkingDraft('unsigned'), toolCall('search', 'running')])
-      )
-    ).toEqual([])
-    expect(
-      thinkingTexts(drive([thinkingDraft('unsigned'), delta('The answer')]))
-    ).toEqual([])
+  it.for([
+    { name: 'a tool call', next: toolCall('search', 'running') },
+    { name: 'the answer', next: delta('The answer') },
+    {
+      name: 'an active tab change',
+      next: {
+        type: 'agent_active_tab',
+        data: { workflow_id: 'wf-1', message_id: 'm', thread_id: 't' }
+      } satisfies AgentChatEvent
+    }
+  ])('drops an unconfirmed draft at $name', ({ next }) => {
+    expect(thinkingTexts(drive([thinkingDraft('unsigned'), next]))).toEqual([])
+  })
 
+  it('drops an unconfirmed draft when the turn settles', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit)
@@ -1160,16 +1165,13 @@ describe('agentEventTransport thinking drafts', () => {
     expect(thinkingTexts(emit.mock.calls.at(-1)?.[0] ?? message)).toEqual([])
   })
 
-  it('never settles a draft into a finished row when the tab changes', () => {
+  it('opens the row above an answer draft already on screen', () => {
     const message = drive([
-      thinkingDraft('unsigned'),
-      {
-        type: 'agent_active_tab',
-        data: { workflow_id: 'wf-1', message_id: 'm', thread_id: 't' }
-      }
+      draft('Here is your'),
+      thinkingDraft('Reconsidering')
     ])
 
-    expect(thinkingTexts(message)).toEqual([])
+    expect(message.parts.map((part) => part.type)).toEqual(['thinking', 'text'])
   })
 
   it('does not let an answer withdrawal take the thinking draft', () => {

@@ -122,8 +122,6 @@ export function createAgentEventTransport(
   let draft: TextPart | null = null
   let openThinking: ThinkingPart | null = null
   let openThinkingStartedAt = 0
-  /** The row showing the thinking the model is still writing. Provisional
-   * until the round's `agent_thinking` frames take the row over. */
   let thinkingDraft: ThinkingPart | null = null
   const tools = new Map<string, ToolPart>(
     message.parts
@@ -359,8 +357,6 @@ export function createAgentEventTransport(
     message.thinkingText = openThinking?.text
   }
 
-  /** The round's own thinking replaces the draft in its row: the draft may
-   * already sit above an answer draft, and that order should not flip. */
   function adoptThinkingDraft(): void {
     if (!thinkingDraft) return
     thinkingDraft.text = ''
@@ -369,8 +365,6 @@ export function createAgentEventTransport(
     thinkingDraft = null
   }
 
-  /** Applies one `agent_thinking_draft` frame: the whole of the round's
-   * thinking so far replaces the last draft, and an empty one withdraws it. */
   function handleThinkingDraftEvent(
     data: AgentThinkingDraftEvent['data']
   ): void {
@@ -382,10 +376,18 @@ export function createAgentEventTransport(
       closeOpenText()
       closeOpenThinking()
       thinkingDraft = openNewThinking()
+      moveAboveAnswerDraft(thinkingDraft)
     }
     thinkingDraft.text = data.text
     message.thinking = true
     message.thinkingText = data.text
+  }
+
+  function moveAboveAnswerDraft(part: ThinkingPart): void {
+    if (!draft) return
+    const others = message.parts.filter((other) => other !== part)
+    others.splice(others.indexOf(draft), 0, part)
+    message.parts = others
   }
 
   function dropThinkingDraft(): void {
@@ -442,8 +444,6 @@ export function createAgentEventTransport(
     draft = null
   }
 
-  /** A round that moved on without sending its thinking had none to keep, so
-   * its draft goes with the answer draft. */
   function dropDrafts(): void {
     dropDraft()
     dropThinkingDraft()

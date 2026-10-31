@@ -17,6 +17,10 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import {
+  thinkingDraftFrame,
+  thinkingFrame
+} from '@e2e/fixtures/data/agent/agentThinkingFrames'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
@@ -35,14 +39,6 @@ const ids = { thread_id: THREAD_ID, message_id: MESSAGE_ID }
 
 function draft(text: string): AgentWsEvent {
   return { type: 'agent_message_draft', data: { text, ...ids } }
-}
-
-function thinkingDraft(text: string): AgentWsEvent {
-  return { type: 'agent_thinking_draft', data: { text, ...ids } }
-}
-
-function thinking(delta: string): AgentWsEvent {
-  return { type: 'agent_thinking', data: { delta, ...ids } }
 }
 
 function toolCall(name: string, status: 'running' | 'success'): AgentWsEvent {
@@ -165,13 +161,12 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
 
     await expect(panel.getByText(WORKING_LABEL)).toBeVisible()
 
-    send(thinkingDraft('The user wants'))
+    send(thinkingDraftFrame(ids, 'The user wants'))
     await expect(
       panel.getByText('The user wants', { exact: true })
     ).toBeVisible()
 
-    // Each frame is the whole thinking so far, so it replaces the last.
-    send(thinkingDraft('The user wants a fox video'))
+    send(thinkingDraftFrame(ids, 'The user wants a fox video'))
     await expect(
       panel.getByText('The user wants a fox video', { exact: true })
     ).toBeVisible()
@@ -179,8 +174,9 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       panel.getByText('The user wants', { exact: true })
     ).toHaveCount(0)
 
-    // The round's finished thinking supersedes the draft, in the same row.
-    send(thinking('The user wants a fox video, so I will render one.'))
+    send(
+      thinkingFrame(ids, 'The user wants a fox video, so I will render one.')
+    )
     await expect(
       panel.getByText('The user wants a fox video, so I will render one.', {
         exact: true
@@ -197,12 +193,12 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
     test.setTimeout(60_000)
     const { panel, send } = await startTurn(page, 'Think about a fox video.')
 
-    send(thinkingDraft('half a thought'))
+    send(thinkingDraftFrame(ids, 'half a thought'))
     await expect(
       panel.getByText('half a thought', { exact: true })
     ).toBeVisible()
 
-    send(thinkingDraft(''))
+    send(thinkingDraftFrame(ids, ''))
     await expect(
       panel.getByText('half a thought', { exact: true })
     ).toHaveCount(0)
