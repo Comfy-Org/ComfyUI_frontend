@@ -17,7 +17,51 @@ test.describe(
       }
     )
 
-    test('extension tools select points and apply undoable masks without changing RGB or widgets', async ({
+    test('point selection routes image coordinates and buttons without drawing a mask', async ({
+      comfyPage,
+      maskEditor,
+      extensionTool
+    }) => {
+      await extensionTool.tool.click()
+      await expect(extensionTool.apply).toBeVisible()
+      await extensionTool.clickImagePoint(16, 24, 'left')
+      await extensionTool.clickImagePoint(48, 40, 'right')
+      await comfyPage.nextFrame()
+      await expect(extensionTool.status).toHaveText('2 points')
+      const events = await extensionTool.getEvents()
+      expect(events).toHaveLength(2)
+      expect(events[0].x).toBeCloseTo(16, 0)
+      expect(events[0].y).toBeCloseTo(24, 0)
+      expect(events[0].button).toBe(0)
+      expect(events[1].x).toBeCloseTo(48, 0)
+      expect(events[1].y).toBeCloseTo(40, 0)
+      expect(events[1].button).toBe(2)
+      await expect(extensionTool.overlay).toBeVisible()
+      expect(await maskEditor.pollMaskPixelCount()).toBe(0)
+    })
+
+    test('caller buffer mutations preserve RGB and the mask through one Undo and Redo', async ({
+      maskEditor,
+      extensionTool
+    }) => {
+      const originalImage = await maskEditor.getCanvasSnapshot(0)
+      await extensionTool.tool.click()
+      await extensionTool.apply.click()
+      await expect(extensionTool.status).toHaveText('Mask applied')
+      await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(1024)
+      expect(await extensionTool.getMaskAlphaValues()).toEqual([0, 255])
+      expect(await maskEditor.getCanvasSnapshot(0)).toBe(originalImage)
+      const appliedMask = await maskEditor.getCanvasSnapshot(2)
+      await maskEditor.dialog.getByTitle('Undo', { exact: true }).click()
+      await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(0)
+      expect(await maskEditor.getCanvasSnapshot(0)).toBe(originalImage)
+      await maskEditor.dialog.getByTitle('Redo', { exact: true }).click()
+      await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(1024)
+      expect(await maskEditor.getCanvasSnapshot(2)).toBe(appliedMask)
+      expect(await maskEditor.getCanvasSnapshot(0)).toBe(originalImage)
+    })
+
+    test('native Save and workflow reload preserve mask pixels, RGB, and widget values', async ({
       comfyPage,
       comfyFiles,
       maskEditor,
@@ -26,44 +70,11 @@ test.describe(
       const originalWidgets = await extensionTool.getWidgets()
       const dialog = maskEditor.dialog
 
-      await test.step('Select image points without drawing a native brush stroke', async () => {
+      await test.step('Save the mask without persisting overlay markers or changing RGB', async () => {
         await extensionTool.tool.click()
-        await expect(extensionTool.apply).toBeVisible()
-        await extensionTool.clickImagePoint(16, 24, 'left')
-        await extensionTool.clickImagePoint(48, 40, 'right')
-        await comfyPage.nextFrame()
-        await expect(extensionTool.status).toHaveText('2 points')
-        const events = await extensionTool.getEvents()
-        expect(events).toHaveLength(2)
-        expect(events[0].x).toBeCloseTo(16, 0)
-        expect(events[0].y).toBeCloseTo(24, 0)
-        expect(events[0].button).toBe(0)
-        expect(events[1].x).toBeCloseTo(48, 0)
-        expect(events[1].y).toBeCloseTo(40, 0)
-        expect(events[1].button).toBe(2)
-        await expect(extensionTool.overlay).toBeVisible()
-        expect(await maskEditor.pollMaskPixelCount()).toBe(0)
-      })
-
-      await test.step('Caller buffer mutations preserve the canvas and one native Undo and Redo step', async () => {
-        const originalImage = await maskEditor.getCanvasSnapshot(0)
         await extensionTool.apply.click()
         await expect(extensionTool.status).toHaveText('Mask applied')
-        await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(1024)
-        expect(await extensionTool.getMaskAlphaValues()).toEqual([0, 255])
-        expect(await maskEditor.getCanvasSnapshot(0)).toBe(originalImage)
-        const appliedMask = await maskEditor.getCanvasSnapshot(2)
-        await dialog.getByTitle('Undo', { exact: true }).click()
-        await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(0)
-        expect(await maskEditor.getCanvasSnapshot(0)).toBe(originalImage)
-        await dialog.getByTitle('Redo', { exact: true }).click()
-        await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(1024)
-        expect(await maskEditor.getCanvasSnapshot(2)).toBe(appliedMask)
-        expect(await maskEditor.getCanvasSnapshot(0)).toBe(originalImage)
-      })
-
-      await test.step('Save the mask without persisting overlay markers or changing RGB', async () => {
-        await extensionTool.clickImagePoint(16, 24, 'left')
+        await extensionTool.clickImagePoint(48, 40, 'left')
         await comfyPage.nextFrame()
         await expect(extensionTool.overlay).toBeVisible()
         await dialog.getByRole('button', { name: 'Save' }).click()
@@ -85,6 +96,9 @@ test.describe(
         expect(savedWidgets.map((widget) => widget.name)).toEqual(
           originalWidgets.map((widget) => widget.name)
         )
+        expect(
+          savedWidgets.filter((widget) => widget.name !== 'image')
+        ).toEqual(originalWidgets.filter((widget) => widget.name !== 'image'))
       })
 
       await test.step('Reopening restores the saved mask and starts a fresh tool panel', async () => {

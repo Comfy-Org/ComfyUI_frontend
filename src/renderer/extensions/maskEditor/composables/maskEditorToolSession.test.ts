@@ -194,9 +194,14 @@ describe('MaskEditor extension session contract', () => {
     expect(document.getRevision()).toBe(1)
   })
 
-  it.for([undefined, {}, [null]])(
-    'preserves the overlay on invalid JavaScript points: %j',
-    (invalid) => {
+  it.for([
+    { name: 'missing array', invalid: undefined },
+    { name: 'non-array', invalid: {} },
+    { name: 'null point', invalid: [null] },
+    { name: 'sparse array', invalid: Object.assign([], { length: 1 }) }
+  ])(
+    'preserves the overlay on invalid JavaScript points: $name',
+    ({ invalid }) => {
       const { runtime, overlay } = setup()
       const points = [{ id: 'positive', x: 1, y: 1, radius: 4, color: 'blue' }]
       runtime.context.setOverlay(points)
