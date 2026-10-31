@@ -310,14 +310,59 @@ describe('useWaveAudioPlayer', () => {
 
     it('reloads a failed source before retrying', async () => {
       const { audio, player } = await createPlayer()
-      Object.defineProperty(audio, 'error', { value: { code: 4 } })
-      const load = vi.spyOn(audio, 'load').mockImplementation(() => {})
-      const play = vi.spyOn(audio, 'play').mockResolvedValue(undefined)
+      let mediaError: { code: number } | null = { code: 4 }
+      Object.defineProperty(audio, 'error', { get: () => mediaError })
+      const load = vi.spyOn(audio, 'load').mockImplementation(() => {
+        mediaError = null
+      })
+      vi.spyOn(audio, 'play').mockImplementation(() =>
+        mediaError ? Promise.reject(notSupported()) : Promise.resolve()
+      )
 
       player.togglePlayPause()
-      await vi.waitFor(() => expect(play).toHaveBeenCalledTimes(1))
+      await vi.waitFor(() => expect(load).toHaveBeenCalledTimes(1))
+      await nextTick()
+      await nextTick()
 
-      expect(load).toHaveBeenCalledTimes(1)
+      expect(useToast().toasts).toEqual([])
+    })
+
+    it('reports failures on the caller surface', async () => {
+      vi.mocked(useMediaControls).mockReset()
+      const player = useWaveAudioPlayer({
+        src: ref(''),
+        surface: 'agent',
+        waveform: false
+      })
+      const audio = document.createElement('audio')
+      player.audioRef.value = audio
+      await nextTick()
+      vi.spyOn(audio, 'play').mockRejectedValue(notSupported())
+
+      player.togglePlayPause()
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(DOMException),
+          expect.objectContaining({ surface: 'agent' })
+        )
+      )
+    })
+
+    it('resumes from a waveform click right after a pause', async () => {
+      const { audio, player } = await createPlayer()
+      const play = vi.spyOn(audio, 'play').mockResolvedValue(undefined)
+      const waveform = document.createElement('div')
+      waveform.getBoundingClientRect = () => new DOMRect(0, 0, 100, 10)
+      player.waveformRef.value = waveform
+      await giveDuration(audio)
+      audio.dispatchEvent(new Event('play'))
+      await nextTick()
+      expect(player.isPlaying.value).toBe(true)
+
+      player.handleWaveformClick(new MouseEvent('click'))
+
+      expect(play).toHaveBeenCalledTimes(1)
     })
 
     it('stays silent when a play attempt is aborted', async () => {
