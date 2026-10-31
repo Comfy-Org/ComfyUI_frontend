@@ -665,6 +665,7 @@ const coachDeferredBy = computed(() =>
         : null
 )
 const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
+let coachReleaseRevoked = false
 function releaseCoachCompletionWaiters(proceed = true): void {
   for (const resolve of coachCompletionWaiters) resolve(proceed)
   coachCompletionWaiters.clear()
@@ -694,9 +695,10 @@ async function waitForCoachCompletion(): Promise<boolean> {
     return true
   sendHeldByCoach.value = true
   try {
-    return await new Promise<boolean>((resolve) =>
+    const proceed = await new Promise<boolean>((resolve) =>
       coachCompletionWaiters.add(resolve)
     )
+    return proceed && !coachReleaseRevoked
   } finally {
     sendHeldByCoach.value = false
   }
@@ -1589,9 +1591,10 @@ void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   runPanelTeardown({
     releaseCoachCompletionWaiters: () => {
-      releaseCoachCompletionWaiters(
+      const proceed =
         coachDeferredBy.value !== null && agentPanelStore.isVisible
-      )
+      if (!proceed) coachReleaseRevoked = true
+      releaseCoachCompletionWaiters(proceed)
     },
     invalidateConsentHeldSubmission: () => {
       if (
