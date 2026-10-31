@@ -25,7 +25,7 @@ const config: StorybookConfig = {
   addons: ['@storybook/addon-docs', '@storybook/addon-mcp'],
   framework: {
     name: '@storybook/vue3-vite',
-    options: {}
+    options: { docgen: 'vue-component-meta' }
   },
   async viteFinal(config) {
     const { mergeConfig } = await import('vite')
