@@ -17,14 +17,6 @@ import type { GraphOperation } from './graphOperations'
 import { createOpSender } from './opSender'
 import type { OpsResultView } from './opSender'
 
-/**
- * The canonical CRDT contract for a person's edit on a reconnect, run against
- * the real applier: a Lamport counter is taken when an op is sent, above every
- * counter the sender has received. An edit the wire never carried has not been
- * sent, so it stamps above the catch-up it lands after and wins the register.
- * Without that, an edit typed offline keeps its pre-outage counter and the
- * applier drops it in favour of an agent write the person never saw.
- */
 const WORKFLOW = 'wf-1'
 const HUMAN = 'human:u1:tab'
 const AGENT = 'agent:t:1'
