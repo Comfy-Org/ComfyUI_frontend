@@ -16,6 +16,7 @@ import { createPlan } from '@e2e/fixtures/data/billingPlans'
 export const CLOUD_REMOTE_CONFIG: RemoteConfig = {}
 
 export const LEGACY_PERSONAL_BILLING_STATUS = {
+  next_charge: null,
   billing_rail: 'legacy_stripe',
   billing_status: 'inactive',
   has_funds: true,
@@ -102,6 +103,7 @@ export const DEFAULT_TEAM_MEMBERS: Member[] = [
 const TEAM_PLAN_SLUG = 'team-pro-monthly'
 
 export const TEAM_BILLING_STATUS = {
+  next_charge: null,
   is_active: true,
   subscription_status: 'active',
   subscription_tier: 'PRO',
@@ -118,6 +120,7 @@ export const TEAM_BILLING_STATUS = {
 } satisfies IngestBillingStatusResponse
 
 export const ENDED_STANDARD_BILLING_STATUS = {
+  next_charge: null,
   billing_rail: 'stripe',
   billing_status: 'inactive',
   has_funds: true,

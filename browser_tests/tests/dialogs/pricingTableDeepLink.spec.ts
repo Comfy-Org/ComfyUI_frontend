@@ -79,6 +79,7 @@ const PERSONAL_ANNUAL_PLANS = {
 } satisfies BillingPlansResponse
 
 const ACTIVE_TEAM_STATUS = {
+  next_charge: null,
   is_active: true,
   subscription_status: 'active',
   subscription_tier: 'TEAM',
@@ -99,6 +100,7 @@ const ACTIVE_TEAM_STATUS = {
 } satisfies BillingStatusResponse
 
 const ACTIVE_STANDARD_STATUS = {
+  next_charge: null,
   is_active: true,
   subscription_status: 'active',
   subscription_tier: 'STANDARD',

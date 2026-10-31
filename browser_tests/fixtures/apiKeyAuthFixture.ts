@@ -111,6 +111,7 @@ export const apiKeyAuthFixture = base.extend<{
     )
     await page.route('**/api/billing/status', (route) =>
       fulfillForApiKey(route, {
+        next_charge: null,
         billing_rail: 'stripe',
         billing_status: 'paid',
         has_funds: true,

@@ -142,6 +142,7 @@ export function challengeRequiredOperation(
 export function defaultScenario(): CloudScenario {
   return {
     status: {
+      next_charge: null,
       ended_at: null,
       is_active: true,
       has_funds: true,

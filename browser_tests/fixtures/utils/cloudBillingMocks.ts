@@ -17,6 +17,7 @@ interface MockBillingOptions {
 }
 
 export const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
+  next_charge: null,
   is_active: true,
   has_funds: true,
   subscription_status: 'active',

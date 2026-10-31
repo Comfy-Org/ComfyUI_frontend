@@ -44,6 +44,7 @@ const RAILS_ON = {
 const PENDING_OPERATION_ID = 'op-e2e-idle-tab'
 
 const ACTIVE_STATUS = {
+  next_charge: null,
   is_active: true,
   has_funds: true,
   subscription_status: 'active',

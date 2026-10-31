@@ -112,6 +112,7 @@ const UPGRADE_QUOTE = {
 } satisfies PreviewSubscribeResponse
 
 const ACTIVE_STANDARD = {
+  next_charge: null,
   is_active: true,
   subscription_status: 'active',
   subscription_tier: 'STANDARD',

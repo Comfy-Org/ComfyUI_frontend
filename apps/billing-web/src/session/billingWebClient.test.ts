@@ -134,6 +134,7 @@ describe('createBillingWebClient', () => {
 })
 
 const STATUS_BODY = {
+  next_charge: null,
   billing_rail: 'stripe',
   ended_at: null,
   has_funds: true,

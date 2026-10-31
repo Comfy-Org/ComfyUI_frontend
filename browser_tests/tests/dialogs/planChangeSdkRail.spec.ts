@@ -57,6 +57,7 @@ const CREATOR_ANNUAL_PLAN = createPlan({
 })
 
 const ACTIVE_STANDARD_STATUS = {
+  next_charge: null,
   is_active: true,
   subscription_status: 'active',
   subscription_tier: 'STANDARD',

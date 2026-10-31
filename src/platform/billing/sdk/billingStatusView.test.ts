@@ -138,6 +138,40 @@ describe('projectBillingStatus', () => {
     expect(projected?.period_credit_grant).toBeUndefined()
   })
 
+  it('reads the next charge amount back as a number', () => {
+    const charge = {
+      amount: 2000n,
+      currency: 'usd',
+      date: '2026-11-27T12:00:00Z',
+      reflects_scheduled_change: false
+    }
+
+    expect(
+      projectBillingStatus({ ...DECODED, next_charge: charge })?.next_charge
+    ).toStrictEqual({ ...charge, amount: 2000 })
+  })
+
+  it('keeps a served absence of a next charge', () => {
+    expect(
+      projectBillingStatus({ ...DECODED, next_charge: null })?.next_charge
+    ).toBeNull()
+  })
+
+  it('drops only a next charge whose amount a number cannot hold exactly', () => {
+    const projected = projectBillingStatus({
+      ...DECODED,
+      next_charge: {
+        amount: TOO_LARGE,
+        currency: 'usd',
+        date: '2026-11-27T12:00:00Z',
+        reflects_scheduled_change: false
+      }
+    })
+
+    expect(projected).toBeDefined()
+    expect(projected).not.toHaveProperty('next_charge')
+  })
+
   it('carries a status with no credit stop and no scheduled change through untouched', () => {
     const plain: BillingStatusData = {
       ...DECODED,

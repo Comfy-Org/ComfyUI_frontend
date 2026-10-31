@@ -10,6 +10,7 @@ export const CANCELLATION_SURVEY_REMOTE_CONFIG: RemoteConfig = {
 }
 
 export const PERSONAL_PRO_BILLING_STATUS = {
+  next_charge: null,
   billing_rail: 'stripe',
   is_active: true,
   subscription_status: 'active',

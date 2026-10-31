@@ -695,6 +695,7 @@ function billingAnswer(path: string, scope: BillingScope): unknown {
   switch (path) {
     case '/api/billing/status':
       return {
+        next_charge: null,
         billing_rail: 'stripe',
         ended_at: null,
         has_funds: true,
@@ -920,7 +921,8 @@ describe('cloud API requests on the shared web session', () => {
         { ...LISTED, id: 'ws-personal', name: 'Personal', type: 'personal' },
         { ...LISTED, id: 'ws-team', name: 'Team', type: 'team' }
       ],
-      can_create_workspace: true
+      can_create_workspace: true,
+      max_owned_workspaces: 1
     })
 
     await useTeamWorkspaceStore().initialize()

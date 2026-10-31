@@ -191,6 +191,7 @@ const CAPABILITIES = {
 }
 
 const BILLING_STATUS = {
+  next_charge: null,
   billing_rail: 'stripe',
   ended_at: null,
   has_funds: true,

@@ -89,6 +89,40 @@ describe('createBillingStatusReader', () => {
   )
 
   it.for([
+    { name: 'omitted on an older server', nextCharge: undefined },
+    { name: 'none', nextCharge: null },
+    {
+      name: 'served',
+      nextCharge: {
+        amount: 2000,
+        currency: 'usd',
+        date: '2026-11-27T12:00:00Z',
+        reflects_scheduled_change: false
+      }
+    }
+  ])(
+    'preserves a $name next charge without inventing one',
+    async ({ nextCharge }) => {
+      const { scopeSource } = fakeSession()
+      const body: unknown = JSON.parse(
+        JSON.stringify({ ...STATUS, next_charge: nextCharge })
+      )
+      const { transport } = fakeTransport([httpOk(body)])
+      const reader = createBillingStatusReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      expect(reader.getSnapshot()?.status.next_charge).toStrictEqual(
+        nextCharge && { ...nextCharge, amount: BigInt(nextCharge.amount) }
+      )
+      expect(
+        Object.hasOwn(reader.getSnapshot()?.status ?? {}, 'next_charge')
+      ).toBe(nextCharge !== undefined)
+    }
+  )
+
+  it.for([
     { name: 'malformed date', body: { ...STATUS, ended_at: 'not-a-date' } },
     { name: 'numeric date', body: { ...STATUS, ended_at: 1730000000 } },
     { name: 'malformed core field', body: { ...STATUS, has_funds: 'true' } },

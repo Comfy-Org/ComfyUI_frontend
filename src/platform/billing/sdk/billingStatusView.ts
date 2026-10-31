@@ -16,6 +16,8 @@ type DecodedPeriodCreditGrant = NonNullable<
 type PeriodCreditGrant = NonNullable<
   BillingStatusResponse['period_credit_grant']
 >
+type DecodedNextCharge = NonNullable<BillingStatusData['next_charge']>
+type NextCharge = NonNullable<BillingStatusResponse['next_charge']>
 
 /**
  * The credit stop's two int64 fields — a monthly credit count and a monthly
@@ -37,6 +39,11 @@ function projectRenewalInvoice(
   const amount_due = asSafeNumber(invoice.amount_due)
   if (amount_due === undefined) return undefined
   return { ...invoice, amount_due }
+}
+
+function projectNextCharge(charge: DecodedNextCharge): NextCharge | undefined {
+  const amount = asSafeNumber(charge.amount)
+  return amount === undefined ? undefined : { ...charge, amount }
 }
 
 function projectPeriodCreditGrant({
@@ -61,6 +68,7 @@ export function projectBillingStatus(
     scheduled_change,
     renewal_invoice,
     period_credit_grant,
+    next_charge,
     ...rest
   } = status
   const stop =
@@ -79,8 +87,13 @@ export function projectBillingStatus(
     period_credit_grant === undefined
       ? undefined
       : projectPeriodCreditGrant(period_credit_grant)
+  const nextCharge =
+    next_charge === undefined || next_charge === null
+      ? next_charge
+      : projectNextCharge(next_charge)
   return {
     ...rest,
+    ...(nextCharge !== undefined && { next_charge: nextCharge }),
     ...(invoice && { renewal_invoice: invoice }),
     ...(grant && { period_credit_grant: grant }),
     team_credit_stop: stop,

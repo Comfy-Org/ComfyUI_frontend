@@ -56,6 +56,7 @@ const CREATOR_ANNUAL_PLAN = createPlan({
 
 /** The server naming the operation it still has open for this scope. */
 const STATUS_WITH_PENDING_SUBSCRIPTION = {
+  next_charge: null,
   is_active: true,
   subscription_status: 'active',
   subscription_tier: 'STANDARD',

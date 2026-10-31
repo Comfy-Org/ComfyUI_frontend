@@ -64,6 +64,7 @@ function operation(
 /** The workspace's billing status, naming the top-up it still has open, if any. */
 function billingStatus(pendingTopupId?: string): BillingStatusResponse {
   return {
+    next_charge: null,
     is_active: true,
     has_funds: true,
     subscription_status: 'active',

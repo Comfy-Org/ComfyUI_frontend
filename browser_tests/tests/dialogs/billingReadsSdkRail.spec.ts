@@ -54,6 +54,7 @@ const READ_ROUTES = [
 ] as const
 
 const ACTIVE_STATUS: BillingStatusResponse = {
+  next_charge: null,
   is_active: true,
   has_funds: true,
   subscription_status: 'active',

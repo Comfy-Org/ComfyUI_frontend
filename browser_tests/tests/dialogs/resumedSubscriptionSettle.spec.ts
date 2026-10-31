@@ -93,6 +93,7 @@ const UPGRADE_TO_CREATOR = {
 } satisfies PreviewSubscribeResponse
 
 const ACTIVE_STANDARD = {
+  next_charge: null,
   is_active: true,
   has_funds: true,
   subscription_status: 'active',
