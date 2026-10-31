@@ -532,7 +532,7 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(log).toContain('canvas.onNodeMoved')
     })
 
-    it.fails('releases a hovered node with the pointerup event', () => {
+    it('releases a hovered node with the pointerup event', () => {
       canvas.visible_nodes = [...graph.nodes]
       gesture.move(A_BODY)
       gesture.press(A_BODY)
@@ -544,6 +544,29 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(callbackArgs.get('node.onMouseUp')?.[0]?.[0]).toMatchObject({
         type: 'pointerup'
       })
+    })
+
+    it('releases a hovered node that also captures input once', () => {
+      canvas.visible_nodes = [...graph.nodes]
+      canvas.node_capturing_input = a
+      gesture.move(A_BODY)
+      gesture.press(A_BODY)
+      gesture.release(A_BODY)
+
+      expect(callbackArgs.get('node.onMouseUp')).toHaveLength(1)
+    })
+
+    it('does not release a node when the pointerup ends a link gesture from its slot', () => {
+      a.addOutput('value', 'number')
+      a.updateArea()
+      canvas.visible_nodes = [...graph.nodes]
+      const outputPosition = a.getOutputPos(0)
+      const slot: Point = [outputPosition[0], outputPosition[1]]
+      gesture.move(slot)
+      gesture.press(slot)
+      gesture.release(slot)
+
+      expect(callbackArgs.get('node.onMouseUp')).toBeUndefined()
     })
 
     it('starts a link drag from an output slot', () => {

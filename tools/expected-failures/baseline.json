@@ -64,10 +64,6 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/lib/litegraph/src/LGraphCanvas.gesture.test.ts:releases a hovered node with the pointerup event:1",
-    "classification": "live-defect"
-  },
-  {
     "id": "vitest:src/platform/workflow/persistence/base/hashUtil.test.ts:produces different hashes for known collision paths:1",
     "classification": "live-defect"
   },

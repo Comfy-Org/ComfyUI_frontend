@@ -96,8 +96,11 @@ export async function getFromPngFile(
         reject(new Error('Failed to read file as ArrayBuffer'))
         return
       }
-      const result = await getFromPngBuffer(buffer)
-      resolve(result)
+      try {
+        resolve(await getFromPngBuffer(buffer))
+      } catch (error) {
+        reject(error)
+      }
     }
     reader.onerror = () => reject(reader.error)
     reader.onabort = () => reject(new Error('FileReader aborted'))

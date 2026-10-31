@@ -5,11 +5,11 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import { fromPartial } from '@total-typescript/shoehorn'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import type {
   WebSessionRequestScope,
   WebSessionRequests
-} from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from './agentConsentStore'
 

@@ -8,16 +8,16 @@
       "role": "domain"
     },
     {
-      "path": "src/schemas/colorPaletteSchema.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/services/colorPaletteService.ts",
       "role": "application"
     },
     {
       "path": "src/stores/workspace/colorPaletteStore.ts",
       "role": "application"
+    },
+    {
+      "path": "packages/settings-core/src/colorPaletteSchema.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
