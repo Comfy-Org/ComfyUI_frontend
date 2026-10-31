@@ -1282,12 +1282,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (mintAlreadyRequested(wfContext.tabPath, boundWorkflowId)) return false
     if (boundWorkflowId === null) return true
     if (draft === undefined) return false
-    return hasNodes(draft) || isOpenInATab(boundWorkflowId, tabs)
+    return hasContent(draft) || isOpenInATab(boundWorkflowId, tabs)
   }
 
-  function hasNodes(draft: DraftSnapshot): boolean {
-    const nodes = draft.content.nodes
-    return Array.isArray(nodes) && nodes.length > 0
+  function hasContent(draft: DraftSnapshot): boolean {
+    const { nodes, groups } = draft.content
+    return [nodes, groups].some(
+      (items) => Array.isArray(items) && items.length > 0
+    )
   }
 
   function isOpenInATab(

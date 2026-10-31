@@ -6875,6 +6875,23 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(postMessage.mock.calls[1][1]).not.toHaveProperty('draft')
   })
 
+  it('(h10e2b) a tab holding only a group is not blank', async () => {
+    const draftSnapshot = {
+      content: { nodes: [], links: [], groups: [{ id: 1 }] }
+    }
+    const { session, postMessage, bindingStore } = unboundTabSession({
+      acks: ['wf-other-tab', 'wf-minted'],
+      draft: () => draftSnapshot,
+      tabs: () => ({ open_tabs: [] })
+    })
+
+    await session.sendMessage('build a workflow')
+    bindingStore.unbindWorkflow('wf-other-tab')
+    await session.sendMessage('what is in the group?')
+
+    expect(postMessage.mock.calls[1][1].currentTabUnbound).toBe(true)
+  })
+
   it('(h10e3) a new tab reusing the path of a closed adopted tab mints for itself', async () => {
     const draftSnapshot = { content: { nodes: [{ id: 1 }], links: [] } }
     const { session, postMessage, bindingStore } = unboundTabSession({
