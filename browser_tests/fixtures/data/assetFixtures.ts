@@ -512,3 +512,20 @@ export const FLAT_FOLDER_TEMP_ASSET: Asset = createOutputAsset({
   updated_at: '2026-10-24T00:00:00.000Z',
   last_access_time: '2026-10-24T00:00:00.000Z'
 })
+
+/** A minimal listed asset with a fresh timestamp and an `/api/view` preview. */
+export function createListedAsset(
+  id: string,
+  name: string,
+  tags: string[]
+): Asset {
+  const createdAt = new Date().toISOString()
+  return {
+    id,
+    name,
+    tags,
+    preview_url: `/api/view?filename=${name}&type=input`,
+    created_at: createdAt,
+    updated_at: createdAt
+  }
+}
