@@ -1,19 +1,14 @@
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
-import type { Ref } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import type { BillingContext } from '@/platform/billing/composables/types'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import CreditsLockedNotice from './CreditsLockedNotice.vue'
 
-const subscriptionState: Ref<'never_subscribed' | 'ended' | null> = ref(null)
-
-vi.mock<unknown>(
-  import('@/platform/billing/composables/useBillingContext'),
-  () => ({
-    useBillingContext: () => ({ subscriptionState })
-  })
-)
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 const i18n = createI18n({
   legacy: false,
@@ -30,31 +25,26 @@ const i18n = createI18n({
   }
 })
 
-function renderNotice() {
+function renderNotice(state: BillingContext['subscriptionState']['value']) {
+  mockBillingContext().subscriptionState = computed(() => state)
   return render(CreditsLockedNotice, { global: { plugins: [i18n] } })
 }
 
 describe('CreditsLockedNotice', () => {
-  beforeEach(() => {
-    subscriptionState.value = null
-  })
-
   it('tells a never-subscribed account to subscribe', () => {
-    subscriptionState.value = 'never_subscribed'
-    renderNotice()
+    renderNotice('never_subscribed')
 
     expect(screen.getByRole('status')).toHaveTextContent('Subscribe to run')
   })
 
   it('tells a lapsed account to resubscribe', () => {
-    subscriptionState.value = 'ended'
-    renderNotice()
+    renderNotice('ended')
 
     expect(screen.getByRole('status')).toHaveTextContent('Resubscribe to run')
   })
 
   it('falls back to the subscribe line while the state is unknown', () => {
-    renderNotice()
+    renderNotice(null)
 
     expect(screen.getByRole('status')).toHaveTextContent('Subscribe to run')
   })

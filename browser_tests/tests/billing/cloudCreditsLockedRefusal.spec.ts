@@ -62,25 +62,29 @@ test.describe('Run refused for locked credits', { tag: '@cloud' }, () => {
     )
   })
 
-  test('says why bought credits did not unlock the run', async ({ page }) => {
-    await runAndGetRefused(page, true)
+  test(
+    'says why bought credits did not unlock the run',
+    { tag: '@screenshot' },
+    async ({ page }) => {
+      await runAndGetRefused(page, true)
 
-    const notice = page.getByTestId('credits-locked-notice')
-    await expect(notice).toBeVisible({ timeout: 30_000 })
-    await expect(notice).toHaveText(
-      "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud."
-    )
-    await expectRegionScreenshot(
-      page,
-      [
-        page
-          .getByRole('dialog')
-          .getByRole('heading', { name: 'Choose a Plan' }),
-        notice
-      ],
-      'credits-locked-subscribe-dialog.png'
-    )
-  })
+      const notice = page.getByTestId(TestIds.dialogs.creditsLockedNotice)
+      await expect(notice).toBeVisible({ timeout: 30_000 })
+      await expect(notice).toHaveText(
+        "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud."
+      )
+      await expectRegionScreenshot(
+        page,
+        [
+          page
+            .getByRole('dialog')
+            .getByRole('heading', { name: 'Choose a Plan' }),
+          notice
+        ],
+        'credits-locked-subscribe-dialog.png'
+      )
+    }
+  )
 
   test('stays out of the dialog for an account with no credits', async ({
     page
@@ -88,6 +92,8 @@ test.describe('Run refused for locked credits', { tag: '@cloud' }, () => {
     await runAndGetRefused(page, false)
 
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 30_000 })
-    await expect(page.getByTestId('credits-locked-notice')).toHaveCount(0)
+    await expect(
+      page.getByTestId(TestIds.dialogs.creditsLockedNotice)
+    ).toHaveCount(0)
   })
 })

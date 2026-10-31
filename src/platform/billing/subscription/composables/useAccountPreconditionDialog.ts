@@ -8,9 +8,7 @@ interface AccountPreconditionContext {
   /** Node type that triggered the precondition, used as modal context. */
   nodeType?: string
   source?: PaymentIntentSource
-  /** The run refusal says the account holds credits it cannot use. */
   creditsLocked?: boolean
-  /** Server `error.type` of the refused run. */
   refusalType?: string
 }
 
