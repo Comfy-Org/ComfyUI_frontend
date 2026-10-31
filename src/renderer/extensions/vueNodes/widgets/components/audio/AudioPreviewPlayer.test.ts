@@ -16,8 +16,6 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import AudioPreviewPlayer from '@/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue'
 
-vi.mock(import('@comfyorg/telemetry/reportError'))
-
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn()
 }))
@@ -116,7 +114,6 @@ describe('AudioPreviewPlayer', () => {
       const user = userEvent.setup()
 
       renderPlayer('http://example.com/audio.ogg')
-      load.mockClear()
       vi.spyOn(HTMLMediaElement.prototype, 'error', 'get').mockReturnValue(
         fromPartial<MediaError>({ code: 4 })
       )
@@ -136,30 +133,46 @@ describe('AudioPreviewPlayer', () => {
       )
       const user = userEvent.setup()
 
-      const { container } = renderPlayer('http://example.com/audio.mp3')
+      renderPlayer('http://example.com/audio.mp3')
       const button = screen.getByRole('button', { name: 'g.playPause' })
       await user.click(button)
       expect(button).toHaveAttribute('aria-pressed', 'true')
 
-      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the media element is hidden and exposes no role
-      await fireEvent(container.querySelector('audio')!, new Event('pause'))
+      await fireEvent(screen.getByTestId('audio-preview'), new Event('pause'))
 
       expect(button).toHaveAttribute('aria-pressed', 'false')
     })
 
-    it('shows the error toast when playback fails after it started', async () => {
+    it('reports the native media diagnostics when playback fails after it started', async () => {
       vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
       const user = userEvent.setup()
 
-      const { container } = renderPlayer('http://example.com/audio.mp3')
+      renderPlayer('http://example.com/audio.mp3')
       const button = screen.getByRole('button', { name: 'g.playPause' })
       await user.click(button)
+      vi.spyOn(HTMLMediaElement.prototype, 'error', 'get').mockReturnValue(
+        fromPartial<MediaError>({
+          code: 4,
+          message: 'DEMUXER_ERROR_COULD_NOT_OPEN'
+        })
+      )
 
-      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the media element is hidden and exposes no role
-      await fireEvent.error(container.querySelector('audio')!)
+      await fireEvent.error(screen.getByTestId('audio-preview'))
 
       expect(button).toHaveAttribute('aria-pressed', 'false')
       expect(useToast().toasts).toHaveLength(1)
+      // A bare `MediaError` is not an `Error` and has no own enumerable
+      // properties, so the reporter would stringify it to `"{}"`. Assert both
+      // halves: a real `Error`, carrying the code and the native message.
+      const [reported] = vi.mocked(reportError).mock.calls[0]
+      expect(reported).toBeInstanceOf(Error)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message:
+            'Audio playback failed (MediaError 4): DEMUXER_ERROR_COULD_NOT_OPEN'
+        }),
+        expect.objectContaining({ errorType: 'error_playing_audio' })
+      )
     })
 
     it('dismisses the error toast when a retry is paused', async () => {
@@ -186,17 +199,22 @@ describe('AudioPreviewPlayer', () => {
       vi.spyOn(HTMLMediaElement.prototype, 'duration', 'get').mockReturnValue(
         90
       )
+      // Elapsed time must start nonzero, or dropping the `currentTime` reset
+      // leaves this test green while a user clearing at 0:27 sees `0:27 / 0:00`.
+      vi.spyOn(
+        HTMLMediaElement.prototype,
+        'currentTime',
+        'get'
+      ).mockReturnValue(27)
 
-      const { container, rerender } = renderPlayer(
-        'http://example.com/audio.mp3'
-      )
-      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the media element is hidden and exposes no role
-      await fireEvent.loadedMetadata(container.querySelector('audio')!)
-      expect(screen.getByText(/1:30/)).toBeInTheDocument()
+      const { rerender } = renderPlayer('http://example.com/audio.mp3')
+      await fireEvent.loadedMetadata(screen.getByTestId('audio-preview'))
+      await fireEvent.timeUpdate(screen.getByTestId('audio-preview'))
+      expect(screen.getByText('0:27 / 1:30')).toBeInTheDocument()
 
       await rerender({ modelValue: undefined })
 
-      expect(screen.queryByText(/1:30/)).not.toBeInTheDocument()
+      expect(screen.getByText('0:00 / 0:00')).toBeInTheDocument()
     })
 
     it.for([
@@ -210,13 +228,18 @@ describe('AudioPreviewPlayer', () => {
           notSupported()
         )
         const user = userEvent.setup()
+        // An unrelated notification proves the cleanup is targeted. Without it,
+        // dismissing every toast globally would pass all three transitions.
+        const unrelatedId = useToast().info('Unrelated notice')
         const rendered = renderPlayer('http://example.com/audio.mp3')
         await user.click(screen.getByRole('button', { name: 'g.playPause' }))
-        expect(useToast().toasts).toHaveLength(1)
+        expect(useToast().toasts).toHaveLength(2)
 
         await transition(rendered)
 
-        expect(useToast().toasts).toEqual([])
+        expect(useToast().toasts).toEqual([
+          expect.objectContaining({ id: unrelatedId })
+        ])
       }
     )
 
