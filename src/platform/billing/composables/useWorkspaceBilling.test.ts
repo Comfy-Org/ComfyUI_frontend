@@ -775,6 +775,27 @@ describe('useWorkspaceBilling', () => {
       }
     )
 
+    it.for([
+      { case: 'served', served: 844.5 },
+      { case: 'omitted', served: undefined }
+    ])(
+      'passes the display plan balance through as received when $case',
+      async ({ served }) => {
+        mockWorkspaceApi.getBillingBalance.mockResolvedValue({
+          ...positiveBalance,
+          cloud_credit_display_balance_cents: served
+        })
+
+        const billing = setupBilling()
+        await billing.fetchBalance()
+
+        expect(billing.balance.value).toMatchObject({
+          cloudCreditBalanceMicros: 2_000_000,
+          cloudCreditDisplayBalanceCents: served
+        })
+      }
+    )
+
     it('leaves low balance unset when the balance response omits it', async () => {
       mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
 
