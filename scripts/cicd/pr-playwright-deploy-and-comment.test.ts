@@ -26,9 +26,7 @@ const e2eWorkflow = z
       }),
       'playwright-tests': z.object({
         strategy: z.object({
-          matrix: z.object({
-            include: z.array(z.object({ browser: z.string() }))
-          })
+          matrix: z.object({ browser: z.array(z.string()) })
         })
       })
     })
@@ -37,9 +35,7 @@ const e2eWorkflow = z
 
 const uploadedProjects = [
   ...e2eWorkflow.jobs['merge-reports'].strategy.matrix.project,
-  ...e2eWorkflow.jobs['playwright-tests'].strategy.matrix.include.map(
-    ({ browser }) => browser
-  )
+  ...e2eWorkflow.jobs['playwright-tests'].strategy.matrix.browser
 ]
 
 const passingCounts = '{"passed":2,"failed":0,"flaky":0,"skipped":0,"total":2}'
