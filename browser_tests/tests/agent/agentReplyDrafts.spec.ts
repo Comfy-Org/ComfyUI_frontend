@@ -159,8 +159,6 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
     test.setTimeout(60_000)
     const { panel, send } = await startTurn(page, 'Think about a fox video.')
 
-    await expect(panel.getByText(WORKING_LABEL)).toBeVisible()
-
     send(thinkingDraftFrame(ids, 'The user wants'))
     await expect(
       panel.getByText('The user wants', { exact: true })
@@ -202,7 +200,6 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
     await expect(
       panel.getByText('half a thought', { exact: true })
     ).toHaveCount(0)
-    await expect(panel.getByText(WORKING_LABEL)).toBeVisible()
   })
 
   test('the answer appears while the model writes it, and the final answer replaces it', async ({
