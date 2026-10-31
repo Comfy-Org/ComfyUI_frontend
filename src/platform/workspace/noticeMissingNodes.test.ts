@@ -1,6 +1,8 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
@@ -21,10 +23,12 @@ vi.mock(
 )
 
 vi.mock(import('@/platform/workspace/openCustomDeploymentDialog'), () => ({
-  openCreateCustomDeploymentDialog: vi.fn(),
-  openDeployCustomNodesDialog: vi.fn(),
-  openWorkflowNeedsDeploymentDialog: vi.fn()
+  openWorkflowNeedsDeploymentDialog: vi.fn(async () => true)
 }))
+
+type ActiveWorkflow = NonNullable<
+  ReturnType<typeof useWorkflowStore>['activeWorkflow']
+>
 
 const deployment: WorkspaceDeployment = {
   deployment_id: 'dep-1',
@@ -54,10 +58,6 @@ function listing(
   store.bootDeployment = bootDeployment
 }
 
-function workflowMissing(nodeTypes: MissingNodeType[]) {
-  useMissingNodesErrorStore().setMissingNodeTypes(nodeTypes)
-}
-
 function listingAnswersLater(): () => void {
   let answer = () => {}
   vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
@@ -71,13 +71,11 @@ function listingAnswersLater(): () => void {
 describe(noticeMissingNodes, () => {
   beforeEach(() => {
     offered.value = true
-    vi.mocked(openWorkflowNeedsDeploymentDialog).mockReset()
-    vi.mocked(openWorkflowNeedsDeploymentDialog).mockResolvedValue(true)
   })
 
   it('opens the custom deployment dialog over the error overlay on Comfy Cloud, to a workspace served an empty deployments listing', async () => {
     listing(true, null)
-    workflowMissing(UNSUPPORTED)
+    useMissingNodesErrorStore().setMissingNodeTypes(UNSUPPORTED)
 
     await noticeMissingNodes()
 
@@ -114,7 +112,7 @@ describe(noticeMissingNodes, () => {
     async ({ offer, boot, deployments }) => {
       offered.value = offer
       listing(true, boot, deployments)
-      workflowMissing(UNSUPPORTED)
+      useMissingNodesErrorStore().setMissingNodeTypes(UNSUPPORTED)
 
       await noticeMissingNodes()
 
@@ -126,7 +124,7 @@ describe(noticeMissingNodes, () => {
   it('shows the error overlay before the deployments listing answers', () => {
     listingAnswersLater()
     listing(true, null)
-    workflowMissing(UNSUPPORTED)
+    useMissingNodesErrorStore().setMissingNodeTypes(UNSUPPORTED)
 
     void noticeMissingNodes()
 
@@ -137,20 +135,20 @@ describe(noticeMissingNodes, () => {
     {
       answers: 'within the wait',
       after: DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS - 1,
-      opens: true
+      calls: 1
     },
     {
       answers: 'after the wait',
       after: DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS,
-      opens: false
+      calls: 0
     }
   ])(
     'opens the dialog only when the deployments listing answers $answers',
-    async ({ after, opens }) => {
-      vi.useFakeTimers()
+    async ({ after, calls }) => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
       listing(false, null)
       const answer = listingAnswersLater()
-      workflowMissing(UNSUPPORTED)
+      useMissingNodesErrorStore().setMissingNodeTypes(UNSUPPORTED)
 
       const noticed = noticeMissingNodes()
       await vi.advanceTimersByTimeAsync(after)
@@ -158,22 +156,79 @@ describe(noticeMissingNodes, () => {
       answer()
       await noticed
 
-      expect(
-        vi.mocked(openWorkflowNeedsDeploymentDialog).mock.calls
-      ).toHaveLength(opens ? 1 : 0)
+      expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledTimes(calls)
     }
   )
 
   it('does not open the dialog for a workflow that no longer needs one when the listing answers', async () => {
     listing(true, null)
     const answer = listingAnswersLater()
-    workflowMissing(UNSUPPORTED)
+    useMissingNodesErrorStore().setMissingNodeTypes(UNSUPPORTED)
 
     const noticed = noticeMissingNodes()
-    workflowMissing([])
+    useMissingNodesErrorStore().setMissingNodeTypes([])
     answer()
     await noticed
 
     expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      when: 'the user closed the error overlay',
+      meanwhile: () => useExecutionErrorStore().dismissErrorOverlay()
+    },
+    {
+      when: 'another workflow is in front',
+      meanwhile: () => {
+        useWorkflowStore().activeWorkflow = fromPartial<ActiveWorkflow>({
+          path: 'workflows/other.json'
+        })
+      }
+    }
+  ])(
+    'does not open the dialog when, by the time the listing answers, $when',
+    async ({ meanwhile }) => {
+      listing(true, null)
+      const answer = listingAnswersLater()
+      useMissingNodesErrorStore().setMissingNodeTypes(UNSUPPORTED)
+
+      const noticed = noticeMissingNodes()
+      meanwhile()
+      answer()
+      await noticed
+
+      expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+    }
+  )
+
+  it('does not open the dialog over App mode', async () => {
+    useWorkflowStore().activeWorkflow = fromPartial<ActiveWorkflow>({
+      activeMode: 'app'
+    })
+    listing(true, null)
+    useMissingNodesErrorStore().setMissingNodeTypes(UNSUPPORTED)
+
+    await noticeMissingNodes()
+
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+    expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+  })
+
+  it('opens the dialog on its own once per page for the same missing nodes, and again for others', async () => {
+    listing(true, null)
+    useMissingNodesErrorStore().setMissingNodeTypes(UNSUPPORTED)
+    await noticeMissingNodes()
+    await noticeMissingNodes()
+
+    expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
+
+    useMissingNodesErrorStore().setMissingNodeTypes([
+      { type: 'RMBG', cnrId: 'comfyui-rmbg', isReplaceable: false }
+    ])
+    await noticeMissingNodes()
+
+    expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledTimes(2)
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
   })
 })
