@@ -32,7 +32,7 @@ const workflow = parse(
 const warnStep = workflow.jobs?.['warn-missing-needs-backport']?.steps?.[0]
 const warnScript = warnStep?.run ?? ''
 
-const workflowTokens: Record<string, string> = {
+const workflowTokens: Partial<Record<string, string>> = {
   '${{ github.token }}': 'job-token',
   '${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}': 'shared-pr-token'
 }
@@ -47,7 +47,7 @@ function resolvedWarnEnv() {
         if (token === undefined) {
           throw new Error(`Unmodelled token for ${name}: ${value}`)
         }
-        return [name, token]
+        return [name, token] as const
       })
   )
 }
