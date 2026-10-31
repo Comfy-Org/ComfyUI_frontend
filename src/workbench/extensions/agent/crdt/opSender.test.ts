@@ -786,6 +786,26 @@ describe('createOpSender', () => {
     expect(sent[0].ops[0].base_version).toBe(41)
   })
 
+  it('keeps a later edit above a lifted batch whose send threw and was acknowledged', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(500 * 6)
+
+    observedCounter = 90
+    transportThrows = true
+    sender.retryTransport()
+    const lifted = sender.pendingOps()[0].ops[0]
+    expect(lifted.base_version).toBe(91)
+    expect(sent).toEqual([])
+
+    transportThrows = false
+    transportUp = true
+    resultListener?.({ ok: true, applied: [lifted.op_id], skipped: [] })
+    sender.enqueue([addNode(2)])
+
+    expect(sent[0].ops[0].base_version).toBeGreaterThan(lifted.base_version)
+  })
+
   it('never re-stamps a batch the wire already carried', () => {
     sender.enqueue([addNode(1)])
     const stamped = sent[0].ops[0].base_version
