@@ -2729,7 +2729,10 @@
       "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
       "errorUnavailable": "This feature isn't available right now. Please contact support if the problem persists.",
       "sessionError": "Failed to establish session. Please try again.",
-      "sessionErrorToastSummary": "Couldn't continue OAuth sign-in"
+      "sessionErrorToastSummary": "Couldn't continue OAuth sign-in",
+      "signedInAs": "Signed in as",
+      "notYou": "Not you?",
+      "switchAccount": "Switch account"
     },
     "scopes": {
       "mcp:tools:read": {
