@@ -41,6 +41,7 @@
               :node-id
               :has-error="row.widget.hasError"
               :index="row.widget.slotMetadata.index"
+              :connected="row.widget.slotMetadata.linked"
               :compatible="row.inHoveredGroup"
               :socketless="row.widget.simplified.spec?.socketless"
               :standalone="row.standalone"
