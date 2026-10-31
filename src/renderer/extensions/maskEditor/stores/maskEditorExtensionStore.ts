@@ -26,7 +26,12 @@ export const useMaskEditorExtensionStore = defineStore(
       if (tools.value.some((entry) => entry.id === tool.id)) {
         return { ok: false, reason: 'duplicate-id' }
       }
-      const registration = Object.freeze({ ...tool })
+      const registration = Object.freeze({
+        id: tool.id,
+        label: tool.label,
+        icon: tool.icon,
+        createSession: tool.createSession.bind(tool)
+      })
       tools.value = [...tools.value, registration]
       return {
         ok: true,

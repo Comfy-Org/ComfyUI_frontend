@@ -100,7 +100,7 @@ Changes to the caller's mask buffer after a successful commit do not alter the
 committed mask or its Undo/Redo history.
 
 Success returns `{ ok: true, revision }`. Refusals return `{ ok: false, reason }`
-where the reason is `inactive`, `unavailable`, `stale`, `invalid-mask`, or
+where the reason is `inactive`, `unavailable`, `stale`, `invalid-mask`, `invalid-options`, or
 `failed`. Validate the result before displaying success. A revision never
 returns to an earlier value after Undo, Redo, or history eviction.
 

@@ -23,6 +23,9 @@
       "@comfyorg/api-client/*": ["./packages/api-client/src/*"],
       "@comfyorg/settings-core/*": ["./packages/settings-core/src/*"],
       "@comfyorg/telemetry/*": ["./packages/telemetry/src/*"],
+      "@comfyorg/mask-editor/extensionTypes": [
+        "./packages/mask-editor/src/extensionTypes.ts"
+      ],
       "@comfyorg/shared-frontend-utils/geometry": [
         "./packages/shared-frontend-utils/src/geometry.ts"
       ]
@@ -35,6 +38,7 @@
     "packages/api-client/src/**/*.ts",
     "packages/settings-core/src/**/*.ts",
     "packages/telemetry/src/types.ts",
+    "packages/mask-editor/src/extensionTypes.ts",
     "packages/shared-frontend-utils/src/geometry.ts",
     "global.d.ts"
   ],

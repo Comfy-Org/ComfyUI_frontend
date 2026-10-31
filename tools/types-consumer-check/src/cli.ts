@@ -10,7 +10,8 @@ const privateImports = [
   '@comfyorg/settings-core',
   '@comfyorg/keybindings',
   '@comfyorg/shared-frontend-utils/geometry',
-  '@comfyorg/telemetry'
+  '@comfyorg/telemetry',
+  '@comfyorg/mask-editor'
 ].filter((specifier) => declarations.includes(specifier))
 
 const consumer = `
@@ -21,6 +22,16 @@ import type {
   IWidgetLocator,
   LGraphNode,
   LGraphNodeConstructor,
+  MaskEditorCommitResult,
+  MaskEditorExtensionAPI,
+  MaskEditorImageSnapshot,
+  MaskEditorMask,
+  MaskEditorOverlayPoint,
+  MaskEditorPointerEvent,
+  MaskEditorTool,
+  MaskEditorToolContext,
+  MaskEditorToolRegistration,
+  MaskEditorToolSession,
   NodeId,
   LinkId,
   Point,
@@ -43,6 +54,18 @@ export type WindowLGraphBadge = typeof window.LGraphBadge
 export type WindowLiteGraph = typeof window.LiteGraph
 export type ComfyClass = LGraphNodeConstructor['comfyClass']
 export type NodeData = LGraphNodeConstructor['nodeData']
+export type MaskEditorContracts = [
+  MaskEditorCommitResult,
+  MaskEditorExtensionAPI,
+  MaskEditorImageSnapshot,
+  MaskEditorMask,
+  MaskEditorOverlayPoint,
+  MaskEditorPointerEvent,
+  MaskEditorTool,
+  MaskEditorToolContext,
+  MaskEditorToolRegistration,
+  MaskEditorToolSession
+]
 export type NodeImage = NonNullable<LGraphNode['images']>[number]
 export type AddedDOMWidget = ReturnType<LGraphNode['addDOMWidget']>
 export type NodeDefinition = ComfyNodeDef

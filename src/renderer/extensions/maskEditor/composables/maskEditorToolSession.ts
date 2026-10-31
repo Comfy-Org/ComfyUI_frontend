@@ -46,8 +46,10 @@ export function createMaskEditorToolSession(
     setOverlay: (points) => {
       if (
         isDisposed() ||
+        !Array.isArray(points) ||
         !points.every(
           (point) =>
+            point &&
             Number.isFinite(point.x) &&
             Number.isFinite(point.y) &&
             Number.isFinite(point.radius) &&
@@ -58,9 +60,15 @@ export function createMaskEditorToolSession(
       setOverlay(points.map((point) => ({ ...point })))
       return true
     },
-    commitMask: (mask, { expectedRevision }) => {
+    commitMask: (
+      mask: MaskEditorMask | null | undefined,
+      options: { expectedRevision: number } | null | undefined
+    ) => {
       if (isDisposed()) return { ok: false, reason: 'inactive' }
-      if (expectedRevision !== document.getRevision()) {
+      if (!options || !Number.isSafeInteger(options.expectedRevision))
+        return { ok: false, reason: 'invalid-options' }
+      if (!mask) return { ok: false, reason: 'invalid-mask' }
+      if (options.expectedRevision !== document.getRevision()) {
         return { ok: false, reason: 'stale' }
       }
       const dimensions = call(() => document.getDimensions())
@@ -96,7 +104,10 @@ export function createMaskEditorToolSession(
   if (created) {
     session = created
     if (isDisposed()) call(() => session.dispose?.())
-  } else dispose()
+  } else if (!isDisposed()) {
+    dispose()
+    reportFailure(new Error('MaskEditor tool did not return a session'))
+  }
 
   return {
     context,

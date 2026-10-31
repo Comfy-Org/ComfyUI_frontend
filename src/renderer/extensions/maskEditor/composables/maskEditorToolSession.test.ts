@@ -5,10 +5,10 @@ import type { MaskEditorToolDocument } from './maskEditorToolSession'
 import type {
   MaskEditorMask,
   MaskEditorOverlayPoint,
-  MaskEditorToolSession
+  MaskEditorTool
 } from '@comfyorg/mask-editor/extensionTypes'
 
-function setup(session: MaskEditorToolSession = {}) {
+function setup(createSession: MaskEditorTool['createSession'] = () => ({})) {
   let revision = 1
   let mask: MaskEditorMask = {
     width: 3,
@@ -33,7 +33,7 @@ function setup(session: MaskEditorToolSession = {}) {
   }
   const reportFailure = vi.fn()
   const runtime = createMaskEditorToolSession(
-    { id: 'impact.sam', label: 'SAM', createSession: () => session },
+    { id: 'impact.sam', label: 'SAM', createSession },
     document,
     (points) => {
       overlay = points
@@ -100,7 +100,7 @@ describe('MaskEditor extension session contract', () => {
 
   it('cancels old work on document changes and notifies the active tool', () => {
     const onDocumentChange = vi.fn()
-    const { runtime, document } = setup({ onDocumentChange })
+    const { runtime, document } = setup(() => ({ onDocumentChange }))
     const signal = runtime.context.signal
     document.applyMask(result)
     runtime.documentChanged()
@@ -111,7 +111,7 @@ describe('MaskEditor extension session contract', () => {
 
   it('cleans up once and prevents a closed session from changing the next editor', () => {
     const dispose = vi.fn()
-    const { runtime, mask, overlay } = setup({ dispose })
+    const { runtime, mask, overlay } = setup(() => ({ dispose }))
     const points = [{ id: 'positive', x: 1, y: 1, radius: 4, color: 'blue' }]
     expect(runtime.context.setOverlay(points)).toBe(true)
     expect(overlay()).toEqual(points)
@@ -133,11 +133,11 @@ describe('MaskEditor extension session contract', () => {
 
   it('contains extension cleanup failures', () => {
     const failure = new Error('extension cleanup failed')
-    const { runtime, reportFailure } = setup({
+    const { runtime, reportFailure } = setup(() => ({
       dispose: () => {
         throw failure
       }
-    })
+    }))
     runtime.dispose()
     expect(reportFailure).toHaveBeenCalledWith(failure)
     expect(runtime.context.signal.aborted).toBe(true)
@@ -146,18 +146,81 @@ describe('MaskEditor extension session contract', () => {
   it('cleans a partially mounted panel and disables a failing session', () => {
     const failure = new Error('panel failed to mount')
     const dispose = vi.fn()
-    const { runtime, reportFailure } = setup({
+    const { runtime, reportFailure } = setup(() => ({
       mountPanel: (container) => {
         container.textContent = 'partially mounted'
         throw failure
       },
       dispose
-    })
+    }))
     const container = document.createElement('div')
     runtime.mountPanel(container)
     expect(container.childNodes).toHaveLength(0)
     expect(runtime.context.signal.aborted).toBe(true)
     expect(dispose).toHaveBeenCalledTimes(1)
     expect(reportFailure).toHaveBeenCalledWith(failure)
+  })
+
+  it.for([undefined, null])(
+    'refuses a missing JavaScript mask: %s',
+    (invalid) => {
+      const { runtime, mask, document } = setup()
+      expect(
+        Reflect.apply(runtime.context.commitMask, runtime.context, [
+          invalid,
+          { expectedRevision: 1 }
+        ])
+      ).toEqual({ ok: false, reason: 'invalid-mask' })
+      expect(mask().data).toEqual(new Uint8Array(6))
+      expect(document.getRevision()).toBe(1)
+    }
+  )
+
+  it.for([
+    undefined,
+    null,
+    {},
+    { expectedRevision: '1' },
+    { expectedRevision: NaN }
+  ])('refuses invalid JavaScript commit options: %j', (invalid) => {
+    const { runtime, mask, document } = setup()
+    expect(
+      Reflect.apply(runtime.context.commitMask, runtime.context, [
+        result,
+        invalid
+      ])
+    ).toEqual({ ok: false, reason: 'invalid-options' })
+    expect(mask().data).toEqual(new Uint8Array(6))
+    expect(document.getRevision()).toBe(1)
+  })
+
+  it.for([undefined, {}, [null]])(
+    'preserves the overlay on invalid JavaScript points: %j',
+    (invalid) => {
+      const { runtime, overlay } = setup()
+      const points = [{ id: 'positive', x: 1, y: 1, radius: 4, color: 'blue' }]
+      runtime.context.setOverlay(points)
+      expect(
+        Reflect.apply(runtime.context.setOverlay, runtime.context, [invalid])
+      ).toBe(false)
+      expect(overlay()).toEqual(points)
+    }
+  )
+
+  it('reports and closes a JavaScript tool that returns no session', () => {
+    const { runtime, reportFailure } = setup(
+      vi.fn<MaskEditorTool['createSession']>()
+    )
+    expect(runtime.context.signal.aborted).toBe(true)
+    expect(reportFailure).toHaveBeenCalledExactlyOnceWith(expect.any(Error))
+  })
+
+  it('reports a thrown session creation failure only once', () => {
+    const failure = new Error('session creation failed')
+    const { runtime, reportFailure } = setup(() => {
+      throw failure
+    })
+    expect(runtime.context.signal.aborted).toBe(true)
+    expect(reportFailure).toHaveBeenCalledExactlyOnceWith(failure)
   })
 })

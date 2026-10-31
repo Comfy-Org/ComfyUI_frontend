@@ -5,9 +5,17 @@ test.describe(
   'MaskEditor extension tools',
   { tag: ['@canvas', '@vue-nodes'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-    })
+    test.beforeEach(
+      async ({ comfyPage, comfyFiles, maskEditor, extensionTool }) => {
+        await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+        await extensionTool.register()
+        await maskEditor.openDialog()
+        comfyFiles.deleteAfterTest({
+          filename: 'image64x64.webp',
+          type: 'input'
+        })
+      }
+    )
 
     test('extension tools select points and apply undoable masks without changing RGB or widgets', async ({
       comfyPage,
@@ -16,9 +24,7 @@ test.describe(
       extensionTool
     }, testInfo) => {
       const originalWidgets = await extensionTool.getWidgets()
-      await extensionTool.register()
-      const dialog = await maskEditor.openDialog()
-      comfyFiles.deleteAfterTest({ filename: 'image64x64.webp', type: 'input' })
+      const dialog = maskEditor.dialog
 
       await test.step('Select image points without drawing a native brush stroke', async () => {
         await extensionTool.tool.click()
