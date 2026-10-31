@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type { useExternalLink } from '@/composables/useExternalLink'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -229,5 +230,25 @@ describe('WorkflowNeedsDeploymentCard', () => {
       '- `sd_xl_base_1.0.safetensors` in `models/checkpoints`'
     )
     expect(brief).not.toContain('OldSampler')
+  })
+
+  it('lists and briefs a model Comfy Cloud finds missing after the dialog opens', async () => {
+    const user = renderCard({ models: [] })
+    expect(
+      screen.getByTestId('custom-deployment-missing')
+    ).not.toHaveTextContent('missing model')
+
+    useMissingModelStore().setMissingModels([
+      checkpoint('sd_xl_base_1.0.safetensors')
+    ])
+    await nextTick()
+
+    expect(screen.getByTestId('custom-deployment-missing')).toHaveTextContent(
+      '1 missing modelsd_xl_base_1.0.safetensors'
+    )
+    await user.click(screen.getByTestId('custom-deployment-agent'))
+    expect(await navigator.clipboard.readText()).toContain(
+      '- `sd_xl_base_1.0.safetensors` in `models/checkpoints`'
+    )
   })
 })

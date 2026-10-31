@@ -8,6 +8,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -34,13 +35,14 @@ const NAMES_SHOWN = 3
 
 const { t } = useI18n()
 const { markFor } = useDeploymentCompatibility()
+const missingModelStore = useMissingModelStore()
 
 const missingNodes = nodesNeedingDeployment(
   useMissingNodesErrorStore().missingNodesError?.nodeTypes ?? []
 )
 const packs = missingPacksOf(missingNodes)
-const models = missingModelsOf(
-  useMissingModelStore().visibleMissingModelCandidates ?? []
+const models = computed(() =>
+  missingModelsOf(missingModelStore.visibleMissingModelCandidates ?? [])
 )
 
 const offer = workflowDeploymentOffer(
@@ -66,7 +68,7 @@ function row(key: string, names: readonly string[]): MissingItemsRow[] {
   return [{ label: t(key, names.length), names: listed(names) }]
 }
 
-const missing: MissingItemsRow[] = [
+const missing = computed<MissingItemsRow[]>(() => [
   ...row(
     'deploymentSwitcher.workflowNeedsDeployment.missingPacks',
     packs.flatMap((pack) => (pack.packId === null ? [] : [pack.packId]))
@@ -77,19 +79,19 @@ const missing: MissingItemsRow[] = [
   ),
   ...row(
     'deploymentSwitcher.workflowNeedsDeployment.missingModels',
-    models.map((model) => model.name)
+    models.value.map((model) => model.name)
   )
-]
+])
 
-const pitch: CustomDeploymentPitch = {
+const pitch = computed<CustomDeploymentPitch>(() => ({
   ...customDeploymentPitch(),
-  brief: workflowDeploymentBrief(packs, models),
-  missing,
+  brief: workflowDeploymentBrief(packs, models.value),
+  missing: missing.value,
   ...(offer.kind === 'noneRunIt'
     ? {
         title: t('deploymentSwitcher.workflowNeedsDeployment.titleNoneRunIt'),
         note: t('deploymentSwitcher.workflowNeedsDeployment.noneRunIt')
       }
     : { title: t('deploymentSwitcher.workflowNeedsDeployment.title') })
-}
+}))
 </script>

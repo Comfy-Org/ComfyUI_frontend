@@ -17,7 +17,10 @@ import {
   COMPATIBILITY_WAIT_MS,
   noticeMissingNodes
 } from '@/platform/workspace/noticeMissingNodes'
-import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import {
+  openWorkflowNeedsDeploymentDialog,
+  preloadWorkflowNeedsDeploymentDialog
+} from '@/platform/workspace/openCustomDeploymentDialog'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import type { MarkFor } from '@/platform/workspace/workflowDeploymentOffer'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -179,6 +182,24 @@ describe(noticeMissingNodes, () => {
       await vi.advanceTimersByTimeAsync(COMPATIBILITY_WAIT_MS)
 
       expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+    })
+
+    it('opens no dialog when the check answers only after the wait', async () => {
+      void noticeMissingNodes(UNSUPPORTED, markFor)
+      await vi.advanceTimersByTimeAsync(COMPATIBILITY_WAIT_MS)
+      checkAnswers({ 'dep-1': RUNS, 'dep-stopped': LACKS_BIREFNET })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+    })
+
+    it('opens the dialog at once for an empty listing, without waiting for the check', async () => {
+      listing(true, null)
+
+      void noticeMissingNodes(UNSUPPORTED, markFor)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
     })
 
     it('opens no dialog when the check has not answered for this workflow within the wait', async () => {
@@ -346,6 +367,17 @@ describe(noticeMissingNodes, () => {
     }
   )
 
+  it('opens no dialog, so shows no load error, when the dialog cannot load', async () => {
+    vi.mocked(preloadWorkflowNeedsDeploymentDialog).mockResolvedValueOnce(false)
+    listing(true, null)
+    workflowMissing(UNSUPPORTED)
+
+    await noticeMissingNodes(UNSUPPORTED, markFor)
+
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+    expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+  })
+
   it('does not open the dialog over App mode', async () => {
     useWorkflowStore().activeWorkflow = fromPartial<ActiveWorkflow>({
       activeMode: 'app'
@@ -375,5 +407,21 @@ describe(noticeMissingNodes, () => {
 
     expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledTimes(2)
     expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+  })
+
+  it('opens the dialog on its own once for the same missing node types, however many nodes use them', async () => {
+    const twoNodes: MissingNodeType[] = ['1', '2'].map((nodeId) => ({
+      type: 'BiRefNet',
+      cnrId: 'comfyui-birefnet',
+      isReplaceable: false,
+      nodeId
+    }))
+    listing(true, null)
+    workflowMissing(UNSUPPORTED)
+    await noticeMissingNodes(UNSUPPORTED, markFor)
+    workflowMissing(twoNodes)
+    await noticeMissingNodes(twoNodes, markFor)
+
+    expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
   })
 })

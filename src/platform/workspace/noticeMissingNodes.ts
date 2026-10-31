@@ -77,7 +77,7 @@ async function offerCustomDeployment(
   const needsDeployment = useWorkflowNeedsDeployment()
   await waitForDeploymentListing(DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS)
   await compatibilityAnswered(markFor, checkedWorkflow)
-  await cardLoaded
+  if (!(await cardLoaded)) return
   const stillNoticed =
     workflowStore.activeWorkflow === noticedWorkflow &&
     useExecutionErrorStore().isErrorOverlayOpen &&
@@ -93,9 +93,8 @@ async function offerCustomDeployment(
 }
 
 /**
- * Shows the error overlay for the open workflow's missing nodes and, on Comfy
- * Cloud the first time this page meets them, the deployment dialog over it
- * once it knows what to offer.
+ * Shows the error overlay for the open workflow's missing nodes and, the first
+ * time this page meets them, the deployment dialog over it when it has an offer.
  */
 export async function noticeMissingNodes(
   nodeTypes: readonly MissingNodeType[],

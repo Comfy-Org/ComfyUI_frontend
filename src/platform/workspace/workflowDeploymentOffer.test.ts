@@ -99,8 +99,24 @@ const CASES: OfferCase[] = [
     offer: { kind: 'unchecked' }
   },
   {
+    when: 'the answer leaves out a missing node the workflow runs',
+    workflow: {
+      nodeTypes: ['BiRefNet', 'RMBG', 'SaveImage'],
+      missingNodeTypes: ['BiRefNet', 'RMBG']
+    },
+    marks: { a: RUNS },
+    offer: { kind: 'unchecked' }
+  },
+  {
     when: 'the check finds Comfy Cloud runs it',
     cloud: RUNS,
+    marks: { a: RUNS },
+    offer: { kind: 'unchecked' }
+  },
+  {
+    when: 'Comfy Cloud runs it because every missing node is muted',
+    cloud: RUNS,
+    workflow: { nodeTypes: ['SaveImage'], missingNodeTypes: ['MutedNode'] },
     marks: { a: RUNS },
     offer: { kind: 'unchecked' }
   }

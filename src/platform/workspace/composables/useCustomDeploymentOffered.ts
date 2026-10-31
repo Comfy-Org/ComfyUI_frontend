@@ -27,21 +27,17 @@ export function useWorkflowNeedsDeployment() {
 
 /**
  * Whether Comfy Cloud offers a custom deployment for the open workflow's
- * missing nodes, given the deployments that run it (null until checked).
+ * missing nodes, given whether Cloud and each deployment were found lacking.
  */
 export function useCustomDeploymentOffered(
-  deploymentsThatRunIt: MaybeRefOrGetter<readonly (string | null)[] | null>
+  noneRunIt: MaybeRefOrGetter<boolean>
 ) {
   const pickStore = useDeploymentPickStore()
   const needsDeployment = useWorkflowNeedsDeployment()
 
-  function noDeploymentRunsIt(): boolean {
-    const runIt = toValue(deploymentsThatRunIt)
-    return (
-      pickStore.deployments.length === 0 ||
-      (runIt !== null && runIt.length === 0)
-    )
-  }
-
-  return computed(() => needsDeployment.value && noDeploymentRunsIt())
+  return computed(
+    () =>
+      needsDeployment.value &&
+      (pickStore.deployments.length === 0 || toValue(noneRunIt))
+  )
 }

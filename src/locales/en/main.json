@@ -4164,7 +4164,7 @@
     "runsThisWorkflow": "Runs this workflow",
     "missingNodes": "Missing {count} node | Missing {count} nodes",
     "notChecked": "Not checked",
-    "releaseChanged":"This deployment now runs a different Release. Reload to get its nodes.",
+    "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
     "reload": "Reload",
     "failedToSwitch": "Could not switch",
