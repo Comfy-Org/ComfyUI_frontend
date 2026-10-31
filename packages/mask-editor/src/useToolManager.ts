@@ -138,17 +138,6 @@ export function useToolManager(
       return
     }
 
-    if (store.currentTool === Tools.PaintPen && event.button === 0) {
-      await brushDrawing.startDrawing(event)
-
-      return
-    }
-
-    if (store.currentTool === Tools.PaintPen && event.buttons === 1) {
-      await brushDrawing.handleDrawing(event)
-      return
-    }
-
     if (store.currentTool === Tools.MaskBucket && event.button === 0) {
       const offset = { x: event.offsetX, y: event.offsetY }
       const coords_canvas = coordinateTransform.screenToCanvas(offset)
@@ -160,6 +149,21 @@ export function useToolManager(
       const offset = { x: event.offsetX, y: event.offsetY }
       const coords_canvas = coordinateTransform.screenToCanvas(offset)
       await canvasTools.colorSelectFill(coords_canvas)
+      return
+    }
+
+    await handleBrushPointerDown(event)
+  }
+
+  const handleBrushPointerDown = async (event: PointerEvent): Promise<void> => {
+    if (store.currentTool === Tools.PaintPen && event.button === 0) {
+      await brushDrawing.startDrawing(event)
+
+      return
+    }
+
+    if (store.currentTool === Tools.PaintPen && event.buttons === 1) {
+      await brushDrawing.handleDrawing(event)
       return
     }
 

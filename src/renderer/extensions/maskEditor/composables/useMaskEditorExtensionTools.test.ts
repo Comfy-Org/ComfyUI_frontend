@@ -1,5 +1,6 @@
-import { effectScope } from 'vue'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { render } from '@testing-library/vue'
+import { createI18n } from 'vue-i18n'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -7,10 +8,35 @@ import { useMaskEditorExtensionStore } from '@/renderer/extensions/maskEditor/st
 
 import { useMaskEditorExtensionTools } from './useMaskEditorExtensionTools'
 
+function mountExtensionTools() {
+  let tools: ReturnType<typeof useMaskEditorExtensionTools> | undefined
+  render(
+    {
+      setup() {
+        tools = useMaskEditorExtensionTools()
+        return () => null
+      }
+    },
+    {
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: {
+              en: { maskEditor: { toolFailed: 'Tool {tool} failed' } }
+            }
+          })
+        ]
+      }
+    }
+  )
+  assert(tools)
+  return tools
+}
+
 describe('MaskEditor extension failures', () => {
   it('reports an unusable tool to the user and leaves native tools available', () => {
-    const scope = effectScope()
-    onTestFinished(() => scope.stop())
     const failure = new Error('tool failed to initialize')
     const registry = useMaskEditorExtensionStore()
     registry.registerTool({
@@ -20,26 +46,22 @@ describe('MaskEditor extension failures', () => {
         throw failure
       }
     })
-    scope.run(() => {
-      const tools = useMaskEditorExtensionTools()
-      tools.activate('test.broken')
-      expect(tools.isActive()).toBe(false)
-      expect(reportError).toHaveBeenCalledWith(failure, {
-        errorType: 'failure_running_mask_editor_extension',
-        surface: 'workspace'
-      })
-      expect(useToast().toasts).toEqual([
-        expect.objectContaining({
-          kind: 'error',
-          title: expect.stringContaining('Broken tool')
-        })
-      ])
+    const tools = mountExtensionTools()
+    tools.activate('test.broken')
+    expect(tools.isActive()).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'failure_running_mask_editor_extension',
+      surface: 'workspace'
     })
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: expect.stringContaining('Broken tool')
+      })
+    ])
   })
 
   it('keeps the current session when an earlier async callback fails', async () => {
-    const scope = effectScope()
-    onTestFinished(() => scope.stop())
     const failure = new Error('request failed after switching tools')
     const reject = vi.fn<() => void>()
     const pending = new Promise<void>((_, rejectPromise) => {
@@ -56,7 +78,7 @@ describe('MaskEditor extension failures', () => {
       label: 'Current tool',
       createSession: () => ({})
     })
-    const tools = scope.run(() => useMaskEditorExtensionTools())!
+    const tools = mountExtensionTools()
     tools.activate('test.delayed')
     const callback = tools.active.value!.runtime.pointer({
       phase: 'down',
@@ -81,8 +103,6 @@ describe('MaskEditor extension failures', () => {
   })
 
   it('disposes the active session immediately when its registration is removed', () => {
-    const scope = effectScope()
-    onTestFinished(() => scope.stop())
     const dispose = vi.fn()
     const registration = useMaskEditorExtensionStore().registerTool({
       id: 'test.disposable',
@@ -91,13 +111,11 @@ describe('MaskEditor extension failures', () => {
     })
     expect(registration.ok).toBe(true)
     if (!registration.ok) return
-    scope.run(() => {
-      const tools = useMaskEditorExtensionTools()
-      tools.activate('test.disposable')
-      expect(tools.isActive()).toBe(true)
-      registration.unregister()
-      expect(tools.isActive()).toBe(false)
-      expect(dispose).toHaveBeenCalledTimes(1)
-    })
+    const tools = mountExtensionTools()
+    tools.activate('test.disposable')
+    expect(tools.isActive()).toBe(true)
+    registration.unregister()
+    expect(tools.isActive()).toBe(false)
+    expect(dispose).toHaveBeenCalledTimes(1)
   })
 })

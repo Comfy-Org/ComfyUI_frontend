@@ -356,21 +356,18 @@ class MaskEditorExtensionHelper {
       ])
       let changedRgbPixels = 0
       let incorrectMaskPixels = 0
-      for (let y = 0; y < rgb.height; y++) {
-        for (let x = 0; x < rgb.width; x++) {
-          const offset = (y * rgb.width + x) * 4
-          if (
-            [0, 1, 2].some(
-              (channel) =>
-                rgb.data[offset + channel] !== original.data[offset + channel]
-            )
-          ) {
-            changedRgbPixels++
-          }
-          const expectedAlpha =
-            x < rgb.width / 2 && y < rgb.height / 2 ? 0 : 255
-          if (alpha.data[offset + 3] !== expectedAlpha) incorrectMaskPixels++
-        }
+      for (let offset = 0; offset < rgb.data.length; offset += 4) {
+        const pixel = offset / 4
+        const x = pixel % rgb.width
+        const y = Math.floor(pixel / rgb.width)
+        changedRgbPixels += Number(
+          [0, 1, 2].some(
+            (channel) =>
+              rgb.data[offset + channel] !== original.data[offset + channel]
+          )
+        )
+        const expectedAlpha = x < rgb.width / 2 && y < rgb.height / 2 ? 0 : 255
+        incorrectMaskPixels += Number(alpha.data[offset + 3] !== expectedAlpha)
       }
       return {
         width: rgb.width,

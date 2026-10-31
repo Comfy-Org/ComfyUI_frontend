@@ -80,7 +80,7 @@
       "role": "infrastructure"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["packages/telemetry/src/reportError.ts"],
   "allowedDependencies": [
     "app-host",
     "ingest-api",
@@ -93,6 +93,7 @@
     "dialog-host",
     "extension-runtime",
     "graph-model",
+    "mask-editor",
     "node-widgets",
     "workflow-management"
   ],

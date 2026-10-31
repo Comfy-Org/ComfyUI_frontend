@@ -1,21 +1,30 @@
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
-import { once } from 'es-toolkit'
+import { useI18n } from 'vue-i18n'
+import { inRange, once } from 'es-toolkit'
 
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { useCoordinateTransform } from '@comfyorg/mask-editor/useCoordinateTransform'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { t } from '@/i18n'
 import { useMaskEditorExtensionStore } from '@/renderer/extensions/maskEditor/stores/maskEditorExtensionStore'
 import type {
   MaskEditorMask,
   MaskEditorOverlayPoint,
+  MaskEditorPointerEvent,
   MaskEditorTool
 } from '@comfyorg/mask-editor/extensionTypes'
 
 import { createMaskEditorToolSession } from './maskEditorToolSession'
 
+const pointerPhases: Record<string, MaskEditorPointerEvent['phase']> = {
+  pointerdown: 'down',
+  pointermove: 'move',
+  pointerup: 'up',
+  pointercancel: 'cancel'
+}
+
 export function useMaskEditorExtensionTools() {
+  const { t } = useI18n()
   const editor = useMaskEditorStore()
   const coordinateTransform = useCoordinateTransform()
   const registry = useMaskEditorExtensionStore()
@@ -117,19 +126,11 @@ export function useMaskEditorExtensionTools() {
       y: event.offsetY
     })
     if (!Number.isFinite(x) || !Number.isFinite(y)) return
-    const phase =
-      event.type === 'pointerdown'
-        ? 'down'
-        : event.type === 'pointermove'
-          ? 'move'
-          : event.type === 'pointercancel'
-            ? 'cancel'
-            : 'up'
     await current.runtime.pointer({
-      phase,
+      phase: pointerPhases[event.type] ?? 'up',
       x,
       y,
-      inBounds: x >= 0 && y >= 0 && x < canvas.width && y < canvas.height,
+      inBounds: inRange(x, 0, canvas.width) && inRange(y, 0, canvas.height),
       pointerId: event.pointerId,
       pointerType: event.pointerType,
       button: event.button,

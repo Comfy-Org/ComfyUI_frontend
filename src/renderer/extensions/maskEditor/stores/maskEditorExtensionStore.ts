@@ -1,10 +1,19 @@
 import { defineStore } from 'pinia'
 import { shallowRef } from 'vue'
+import { z } from 'zod'
 
 import type {
   MaskEditorTool,
   MaskEditorToolRegistration
 } from '@comfyorg/mask-editor/extensionTypes'
+
+const toolSchema = z.object({
+  id: z.string().regex(/^[\w.-]+$/),
+  label: z.string().regex(/\S/),
+  createSession: z.custom<MaskEditorTool['createSession']>(
+    (value) => typeof value === 'function'
+  )
+})
 
 export const useMaskEditorExtensionStore = defineStore(
   'maskEditorExtensions',
@@ -12,7 +21,8 @@ export const useMaskEditorExtensionStore = defineStore(
     const tools = shallowRef<readonly MaskEditorTool[]>([])
 
     function registerTool(tool: MaskEditorTool): MaskEditorToolRegistration {
-      if (!isValidTool(tool)) return { ok: false, reason: 'invalid-tool' }
+      if (!toolSchema.safeParse(tool).success)
+        return { ok: false, reason: 'invalid-tool' }
       if (tools.value.some((entry) => entry.id === tool.id)) {
         return { ok: false, reason: 'duplicate-id' }
       }
@@ -29,18 +39,3 @@ export const useMaskEditorExtensionStore = defineStore(
     return { tools, registerTool }
   }
 )
-
-function isValidTool(tool: unknown): tool is MaskEditorTool {
-  return (
-    typeof tool === 'object' &&
-    tool !== null &&
-    'id' in tool &&
-    typeof tool.id === 'string' &&
-    /^[\w.-]+$/.test(tool.id) &&
-    'label' in tool &&
-    typeof tool.label === 'string' &&
-    tool.label.trim().length > 0 &&
-    'createSession' in tool &&
-    typeof tool.createSession === 'function'
-  )
-}
