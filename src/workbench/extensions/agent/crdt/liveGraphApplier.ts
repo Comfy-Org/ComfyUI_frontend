@@ -16,7 +16,10 @@ import {
   reachesDynamicGroupRowCount,
   reportRemoteDynamicGroupRowMismatch
 } from '@/core/graph/widgets/dynamicGroupDiagnostics'
-import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
+import {
+  liveOutputSlot,
+  resolveLiveInputSlot
+} from '@/core/graph/widgets/documentSlots'
 import type { INodeFlags } from '@comfyorg/graph-model/interfaces'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -1652,13 +1655,16 @@ export class LiveGraphApplier {
     const target = graph.getNodeById(toNodeId(link.target))
     if (!origin || !target) return 'missing-node'
 
-    const originSlot = resolveSlot(
-      origin.outputs.map((output) => output.name),
+    const originSlot = liveOutputSlot(
+      origin,
       readDocSlotName(doc, link.origin, 'outputs', link.originSlot),
-      link.originSlot,
-      'positional'
+      link.originSlot
     )
-    const targetSlot = resolveTargetSlot(target, doc, link)
+    const targetSlot = resolveLiveInputSlot(
+      target,
+      readDocSlotName(doc, link.target, 'inputs', link.targetSlot),
+      link.targetSlot
+    )
     if (originSlot < 0 || targetSlot < 0) {
       if (graph.links.has(link.id)) graph.removeLink(link.id)
       return 'unresolved'
@@ -1923,50 +1929,6 @@ function applyAppearance(
       Object.assign(node, { [key]: value })
     }
   }
-}
-
-/**
- * The live input index a document link targets. A dynamic input slot the host
- * grew has no live counterpart until the node's autogrow group is grown to it,
- * so grow it rather than drop a link the document holds against a slot it
- * legitimately owns. `growAutogrowInput` refuses a name outside the node's own
- * groups, leaving a slot the live node really lacks unresolved as before.
- */
-function resolveTargetSlot(
-  target: LGraphNode,
-  doc: Y.Doc,
-  link: DocLink
-): number {
-  const docName = readDocSlotName(doc, link.target, 'inputs', link.targetSlot)
-  const resolved = resolveSlot(
-    target.inputs.map((input) => input.name),
-    docName,
-    link.targetSlot,
-    'none'
-  )
-  if (resolved >= 0 || docName === undefined) return resolved
-  return growAutogrowInput(target, docName) ?? resolved
-}
-
-/**
- * Resolves a document slot to a live slot index, by name first. `ComfyNode.configure`
- * keeps every document input name live (definition or extra), so an input
- * name the live node lacks is a real mismatch and never a positional guess.
- * It matches outputs by index and lets the definition's names win over the
- * document's, so an output resolves by position when its document name is
- * stale.
- */
-function resolveSlot(
-  liveNames: readonly string[],
-  docName: string | undefined,
-  docIndex: number,
-  fallback: 'positional' | 'none'
-): number {
-  const byName = docName === undefined ? -1 : liveNames.indexOf(docName)
-  if (byName >= 0 || (docName !== undefined && fallback === 'none')) {
-    return byName
-  }
-  return docIndex < liveNames.length ? docIndex : -1
 }
 
 /**
