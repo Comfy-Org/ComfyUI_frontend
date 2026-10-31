@@ -46,7 +46,13 @@ const uploadedProjects = [
   )
 ]
 
-const passingCounts: TestCounts = { passed: 2, failed: 0, flaky: 0, skipped: 0, total: 2 }
+const passingCounts: TestCounts = {
+  passed: 2,
+  failed: 0,
+  flaky: 0,
+  skipped: 0,
+  total: 2
+}
 
 function runWithReports(
   projects: string[],
@@ -126,25 +132,22 @@ describe('PR Playwright report section', () => {
   })
 
   it('links a failed test at its path in the repository and in the report', () => {
-    const { summary, extractorCalls } = runWithReports(
-      ['chromium'],
-      {
-        chromium: {
-          passed: 0,
-          failed: 1,
-          flaky: 0,
-          skipped: 0,
-          total: 1,
-          failures: [
-            {
-              name: 'saves a workflow',
-              file: 'browser_tests/tests/save.spec.ts',
-              reportUrl: 'https://abc.chromium.pages.dev/#?testId=fail-1'
-            }
-          ]
-        }
+    const { summary, extractorCalls } = runWithReports(['chromium'], {
+      chromium: {
+        passed: 0,
+        failed: 1,
+        flaky: 0,
+        skipped: 0,
+        total: 1,
+        failures: [
+          {
+            name: 'saves a workflow',
+            file: 'browser_tests/tests/save.spec.ts',
+            reportUrl: 'https://abc.chromium.pages.dev/#?testId=fail-1'
+          }
+        ]
       }
-    )
+    })
 
     expect(extractorCalls).toContain('browser_tests')
     expect(summary).toContain(
