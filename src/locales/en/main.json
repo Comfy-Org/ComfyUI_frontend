@@ -3718,6 +3718,7 @@
           "yearly": "Billed yearly. Next invoice {date}."
         },
         "ended": "Ended {date}.",
+        "endedNoDate": "This plan has ended.",
         "ending": "Ends {date}. You won't be charged again.",
         "lifecycleRefused": "We couldn't make this change. Try again.",
         "managedByOwner": "Managed by the workspace owner.",
