@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import CanvasModeSelector from '@/components/graph/CanvasModeSelector.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 beforeEach(() => {
   useCanvasStore().canvas = fromPartial({ read_only: false })

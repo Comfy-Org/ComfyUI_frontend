@@ -78,7 +78,7 @@
           >
             <template v-if="maxMembersByTier[tier.key] > 1">
               <div class="flex items-center gap-2 text-emerald-400">
-                <i class="pi pi-users text-xs" aria-hidden="true" />
+                <i class="icon-[lucide--users] size-3" aria-hidden="true" />
                 <span class="text-sm">
                   {{ t('subscription.inviteUpTo') }}
                 </span>
@@ -128,14 +128,14 @@
               <span class="text-sm font-normal">
                 {{ t('subscription.gpuLabel') }}
               </span>
-              <i class="pi pi-check text-xs text-success" />
+              <i class="icon-[lucide--check] size-3 text-success" />
             </div>
 
             <div class="flex items-center justify-between">
               <span class="text-sm font-normal">
                 {{ t('subscription.addCreditsLabel') }}
               </span>
-              <i class="pi pi-check text-xs text-success" />
+              <i class="icon-[lucide--check] size-3 text-success" />
             </div>
 
             <div class="flex items-center justify-between">
@@ -144,9 +144,9 @@
               </span>
               <i
                 v-if="tier.customLoRAs"
-                class="pi pi-check text-xs text-success"
+                class="icon-[lucide--check] size-3 text-success"
               />
-              <i v-else class="pi pi-times text-xs" />
+              <i v-else class="icon-[lucide--x] size-3" />
             </div>
 
             <div class="flex flex-col gap-2">
@@ -159,7 +159,7 @@
                     class="group flex items-center gap-2 pt-2 text-muted-foreground"
                   >
                     <i
-                      class="pi pi-question-circle text-xs group-hover:text-foreground"
+                      class="icon-[lucide--circle-question-mark] size-3 group-hover:text-foreground"
                     />
                     <PopoverRoot>
                       <PopoverTrigger as-child>
@@ -236,7 +236,7 @@
           @click="handleContactUs"
         >
           {{ $t('subscription.contactUs') }}
-          <i class="pi pi-comments" />
+          <i class="icon-[lucide--messages-square]" />
         </Button>
         <span class="text-sm text-muted-foreground">{{ $t('g.or') }}</span>
         <Button
@@ -245,7 +245,7 @@
           @click="handleViewEnterprise"
         >
           {{ $t('subscription.viewEnterprise') }}
-          <i class="pi pi-external-link" />
+          <i class="icon-[lucide--external-link]" />
         </Button>
       </div>
     </div>
@@ -278,7 +278,7 @@ import type {
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import type { Plan } from '@comfyorg/billing-core'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 

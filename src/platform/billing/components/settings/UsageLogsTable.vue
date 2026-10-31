@@ -68,7 +68,7 @@
                 size="icon-sm"
                 :aria-label="$t('credits.additionalInfo')"
               >
-                <i class="pi pi-info-circle" />
+                <i class="icon-[lucide--info]" />
               </Button>
             </TableCell>
           </TableRow>
@@ -101,9 +101,13 @@ import TableCell from '@comfyorg/design-system/table/TableCell'
 import TableHead from '@comfyorg/design-system/table/TableHead'
 import TableHeader from '@comfyorg/design-system/table/TableHeader'
 import TableRow from '@comfyorg/design-system/table/TableRow'
-import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
+import {
+  formatCredits,
+  isSubCreditCharge,
+  microUsdToCredits
+} from '@/base/credits/comfyCredits'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
@@ -141,11 +145,14 @@ function eventAmount(event: AuditLog) {
 }
 
 function formatChargeCredits(microUsd: number) {
-  const amount = formatCreditsFromUsd({
-    usd: microUsd / 1_000_000,
-    locale: locale.value,
-    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
-  })
+  const credits = microUsdToCredits(microUsd)
+  const amount = isSubCreditCharge(credits)
+    ? t('credits.lessThanOne')
+    : formatCredits({
+        value: credits,
+        locale: locale.value,
+        numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+      })
   return `${amount} ${t('credits.credits')}`
 }
 

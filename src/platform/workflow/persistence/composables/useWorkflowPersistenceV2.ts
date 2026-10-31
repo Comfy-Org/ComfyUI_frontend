@@ -419,6 +419,14 @@ export function useWorkflowPersistenceV2() {
    * GraphCanvas must call this during startup when workflow persistence is enabled.
    */
   const restoreWorkflowTabsState = async () => {
+    try {
+      await restoreSavedTabs()
+    } finally {
+      workflowStore.markTabsRestored()
+    }
+  }
+
+  const restoreSavedTabs = async () => {
     if (!workflowPersistenceEnabled.value) {
       tabStateRestored = true
       return

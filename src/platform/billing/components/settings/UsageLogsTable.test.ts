@@ -12,7 +12,7 @@ import {
 } from '@/services/customerEventsService'
 
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type { BillingEventsResponse } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
@@ -22,7 +22,7 @@ import UsageLogsTable from './UsageLogsTable.vue'
 
 vi.mock(import('@/services/customerEventsService'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const CONFIRMED_AT_MS = Date.parse('2024-06-15T12:30:00Z')
 
@@ -314,6 +314,11 @@ describe('UsageLogsTable', () => {
       { charge: '36209', expected: 'Charge: 8 Credits' },
       { charge: 10_000_000_000, expected: 'Charge: 2,110,000 Credits' },
       { charge: 0, expected: 'Charge: 0 Credits' },
+      { charge: 1, expected: 'Charge: <1 Credits' },
+      { charge: 1_000, expected: 'Charge: <1 Credits' },
+      { charge: 3_318, expected: 'Charge: <1 Credits' },
+      { charge: 4_740, expected: 'Charge: 1 Credits' },
+      { charge: 6_636, expected: 'Charge: 1 Credits' },
       { charge: 'n/a', expected: 'charge_micro_usd: n/a' }
     ])(
       'shows charge_micro_usd $charge as $expected',

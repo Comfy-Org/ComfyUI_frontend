@@ -243,7 +243,7 @@ import {
 } from '@/platform/billing/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/billing/subscription/utils/creditsProgress'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'

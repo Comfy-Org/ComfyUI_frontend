@@ -1,6 +1,6 @@
-import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
-import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IStringWidget } from '@comfyorg/graph-model/widgets'
 
 import { BaseWidget, extensionValue } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'

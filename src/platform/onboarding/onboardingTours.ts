@@ -1,7 +1,7 @@
 import { shallowReactive } from 'vue'
 import type { Ref } from 'vue'
 
-import type { OnboardingTourNotStartedReason } from '@/platform/telemetry/types'
+import type { OnboardingTourNotStartedReason } from '@comfyorg/telemetry/types'
 
 /** Every tour, including ones whose steps a consumer registers at runtime. */
 export const ENTRY_PATHS = ['appMode', 'firstRun'] as const

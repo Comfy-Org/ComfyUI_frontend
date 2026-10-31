@@ -4,7 +4,7 @@
       v-if="isPositioned && ringStyle"
       aria-hidden="true"
       data-testid="first-run-nudge-ring"
-      class="pointer-events-none fixed z-1000 rounded-lg outline-2 -outline-offset-2 outline-white"
+      class="pointer-events-none fixed rounded-lg outline-2 -outline-offset-2 outline-white"
       :style="ringStyle"
     />
     <div
@@ -14,7 +14,7 @@
       data-testid="first-run-nudge"
       :class="
         cn(
-          'fixed z-1000 w-80 animate-in animation-duration-500 fade-in-0',
+          'fixed w-80 animate-in animation-duration-500 fade-in-0',
           !isPositioned && 'invisible'
         )
       "
@@ -99,7 +99,7 @@ import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import type { SpotlightStep } from '@/platform/onboarding/onboardingTours'
 import { useCoachmarkTarget } from '@/platform/onboarding/useCoachmarkTarget'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'

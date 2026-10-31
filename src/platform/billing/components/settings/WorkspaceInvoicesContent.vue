@@ -3,7 +3,9 @@
     <!-- Billing data still loading: avoid rendering a false $0 charge -->
     <div v-if="isLoading && !subscription" class="rounded-2xl border p-6">
       <div class="flex items-center gap-2 py-4 text-muted-foreground">
-        <i class="pi pi-spin pi-spinner" />
+        <i
+          class="icon-[lucide--loader-circle] animate-spin motion-reduce:animate-none"
+        />
         <span>{{ $t('g.loading') }}</span>
       </div>
     </div>
@@ -14,7 +16,7 @@
       class="flex flex-col items-start gap-3 rounded-2xl border p-6"
     >
       <div class="flex items-center gap-2 text-muted-foreground">
-        <i class="pi pi-exclamation-circle text-destructive" />
+        <i class="icon-[lucide--circle-alert] text-destructive" />
         <span class="text-sm">{{ $t('subscription.planLoadError') }}</span>
       </div>
       <Button

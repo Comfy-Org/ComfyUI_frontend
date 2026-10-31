@@ -9,7 +9,7 @@
     :data-dd-action-name="BILLING_ACTION_NAME.subscribeToRun"
     @click="handleSubscribeToRun"
   >
-    <i class="pi pi-lock" />
+    <i class="icon-[lucide--lock]" />
     {{ buttonLabel }}
   </Button>
 </template>

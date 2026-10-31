@@ -431,6 +431,9 @@ importers:
       '@comfyorg/account-ui':
         specifier: workspace:*
         version: link:packages/account-ui
+      '@comfyorg/api-client':
+        specifier: workspace:*
+        version: link:packages/api-client
       '@comfyorg/billing-contract':
         specifier: workspace:*
         version: link:packages/billing-contract
@@ -449,6 +452,12 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:packages/design-system
+      '@comfyorg/graph-model':
+        specifier: workspace:*
+        version: link:packages/graph-model
+      '@comfyorg/keybindings':
+        specifier: workspace:*
+        version: link:packages/keybindings
       '@comfyorg/layer-editor':
         specifier: workspace:*
         version: link:packages/layer-editor
@@ -461,12 +470,18 @@ importers:
       '@comfyorg/registry-types':
         specifier: workspace:*
         version: link:packages/registry-types
+      '@comfyorg/settings-core':
+        specifier: workspace:*
+        version: link:packages/settings-core
       '@comfyorg/shared-frontend-utils':
         specifier: workspace:*
         version: link:packages/shared-frontend-utils
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:packages/tailwind-utils
+      '@comfyorg/telemetry':
+        specifier: workspace:*
+        version: link:packages/telemetry
       '@comfyorg/viewport3d':
         specifier: workspace:*
         version: link:packages/viewport3d
@@ -897,6 +912,9 @@ importers:
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
+      '@vueuse/integrations':
+        specifier: 'catalog:'
+        version: 14.4.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))
       firebase:
         specifier: 'catalog:'
         version: 11.10.0
@@ -1016,6 +1034,9 @@ importers:
       '@comfyorg/account-core':
         specifier: workspace:^
         version: link:../account-core
+      '@vueuse/integrations':
+        specifier: ^14.4.0
+        version: 14.4.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))
       primeicons:
         specifier: ^7.0.0
         version: 7.0.0
@@ -1072,6 +1093,49 @@ importers:
         specifier: 'catalog:'
         version: 3.5.42(typescript@6.0.3)
 
+  packages/api-client:
+    dependencies:
+      '@comfyorg/account-core':
+        specifier: workspace:*
+        version: link:../account-core
+      '@comfyorg/graph-model':
+        specifier: workspace:*
+        version: link:../graph-model
+      '@comfyorg/ingest-types':
+        specifier: workspace:*
+        version: link:../ingest-types
+      '@comfyorg/object-info-parser':
+        specifier: workspace:*
+        version: link:../object-info-parser
+      '@comfyorg/settings-core':
+        specifier: workspace:*
+        version: link:../settings-core
+      '@comfyorg/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+      '@sentry/vue':
+        specifier: 'catalog:'
+        version: 10.65.0(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))(vue@3.5.42(typescript@6.0.3))
+      axios:
+        specifier: 'catalog:'
+        version: 1.18.1(debug@4.4.3)
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.49.0
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.42(typescript@6.0.3)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.2(@types/node@25.9.5)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+
   packages/billing-contract:
     devDependencies:
       '@comfyorg/account-core':
@@ -1126,12 +1190,6 @@ importers:
       '@iconify/utils':
         specifier: 'catalog:'
         version: 3.1.4
-      '@vueuse/core':
-        specifier: 'catalog:'
-        version: 14.4.0(vue@3.5.42(typescript@6.0.3))
-      '@vueuse/integrations':
-        specifier: 'catalog:'
-        version: 14.4.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))
       chart.js:
         specifier: ^4.5.0
         version: 4.5.1
@@ -1157,6 +1215,9 @@ importers:
         specifier: 'catalog:'
         version: 1.4.0
     devDependencies:
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:^
+        version: link:../shared-frontend-utils
       '@comfyorg/tailwind-utils':
         specifier: workspace:^
         version: link:../tailwind-utils
@@ -1181,6 +1242,12 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 5.0.2(vitest@5.0.2)
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 14.4.0(vue@3.5.42(typescript@6.0.3))
+      '@vueuse/integrations':
+        specifier: 'catalog:'
+        version: 14.4.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))
       happy-dom:
         specifier: 'catalog:'
         version: 20.14.5
@@ -1212,6 +1279,31 @@ importers:
         specifier: 'catalog:'
         version: 3.3.11
 
+  packages/graph-model:
+    dependencies:
+      '@comfyorg/layer-editor':
+        specifier: workspace:*
+        version: link:../layer-editor
+      '@comfyorg/object-info-parser':
+        specifier: workspace:*
+        version: link:../object-info-parser
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../shared-frontend-utils
+      '@comfyorg/viewport3d':
+        specifier: workspace:*
+        version: link:../viewport3d
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+      zod-validation-error:
+        specifier: 'catalog:'
+        version: 5.0.0(zod@4.6.5)
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
   packages/ingest-types:
     devDependencies:
       '@comfyorg/published-package-build':
@@ -1230,8 +1322,33 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
 
+  packages/keybindings:
+    dependencies:
+      '@comfyorg/graph-model':
+        specifier: workspace:*
+        version: link:../graph-model
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.49.0
+      pinia:
+        specifier: 'catalog:'
+        version: 4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.42(typescript@6.0.3)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
   packages/layer-editor:
     dependencies:
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../shared-frontend-utils
       es-toolkit:
         specifier: 'catalog:'
         version: 1.49.0
@@ -1254,6 +1371,9 @@ importers:
       '@alloc/quick-lru':
         specifier: 'catalog:'
         version: 5.2.0
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../shared-frontend-utils
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
@@ -1320,6 +1440,46 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
+  packages/settings-core:
+    dependencies:
+      '@comfyorg/graph-model':
+        specifier: workspace:*
+        version: link:../graph-model
+      '@comfyorg/keybindings':
+        specifier: workspace:*
+        version: link:../keybindings
+      '@comfyorg/object-info-parser':
+        specifier: workspace:*
+        version: link:../object-info-parser
+      '@comfyorg/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 14.4.0(vue@3.5.42(typescript@6.0.3))
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.49.0
+      semver:
+        specifier: ^7.7.2
+        version: 7.8.5
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.42(typescript@6.0.3)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      '@types/semver':
+        specifier: 'catalog:'
+        version: 7.8.0
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.2(@types/node@25.9.5)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+
   packages/shared-frontend-utils:
     dependencies:
       '@comfyorg/object-info-parser':
@@ -1364,6 +1524,43 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
+  packages/telemetry:
+    dependencies:
+      '@comfyorg/account-core':
+        specifier: workspace:*
+        version: link:../account-core
+      '@comfyorg/billing-contract':
+        specifier: workspace:*
+        version: link:../billing-contract
+      '@comfyorg/comfyui-desktop-bridge-types':
+        specifier: 'catalog:'
+        version: 0.5.0
+      '@comfyorg/graph-model':
+        specifier: workspace:*
+        version: link:../graph-model
+      '@comfyorg/ingest-types':
+        specifier: workspace:*
+        version: link:../ingest-types
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../shared-frontend-utils
+    devDependencies:
+      '@datadog/browser-rum':
+        specifier: 'catalog:'
+        version: 6.33.0(@datadog/browser-logs@6.33.0)
+      '@sentry/vue':
+        specifier: 'catalog:'
+        version: 10.65.0(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))(vue@3.5.42(typescript@6.0.3))
+      '@total-typescript/shoehorn':
+        specifier: 'catalog:'
+        version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.2(@types/node@25.9.5)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+
   packages/test-utils:
     devDependencies:
       typescript:
@@ -1381,6 +1578,9 @@ importers:
       '@comfyorg/quad-wireframe-three':
         specifier: ^0.1.0
         version: 0.1.0(three@0.186.1)
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../shared-frontend-utils
       '@sparkjsdev/spark':
         specifier: 'catalog:'
         version: 2.3.1(three@0.186.1)
@@ -1394,9 +1594,6 @@ importers:
         specifier: 'catalog:'
         version: 6.2.1(three@0.186.1)
     devDependencies:
-      '@comfyorg/shared-frontend-utils':
-        specifier: workspace:*
-        version: link:../shared-frontend-utils
       '@total-typescript/shoehorn':
         specifier: 'catalog:'
         version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { computeArrangement } from '@/composables/graph/useArrangeNodes'
-import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
-import { toNodeId } from '@/types/nodeId'
+import { TitleMode } from '@comfyorg/graph-model/globalEnums'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 const GAP = 12

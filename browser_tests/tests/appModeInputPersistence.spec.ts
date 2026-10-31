@@ -17,10 +17,6 @@ test.describe(
       initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
     })
 
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.appMode.enableLinearMode()
-    })
-
     test('persists selected inputs after save and reopen without visibility errors', async ({
       comfyPage
     }) => {

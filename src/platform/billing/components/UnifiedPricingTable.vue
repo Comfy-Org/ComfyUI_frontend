@@ -149,7 +149,7 @@
                 :key="feature"
                 class="flex items-start gap-2"
               >
-                <i class="pi pi-check mt-0.5 text-xs" />
+                <i class="mt-0.5 icon-[lucide--check] size-3" />
                 <span class="text-sm font-normal text-muted-foreground">
                   {{ feature }}
                 </span>
@@ -294,7 +294,7 @@
                   :key="perk"
                   class="flex items-start gap-2"
                 >
-                  <i class="pi pi-check mt-0.5 text-xs" />
+                  <i class="mt-0.5 icon-[lucide--check] size-3" />
                   <span class="text-sm font-normal text-muted-foreground">
                     {{ perk }}
                   </span>
@@ -306,7 +306,7 @@
                   {{ t('subscription.teamPlan.comingSoonLabel') }}
                 </span>
                 <div class="flex items-start gap-2">
-                  <i class="pi pi-clock mt-0.5 text-xs" />
+                  <i class="mt-0.5 icon-[lucide--clock] size-3" />
                   <span class="text-sm font-normal">
                     {{ t('subscription.teamPlan.perkProjectAssets') }}
                   </span>

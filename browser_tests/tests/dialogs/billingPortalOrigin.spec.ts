@@ -53,6 +53,7 @@ const ACTIVE_PRO_STATUS: BillingStatusResponse = {
   renewal_date: '2099-02-20T12:00:00Z',
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null
 }

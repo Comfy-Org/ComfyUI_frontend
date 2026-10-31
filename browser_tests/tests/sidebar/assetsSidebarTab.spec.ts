@@ -17,10 +17,7 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
-import type {
-  JobDetail,
-  RawJobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobDetail, RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture)
 
@@ -376,7 +373,7 @@ bulkInsertionTest.describe(
 
     bulkInsertionTest.beforeEach(async ({ comfyPage }) => {
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
       await comfyPage.toast.closeToasts()
       const panel = new PropertiesPanelHelper(comfyPage.page)
       await panel.open(comfyPage.actionbar.propertiesButton)

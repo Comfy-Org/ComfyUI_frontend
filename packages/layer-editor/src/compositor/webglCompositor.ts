@@ -1,4 +1,7 @@
-import type { Rect } from '#/node'
+import type {
+  Size2D,
+  CompactRect as Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { modeUniforms } from './modeCodes'
 import type {
   Compositor,
@@ -183,11 +186,9 @@ void main(){
   fragColor = vec4(mix(bg.rgb, adjusted, t), bg.a);
 }`
 
-interface Target {
+interface Target extends Size2D {
   fbo: WebGLFramebuffer
   tex: WebGLTexture
-  width: number
-  height: number
 }
 
 function compile(

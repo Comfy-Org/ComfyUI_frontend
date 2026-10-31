@@ -1,7 +1,8 @@
 import { defaultMode } from '#/mode'
 import type { NodeKind } from '#/nodeKind'
 import { getNodeKind } from '#/nodeKind'
-import type { GroupData, Rect, Transform } from '#/node'
+import type { GroupData, Transform } from '#/node'
+import type { CompactRect as Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import { generateId } from '#/id'
 
 function fullTransform(): Transform {

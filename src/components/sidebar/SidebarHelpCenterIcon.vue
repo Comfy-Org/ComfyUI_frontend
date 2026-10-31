@@ -2,7 +2,7 @@
   <PopoverRoot v-if="linearMode">
     <PopoverTrigger as-child>
       <SidebarIcon
-        icon="pi pi-question-circle"
+        icon="icon-[lucide--circle-question-mark] scale-90"
         class="comfy-help-center-btn"
         data-testid="help-center-button"
         :label="$t('menu.help')"
@@ -34,7 +34,7 @@
   </PopoverRoot>
   <SidebarIcon
     v-else
-    icon="pi pi-question-circle"
+    icon="icon-[lucide--circle-question-mark] scale-90"
     class="comfy-help-center-btn"
     data-testid="help-center-button"
     :label="$t('menu.help')"

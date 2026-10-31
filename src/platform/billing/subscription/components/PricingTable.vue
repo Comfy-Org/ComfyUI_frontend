@@ -117,14 +117,14 @@
               <span class="text-sm font-normal">
                 {{ t('subscription.gpuLabel') }}
               </span>
-              <i class="pi pi-check text-xs text-success" />
+              <i class="icon-[lucide--check] size-3 text-success" />
             </div>
 
             <div class="flex items-center justify-between">
               <span class="text-sm font-normal">
                 {{ t('subscription.addCreditsLabel') }}
               </span>
-              <i class="pi pi-check text-xs text-success" />
+              <i class="icon-[lucide--check] size-3 text-success" />
             </div>
 
             <div class="flex items-center justify-between">
@@ -133,9 +133,9 @@
               </span>
               <i
                 v-if="tier.customLoRAs"
-                class="pi pi-check text-xs text-success"
+                class="icon-[lucide--check] size-3 text-success"
               />
-              <i v-else class="pi pi-times text-xs" />
+              <i v-else class="icon-[lucide--x] size-3" />
             </div>
 
             <div class="flex flex-col gap-2">
@@ -148,7 +148,7 @@
                     class="group flex items-center gap-2 pt-2 text-muted-foreground"
                   >
                     <i
-                      class="pi pi-question-circle text-xs group-hover:text-foreground"
+                      class="icon-[lucide--circle-question-mark] size-3 group-hover:text-foreground"
                     />
                     <PopoverRoot>
                       <PopoverTrigger as-child>
@@ -253,11 +253,11 @@ import {
 import { isPlanDowngrade } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useAuthStore } from '@/stores/authStore'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'

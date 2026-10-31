@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { toRootGraphId } from '@/types/graphScopeId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
@@ -129,7 +129,22 @@ function connectAgentHeldWorkflow() {
       .flatMap(([frame]) => sentWireOps(frame))
   }
 
-  return { graph, host, deliver, humanAdds }
+  async function humanWrites(write: () => void) {
+    const framesBefore = agentSocket.send.mock.calls.length
+    const sentOps = () =>
+      agentSocket.send.mock.calls
+        .slice(framesBefore)
+        .flatMap(([frame]) => sentWireOps(frame))
+    write()
+    await vi.waitFor(() => expect(sentOps()).not.toEqual([]))
+    const sent = sentOps()
+    const { result, update } = host.applyWire(sent)
+    deliver(result)
+    if (update) deliver(update)
+    return { sent, verdict: result.data }
+  }
+
+  return { graph, host, deliver, humanAdds, humanWrites }
 }
 
 function openInAnotherTab(host: HostDoc) {
@@ -203,6 +218,30 @@ describe('PM-2003: a human adds Display Int (rgthree) while the agent holds the 
       onCanvas: DISPLAY_INT,
       inDocument: [{ type: DISPLAY_INT, widgets_values: { output: '' } }]
     })
+  })
+
+  it('FRONT-3704 known gap: refuses a human write to a widget mounted after add_node, because the form is fixed at add time', async () => {
+    LiteGraph.registerNodeType(
+      DISPLAY_INT,
+      DisplayIntWithClientOnlyOutputWidget
+    )
+    const { host, humanAdds, humanWrites } = connectAgentHeldWorkflow()
+    const node = new DisplayIntWithClientOnlyOutputWidget()
+    await humanAdds(node)
+    const late = node.addWidget('text', 'late', '', () => {})
+
+    const { sent, verdict } = await humanWrites(() => {
+      late.value = 'typed'
+    })
+
+    expect(sent).toEqual([
+      expect.objectContaining({ op: 'set_widget', widget: 'late' })
+    ])
+    expect(verdict).toMatchObject({
+      ok: false,
+      failed: { code: 'unknown_widget' }
+    })
+    expect(host.projection().nodes[0].widgets_values).toEqual({ output: '' })
   })
 
   it('lands an agent write to the declared widget on the canvas', async () => {

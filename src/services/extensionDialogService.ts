@@ -8,10 +8,15 @@ import { useDialogService } from '@/services/dialogService'
 
 export function createExtensionDialogService(): ExtensionDialogService {
   const { showPublishDialog } = useComfyHubPublishDialog()
+  const { showSubscriptionRequiredDialog, ...billingDialogs } =
+    useBillingDialogs()
   return {
     ...useDialogService(),
     ...useAuthDialogs(),
-    ...useBillingDialogs(),
+    ...billingDialogs,
+    showSubscriptionRequiredDialog: async (options) => {
+      await showSubscriptionRequiredDialog(options)
+    },
     ...useWorkspaceDialogs(),
     ...useCloudNotificationDialog(),
     showPublishDialog

@@ -1,6 +1,6 @@
 import type { Locator } from '@playwright/test'
 
-import type { PromptResponse } from '@/platform/remote/comfyui/types'
+import type { PromptResponse } from '@comfyorg/api-client/types'
 
 import {
   comfyExpect as expect,
@@ -230,9 +230,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       .poll(() => comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph'))
       .toHaveLength(1)
 
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(initialCount - 1)
+    await comfyPage.expectNodeCount(initialCount - 1)
   })
 
   test('frame nodes button creates group from multiple selected nodes', async ({

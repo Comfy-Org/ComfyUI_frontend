@@ -15,7 +15,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   clearWorkflowRestoreState,
   prepareWorkflowWorkspaceTransition
@@ -233,6 +233,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   )
   const identityGeneration = ref(0)
   let initializationPromise: Promise<void> | null = null
+  let hostChangedWhileLoading = false
   let pendingWorkspaceSwitch: Promise<void> | null = null
 
   function isStaleIdentity(generation: number): boolean {
@@ -528,10 +529,14 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     initializationPromise = promise
     void promise.then(
       () => {
-        if (initializationPromise === promise) initializationPromise = null
+        if (initializationPromise !== promise) return
+        initializationPromise = null
+        hostChangedWhileLoading = false
       },
       () => {
-        if (initializationPromise === promise) initializationPromise = null
+        if (initializationPromise !== promise) return
+        initializationPromise = null
+        retryIfHostChangedWhileLoading()
       }
     )
     return promise
@@ -1111,6 +1116,27 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     if (isListed()) mutableActiveWorkspaceId.value = hostWorkspaceId
   }
 
+  function retryInitializationForHost(): void {
+    initialize().catch((error: unknown) =>
+      reportError(error, {
+        errorType: 'error_reinitializing_workspaces_for_desktop_host',
+        surface: 'workspace'
+      })
+    )
+  }
+
+  watch(desktopHostUser, (hostUser) => {
+    if (!hostUser) return
+    if (initState.value === 'loading') hostChangedWhileLoading = true
+    if (initState.value === 'error') retryInitializationForHost()
+  })
+
+  function retryIfHostChangedWhileLoading(): void {
+    const retry = hostChangedWhileLoading && desktopHostUser.value !== null
+    hostChangedWhileLoading = false
+    if (retry) retryInitializationForHost()
+  }
+
   watch(
     () => desktopHostUser.value?.workspaceId,
     (hostWorkspaceId) => {
@@ -1130,6 +1156,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     mutableWorkspaceTransitionGeneration.value++
     pendingWorkspaceSwitch = null
     initializationPromise = null
+    hostChangedWhileLoading = false
     initState.value = 'uninitialized'
     workspaces.value = []
     serverRefusesCreation.value = false

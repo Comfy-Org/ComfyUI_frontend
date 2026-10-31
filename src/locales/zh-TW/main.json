@@ -83,6 +83,7 @@
     "copyMarkdown": "複製為 Markdown",
     "copyUnavailable": "此版本僅能複製目前的對話",
     "creditTransitionNotice": "您已用完免費的代理程式點數。後續的代理程式活動會使用您的工作區點數，其中可能包含付費點數。",
+    "creditsUsed": "代理程式使用了 {credits} 點積分 | 代理程式使用了 {credits} 點積分",
     "currentTab": "目前分頁",
     "delete": "刪除",
     "deleteApproval": {
@@ -5858,13 +5859,11 @@
         "onHold": "沒有預設付款方式。請設定付款方式以恢復自動儲值。",
         "paused": "已達每月上限。將於 {date} 恢復。",
         "pausedNoDate": "已達每月上限。",
-        "rule": "低於 {threshold} 點數時，新增 {amount}（{credits} 點數）。",
         "status": {
           "failed": "失敗",
           "off": "關閉",
           "on": "開啟",
           "onHold": "暫緩",
-          "paused": "已暫停",
           "turnedOff": "已關閉"
         },
         "title": "自動儲值",
@@ -5927,7 +5926,6 @@
         },
         "scheduledChange": "將於 {date} 變更為 {plan}。",
         "stayConfirm": {
-          "body": "您的方案不會於 {date} 變更為 {plan}。您隨時都可以再次排定變更。",
           "title": "要取消變更為 {plan} 的操作嗎？"
         },
         "unknown": {

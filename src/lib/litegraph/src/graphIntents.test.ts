@@ -1,9 +1,9 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
-import { toLinkId } from '@/types/linkId'
-import type { LinkId } from '@/types/linkId'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 
 import type { LGraph } from './LGraph'
 import type { LLink } from './LLink'

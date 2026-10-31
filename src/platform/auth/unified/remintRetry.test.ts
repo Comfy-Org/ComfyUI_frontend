@@ -4,8 +4,8 @@ import type { AxiosAdapter } from 'axios'
 import axios, { AxiosError } from 'axios'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -15,9 +15,9 @@ import {
   fetchWithUnifiedRemint
 } from '@/platform/auth/unified/remintRetry'
 import { attachRetryableStatusRetry } from '@/utils/axiosRetryableStatus'
-import { NO_RETRY_POLICY } from '@/utils/retryPolicy'
+import { NO_RETRY_POLICY } from '@comfyorg/api-client/retryPolicy'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('firebase/auth'))
 

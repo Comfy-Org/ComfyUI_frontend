@@ -4,7 +4,7 @@ import type * as THREE from 'three'
 
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import type { createLoad3d as createLoad3dContract } from '@comfyorg/viewport3d/load3d/createLoad3d'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { generateModelThumbnail } from './modelThumbnail'
 
 type ThumbnailLoad3d = Pick<Load3d, 'loadModel' | 'captureThumbnail' | 'remove'>

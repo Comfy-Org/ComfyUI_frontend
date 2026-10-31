@@ -16,11 +16,11 @@ import {
   SIDEBAR_MIN_WIDTH,
   SIDE_TOOLBAR_WIDTH
 } from '@/constants/splitterConstants'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   AgentPanelCloseSource,
   AgentPanelOpenedMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -100,8 +100,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const draggedWidth = ref(PANEL_MIN_WIDTH)
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
+  const billingRefreshedAcceptances = ref(0)
   const reportedFreeUseExposure = ref(false)
   const reportedFreeUseImpression = ref(false)
+  const reportedCreditUsageExposure = ref(false)
   const fundsRechecks = ref(new Map<number, string>())
   const fundsRecheckTimeouts = new Map<number, ReturnType<typeof setTimeout>>()
   const fundsRecheckFinished = new Map<number, () => void>()
@@ -241,6 +243,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     teardownReported = false
     reportedFreeUseExposure.value = false
     reportedFreeUseImpression.value = false
+    reportedCreditUsageExposure.value = false
   }
 
   const isVisible = computed(() => enabled.value && isOpen.value)
@@ -416,8 +419,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     flagsSettled,
     comfyAgent,
     reportedExhaustionIdentity,
+    billingRefreshedAcceptances,
     reportedFreeUseExposure,
     reportedFreeUseImpression,
+    reportedCreditUsageExposure,
     creditTransitionNotice: readonly(creditTransitionNotice),
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,

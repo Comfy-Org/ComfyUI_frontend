@@ -8,7 +8,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUsePlacement
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { AGENT_COST_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 
 import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'

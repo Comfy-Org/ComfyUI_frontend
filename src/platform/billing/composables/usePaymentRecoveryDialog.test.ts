@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import type { BillingPortalOutcome } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   canManageBillingFact,
   paymentRecoveryAvailableFact,

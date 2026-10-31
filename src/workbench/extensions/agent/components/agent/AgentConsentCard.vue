@@ -1,14 +1,21 @@
 <script setup lang="ts">
-import { useMediaQuery } from '@vueuse/core'
-import { computed, onMounted, ref, useId } from 'vue'
+import {
+  createReusableTemplate,
+  useMediaQuery,
+  useResizeObserver
+} from '@vueuse/core'
+import { computed, onMounted, ref, watch } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Video from '@/components/common/Video.vue'
+import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import Message from '@comfyorg/design-system/message/Message'
 import { applyDarkPaletteTheme } from '@/utils/colorPaletteTheme'
+import { openFeedbackDialog } from '@/workbench/extensions/agent/feedback'
+import type { ConsentCardError } from '@/workbench/extensions/agent/types/consentCardError'
 
 const {
   title,
@@ -27,7 +34,7 @@ const {
   docsUrl?: string
   requiresSignIn?: boolean
   accepting?: boolean
-  error?: string
+  error?: ConsentCardError | ''
 }>()
 
 const emit = defineEmits<{
@@ -35,29 +42,147 @@ const emit = defineEmits<{
   accept: []
 }>()
 
+const WIDE_MIN_WIDTH = 576
+const ERROR_TITLE_KEY = {
+  save: 'agent.consent.errorTitle',
+  load: 'agent.consent.loadErrorTitle',
+  signIn: 'agent.consent.signInErrorTitle'
+} as const satisfies Record<ConsentCardError, string>
+const CARD_SHELL =
+  'grid max-h-[85dvh] overflow-y-auto overscroll-contain rounded-2xl border bg-background shadow-2xl'
+const MEDIA_SHELL = 'w-full rounded-lg object-cover'
+const FALLBACK_SHELL =
+  'grid w-full place-items-center rounded-lg bg-secondary text-xs text-muted-foreground'
+const COPY_SHELL = 'my-0 text-sm/5 text-muted-foreground'
+const SECTION_SHELL = 'flex min-w-0 flex-col gap-3'
+const FOOTER_WIDE =
+  'flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2'
+const FOOTER_NARROW = 'flex min-w-0 flex-col gap-2.5'
+const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
+
+const LAYOUTS = {
+  stacked: {
+    width: 'w-[min(600px,calc(100vw-2rem))]',
+    card: cn(CARD_SHELL, 'gap-0 p-0'),
+    videoWrap: 'w-full min-w-0 p-2',
+    media: cn(MEDIA_SHELL, 'aspect-video'),
+    fallback: cn(FALLBACK_SHELL, 'aspect-video'),
+    heading: 'my-0 text-2xl/7.5',
+    copy: COPY_SHELL,
+    contentWrap: 'flex min-w-0 flex-col',
+    section: cn(SECTION_SHELL, 'px-6 pt-4.5'),
+    sectionNarrow: cn(SECTION_SHELL, 'gap-2 px-4.5 pt-3'),
+    footer: cn(FOOTER_WIDE, 'px-6 pt-4.5 pb-6'),
+    footerNarrow: cn(FOOTER_NARROW, 'px-4.5 pt-3 pb-4.5')
+  },
+  compact: {
+    width: 'w-[min(600px,calc(100vw-2rem))]',
+    card: cn(CARD_SHELL, 'h-[85dvh] grid-rows-[minmax(0,1fr)_auto] gap-0 p-0'),
+    videoWrap:
+      '[container-type:size] grid h-full min-h-0 w-full place-items-center overflow-hidden p-2 [&>div.relative]:grid [&>div.relative]:size-full [&>div.relative]:place-items-center',
+    media:
+      'aspect-video w-[min(100cqw,calc(100cqh*16/9))] max-h-full rounded-lg object-contain',
+    fallback: cn(
+      FALLBACK_SHELL,
+      'aspect-video max-h-full w-[min(100cqw,calc(100cqh*16/9))]'
+    ),
+    heading: 'my-0 text-2xl/7.5 text-[22px]/7',
+    copy: cn(COPY_SHELL, 'text-[13px]/4.5'),
+    contentWrap: 'flex min-w-0 flex-col',
+    section: cn(SECTION_SHELL, 'gap-2 px-4.5 pt-3'),
+    sectionNarrow: cn(SECTION_SHELL, 'gap-2 px-4.5 pt-3'),
+    footer: cn(FOOTER_WIDE, 'px-4.5 pt-3 pb-4.5'),
+    footerNarrow: cn(FOOTER_NARROW, 'px-4.5 pt-3 pb-4.5')
+  },
+  columns: {
+    width: 'w-[min(960px,calc(100vw-2rem))]',
+    card: cn(CARD_SHELL, 'grid-cols-2 items-stretch gap-x-7 p-2'),
+    videoWrap:
+      '[container-type:size] grid h-0 min-h-full w-full min-w-0 place-items-center self-stretch overflow-hidden rounded-lg [&>div.relative]:grid [&>div.relative]:size-full [&>div.relative]:place-items-center',
+    media:
+      'aspect-video w-[min(100cqw,calc(100cqh*16/9))] max-h-full rounded-lg object-contain',
+    fallback: cn(
+      FALLBACK_SHELL,
+      'aspect-video max-h-full w-[min(100cqw,calc(100cqh*16/9))]'
+    ),
+    heading: 'my-0 text-2xl/7.5',
+    copy: COPY_SHELL,
+    contentWrap: 'flex min-w-0 flex-col justify-between gap-3.5 pt-3 pr-3 pb-3',
+    section: cn(SECTION_SHELL, 'gap-2.5'),
+    sectionNarrow: cn(SECTION_SHELL, 'gap-2.5'),
+    footer: FOOTER_WIDE,
+    footerNarrow: FOOTER_NARROW
+  }
+} as const
+
 const containerRef = ref<HTMLElement>()
+const isWide = ref(true)
 const isTwoColumn = useMediaQuery('(min-width: 700px) and (height < 650px)')
 const isShortViewport = useMediaQuery('(height < 680px)')
-const isCompact = computed(() => isShortViewport.value && !isTwoColumn.value)
-const layoutClasses = computed(() => ({
-  width: isTwoColumn.value
-    ? 'w-[min(960px,calc(100vw-2rem))]'
-    : 'w-[min(600px,calc(100vw-2rem))]',
-  heading: isCompact.value ? 'text-[22px]/7' : undefined,
-  video: isCompact.value
-    ? 'max-h-41.5'
-    : isTwoColumn.value
-      ? 'max-h-[calc(85dvh-2.5rem)]'
-      : 'max-h-[min(238px,calc(85dvh-22rem))]',
-  fallback: isCompact.value ? 'max-h-41.5' : 'max-h-59.5'
-}))
-const signInHintId = useId()
-const hasConsentHelp = computed(() => Boolean(docsUrl || requiresSignIn))
-const acceptAction = computed(() =>
-  requiresSignIn
-    ? { labelKey: 'agent.consent.agreeAndContinue', describedBy: signInHintId }
-    : { labelKey: 'agent.consent.accept', describedBy: undefined }
+
+function layoutMode(): keyof typeof LAYOUTS {
+  if (isTwoColumn.value) return 'columns'
+  if (isShortViewport.value) return 'compact'
+  return 'stacked'
+}
+
+const mode = computed(() => layoutMode())
+const layout = computed(() => LAYOUTS[mode.value])
+const headingClass = computed(() =>
+  isWide.value ? layout.value.heading : 'my-0 text-xl'
 )
+const sectionClass = computed(() =>
+  isWide.value ? layout.value.section : layout.value.sectionNarrow
+)
+const footerClass = computed(() =>
+  isWide.value ? layout.value.footer : layout.value.footerNarrow
+)
+const actions = computed(() => {
+  if (accepting) return ['accept'] as const
+  return isWide.value
+    ? (['reject', 'accept'] as const)
+    : (['accept', 'reject'] as const)
+})
+const actionButtonClass = computed(() =>
+  isWide.value
+    ? 'h-auto min-h-11 w-fit max-w-full whitespace-normal'
+    : 'h-auto min-h-11 w-full max-w-full whitespace-normal'
+)
+const actionRowClass = computed(() =>
+  isWide.value
+    ? 'ml-auto flex flex-wrap items-center justify-end gap-2.5'
+    : 'flex w-full flex-col gap-2.5'
+)
+const acceptLabelKey = computed(() => {
+  if (error) return 'agent.consent.tryAgain'
+  return requiresSignIn
+    ? 'agent.consent.agreeAndContinue'
+    : 'agent.consent.accept'
+})
+const errorTitleKey = computed(() => (error ? ERROR_TITLE_KEY[error] : ''))
+const errorVisible = ref(Boolean(error))
+
+watch(
+  () => error,
+  (value) => {
+    if (value) errorVisible.value = true
+  }
+)
+
+function openConsentFeedback(): void {
+  openFeedbackDialog('agent-consent')
+}
+
+useResizeObserver(containerRef, ([entry]) => {
+  const width = entry.contentRect.width
+  if (width === 0) return
+  isWide.value = width >= WIDE_MIN_WIDTH
+})
+
+function choose(action: 'accept' | 'reject'): void {
+  if (action === 'accept') emit('accept')
+  else emit('reject')
+}
 
 onMounted(() => {
   if (containerRef.value) applyDarkPaletteTheme(containerRef.value.style)
@@ -65,19 +190,24 @@ onMounted(() => {
 </script>
 
 <template>
-  <div ref="containerRef" :class="cn('max-w-full', layoutClasses.width)">
-    <div
-      data-testid="agent-consent-card"
-      :class="
-        cn(
-          'grid max-h-[85dvh] gap-4.5 overflow-y-auto overscroll-contain rounded-2xl border bg-background p-6 shadow-2xl',
-          isTwoColumn &&
-            'grid-cols-2 grid-rows-[auto_auto] gap-x-7 gap-y-3.5 p-5',
-          isCompact && 'gap-3 p-4.5'
-        )
-      "
+  <DefineDocsLink>
+    <Button
+      variant="link"
+      size="unset"
+      class="mr-auto w-fit gap-1 px-0 py-2 text-sm/5 font-normal hover:underline"
+      as="a"
+      :href="docsUrl"
+      target="_blank"
+      rel="noopener noreferrer"
     >
-      <div :class="cn('min-w-0', isTwoColumn && 'row-span-2 self-center')">
+      {{ $t('agent.consent.readDocs') }}
+      <i class="icon-[lucide--square-arrow-out-up-right]" />
+    </Button>
+  </DefineDocsLink>
+
+  <div ref="containerRef" :class="cn('max-w-full', layout.width)">
+    <div data-testid="agent-consent-card" :class="layout.card">
+      <div :class="layout.videoWrap">
         <Video
           :sources="videoSources"
           :poster-src="posterSrc"
@@ -86,116 +216,84 @@ onMounted(() => {
           loop
           plays-inline
           data-testid="agent-consent-video"
-          :class="
-            cn(
-              'mx-auto aspect-video w-full max-w-full rounded-lg object-contain',
-              layoutClasses.video
-            )
-          "
+          :class="layout.media"
         >
           <template #fallback>
-            <div
-              :class="
-                cn(
-                  'grid aspect-video w-full place-items-center rounded-lg bg-secondary text-xs text-muted-foreground',
-                  layoutClasses.fallback
-                )
-              "
-            >
+            <div :class="layout.fallback">
               {{ $t('agent.consent.videoPlaceholder') }}
             </div>
           </template>
         </Video>
       </div>
 
-      <section
-        :class="
-          cn(
-            'flex min-w-0 flex-col gap-3',
-            isTwoColumn && 'col-start-2 row-start-1 gap-2.5',
-            isCompact && 'gap-2'
-          )
-        "
-      >
-        <DialogTitle :class="cn('my-0 text-2xl/7.5', layoutClasses.heading)">
-          {{ title }}
-        </DialogTitle>
-        <p
-          v-for="(paragraph, index) in paragraphs"
-          :key="index"
-          :class="
-            cn(
-              'my-0 text-sm/5 text-muted-foreground',
-              isCompact && 'text-[13px]/4.5'
-            )
-          "
-        >
-          {{ paragraph }}
-        </p>
-        <p v-if="error" role="alert" class="my-0 text-sm/5 text-destructive">
-          {{ error }}
-        </p>
-      </section>
-
-      <footer
-        :class="
-          cn(
-            'flex min-w-0 flex-col gap-2.5',
-            isTwoColumn && 'col-start-2 row-start-2'
-          )
-        "
-      >
-        <div
-          v-if="hasConsentHelp"
-          class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1"
-        >
-          <Button
-            v-if="docsUrl"
-            variant="link"
-            size="link"
-            class="w-fit py-0 text-xs/5"
-            as="a"
-            :href="docsUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {{ $t('agent.consent.readDocs') }}
-            <i
-              aria-hidden="true"
-              class="icon-[lucide--square-arrow-out-up-right] size-3"
-            />
-          </Button>
+      <div :class="layout.contentWrap">
+        <section :class="sectionClass">
+          <DialogTitle :class="headingClass">
+            {{ title }}
+          </DialogTitle>
           <p
-            v-if="requiresSignIn"
-            :id="signInHintId"
-            class="my-0 text-xs/5 text-muted-foreground"
+            v-for="(paragraph, index) in paragraphs"
+            :key="index"
+            :class="layout.copy"
           >
-            {{ $t('agent.consent.signInNext') }}
+            {{ paragraph }}
           </p>
-        </div>
-        <div class="flex flex-wrap gap-2.5">
-          <Button
-            v-if="!accepting"
-            variant="secondary"
-            size="lg"
-            class="h-auto min-h-11 max-w-full whitespace-normal"
-            @click="emit('reject')"
+          <ReuseDocsLink v-if="docsUrl && !isWide" />
+          <Message
+            v-if="error"
+            v-model:visible="errorVisible"
+            severity="error"
+            closable
+            :close-label="$t('g.close')"
           >
-            {{ $t('agent.consent.reject') }}
-          </Button>
-          <Button
-            variant="inverted"
-            size="lg"
-            class="h-auto min-h-11 max-w-full flex-1 whitespace-normal"
-            :loading="accepting"
-            :disabled="accepting"
-            :aria-describedby="acceptAction.describedBy"
-            @click="emit('accept')"
-          >
-            {{ $t(acceptAction.labelKey) }}
-          </Button>
-        </div>
-      </footer>
+            <template #icon>
+              <i class="icon-[lucide--circle-x] size-5 text-destructive" />
+            </template>
+            <div class="flex min-w-0 flex-col gap-0.5">
+              <p class="my-0 font-medium">
+                {{ $t(errorTitleKey) }}
+              </p>
+              <p class="my-0 text-muted-foreground">
+                <i18n-t keypath="agent.consent.errorContact" tag="span">
+                  <template #contactForm>
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="unset"
+                      class="inline h-auto p-0 font-normal underline"
+                      @click="openConsentFeedback"
+                    >
+                      {{ $t('agent.consent.contactForm') }}
+                    </Button>
+                  </template>
+                </i18n-t>
+              </p>
+            </div>
+          </Message>
+        </section>
+
+        <footer :class="footerClass">
+          <ReuseDocsLink v-if="docsUrl && isWide" />
+          <div :class="actionRowClass">
+            <Button
+              v-for="action in actions"
+              :key="action"
+              :variant="action === 'accept' ? 'inverted' : 'secondary'"
+              size="lg"
+              :class="actionButtonClass"
+              :loading="action === 'accept' && accepting"
+              :disabled="accepting"
+              @click="choose(action)"
+            >
+              {{
+                action === 'accept'
+                  ? $t(acceptLabelKey)
+                  : $t('agent.consent.reject')
+              }}
+            </Button>
+          </div>
+        </footer>
+      </div>
     </div>
   </div>
 </template>

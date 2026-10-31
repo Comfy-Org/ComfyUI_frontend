@@ -7,7 +7,7 @@ import { useNodeMenuOptions } from '@/composables/graph/useNodeMenuOptions'
 import type { Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/scripts/app'))
 

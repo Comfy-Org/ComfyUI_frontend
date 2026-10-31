@@ -6,9 +6,9 @@ import { i18n } from '@/i18n'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUsePlacement
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 
-import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
+import { AGENT_FREE_USE_PLACEMENTS } from '@comfyorg/telemetry/types'
 
 import AgentPanel from './AgentPanel.vue'
 import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'

@@ -17,7 +17,8 @@ used to follow different onboarding policies, chosen from the host at runtime.
 ## Decision
 
 Revised 2026-10-24: Cloud and Desktop share one onboarding policy, and no
-module checks the host for it.
+module checks the host for it. Revised 2026-10-27: a signed-out Agree is kept
+across a sign-in that reloads or leaves the page.
 
 Keep an introduction-response marker separate from the existing
 account/workspace consent setting. Only Agree or Skip sets this marker; display
@@ -44,13 +45,26 @@ user who has answered. An accepted consent load still emits
 `consent_already_accepted`.
 Neither the marker nor a Skip records audited server consent.
 
-Agree while signed out continues through sign-in and confirmed server consent
-registration within that request. Canceling sign-in discards the pending choice;
-a later manual Agent request asks for consent again. Existing server readiness,
-account/workspace ownership and consent persistence checks still gate Agent use.
-An in-memory continuation flag prevents the automatic introduction from racing
-this request during authentication. It is cleared on every ending and never
-stored across launches. A scope change closes a still-undecided card.
+Agree while signed out continues through sign-in. When sign-in finishes in the
+page, consent is registered within that request. Desktop's Google and GitHub
+sign-in reloads the page, and the local web sign-in redirects away and back, so
+just before the sign-in dialog opens the pending Agree and the held message
+text are written to a session record (`sessionStorage`, 10-minute expiry):
+
+- The record is read only when a page starts. A page that starts signed out
+  drops it. A signed-in page waits for the account to resolve and for any
+  workspace switch to end, then takes the record once and registers consent for
+  the first account that page resolved to. Only after the save does it put the
+  text back into an empty composer. Nothing is sent automatically.
+- Closing the sign-in dialog does not clear the record: the page cannot tell a
+  cancel from Desktop's browser sign-in carrying on. Any later answer on a
+  consent card in the page clears it, and a new signed-out Agree replaces it.
+
+Existing server readiness, account/workspace ownership and consent persistence
+checks still gate Agent use. An in-memory continuation flag keeps the
+automatic introduction from racing this request during authentication or the
+post-reload save, and a Send made during that save waits for it. The flag is
+never stored across launches. A scope change closes a still-undecided card.
 
 ## Alternatives and Consequences
 
@@ -62,9 +76,15 @@ An account-wide refusal stored in user settings is not used: automatic cards
 already end after two launches, and on a local install those settings belong to
 the install, not the account.
 
-Persisting a pending agreement across canceled sign-in would require recovery,
-expiration and binding to a future authenticated account. Repeating the card on
-the next manual request avoids that additional state. A single global marker
+The pending-Agree record is read once rather than kept until the save
+succeeds. If that save fails, the card asks again on the next Send and the text
+is restored in that page. If a second reload interrupts the save, the text is
+lost as well. Closing the sign-in dialog keeps the Agree even if browser sign-in
+never started or was cancelled, so a later sign-in and reload in the same tab
+within 10 minutes may use it, unless a newer card answer cleared it. Only the
+message text is kept, trimmed of leading and trailing whitespace; references
+and attachments are not. Tracking the browser sign-in instead was rejected: the
+page has no handle on Desktop's Google and GitHub flow. A single global marker
 would need session tracking to tell an external sign-in from this request's own
 sign-in; keying it by scope makes that tracking unnecessary. Clearing renderer
 storage makes the introduction eligible again.

@@ -13,9 +13,8 @@ import type {
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
@@ -94,6 +93,7 @@ const FUNDED_BILLING_STATUS = {
   subscription_duration: 'MONTHLY',
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
+  ended_at: null,
   team_credit_stop: null
 } satisfies BillingStatusResponse
 
@@ -123,6 +123,9 @@ function createDeferredGate(): DeferredGate {
 class AgentBillingFixture {
   private status: BillingStatusResponse = FUNDED_BILLING_STATUS
   private available = true
+  private initialStatusResponse = createDeferredGate()
+  private initialStatusResponseCompleted = false
+  private statusRequests = 0
   private heldRefresh:
     | {
         entered: DeferredGate
@@ -164,6 +167,20 @@ class AgentBillingFixture {
     this.available = true
   }
 
+  get statusRequestCount(): number {
+    return this.statusRequests
+  }
+
+  waitForInitialStatusResponse(): Promise<void> {
+    return this.initialStatusResponse.promise
+  }
+
+  private completeInitialStatusResponse(): void {
+    if (this.initialStatusResponseCompleted) return
+    this.initialStatusResponseCompleted = true
+    this.initialStatusResponse.release()
+  }
+
   holdNextFundedRefresh(): HeldBillingRefresh {
     const heldRefresh: NonNullable<AgentBillingFixture['heldRefresh']> = {
       entered: createDeferredGate(),
@@ -186,8 +203,10 @@ class AgentBillingFixture {
   }
 
   async fulfillStatus(route: Route): Promise<void> {
+    this.statusRequests++
     if (!this.available) {
       await route.fulfill({ status: 503 })
+      this.completeInitialStatusResponse()
       return
     }
     const response = this.status
@@ -201,6 +220,7 @@ class AgentBillingFixture {
       await heldRefresh.request.promise
     }
     await route.fulfill(jsonRoute(response))
+    this.completeInitialStatusResponse()
     completedHeldRefresh?.completed.release()
   }
 }
@@ -336,7 +356,6 @@ async function mockAgentBoot(
     agentConsentWebSession,
     agentConsentWrites,
     agentFlagEnabled,
-    starterPromptSet,
     agentPanelInitiallyOpen,
     agentOnboardingCompleted,
     agentRetryAfter,
@@ -407,16 +426,12 @@ async function mockAgentBoot(
   const storedSettings: Record<string, unknown> = {
     'Comfy.TutorialCompleted': true,
     'Comfy.RightSidePanel.ShowErrorsTab': false,
-    ...DEPLOY_ACTION_SEEN_SETTINGS,
     ...(vueNodes && { 'Comfy.VueNodes.Enabled': true }),
     ...initialSettings
   }
   await mockCloudBootRoutes(page, {
     features: {
       ...agentFeatures(agentFlagEnabled),
-      ...(starterPromptSet !== undefined && {
-        'agent-starter-prompt-set': starterPromptSet
-      }),
       ...(agentConsentWebSession && { unified_web_session: true }),
       ...initialFeatureFlags
     },
@@ -655,7 +670,6 @@ type AgentFixtures = {
   agentConsentWebSession: boolean
   agentConsentWrites: boolean[]
   agentFlagEnabled: boolean
-  starterPromptSet: RemoteConfig['agent-starter-prompt-set']
   agentPanel: AgentPanel
   agentPanelInitiallyOpen: boolean
   agentOnboardingCompleted: boolean
@@ -685,7 +699,6 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use([])
   },
   agentFlagEnabled: [true, { option: true }],
-  starterPromptSet: [undefined, { option: true }],
   agentPanel: async ({ comfyPage }, use) => {
     await use(new AgentPanel(comfyPage.page))
   },
@@ -702,7 +715,6 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentWebSession,
       agentConsentWrites,
       agentFlagEnabled,
-      starterPromptSet,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       agentRetryAfter,
@@ -725,7 +737,6 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentWebSession,
       agentConsentWrites,
       agentFlagEnabled,
-      starterPromptSet,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       agentRetryAfter,

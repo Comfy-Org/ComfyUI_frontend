@@ -9,7 +9,7 @@ import type {
   RetentionOfferPhase
 } from '@/platform/billing/subscription/utils/retentionOffer'
 import { reduceRetentionOffer } from '@/platform/billing/subscription/utils/retentionOffer'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'

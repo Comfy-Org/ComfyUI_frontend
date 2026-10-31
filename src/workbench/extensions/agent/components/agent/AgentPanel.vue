@@ -12,9 +12,8 @@ import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
-  AgentStarterPromptAssignment,
   AgentStopMethod
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 
 import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
 import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
@@ -84,8 +83,6 @@ const {
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
-  starterPromptAssignment = 'control',
-  attributeStarterPromptExperiment = false,
   syncRetryAvailable = false
 } = defineProps<{
   entries: ConversationEntry[]
@@ -129,8 +126,6 @@ const {
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
-  starterPromptAssignment?: AgentStarterPromptAssignment
-  attributeStarterPromptExperiment?: boolean
   syncRetryAvailable?: boolean
 }>()
 const emit = defineEmits<{
@@ -167,7 +162,6 @@ const emit = defineEmits<{
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
   freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
-  starterPromptRendered: [assignment: AgentStarterPromptAssignment]
   retrySync: []
 }>()
 
@@ -515,9 +509,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :aria-busy="openingChat"
           :inert="openingChat"
           :user-name
-          :assignment="starterPromptAssignment"
-          :attribute-experiment="attributeStarterPromptExperiment"
-          @rendered="emit('starterPromptRendered', $event)"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)
@@ -550,7 +541,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             (workflowId, workflowName) =>
               emit('openReferenceWorkflow', workflowId, workflowName)
           "
-          @paywall-action="emit('paywallAction', $event, 'refused_send')"
+          @paywall-action="
+            (action, surface) => emit('paywallAction', action, surface)
+          "
         />
         <div
           v-if="showChatLoading"

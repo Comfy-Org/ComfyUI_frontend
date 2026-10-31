@@ -7,10 +7,10 @@ import {
   consumeSurveyReplayRequest,
   isSurveyReplayRequested
 } from '@/platform/onboarding/onboardingReplay'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
-import { toError } from '@/utils/errorUtil'
+import { toError } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 interface UserCloudStatus {
   status: 'active'

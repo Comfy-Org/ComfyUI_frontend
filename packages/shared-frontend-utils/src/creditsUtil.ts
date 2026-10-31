@@ -42,6 +42,16 @@ export const creditsToCents = (credits: number): number =>
 export const usdToCredits = (usd: number): number =>
   Math.round(usd * CREDITS_PER_USD)
 
+export const microUsdToCredits = (microUsd: number): number =>
+  (microUsd * CREDITS_PER_USD) / 1_000_000
+
+/**
+ * True for a real charge below one whole credit. Rounding would report it as 0
+ * (a free turn) or 1 (more than was charged), so charge displays show "<1".
+ */
+export const isSubCreditCharge = (credits: number): boolean =>
+  credits > 0 && credits < 1
+
 export const creditsToUsd = (credits: number): number =>
   Math.round((credits / CREDITS_PER_USD) * 100) / 100
 
