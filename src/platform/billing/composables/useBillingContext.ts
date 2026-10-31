@@ -1,3 +1,5 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
@@ -275,16 +277,26 @@ function useBillingContextInternal(): BillingContext {
 
       try {
         await initialize()
-        if (freshStatusReadOwed && type.value !== 'unknown') {
-          freshStatusReadOwed = false
-          await activeContext.value.fetchStatus({ fresh: true })
-        }
       } catch (err) {
         console.error('Failed to initialize billing context:', err)
       }
+      await runOwedFreshStatusRead()
     },
     { immediate: true }
   )
+
+  async function runOwedFreshStatusRead(): Promise<void> {
+    if (!freshStatusReadOwed || type.value === 'unknown') return
+    freshStatusReadOwed = false
+    try {
+      await activeContext.value.fetchStatus({ fresh: true })
+    } catch (err) {
+      reportError(err, {
+        surface: 'agent',
+        errorType: 'error_refreshing_agent_billing_status'
+      })
+    }
+  }
 
   // Rejects on timeout. Resolves false when the user switched workspace during
   // the wait, so the caller stops silently.
