@@ -3044,7 +3044,6 @@ describe('useAgentCrdtFollower', () => {
       seq: 1
     })
     agentSocket.drop()
-    clientState.sendOps.mockClear()
 
     enqueue([edit])
     await Promise.resolve()
@@ -3087,7 +3086,6 @@ describe('useAgentCrdtFollower', () => {
       seq: 1
     })
     agentSocket.drop()
-    clientState.sendOps.mockClear()
 
     enqueue([edit])
     await Promise.resolve()
@@ -3121,7 +3119,6 @@ describe('useAgentCrdtFollower', () => {
     vi.useFakeTimers()
     const { enqueue, unmount } = mountFollower('wf-1')
     bridge().isCatchingUp = true
-    clientState.sendOps.mockClear()
 
     enqueue([{ op: 'set_widget', node_id: '1', widget: 'cfg', value: 4.5 }])
     await Promise.resolve()
