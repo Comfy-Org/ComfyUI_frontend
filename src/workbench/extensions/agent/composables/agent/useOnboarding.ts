@@ -10,8 +10,7 @@ export interface CoachStep {
   target: string
   title: string
   body: string
-  placement: 'left-center' | 'left-end' | 'graph-bottom' | 'left-start'
-  toolbarTarget?: string
+  placement: 'left-center' | 'left-end' | 'left-start'
   tooltip?: string
 }
 
