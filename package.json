@@ -210,7 +210,7 @@
     "eslint-plugin-vue": "catalog:",
     "fallow": "catalog:",
     "fast-check": "catalog:",
-    "fs-extra": "^11.2.0",
+    "fs-extra": "catalog:",
     "globals": "catalog:",
     "happy-dom": "catalog:",
     "husky": "catalog:",
@@ -248,11 +248,11 @@
     "vue-eslint-parser": "catalog:",
     "vue-tsc": "catalog:",
     "yaml": "catalog:",
-    "zip-dir": "^2.0.0"
+    "zip-dir": "catalog:"
   },
   "engines": {
     "node": ">=26.8.2 <27",
     "pnpm": ">=11.3"
   },
-  "packageManager": "pnpm@11.13.1"
+  "packageManager": "pnpm@12.16.1"
 }
