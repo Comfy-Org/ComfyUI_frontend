@@ -15,13 +15,39 @@
     "addFromAssets": "asset را از پنل asset بکشید و رها کنید",
     "addNodesFromGraph": "به nodeهای نمودار اشاره کنید",
     "addToPrompt": "افزودن به پرامپت",
+    "askUnavailable": "عامل منتظر مرحله‌ای است که این پنل نمی‌تواند نمایش دهد.",
+    "askUser": {
+      "answerRejected": "عامل نتوانست آن پاسخ را بپذیرد. انتخاب‌هایتان را تغییر دهید یا نوبت را متوقف کنید.",
+      "answered": "پاسخ داده شد",
+      "card": "پرسش از عامل",
+      "chooseAny": "همه موارد مرتبط را انتخاب کنید",
+      "chooseAtLeast": "حداقل {min} مورد را انتخاب کنید",
+      "chooseBetween": "از {min} تا {max} مورد را انتخاب کنید",
+      "chooseExactly": "دقیقاً {min} مورد را انتخاب کنید",
+      "chooseOneOrNone": "یک مورد را انتخاب کنید، یا هیچ‌کدام را",
+      "chooseUpTo": "حداکثر {max} مورد را انتخاب کنید",
+      "closed": "این پرسش بدون پاسخ بسته شد.",
+      "other": "سایر",
+      "otherAnswer": "سایر: {text}",
+      "otherPlaceholder": "پاسخ خود را وارد کنید",
+      "retired": "این پرسش دیگر در اینجا باز نیست.",
+      "unconfirmed": "نتوانستیم تأیید کنیم که پاسخ شما به عامل رسیده است."
+    },
+    "assetFetchFailed": "بازیابی {name} ممکن نشد",
     "assetNotAttachable": "می‌توان تصاویر، ویدیو، صدا، مدل‌های سه‌بعدی و فایل‌های متنی را پیوست کرد",
     "attach": "پیوست کردن فایل",
     "attachFiles": "تصاویر یا فایل‌ها را بارگذاری کنید",
+    "attachmentCountExceeded": "فقط می‌توان {count} فایل را به یک پیام پیوست کرد",
+    "attachmentInvalidVideo": "{name} یک فایل ویدیویی معتبر نیست. آن را حذف کنید و فایل دیگری را امتحان کنید.",
+    "attachmentNamesOverflow": "{names} و {count} مورد دیگر",
     "attachmentTooLarge": "{name} بزرگ‌تر از {limit} است",
+    "attachmentTypeNotAccepted": "{name} از نوع فایل‌های پذیرفته‌شده توسط عامل نیست | {name} از نوع فایل‌های پذیرفته‌شده توسط عامل نیستند",
+    "attachmentUnsupportedType": "{name} از نوع فایل‌های پذیرفته‌شده توسط عامل نیست. آن را حذف کنید و فایل دیگری را امتحان کنید.",
     "attachmentUploadFailed": "{name} بارگذاری نشد",
+    "attachmentsAlreadyAdded": "{name} از قبل در سینی دارایی‌ها قرار دارد | از {count} دارایی تکراری صرف‌نظر شد",
     "backToPreviousChat": "بازگشت به گفتگوی قبلی",
     "beta": "بتا",
+    "canvasIsEmptyAfterTurn": "این بوم خالی است — چیزی به آن افزوده نشده است. هنوز چیزی برای اجرا، ذخیره یا صادر کردن وجود ندارد.",
     "changeWorkflowForChat": "workflowی را که agent می‌تواند ویرایش کند تغییر دهید",
     "chatOptions": "گزینه‌های گفتگو",
     "chooseWorkflow": "انتخاب یک workflow",
@@ -32,19 +58,23 @@
     "coachGraphTitle": "اجازه دهید agent هنگام ویرایش شما اجرا شود",
     "coachHistoryBody": "گفت‌وگوهای قبلی اینجا ذخیره می‌شوند. یکی را باز کنید تا آن را مرور کنید یا کار با agent را ادامه دهید.",
     "coachHistoryTitle": "از همان‌جا که رها کردید ادامه دهید",
+    "coachHoldNotice": "پیام شما پس از پایان دادن یا رد کردن راهنما ارسال خواهد شد.",
     "coachProgress": "{current} از {total}",
     "coachTitle": "با Comfy Agent خود آشنا شوید",
     "coachWorkflowBody": "تا زمانی که پیامی ارسال کنید، یک workflow انتخاب کنید یا ارجاعی به node اضافه کنید، همراه با تب‌های شما جابه‌جا می‌شود.",
     "coachWorkflowTitle": "عامل شما workflowی را که مشاهده می‌کنید ویرایش می‌کند",
     "consent": {
       "accept": "شروع استفاده از Comfy Agent",
+      "agreeAndContinue": "موافقت و ادامه",
       "body1": "Comfy Agent به شما کمک می‌کند workflowها را برنامه‌ریزی، ایجاد، اجرا و تکرار کنید. آنچه می‌خواهید ایجاد کنید را شرح دهید تا Comfy Agent به‌عنوان هم‌تیمی قدرتمند شما عمل کند.",
       "body2": "برای ایجاد workflowهای شما، Comfy Agent برخی از داده‌های شما را پردازش می‌کند. مطمئن باشید که داده‌های شما هرگز برای آموزش مدل‌های هوش مصنوعی استفاده نمی‌شوند. با کلیک روی «شروع»، با استفاده از آن موافقت می‌کنید.",
+      "body2BeforeSignIn": "برای ساخت workflowهای شما، Comfy Agent بخشی از داده‌های شما را پردازش می‌کند. مطمئن باشید که داده‌های شما هرگز برای آموزش مدل‌های هوش مصنوعی استفاده نمی‌شوند. با کلیک بر «موافقت و ادامه»، با استفاده از آن موافقت می‌کنید.",
       "loadError": "بارگیری تنظیمات Agent شما ممکن نشد. دوباره تلاش کنید.",
       "readDocs": "مستندات را بخوانید",
       "reject": "فعلاً رد کردن",
       "saveError": "ذخیره تنظیمات شما ممکن نشد. دوباره تلاش کنید.",
       "signInError": "باز کردن ورود به حساب ممکن نشد. لطفاً دوباره تلاش کنید.",
+      "signInNext": "در مرحلهٔ بعد وارد حساب می‌شوید.",
       "title": "آشنایی با Comfy Agent",
       "videoPlaceholder": "ویدئو در دسترس نیست"
     },
@@ -52,8 +82,23 @@
     "copy": "کپی",
     "copyMarkdown": "کپی به‌صورت مارک‌داون",
     "copyUnavailable": "در این نسخه فقط گفت‌وگوی فعلی قابل کپی است",
+    "creditTransitionNotice": "از اعتبارهای رایگان agent خود استفاده کرده‌اید. فعالیت‌های بعدی agent از اعتبارهای workspace شما استفاده می‌کنند که ممکن است شامل اعتبارهای پولی باشند.",
+    "creditsUsed": "عامل {credits} اعتبار مصرف کرد | عامل {credits} اعتبار مصرف کرد",
     "currentTab": "زبانهٔ فعلی",
     "delete": "حذف",
+    "deleteApproval": {
+      "answered": "پاسخ داده شد",
+      "card": "درخواست حذف از عامل",
+      "closed": "این درخواست بدون پاسخ بسته شد.",
+      "delete": "حذف",
+      "deleted": "پاسخ داده شد: آن را حذف کنید | پاسخ داده شد: آنها را حذف کنید",
+      "keep": "نگه‌دار",
+      "kept": "پاسخ داده شد: آن را نگه دارید | پاسخ داده شد: آنها را نگه دارید",
+      "moreNodes": "{count} node دیگر فهرست نشده است | {count} node دیگر فهرست نشده‌اند",
+      "nodes": "nodeهایی که عامل درخواست حذفشان را داده است",
+      "retired": "این درخواست دیگر در اینجا باز نیست.",
+      "unconfirmed": "نتوانستیم پاسخ شما را تأیید کنیم. پیش از تلاش دوباره، بوم را بررسی کنید."
+    },
     "diagnosticReport": {
       "clipboardFailed": "دسترسی به کلیپ‌بورد ناموفق بود. گزارش زیر را انتخاب و کپی کنید، یا دوباره تلاش کنید.",
       "collectionFailed": "امکان گردآوری گزارش وجود نداشت. دوباره تلاش کنید، یا منابع اختیاری را غیرفعال کرده و دوباره تلاش کنید.",
@@ -65,16 +110,32 @@
     "downloadAssets": "دانلود دارایی‌ها",
     "dragAndDropAssets": "دارایی‌ها را اینجا بکشید و رها کنید",
     "editRejected": {
-      "generic": "ویرایش شما رد شد و ذخیره نشد. ممکن است workflow دیگر با canvas آن مطابقت نداشته باشد — برای دیدن آنچه حفظ شده است، workflow را دوباره بارگذاری کنید.",
-      "genericPartial": "ویرایش شما رد شد و ذخیره نشد، هرچند برخی ویرایش‌های قبلی ذخیره شدند. ممکن است workflow دیگر با canvas آن مطابقت نداشته باشد — برای دیدن آنچه حفظ شده است، workflow را دوباره بارگذاری کنید.",
-      "widgetWrite": "ویرایش ویجت رد شد و ذخیره نشد. مقدار تایپ‌شدهٔ شما فقط روی canvas وجود دارد — برای دیدن مقداری که حفظ شده است، workflow را دوباره بارگذاری کنید.",
-      "widgetWritePartial": "ویرایش ویجت رد شد و ذخیره نشد، هرچند برخی ویرایش‌های قبلی ذخیره شدند. مقدار تایپ‌شدهٔ شما فقط روی canvas وجود دارد — برای دیدن مقادیری که حفظ شده‌اند، workflow را دوباره بارگذاری کنید."
+      "generic": "ویرایش شما رد شد و ذخیره نشد. اگر بوم همچنان آن را نشان می‌دهد، workflow را بارگذاری مجدد کنید.",
+      "genericPartial": "ویرایش شما رد شد و ذخیره نشد، هرچند برخی ویرایش‌های قبلی ذخیره شدند. اگر بوم همچنان بخش ردشده را نشان می‌دهد، workflow را بارگذاری مجدد کنید.",
+      "targets": {
+        "clear": "پاک‌سازی workflow",
+        "link": "پیوند {id}",
+        "node": "node {id}",
+        "nodeField": "node {id} {field}"
+      },
+      "widgetWrite": "ویرایش ویجت رد شد و ذخیره نشد. workflow مقدار قبلی را حفظ می‌کند؛ اگر بوم همچنان مقدار تایپ‌شدهٔ شما را نشان می‌دهد، workflow را بارگذاری مجدد کنید.",
+      "widgetWritePartial": "ویرایش ویجت رد شد و ذخیره نشد، هرچند برخی ویرایش‌های قبلی ذخیره شدند. workflow مقدار قبلی را حفظ می‌کند؛ اگر بوم همچنان مقدار تایپ‌شدهٔ شما را نشان می‌دهد، workflow را بارگذاری مجدد کنید.",
+      "withReason": "{notice} رد شد: {target} ({code})",
+      "withReasonCode": "{notice} دلیل: {code}",
+      "withReasonTarget": "{notice} رد شد: {target}"
     },
     "editWhileWorking": "می‌توانید هنگام کار کردن عامل، به ویرایش ادامه دهید",
     "entryButton": "عامل",
+    "entryFailed": "عامل در دسترس نیست",
+    "entryFailedReason": "ComfyUI نتوانست عامل را راه‌اندازی کند: {reason}",
+    "entryStarting": "عامل در حال راه‌اندازی است…",
+    "entryStartingReason": "ComfyUI در حال راه‌اندازی عامل است: {reason}",
     "feedbackCaption": "بازخورد خود را به اشتراک بگذارید",
     "focusNode": "نمایش روی بوم",
     "focusNodeLabel": "نمایش {node} روی بوم",
+    "followedChatOpenFailed": "چت برای {workflowName} باز نشد.",
+    "freeUseNotice": "اولین گفت‌وگوی خود را رایگان امتحان کنید!",
+    "freeUseNoticeLabel": "اعلان استفادهٔ رایگان",
     "friend": "دوست عزیز",
     "gotIt": "متوجه شدم",
     "greeting": "سلام {name}،",
@@ -98,6 +159,7 @@
     "newChatTitle": "بدون عنوان",
     "noNodesToMention": "هیچ nodeی در این workflow نیست",
     "noNodesToReference": "هیچ نودی برای ارجاع موجود نیست",
+    "noSkillsFound": "هیچ مهارتی یافت نشد",
     "noWorkflowsToReference": "هیچ workflowی برای ارجاع موجود نیست",
     "nodeSelection": {
       "bannerSubtitle": "برای افزودن به‌عنوان مرجع، یک یا چند گره را انتخاب کنید",
@@ -109,6 +171,8 @@
     "nodesAdded": "عامل ۱ node به گراف افزود | عامل {count} node به گراف افزود",
     "notHelpful": "غیرمفید",
     "openWorkflowTab": "باز کردن {name}",
+    "openingChat": "در حال باز کردن چت…",
+    "openingWorkflowChat": "در حال باز کردن چت برای {workflowName}…",
     "otherOpenWorkflows": "workflowهای باز دیگر",
     "paywall": {
       "addCredits": "افزودن اعتبار",
@@ -123,20 +187,25 @@
       "title": "اعتبار کافی ندارید",
       "upgradePlan": "ارتقای طرح"
     },
-    "placeholder": "ایده‌ها را شرح دهید، {'@'} برای ارجاع به workflowها، دارایی‌های رسانه‌ای و فایل‌ها را بکشید و رها کنید، یا\nnodeها را ذکر کنید",
+    "placeholder": "آنچه می‌خواهید ایجاد کنید را شرح دهید",
+    "placeholderWithoutSkills": "آنچه می‌خواهید ایجاد کنید را شرح دهید",
+    "previewAsset": "پیش‌نمایش {name}",
     "recoveredTurnFailed": "agent نتوانست این پاسخ را تکمیل کند.",
     "reference": "مرجع",
     "remove": "حذف",
+    "removeAsset": "حذف {name}",
+    "removeAssetReference": "حذف ارجاع {name}",
     "removeNodeLabel": "حذف ارجاع {node}",
     "removeWorkflowReference": "حذف مرجع {name}",
     "retryAfterSeconds": "می‌توانید تا {seconds} ثانیهٔ دیگر دوباره تلاش کنید.",
+    "retryFollowedChat": "باز کردن دوبارهٔ چت برای {workflowName}",
     "runApproval": {
       "answerFailed": "ارسال پاسخ شما ممکن نشد. صفحه را دوباره بارگذاری کنید و دوباره تلاش کنید.",
-      "answerSuperseded": "به این درخواست پیش‌تر در جای دیگری پاسخ داده شده بود؛ بنابراین آن پاسخ به‌جای پاسخ شما استفاده شد.",
+      "answerSuperseded": "این مورد پیش‌تر در جای دیگری پاسخ داده شده است، بنابراین همان پاسخ به‌جای پاسخ شما استفاده شد.",
       "answerUncertain": "تأیید اینکه پاسخ شما به agent رسیده است ممکن نشد. ممکن است همچنان اعمال شده باشد — صفحه را دوباره بارگذاری کنید تا وضعیت را ببینید.",
       "cancel": "لغو",
-      "lead": "این ابزار می‌خواهد workflow را اجرا کند:",
-      "leadBound": "این ابزار می‌خواهد این workflow را اجرا کند.",
+      "lead": "Comfy Agent می‌خواهد workflow را اجرا کند:",
+      "leadBound": "عامل Comfy می‌خواهد این workflow را اجرا کند.",
       "question": "آیا تأیید می‌کنید؟",
       "run": "اجرا",
       "thisWorkflow": "این workflow"
@@ -154,8 +223,8 @@
     "runModeTriggerAutoLimit": "خودکار (محدود)",
     "runModeTriggerAutoLimitTooltip": "هنگام رسیدن به سقف اعتبار پرسیده شود",
     "runModeTriggerAutoTooltip": "اجرای workflow بدون اجازه",
-    "runNotice": "عامل می‌تواند گراف را تغییر دهد. پیش از اجازه دادن به آن برای اجرای workflow، مجوزهای اجرا را بررسی کنید.",
-    "runNoticeExpanded": "عامل می‌تواند workflow شما را تغییر دهد. پیش از اجازه دادن به آن برای اجرا، مجوزهای اجرا را بررسی کنید.",
+    "runNotice": "عامل می‌تواند گراف را تغییر دهد. برای کنترل اینکه پیش از اجرا درخواست تأیید کند یا نه، از مجوزهای اجرا در نوار ابزار کامپوزر استفاده کنید.",
+    "runNoticeExpanded": "عامل می‌تواند workflow شما را تغییر دهد. برای کنترل اینکه پیش از اجرا درخواست تأیید کند یا نه، از مجوزهای اجرا در نوار ابزار کامپوزر استفاده کنید.",
     "runPermissions": "مجوزهای اجرا",
     "runPermissionsDescription": "زمان نیاز agent به رضایت شما را انتخاب کنید",
     "savingWorkflow": "در حال ذخیره‌سازی workflow",
@@ -164,13 +233,21 @@
     "selectWorkflowForNodes": "لطفاً ابتدا یک workflow انتخاب کنید",
     "selectWorkflowToGenerate": "یک workflow برای تولید انتخاب کنید",
     "send": "ارسال",
+    "sendBlockedByInvalidAttachments": "ارسال {count} فایل ممکن نیست. برای ارسال، آن‌ها را حذف کنید.",
+    "sendBlockedByInvalidVideo": "{name} یک ویدیوی معتبر نیست. برای ارسال، آن را حذف کنید.",
+    "sendBlockedByUnsupportedType": "{name} از نوع فایل‌های پذیرفته‌شده توسط عامل نیست. برای ارسال، آن را حذف کنید.",
     "sendBusy": "پیامی در حال ارسال است",
     "sendFailed": "ارسال پیام ناموفق بود",
+    "sendTurnInProgress": "این چت همچنان در حال دریافت پاسخ است. صبر کنید تا تمام شود، یا آن را متوقف کنید، سپس دوباره ارسال کنید.",
     "showChatHistory": "نمایش تاریخچهٔ گفتگو",
     "showLess": "نمایش کمتر",
     "showMore": "نمایش بیشتر",
     "showTarget": "نمایش هدف",
     "showTargetWorkflow": "نمایش workflow هدف: {workflowName}",
+    "skillNotAvailable": "در دسترس نیست",
+    "skills": "مهارت‌ها",
+    "skillsLoadError": "مهارت‌ها بارگیری نشدند. دوباره تلاش کنید.",
+    "skillsLoading": "در حال بارگذاری مهارت‌ها…",
     "skip": "رد کردن",
     "stop": "توقف",
     "stopShortcut": "Esc",
@@ -188,7 +265,16 @@
         "nodeهای انتخاب‌شده را توضیح دهید",
         "برای نصب nodeهای مفقود این workflow به من کمک کنید",
         "خطاهای این workflow را برطرف کنید"
-      ]
+      ],
+      "treatment": {
+        "cloud": [
+          "یک تصویر محصول از یک prompt متنی ایجاد کنید",
+          "یک workflow تبدیل تصویر به ویدئو بسازید",
+          "نحوهٔ کار یک workflow در ComfyUI را توضیح بده",
+          "بهترین workflow را برای یک وظیفهٔ مشخص پیدا کن",
+          "خطاهای یک workflow را تشخیص بده و برطرف کن"
+        ]
+      }
     },
     "switchWorkflow": "تغییر workflow",
     "switchWorkflowForNodes": "برای افزودن نودها، به {workflowName} بروید.",
@@ -205,26 +291,32 @@
     "toolForgotPreference": "یک ترجیح فراموش شد",
     "toolLoadedSkill": "{skill} بارگذاری شد",
     "toolLoadingSkill": "در حال بارگذاری {skill}",
+    "toolNotConfirmedOnCanvas": "{tool} — در بوم شما تأیید نشده است",
     "toolOpenedNewTab": "یک زبانهٔ جدید باز شد",
     "toolOpeningNewTab": "در حال باز کردن یک زبانهٔ جدید",
     "toolSavedPreference": "یک ترجیح ذخیره شد",
     "toolSavingPreference": "در حال ذخیرهٔ یک ترجیح",
     "toolSwitchedTabs": "زبانه‌ها جابه‌جا شدند",
     "toolSwitchingTabs": "در حال جابه‌جایی بین زبانه‌ها",
+    "typeToSearch": "برای جستجو تایپ کنید",
     "unavailableWorkflowReference": "{name} (دردسترس نیست)",
     "unsavedWorkflow": "ذخیره‌نشده",
     "untitledChat": "بدون عنوان",
     "updatingGraph": "عامل در حال به‌روزرسانی گراف است",
     "uploading": "در حال بارگذاری",
+    "uploadingAttachments": "در حال بارگذاری {count} پیوست | در حال بارگذاری {count} پیوست",
     "viewAddedNodes": "مشاهدهٔ node | مشاهدهٔ nodeها",
     "viewingDifferentWorkflow": "شما در حال مشاهدهٔ workflowی متفاوت از هدف هستید.",
     "worked": "انجام شد",
     "workedForMinutes": "به‌مدت {minutes}m {seconds}s انجام شد",
     "workedForSeconds": "به‌مدت {seconds} ثانیه انجام شد",
+    "workedNotConfirmedOnCanvas": "تغییرات در بوم شما تأیید نشده‌اند",
     "workflowEditNotice": "ایجنت اکنون می‌تواند {workflow} را ویرایش کند. هر بار روی ۱ workflow کار می‌کند و می‌توانید هنگام گفت‌وگو workflowها را تغییر دهید.",
     "workflowReferenceUnavailableReason": "این workflow ارجاع‌شده دیگر در دسترس نیست یا به آن دسترسی ندارید.",
     "workflowSyncFailedDetail": "این workflow با نسخه‌ای ناسازگار از سند ایجاد شده است. canvas شما بدون تغییر باقی مانده است.",
-    "workflowSyncFailedDetailCatalogMismatch": "این workflow از کاتالوگ nodeی استفاده می‌کند که با این فضای کاری ناسازگار است. canvas شما بدون تغییر باقی مانده است.",
+    "workflowSyncFailedDetailCatalogMismatch": "یک node در این workflow از آخرین باری که عامل آن را دیده تغییر کرده است. بوم شما بدون تغییر باقی مانده است. پیام بعدی شما بوم‌تان را ارسال می‌کند تا عامل بتواند نسخهٔ خود از workflow را بازسازی کند.",
+    "workflowSyncFailedDetailStaleClient": "این صفحه به‌روز نیست، بنابراین تغییرات عامل قابل نمایش نیستند. برای مشاهدهٔ آن‌ها صفحه را بارگذاری مجدد کنید.",
+    "workflowSyncFailedDetailStaleHost": "این صفحه از سرویس عامل جلوتر است، بنابراین تغییرات عامل هنوز نمی‌توانند اینجا نمایش داده شوند. پس از اینکه سرویس به‌روزرسانی را تمام کرد، صفحه را دوباره بارگذاری کنید تا آن‌ها را ببینید.",
     "workflowSyncFailedTitle": "این workflow همگام‌سازی نمی‌شود",
     "workflows": "workflowها",
     "working": "در حال انجام..."
@@ -456,6 +548,11 @@
     "deleteAccount": {
       "contactSupport": "برای حذف حساب کاربری خود، لطفاً با {email} تماس بگیرید."
     },
+    "desktopHost": {
+      "continueInBrowser": "ورود را در مرورگر خود تکمیل کنید",
+      "signInFailed": "ورود تکمیل نشد. دوباره تلاش کنید.",
+      "signOutFailed": "هنوز از Comfy Desktop خارج نشده‌اید. هر نصب در حال اجرا را تکمیل یا لغو کنید، سپس دوباره خارج شوید."
+    },
     "errors": {
       "auth/account-exists-with-different-credential": "نتوانستیم با این روش شما را وارد کنیم. گزینهٔ ورود دیگری را امتحان کنید یا برای ادامه گذرواژه‌تان را بازنشانی کنید.",
       "auth/cancelled-popup-request": "پنجره ورود دیگری از قبل باز بود، بنابراین این پنجره لغو شد. لطفاً دوباره تلاش کنید.",
@@ -470,7 +567,7 @@
       "auth/user-disabled": "این حساب غیرفعال شده است. لطفاً با پشتیبانی تماس بگیرید.",
       "auth/weak-password": "رمز عبور خیلی ضعیف است. لطفاً از رمز عبور قوی‌تر با حداقل ۶ کاراکتر استفاده کنید.",
       "generic": "در ورود شما مشکلی پیش آمد. لطفاً دوباره تلاش کنید.",
-      "signupBlocked": "در حال حاضر امکان ایجاد حساب کاربری وجود ندارد. لطفاً بعداً دوباره تلاش کنید. اگر این مشکل ادامه داشت، با support@comfy.org تماس بگیرید."
+      "signupBlocked": "در حال حاضر امکان ایجاد حساب کاربری وجود ندارد. لطفاً بعداً دوباره تلاش کنید. اگر این مشکل ادامه داشت، با support{'@'}comfy.org تماس بگیرید."
     },
     "hidePassword": "پنهان‌کردن گذرواژه",
     "login": {
@@ -565,6 +662,40 @@
       "signUpWithGoogle": "ثبت‌نام با Google",
       "title": "ایجاد حساب کاربری"
     },
+    "sso": {
+      "continueWithSso": "ادامه با SSO",
+      "emailLabel": "ایمیل کاری",
+      "emailPlaceholder": "ایمیل کاری خود را وارد کنید",
+      "errors": {
+        "accountConflict": "بیش از یک حساب Comfy از این ایمیل استفاده می‌کند. برای دریافت کمک به support{'@'}comfy.org ایمیل بزنید.",
+        "accountDeleted": "این حساب برای حذف زمان‌بندی شده است. اگر این مورد اشتباه است، به support{'@'}comfy.org ایمیل بزنید.",
+        "emailDomainNotAllowed": "ورود سازمان شما ایمیلی خارج از دامنه‌های آن بازگرداند. از مدیر خود بخواهید ایمیل کاری شما را در دایرکتوری استفاده کند.",
+        "expired": "ورود شما منقضی شده یا در مرورگر دیگری آغاز شده است. دوباره شروع کنید.",
+        "failed": "نتوانستیم با ورود یکپارچه شما را وارد کنیم. دوباره تلاش کنید.",
+        "idpError": "ارائه‌دهنده هویت شما ورود را تکمیل نکرد. دوباره تلاش کنید.",
+        "notConfigured": "ورود یکپارچه برای سازمان شما تنظیم نشده است. با مدیر خود تماس بگیرید.",
+        "orgDisabled": "ورود یکپارچه برای سازمان شما غیرفعال است. با مدیر خود تماس بگیرید.",
+        "orgMismatch": "شما به سازمانی متفاوت از سازمان مرتبط با این ایمیل وارد شده‌اید. دوباره با حساب کاری خود تلاش کنید.",
+        "orgNotAttached": "workspace Comfy سازمان شما هنوز تنظیم نشده است. با مدیر خود تماس بگیرید.",
+        "rateLimited": "تلاش‌های ورود بیش از حد مجاز است. چند دقیقه صبر کنید و دوباره تلاش کنید.",
+        "suspended": "سازمان شما دسترسی‌تان را حذف کرده است. با مدیر خود تماس بگیرید.",
+        "unavailable": "ورود یکپارچه در حال حاضر در دسترس نیست. لحظاتی دیگر دوباره تلاش کنید."
+      },
+      "invalidEmail": "یک نشانی ایمیل معتبر وارد کنید.",
+      "notSso": "این ایمیل از ورود یکپارچه استفاده نمی‌کند. از یکی از گزینه‌های ورود بالا استفاده کنید.",
+      "outsideOrganization": {
+        "body": "حساب شما بخشی از سازمانی که این workspace را مدیریت می‌کند نیست، بنابراین نمی‌تواند آن را باز کند. به workspace دیگری بروید یا از مدیر سازمان درخواست دسترسی کنید.",
+        "title": "این workspace با ورود یکپارچه مدیریت می‌شود"
+      },
+      "required": {
+        "body": "این حساب با ورود یکپارچهٔ سازمان شما وارد می‌شود. برای ورود، با SSO ادامه دهید.",
+        "bodyWithEmail": "{email} با ورود یکپارچهٔ سازمان شما وارد می‌شود. برای ورود، با SSO ادامه دهید.",
+        "dismiss": "اکنون نه",
+        "title": "سازمان شما ورود یکپارچه را الزامی می‌داند"
+      },
+      "submit": "ادامه",
+      "unavailable": "در حال حاضر نتوانستیم ورود یکپارچه را بررسی کنیم. لحظاتی دیگر دوباره تلاش کنید یا از یکی از گزینه‌های ورود بالا استفاده کنید."
+    },
     "turnstile": {
       "expired": "اعتبار تأییدیه به پایان رسیده است. لطفاً دوباره چالش را تکمیل کنید.",
       "failed": "تأییدیه ناموفق بود. لطفاً دوباره تلاش کنید.",
@@ -580,6 +711,7 @@
         "ended": "نشست شما پایان یافت. برای ادامه دوباره وارد شوید.",
         "identityChanged": "نشست شما تغییر کرد. برای ادامه صفحه را دوباره بارگذاری کنید.",
         "refused": "درخواست شما رد شد. صفحه را دوباره بارگذاری کنید و دوباره تلاش کنید.",
+        "ssoRequired": "سازمان شما ورود یکپارچه را الزامی کرده است. برای ورود، با SSO ادامه دهید.",
         "unavailable": "نتوانستیم به حساب شما دسترسی پیدا کنیم. چند لحظه دیگر دوباره تلاش کنید.",
         "workspaceDenied": "به این فضای کاری دسترسی ندارید. اگر این مشکل ادامه داشت، با پشتیبانی تماس بگیرید."
       }
@@ -592,12 +724,15 @@
     "authenticatePaymentBlockedDetail": "بانک شما این پرداخت را تأیید نکرد. پیش از تلاش برای خرید دیگر، با بانک خود تماس بگیرید.",
     "authenticatePaymentDetail": "بانک شما باید این پرداخت را تأیید کند. لطفاً دوباره تلاش کنید و هنگام درخواست، پرداخت را با بانک خود تأیید کنید.",
     "authenticationFailedDetail": "نتوانستیم تأیید پرداخت را تکمیل کنیم. لطفاً دوباره تلاش کنید.",
-    "authenticationUnavailable": "احراز هویت امن پرداخت در دسترس نیست. لطفاً صفحه را تازه‌سازی کرده و دوباره تلاش کنید.",
     "cancelFailed": "لغو اشتراک ناموفق بود",
+    "cancelPaymentFailed": "نتوانستیم این پرداخت را لغو کنیم. لطفاً دوباره تلاش کنید.",
+    "cancelPaymentInFlight": "این پرداخت در حال پردازش است و نمی‌توان آن را لغو کرد.",
+    "cancelPaymentNotCancelable": "این پرداخت دیگر قابل لغو نیست.",
     "cancelTimeout": "مهلت لغو اشتراک به پایان رسید",
     "expiredCardDetail": "این کارت منقضی شده است. از روش پرداخت دیگری استفاده کنید.",
     "incorrectCvcDetail": "کد امنیتی کارت نادرست است. آن را بررسی کرده و دوباره تلاش کنید.",
     "insufficientFundsDetail": "این روش پرداخت موجودی کافی ندارد. روش پرداخت دیگری را امتحان کنید یا با بانک خود تماس بگیرید.",
+    "methodNotChargeableOffSessionDetail": "این روش پرداخت را نمی‌توان برای اشتراک‌ها استفاده کرد. روش پرداخت دیگری اضافه کنید، سپس دوباره تلاش کنید.",
     "operationAlreadyPendingDetail": "پرداختی که پیش‌تر آغاز کرده‌اید هنوز در حال انجام است. پیش از انتخاب طرحی دیگر، باید تکمیل شود.",
     "paymentDeclinedDetail": "بانک شما این پرداخت را رد کرد. روش پرداخت دیگری را امتحان کنید یا با بانک خود تماس بگیرید.",
     "processingErrorDetail": "پرداخت شما پردازش نشد. دوباره تلاش کنید یا از روش پرداخت دیگری استفاده کنید.",
@@ -610,6 +745,7 @@
     "subscriptionSuccess": "اشتراک با موفقیت به‌روزرسانی شد",
     "subscriptionTimeout": "تأیید اشتراک زمان‌بر شد",
     "topupActionRequired": "برای افزودن اعتبار، پرداخت خود را تأیید کنید",
+    "topupAlreadyPendingDetail": "افزایش اعتباری که پیش‌تر آغاز کرده‌اید هنوز در حال انجام است. پیش از افزودن اعتبار بیشتر، تأیید آن را کامل کنید یا منتظر بمانید تا تکمیل شود.",
     "topupFailed": "افزایش اعتبار ناموفق بود",
     "topupProcessing": "در حال پردازش پرداخت — در حال افزودن اعتبار...",
     "topupSuccess": "اعتبار با موفقیت افزوده شد",
@@ -625,9 +761,13 @@
     "clearAll": "پاک‌سازی همه",
     "clickRegionToEdit": "برای ویرایش، روی یک ناحیه کلیک کنید.",
     "colors": "پالت رنگ",
+    "deleteRegion": "حذف ناحیه {tag}",
     "descLabel": "توضیحات",
     "descPlaceholder": "توضیحات این ناحیه",
+    "drawRegionHint": "برای افزودن یک ناحیه، روی بوم بکشید.",
+    "editorTitle": "کادرهای محدودکننده",
     "grid": "شبکه",
+    "openFullscreen": "باز کردن ویرایشگر تمام‌صفحه",
     "textLabel": "متن",
     "textPlaceholder": "متن برای نمایش (عیناً)",
     "typeObj": "obj",
@@ -926,7 +1066,7 @@
     "uploadWorkflowButton": "بارگذاری جریان‌کار من",
     "usernameError": "۳ تا ۴۲ کاراکتر حرفی یا عددی کوچک و خط تیره، باید با حرف یا عدد شروع و پایان یابد",
     "usernameLabel": "نام کاربری شما (الزامی)",
-    "usernamePlaceholder": "@"
+    "usernamePlaceholder": "{'@'}"
   },
   "comfyHubPublish": {
     "additionalInfo": "اطلاعات تکمیلی",
@@ -1043,6 +1183,7 @@
     "Shape": "شکل",
     "Shapes": "اشکال",
     "Show Link": "نمایش پیوند",
+    "Show Links": "نمایش پیوندها",
     "Title": "عنوان",
     "Top": "بالا",
     "UnfavoriteWidget": "حذف از علاقه‌مندی‌ها",
@@ -1057,13 +1198,16 @@
     "activity": "فعالیت",
     "added": "افزوده شد",
     "additionalInfo": "اطلاعات تکمیلی",
+    "api": "API",
     "apiPricing": "قیمت‌گذاری API",
+    "charge": "هزینه",
     "credits": "اعتبار",
     "creditsAvailable": "اعتبار موجود",
     "details": "جزئیات",
     "eventType": "نوع رویداد",
     "eventTypes": {
       "accountCreated": "حساب کاربری ایجاد شد",
+      "agentUsage": "استفاده از عامل",
       "apiNodeUsage": "استفاده از Node شریک",
       "apiUsage": "استفاده از API",
       "creditAdded": "اعتبار افزوده شد",
@@ -1093,33 +1237,51 @@
       "buyCredits": "ادامه به پرداخت",
       "buyNow": "هم‌اکنون خرید کنید",
       "changeInProgressError": "خرید اعتبار دیگری همچنان باز است. پیش از شروع خرید جدید، منتظر بمانید تا تکمیل یا منقضی شود.",
-      "chargedImmediatelyNote": "روش پرداخت ذخیره‌شدهٔ شما بلافاصله شارژ می‌شود.",
+      "checkoutBlockedBody": "مرورگر شما باز شدن برگه جدید را مسدود کرد. برای تکمیل پرداخت، صفحه پرداخت را باز کنید.",
+      "checkoutBlockedTitle": "صفحه پرداخت باز نشد",
+      "checkoutOpenFailed": "صفحه پرداخت باز نشد. هیچ مبلغی کسر نشد. دوباره تلاش کنید.",
+      "checkoutOpenedBody": "به‌محض انجام شدن پرداخت شما، اعتبار به این فضای کاری افزوده می‌شود.",
+      "checkoutOpenedTitle": "صفحه پرداخت در یک برگه جدید باز شد",
       "confirmSubtitle": "اعتبارها به محض تکمیل پرداخت به این ورک‌اسپیس افزوده می‌شوند.",
       "confirmTitle": "تأیید",
       "contactUs": "با ما تماس بگیرید",
+      "continueToCheckout": "ادامه به صفحه پرداخت",
       "creditsDescription": "اعتبارها برای اجرای workflow یا nodeهای شریک استفاده می‌شوند.",
       "creditsPerDollar": "اعتبار به ازای هر دلار",
       "creditsToReceiveLabel": "اعتبار دریافتی",
+      "defaultCardBlockedBody": "مرورگر شما باز شدن برگه جدید را مسدود کرد. برای تنظیم یک کارت پیش‌فرض، صفحه پرداخت را باز کنید.",
+      "defaultCardBlockedTitle": "صفحه پرداخت باز نشد",
       "howManyCredits": "چه تعداد اعتبار می‌خواهید اضافه کنید؟",
       "insufficientMessage": "شما اعتبار کافی برای اجرای این workflow ندارید.",
       "insufficientTitle": "اعتبار کافی نیست",
       "insufficientWorkflowMessage": "شما اعتبار کافی برای اجرای این workflow ندارید.",
-      "manageBillingError": "باز کردن پورتال صورتحساب ناموفق بود. لطفاً دوباره تلاش کنید.",
       "maxAllowed": "حداکثر {credits} اعتبار.",
       "maxAmount": "(حداکثر ۱٬۰۰۰ دلار آمریکا)",
       "maximumAmount": "حداکثر {amount}",
       "minRequired": "حداقل {credits} اعتبار",
       "minimumPurchase": "حداقل {amount} ({credits} اعتبار)",
       "needMore": "بیشتر نیاز دارید؟",
-      "noPaymentMethodError": "هیچ روش پرداختی برای این فضای کاری ذخیره نشده است. از مسیر تنظیمات ← طرح و اعتبارها ← مدیریت صورتحساب، یک روش اضافه کنید و سپس شارژ را دوباره امتحان کنید.",
+      "negativeBalanceNotice": "مانده شما −{credits} اعتبار است. این افزایش اعتبار ابتدا آن را پوشش می‌دهد. | مانده شما −{credits} اعتبار است. این افزایش اعتبار ابتدا آن را پوشش می‌دهد.",
+      "noPaymentMethodCheckoutHint": "این فضای کاری هیچ کارتی برای افزایش اعتبار با یک کلیک ذخیره نکرده است. به‌جای آن در صفحه پرداخت کنید، یا یک کارت پیش‌فرض تنظیم کنید تا افزایش‌های اعتبار بعدی مستقیماً از آن کسر شوند.",
+      "openCheckout": "باز کردن صفحه پرداخت",
+      "openPaymentPage": "باز کردن صفحه پرداخت",
       "payAmount": "پرداخت {amount}",
-      "paymentDetailsRequiredNote": "برای تکمیل این خرید، از شما خواسته می‌شود یک روش پرداخت اضافه کنید.",
+      "paymentProcessingBody": "نیازی نیست دوباره پرداخت کنید.",
+      "paymentProcessingFlyout": "پرداخت در حال پردازش است. نیازی نیست دوباره پرداخت کنید.",
+      "paymentProcessingTitle": "پرداخت {amount} همچنان در حال پردازش است",
+      "paymentProcessingTitleNoAmount": "پرداخت همچنان در حال پردازش است",
+      "planRequiredFreeRuns": "خرید اعتبار، طرح Cloud را آغاز نمی‌کند. پس از مصرف اجراهای رایگان، برای ادامهٔ اجرای workflowها اشتراک تهیه کنید.",
+      "planRequiredResubscribe": "خرید اعتبار، طرح Cloud شما را از سر نمی‌گیرد. برای اجرای workflowها در Cloud، دوباره اشتراک تهیه کنید.",
+      "planRequiredSubscribe": "خرید اعتبار، طرح Cloud را آغاز نمی‌کند. برای اجرای workflowها در Cloud اشتراک تهیه کنید.",
       "purchaseError": "خرید ناموفق بود",
       "purchaseErrorDetail": "خرید اعتبار ناموفق بود: {error}",
       "purchaseSuccess": "اعتبار با موفقیت افزوده شد!",
       "quickPurchase": "خرید سریع",
+      "reopenCheckout": "باز کردن مجدد صفحه پرداخت",
       "seeDetails": "مشاهده جزئیات",
       "selectAmount": "انتخاب مبلغ",
+      "setDefaultCard": "تنظیم کارت پیش‌فرض",
+      "setDefaultCardError": "تنظیمات کارت باز نشد",
       "startOver": "شروع مجدد",
       "templateNote": "*تولید شده با قالب Wan Fun Control",
       "topUp": "افزایش اعتبار",
@@ -1154,6 +1316,7 @@
     "BOOLEAN": "بولی",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "BOUNDING_BOXES": "جعبه‌های مرزی",
+    "CAMERA_INFO_STATE": "CAMERA_INFO_STATE",
     "CLIP": "clip",
     "CLIP_VISION": "بینایی clip",
     "CLIP_VISION_OUTPUT": "خروجی بینایی clip",
@@ -1162,6 +1325,7 @@
     "COMBO": "ترکیبی",
     "COMFY_AUTOGROW_V3": "Comfy AutoGrow V3",
     "COMFY_DYNAMICCOMBO_V3": "Comfy DynamicCombo V3",
+    "COMFY_DYNAMICGROUP_V3": "COMFY_DYNAMICGROUP_V3",
     "COMFY_MATCHTYPE_V3": "Comfy MatchType V3",
     "COMPOSITOR": "کامپوزیتور",
     "CONDITIONING": "شرط‌گذاری",
@@ -1262,10 +1426,77 @@
   },
   "deployToComfyApi": {
     "body": "این workflow را در عرض چند دقیقه به‌عنوان یک API تولیدی مستقر کنید. nodeهای سفارشی، مدل‌ها و وابستگی‌های Python خود را در یک build قابل‌بازتولید بسته‌بندی کنید؛ سپس Comfy API آن را به‌صورت یک endpoint با مقیاس‌پذیری خودکار اجرا می‌کند.",
+    "briefFailed": "امکان آماده‌سازی شرح برای agent شما وجود نداشت. دوباره تلاش کنید.",
+    "bundleBusy": "Comfy مشغول است. لحظه‌ای دیگر دوباره تلاش کنید.",
+    "bundleRejected": "Comfy upload را رد کرد. مشکل گزارش شده است.",
+    "bundleTooLarge": "این نصب برای upload کردن بیش از حد بزرگ است.",
+    "bundleTooMany": "تعداد uploadهای در انتظار شما بیش از حد است. بعداً دوباره تلاش کنید؛ آن‌ها پس از ۲۴ ساعت منقضی می‌شوند.",
+    "bundleUnauthorized": "دوباره به حساب Comfy خود وارد شوید، سپس یک بار دیگر تلاش کنید.",
+    "bundleUnavailable": "دسترسی به Comfy ممکن نشد. بعداً دوباره تلاش کنید.",
     "buttonLabel": "استقرار در Comfy API",
+    "copied": "کپی شد",
     "deployOnPlatform": "استقرار روی پلتفرم",
+    "deployWithAgent": "با agent خود بسازید",
+    "openBuilder": "باز کردن راهنمای ساخت",
     "readDocs": "مطالعهٔ مستندات",
+    "summaryClasses": "{count} کلاس node | {count} کلاس node",
+    "summaryModels": "{count} مدل | {count} مدل",
+    "summaryPacks": "{count} بستهٔ node | {count} بستهٔ node",
     "title": "استقرار در Comfy API"
+  },
+  "deploymentSwitcher": {
+    "comfyCloud": "Comfy Cloud",
+    "createCustomDeployment": "ایجاد deployment سفارشی",
+    "createCustomDeploymentTooltip": "ویرایشگر را با nodeها و مدل‌های سفارشی خود اجرا کنید. آن را در پلتفرم توسعه‌دهندگان تنظیم کنید.",
+    "currentTooltip": "در حال اجرا روی {deployment}",
+    "defaultDeleted": "حذف‌شده",
+    "defaultGone": "پیش‌فرض workspace حذف شده است؛ بنابراین اعضا با Comfy Cloud شروع می‌کنند.",
+    "defaultGoneOwner": "پیش‌فرض workspace حذف شده است؛ بنابراین اعضا با Comfy Cloud شروع می‌کنند. یک مورد جدید را در بخش «پیش‌فرض workspace» انتخاب کنید.",
+    "deployment": "{build} v{version}",
+    "deploymentChanged": "این مرورگر اکنون روی {deployment} اجرا می‌شود. برای دریافت nodeهای آن، دوباره بارگذاری کنید.",
+    "failedToSetDefault": "تغییر پیش‌فرض workspace ممکن نشد",
+    "failedToSwitch": "تغییر ممکن نشد",
+    "fullLabel": "{build} · {deployment}",
+    "landed": "در حال اجرا روی {deployment}",
+    "linkRefused": "باز کردن این deployment ممکن نشد",
+    "linkTimedOut": "باز شدن این deployment بیش از حد طول کشید. دوباره پیوند را امتحان کنید.",
+    "linkWorkspaceRefused": "تغییر به آن workspace ممکن نشد. همچنان در {workspaceName} هستید.",
+    "lookupUnavailable": "بررسی اینکه این ویرایشگر روی کدام deployment اجرا می‌شود ممکن نشد.",
+    "lookupUnavailableDetail": "مدل‌های نمایش‌داده‌شده متعلق به Comfy Cloud هستند. برای تلاش دوباره، صفحه را بارگذاری مجدد کنید.",
+    "membersStartOn": "اعضایی که انتخاب شخصی ندارند، با این مورد شروع می‌کنند",
+    "missingNodes": "{count} node مفقود است|{count} node مفقود هستند",
+    "nameWithVersion": "{name} · v{version}",
+    "namedDeployment": "{name}",
+    "noDeployments": "این workspace هنوز هیچ deploymentی ندارد.",
+    "notChecked": "بررسی نشده",
+    "notReadyTooltip": "در حال اجرا روی {deployment}. آماده نیست، بنابراین تا زمانی که آماده نشود، jobها اجرا نخواهند شد.",
+    "pickGone": "deployment انتخاب‌شده دیگر وجود ندارد.",
+    "pickGoneDetail": "این مرورگر اکنون روی Comfy Cloud اجرا می‌شود. برای استفاده از یک deployment، دوباره آن را انتخاب کنید.",
+    "releaseChanged": "این deployment اکنون Release دیگری را اجرا می‌کند. برای دریافت nodeهای آن، دوباره بارگذاری کنید.",
+    "reload": "بارگذاری مجدد",
+    "runOn": "اجرا در",
+    "runsThisWorkflow": "این workflow را اجرا می‌کند",
+    "status": {
+      "notReady": "آماده نیست",
+      "provisioning": "در حال شروع",
+      "starting": "در حال شروع",
+      "stopped": "متوقف‌شده"
+    },
+    "stoppedTooltip": "در حال اجرا روی {deployment}. متوقف است، بنابراین تا زمانی که در پلتفرم توسعه‌دهندگان راه‌اندازی نشود، jobها اجرا نخواهند شد.",
+    "switching": "در حال تغییر",
+    "switchingNote": "با تغییر، ویرایشگر دوباره بارگذاری می‌شود. زبانه‌های شما باز می‌مانند.",
+    "switchingNoteWithoutDrafts": "با تغییر، ویرایشگر دوباره بارگذاری می‌شود.",
+    "triggerLabel": "در حال اجرا در {deployment}. محل اجرای این ویرایشگر را انتخاب کنید",
+    "triggerLabelNotReady": "{status} محل اجرای این ویرایشگر را انتخاب کنید",
+    "unnamedDeployment": "استقرار {id}",
+    "unsaved": {
+      "message": "با جابه‌جایی به {deployment}، زبانه دوباره بارگذاری می‌شود. این workflowها تغییراتی دارند که هنوز ذخیره نشده‌اند.",
+      "saveAndSwitch": "ذخیره و جابه‌جایی",
+      "switchWithoutSaving": "جابه‌جایی بدون ذخیره",
+      "tabsReturn": "در هر صورت، زبانه‌های باز شما پس از بارگذاری دوباره بازمی‌گردند.",
+      "title": "پیش از جابه‌جایی workflowهای خود را ذخیره می‌کنید؟"
+    },
+    "workspaceDefault": "پیش‌فرض workspace"
   },
   "desktopLogin": {
     "confirmMessage": "برنامه دسکتاپ ComfyUI در انتظار ورود به حساب شما است. فقط در صورتی ادامه دهید که همین حالا ورود را از برنامه دسکتاپ ComfyUI آغاز کرده‌اید.",
@@ -1274,6 +1505,8 @@
     "expiredSummary": "ورود دسکتاپ ناموفق بود",
     "failedDetail": "در تکمیل ورود دسکتاپ مشکلی پیش آمد. ورود را دوباره از برنامه دسکتاپ ComfyUI آغاز کنید.",
     "failedSummary": "ورود دسکتاپ ناموفق بود",
+    "ssoUnavailableDetail": "حساب شما از طریق SSO سازمانتان وارد می‌شود که برنامه دسکتاپ ComfyUI هنوز نمی‌تواند از آن استفاده کند. از مدیر خود راه دیگری برای ورود به برنامه دسکتاپ بخواهید.",
+    "ssoUnavailableSummary": "ورود دسکتاپ برای حساب‌های SSO هنوز در دسترس نیست",
     "successDetail": "می‌توانید به برنامه دسکتاپ ComfyUI بازگردید.",
     "successSummary": "ورود انجام شد"
   },
@@ -1333,26 +1566,36 @@
       },
       "missing_model": {
         "displayMessageCloud": "یک مدل وارد کنید یا نود را باز کنید تا آن را جایگزین نمایید.",
+        "displayMessageDeployment": "این مدل‌ها روی {deployment} نیستند. node را باز کنید تا مدلی را که دارد انتخاب کنید.",
         "displayMessageOss": "یک مدل دانلود کنید یا نود را باز کنید تا آن را جایگزین نمایید.",
         "toastMessageManyCloud": "برخی مدل‌ها پشتیبانی نمی‌شوند. مدل‌های دیگری انتخاب کنید.",
+        "toastMessageManyDeployment": "مدل‌های دیگری را انتخاب کنید، یا deploymentی را انتخاب کنید که آنها را دارد.",
         "toastMessageManyOss": "{count} فایل مدل مفقود است.",
         "toastMessageOneCloud": "این مدل پشتیبانی نمی‌شود. مدل دیگری انتخاب کنید.",
+        "toastMessageOneDeployment": "مدل دیگری را انتخاب کنید، یا deploymentی را انتخاب کنید که آن را دارد.",
         "toastMessageOneOss": "{nodeName} به یک فایل مدل مورد نیاز دسترسی ندارد.",
         "toastTitleMany": "مدل‌های مفقود",
         "toastTitleManyCloud": "مدل‌ها در Cloud در دسترس نیستند",
+        "toastTitleManyDeployment": "مدل‌ها روی {deployment} نیستند",
         "toastTitleOneCloud": "{modelName} در Cloud در دسترس نیست",
+        "toastTitleOneDeployment": "{modelName} روی {deployment} نیست",
         "toastTitleOneOss": "{modelName} مفقود است"
       },
       "missing_node": {
         "displayMessageCloud": "نودهای سفارشی مورد نیاز در Cloud پشتیبانی نمی‌شوند. آن‌ها را با نودهای پشتیبانی‌شده جایگزین کنید.",
+        "displayMessageDeployment": "این nodeها روی {deployment} نیستند. آن‌ها را جایگزین کنید یا deploymentی را انتخاب کنید که آن‌ها را دارد.",
         "displayMessageOss": "برای استفاده از این workflow، بسته‌های مورد نیاز را نصب کنید.",
         "toastMessageManyCloud": "این workflow از نودهایی استفاده می‌کند که در Cloud پشتیبانی نمی‌شوند.",
+        "toastMessageManyDeployment": "این nodeها را جایگزین کنید یا deploymentی را انتخاب کنید که آن‌ها را دارد.",
         "toastMessageManyOss": "{count} نود به بسته‌های نود مفقود نیاز دارند.",
         "toastMessageOneCloud": "این نود در Cloud پشتیبانی نمی‌شود.",
+        "toastMessageOneDeployment": "این node را جایگزین کنید یا deploymentی را انتخاب کنید که آن را دارد.",
         "toastMessageOneOss": "این workflow از یک نود سفارشی استفاده می‌کند که نصب نشده است. آن را از رجیستری نصب یا نود را جایگزین کنید.",
         "toastTitleManyCloud": "نودها در Cloud در دسترس نیستند",
+        "toastTitleManyDeployment": "nodeها روی {deployment} نیستند",
         "toastTitleManyOss": "نودهای مفقود",
         "toastTitleOneCloud": "{nodeType} در Cloud در دسترس نیست",
+        "toastTitleOneDeployment": "{nodeType} روی {deployment} نیست",
         "toastTitleOneOss": "نود مفقود: {nodeType}"
       },
       "swap_nodes": {
@@ -1729,6 +1972,7 @@
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
     "defaultTitle": "خطایی رخ داد",
+    "executionFailedWhileDisconnected": "کار در زمانی که اتصال زنده در دسترس نبود، ناموفق شد.",
     "extensionFileHint": "این ممکن است به دلیل اسکریپت زیر باشد",
     "loadWorkflowTitle": "بارگذاری به دلیل خطا در بارگذاری مجدد داده‌های workflow متوقف شد",
     "noStackTrace": "هیچ stacktraceی موجود نیست",
@@ -1740,8 +1984,11 @@
     "missingMedia": "برخی از نودها ورودی‌های مورد نیاز را ندارند",
     "missingModels": "{count} مدل مورد نیاز مفقود است | {count} مدل مورد نیاز مفقود هستند",
     "missingNodes": "برخی از نودها مفقود هستند و باید نصب شوند",
+    "moreDeployments": "{count} مورد دیگر",
     "multipleIssueCount": "{count} مشکل یافت شد | {count} مشکل یافت شد",
     "multipleIssuesMessage": "پیش از اجرای workflow، این مشکلات را برطرف کنید.",
+    "runsOn": "روی {deployment} اجرا می‌شود",
+    "switchDeployment": "جابه‌جایی",
     "viewDetails": "مشاهده جزئیات"
   },
   "errorPanelSurvey": {
@@ -1805,11 +2052,13 @@
     "1x": "۱x",
     "2x": "۲x",
     "about": "درباره",
+    "actions": "عملیات",
     "add": "افزودن",
     "addNewKeybinding": "افزودن کلید میانبر جدید",
     "addNode": "افزودن node...",
     "addNodeFilterCondition": "افزودن شرط فیلتر node",
     "agentModified": "عامل این workflow را به‌روزرسانی کرد",
+    "agentNeedsApproval": "عامل به تأیید شما نیاز دارد",
     "agentWorking": "عامل در حال کار روی این workflow است",
     "all": "همه",
     "allKeybindingsReset": "همه کلیدهای میانبر به پیش‌فرض بازنشانی شدند",
@@ -1848,10 +2097,10 @@
     "clearFilters": "پاک‌سازی فیلترها",
     "close": "بستن",
     "closeDialog": "بستن پنجره",
+    "collapse": "بستن",
     "collapseAll": "بستن همه",
     "color": "رنگ",
     "comfy": "Comfy",
-    "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "لوگوی ComfyOrg",
     "comfyPackageOutdated": "نسخه نصب‌شده {name} با شماره {installedVersion} پایین‌تر از نسخه مورد نیاز {requiredVersion} است.",
     "comingSoon": "به‌زودی",
@@ -1924,6 +2173,7 @@
     "errorLoadingImage": "خطا در بارگذاری تصویر",
     "errorLoadingVideo": "خطا در بارگذاری ویدیو",
     "essentials": "ضروریات",
+    "expand": "باز کردن",
     "expandAll": "باز کردن همه",
     "experimental": "آزمایشی",
     "export": "خروجی گرفتن",
@@ -1947,7 +2197,9 @@
     "frontendOutdated": "نسخه فرانت‌اند {frontendVersion} قدیمی است. بک‌اند به نسخه {requiredVersion} یا بالاتر نیاز دارد.",
     "gallery": "گالری",
     "galleryImage": "تصویر گالری",
+    "galleryImagePosition": "تصویر گالری {index} از {total}",
     "galleryThumbnail": "تصویر بندانگشتی گالری",
+    "galleryThumbnailPosition": "بندانگشتی گالری {index} از {total}",
     "getHelpAction": "دریافت راهنما",
     "goToNode": "رفتن به node",
     "graphNavigation": "ناوبری گراف",
@@ -1974,6 +2226,7 @@
     "installing": "در حال نصب",
     "interrupted": "متوقف شده",
     "itemsCopiedToClipboard": "موارد در کلیپ‌بورد کپی شدند",
+    "itemsPerPage": "موارد در هر صفحه",
     "itemsSelected": "هیچ موردی انتخاب نشده است | {count} مورد انتخاب شده است | {count} مورد انتخاب شده‌اند",
     "job": "وظیفه",
     "jobIdCopied": "شناسه وظیفه در کلیپ‌بورد کپی شد",
@@ -2071,6 +2324,7 @@
     "or": "یا",
     "output": "خروجی",
     "overwrite": "جایگزینی",
+    "pageNumber": "صفحه {page}",
     "partner": "همکار",
     "partnerNodes": "گره‌های شریک",
     "pause": "توقف",
@@ -2149,6 +2403,8 @@
     "searchSettings": "جستجوی تنظیمات",
     "searchWorkflows": "جستجوی workflowها",
     "seeTutorial": "مشاهده آموزش",
+    "selectAll": "انتخاب همه",
+    "selectItem": "انتخاب {name}",
     "selectItemsToCopy": "مواردی برای کپی انتخاب کنید",
     "selectItemsToDelete": "مواردی برای حذف انتخاب کنید",
     "selectItemsToDuplicate": "مواردی برای تکرار انتخاب کنید",
@@ -2211,9 +2467,10 @@
     "use": "استفاده",
     "user": "کاربر",
     "validate": "اعتبارسنجی",
+    "versionMismatchUpdateInstructions": "{detail} برای دستورالعمل‌های به‌روزرسانی، به https://docs.comfy.org/installation/update_comfyui#common-update-issues مراجعه کنید.",
     "versionMismatchWarning": "هشدار ناسازگاری نسخه",
-    "versionMismatchWarningMessage": "{warning}: {detail} برای راهنمای به‌روزرسانی به https://docs.comfy.org/installation/update_comfyui#common-update-issues مراجعه کنید.",
     "videoFailedToLoad": "بارگذاری ویدیو ناموفق بود",
+    "videoFilenameExtensionRequired": "نام فایل ویدیو باید با پسوندی مانند .mp4 پایان یابد. نام فایل را تغییر دهید و دوباره تلاش کنید.",
     "videoPreview": "پیش‌نمایش ویدیو - برای جابجایی بین ویدیوها از کلیدهای جهت‌دار استفاده کنید",
     "viewGrid": "نمای شبکه‌ای",
     "viewImageOfTotal": "مشاهده تصویر {index} از {total}",
@@ -2467,6 +2724,19 @@
   "issueReport": {
     "helpFix": "کمک به رفع این مشکل"
   },
+  "lateCustomNodes": {
+    "failed": "برخی nodeهای سفارشی راه‌اندازی نشدند",
+    "failedDetail": "برای فعال کردن موارد زیر، صفحه را دوباره بارگذاری کنید: {packs}",
+    "ready": "nodeهای سفارشی آماده هستند",
+    "reload": "بارگذاری مجدد",
+    "starting": "nodeهای سفارشی در حال راه‌اندازی هستند... {seconds} ثانیه",
+    "startingDetail": "معمولاً حدود ۲۰ ثانیه. دکمه‌ها و منوهای آن‌ها خودبه‌خود اینجا ظاهر خواهند شد.",
+    "stepBuilding": "در حال ساخت سرور برای nodeهای سفارشی شما.\nراه‌اندازی اولیه برای این نسخه؛ چند دقیقه طول می‌کشد.",
+    "stepCreating": "در حال ایجاد سرور برای nodeهای سفارشی شما.\nراه‌اندازی اولیه.",
+    "stepStarting": "در حال بارگذاری nodeهای سفارشی.\nاین معمولاً کمتر از نیم دقیقه طول می‌کشد.",
+    "waitingBadge": "در انتظار بستهٔ آن",
+    "waitingFor": "در انتظار: {packs}"
+  },
   "layerEditor": {
     "alignBottom": "تراز به پایین",
     "alignCenterHorizontal": "تراز افقی مرکز",
@@ -2533,6 +2803,23 @@
     "webglUnavailable": "WebGL در دسترس نیست - بوم قابل نمایش نیست",
     "zoom": "بزرگ‌نمایی"
   },
+  "lightInfo": {
+    "addLight": "افزودن نور",
+    "angle": "زاویه",
+    "castShadow": "ایجاد سایه",
+    "color": "رنگ",
+    "directional": "جهتی",
+    "innerCone": "مخروط داخلی",
+    "intensity": "شدت",
+    "lightChip": "نور {index}، {type}",
+    "noLights": "برای شروع، یک نور اضافه کنید.",
+    "outerCone": "مخروط خارجی",
+    "point": "نقطه‌ای",
+    "range": "برد",
+    "removeLight": "حذف نور",
+    "size": "اندازه",
+    "spot": "نقطه‌ای متمرکز"
+  },
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "سازنده اپلیکیشن",
@@ -2598,6 +2885,10 @@
     "giveFeedback": "ارسال بازخورد",
     "graphMode": "حالت گراف",
     "hasCreditCost": "نیازمند اعتبار اضافی",
+    "inputDownloads": {
+      "downloading": "در حال دانلود {count} ورودی آغازین | در حال دانلود {count} ورودی آغازین",
+      "finalizing": "در حال آماده‌سازی ورودی‌های آغازین دانلودشده"
+    },
     "linearMode": "حالت برنامه",
     "loadTemplate": "بارگذاری قالب",
     "mobileControls": "ویرایش و اجرا",
@@ -2663,6 +2954,7 @@
     "loadingBackgroundImage": "در حال بارگذاری تصویر پس‌زمینه",
     "loadingHDRI": "در حال بارگذاری HDRI...",
     "loadingModel": "در حال بارگذاری مدل سه‌بعدی...",
+    "lockCamera": "قفل کردن دوربین",
     "lookThrough": "نمای دوربین",
     "materialMode": "حالت متریال",
     "materialModes": {
@@ -2702,6 +2994,7 @@
     "model": "مدل",
     "model3d": "مدل سه‌بعدی",
     "openIn3DViewer": "باز کردن در نمایشگر سه‌بعدی",
+    "outputView": "نمای خروجی",
     "panoramaMode": "حالت پانوراما",
     "previewOutput": "پیش‌نمایش خروجی",
     "reloadingModel": "در حال بارگذاری مجدد مدل...",
@@ -2720,9 +3013,11 @@
       "cameraRotate": "چرخش دوربین",
       "cameraTranslate": "موقعیت دوربین",
       "label": "ویرایش",
+      "lightPosition": "موقعیت نور",
       "none": "هیچ‌کدام",
       "target": "هدف"
     },
+    "unlockCamera": "باز کردن قفل دوربین",
     "unsupportedFileType": "نوع فایل پشتیبانی نمی‌شود (فقط .gltf، .glb، .obj، .fbx، .stl پشتیبانی می‌شود)",
     "upDirection": "جهت بالا",
     "upDirections": {
@@ -2878,6 +3173,7 @@
     "legacyManagerUIDescription": "برای استفاده از رابط کاربری قدیمی مدیریت، ComfyUI را با --enable-manager-legacy-ui اجرا کنید.",
     "legacyMenuNotAvailable": "منوی مدیریت قدیمی در دسترس نیست، به منوی جدید مدیریت منتقل می‌شود.",
     "license": "مجوز",
+    "loadMoreFailed": "نتایج بیشتری بارگیری نشد.",
     "loadingVersions": "در حال بارگذاری نسخه‌ها...",
     "mixedSelectionMessage": "امکان انجام عملیات گروهی روی انتخاب ترکیبی وجود ندارد",
     "nav": {
@@ -2970,6 +3266,8 @@
     "black": "سیاه",
     "brushSettings": "تنظیمات قلم‌مو",
     "brushShape": "شکل قلم‌مو",
+    "brushShapeCircle": "قلم‌موی دایره‌ای",
+    "brushShapeSquare": "قلم‌موی مربعی",
     "clear": "پاک‌سازی",
     "clickToResetZoom": "برای بازنشانی بزرگنمایی کلیک کنید",
     "colorSelectSettings": "تنظیمات انتخاب رنگ",
@@ -3023,7 +3321,7 @@
     "assetDelete": {
       "error": "حذف برخی موارد ناموفق بود",
       "success": "حذف با موفقیت انجام شد",
-      "warn": "حذف برخی موارد ناموفق بود"
+      "warning": "حذف برخی موارد ناموفق بود"
     },
     "assetsDeleted": "{n} / {total} دارایی حذف شد",
     "deleteHistoryOnly": "فقط تاریخچه تحت تأثیر قرار می‌گیرد؛ فایل‌ها روی دیسک باقی می‌مانند",
@@ -3135,6 +3433,7 @@
     "Custom Nodes Manager": "مدیر Custom Nodes",
     "Decrease Brush Size in MaskEditor": "کاهش اندازه قلم‌مو در MaskEditor",
     "Delete Selected Items": "حذف موارد انتخاب‌شده",
+    "Delete Selected Links": "حذف پیوندهای انتخاب‌شده",
     "Desktop User Guide": "راهنمای کاربر دسکتاپ",
     "Duplicate Current Workflow": "تکثیر Workflow فعلی",
     "Edit": "ویرایش",
@@ -3150,6 +3449,7 @@
     "Group Selected Nodes": "گروه‌بندی Nodeهای انتخاب‌شده",
     "Help": "راهنما",
     "Help Center": "مرکز راهنما",
+    "Hide Selected Links": "پنهان کردن پیوندهای انتخاب‌شده",
     "Increase Brush Size in MaskEditor": "افزایش اندازه قلم‌مو در MaskEditor",
     "Install Missing Custom Nodes": "نصب Custom Nodeهای گمشده",
     "Interrupt": "توقف",
@@ -3172,7 +3472,6 @@
     "Node Library": "کتابخانه Node",
     "Node Links": "پیوندهای Node",
     "Open": "باز کردن",
-    "Open 3D Viewer (Beta) for Selected Node": "باز کردن نمایشگر سه‌بعدی (بتا) برای نود انتخاب‌شده",
     "Open Color Picker in MaskEditor": "باز کردن انتخاب‌گر رنگ در MaskEditor",
     "Open Custom Nodes Folder": "باز کردن پوشه Custom Nodes",
     "Open DevTools": "باز کردن DevTools",
@@ -3211,6 +3510,7 @@
     "Set Subgraph Search Aliases": "تنظیم نام‌های مستعار جستجوی زیرگراف",
     "Show Keybindings Dialog": "نمایش پنجره کلیدهای میانبر",
     "Show Model Selector (Dev)": "نمایش انتخاب‌گر مدل (توسعه‌دهنده)",
+    "Show Selected Links": "نمایش پیوندهای انتخاب‌شده",
     "Show Settings Dialog": "نمایش پنجره تنظیمات",
     "Sign Out": "خروج از حساب",
     "Toggle App Mode": "تغییر حالت برنامه",
@@ -3297,11 +3597,13 @@
     "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
+    "Clarity AI": "Clarity AI",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
+    "Higgsfield": "Higgsfield",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -3312,6 +3614,7 @@
     "Meshy": "Meshy",
     "Meta": "متا",
     "MiniMax": "MiniMax",
+    "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
@@ -3326,6 +3629,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
     "Wan": "Wan",
@@ -3360,6 +3664,7 @@
     "debug": "اشکال‌زدایی",
     "detection": "شناسایی",
     "experimental": "آزمایشی",
+    "fibo": "fibo",
     "filters": "فیلترها",
     "flux": "flux",
     "fun control": "کنترل سرگرم‌کننده",
@@ -3396,6 +3701,7 @@
     "mochi": "mochi",
     "model": "مدل",
     "model specific": "مدل خاص",
+    "moss_image": "moss_image",
     "move": "move",
     "multigpu": "چند GPU",
     "noise": "نویز",
@@ -3432,6 +3738,7 @@
     "stable zero123": "stable zero123",
     "supir": "supir",
     "sync_so": "sync.so",
+    "testing": "آزمایشی",
     "text": "متن",
     "texturing": "بافت‌دهی",
     "training": "آموزش",
@@ -3505,6 +3812,7 @@
   },
   "nodeTemplates": {
     "enterName": "نام را وارد کنید",
+    "notLoaded": "الگوهای ذخیره‌شده بارگیری نشدند؛ بنابراین برای جلوگیری از بازنویسی آن‌ها، تغییرات ذخیره نشدند. صفحه را دوباره بارگیری کنید و مجدداً تلاش کنید.",
     "saveAsTemplate": "ذخیره به عنوان قالب"
   },
   "notSupported": {
@@ -3542,6 +3850,9 @@
       "sessionErrorToastSummary": "ورود با OAuth ادامه نیافت",
       "subtitle": "برای ادامه وارد {resource} شوید",
       "title": "{client} درخواست دسترسی دارد",
+      "unverifiedBadge": "نام تأیید نشده است",
+      "unverifiedNotice": "این نام توسط فردی که این برنامه را ثبت کرده است ارائه شده است. پس از ادامه، مرورگر شما به {host} هدایت می‌شود — مطمئن شوید که آن را می‌شناسید.",
+      "unverifiedNoticeNoHost": "این نام توسط فردی که این برنامه را ثبت کرده است ارائه شده و توسط Comfy تأیید نشده است.",
       "workspaceLabel": "ورک‌اسپیس"
     },
     "scopes": {
@@ -3688,6 +3999,7 @@
     "size": "اندازه نشانگر",
     "tool": "ابزار",
     "uploadError": "بارگذاری تصویر painter ناموفق بود: {status} - {statusText}",
+    "uploadMissingName": "بارگذاری تصویر Painter نام فایلی برنگرداند",
     "width": "عرض"
   },
   "palette": {
@@ -3882,13 +4194,16 @@
       "unknownCategory": "نامشخص"
     },
     "missingNodePacks": {
+      "andMore": "و {count} مورد دیگر",
       "applyChanges": "اعمال تغییرات",
       "collapse": "جمع کردن",
       "expand": "باز کردن",
       "installAll": "نصب همه",
       "installed": "نصب شد",
       "installing": "در حال نصب...",
+      "noDeploymentRunsIt": "هیچ استقراری در این فضای کاری همهٔ این nodeها را ندارد.",
       "ossManagerDisabledHint": "برای نصب nodeهای مورد نیاز، ابتدا دستور {pipCmd} را در محیط پایتون خود اجرا کنید تا Node Manager نصب شود، سپس ComfyUI را با پرچم {flag} مجدداً راه‌اندازی کنید.",
+      "runsOn": "اجرا می‌شود روی:",
       "title": "پک‌های node مفقود",
       "unknownPack": "پک ناشناخته",
       "unsupportedTitle": "پک‌های node پشتیبانی‌نشده",
@@ -4149,6 +4464,7 @@
     "About": "درباره",
     "Allowlist": "لیست مجاز",
     "Appearance": "ظاهر",
+    "Billing": "صورتحساب",
     "BrushAdjustment": "تنظیم قلم‌مو",
     "Camera": "دوربین",
     "Canvas": "بوم",
@@ -4200,6 +4516,7 @@
     "Server-Config": "پیکربندی سرور",
     "Settings": "تنظیمات",
     "Sidebar": "نوار کناری",
+    "SkillPacks": "بسته‌های مهارت",
     "Tree Explorer": "کاوشگر درختی",
     "UV": "UV",
     "User": "کاربر",
@@ -4275,7 +4592,6 @@
     "viewControls": "کنترل‌های نمایش"
   },
   "sideToolbar": {
-    "activeJobStatus": "وضعیت کار فعال: {status}",
     "assets": "دارایی‌ها",
     "backToAssets": "بازگشت به همه دارایی‌ها",
     "browseTemplates": "مرور قالب‌های نمونه",
@@ -4461,6 +4777,40 @@
     },
     "workflows": "Workflowها"
   },
+  "skillPacks": {
+    "addPack": "افزودن بستهٔ مهارت",
+    "atLimitHint": "برای ایجاد فضا برای این بسته، یک بسته را حذف کنید.",
+    "atLimitTitle": "به حد مجاز خود رسیده‌اید",
+    "body": "دستورالعمل‌ها",
+    "bodyPlaceholder": "دستورالعمل‌هایی که عامل پس از بارگذاری این بسته دنبال می‌کند.",
+    "bodySize": "{bytes} بایت",
+    "deleteConfirmMessage": "آیا از حذف «{name}» مطمئن هستید؟ این عمل قابل بازگردانی نیست.",
+    "deleteConfirmTitle": "حذف بستهٔ مهارت",
+    "editPack": "ویرایش بستهٔ مهارت",
+    "errors": {
+      "bodyRequired": "دستورالعمل‌ها الزامی هستند",
+      "descriptionRequired": "خط راه‌انداز الزامی است",
+      "descriptionSingleLine": "خط راه‌انداز باید یک خط باشد و نویسهٔ کنترلی نداشته باشد",
+      "descriptionTooLong": "خط راه‌انداز باید حداکثر {max} نویسه باشد",
+      "nameAlreadyExists": "بستهٔ مهارتی با نام «{name}» از قبل وجود دارد. به‌جای آن، همان بسته را ویرایش کنید.",
+      "nameCharset": "نام فقط می‌تواند شامل حروف، ارقام، «.»، «_» و «-» باشد و باید دست‌کم یک نویسهٔ غیرنقطه داشته باشد",
+      "nameRequired": "نام الزامی است",
+      "nameReserved": "«{name}» نام یک بستهٔ داخلی است و قابل استفاده نیست",
+      "nameTooLong": "نام باید حداکثر {max} نویسه باشد"
+    },
+    "name": "نام",
+    "nameHint": "حروف، ارقام، «.»، «_» و «-». این نامی است که عامل با آن بسته را بارگذاری می‌کند.",
+    "namePlaceholder": "برای مثال، my-render-defaults",
+    "noPacks": "هنوز هیچ بستهٔ مهارتی وجود ندارد. یکی اضافه کنید تا ترجیحی را که مدام تکرار می‌کنید به عامل آموزش دهید.",
+    "packSize": "{bytes} بایت",
+    "panelDescription": "یک ترجیح را یک‌بار ثبت کنید تا عامل هنگام مطابقت خط راه‌انداز آن را بارگذاری کند. بسته‌ها فقط برای شما خصوصی هستند.",
+    "publish": "انتشار",
+    "title": "بسته‌های مهارت عامل",
+    "triggerLine": "خط راه‌انداز",
+    "triggerLineHint": "یک خط که مشخص کند این بسته چه زمانی بارگذاری شود. چه از بسته استفاده شود چه نشود، این خط در هر prompt قرار می‌گیرد؛ پس کوتاهش نگه دارید.",
+    "triggerLinePlaceholder": "وقتی کاربر دربارهٔ بزرگ‌نمایی پرسید، مرا بارگذاری کن",
+    "yourPacks": "بسته‌های شما"
+  },
   "subgraphStore": {
     "blueprintName": "نام زیرگراف",
     "blueprintNamePrompt": "نام Subgraph:",
@@ -4510,22 +4860,63 @@
       "message": "صورت‌حساب تیمی به‌زودی ارائه می‌شود. به‌زودی می‌توانید برای فضای کاری خود با قیمت هر نفر اشتراک تهیه کنید. برای به‌روزرسانی‌ها همراه ما باشید.",
       "title": "به‌زودی"
     },
+    "billingPortalUnavailable": "باز کردن صورتحساب ممکن نشد. دوباره تلاش کنید.",
     "billingTabBlocked": "صفحه صورتحساب باز نشد. پنجره‌های بازشو را برای این سایت مجاز کنید و دوباره تلاش کنید.",
     "cancelDialog": {
-      "confirmCancel": "لغو اشتراک",
-      "description": "دسترسی شما تا تاریخ {date} ادامه دارد. دیگر هزینه‌ای دریافت نمی‌شود و فضای کاری و اعتبار شما حفظ خواهد شد. هر زمان می‌توانید دوباره اشتراک تهیه کنید.",
-      "discountApplied": "تخفیف شما اعمال شده است، بنابراین این اشتراک لغو نشد. برای مشاهده طرح به‌روزشده، این پنجره را ببندید.",
-      "discountRefreshFailed": "تخفیف شما اعمال شد. برای مشاهده طرح به‌روزشده، صفحه را تازه‌سازی کنید.",
-      "endOfBillingPeriod": "پایان دوره صورتحساب",
+      "endOfBillingPeriod": "پایان دوره صورتحساب شما",
       "failed": "لغو اشتراک ناموفق بود",
       "finishOnStripe": "اشتراک شما هنوز لغو نشده است. لغو را در صفحه Stripe که تازه باز شد تکمیل کنید. تا آن زمان، طرح شما طبق روال تمدید می‌شود.",
-      "keepSubscription": "حفظ اشتراک",
-      "offerUnavailable": "این گزینه در دسترس نیست. لطفاً گزینه دیگری را انتخاب کنید.",
-      "title": "لغو اشتراک",
       "workspaceChanged": "محیط کاری فعال شما تغییر کرده است. لطفاً بازگردید و دوباره تلاش کنید."
     },
+    "cancelFlow": {
+      "cancelled": {
+        "title": "طرح شما لغو شد"
+      },
+      "confirm": {
+        "cancelPlan": "طرح من را لغو کنید",
+        "description": "طرح {plan} شما تا {date} فعال می‌ماند و دیگر هزینه‌ای از شما دریافت نمی‌شود. هر زمان بخواهید می‌توانید دوباره اشتراک بگیرید.",
+        "features": {
+          "credits": {
+            "description": "اعتبارهای شما دیگر شارژ نمی‌شوند.",
+            "generic": "اعتبار ماهانه",
+            "monthly": "{credits} اعتبار ماهانه",
+            "yearly": "{credits} اعتبار سالانه"
+          },
+          "customNodes": {
+            "description": "nodeهای پشت حدود ۹۰٪ از workflowهای جامعه.",
+            "title": "nodeهای سفارشی، آماده"
+          },
+          "gpus": {
+            "description": "سخت‌افزار RTX 6000 Pro، بدون نیاز به هیچ تنظیمی.",
+            "title": "GPUهای ابری"
+          },
+          "models": {
+            "description": "مدل‌های متن‌باز و مدل‌های شرکا در کنار هم.",
+            "title": "همهٔ مدل‌ها، یک موجودی"
+          }
+        },
+        "loseAccess": "پس از {date}، دسترسی خود را به موارد زیر از دست می‌دهید:",
+        "title": "طرح خود را لغو می‌کنید؟"
+      },
+      "continueCancelling": "ادامهٔ لغو",
+      "done": "انجام شد",
+      "genericPlanName": "Comfy Cloud",
+      "keepPlan": "طرح من را نگه دارید",
+      "survey": {
+        "commentLabel": "مورد دیگری هست که بخواهید به اشتراک بگذارید؟ (اختیاری)",
+        "commentPlaceholder": "هرچه می‌خواهید به ما بگویید",
+        "reasons": {
+          "missingFeatures": "ویژگی‌ها یا مدل‌های موردنیاز موجود نیستند",
+          "notUsingEnough": "به‌اندازهٔ کافی از آن استفاده نمی‌کنم",
+          "somethingElse": "دلیل دیگری",
+          "switchingTools": "در حال تغییر به ابزار دیگری هستم",
+          "tooExpensive": "بیش از حد گران است"
+        },
+        "subtitle": "اختیاری است، اما به بهتر شدن Comfy Cloud کمک می‌کند.",
+        "title": "چرا لغو می‌کنید؟"
+      }
+    },
     "cancelPlan": "لغو پلن",
-    "cancelSuccess": "اشتراک با موفقیت لغو شد",
     "canceled": "لغو شد",
     "canceledCard": {
       "description": "دیگر هزینه‌ای از شما دریافت نمی‌شود. امکانات شما تا تاریخ {date} فعال خواهد بود.",
@@ -4655,9 +5046,25 @@
     "personalWorkspace": "فضای کاری شخصی",
     "planLoadError": "امکان بارگذاری جزئیات پلن شما وجود ندارد.",
     "planLoadErrorRetry": "تلاش مجدد",
+    "planNotAvailable": "این طرح در دسترس نیست",
     "planScope": {
       "personal": "برای استفاده شخصی",
       "team": "برای تیم‌ها"
+    },
+    "planUnavailable": {
+      "annualToMonthlyUnsupported": "تا زمانی که طرح سالانه‌تان پایان نیافته است، نمی‌توانید به یک طرح ماهانهٔ بالاتر بروید.",
+      "billingOperationInProgress": "تغییری در صورتحساب در حال انجام است. این طرح به‌زودی دوباره در دسترس خواهد بود.",
+      "billingOperationParked": "یک تغییر اخیر در صورتحساب به اصلاحی از سوی تیم ما نیاز دارد. برای تغییر طرحتان با پشتیبانی تماس بگیرید.",
+      "billingStateUnknown": "نتوانستیم جزئیات صورتحساب شما را تأیید کنیم. لحظه‌ای دیگر دوباره تلاش کنید.",
+      "exceedsMaxSeats": "فضای کاری شما اعضای بیشتری از حد مجاز این طرح دارد.",
+      "generic": "این طرح برای فضای کاری شما در دسترس نیست.",
+      "incompatibleTransition": "این طرح از طرح فعلی شما قابل انتخاب نیست.",
+      "notAMember": "شما دیگر عضو این فضای کاری نیستید، بنابراین نمی‌توانید طرح آن را تغییر دهید.",
+      "notOriginalOwner": "فقط شخصی که این فضای کاری را ایجاد کرده است می‌تواند این تغییر طرح را انجام دهد.",
+      "notWorkspaceOwner": "فقط مالک فضای کاری می‌تواند طرح را تغییر دهد.",
+      "salesManaged": "طرح شما توسط تیم فروش ما مدیریت می‌شود. برای تغییر آن با بخش فروش تماس بگیرید.",
+      "subscriptionChangeInProgress": "شما از پیش یک تغییر طرح برنامه‌ریزی‌شده دارید. پس از اعمال شدن آن می‌توانید طرح دیگری انتخاب کنید.",
+      "subscriptionChangeScheduled": "تغییر برنامه‌ریزی‌شدهٔ طرح شما در {date} اعمال می‌شود. پس از آن می‌توانید طرح دیگری انتخاب کنید."
     },
     "plansAndCredits": "طرح‌ها و اعتبارها",
     "plansAndPricing": "طرح‌ها و قیمت‌ها",
@@ -4672,10 +5079,10 @@
       "alipay": "Alipay",
       "alipayRenewalNote": "مجوز Alipay برای تمدیدهای خودکار و خریدهای آینده نیز استفاده خواهد شد.",
       "applyPromoCode": "اعمال",
-      "applyQuoteBeforeContinuing": "پیش از ادامه، کد تخفیف را اعمال کنید تا پیش‌فاکتور شما به‌روزرسانی شود.",
       "backToAllPlans": "بازگشت به همه طرح‌ها",
       "billedEachMonth": "{amount} هر ماه صورتحساب می‌شود. در هر زمان قابل لغو است.",
       "billingAddress": "نشانی صورتحساب",
+      "cancelPaymentAndRetry": "پرداخت را لغو کنید و دوباره تلاش کنید",
       "changePaymentMethod": "تغییر",
       "commitment": "تعهد",
       "completePayment": "پرداخت خود را تکمیل کنید",
@@ -4714,8 +5121,6 @@
       "promoCodePlaceholder": "کد تخفیف",
       "proratedCharge": "هزینه متناسب برای {plan}",
       "proratedRefund": "بازپرداخت متناسب برای {plan}",
-      "quoteRefreshFailed": "پیش‌فاکتور شما منقضی شد و نتوانست به‌روزرسانی شود. دوباره طرح خود را انتخاب کنید.",
-      "quoteStale": "پیش‌فاکتور شما تغییر کرده است. مبلغ به‌روزشده را بررسی کرده و دوباره تلاش کنید.",
       "quoteUnavailable": "در دسترس نیست",
       "reactivation": {
         "amountChanged": "مبلغ پرداختی از زمان تأیید شما تغییر کرده است — لطفاً بررسی و دوباره تلاش کنید",
@@ -4757,6 +5162,7 @@
       "yearlySubscription": "اشتراک سالانه",
       "youllBeCharged": "شما مبلغ زیر را پرداخت خواهید کرد"
     },
+    "previewLoadFailed": "بارگذاری پیش‌نمایش اشتراک ناموفق بود",
     "pricingBlurb": "*بر اساس این قالب، {seeDetails}. برای {questions} یا {enterpriseDiscussions} با ما تماس بگیرید. برای جزئیات بیشتر قیمت‌گذاری، {clickHere}.",
     "pricingBlurbClickHere": "اینجا کلیک کنید",
     "pricingBlurbEnterprise": "بحث‌های سازمانی",
@@ -4782,6 +5188,41 @@
     "resubscribeFailed": "فعال‌سازی مجدد اشتراک ناموفق بود",
     "resubscribeSuccess": "اشتراک با موفقیت فعال شد",
     "resubscribeTo": "ازسرگیری {plan}",
+    "resubscribeToUseCredits": "برای استفاده از اعتبارها در Cloud، دوباره مشترک شوید.",
+    "retentionOffer": {
+      "accept": "{plan} را حفظ کنید و {percent}% صرفه‌جویی کنید",
+      "appliedBadge": "اعمال شد",
+      "appliedBody": "{percent}% تخفیف از {date} برای پرداخت بعدی شما اعمال می‌شود. | {percent}% تخفیف از {date} برای {months} پرداخت بعدی شما اعمال می‌شود.",
+      "appliedTitle": "شما در {plan} می‌مانید",
+      "checkAgain": "دوباره بررسی کنید",
+      "declinedBody": "طرح {plan} شما تغییر نکرده است. می‌توانید آن را با قیمت فعلی حفظ کنید یا لغو را ادامه دهید.",
+      "expiredBody": "این پیشنهاد منقضی شده است، یا طرح شما از زمان ارائهٔ آن تغییر کرده است. فرایند لغو را ببندید و دوباره باز کنید تا گزینه‌های فعلی خود را ببینید.",
+      "expiredTitle": "این پیشنهاد دیگر در دسترس نیست",
+      "failed": "نتوانستیم این پیشنهاد را اعمال کنیم و طرح شما تغییر نکرده است. همچنان می‌توانید لغو کنید.",
+      "failedBody": "مشکلی از سمت ما پیش آمد و طرح {plan} شما تغییر نکرده است. دوباره تلاش کنید یا لغو را ادامه دهید.",
+      "failedTitle": "نتوانستیم تخفیف شما را اعمال کنیم",
+      "finePrint": "پیشنهاد یک‌باره. پس از ۱ تمدید، {plan} به {regular}/ماه بازمی‌گردد. هر زمان خواستید لغو کنید. | پیشنهاد یک‌باره. پس از {months} تمدید، {plan} به {regular}/ماه بازمی‌گردد. هر زمان خواستید لغو کنید.",
+      "keepCredits": "{credits} اعتبار ماهانه و همه موارد دیگر در {plan} را حفظ کنید.",
+      "keepCreditsAndLoRAs": "{credits} اعتبار ماهانه، LoRAهای سفارشی و همه موارد دیگر در {plan} را حفظ کنید.",
+      "keepEverything": "همه‌چیز را در طرح {plan} خود حفظ کنید.",
+      "nextPayments": "پرداخت بعدی | {months} پرداخت بعدی",
+      "pendingToast": "تخفیف شما همچنان در حال تأیید شدن است. پیش از ایجاد تغییر دیگری در صورتحساب، طرح خود را بررسی کنید.",
+      "perMonth": "/ماه",
+      "percentOff": "{percent}% تخفیف",
+      "pricePerMonth": "{price}/ماه",
+      "refreshFailed": "تخفیف شما اعمال شد. برای دیدن طرح به‌روزشدهٔ خود، صفحه را تازه‌سازی کنید.",
+      "renewsAt": "در {date} با مبلغ {regular} تمدید می‌شود.",
+      "savings": "در این پرداخت {savings} صرفه‌جویی خواهید کرد. | در مجموع این {months} پرداخت، {savings} صرفه‌جویی خواهید کرد.",
+      "stayOnPlan": "در {plan} بمانید",
+      "subtitle": "تا زمانی که تصمیم می‌گیرید، این پیشنهاد برای شماست",
+      "supportCode": "اگر این مشکل ادامه داشت، با کد DISCOUNT_NOT_APPLIED با پشتیبانی تماس بگیرید.",
+      "term": "برای پرداخت بعدی شما، سپس {regular}/ماه | برای {months} پرداخت بعدی شما، سپس {regular}/ماه",
+      "title": "پیش از رفتن شما",
+      "tryAgain": "دوباره تلاش کنید",
+      "unconfirmed": "هنوز در حال تأیید تخفیف شما هستیم. لحظه‌ای دیگر دوباره بررسی کنید، یا اگر این مشکل برطرف نشد با پشتیبانی تماس بگیرید.",
+      "unconfirmedBody": "ممکن است تخفیف شما همچنان در حال اعمال شدن باشد. پیش از ایجاد تغییر دیگری در صورتحساب، لحظه‌ای صبر کنید و دوباره بررسی کنید.",
+      "unconfirmedTitle": "تخفیف شما هنوز تأیید نشده است"
+    },
     "salesManagedCreditsEndedNote": "اعتبارهای طرح با اشتراک شما پایان یافتند.",
     "salesManagedInactiveCreditsNote": "پس از بازیابی طرحتان قابل‌استفاده خواهد بود.",
     "salesManagedRunBlockedDetail": "طرح این فضای کاری دیگر فعال نیست. برای بازیابی دسترسی با مدیر حساب Comfy خود تماس بگیرید.",
@@ -4789,7 +5230,6 @@
     "saveYearly": "٪۲۰ صرفه‌جویی",
     "saveYearlyUpTo": "تا ۲۰٪ صرفه‌جویی کنید",
     "scheduledChangeNotice": "طرح شما در {date} به {plan} تغییر می‌کند.",
-    "scheduledForDate": "برای {date} زمان‌بندی شده است",
     "soloUseOnly": "فقط برای استفاده فردی",
     "subscribe": "اشتراک",
     "subscribeFailed": "اشتراک‌گذاری ناموفق بود",
@@ -4799,6 +5239,7 @@
     "subscribeToComfyCloud": "اشتراک در Comfy Cloud",
     "subscribeToRun": "اشتراک",
     "subscribeToRunFull": "اشتراک برای اجرا",
+    "subscribeToUseCredits": "برای استفاده از اعتبارها در Cloud، مشترک شوید.",
     "subscriptionRequiredMessage": "برای اجرای workflowها در Cloud، اشتراک لازم است.",
     "success": {
       "allSet": "همه چیز آماده است",
@@ -4866,11 +5307,11 @@
     "title": "اشتراک",
     "titleUnsubscribed": "اشتراک در Comfy Cloud",
     "totalCredits": "کل اعتبارها",
+    "unableToSubscribe": "امکان اشتراک وجود ندارد",
     "unknownTierName": "طرح فعلی",
     "upgrade": "ارتقا",
     "upgradePlan": "ارتقا طرح",
     "upgradeTo": "ارتقا به {plan}",
-    "upgradeToAddCredits": "برای افزودن اعتبار ارتقاء دهید",
     "usdPerMonth": "دلار آمریکا / ماه",
     "usdPerMonthPerMember": "دلار آمریکا / ماه / هر عضو",
     "usdPerYear": "دلار آمریکا / سال",
@@ -4953,11 +5394,15 @@
       "breadcrumbLabel": "ناوبری الگو",
       "cloudUpsellDescription": "اجرا روی GPUهای ابری بدون راه‌اندازی محلی یا دانلود.",
       "cloudUpsellTitle": "اجرای این الگو در Comfy Cloud",
+      "descriptionLess": "نمایش کمتر",
+      "descriptionMore": "نمایش بیشتر",
       "downloadCancelled": "دانلود لغو شد",
       "downloadFailed": "دانلود ناموفق بود",
+      "downloadFailedHint": "دانلود تکمیل نشد. برای تلاش دوباره، از «تلاش مجدد» استفاده کنید.",
       "downloadModel": "دانلود مدل",
       "downloadModelNamed": "دانلود {model}",
       "downloadModelsAndOpen": "دانلود مدل‌ها و باز کردن",
+      "downloadModelsAndOpenWithSize": "دانلود مدل‌ها و باز کردن ({size})",
       "downloadPaused": "متوقف‌شده",
       "downloadPausedModel": "دانلود {model} متوقف شده است",
       "downloadPausedProgress": "متوقف‌شده · {progress}",
@@ -4967,6 +5412,12 @@
       "downloading": "در حال دانلود",
       "downloadingModel": "در حال دانلود {model}",
       "getItManually": "دریافت دستی",
+      "inputAssets": "دارایی‌های ورودی",
+      "inputMediaTypes": {
+        "audio": "صوت",
+        "image": "تصویر",
+        "video": "ویدیو"
+      },
       "installed": "نصب‌شده",
       "models": "مدل‌ها",
       "openInCloud": "باز کردن در Cloud",
@@ -5041,13 +5492,13 @@
     "failedToApplyTexture": "اعمال بافت با خطا مواجه شد",
     "failedToConvertToSubgraph": "تبدیل آیتم‌ها به subgraph انجام نشد",
     "failedToCreateCustomer": "ایجاد مشتری انجام نشد: {error}",
-    "failedToDownloadFile": "دانلود فایل انجام نشد",
     "failedToExportModel": "صادرات مدل با فرمت {format} انجام نشد",
     "failedToFetchBalance": "دریافت موجودی انجام نشد: {error}",
     "failedToFetchLogs": "دریافت گزارش‌های سرور انجام نشد",
     "failedToFetchSubscription": "دریافت وضعیت اشتراک انجام نشد: {error}",
     "failedToInitializeCameraAngleViewer": "راه‌اندازی نمایشگر زاویهٔ دوربین ناموفق بود. صفحه را دوباره بارگذاری کنید.",
     "failedToInitializeCameraInfoViewer": "راه‌اندازی نمایشگر اطلاعات دوربین ناموفق بود. صفحه را دوباره بارگذاری کنید.",
+    "failedToInitializeLightInfoViewer": "راه‌اندازی نمایشگر اطلاعات نور ناموفق بود. صفحه را دوباره بارگذاری کنید.",
     "failedToInitializeLoad3dViewer": "راه‌اندازی نمایشگر سه‌بعدی انجام نشد",
     "failedToInitiateCreditPurchase": "آغاز خرید اعتبار انجام نشد: {error}",
     "failedToInitiateSubscription": "آغاز اشتراک انجام نشد: {error}",
@@ -5056,7 +5507,9 @@
     "failedToLoadModel": "بارگذاری مدل سه‌بعدی انجام نشد",
     "failedToPurchaseCredits": "خرید اعتبار انجام نشد: {error}",
     "failedToQueue": "صف‌بندی انجام نشد",
+    "failedToRegisterSubgraph": "ثبت زیرگراف ناموفق بود",
     "failedToSaveDraft": "ذخیره پیش‌نویس workflow ناموفق بود",
+    "failedToSaveNodeTemplates": "ذخیرهٔ قالب‌های node ناموفق بود",
     "failedToSetGizmoMode": "تنظیم حالت Gizmo ناموفق بود",
     "failedToToggleCamera": "تغییر وضعیت دوربین انجام نشد",
     "failedToToggleGizmo": "فعال/غیرفعال کردن Gizmo ناموفق بود",
@@ -5081,23 +5534,35 @@
     "missingMediaVerificationFailed": "تأیید رسانه‌های مفقود ناموفق بود. ممکن است برخی ورودی‌ها در زبانهٔ مشکلات نمایش داده نشوند.",
     "missingModelVerificationFailed": "تأیید مدل‌های مفقود ناموفق بود. ممکن است برخی مدل‌ها در زبانهٔ مشکلات نمایش داده نشوند.",
     "modelLoadedSuccessfully": "مدل سه‌بعدی با موفقیت بارگذاری شد",
+    "modelsAndCacheCleared": "مدل‌ها و کش اجرا پاک شدند.",
+    "modelsUnloaded": "مدل‌ها باربرداری شدند.",
     "no3dScene": "صحنه سه‌بعدی برای اعمال بافت وجود ندارد",
     "no3dSceneToExport": "صحنه سه‌بعدی برای صادرات وجود ندارد",
+    "noPersonalWorkspace": "این حساب صورتحساب شخصی ندارد. صورتحساب را از workspace تیمی خود مدیریت کنید.",
     "noTemplatesToExport": "قالبی برای صادرات وجود ندارد",
+    "noWebcamImageCaptured": "هیچ تصویری از وب‌کم ثبت نشد",
     "nodeDefinitionsUpdateFailed": "به‌روزرسانی تعاریف node انجام نشد",
     "nodeDefinitionsUpdated": "تعاریف node به‌روزرسانی شد",
     "nothingSelected": "موردی انتخاب نشده است",
     "nothingToGroup": "موردی برای گروه‌بندی وجود ندارد",
+    "nothingToPasteIntoNode": "چیزی برای چسباندن در این node وجود ندارد",
     "nothingToQueue": "موردی برای صف‌بندی وجود ندارد",
+    "notificationsLabel": "اعلان",
+    "notificationsViewportLabel": "اعلان‌ها ({hotkey})",
     "pendingTasksDeleted": "وظایف در انتظار حذف شدند",
     "pleaseSelectNodesToGroup": "لطفاً nodeها (یا گروه‌های دیگر) را برای ایجاد گروه انتخاب کنید",
     "pleaseSelectOutputNodes": "لطفاً nodeهای خروجی را انتخاب کنید",
     "unableToGetModelFilePath": "امکان دریافت مسیر فایل مدل وجود ندارد",
     "unauthorizedDomain": "دامنه شما ({domain}) مجاز به استفاده از این سرویس نیست. لطفاً برای افزودن دامنه خود به لیست سفید با {email} تماس بگیرید.",
+    "unloadModelsError": "هنگام تلاش برای باربرداری مدل‌ها خطایی رخ داد.",
+    "unloadModelsFailed": "باربرداری مدل‌ها ناموفق بود. ممکن است ComfyUI نصب‌شده نسخه‌ای قدیمی باشد.",
     "unsupportedHDRIFormat": "فرمت فایل پشتیبانی نمی‌شود. لطفاً یک فایل .hdr یا .exr بارگذاری کنید.",
     "updateRequested": "درخواست به‌روزرسانی ثبت شد",
     "useApiKeyTip": "نکته: به ورود عادی دسترسی ندارید؟ از گزینه Comfy API Key استفاده کنید.",
-    "userNotAuthenticated": "کاربر احراز هویت نشده است"
+    "userNotAuthenticated": "کاربر احراز هویت نشده است",
+    "workflowLinksFixed": "{patched} اتصال node اصلاح و {deleted} پیوند نامعتبر حذف شد.",
+    "workflowLinksFixedTitle": "پیوندهای workflow اصلاح شدند",
+    "workflowValidationTitle": "اعتبارسنجی workflow"
   },
   "typeform": {
     "loadError": "بارگذاری فرم ناموفق بود. لطفاً بعداً دوباره تلاش کنید."
@@ -5207,6 +5672,10 @@
     "browseFiles": "انتخاب فایل‌ها",
     "dropPrompt": "فایل خود را رها کنید یا"
   },
+  "widgetHistory": {
+    "redo": "انجام مجدد",
+    "undo": "واگرد"
+  },
   "widgets": {
     "boolean": {
       "false": "نادرست",
@@ -5265,10 +5734,17 @@
     "savedAsWorkflow": "به گردش‌کار فقط گراف node تبدیل شد"
   },
   "workspace": {
-    "addedToWorkspace": "شما به این مورد افزوده شده‌اید:",
+    "addedToNamedWorkspace": "به {workspaceName} افزوده شدید",
     "deepLinkStayed": "باز کردن آن فضای کاری ممکن نشد. همچنان در {workspaceName} هستید.",
     "inviteAccepted": "دعوت پذیرفته شد",
+    "inviteDirectoryManaged": "مدیر سازمان شما عضویت‌ها را مدیریت می‌کند",
+    "inviteDirectoryManagedDetail": "اعضای این workspace از طریق directory سازمان شما مدیریت می‌شوند؛ بنابراین نمی‌توان برای پیوستن به آن از پیوندهای دعوت استفاده کرد. از مدیر سازمان خود بخواهید شما را اضافه کند.",
     "inviteFailed": "پذیرش دعوت ناموفق بود",
+    "inviteNeedsSignIn": "برای پذیرفتن این دعوت وارد شوید",
+    "inviteNeedsSignInDetail": "این مرورگر وارد شده است، اما برای پذیرفتن دعوت باید یک‌بار اینجا وارد شوید.",
+    "inviteSignIn": "ورود",
+    "inviteSsoUnavailable": "از مدیر خود بخواهید شما را اضافه کند",
+    "inviteSsoUnavailableDetail": "هنوز نمی‌توان پیوندهای دعوت را از حساب SSO پذیرفت. از یکی از مدیران workspace بخواهید شما را مستقیماً به workspace اضافه کند.",
     "switchFailed": "تغییر ورک‌اسپیس ناموفق بود. لطفاً دوباره تلاش کنید.",
     "viewWorkspace": "مشاهده workspace"
   },
@@ -5277,40 +5753,43 @@
       "accessDenied": "شما به این فضای کاری دسترسی ندارید.",
       "invalidFirebaseToken": "احراز هویت ناموفق بود. لطفاً دوباره وارد شوید.",
       "notAuthenticated": "برای دسترسی به فضاهای کاری باید وارد شوید.",
+      "ssoRequired": "سازمان شما به ورود یکپارچه نیاز دارد. برای ورود، با SSO ادامه دهید.",
       "tokenExchangeFailed": "احراز هویت با فضای کاری ناموفق بود: {error}",
       "workspaceNotFound": "فضای کاری پیدا نشد."
     },
     "initializationFailed": "امکان بارگذاری workspace شما وجود ندارد",
     "initializationFailedDetail": "اتصال خود را بررسی کرده و دوباره تلاش کنید.",
     "initializationFailedSignOutDetail": "خروج کرده و دوباره وارد شوید تا ادامه دهید.",
+    "noWorkspaceAccess": {
+      "detail": "از مدیر خود بخواهید شما را به یک workspace اضافه کند، سپس دوباره وارد شوید.",
+      "title": "به هیچ workspaceی دسترسی ندارید"
+    },
     "retry": "تلاش مجدد"
   },
   "workspacePanel": {
-    "activity": {
-      "columns": {
-        "creditsUsed": "اعتبار مصرف‌شده",
-        "date": "تاریخ",
-        "eventDetails": "جزئیات رویداد",
-        "eventType": "نوع رویداد",
-        "user": "کاربر"
-      },
-      "empty": "هنوز فعالیتی وجود ندارد.",
-      "fullActivity": "تمام فعالیت‌ها",
-      "hoverCard": {
-        "lastActivity": "آخرین فعالیت",
-        "partnerNodeUsed": "گره شریک استفاده‌شده",
-        "totalCreditsUsed": "مجموع اعتبار مصرف‌شده"
-      }
-    },
     "billingStatus": {
+      "autoTopUpFailed": {
+        "body": "پرداخت افزایش خودکار اعتبار شما انجام نشد. روش پرداخت خود را به‌روزرسانی کنید یا اعتبار را به‌صورت دستی اضافه کنید.",
+        "title": "افزایش خودکار اعتبار ناموفق بود"
+      },
+      "autoTopUpOff": {
+        "body": "روش پرداخت شما ۳ بار پیاپی رد شد. روش پرداخت خود را به‌روزرسانی کنید، سپس افزایش خودکار اعتبار را دوباره فعال کنید.",
+        "title": "افزایش خودکار اعتبار غیرفعال شد"
+      },
       "ending": {
-        "body": "اعضا تا آن زمان دسترسی کامل دارند. برای حفظ اعتبارهای اشتراکی تیمتان، طرح خود را ازسر بگیرید.",
+        "body": "دیگر هزینه‌ای از شما دریافت نخواهد شد. اعضا تا آن زمان دسترسی کامل خواهند داشت. برای حفظ اعتبارهای مشترک تیم خود، طرح‌تان را از سر بگیرید.",
         "contactSales": "تماس با فروش",
         "enterpriseBody": "اعضا تا آن زمان دسترسی کامل دارند. برای تمدید با تیم فروش ما تماس بگیرید.",
         "enterpriseTitle": "طرح Enterprise شما در {date} پایان می‌یابد",
         "memberBody": "تا آن زمان می‌توانید workflowها را اجرا کنید.",
+        "personalBody": "دیگر هزینه‌ای از شما دریافت نخواهد شد. برای حفظ اعتبارهای ماهانه‌تان، طرح خود را از سر بگیرید.",
+        "personalTitle": "طرح {plan} شما در {date} پایان می‌یابد",
         "reactivate": "ازسرگیری طرح",
         "title": "طرح Team شما در {date} پایان می‌یابد"
+      },
+      "lowCredits": {
+        "localBody": "{credits} اعتبار باقی مانده است. برای ادامه اجرای Partner Nodes، اعتبار اضافه کنید.",
+        "title": "اعتبارها رو به اتمام‌اند"
       },
       "outOfCredits": {
         "addCredits": "افزودن اعتبار",
@@ -5319,23 +5798,43 @@
         "dismiss": "بستن",
         "memberBody": "تیم شما همه اعتبارهای خود را مصرف کرده است. از مالک workspace خود بخواهید اعتبار بیشتری اضافه کند یا تا شارژ مجدد اعتبارها در {date} صبر کنید.",
         "memberBodyNoDate": "تیم شما همه اعتبارهای خود را مصرف کرده است. از مالک workspace خود بخواهید اعتبار بیشتری اضافه کند.",
+        "pastDueBody": "تیم شما تمام اعتبارهای خود را استفاده کرده است. برای افزودن اعتبار بیشتر، روش پرداخت خود را به‌روزرسانی کنید.",
+        "pastDueMemberBody": "تیم شما تمام اعتبارهای خود را استفاده کرده است. از مالک workspace خود بخواهید روش پرداخت را به‌روزرسانی کند.",
+        "pastDuePersonalBody": "تمام اعتبارهای خود را استفاده کرده‌اید. برای افزودن اعتبار بیشتر، روش پرداخت خود را به‌روزرسانی کنید.",
+        "personalBody": "تمام اعتبارهای خود را استفاده کرده‌اید. اعتبار بیشتری اضافه کنید یا تا شارژ مجدد اعتبارها در {date} صبر کنید.",
+        "personalBodyNoDate": "تمام اعتبارهای خود را استفاده کرده‌اید. اعتبار بیشتری اضافه کنید.",
         "title": "اعتبار به پایان رسیده است"
       },
-      "paused": {
-        "body": "اشتراک این ورک‌اسپیس متوقف شده است. برای ادامه، پرداخت را به‌روزرسانی کنید.",
-        "memberBody": "اشتراک این ورک‌اسپیس متوقف شده است. مدیران ورک‌اسپیس باید روش پرداخت را به‌روزرسانی کنند.",
-        "personalBody": "اشتراک شما متوقف شده است. برای ازسرگیری، روش پرداخت خود را به‌روزرسانی کنید.",
-        "personalPaymentFailedBody": "پرداخت شما انجام نشد. برای ازسرگیری، روش پرداخت خود را به‌روزرسانی کنید.",
-        "title": "اشتراک متوقف شده است"
+      "parked": {
+        "body": "برای رفع مشکل با پشتیبانی تماس بگیرید.",
+        "contactSupport": "تماس با پشتیبانی",
+        "title": "مشکلی در پرداخت اخیر رخ داد"
       },
-      "payInvoice": "پرداخت فاکتور",
+      "paused": {
+        "body": "اشتراک این ورک‌اسپیس متوقف شده است. برای ادامه، پرداخت را به‌روزرسانی کنید."
+      },
       "planChange": {
         "body": "طرح فعلی شما تا آن زمان فعال می‌ماند.",
         "title": "طرح شما در {date} به {plan} تغییر می‌کند."
       },
+      "planCheckout": {
+        "dismiss": "بستن",
+        "paymentReceived": {
+          "body": "طرح شما در حال فعال‌سازی است. دوباره از شما هزینه‌ای دریافت نمی‌شود.",
+          "title": "پرداخت دریافت شد"
+        },
+        "verifyPayment": {
+          "action": "پرداخت خود را تأیید کنید",
+          "body": "بانک شما برای تکمیل این پرداخت به تأیید اضافی نیاز دارد.",
+          "title": "پرداخت خود را تأیید کنید"
+        }
+      },
       "planEnded": {
         "enterpriseBody": "برای شروع یک طرح Enterprise جدید، با فروش تماس بگیرید.",
         "enterpriseTitle": "طرح Enterprise شما در {date} پایان یافت",
+        "personalBody": "برای اجرای workflowها و دریافت دوبارهٔ اعتبارهای ماهانه، اشتراک خود را تمدید کنید.",
+        "personalTitle": "طرح {plan} شما در {date} پایان یافت",
+        "personalTitleNoDate": "طرح {plan} شما پایان یافته است",
         "planTitle": "طرح شما در {date} پایان یافت",
         "salesBody": "برای شروع یک طرح جدید، با فروش تماس بگیرید.",
         "salesMemberBody": "از مالک workspace خود بخواهید با فروش تماس بگیرد.",
@@ -5344,6 +5843,112 @@
         "teamTitle": "طرح Team شما در {date} پایان یافت"
       },
       "updatePayment": "به‌روزرسانی پرداخت"
+    },
+    "billingTab": {
+      "autoTopUp": {
+        "actions": {
+          "manage": "مدیریت",
+          "turnOn": "روشن کردن",
+          "updatePayment": "به‌روزرسانی پرداخت"
+        },
+        "failed": "پرداخت شما انجام نشد. روش پرداخت خود را به‌روزرسانی کنید یا اعتبارها را به‌صورت دستی اضافه کنید.",
+        "limit": "سقف ماهانه: {spent} از {limit} استفاده شده است",
+        "limitTooltip": "فقط پرداخت‌های افزایش اعتبار خودکار را محاسبه می‌کند. در {date} بازنشانی می‌شود.",
+        "limitTooltipNoDate": "فقط پرداخت‌های افزایش اعتبار خودکار را محاسبه می‌کند.",
+        "off": "وقتی موجودی‌تان کم می‌شود، اعتبارها را افزایش می‌دهد",
+        "onHold": "روش پرداخت پیش‌فرضی وجود ندارد. برای ازسرگیری افزایش اعتبار خودکار، یکی تنظیم کنید.",
+        "paused": "سقف ماهانه پر شده است. در {date} از سر گرفته می‌شود.",
+        "pausedNoDate": "سقف ماهانه پر شده است.",
+        "status": {
+          "failed": "ناموفق",
+          "off": "خاموش",
+          "on": "روشن",
+          "onHold": "در انتظار",
+          "turnedOff": "خاموش شد"
+        },
+        "title": "افزایش اعتبار خودکار",
+        "turnedOff": "پس از ۳ پرداخت ردشده خاموش شد. روش پرداخت خود را به‌روزرسانی کنید، سپس دوباره آن را روشن کنید.",
+        "unavailable": "بارگیری افزایش اعتبار خودکار ممکن نشد."
+      },
+      "credits": {
+        "addCredits": "افزودن اعتبار",
+        "available": "موجود",
+        "inUse": "اکنون در حال استفاده",
+        "overdrawn": "اجرای شما {count} اعتبار بیشتر از موجودی‌تان مصرف کرد. | اجرای شما {count} اعتبار بیشتر از موجودی‌تان مصرف کرد.",
+        "plan": "طرح",
+        "planOfPool": "{remaining} از {total}",
+        "planTooltip": "اعتبارهای شامل طرح شما. در هر دورهٔ صورتحساب دوباره شارژ می‌شوند.",
+        "rateInfo": "دربارهٔ اعتبارها",
+        "rateTooltip": "هزینهٔ اجراها با اعتبار پرداخت می‌شود. {credits} اعتبار = $1.",
+        "title": "اعتبارها",
+        "topUp": "افزایش اعتبار",
+        "topUpTooltip": "اعتبارهایی که افزوده‌اید. پس از تمام‌شدن اعتبارهای طرح استفاده می‌شوند.",
+        "unavailable": "بارگیری موجودی شما ممکن نشد."
+      },
+      "handoff": {
+        "member": {
+          "action": "مشاهدهٔ میزان استفاده",
+          "label": "میزان استفاده"
+        },
+        "owner": {
+          "action": "باز کردن صورتحساب",
+          "label": "روش‌های پرداخت، فاکتورها و میزان استفاده"
+        }
+      },
+      "loadError": "نتوانستیم طرح شما را بارگیری کنیم.",
+      "plan": {
+        "actions": {
+          "choosePlan": "انتخاب طرح",
+          "contactSales": "تماس با بخش فروش",
+          "manage": "مدیریت",
+          "resume": "ازسرگیری طرح",
+          "stay": "ماندن در {plan}",
+          "subscribe": "اشتراک گرفتن"
+        },
+        "activating": "در حال فعال‌سازی طرح {plan} شما…",
+        "active": {
+          "monthly": "صورتحساب ماهانه است. فاکتور بعدی: {date}.",
+          "yearly": "صورتحساب سالانه است. فاکتور بعدی: {date}."
+        },
+        "ended": "در {date} پایان یافت.",
+        "ending": "در {date} پایان می‌یابد. دوباره هزینه‌ای از شما دریافت نخواهد شد.",
+        "lifecycleRefused": "نتوانستیم این تغییر را اعمال کنیم. دوباره تلاش کنید.",
+        "managedByOwner": "توسط مالک workspace مدیریت می‌شود.",
+        "noPlan": {
+          "freeRunsLeft": "{remaining} از {total} اجرای رایگان شما باقی مانده است. برای ادامهٔ اجرای workflowها پس از آن، اشتراک بگیرید.",
+          "freeRunsUsed": "از همهٔ {total} اجرای رایگان استفاده کرده‌اید. برای ادامهٔ اجرای workflowها اشتراک بگیرید.",
+          "line": "برای اجرای workflowها در Cloud اشتراک بگیرید.",
+          "title": "این workspace هیچ طرح فعالی ندارد"
+        },
+        "resumeConfirm": {
+          "body": "طرح شما در {date} تمدید خواهد شد. هر زمان می‌توانید دوباره لغو کنید.",
+          "title": "طرح {plan} خود را از سر می‌گیرید؟"
+        },
+        "scheduledChange": "در {date} به {plan} تغییر می‌کند.",
+        "stayConfirm": {
+          "title": "تغییر خود به {plan} را لغو می‌کنید؟"
+        },
+        "unknown": {
+          "title": "طرح شما"
+        }
+      },
+      "topupCheckout": {
+        "creditsApplying": {
+          "body": "اعتبارهای شما در حال افزوده‌شدن هستند. دوباره از شما هزینه‌ای دریافت نخواهد شد.",
+          "title": "پرداخت دریافت شد"
+        },
+        "dismiss": "بستن",
+        "failed": {
+          "body": "اعتباری افزوده نشد. دوباره تلاش کنید یا از روش پرداخت دیگری استفاده کنید.",
+          "title": "افزایش اعتبار {amount} شما انجام نشد",
+          "titleNoAmount": "افزایش اعتبار شما انجام نشد"
+        },
+        "processing": {
+          "body": "بانک شما در حال تأیید پرداخت است. اعتبارها پس از تأیید افزوده می‌شوند، بنابراین نیازی نیست دوباره پرداخت کنید.",
+          "title": "پردازش پرداخت"
+        }
+      },
+      "tryAgain": "تلاش مجدد"
     },
     "changeRoleDialog": {
       "demoteConfirm": "تنزل به عضو",
@@ -5433,12 +6038,6 @@
         "resendInvite": "ارسال مجدد دعوت‌نامه",
         "setCreditLimit": "تنظیم سقف اعتبار"
       },
-      "activity": {
-        "daysAgo": "{count} روز پیش",
-        "hoursAgo": "{n} ساعت پیش",
-        "justNow": "همین حالا",
-        "minutesAgo": "{n} دقیقه پیش"
-      },
       "columns": {
         "creditsUsed": "اعتبار استفاده‌شده در این ماه",
         "email": "ایمیل",
@@ -5480,18 +6079,23 @@
       "totalMembersCount": "{count} از {maxSeats} عضو در مجموع.",
       "totalMembersUnlimited": "{count} عضو در مجموع. | {count} عضو در مجموع.",
       "upgradeToTeam": "ارتقاء به تیم",
-      "upsellBanner": "برای افزودن همکاران، پلن خود را ارتقاء دهید.",
-      "upsellBannerEnterpriseEnded": "برای فعال‌سازی دوباره طرح Enterprise خود با بخش فروش تماس بگیرید.",
-      "upsellBannerPlanEnded": "برای فعال‌سازی دوباره طرحتان با بخش فروش تماس بگیرید.",
-      "upsellBannerReactivate": "برای افزودن همکاران بیشتر، پلن خود را فعال‌سازی مجدد کنید."
+      "upsellBanner": "برای افزودن همکاران، پلن خود را ارتقاء دهید."
     },
     "menu": {
       "creatorCannotLeave": "سازنده workspace نمی‌تواند workspace ایجادشده را ترک کند.",
       "deleteWorkspace": "حذف محیط کاری",
-      "deleteWorkspaceAfterPlanEndsTooltip": "پس از پایان طرح شما در {date} می‌توانید این workspace را حذف کنید",
+      "deleteWorkspaceAfterPlanEndsTooltip": "پس از پایان طرح شما در {date}، می‌توانید این workspace را حذف کنید.",
+      "deleteWorkspaceBillingInProgressTooltip": "تغییری در صورتحساب در حال انجام است. لحظاتی دیگر دوباره تلاش کنید.",
+      "deleteWorkspaceBillingParkedTooltip": "یک پرداخت اخیر به اصلاح توسط تیم ما نیاز دارد. با پشتیبانی تماس بگیرید.",
       "deleteWorkspaceDisabledTooltip": "ابتدا اشتراک فعال محیط کاری خود را لغو کنید",
+      "deleteWorkspacePlanNotEndedTooltip": "پس از پایان طرح این workspace می‌توانید آن را حذف کنید. آن را از «مدیریت طرح» لغو کنید.",
+      "deleteWorkspaceUnavailableTooltip": "در حال حاضر نمی‌توان این workspace را حذف کرد.",
       "editWorkspace": "ویرایش جزئیات محیط کاری",
-      "leaveWorkspace": "خروج از محیط کاری"
+      "leaveWorkspace": "خروج از محیط کاری",
+      "leaveWorkspaceCreatorTooltip": "شما این workspace را ایجاد کرده‌اید، بنابراین نمی‌توانید آن را ترک کنید.",
+      "leaveWorkspaceDirectoryTooltip": "سازمان شما این عضویت را مدیریت می‌کند، بنابراین نمی‌توانید این workspace را ترک کنید.",
+      "leaveWorkspaceOnlyOwnerTooltip": "پیش از ترک این workspace، عضو دیگری را مالک کنید.",
+      "leaveWorkspaceUnavailableTooltip": "در حال حاضر نمی‌توانید این workspace را ترک کنید."
     },
     "partnerNodes": {
       "accessMode": "حالت دسترسی nodeهای شریک",
@@ -5590,6 +6194,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "ایجاد محیط کاری جدید",
     "failedToSwitch": "تغییر فضای کاری ناموفق بود",
+    "managedByOrganization": "سازمان شما workspaceهایتان را مدیریت می‌کند؛ بنابراین نمی‌توانید workspace جدیدی ایجاد کنید.",
     "maxWorkspacesReached": "شما فقط می‌توانید مالک ۱۰ محیط کاری باشید. برای ایجاد محیط کاری جدید، یکی را حذف کنید.",
     "personal": "شخصی",
     "roleMember": "عضو",

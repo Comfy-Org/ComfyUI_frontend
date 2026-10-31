@@ -1,6 +1,6 @@
-import type { CurveData } from '@/components/curve/types'
+import type { CurveData } from '@comfyorg/graph-model/curve'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ICurveWidget } from '@/lib/litegraph/src/types/widgets'
+import type { ICurveWidget } from '@comfyorg/graph-model/widgets'
 import type {
   CurveInputSpec,
   InputSpec as InputSpecV2
@@ -22,7 +22,13 @@ export const useCurveWidget = (): ComfyWidgetConstructorV2 => {
       ? { ...spec.default, points: [...spec.default.points] }
       : { ...DEFAULT_CURVE_DATA, points: [...DEFAULT_CURVE_DATA.points] }
 
-    const rawWidget = node.addWidget('curve', spec.name, defaultValue, () => {})
+    const rawWidget = node.addWidget(
+      'curve',
+      spec.name,
+      defaultValue,
+      () => {},
+      { hideInPanel: true }
+    )
 
     if (rawWidget.type !== 'curve') {
       throw new Error(`Unexpected widget type: ${rawWidget.type}`)

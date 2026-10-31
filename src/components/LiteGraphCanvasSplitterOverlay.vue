@@ -1,10 +1,10 @@
 <template>
   <div
-    class="pointer-events-none absolute top-0 left-0 z-999 flex size-full flex-col"
+    class="pointer-events-none absolute top-0 left-0 isolate flex size-full flex-col"
   >
     <slot name="workflow-tabs" />
 
-    <div class="pointer-events-none flex min-h-0 flex-1 flex-row">
+    <div class="pointer-events-none flex min-h-0 flex-1">
       <div
         :class="
           cn(
@@ -37,8 +37,8 @@
               :order="1"
               :class="
                 sidebarLocation === 'left'
-                  ? 'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
-                  : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
+                  ? 'side-bar-panel pointer-events-auto bg-background focus-visible:outline-hidden'
+                  : 'pointer-events-auto bg-background focus-visible:outline-hidden'
               "
               :min-size="
                 sidebarLocation === 'left'
@@ -72,7 +72,7 @@
                 cn(
                   'pointer-events-auto',
                   !firstPanelRendered && 'hidden',
-                  sidebarLocation === 'left' && 'bg-interface-stroke/50'
+                  sidebarLocation === 'left' && 'bg-border/50'
                 )
               "
               @dragging="onResizeDragging($event, 'first-side-panel')"
@@ -127,7 +127,7 @@
                   id="bottom-panel"
                   :order="2"
                   :default-size="bottomPanelDefaultSizes[1]"
-                  class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-interface-stroke bg-comfy-menu-bg focus-visible:outline-hidden"
+                  class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border bg-background focus-visible:outline-hidden"
                 >
                   <slot name="bottom-panel" />
                 </SplitterPanel>
@@ -142,7 +142,7 @@
                 cn(
                   'pointer-events-auto',
                   !lastPanelRendered && 'hidden',
-                  sidebarLocation === 'right' && 'bg-interface-stroke/50'
+                  sidebarLocation === 'right' && 'bg-border/50'
                 )
               "
               @dragging="onResizeDragging($event, 'last-side-panel')"
@@ -156,8 +156,8 @@
               :order="3"
               :class="
                 sidebarLocation === 'right'
-                  ? 'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
-                  : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
+                  ? 'side-bar-panel pointer-events-auto bg-background focus-visible:outline-hidden'
+                  : 'pointer-events-auto bg-background focus-visible:outline-hidden'
               "
               :min-size="
                 sidebarLocation === 'right'
@@ -207,9 +207,9 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SplitterGroup from '@/components/ui/splitter/SplitterGroup.vue'
-import SplitterPanel from '@/components/ui/splitter/SplitterPanel.vue'
-import SplitterResizeHandle from '@/components/ui/splitter/SplitterResizeHandle.vue'
+import SplitterGroup from '@comfyorg/design-system/splitter/SplitterGroup'
+import SplitterPanel from '@comfyorg/design-system/splitter/SplitterPanel'
+import SplitterResizeHandle from '@comfyorg/design-system/splitter/SplitterResizeHandle'
 import { useAppMode } from '@/composables/useAppMode'
 import { usePanelSizing } from '@/composables/usePanelSizing'
 import {

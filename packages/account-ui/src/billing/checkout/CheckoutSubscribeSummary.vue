@@ -1,13 +1,13 @@
 <template>
   <div class="flex flex-col gap-2">
-    <span class="text-sm text-base-foreground">
+    <span class="text-sm text-foreground">
       {{ plan.name }}
     </span>
-    <div class="flex items-baseline gap-2">
-      <span class="text-2xl font-semibold text-base-foreground tabular-nums">
+    <div class="flex items-baseline gap-2 text-foreground">
+      <span class="text-2xl font-semibold tabular-nums">
         ${{ displayPrice }}
       </span>
-      <span class="text-base text-base-foreground">
+      <span class="text-base">
         {{ copy.usdPerMonth }}
       </span>
     </div>
@@ -23,12 +23,12 @@
     :class="cn('flex flex-col gap-3 pt-16 pb-8', compact && 'xl:pt-6 xl:pb-4')"
   >
     <div class="flex items-center justify-between">
-      <span class="text-base-foreground">
+      <span class="text-foreground">
         {{ refillLabel }}
       </span>
       <div class="flex items-center gap-1">
-        <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
-        <span class="font-bold text-base-foreground tabular-nums">
+        <i class="icon-[lucide--coins] bg-credit" />
+        <span class="font-bold text-foreground tabular-nums">
           {{ refillCredits }}
         </span>
       </div>
@@ -39,16 +39,16 @@
     v-if="totalDueToday"
     :class="
       cn(
-        'flex flex-col gap-2 border-t border-border-subtle pt-8',
+        'flex flex-col gap-2 border-t border-border/50 pt-8',
         compact && 'xl:pt-6'
       )
     "
   >
-    <div class="flex items-center justify-between text-base">
-      <span class="text-base-foreground">
+    <div class="flex items-center justify-between text-base text-foreground">
+      <span>
         {{ copy.totalDueToday }}
       </span>
-      <span class="font-bold text-base-foreground tabular-nums">
+      <span class="font-bold tabular-nums">
         {{ totalDueToday }}
       </span>
     </div>
@@ -63,7 +63,7 @@
       class="flex items-center justify-between text-muted-foreground"
     >
       <span>{{ discount.label }}</span>
-      <span class="text-base-foreground">
+      <span class="text-foreground">
         {{ discount.name
         }}<template v-if="discount.amount"> · −{{ discount.amount }}</template>
       </span>
@@ -132,7 +132,7 @@ const billedLabel = computed(() => {
   if (!isYearly.value) return copy.billedMonthly
   const usd = quotedPrice.value
     ? quotedPrice.value.price_cents / 100
-    : plan.monthlyPriceUsd.yearly * 12
+    : (plan.yearlyChargeUsd ?? plan.monthlyPriceUsd.yearly * 12)
   return copy.billedYearly(`$${formatNumber(usd, locale)}`)
 })
 

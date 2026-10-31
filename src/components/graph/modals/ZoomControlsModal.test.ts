@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ZoomControlsModal from '@/components/graph/modals/ZoomControlsModal.vue'
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 beforeEach(() => {
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)

@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useExtensionService } from '@/services/extensionService'
+import type { ComfyExtension } from '@/types/comfy'
 
-useExtensionService().registerExtension({
+export const imageCropExtension: ComfyExtension = {
   name: 'Comfy.ImageCrop',
 
   async nodeCreated(node: LGraphNode) {
@@ -11,4 +11,4 @@ useExtensionService().registerExtension({
     const [oldWidth, oldHeight] = node.size
     node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 450)])
   }
-})
+}

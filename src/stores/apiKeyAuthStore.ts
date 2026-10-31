@@ -1,12 +1,13 @@
-import { useLocalStorage } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useAuthStore } from '@/stores/authStore'
-import type { ApiKeyAuthHeader } from '@/types/authTypes'
+import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
+import { reportError as reportTelemetryError } from '@comfyorg/telemetry/reportError'
+import type { ApiKeyAuthHeader } from '@comfyorg/api-client/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 
 type ComfyApiUser =
@@ -14,9 +15,73 @@ type ComfyApiUser =
 
 const STORAGE_KEY = 'comfy_api_key'
 
+const SAVE_FAILURE_DETAIL = {
+  gone: 'auth.apiKey.storedForSessionDetail',
+  kept: 'auth.apiKey.storedForSessionPreviousKeptDetail',
+  unreadable: 'auth.apiKey.storedForSessionBlockedDetail'
+} as const
+
 export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
-  const authStore = useAuthStore()
-  const apiKey = useLocalStorage<string | null>(STORAGE_KEY, null)
+  const authStore = useAuthStoreAccess()
+  let storageFailureReported = false
+  const reportStorageFailure = (error: unknown) => {
+    if (storageFailureReported) return
+    storageFailureReported = true
+    reportTelemetryError(error, {
+      surface: 'auth',
+      errorType: 'api_key_storage_failed',
+      level: 'warning'
+    })
+  }
+
+  const readPersistedKey = (): string | null => {
+    try {
+      return localStorage.getItem(STORAGE_KEY)
+    } catch (error) {
+      reportStorageFailure(error)
+      return null
+    }
+  }
+
+  const apiKey = ref<string | null>(readPersistedKey())
+
+  useEventListener(window, 'storage', (event: StorageEvent) => {
+    if (event.key !== null && event.key !== STORAGE_KEY) return
+    try {
+      if (event.storageArea !== localStorage) return
+    } catch {
+      return
+    }
+    apiKey.value = event.newValue
+  })
+
+  const persistKey = (key: string): boolean => {
+    try {
+      localStorage.setItem(STORAGE_KEY, key)
+      return true
+    } catch (error) {
+      reportStorageFailure(error)
+      return false
+    }
+  }
+
+  const forgetPersistedKey = (): 'gone' | 'kept' | 'unreadable' => {
+    let stored: string | null
+    try {
+      stored = localStorage.getItem(STORAGE_KEY)
+    } catch (error) {
+      reportStorageFailure(error)
+      return 'unreadable'
+    }
+    if (stored === null) return 'gone'
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+      return 'gone'
+    } catch (error) {
+      reportStorageFailure(error)
+      return 'kept'
+    }
+  }
   const toast = useToast()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
@@ -32,6 +97,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       })
     if (apiKey.value !== watchedApiKey) return
     if (!createCustomerResponse) {
+      forgetPersistedKey()
       apiKey.value = null
       throw new Error(t('auth.login.noAssociatedUser'))
     }
@@ -65,7 +131,15 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   }
 
   const storeApiKey = wrapWithErrorHandlingAsync(async (newApiKey: string) => {
+    const persisted = persistKey(newApiKey)
     apiKey.value = newApiKey
+    if (!persisted) {
+      toast.warning(t('auth.apiKey.storedForSession'), {
+        description: t(SAVE_FAILURE_DETAIL[forgetPersistedKey()]),
+        duration: 8000
+      })
+      return true
+    }
     toast.success(t('auth.apiKey.stored'), {
       description: t('auth.apiKey.storedDetail'),
       duration: 5000
@@ -74,7 +148,19 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   }, reportError)
 
   const clearStoredApiKey = wrapWithErrorHandlingAsync(async () => {
+    const removal = forgetPersistedKey()
     apiKey.value = null
+    if (removal !== 'gone') {
+      toast.warning(t('auth.apiKey.clearedForSession'), {
+        description: t(
+          removal === 'kept'
+            ? 'auth.apiKey.clearedForSessionDetail'
+            : 'auth.apiKey.clearedForSessionBlockedDetail'
+        ),
+        duration: 8000
+      })
+      return true
+    }
     toast.success(t('auth.apiKey.cleared'), {
       description: t('auth.apiKey.clearedDetail'),
       duration: 5000

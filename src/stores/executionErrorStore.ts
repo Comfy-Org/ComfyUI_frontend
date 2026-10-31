@@ -13,23 +13,26 @@ import {
   resolveLiftChain
 } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useApp } from '@/scripts/appInstance'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
 import { useDialogService } from '@/services/dialogService'
-import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
-import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
+import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
+import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId
-} from '@/types/nodeIdentification'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 import {
   executionIdToNodeLocatorId,
   getExecutionIdByNode,
@@ -46,7 +49,7 @@ import {
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 
 interface SlotNodeErrorClearTarget {
   executionId: NodeExecutionId
@@ -282,7 +285,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   whenever(
     () => !missingNodesStore.missingNodesError?.nodeTypes.length,
     () => {
-      if (ChangeTracker.isLoadingGraph) return
+      if (ChangeTrackerAccess.isLoadingGraph) return
       retireResolvedMissingNodePromptError()
     },
     // The missing-node scan and prompt recording share a synchronous block; clear before recording the new error.
@@ -319,7 +322,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     previous?: MissingResourceCandidates
   ) {
     if (
-      ChangeTracker.isLoadingGraph ||
+      ChangeTrackerAccess.isLoadingGraph ||
       key === null ||
       key !== activeRunErrorKey.value
     )

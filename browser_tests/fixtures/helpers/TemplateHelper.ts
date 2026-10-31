@@ -4,7 +4,7 @@ import type { Page, Route } from '@playwright/test'
 import type {
   TemplateInfo,
   WorkflowTemplates
-} from '@/platform/workflow/templates/types/template'
+} from '@comfyorg/api-client/templateTypes'
 import {
   makeTemplate,
   mockTemplateIndex

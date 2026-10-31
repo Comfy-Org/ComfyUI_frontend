@@ -6,7 +6,7 @@ import {
   LiteGraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -14,15 +14,17 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import {
+  appendQuarantine,
   flushProxyWidgetMigration,
+  makeQuarantineEntry,
   normalizeLegacyProxyWidgetEntry,
   readHostQuarantine
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock(import('@/services/litegraphService'))
@@ -125,7 +127,7 @@ describe('flushProxyWidgetMigration', () => {
       host.properties.proxyWidgets = [[String(inner.id), 'seed']]
       flushProxyWidgetMigration({
         hostNode: host,
-        hostWidgetValues: [99]
+        hostWidgetValues: ['99']
       })
 
       expect(getPromotedInputValue(host, 'seed')).toBe(99)
@@ -542,6 +544,30 @@ describe('flushProxyWidgetMigration', () => {
   })
 
   describe('quarantine accumulation', () => {
+    it('restores a quarantined numeric string as a number', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'seed', type: 'INT' }]
+      })
+      const inner = new LGraphNode('Inner')
+      const slot = inner.addInput('seed', 'INT')
+      const widget = inner.addWidget('number', 'seed', 0, () => {})
+      slot.widget = { name: widget.name }
+      subgraph.add(inner)
+      subgraph.inputNode.slots[0].connect(inner.inputs[0], inner)
+      const host = createTestSubgraphNode(subgraph)
+      host.graph!.add(host)
+
+      appendQuarantine(host, [
+        makeQuarantineEntry({
+          originalEntry: ['-1', 'seed'],
+          reason: 'missingSourceNode',
+          hostValue: '42'
+        })
+      ])
+
+      expect(getPromotedInputValue(host, 'seed')).toBe(42)
+    })
+
     it('quarantines entries whose source node has disappeared', () => {
       const host = buildHost()
       host.properties.proxyWidgets = [['9999', 'seed']]

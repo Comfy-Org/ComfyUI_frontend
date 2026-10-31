@@ -65,9 +65,7 @@ test.describe(
         await openContextMenu(comfyPage, 'KSampler')
         await comfyPage.contextMenu.clickMenuItemExact('Delete')
 
-        await expect
-          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-          .toBe(initialCount - 1)
+        await comfyPage.expectNodeCount(initialCount - 1)
       })
 
       test('should not show Run Branch for non-output nodes', async ({

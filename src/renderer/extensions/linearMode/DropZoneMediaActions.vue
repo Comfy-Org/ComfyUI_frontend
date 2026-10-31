@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ImageLightbox from '@/components/common/ImageLightbox.vue'
+import ImageLightbox from '@comfyorg/design-system/media/ImageLightbox'
 
 const { mediaUrl, label, onMaskEdit } = defineProps<{
   mediaUrl: string
@@ -15,27 +15,33 @@ const lightboxOpen = ref(false)
 </script>
 <template>
   <div
-    class="absolute top-2 right-5 z-10 flex gap-1 opacity-0 transition-opacity duration-200 group-focus-within/dropzone:opacity-100 group-hover/dropzone:opacity-100"
+    class="absolute top-2 right-5 z-10 flex gap-1 text-background opacity-0 transition-opacity duration-200 group-focus-within/dropzone:opacity-100 group-hover/dropzone:opacity-100"
   >
     <button
       v-if="onMaskEdit"
       type="button"
       :aria-label="t('maskEditor.openMaskEditor')"
       :title="t('maskEditor.openMaskEditor')"
-      class="flex cursor-pointer items-center justify-center rounded-lg bg-base-foreground p-2 text-base-background transition-colors hover:bg-base-foreground/90"
+      class="flex cursor-pointer items-center justify-center rounded-lg bg-foreground p-2 transition-colors hover:bg-foreground/90"
       @click.stop="onMaskEdit()"
     >
-      <i class="icon-[comfy--mask] size-4" />
+      <i class="icon-[comfy--mask]" />
     </button>
     <button
       type="button"
       :aria-label="t('mediaAsset.actions.zoom')"
       :title="t('mediaAsset.actions.zoom')"
-      class="flex cursor-pointer items-center justify-center rounded-lg bg-base-foreground p-2 text-base-background transition-colors hover:bg-base-foreground/90"
+      class="flex cursor-pointer items-center justify-center rounded-lg bg-foreground p-2 transition-colors hover:bg-foreground/90"
       @click.stop="lightboxOpen = true"
     >
-      <i class="icon-[lucide--zoom-in] size-4" />
+      <i class="icon-[lucide--zoom-in]" />
     </button>
   </div>
-  <ImageLightbox v-model="lightboxOpen" :src="mediaUrl" :alt="label ?? ''" />
+  <ImageLightbox
+    v-model="lightboxOpen"
+    :src="mediaUrl"
+    :alt="label ?? ''"
+    :fallback-title="$t('g.imageLightbox')"
+    :close-label="$t('g.close')"
+  />
 </template>

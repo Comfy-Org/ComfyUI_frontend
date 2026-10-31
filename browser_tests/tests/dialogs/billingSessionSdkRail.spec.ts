@@ -52,6 +52,7 @@ const ACTIVE_STATUS = {
   billing_status: 'paid',
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   plan_slug: 'pro-monthly',
@@ -227,7 +228,7 @@ async function recordTotalCreditStates(page: Page) {
       }
       const tile = label?.parentElement
       if (!tile) return
-      const state = tile.querySelector('[data-pc-name="skeleton"]')
+      const state = tile.querySelector('[data-slot="skeleton"]')
         ? 'loading'
         : tile.textContent
             .replace('Total credits', '')

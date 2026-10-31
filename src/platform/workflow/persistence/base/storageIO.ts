@@ -313,16 +313,18 @@ function readSessionPointer<T extends { workspaceId: string }>(
  * then to localStorage when sessionStorage is empty (browser restart).
  */
 export function readActivePath(
-  clientId: string,
+  clientId: string | null,
   targetWorkspaceId?: string
 ): ActivePathPointer | null {
   return (
-    readSessionPointer<ActivePathPointer>(
-      StorageKeys.activePath(clientId),
-      StorageKeys.prefixes.activePath,
-      targetWorkspaceId,
-      isValidActivePathPointer
-    ) ??
+    (clientId
+      ? readSessionPointer<ActivePathPointer>(
+          StorageKeys.activePath(clientId),
+          StorageKeys.prefixes.activePath,
+          targetWorkspaceId,
+          isValidActivePathPointer
+        )
+      : null) ??
     (targetWorkspaceId
       ? readLocalPointer<ActivePathPointer>(
           StorageKeys.lastActivePath(targetWorkspaceId),
@@ -365,16 +367,18 @@ export function clearActivePath(clientId: string, workspaceId: string): void {
  * then to localStorage when sessionStorage is empty (browser restart).
  */
 export function readOpenPaths(
-  clientId: string,
+  clientId: string | null,
   targetWorkspaceId?: string
 ): OpenPathsPointer | null {
   return (
-    readSessionPointer<OpenPathsPointer>(
-      StorageKeys.openPaths(clientId),
-      StorageKeys.prefixes.openPaths,
-      targetWorkspaceId,
-      isValidOpenPathsPointer
-    ) ??
+    (clientId
+      ? readSessionPointer<OpenPathsPointer>(
+          StorageKeys.openPaths(clientId),
+          StorageKeys.prefixes.openPaths,
+          targetWorkspaceId,
+          isValidOpenPathsPointer
+        )
+      : null) ??
     (targetWorkspaceId
       ? readLocalPointer<OpenPathsPointer>(
           StorageKeys.lastOpenPaths(targetWorkspaceId),

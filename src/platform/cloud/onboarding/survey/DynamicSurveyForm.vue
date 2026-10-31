@@ -63,7 +63,7 @@
         class="px-0 text-primary-comfy-canvas/70 hover:text-primary-comfy-canvas"
         @click="goPrevious"
       >
-        <i class="icon-[lucide--chevron-left] size-4" aria-hidden="true" />
+        <i class="icon-[lucide--chevron-left]" aria-hidden="true" />
         {{ $t('g.back') }}
       </Button>
       <span v-else />
@@ -76,7 +76,7 @@
         @click="goNext"
       >
         {{ $t('g.next') }}
-        <i class="icon-[lucide--chevron-right] size-4" aria-hidden="true" />
+        <i class="icon-[lucide--chevron-right]" aria-hidden="true" />
       </Button>
       <Button
         v-else-if="isLast"
@@ -99,7 +99,7 @@ import { useForm } from 'vee-validate'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type {
   OnboardingSurvey,
   OnboardingSurveyField

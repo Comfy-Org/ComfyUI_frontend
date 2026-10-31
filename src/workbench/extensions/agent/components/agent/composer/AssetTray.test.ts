@@ -5,7 +5,7 @@ import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 
-import type { ComposerAttachment } from '../../../types/composerAttachment'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import AssetTray from './AssetTray.vue'
 
 const images: ComposerAttachment[] = [
@@ -16,7 +16,7 @@ const images: ComposerAttachment[] = [
 function renderTray(attachments = images) {
   const view = render(AssetTray, {
     props: { attachments },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   onTestFinished(async () => {
     view.unmount()
@@ -162,9 +162,12 @@ describe('asset tray previews', () => {
       await vi.advanceTimersByTimeAsync(250)
       expect(screen.getAllByRole('dialog')).toHaveLength(1)
       expect(screen.getByRole('dialog', { name: 'dog.png' })).toBeVisible()
-      expect(player.currentTime).toBe(0)
       expect(pause).toHaveBeenCalled()
       expect(player).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: `Preview ${name}` }))
+      const reopenedPlayer = screen.getByLabelText(name, { selector })
+      assert.instanceOf(reopenedPlayer, HTMLMediaElement)
+      expect(reopenedPlayer.currentTime).toBe(0)
     }
   )
 })

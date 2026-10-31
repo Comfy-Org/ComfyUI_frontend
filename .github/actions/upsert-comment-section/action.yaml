@@ -48,9 +48,13 @@ runs:
               'Either section-content or section-content-file is required'
             )
           }
-          const sectionContent = sectionContentFile
+          const rawSectionContent = sectionContentFile
             ? require('node:fs').readFileSync(sectionContentFile, 'utf8')
             : process.env.INPUT_SECTION_CONTENT
+          const sectionContent = rawSectionContent.replaceAll(
+            '<!--',
+            '<!--\u200B'
+          )
           const commentMarker = process.env.INPUT_COMMENT_MARKER
 
           if (!/^[a-z0-9-]+$/.test(sectionName)) {
@@ -71,11 +75,13 @@ runs:
             'billing-contract-release',
             'ingest-types-release',
             'playwright',
+            'playwright-update',
             'storybook',
             'chromatic',
             'custom-nodes-e2e',
             'custom-nodes-matrix',
             'fallow',
+            'architecture',
             'e2e',
             'screenshot-update',
             'preview',

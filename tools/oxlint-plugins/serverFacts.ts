@@ -90,7 +90,8 @@ const ROLE_FALLBACK_OPERATORS: ReadonlySet<string> = new Set(['??', '||'])
 const SERVER_MESSAGE_NAME = /message$/i
 // Text matching is reported where the receiver is a server execution or API
 // error; elsewhere `message` is usually a browser or library error.
-const SERVER_MESSAGE_FILE = /(?:^|\/)src\/platform\/errorCatalog\//
+const SERVER_MESSAGE_FILE =
+  /(?:^|\/)src\/platform\/workflowErrors\/errorCatalog\//
 
 export const GUIDANCE =
   "Render the server fact as received. If the UI needs a fact the API does not emit, open a backend ticket and wrap the interim expression in pendingServerFact('BE-xxxx', ...). See docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md"
@@ -835,10 +836,58 @@ export const noServerFactLiterals: Rule = {
   }
 }
 
+const FACT_CONSTRUCTOR = 'receiveServerFact'
+const FACT_PROVIDERS = [
+  /(?:^|\/)src\/platform\/serverFacts\/serverFact\.ts$/,
+  /(?:^|\/)src\/platform\/billing\/composables\/useBillingCapabilities\.ts$/,
+  /\.(?:test|spec|stories)\.ts$/,
+  /(?:^|\/)__mocks__\//,
+  /(?:^|\/)src\/storybook\//
+]
+
+export const noStrayServerFactConstructor: Rule = {
+  meta: {
+    type: 'problem',
+    docs: {
+      description:
+        'Restrict receiveServerFact to the modules that decode an API response or answer a fact locally'
+    },
+    schema: [],
+    messages: {
+      stray: `\`${FACT_CONSTRUCTOR}\` is used outside a fact provider. Only the module that decodes the API response, or a local provider listed in FACT_PROVIDERS, may mint a ServerFact; a gate receives it from there. ${GUIDANCE}`
+    }
+  },
+  create(context) {
+    const filename = context.filename.replaceAll('\\', '/')
+    if (FACT_PROVIDERS.some((provider) => provider.test(filename))) return {}
+    return {
+      ImportSpecifier(node) {
+        const imported = node.imported
+        const name =
+          imported.type === 'Identifier' ? imported.name : imported.value
+        if (name !== FACT_CONSTRUCTOR) return
+        context.report({ node, messageId: 'stray' })
+      },
+      MemberExpression(node) {
+        const property = node.property
+        const name =
+          property.type === 'Identifier' && !node.computed
+            ? property.name
+            : property.type === 'Literal'
+              ? property.value
+              : undefined
+        if (name !== FACT_CONSTRUCTOR) return
+        context.report({ node, messageId: 'stray' })
+      }
+    }
+  }
+}
+
 export default {
   meta: { name: 'comfy' },
   rules: {
     'no-capability-recombination': noCapabilityRecombination,
-    'no-server-fact-literals': noServerFactLiterals
+    'no-server-fact-literals': noServerFactLiterals,
+    'no-stray-server-fact-constructor': noStrayServerFactConstructor
   }
 }

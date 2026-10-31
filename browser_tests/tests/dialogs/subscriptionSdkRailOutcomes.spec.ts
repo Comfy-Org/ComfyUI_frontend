@@ -81,6 +81,7 @@ const ACTIVE_STANDARD_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   max_seats: 1,
@@ -462,7 +463,9 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     const [topup] = routes.topupRequests
     expect(transport(topup)).toBe('xhr')
     expect(idempotencyKey(topup)).toBeUndefined()
-    expect(topup.postDataJSON()).not.toHaveProperty('idempotency_key')
+    expect(topup.postDataJSON()).toMatchObject({
+      idempotency_key: expect.stringMatching(/^[0-9a-f-]{36}$/i)
+    })
   })
 
   test('shows the server end date for a cancelled plan after a reload', async ({

@@ -9,6 +9,7 @@ import {
   MINIMAP_POINTER_OPTS,
   readMainCanvasOffset
 } from '@e2e/fixtures/utils/minimapUtils'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 function hasCanvasContent(canvas: Locator): Promise<boolean> {
   return canvas.evaluate((el: HTMLCanvasElement) => {
@@ -28,6 +29,9 @@ function getMinimapLocators(comfyPage: ComfyPage) {
     container,
     canvas: comfyPage.page.getByTestId(TestIds.canvas.minimapCanvas),
     viewport: comfyPage.page.getByTestId(TestIds.canvas.minimapViewport),
+    interactionOverlay: comfyPage.page.getByTestId(
+      TestIds.canvas.minimapInteractionOverlay
+    ),
     toggleButton: comfyPage.page.getByTestId(
       TestIds.canvas.toggleMinimapButton
     ),
@@ -63,21 +67,14 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
   })
 
   test('Validate minimap is visible by default', async ({ comfyPage }) => {
-    const { container, canvas, viewport } = getMinimapLocators(comfyPage)
+    const { container, canvas, viewport, interactionOverlay } =
+      getMinimapLocators(comfyPage)
 
     await expect(container).toBeVisible()
     await expect(canvas).toBeVisible()
     await expect(viewport).toBeVisible()
     await expect.poll(() => comfyPage.canvasOps.getMinimapRightInset()).toBe(8)
-
-    await expect(container).toHaveCSS('position', 'relative')
-
-    // position and z-index validation moved to the parent container of the minimap
-    const minimapMainContainer = comfyPage.page.locator(
-      '.minimap-main-container'
-    )
-    await expect(minimapMainContainer).toHaveCSS('position', 'absolute')
-    await expect(minimapMainContainer).toHaveCSS('z-index', '1000')
+    await interactionOverlay.click({ trial: true })
   })
 
   test('Validate minimap toggle button state', async ({ comfyPage }) => {
@@ -156,7 +153,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       const { container } = getMinimapLocators(comfyPage)
       await expect(container).toBeVisible()
 
-      await expect(container).toHaveScreenshot('minimap-before-pan.png')
+      await expectElementScreenshot(container, 'minimap-before-pan.png')
 
       await comfyPage.page.evaluate(() => {
         const canvas = window.app!.canvas
@@ -165,7 +162,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
         canvas.ds.offset[1] = -600
         canvas.setDirty(true, true)
       })
-      await expect(container).toHaveScreenshot('minimap-after-pan.png')
+      await expectElementScreenshot(container, 'minimap-after-pan.png')
     }
   )
 
@@ -192,7 +189,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       expect(viewportBox!.x).toBeLessThan(minimapBox!.x + minimapBox!.width)
       expect(viewportBox!.y).toBeLessThan(minimapBox!.y + minimapBox!.height)
 
-      await expect(container).toHaveScreenshot('minimap-with-viewport.png')
+      await expectElementScreenshot(container, 'minimap-with-viewport.png')
     }
   )
 
@@ -427,7 +424,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await comfyPage.canvas.press('Delete')
     await comfyPage.nextFrame()
 
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
 
     // Minimap canvas should be empty — no nodes means nothing to render
     await expect
@@ -506,7 +503,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       await comfyPage.contextMenu.clickMenuItemExact('Unpack Subgraph')
       await comfyPage.contextMenu.waitForHidden()
 
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
+      await comfyPage.expectNodeCount(2)
       await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
       await expect(
         comfyPage.vueNodes.getNodeLocator(subgraphNodeId)

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import workflow from '@e2e/assets/nodes/single_ksampler.json' with { type: 'json' }
 import {
   agentTest as test,

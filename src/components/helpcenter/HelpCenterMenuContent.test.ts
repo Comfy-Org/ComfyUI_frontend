@@ -1,8 +1,9 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import axios from 'axios'
+import { ConfigProvider } from 'reka-ui'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, h } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -10,8 +11,8 @@ import enCommands from '@/locales/en/commands.json' with { type: 'json' }
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
 
 import HelpCenterMenuContent from './HelpCenterMenuContent.vue'
 
@@ -43,28 +44,24 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock<unknown>(import('@/utils/envUtil'), () => ({
   electronAPI: () => null
 }))
 
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useConflictAcknowledgment'),
+  import('@/platform/customNodes/manager/composables/useConflictAcknowledgment'),
 
   () => ({
     useConflictAcknowledgment: () => ({ shouldShowRedDot: { value: false } })
   })
 )
 
-vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
-
-vi.mock(import('@/components/icons/PuzzleIcon.vue'), () => ({
-  default: defineComponent({
-    name: 'PuzzleIconStub',
-    render: () => h('div')
-  })
-}))
+vi.mock(
+  import('@/platform/customNodes/manager/composables/dialogs/useManagerDialog')
+)
+vi.mock(import('@/platform/customNodes/manager/composables/useManagerState'))
 
 function renderComponent() {
   const user = userEvent.setup()
@@ -164,6 +161,39 @@ describe('HelpCenterMenuContent system status item', () => {
 })
 
 describe('HelpCenterMenuContent onboarding replay', () => {
+  it('keeps the submenu in its configured overlay owner', async () => {
+    useSettingStore().settingValues['Comfy.DevMode'] = true
+    const user = userEvent.setup()
+    render(
+      {
+        components: { ConfigProvider, HelpCenterMenuContent },
+        setup: () => ({ owner: ref<HTMLElement>() }),
+        template: `
+        <section ref="owner" aria-label="Help owner" />
+        <ConfigProvider v-if="owner" :teleport-to="owner">
+          <HelpCenterMenuContent />
+        </ConfigProvider>
+      `
+      },
+      {
+        global: {
+          plugins: [
+            createI18n({
+              legacy: false,
+              locale: 'en',
+              messages: { en: { ...enMessages, commands: enCommands } }
+            })
+          ]
+        }
+      }
+    )
+
+    await user.hover(await screen.findByRole('menuitem', { name: 'More...' }))
+    expect(screen.getByRole('region', { name: 'Help owner' })).toContainElement(
+      await screen.findByRole('menuitem', { name: 'Replay Onboarding' })
+    )
+  })
+
   it('is hidden outside developer mode', async () => {
     distribution.isDesktop = true
     useSettingStore().settingValues['Comfy.DevMode'] = false

@@ -23,7 +23,7 @@ import {
   selectVueAssetPromotedModel
 } from '@e2e/fixtures/utils/promotedMissingModel'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'

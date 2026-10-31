@@ -9,7 +9,7 @@ import type {
   Subgraph,
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -33,11 +33,11 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import type { WidgetId } from '@/types/widgetId'
-import type { WidgetState } from '@/types/widgetState'
-import { widgetId } from '@/types/widgetId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 
 import {
@@ -1301,6 +1301,27 @@ describe('SubgraphWidgetPromotion', () => {
         reorderSubgraphInputsByName(host, ['second', 'first'])
 
         expect(host.serialize().widgets_values).toEqual(['second value', null])
+      })
+
+      it('restores a numeric string saved for a promoted number widget as a number', () => {
+        const subgraph = createTestSubgraph({
+          inputs: [{ name: 'value', type: 'number' }]
+        })
+        const { node: interiorNode } = createNodeWithWidget(
+          'Interior',
+          'number',
+          7
+        )
+        const serialized = setupPromotedWidget(
+          subgraph,
+          interiorNode
+        ).serialize()
+        serialized.widgets_values = ['42']
+
+        const reloaded = createTestSubgraphNode(subgraph)
+        reloaded.configure(serialized)
+
+        expect(promotedWidgetStateByName(reloaded, 'value').value).toBe(42)
       })
     })
 

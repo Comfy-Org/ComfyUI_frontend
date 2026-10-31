@@ -4,17 +4,20 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import { i18n, st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
-import type { NavGroupData, NavItemData } from '@/types/navTypes'
+import type {
+  NavGroupData,
+  NavItemData
+} from '@comfyorg/design-system/lib/navigation/types'
 import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-import { zLogoIndex } from '../schemas/templateSchema'
-import type { LogoIndex } from '../schemas/templateSchema'
+import { zLogoIndex } from '@comfyorg/api-client/templateSchema'
+import type { LogoIndex } from '@comfyorg/api-client/templateSchema'
 import type {
   TemplateGroup,
   TemplateInfo,
   WorkflowTemplates
-} from '../types/template'
+} from '@comfyorg/api-client/templateTypes'
 
 // Enhanced template interface for easier filtering
 interface EnhancedTemplate extends TemplateInfo {
@@ -570,7 +573,7 @@ export const useWorkflowTemplatesStore = defineStore(
       if (!logoPath) return ''
 
       // Validate path to prevent directory traversal and ensure safe file extensions
-      const safePathPattern = /^[a-zA-Z0-9_\-./]+\.(png|jpg|jpeg|svg|webp)$/i
+      const safePathPattern = /^[a-z0-9_\-./]+\.(png|jpg|jpeg|svg|webp)$/i
       if (
         !safePathPattern.test(logoPath) ||
         logoPath.includes('..') ||

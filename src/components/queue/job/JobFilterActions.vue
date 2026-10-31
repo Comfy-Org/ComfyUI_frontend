@@ -2,6 +2,8 @@
   <div class="flex min-w-0 items-center gap-2">
     <SearchInput
       v-if="showSearch"
+      :clear-label="$t('g.clear')"
+      :accessible-label="searchPlaceholderText"
       :model-value="searchQuery"
       class="min-w-0 flex-1"
       :placeholder="searchPlaceholderText"
@@ -57,10 +59,10 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import MenuRadioGroup from '@/components/ui/menu/MenuRadioGroup.vue'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
 import { jobSortModes } from '@/composables/queue/useJobList'
 import type { JobSortMode } from '@/composables/queue/useJobList'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'

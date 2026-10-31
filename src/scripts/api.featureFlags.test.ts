@@ -2,7 +2,8 @@ import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
-import { api, ComfyApi } from '@/scripts/api'
+import { ComfyApi } from '@comfyorg/api-client/ComfyApi'
+import { api } from '@/scripts/api'
 
 interface MockWebSocket {
   readyState: number
@@ -51,8 +52,31 @@ describe('API Feature Flags', () => {
   })
 
   describe('Feature flags negotiation', () => {
+    it("drops the previous account's agent feature when resetting the socket identity", async () => {
+      const resettingApi = new ComfyApi({
+        isCloud: false,
+        featureFlagOverride: () => undefined,
+        onFreeMemory: () => {}
+      })
+      resettingApi.serverFeatureFlags.value = {
+        account_a_feature: true,
+        agent: { state: 'ready' }
+      }
+
+      const resetPromise = resettingApi.resetSocket()
+
+      expect(resettingApi.serverFeatureFlags.value).toEqual({
+        account_a_feature: true
+      })
+      await resetPromise
+    })
+
     it('marks feature flags stale without clearing them when resetting the socket identity', async () => {
-      const resettingApi = new ComfyApi()
+      const resettingApi = new ComfyApi({
+        isCloud: false,
+        featureFlagOverride: () => undefined,
+        onFreeMemory: () => {}
+      })
       resettingApi.serverFeatureFlags.value = { account_a_feature: true }
       resettingApi.serverFeatureFlagsSettled.value = true
 
@@ -120,6 +144,49 @@ describe('API Feature Flags', () => {
         api_version: '1.0.0',
         max_upload_size: 104857600,
         capabilities: ['isolated_nodes', 'dynamic_models']
+      })
+      expect(api.serverFeatureFlagsSettled.value).toBe(true)
+    })
+
+    it("folds ComfyUI's agent_status pushes into the agent feature", () => {
+      void api.init()
+      const send = (type: string, data: unknown) =>
+        wsEventHandlers['message']({ data: JSON.stringify({ type, data }) })
+
+      send('feature_flags', {
+        api_version: '1.0.0',
+        agent: { state: 'starting', reason: null }
+      })
+      const onStatus = vi.fn()
+      api.addEventListener('agent_status', onStatus)
+      onTestFinished(() => api.removeEventListener('agent_status', onStatus))
+      send('agent_status', { state: 'ready', reason: null })
+
+      expect(onStatus).toHaveBeenCalledOnce()
+
+      expect(api.getServerFeature('agent')).toEqual({
+        state: 'ready',
+        reason: null
+      })
+      expect(api.getServerFeature('api_version')).toBe('1.0.0')
+    })
+
+    it('takes the agent feature from a handshake reply that follows an earlier agent_status push', () => {
+      void api.init()
+      const send = (type: string, data: unknown) =>
+        wsEventHandlers['message']({ data: JSON.stringify({ type, data }) })
+
+      send('agent_status', { state: 'starting', reason: null })
+      expect(api.serverFeatureFlagsSettled.value).toBe(false)
+
+      send('feature_flags', {
+        api_version: '1.0.0',
+        agent: { state: 'ready', reason: null }
+      })
+
+      expect(api.getServerFeature('agent')).toEqual({
+        state: 'ready',
+        reason: null
       })
       expect(api.serverFeatureFlagsSettled.value).toBe(true)
     })
@@ -448,7 +515,11 @@ describe('API Feature Flags', () => {
   })
 
   it('preserves server-pushed graph change signals', async () => {
-    const socketApi = new ComfyApi()
+    const socketApi = new ComfyApi({
+      isCloud: false,
+      featureFlagOverride: () => undefined,
+      onFreeMemory: () => {}
+    })
     const graphChanged = vi.fn()
     const autoQueueGraphChanged = vi.fn()
     socketApi.addEventListener('graphChanged', graphChanged)

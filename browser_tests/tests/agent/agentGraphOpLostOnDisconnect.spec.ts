@@ -1,23 +1,22 @@
-import type { WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import type { ClientDocFrame } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
@@ -43,7 +42,6 @@ const THREAD_ID = 'c9b6a9c0-9b1a-4b9b-8f0e-1a2b3c4d5e6f'
 const MESSAGE_ID = '0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5001'
 const ADDED_NODE_ID = 9001
 const NODE_TEXT = 'created while disconnected'
-const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 
 const CATALOG: WidgetCatalog = {
   types: { MarkdownNote: { widget_order: ['text'] } }
@@ -52,32 +50,6 @@ const SEED: WorkflowJSON = { nodes: [], links: [] }
 
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
-
-interface SubscriptionFrame {
-  type: 'doc_subscribe' | 'doc_unsubscribe'
-  stateVector: string | null
-}
-
-interface PostReconnectDocFrame extends SubscriptionFrame {
-  at: number
-}
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null
-
-/** The follower's subscription frames for the workflow under test, or null. */
-function subscriptionFrameOf(raw: string | Buffer): SubscriptionFrame | null {
-  const frame: unknown = JSON.parse(raw.toString())
-  if (!isRecord(frame) || !isRecord(frame.data)) return null
-  if (frame.type !== 'doc_subscribe' && frame.type !== 'doc_unsubscribe')
-    return null
-  if (frame.data.workflow_id !== WORKFLOW_ID) return null
-  const { state_vector_b64 } = frame.data
-  return {
-    type: frame.type,
-    stateVector: typeof state_vector_b64 === 'string' ? state_vector_b64 : null
-  }
-}
 
 test.describe(
   'Agent graph op lost on disconnect',
@@ -90,24 +62,27 @@ test.describe(
       const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
       const vueNodes = new VueNodeHelpers(page)
 
-      let socket: WebSocketRoute | null = null
-      let connectionCount = 0
-      const postReconnectDocFrames: PostReconnectDocFrame[] = []
-      const postReconnectSubscribes = (): PostReconnectDocFrame[] =>
-        postReconnectDocFrames.filter(({ type }) => type === 'doc_subscribe')
+      const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
+      const postReconnectDocFrames = (): ClientDocFrame[] =>
+        hostSocket
+          .clientDocFrames()
+          .filter(
+            ({ type, workflowId, connection }) =>
+              connection > 1 &&
+              workflowId === WORKFLOW_ID &&
+              (type === 'doc_subscribe' || type === 'doc_unsubscribe')
+          )
+      const postReconnectSubscribes = (): ClientDocFrame[] =>
+        postReconnectDocFrames().filter(({ type }) => type === 'doc_subscribe')
+      hostSocket.answerSubscribesWith((stateVector) =>
+        hostSocket.connectionCount() > 1 &&
+        postReconnectSubscribes().length === 1
+          ? []
+          : [host.subscribed(), host.catchUp(stateVector)]
+      )
 
-      const send = (frame: AgentWsEvent | HostFrame): void => {
-        if (
-          (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
-          parseServerDocFrame(frame) === null
-        )
-          throw new Error(`frame ${frame.type} is not a valid doc frame`)
-        if (!socket) throw new Error('the app has not opened /ws yet')
-        socket.send(JSON.stringify(frame))
-      }
-
-      await page.route('**/api/agent/threads', (route) =>
-        route.fulfill(jsonRoute({ threads: [] }))
+      await page.route('**/api/agent/threads?*', (route) =>
+        route.fulfill(jsonRoute(emptyAgentThreadList()))
       )
       await page.route('**/api/agent/threads/*/messages', (route) => {
         if (route.request().method() === 'POST') {
@@ -123,38 +98,7 @@ test.describe(
         }
         return route.fulfill(jsonRoute([]))
       })
-      await page.routeWebSocket(/\/ws/, (ws) => {
-        connectionCount += 1
-        const isFirstConnection = connectionCount === 1
-        socket = ws
-        ws.send(
-          JSON.stringify({
-            type: 'status',
-            data: {
-              status: { exec_info: { queue_remaining: 0 } },
-              sid: SOCKET_SID
-            }
-          })
-        )
-        ws.onMessage((raw) => {
-          const frame = subscriptionFrameOf(raw)
-          if (frame === null) return
-          if (!isFirstConnection) {
-            postReconnectDocFrames.push({ ...frame, at: Date.now() })
-          }
-          if (frame.type !== 'doc_subscribe' || frame.stateVector === null)
-            return
-          // The reconnect's re-subscribe never gets an answer: the general
-          // realtime channel recovered (chat keeps flowing below), but the
-          // host swallows the doc subscription frame. Only a retry of that
-          // subscribe is answered.
-          const swallowed =
-            !isFirstConnection && postReconnectSubscribes().length === 1
-          if (swallowed) return
-          send(host.subscribed())
-          send(host.catchUp(frame.stateVector))
-        })
-      })
+      await hostSocket.install()
 
       await bootAgentApp(page, true, {
         settings: {
@@ -216,9 +160,7 @@ test.describe(
         .click()
       await expect(picker).toHaveText('Unsaved Workflow')
 
-      // Setup checkpoint: the follower actually bound and subscribed once on
-      // the first (and so far only) connection before anything goes wrong.
-      await expect.poll(() => connectionCount).toBe(1)
+      await expect.poll(() => hostSocket.connectionCount()).toBe(1)
 
       const composer = panel.getByRole('textbox', {
         name: AGENT_COMPOSER_LABEL
@@ -229,7 +171,7 @@ test.describe(
         panel.getByText('Add a note to the canvas.').first()
       ).toBeVisible()
 
-      send({
+      hostSocket.send({
         type: 'agent_active_tab',
         data: {
           workflow_id: WORKFLOW_ID,
@@ -238,7 +180,7 @@ test.describe(
           message_id: MESSAGE_ID
         }
       })
-      send({
+      hostSocket.send({
         type: 'agent_tool_call',
         data: {
           tool_call_id: 'call-1',
@@ -250,8 +192,6 @@ test.describe(
         }
       })
 
-      // The op lands on the authoritative document (the CRDT event log the
-      // debug report quotes) ...
       const update = host.apply([
         {
           op: 'add_node',
@@ -275,21 +215,16 @@ test.describe(
       ])
       expect(Object.keys(host.graph().nodes)).toContain(String(ADDED_NODE_ID))
 
-      // ... but the transport drops right as that update would go out: the
-      // frame is never sent, and the socket closes under the follower.
       void update
-      await socket!.close()
+      await hostSocket.disconnect()
 
-      // The main realtime channel recovers (exactly one reconnect: chat keeps
-      // working below), so the agent can still report success. The follower's
-      // re-subscribe went out on the new socket and is being ignored.
-      await expect.poll(() => connectionCount).toBe(2)
-      await expect.poll(() => postReconnectDocFrames.length).toBe(1)
-      expect(postReconnectDocFrames.map(({ type }) => type)).toEqual([
+      await expect.poll(() => hostSocket.connectionCount()).toBe(2)
+      await expect.poll(() => postReconnectDocFrames().length).toBe(1)
+      expect(postReconnectDocFrames().map(({ type }) => type)).toEqual([
         'doc_subscribe'
       ])
 
-      send({
+      hostSocket.send({
         type: 'agent_message_delta',
         data: {
           delta: 'Added a note to the canvas.',
@@ -297,43 +232,40 @@ test.describe(
           message_id: MESSAGE_ID
         }
       })
-      send({
+      hostSocket.send({
         type: 'agent_message_done',
         data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
       })
 
-      // Setup checkpoint: the agent's turn completes and reports success in
-      // the panel, exactly as the tester saw it do.
       await expect(
         panel.getByRole('button', { name: SEND_LABEL })
       ).toBeVisible()
       await expect(panel.getByRole('button', { name: STOP_LABEL })).toHaveCount(
         0
       )
-      await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
+      await expect(
+        panel.getByRole('button', {
+          name: enMessages.agent.workedNotConfirmedOnCanvas,
+          exact: true
+        })
+      ).toBeVisible()
 
-      // The agent said it added the note, and the op is in the document's own
-      // record (asserted above). The follower must notice that its subscribe
-      // was never acknowledged, retry it, and land the node on the live canvas.
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible({
         timeout: SUBSCRIBE_ACK_TIMEOUT_MS + 10_000
       })
 
-      // The retry is the fix's fingerprint: one more `doc_subscribe` on the
-      // same lineage (unchanged state vector, no unsubscribe in between) after
-      // the ack timeout, never an immediate retarget or a reset.
       await expect
         .poll(() => postReconnectSubscribes().length, {
           message: 'the follower never retried the unanswered doc_subscribe'
         })
         .toBe(2)
-      expect(postReconnectDocFrames.map(({ type }) => type)).toEqual([
+      expect(postReconnectDocFrames().map(({ type }) => type)).toEqual([
         'doc_subscribe',
         'doc_subscribe'
       ])
       const [silenced, retried] = postReconnectSubscribes()
       expect(retried.stateVector).toBe(silenced.stateVector)
-      expect(retried.at - silenced.at).toBeGreaterThanOrEqual(
+      expect(retried.atMs - silenced.atMs).toBeGreaterThanOrEqual(
         SUBSCRIBE_ACK_TIMEOUT_MS - 500
       )
     })

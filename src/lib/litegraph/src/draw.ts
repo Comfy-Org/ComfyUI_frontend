@@ -1,7 +1,7 @@
 import type { Rectangle } from './infrastructure/Rectangle'
-import type { CanvasColour } from './interfaces'
+import type { CanvasColour } from '@comfyorg/graph-model/interfaces'
 import { litegraph } from './litegraphInstance'
-import { RenderShape, TitleMode } from './types/globalEnums'
+import { RenderShape, TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { cachedMeasureText } from './utils/textMeasureCache'
 
 const ELLIPSIS = '\u2026'

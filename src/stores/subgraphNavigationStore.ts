@@ -8,19 +8,35 @@ import {
   useRouter
 } from 'vue-router'
 
-import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
+import type { PanZoom as DragAndScaleState } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { reportError } from '@/platform/telemetry/reportError'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
-import { useLitegraphService } from '@/services/litegraphService'
+import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
+
+interface WorkflowServiceAccess {
+  openWorkflow(
+    workflow: ComfyWorkflow,
+    options: { navigationIntentId?: number; initiator?: 'user' }
+  ): Promise<boolean>
+}
+
+let useWorkflowService: () => WorkflowServiceAccess
+
+/** Called by `workflowService` when it loads; it imports this store. */
+export function provideWorkflowService(
+  useService: () => WorkflowServiceAccess
+): void {
+  useWorkflowService = useService
+}
 
 export const VIEWPORT_CACHE_MAX_SIZE = 32
 
@@ -154,7 +170,7 @@ export const useSubgraphNavigationStore = defineStore(
         isCurrent: () => getActiveGraphId() === graphId,
         run: () => {
           if (!canvas.graph?.nodes.length) return
-          useLitegraphService().fitView()
+          useLitegraphServiceAccess().fitView()
         }
       })
     }
@@ -216,7 +232,7 @@ export const useSubgraphNavigationStore = defineStore(
     type GraphNavigationIntent = {
       id: number
       hash: string
-      source: 'graph' | 'route'
+      source: 'graph' | 'route' | 'restore'
     }
     type NavigationIntent =
       | GraphNavigationIntent
@@ -297,7 +313,11 @@ export const useSubgraphNavigationStore = defineStore(
       }
     }
 
-    async function navigateToHash(newHash: string, navigationId: number) {
+    async function navigateToHash(
+      newHash: string,
+      navigationId: number,
+      initiator?: 'user'
+    ) {
       const root = useApp().rootGraph
       const locatorId = newHash.slice(1) || root.id
       const canvas = canvasStore.getCanvas()
@@ -330,7 +350,8 @@ export const useSubgraphNavigationStore = defineStore(
             await withNavBlocked(
               () =>
                 useWorkflowService().openWorkflow(workflow, {
-                  navigationIntentId: navigationId
+                  navigationIntentId: navigationId,
+                  initiator
                 }),
               newHash
             )
@@ -419,7 +440,11 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     async function applyNavigationIntent(intent: GraphNavigationIntent) {
-      await navigateToHash(intent.hash, intent.id)
+      await navigateToHash(
+        intent.hash,
+        intent.id,
+        intent.source === 'route' ? 'user' : undefined
+      )
       if (blockNavDepth > 0) return
 
       const deferredIntent = deferredNavigationIntent
@@ -511,7 +536,7 @@ export const useSubgraphNavigationStore = defineStore(
         initialLoad = false
         if (!routeHash.value) return Promise.resolve()
         return applyNavigationIntent(
-          createNavigationIntent(routeHash.value, 'route')
+          createNavigationIntent(routeHash.value, 'restore')
         ).then(() => {
           const activeGraph = canvasStore.getCanvas().graph
           if (isSubgraph(activeGraph)) {

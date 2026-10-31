@@ -7,7 +7,7 @@ import {
   SEED_SOURCE_NODE_ID,
   SOURCE_NODE_ID
 } from '@e2e/fixtures/data/minimaxAutogrowReload'
-import type { LinkId } from '@/types/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 
 const NEXT_REFERENCE_INPUT = 'model.reference_images.image_2'
 

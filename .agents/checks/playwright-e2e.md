@@ -45,7 +45,6 @@ Reference docs (read if you need full context):
 8. **Reimplementing existing fixture helpers** — Before flagging, grep `browser_tests/fixtures/` for the functionality. Common missed helpers:
    - `comfyPage.command.executeCommand()` for menu/command actions
    - `comfyPage.workflow.loadWorkflow()` for loading test workflows
-   - `comfyPage.canvasOps.resetView()` for view reset
    - `test.use({ initialSettings })` for starting settings; `comfyPage.settings.setSetting()` for runtime changes under test
    - Component page objects in `browser_tests/fixtures/components/`
    - `comfyPage.toast` (`ToastHelper`) for toasts. Flag any `getByText` or `getByRole('alert' | 'status').filter({ hasText })` on a toast's copy: `Toaster` repeats it in a live region, so strict mode resolves two elements. Use `comfyPage.toast.withText()` or a kind locator such as `toastErrors`. Also flag raw `getByTestId('toast')` or `[data-toast-kind]` locators in specs. Tests without `comfyPage` destructure the `toast` fixture
@@ -62,34 +61,32 @@ Reference docs (read if you need full context):
 
 13. **Screenshot tests without masking dynamic content** — Timestamps, version numbers, or other non-deterministic content in screenshots will cause flakes. Use `mask` option.
 
-14. **`test.describe` without `afterEach` cleanup when canvas state changes** — Tests that manipulate canvas view (drag, zoom, pan) should include `afterEach` with `comfyPage.canvasOps.resetView()`. Prefer moving canvas reset into the fixture so individual tests don't manage cleanup.
-
-15. **Debug helpers left in committed code** — `debugAddMarker`, `debugAttachScreenshot`, `debugShowCanvasOverlay`, `debugGetCanvasDataURL` are for local debugging only.
+14. **Debug helpers left in committed code** — `debugAddMarker`, `debugAttachScreenshot`, `debugShowCanvasOverlay`, `debugGetCanvasDataURL` are for local debugging only.
 
 ### Test Design (Nitpick)
 
-16. **Screenshot-only assertions where functional assertions are possible** — Prefer `expect(await node.isPinned()).toBe(true)` over screenshot comparison when testing non-visual behavior.
+15. **Screenshot-only assertions where functional assertions are possible** — Prefer `expect(await node.isPinned()).toBe(true)` over screenshot comparison when testing non-visual behavior.
 
-17. **Overly large test workflows** — Test should load the minimal workflow needed. If a test only needs one node, don't load the full default graph.
+16. **Overly large test workflows** — Test should load the minimal workflow needed. If a test only needs one node, don't load the full default graph.
 
-18. **Vue Nodes / LiteGraph mismatch** — If testing Vue-rendered node UI (DOM widgets, CSS states), should use `comfyPage.vueNodes.*`. If testing canvas interactions/connections, should use `comfyPage.nodeOps.*`. Mixing both in one test is a smell.
+17. **Vue Nodes / LiteGraph mismatch** — If testing Vue-rendered node UI (DOM widgets, CSS states), should use `comfyPage.vueNodes.*`. If testing canvas interactions/connections, should use `comfyPage.nodeOps.*`. Mixing both in one test is a smell.
 
 ### Structure, Types & Regressions (Medium)
 
-19. **Non-test code inline in the spec** — Flag free-standing functions/constants at the top of a spec that do setup, wire locators, or drive reusable dialog interactions (e.g. a "close the templates dialog" helper). These belong in `browser_tests/fixtures/components/` (page objects), `fixtures/helpers/`, or a Playwright fixture. Do NOT flag top-level Playwright hooks or configuration — `test.use()`, `test.describe.configure()`, and file-level `test.beforeEach()`/`test.afterEach()` legitimately live in the spec. The target is free-standing helpers/constants/locator wiring, not Playwright's own API surface. See `browser_tests/README.md` → Test structure.
+18. **Non-test code inline in the spec** — Flag free-standing functions/constants at the top of a spec that do setup, wire locators, or drive reusable dialog interactions (e.g. a "close the templates dialog" helper). These belong in `browser_tests/fixtures/components/` (page objects), `fixtures/helpers/`, or a Playwright fixture. Do NOT flag top-level Playwright hooks or configuration — `test.use()`, `test.describe.configure()`, and file-level `test.beforeEach()`/`test.afterEach()` legitimately live in the spec. The target is free-standing helpers/constants/locator wiring, not Playwright's own API surface. See `browser_tests/README.md` → Test structure.
 
-20. **Inline-declared types in specs/mocks** — Never hand-write `interface`/`type` shapes for API payloads, node definitions, or store data inside a spec or mock file. Must import the real type — generated packages (`@comfyorg/ingest-types`, `@comfyorg/registry-types`, `generatedManagerTypes.ts`) or `src/` Zod schemas. This requirement also applies to typed mock/data factories under `browser_tests/fixtures/data/` — the imported-type rule is enforced there despite the general `browser_tests/fixtures/` exclusion below. See `browser_tests/README.md` → Type safety and Test Data & Typed Mocks.
+19. **Inline-declared types in specs/mocks** — Never hand-write `interface`/`type` shapes for API payloads, node definitions, or store data inside a spec or mock file. Must import the real type — generated packages (`@comfyorg/ingest-types`, `@comfyorg/registry-types`, `generatedManagerTypes.ts`) or `src/` Zod schemas. This requirement also applies to typed mock/data factories under `browser_tests/fixtures/data/` — the imported-type rule is enforced there despite the general `browser_tests/fixtures/` exclusion below. See `browser_tests/README.md` → Type safety and Test Data & Typed Mocks.
 
-21. **Spec not nested in a feature folder** — New specs must live in a `tests/` subfolder mirroring the feature under test, not dumped at the top level of `tests/`. Flag new top-level `browser_tests/tests/*.spec.ts` additions. See `browser_tests/README.md` → Spec File Placement.
+20. **Spec not nested in a feature folder** — New specs must live in a `tests/` subfolder mirroring the feature under test, not dumped at the top level of `tests/`. Flag new top-level `browser_tests/tests/*.spec.ts` additions. See `browser_tests/README.md` → Spec File Placement.
 
-22. **Stale spec filename** — A spec's filename must describe the coverage it actually holds. Flag renamed/rescoped tests whose filename no longer matches their content. See `browser_tests/README.md` → Spec File Placement.
+21. **Stale spec filename** — A spec's filename must describe the coverage it actually holds. Flag renamed/rescoped tests whose filename no longer matches their content. See `browser_tests/README.md` → Spec File Placement.
 
-23. **Test edit that may undo a prior fix** — When a diff removes or weakens an existing assertion, wait, or timeout in a test, confirm the change isn't silently undoing a deliberate regression/flake fix. The author should have run a `git blame` regression-detection pass; a reviewer flags removals of load-bearing guards whose history shows they fixed a specific race or bug. See `browser_tests/README.md` → Before changing an existing test.
+22. **Test edit that may undo a prior fix** — When a diff removes or weakens an existing assertion, wait, or timeout in a test, confirm the change isn't silently undoing a deliberate regression/flake fix. The author should have run a `git blame` regression-detection pass; a reviewer flags removals of load-bearing guards whose history shows they fixed a specific race or bug. See `browser_tests/README.md` → Before changing an existing test.
 
 ## Rules
 
 - Only review `.spec.ts` files and supporting code in `browser_tests/`
-- Do NOT flag patterns in fixture/helper code (`browser_tests/fixtures/`) — those are shared infrastructure with different rules (exception: rule 20's imported-type requirement still applies to typed mock/data factories under `browser_tests/fixtures/data/`)
-- "Major" for flakiness risks (items 1-7), "medium" for fixture misuse (8-10), "minor" for convention violations (11-15), "nitpick" for test design (16-18), "medium" for structure/type/regression rules (19-23)
+- Do NOT flag patterns in fixture/helper code (`browser_tests/fixtures/`) — those are shared infrastructure with different rules (exception: rule 19's imported-type requirement still applies to typed mock/data factories under `browser_tests/fixtures/data/`)
+- "Major" for flakiness risks (items 1-7), "medium" for fixture misuse (8-10), "minor" for convention violations (11-14), "nitpick" for test design (15-17), "medium" for structure/type/regression rules (18-22)
 - When flagging missing fixture usage (item 8), confirm the helper exists by checking the fixture code — don't assume
 - Existing tests that predate conventions are acceptable to modify but not required to fix

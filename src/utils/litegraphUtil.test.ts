@@ -4,14 +4,14 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
+import { createNode } from './createNode'
 import {
-  createNode,
   getWidgetIdForNode,
   mapLiveWidgetsById,
   migrateWidgetsValues,

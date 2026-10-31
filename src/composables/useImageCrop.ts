@@ -1,12 +1,16 @@
 import { useResizeObserver } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { Bounds } from '@/renderer/core/layout/types'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
+import { locateWidgetNode } from '@/composables/widgetHistoryScope'
+import type { LocatedWidget } from '@/composables/widgetHistoryScope'
+import { resolveWidgetInputSource } from '@/composables/widgetInputSource'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@/types/nodeId'
-import { resolveNode } from '@/utils/litegraphUtil'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 type ResizeDirection =
   | 'top'
@@ -60,16 +64,30 @@ export const ASPECT_RATIOS = {
 } as const
 
 interface UseImageCropOptions {
+  widget: LocatedWidget
   imageEl: Ref<HTMLImageElement | null>
   containerEl: Ref<HTMLDivElement | null>
   modelValue: Ref<Bounds>
+  onEditEnd?: () => void
+}
+
+function imageInputSlot(node: LGraphNode): number {
+  if (node.isSubgraphNode()) return 0
+
+  const slot = node.inputs.findIndex((input) =>
+    LiteGraph.isValidConnection('IMAGE', input.type)
+  )
+  return slot === -1 ? 0 : slot
 }
 
 export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
-  const { imageEl, containerEl, modelValue } = options
+  const { widget, imageEl, containerEl, modelValue, onEditEnd } = options
   const nodeOutputStore = useNodeOutputStore()
 
-  const node = ref<LGraphNode | null>(null)
+  const node = useLiveGraphNode(() => {
+    const location = locateWidgetNode(widget, nodeId)
+    return location?.graph.getNodeById(location.nodeId)
+  })
 
   const imageUrl = ref<string | null>(null)
   const isLoading = ref(false)
@@ -143,6 +161,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
       lockedRatio.value =
         ASPECT_RATIOS[key as keyof typeof ASPECT_RATIOS] ?? null
       applyLockedRatio()
+      onEditEnd?.()
     }
   })
 
@@ -180,39 +199,38 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     }
   })
 
-  const getInputImageUrl = (): string | null => {
-    if (!node.value) return null
+  const inputImageUrl = computed<string | null>(() => {
+    const cropNode = node.value
+    if (!cropNode) return null
 
-    let sourceNode = node.value.getInputNode(0)
+    const sourceNode = resolveWidgetInputSource(
+      cropNode,
+      imageInputSlot(cropNode),
+      nodeId
+    )
     if (!sourceNode) return null
 
-    if (sourceNode.isSubgraphNode()) {
-      const link = node.value.getInputLink(0)
-      if (!link) return null
-      const resolved = sourceNode.resolveSubgraphOutputLink(link.origin_slot)
-      sourceNode = resolved?.outputNode ?? null
-      if (!sourceNode) return null
-    }
-
-    const urls = nodeOutputStore.getNodeImageUrls(sourceNode)
-
-    if (urls?.length) {
-      return urls[0]
-    }
-
-    return null
-  }
-
-  const updateImageUrl = () => {
-    imageUrl.value = getInputImageUrl()
-  }
-
-  watch(imageUrl, (url, previous) => {
-    const next = imageCropLoadingAfterUrlChange(url, previous)
-    if (next !== null) {
-      isLoading.value = next
-    }
+    return nodeOutputStore.getNodeImageUrls(sourceNode)?.[0] ?? null
   })
+
+  watch(
+    inputImageUrl,
+    (url) => {
+      imageUrl.value = url
+    },
+    { immediate: true }
+  )
+
+  watch(
+    imageUrl,
+    (url, previous) => {
+      const next = imageCropLoadingAfterUrlChange(url, previous)
+      if (next !== null) {
+        isLoading.value = next
+      }
+    },
+    { immediate: true }
+  )
 
   const updateDisplayedDimensions = () => {
     if (!imageEl.value || !containerEl.value) return
@@ -429,6 +447,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
 
     isDragging.value = false
     releasePointer(e)
+    onEditEnd?.()
   }
 
   const handleResizeStart = (e: PointerEvent, direction: ResizeDirection) => {
@@ -582,27 +601,8 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     isResizing.value = false
     resizeDirection.value = null
     releasePointer(e)
+    onEditEnd?.()
   }
-
-  const initialize = () => {
-    node.value = resolveNode(nodeId) ?? null
-
-    updateImageUrl()
-  }
-
-  watch(
-    () => nodeOutputStore.nodeOutputs,
-    () => updateImageUrl(),
-    { deep: true }
-  )
-
-  watch(
-    () => nodeOutputStore.nodePreviewImages,
-    () => updateImageUrl(),
-    { deep: true }
-  )
-
-  onMounted(initialize)
 
   return {
     imageUrl,

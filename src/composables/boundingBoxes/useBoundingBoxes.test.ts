@@ -1,20 +1,53 @@
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref, ShallowRef } from 'vue'
-import { computed, defineComponent, h, nextTick, ref, shallowRef } from 'vue'
+import {
+  computed,
+  defineComponent,
+  h,
+  nextTick,
+  reactive,
+  ref,
+  shallowRef
+} from 'vue'
 
 import { useBoundingBoxes } from './useBoundingBoxes'
-import type { BoundingBox } from '@/types/boundingBoxes'
-import { toNodeId } from '@/types/nodeId'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-const appState = vi.hoisted(() => ({ node: null as MockNode | null }))
+const appState = vi.hoisted(() => ({
+  node: null as MockNode | null,
+  graphId: 'graph-0',
+  canvasGraphId: 'graph-0',
+  canvasNode: null as MockNode | null,
+  rootGraphEvents: new EventTarget()
+}))
 const incomingBoxes = shallowRef<BoundingBox[] | undefined>()
 const backgroundUrl = shallowRef<string | undefined>()
 const backgroundConnected = shallowRef(false)
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    canvas: { graph: { getNodeById: () => appState.node } }
+    get rootGraphOrUndefined() {
+      return { events: appState.rootGraphEvents }
+    },
+    get rootGraph() {
+      return {
+        id: appState.graphId,
+        subgraphs: new Map(),
+        getNodeById: () => appState.node
+      }
+    },
+    canvas: {
+      get graph() {
+        return {
+          id: appState.canvasGraphId,
+          getNodeById: () => appState.canvasNode ?? appState.node
+        }
+      }
+    }
   }
 }))
 
@@ -74,7 +107,7 @@ function makeCanvas(): HTMLCanvasElement {
 }
 
 interface MockNode {
-  widgets: { name: string; value: unknown; hidden?: boolean }[]
+  widgets: { name: string; type?: string; value: unknown; hidden?: boolean }[]
 }
 
 function makeNode(): MockNode {
@@ -82,6 +115,7 @@ function makeNode(): MockNode {
     widgets: [
       { name: 'width', value: 512 },
       { name: 'height', value: 512 },
+      { name: 'bboxes', type: 'boundingboxes', value: [] },
       { name: 'last_incoming', value: [] }
     ]
   }
@@ -123,19 +157,21 @@ interface Captured extends Api {
 
 const modelBoxes = (c: Captured) => c.modelValue.value
 
-function setup(initial: BoundingBox[] = []) {
+function setup(
+  initial: BoundingBox[] = [],
+  widget: Pick<SimplifiedWidget, 'name' | 'nodeLocatorId'> = { name: 'bboxes' }
+) {
   let captured: Captured | undefined
   const Harness = defineComponent({
     setup() {
       const canvasEl = shallowRef<HTMLCanvasElement | null>(null)
-      const canvasContainer = shallowRef<HTMLDivElement | null>(null)
       const inlineEditorEl = shallowRef<HTMLTextAreaElement | null>(null)
       const modelValue = ref(initial)
       const api = useBoundingBoxes(toNodeId('1'), {
         canvasEl,
-        canvasContainer,
         inlineEditorEl,
-        modelValue
+        modelValue,
+        widget
       })
       captured = { canvasEl, modelValue, ...api }
       return () => h('div')
@@ -155,8 +191,14 @@ const box = (over: Partial<BoundingBox> = {}): BoundingBox => ({
   ...over
 })
 
+let graphCounter = 0
+
 beforeEach(() => {
+  appState.rootGraphEvents = new EventTarget()
   appState.node = makeNode()
+  appState.graphId = `graph-${++graphCounter}`
+  appState.canvasGraphId = appState.graphId
+  appState.canvasNode = null
   incomingBoxes.value = undefined
   backgroundUrl.value = undefined
   backgroundConnected.value = false
@@ -179,10 +221,82 @@ describe('useBoundingBoxes initialization', () => {
     expect(c.canvasStyle.value).toEqual({ aspectRatio: '512 / 512' })
   })
 
+  it('fits the contained canvas style inside its container on both axes', () => {
+    const node = makeNode()
+    node.widgets[0].value = 1024
+    appState.node = node
+    const c = setup()
+    expect(c.containedCanvasStyle.value).toEqual({
+      aspectRatio: '1024 / 512',
+      width: 'min(100cqw, 100cqh * 1024 / 512)'
+    })
+  })
+
   it('starts with no active region when empty', () => {
     const c = setup()
     expect(c.hasRegions.value).toBe(false)
     expect(c.activeRegion.value).toBeNull()
+  })
+})
+
+describe('useBoundingBoxes after the graph is reloaded', () => {
+  function reloadGraphWithWidth(width: number) {
+    const reloadedNode = makeNode()
+    reloadedNode.widgets[0].value = width
+    appState.node = reloadedNode
+    appState.rootGraphEvents.dispatchEvent(new Event('configured'))
+  }
+
+  it('follows the reloaded node size after a canvas undo', async () => {
+    appState.node!.widgets[0].value = 1024
+    const c = setup()
+    expect(c.canvasStyle.value).toEqual({ aspectRatio: '1024 / 512' })
+
+    reloadGraphWithWidth(512)
+    await flush()
+
+    expect(c.canvasStyle.value).toEqual({ aspectRatio: '512 / 512' })
+  })
+
+  it('writes edits in pixels of the reloaded node size', async () => {
+    const c = setup()
+    reloadGraphWithWidth(1024)
+    await flush()
+
+    c.onPointerDown(pe(0, 0))
+    c.onCanvasPointerMove(pe(50, 50))
+    c.onDocPointerUp(pe(50, 50))
+    await flush()
+
+    expect(modelBoxes(c)[0]).toMatchObject({ width: 512, height: 256 })
+  })
+
+  it('keeps the boxes the reload restored along with a new size', async () => {
+    const c = setup([box({ x: 0, y: 0, width: 256, height: 256 })])
+    const restored = [box({ x: 512, y: 0, width: 512, height: 256 })]
+
+    reloadGraphWithWidth(1024)
+    c.modelValue.value = restored
+    await flush()
+
+    expect(modelBoxes(c)).toEqual(restored)
+    expect(c.regions.value[0]).toMatchObject({ x: 0.5, w: 0.5 })
+  })
+})
+
+describe('useBoundingBoxes in app mode', () => {
+  it('reads the canvas size from its own node while the canvas shows another graph', () => {
+    const otherNode = makeNode()
+    otherNode.widgets[0].value = 2048
+    appState.canvasGraphId = '00000000-0000-4000-8000-0000000000aa'
+    appState.canvasNode = otherNode
+
+    const c = setup([], {
+      name: 'bboxes',
+      nodeLocatorId: createNodeLocatorId(null, toNodeId('1'))
+    })
+
+    expect(c.canvasStyle.value).toEqual({ aspectRatio: '512 / 512' })
   })
 })
 
@@ -217,7 +331,7 @@ describe('useBoundingBoxes drawing', () => {
 describe('useBoundingBoxes region editing', () => {
   it('changes the active region type', async () => {
     const c = setup([box()])
-    c.setActiveType('text')
+    c.updateRegion(c.activeIndex.value, 'type', 'text')
     await flush()
     expect(modelBoxes(c)[0].metadata.type).toBe('text')
   })
@@ -242,6 +356,173 @@ describe('useBoundingBoxes region editing', () => {
     await flush()
     expect(modelBoxes(c)).toHaveLength(0)
     expect(lastIncomingOf(node)).toEqual([])
+  })
+})
+
+describe('useBoundingBoxes node history', () => {
+  const draw = async (c: Captured, from: number, to: number) => {
+    c.onPointerDown(pe(from, from))
+    c.onCanvasPointerMove(pe(to, to))
+    c.onDocPointerUp(pe(to, to))
+    await flush()
+  }
+
+  it('undoes and redoes a drawn region', async () => {
+    const c = setup([box()])
+    expect(c.canUndo.value).toBe(false)
+
+    await draw(c, 80, 95)
+    expect(modelBoxes(c)).toHaveLength(2)
+    expect(c.canUndo.value).toBe(true)
+
+    c.undo()
+    await flush()
+    expect(modelBoxes(c)).toEqual([box({ x: 51, y: 51, width: 256 })])
+    expect(c.canRedo.value).toBe(true)
+
+    c.redo()
+    await flush()
+    expect(modelBoxes(c)).toHaveLength(2)
+    expect(c.canRedo.value).toBe(false)
+  })
+
+  it('undoes to the same region after the canvas size changes', async () => {
+    const node = reactive(makeNode())
+    appState.node = node
+    const c = setup([box({ x: 51, width: 256 })])
+    c.updateRegion(c.activeIndex.value, 'type', 'text')
+    await flush()
+
+    node.widgets[0].value = 1024
+    node.widgets[1].value = 1024
+    await flush()
+    c.undo()
+    await flush()
+
+    expect(modelBoxes(c)[0]).toMatchObject({
+      x: 102,
+      width: 512,
+      metadata: { type: 'obj' }
+    })
+  })
+
+  it('undoes a continuous palette color change as a single step', async () => {
+    const c = setup([box()])
+    c.updateRegion(c.activeIndex.value, 'palette', ['#111111'])
+    c.updateRegion(c.activeIndex.value, 'palette', ['#222222'])
+
+    c.undo()
+    await flush()
+    expect(modelBoxes(c)[0].metadata.palette).toEqual(['#ff0000'])
+    expect(c.canUndo.value).toBe(false)
+  })
+
+  it('undoes typing into one region as a single step', async () => {
+    const c = setup([box()])
+    c.updateRegion(c.activeIndex.value, 'text', 'a')
+    c.updateRegion(c.activeIndex.value, 'text', 'ab')
+    c.updateRegion(c.activeIndex.value, 'text', 'abc')
+    await flush()
+    expect(modelBoxes(c)[0].metadata.text).toBe('abc')
+
+    c.undo()
+    await flush()
+    expect(modelBoxes(c)[0].metadata.text).toBe('')
+    expect(c.canUndo.value).toBe(false)
+  })
+
+  it('starts a new branch when editing after an undo', async () => {
+    const c = setup([box()])
+    c.updateRegion(c.activeIndex.value, 'type', 'text')
+    c.undo()
+    c.onCanvasKeyDown({
+      key: 'Delete',
+      preventDefault: () => {},
+      stopPropagation: () => {}
+    } as unknown as KeyboardEvent)
+    await flush()
+    expect(c.canRedo.value).toBe(false)
+
+    c.undo()
+    await flush()
+    expect(modelBoxes(c)[0].metadata.type).toBe('obj')
+  })
+
+  it('undoes boxes applied from the incoming input', async () => {
+    const c = setup([box()])
+    incomingBoxes.value = [box({ x: 0, width: 100 })]
+    await flush()
+    expect(modelBoxes(c)[0].width).toBe(100)
+
+    c.undo()
+    await flush()
+    expect(modelBoxes(c)[0].width).toBe(256)
+  })
+
+  it('keeps history across a remount of the same widget', async () => {
+    const first = setup([box()])
+    first.updateRegion(first.activeIndex.value, 'type', 'text')
+    await flush()
+
+    const second = setup(modelBoxes(first))
+    expect(second.canUndo.value).toBe(true)
+    second.undo()
+    await flush()
+    expect(modelBoxes(second)[0].metadata.type).toBe('obj')
+  })
+
+  it('keeps history when the graph reloads the node under the widget', async () => {
+    const c = setup([box()])
+    c.updateRegion(c.activeIndex.value, 'type', 'text')
+    appState.node = makeNode()
+
+    expect(c.canUndo.value).toBe(true)
+    c.undo()
+    await flush()
+    expect(modelBoxes(c)[0].metadata.type).toBe('obj')
+  })
+
+  it('keeps separate histories for two widgets on the same node', async () => {
+    const first = setup([box()], { name: 'boxes_a' })
+    const second = setup([box()], { name: 'boxes_b' })
+    first.updateRegion(first.activeIndex.value, 'type', 'text')
+    await flush()
+
+    expect(second.canUndo.value).toBe(false)
+    second.updateRegion(second.activeIndex.value, 'type', 'text')
+    second.undo()
+    await flush()
+    expect(modelBoxes(second)[0].metadata.type).toBe('obj')
+    expect(modelBoxes(first)[0].metadata.type).toBe('text')
+    expect(first.canUndo.value).toBe(true)
+  })
+
+  it('remembers history per graph', async () => {
+    const first = setup([box()])
+    first.updateRegion(first.activeIndex.value, 'type', 'text')
+    await flush()
+
+    appState.graphId = 'other-graph'
+    appState.canvasGraphId = 'other-graph'
+    const second = setup(modelBoxes(first))
+    expect(second.canUndo.value).toBe(false)
+  })
+
+  it('shares history between the canvas and app mode while the canvas shows a subgraph', async () => {
+    const located = {
+      name: 'bboxes',
+      nodeLocatorId: createNodeLocatorId(null, toNodeId('1'))
+    }
+    const onCanvas = setup([box()], located)
+    onCanvas.updateRegion(onCanvas.activeIndex.value, 'type', 'text')
+    await flush()
+
+    appState.canvasGraphId = '00000000-0000-4000-8000-0000000000aa'
+    const inAppMode = setup(modelBoxes(onCanvas), located)
+    expect(inAppMode.canUndo.value).toBe(true)
+    inAppMode.undo()
+    await flush()
+    expect(modelBoxes(inAppMode)[0].metadata.type).toBe('obj')
   })
 })
 
@@ -542,5 +823,82 @@ describe('useBoundingBoxes hover cursor', () => {
     c.onCanvasPointerMove(pe(15, 15))
     await flush()
     expect(c.canvasCursor.value).toBe('pointer')
+  })
+})
+
+describe('useBoundingBoxes shared between editors of one widget', () => {
+  it('adopts boxes written to the model by another editor', async () => {
+    const c = setup([box()])
+    c.modelValue.value = [box(), box({ x: 256, y: 256, width: 128 })]
+    await flush()
+
+    expect(modelBoxes(c)).toHaveLength(2)
+    c.onCanvasKeyDown(new KeyboardEvent('keydown', { key: 'Delete' }))
+    await flush()
+    expect(modelBoxes(c)).toEqual([box({ x: 256, y: 256, width: 128 })])
+  })
+
+  it('does not record an external write as its own undo step', async () => {
+    const c = setup([box()])
+    c.modelValue.value = []
+    await flush()
+
+    expect(c.hasRegions.value).toBe(false)
+    expect(c.canUndo.value).toBe(false)
+  })
+
+  it('shares one undo history and the latest boxes across both editors', async () => {
+    const node = setup([box()])
+    const fullscreen = setup([box()])
+    fullscreen.updateRegion(fullscreen.activeIndex.value, 'text', 'caption')
+    node.modelValue.value = fullscreen.modelValue.value
+    await flush()
+
+    expect(node.activeRegion.value?.text).toBe('caption')
+    node.undo()
+    await flush()
+    expect(modelBoxes(node)[0].metadata.text).toBe('')
+  })
+
+  it('mirrors the grid toggle to the other editor of the same widget', async () => {
+    const node = setup()
+    const fullscreen = setup()
+    const otherWidget = setup([], { name: 'other' })
+
+    fullscreen.grid.value = false
+    await flush()
+
+    expect(node.grid.value).toBe(false)
+    expect(otherWidget.grid.value).toBe(true)
+  })
+})
+
+describe('useBoundingBoxes region list', () => {
+  it('edits a region that is not the active one', async () => {
+    const c = setup([box(), box({ x: 300 })])
+    c.updateRegion(1, 'desc', 'second')
+    await flush()
+
+    expect(c.activeIndex.value).toBe(0)
+    expect(modelBoxes(c).map((b) => b.metadata.desc)).toEqual(['', 'second'])
+  })
+
+  it('selects only existing regions', () => {
+    const c = setup([box(), box({ x: 300 })])
+    c.selectRegion(1)
+    c.selectRegion(5)
+
+    expect(c.activeIndex.value).toBe(1)
+  })
+
+  it('deletes a region by index and keeps a neighbour active', async () => {
+    const c = setup([box(), box({ x: 300 })])
+    c.selectRegion(1)
+    c.deleteRegion(1)
+    c.deleteRegion(4)
+    await flush()
+
+    expect(modelBoxes(c)).toEqual([box()])
+    expect(c.activeIndex.value).toBe(0)
   })
 })

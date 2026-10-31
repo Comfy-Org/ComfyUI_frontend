@@ -6,10 +6,9 @@ import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import type { UserCredential } from 'firebase/auth'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -18,7 +17,6 @@ import enLocale from '@/locales/en/main.json'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 
 vi.mock(import('firebase/auth'), { spy: true })
@@ -32,7 +30,11 @@ let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 
 const mockStartPendingTopup = vi.hoisted(() => vi.fn())
-const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+const mockClearPendingTopup = vi.hoisted(() => vi.fn())
+const mockDistributionState = vi.hoisted(() => ({
+  isCloud: false,
+  isDesktop: false
+}))
 const mockClearAllWorkspaceStorage = vi.hoisted(() => vi.fn())
 const mockPrepareWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
 
@@ -64,14 +66,23 @@ vi.mock(import('@/platform/auth/sso/ssoRequired'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
+  },
+  get isDesktop() {
+    return mockDistributionState.isDesktop
   }
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
-  usePendingTopup: () => ({ startPendingTopup: mockStartPendingTopup })
-}))
+vi.mock<unknown>(
+  import('@/platform/billing/composables/usePendingTopup'),
+  () => ({
+    usePendingTopup: () => ({
+      startPendingTopup: mockStartPendingTopup,
+      clearPendingTopup: mockClearPendingTopup
+    })
+  })
+)
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
   clearAllWorkspaceStorage: mockClearAllWorkspaceStorage,
@@ -81,8 +92,6 @@ vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock(import('@/services/dialogService'))
-
-vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/composables/useErrorHandling'))
 
@@ -115,10 +124,6 @@ beforeEach(() => {
     const code = translationKey.replace('auth.errors.', '')
     return code in authErrorMessages ? translationKey : String(fallback)
   })
-  const billingContext = useBillingContext()
-  vi.mocked(useBillingContext).mockReturnValue(billingContext)
-  billingContext.canAccessSubscriptionFeatures = computed(() => false)
-  billingContext.isFreeTier = computed(() => true)
   stubFirebaseAuthHarness()
   mockAuthStore = useAuthStore()
   mockWorkflowStore = useWorkflowStore()
@@ -132,13 +137,26 @@ beforeEach(() => {
   vi.mocked(mockAuthStore.register).mockResolvedValue(credential)
   vi.mocked(mockAuthStore.loginWithGoogle).mockResolvedValue(credential)
   mockDistributionState.isCloud = false
+  mockDistributionState.isDesktop = false
+})
+
+describe('useAuthActions.accessBillingPortalDirect', () => {
+  it('rejects without opening a tab when no billing portal URL is returned', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => window)
+    vi.mocked(mockAuthStore.accessBillingPortal).mockResolvedValueOnce(
+      fromPartial({})
+    )
+    const { accessBillingPortalDirect } = useAuthActions()
+
+    await expect(accessBillingPortalDirect()).rejects.toThrow(
+      'toastMessages.failedToAccessBillingPortal:No billing portal URL returned'
+    )
+
+    expect(open).not.toHaveBeenCalled()
+  })
 })
 
 describe('useAuthActions.purchaseCreditsDirect', () => {
-  beforeEach(() => {
-    useBillingContext().canAccessSubscriptionFeatures = computed(() => true)
-  })
-
   it('starts top-up tracking before opening Stripe checkout', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => window)
     const { purchaseCreditsDirect } = useAuthActions()
@@ -174,6 +192,26 @@ describe('useAuthActions.purchaseCreditsDirect', () => {
 
     expect(mockStartPendingTopup).not.toHaveBeenCalled()
     expect(open).not.toHaveBeenCalled()
+  })
+
+  it('reports a blocked checkout popup on the web', async () => {
+    vi.spyOn(window, 'open').mockImplementation(() => null)
+    const { purchaseCreditsDirect } = useAuthActions()
+
+    await expect(purchaseCreditsDirect(25)).rejects.toThrow()
+
+    expect(mockClearPendingTopup).toHaveBeenCalledOnce()
+  })
+
+  it('keeps tracking the top-up when Desktop hands checkout to the system browser', async () => {
+    mockDistributionState.isDesktop = true
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const { purchaseCreditsDirect } = useAuthActions()
+
+    await purchaseCreditsDirect(25)
+
+    expect(open).toHaveBeenCalledWith('https://checkout.stripe.test', '_blank')
+    expect(mockClearPendingTopup).not.toHaveBeenCalled()
   })
 })
 
@@ -633,6 +671,41 @@ describe('useAuthActions.reportError', () => {
       expect(mockToastErrorHandler).not.toHaveBeenCalled()
     }
   )
+
+  describe('inside Comfy Desktop, which takes over the sign-in popup', () => {
+    beforeEach(() => {
+      window.__comfyDesktop2 = {}
+    })
+
+    afterEach(() => {
+      delete window.__comfyDesktop2
+    })
+
+    it('points a blocked popup at the system browser instead of the pop-up blocker', () => {
+      const { reportError } = useAuthActions()
+
+      reportError(new FirebaseError('auth/popup-blocked', 'raw firebase'))
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'info',
+          title: 'auth.desktopHost.continueInBrowser'
+        })
+      ])
+    })
+
+    it.for(
+      popupPermissionCodes.filter((code) => code !== 'auth/popup-blocked')
+    )('still warns for %s, which the user caused', (code) => {
+      const { reportError } = useAuthActions()
+
+      reportError(new FirebaseError(code, 'raw firebase'))
+
+      expect(useToast().warning).toHaveBeenCalledWith('g.warning', {
+        description: `auth.errors.${code}`
+      })
+    })
+  })
 
   it('reports an account collision as an error, not a popup warning', () => {
     const { reportError, accessError } = useAuthActions()

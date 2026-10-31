@@ -2,7 +2,7 @@
   <div class="flex size-full min-h-32 flex-col overflow-hidden">
     <div
       v-if="showBatchNav"
-      class="flex shrink-0 justify-between px-2 py-1 text-xs"
+      class="flex shrink-0 justify-between px-2 py-1"
       data-testid="batch-nav"
     >
       <BatchNavigation
@@ -27,7 +27,7 @@
       v-if="beforeImage || afterImage"
       ref="containerRef"
       data-testid="image-compare-viewport"
-      class="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-node-component-surface py-4"
+      class="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-node py-4"
     >
       <img
         v-if="afterImage"
@@ -84,10 +84,9 @@ import { useMouseInElement } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
 import { useImageCompareImages } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages'
-import { app } from '@/scripts/app'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import BatchNavigation from './BatchNavigation.vue'
 
@@ -96,13 +95,12 @@ const { widget, nodeId } = defineProps<{
   nodeId: NodeId
 }>()
 
-const node = computed(() => {
-  const locatorId = widget.nodeLocatorId
-  const owner = locatorId && getNodeByLocatorId(app.rootGraph, locatorId)
-  return owner || app.canvas.graph?.getNodeById(nodeId)
-})
+const node = useWidgetHostNode(
+  () => widget.nodeLocatorId,
+  () => nodeId
+)
 
-const { beforeImages, afterImages } = useImageCompareImages(node)
+const { beforeImages, afterImages } = useImageCompareImages(node, nodeId)
 
 const containerRef = ref<HTMLElement | null>(null)
 const sliderPosition = ref(50)

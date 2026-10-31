@@ -47,6 +47,7 @@ import {
   trackSsoSignInCompleted
 } from '@/platform/auth/sso/ssoTelemetry'
 import { webSessionUser } from '@/platform/auth/session/webSessionUser'
+import { getDesktopInstallId } from '@/platform/auth/session/desktopInstallId'
 import {
   clearInteractiveSignIn,
   markInteractiveSignIn,
@@ -57,14 +58,14 @@ import {
   isSsoSession,
   rememberSignedInSession
 } from '@/platform/auth/session/ssoReentryStorage'
-import type { WebSessionRequestScope } from '@/platform/auth/session/webSessionFetch'
+import type { WebSessionRequestScope } from '@comfyorg/api-client/webSessionFetch'
 import {
   fetchOnWebSession,
   provideWebSessionRequests,
   WebSessionTokenError
-} from '@/platform/auth/session/webSessionFetch'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+} from '@comfyorg/api-client/webSessionFetch'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -150,16 +151,18 @@ function resetForAccountChange(change: WebSessionAccountChange): void {
   })
 }
 
-function teamWorkspaceId(): string | undefined {
+function selectedWorkspaceId(): string | undefined {
   const { currentWorkspace, deniedWorkspaceId } = useWorkspaceAuthStore()
-  if (currentWorkspace?.type === 'team') return currentWorkspace.id
-  return deniedWorkspaceId ?? undefined
+  return currentWorkspace?.id ?? deniedWorkspaceId ?? undefined
 }
+
+const SESSION_REQUEST_TIMEOUT_MS = 15_000
 
 function sessionOptions(): WebSessionOptions {
   return {
     apiBaseUrl: api.apiURL(''),
-    fetchImpl: (input, init) => fetch(input, init)
+    fetchImpl: (input, init) => fetch(input, init),
+    timeoutMs: SESSION_REQUEST_TIMEOUT_MS
   }
 }
 
@@ -222,7 +225,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   watch(
     () =>
       signedInUser.value?.id &&
-      JSON.stringify([signedInUser.value.id, teamWorkspaceId()]),
+      JSON.stringify([signedInUser.value.id, selectedWorkspaceId()]),
     (socketScope) => {
       if (socketScope) void api.reconnectSocket()
     }
@@ -295,8 +298,9 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   /** Decides the flag for this page load; true when the session is on. */
   function start(): boolean {
     if (decided) return identity !== null
+    const enabled = useFeatureFlags().flags.unifiedWebSessionEnabled
     decided = true
-    if (!useFeatureFlags().flags.unifiedWebSessionEnabled) return false
+    if (!enabled) return false
     const session = createCloudIdentity((change) => {
       resetForAccountChange(change)
       if (change.reason === 'signed_out' && !signingOut) {
@@ -315,11 +319,16 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       getSession: currentSession
     })
     const authorize = createRequestAuthorizer({
-      getWorkspaceToken: mint.getWorkspaceToken
+      getWorkspaceToken: mint.getWorkspaceToken,
+      getInstallId: getDesktopInstallId
     })
     releaseRequests = provideWebSessionRequests({
+      refreshSession: async () => {
+        await session.refresh()
+        await whenDecided()
+      },
       scope: requestScope,
-      workspaceId: () => (currentSession() ? teamWorkspaceId() : undefined),
+      workspaceId: () => (currentSession() ? selectedWorkspaceId() : undefined),
       send: (url, init, scope) => send(url, init, scope, authorize),
       workspaceToken: async (scope) =>
         settleScopedToken(scope, await mint.mint(scope.workspaceId)),
@@ -462,7 +471,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     await decidedForRequests
     const session = currentSession()
     if (!identity || !session) return undefined
-    const workspaceId = teamWorkspaceId()
+    const workspaceId = selectedWorkspaceId()
     return {
       session,
       epoch: identity.getEpoch(),

@@ -16,7 +16,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { createMockLinks } from '@/utils/__tests__/litegraphTestUtils'
 import {

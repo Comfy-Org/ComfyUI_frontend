@@ -16,18 +16,18 @@ import {
   ToInputRenderLink,
   LinkDirection
 } from '@/lib/litegraph/src/litegraph'
-import type { ConnectingLink } from '@/lib/litegraph/src/types/slots'
-import type { LinkId } from '@/types/linkId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
+import type { ConnectingLink } from '@comfyorg/graph-model/slots'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import {
   createMockNodeInputSlot,
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
 
-import { registerLinkTopology } from '../LLink'
-import { registerRerouteChain } from '../Reroute'
+import { registerLinkTopology } from '@/lib/litegraph/src/LLink'
+import { registerRerouteChain } from '@/lib/litegraph/src/Reroute'
 
 interface TestContext {
   network: LinkNetwork & {

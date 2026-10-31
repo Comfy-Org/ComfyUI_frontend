@@ -4,7 +4,7 @@ import { useNodePricing } from '@/composables/node/useNodePricing'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { installNodeBadges } from '@/systems/badgeSystem'
 
 /**

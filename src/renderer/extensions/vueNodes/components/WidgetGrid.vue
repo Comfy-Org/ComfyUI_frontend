@@ -2,7 +2,7 @@
   <div
     ref="grid"
     data-testid="node-widgets"
-    class="lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3"
+    class="lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3 text-xs text-node-foreground"
     :style="{
       'grid-template-rows': gridTemplateRows,
       flex: gridTemplateRows.includes('auto') ? 1 : undefined
@@ -65,11 +65,7 @@
                     :invalid="row.widget.hasError"
                     :aria-invalid="row.widget.hasError || undefined"
                     :class="
-                      cn(
-                        'col-span-2',
-                        row.widget.hasError &&
-                          'font-bold text-node-stroke-error'
-                      )
+                      cn('col-span-2', row.widget.hasError && 'font-bold')
                     "
                     @update:model-value="row.widget.updateHandler"
                     @contextmenu="row.widget.handleContextMenu"
@@ -91,16 +87,16 @@
 <script setup lang="ts">
 import { computed, nextTick, useTemplateRef, watch } from 'vue'
 
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'

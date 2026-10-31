@@ -12,7 +12,7 @@
           {{ isSignIn ? t('auth.login.title') : t('auth.signup.title') }}
         </h1>
         <p class="my-0 text-base">
-          <span class="text-muted">{{
+          <span class="text-muted-foreground">{{
             isSignIn
               ? t('auth.login.newUser')
               : t('auth.signup.alreadyHaveAccount')
@@ -54,11 +54,11 @@
       </template>
 
       <div class="my-8 flex items-center gap-3">
-        <div class="grow border-t border-interface-stroke" />
-        <span class="shrink-0 text-muted">{{
+        <div class="grow border-t" />
+        <span class="shrink-0 text-muted-foreground">{{
           t('auth.login.orContinueWith')
         }}</span>
-        <div class="grow border-t border-interface-stroke" />
+        <div class="grow border-t" />
       </div>
 
       <!-- Social Login Buttons (hidden if host not whitelisted) -->
@@ -96,7 +96,7 @@
             variant="secondary"
             @click="signInWithGithub"
           >
-            <i class="pi pi-github mr-2"></i>
+            <i class="mr-2 icon-[lucide--github]"></i>
             {{
               isSignIn
                 ? t('auth.login.loginWithGithub')
@@ -106,7 +106,7 @@
 
           <p
             v-if="showGoogleSsoInAppBrowserNotice"
-            class="my-0 text-xs text-muted"
+            class="my-0 text-xs text-muted-foreground"
             data-testid="google-sso-in-app-browser-notice"
           >
             {{ t('auth.login.googleSsoInAppBrowserNotice') }}
@@ -127,7 +127,7 @@
             />
             {{ t('auth.login.useApiKey') }}
           </Button>
-          <small class="text-center text-muted">
+          <small class="text-center text-muted-foreground">
             {{ t('auth.apiKey.helpText') }}
             <a
               :href="`${comfyPlatformBaseUrl}/login`"
@@ -140,18 +140,19 @@
         </template>
         <Message
           v-model:visible="authActions.accessError.value"
+          :close-label="$t('g.close')"
           severity="info"
           closable
         >
           <template #icon>
-            <i class="pi pi-info-circle" />
+            <i class="icon-[lucide--info]" />
           </template>
           {{ t('toastMessages.useApiKeyTip') }}
         </Message>
       </div>
 
       <!-- Terms & Contact -->
-      <p class="mt-8 text-xs text-muted">
+      <p class="mt-8 text-xs text-muted-foreground">
         {{ t('auth.login.termsText') }}
         <a
           href="https://comfy.org/terms-of-service/"
@@ -184,9 +185,9 @@ import { useI18n } from 'vue-i18n'
 import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
-import Button from '@/components/ui/button/Button.vue'
-import Message from '@/components/ui/message/Message.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
@@ -197,6 +198,7 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
 import {
+  desktopHostReportsSignInFailures,
   isDesktopHostSessionActive,
   requestDesktopHostSignIn
 } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -221,9 +223,18 @@ const showGoogleSsoInAppBrowserNotice = isEmbeddedWebView()
 const desktopHostSso = isDesktopHostSessionActive()
 
 const signInWithDesktopHost = async () => {
+  if (desktopHostReportsSignInFailures()) {
+    if (await requestDesktopHostSignIn()) onSuccess()
+    return
+  }
   const toast = useToast()
-  toast.info(t('auth.desktopHost.continueInBrowser'), { duration: 6000 })
-  if (await requestDesktopHostSignIn()) {
+  const continueInBrowser = toast.info(
+    t('auth.desktopHost.continueInBrowser'),
+    { duration: 6000 }
+  )
+  const signedIn = await requestDesktopHostSignIn()
+  toast.dismiss(continueInBrowser)
+  if (signedIn) {
     onSuccess()
     return
   }

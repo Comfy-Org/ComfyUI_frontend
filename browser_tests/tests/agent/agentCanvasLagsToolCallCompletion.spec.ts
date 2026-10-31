@@ -1,22 +1,21 @@
-import type { Page, WebSocketRoute } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
@@ -83,8 +82,9 @@ const WORKFLOW_ID = 'c1d2e3f4-5a6b-4c7d-8e9f-0a1b2c3d4e5f'
 const THREAD_ID = 'f0e1d2c3-b4a5-4968-8172-6354a3b2c1d0'
 const MESSAGE_ID = '1e2d3c4b-5a69-4788-9061-52f3e4d5c6b7'
 const ADDED_NODE_ID = 4242
+const UNRELATED_NODE_ID = 4241
+const SECOND_NODE_ID = 4243
 const NODE_TEXT = 'added while the doc broadcast lags'
-const SOCKET_SID = 'a9b8c7d6-e5f4-4321-8a9b-0c1d2e3f4a5b'
 
 const CATALOG: WidgetCatalog = {
   types: { MarkdownNote: { widget_order: ['text'] } }
@@ -93,65 +93,26 @@ const SEED: WorkflowJSON = { nodes: [], links: [] }
 
 const SEND_LABEL = enMessages.agent.send
 
-/** The follower's `doc_subscribe` payload for the workflow under test, or null. */
-function subscribeStateVectorOf(raw: Buffer | string): string | null {
-  const frame: unknown = JSON.parse(raw.toString())
-  if (typeof frame !== 'object' || frame === null) return null
-  const { type, data } = frame as { type?: unknown; data?: unknown }
-  if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-    return null
-  const { workflow_id, state_vector_b64 } = data as {
-    workflow_id?: unknown
-    state_vector_b64?: unknown
-  }
-  if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
-    return null
-  return state_vector_b64
-}
-
-/**
- * Drives one "add a note to the canvas" turn through to the agent reporting
- * it done -- the tool call's own completion AND the turn's "Worked for Xs"
- * summary, matching the bug report's "every working affordance" -- while the
- * doc host has ALREADY recorded the `add_node` op authoritatively
- * (`host.apply` below) but its broadcast `doc_update` is deliberately held
- * back. Callers decide when (if ever) to release it via the returned
- * `sendDelayedDocUpdate`.
- */
 async function driveThroughToolCallDone(
   page: Page,
-  /**
-   * The healthy-doc-host ordering is the tool call's own terminal frame
-   * landing before the matching `doc_update` broadcast -- that is what every
-   * scenario above exercises. 'docUpdateBeforeToolCall' instead releases the
-   * (already-applied, see `host.apply` below) `doc_update` BEFORE the
-   * `agent_tool_call success` frame, to exercise the inverted ordering a
-   * lost-wakeup regression in `notifyCanvasCaughtUp`'s edge-triggering would
-   * strand at `STALE_AFTER_MS` even though the canvas had already caught up.
-   */
   order:
     | 'toolCallBeforeDocUpdate'
-    | 'docUpdateBeforeToolCall' = 'toolCallBeforeDocUpdate'
+    | 'docUpdateBeforeToolCall' = 'toolCallBeforeDocUpdate',
+  includeUnrelatedUpdate = false,
+  includeSecondOpUpdate = false
 ): Promise<{
   vueNodes: VueNodeHelpers
+  sendUnrelatedDocUpdate: () => void
   sendDelayedDocUpdate: () => void
+  sendSecondOpDocUpdate: () => void
 }> {
   const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
   const vueNodes = new VueNodeHelpers(page)
 
-  let socket: WebSocketRoute | null = null
-  const send = (frame: AgentWsEvent | HostFrame): void => {
-    if (
-      (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
-      parseServerDocFrame(frame) === null
-    )
-      throw new Error(`frame ${frame.type} is not a valid doc frame`)
-    if (!socket) throw new Error('the app has not opened /ws yet')
-    socket.send(JSON.stringify(frame))
-  }
+  const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
 
-  await page.route('**/api/agent/threads', (route) =>
-    route.fulfill(jsonRoute({ threads: [] }))
+  await page.route('**/api/agent/threads?*', (route) =>
+    route.fulfill(jsonRoute(emptyAgentThreadList()))
   )
   await page.route('**/api/agent/threads/*/messages', (route) => {
     if (route.request().method() === 'POST') {
@@ -167,24 +128,7 @@ async function driveThroughToolCallDone(
     }
     return route.fulfill(jsonRoute([]))
   })
-  await page.routeWebSocket(/\/ws/, (ws) => {
-    socket = ws
-    ws.send(
-      JSON.stringify({
-        type: 'status',
-        data: {
-          status: { exec_info: { queue_remaining: 0 } },
-          sid: SOCKET_SID
-        }
-      })
-    )
-    ws.onMessage((raw) => {
-      const stateVector = subscribeStateVectorOf(raw)
-      if (stateVector === null) return
-      send(host.subscribed())
-      send(host.catchUp(stateVector))
-    })
-  })
+  await hostSocket.install()
 
   await bootAgentApp(page, true, {
     settings: {
@@ -246,7 +190,7 @@ async function driveThroughToolCallDone(
     .click()
   await expect(picker).toHaveText('Unsaved Workflow')
 
-  await expect.poll(() => socket !== null).toBe(true)
+  await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 
   const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
   await composer.fill('Add a note to the canvas.')
@@ -255,7 +199,7 @@ async function driveThroughToolCallDone(
     panel.getByText('Add a note to the canvas.').first()
   ).toBeVisible()
 
-  send({
+  hostSocket.send({
     type: 'agent_active_tab',
     data: {
       workflow_id: WORKFLOW_ID,
@@ -265,10 +209,29 @@ async function driveThroughToolCallDone(
     }
   })
 
-  // The doc host records the op on its authoritative document as soon as the
-  // tool actually executes -- this is not a race the agent lost, the op is
-  // real -- independent of when its broadcast reaches this client relative
-  // to the tool call's own terminal frame, which `order` controls below.
+  const unrelatedUpdate = includeUnrelatedUpdate
+    ? host.apply([
+        {
+          op: 'add_node',
+          pos: [250, 0],
+          node: {
+            id: UNRELATED_NODE_ID,
+            pos: [250, 0],
+            mode: 0,
+            size: [200, 100],
+            type: 'MarkdownNote',
+            flags: {},
+            order: 0,
+            inputs: [],
+            outputs: [],
+            properties: {},
+            widgets_values: ['unrelated document operation']
+          },
+          node_id: UNRELATED_NODE_ID,
+          class_type: 'MarkdownNote'
+        }
+      ])
+    : null
   const update = host.apply([
     {
       op: 'add_node',
@@ -290,29 +253,57 @@ async function driveThroughToolCallDone(
       class_type: 'MarkdownNote'
     }
   ])
+  const secondOpUpdate = includeSecondOpUpdate
+    ? host.apply([
+        {
+          op: 'add_node',
+          pos: [0, 250],
+          node: {
+            id: SECOND_NODE_ID,
+            pos: [0, 250],
+            mode: 0,
+            size: [200, 100],
+            type: 'MarkdownNote',
+            flags: {},
+            order: 0,
+            inputs: [],
+            outputs: [],
+            properties: {},
+            widgets_values: ['second operation of the same tool call']
+          },
+          node_id: SECOND_NODE_ID,
+          class_type: 'MarkdownNote'
+        }
+      ])
+    : null
   expect(Object.keys(host.graph().nodes)).toContain(String(ADDED_NODE_ID))
+  const matchingOpIds = [update, secondOpUpdate].flatMap((hostUpdate) => {
+    if (hostUpdate === null) return []
+    const opIds = hostUpdate.data.op_ids
+    if (
+      !Array.isArray(opIds) ||
+      !opIds.every((opId): opId is string => typeof opId === 'string')
+    ) {
+      throw new Error('host update did not carry string op_ids')
+    }
+    return opIds
+  })
 
-  // The inverted ordering: the doc_update broadcast reaches this client
-  // while the tool is still (from the chat frames' perspective) running --
-  // the healthy-doc-host case most reviewers flagged as the lost-wakeup risk
-  // for notifyCanvasCaughtUp()'s edge triggering.
-  if (order === 'docUpdateBeforeToolCall') send(update)
-
-  // The tool-call-completion affordance: `agentEventTransport.ts`'s `ingest()`
-  // flips this tool part `done` the instant this frame is read, purely from
-  // `status`, with nothing checked on the CRDT doc side (see file header).
-  send({
+  if (order === 'docUpdateBeforeToolCall') hostSocket.send(update)
+  hostSocket.send({
     type: 'agent_tool_call',
     data: {
       tool_call_id: 'call-add-node',
       tool_name: 'add_node',
       status: 'success',
       duration_ms: 90,
+      workflow_id: WORKFLOW_ID,
+      op_ids: matchingOpIds,
       thread_id: THREAD_ID,
       message_id: MESSAGE_ID
     }
   })
-  send({
+  hostSocket.send({
     type: 'agent_message_delta',
     data: {
       delta: 'Added a note to the canvas.',
@@ -320,23 +311,32 @@ async function driveThroughToolCallDone(
       message_id: MESSAGE_ID
     }
   })
-  send({
+  hostSocket.send({
     type: 'agent_message_done',
     data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
   })
 
-  // Setup checkpoint: every working affordance the report names has settled --
-  // the composer is free again and the turn's own "Worked for Xs" summary is
-  // up -- while the canvas (asserted by the caller) has nothing yet.
   await expect(panel.getByRole('button', { name: SEND_LABEL })).toBeVisible()
-  await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
+  await expect(
+    panel.getByRole('button', {
+      name:
+        order === 'docUpdateBeforeToolCall'
+          ? enMessages.agent.worked
+          : enMessages.agent.workedNotConfirmedOnCanvas,
+      exact: true
+    })
+  ).toBeVisible()
 
   return {
     vueNodes,
-    // A no-op once `order` already sent it above -- resending the same
-    // update twice is not part of what either ordering means to exercise.
+    sendUnrelatedDocUpdate: () => {
+      if (unrelatedUpdate) hostSocket.send(unrelatedUpdate)
+    },
     sendDelayedDocUpdate: () => {
-      if (order !== 'docUpdateBeforeToolCall') send(update)
+      if (order !== 'docUpdateBeforeToolCall') hostSocket.send(update)
+    },
+    sendSecondOpDocUpdate: () => {
+      if (secondOpUpdate) hostSocket.send(secondOpUpdate)
     }
   }
 }
@@ -358,7 +358,10 @@ test.describe(
       // the fix under test lives one level down, on the tool call's OWN
       // displayed state inside that summary: expand it to look.
       const panel = page.locator('#agent-panel-root')
-      const workSummary = panel.getByRole('button', { name: /^Worked/ })
+      const workSummary = panel.getByRole('button', {
+        name: enMessages.agent.workedNotConfirmedOnCanvas,
+        exact: true
+      })
       await workSummary.click()
       await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
 
@@ -386,6 +389,87 @@ test.describe(
         0
       )
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
+      await expect(
+        panel.getByRole('button', {
+          name: enMessages.agent.worked,
+          exact: true
+        })
+      ).toBeVisible()
+    })
+
+    test('an unrelated doc_update does not settle the correlated tool call', async ({
+      page
+    }) => {
+      const { vueNodes, sendUnrelatedDocUpdate, sendDelayedDocUpdate } =
+        await driveThroughToolCallDone(page, 'toolCallBeforeDocUpdate', true)
+
+      const panel = page.locator('#agent-panel-root')
+      const workSummary = panel.getByRole('button', {
+        name: enMessages.agent.workedNotConfirmedOnCanvas,
+        exact: true
+      })
+      await workSummary.click()
+      await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
+
+      const addNodeRow = panel
+        .getByRole('listitem')
+        .filter({ hasText: 'Add node' })
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toBeVisible()
+
+      sendUnrelatedDocUpdate()
+      await expect(
+        vueNodes.getNodeLocator(String(UNRELATED_NODE_ID))
+      ).toBeVisible()
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toBeVisible()
+      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toHaveCount(
+        0
+      )
+
+      sendDelayedDocUpdate()
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toHaveCount(
+        0
+      )
+      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
+    })
+
+    test('a multi-op tool call stays syncing until its final op reaches the canvas', async ({
+      page
+    }) => {
+      const { vueNodes, sendDelayedDocUpdate, sendSecondOpDocUpdate } =
+        await driveThroughToolCallDone(
+          page,
+          'toolCallBeforeDocUpdate',
+          false,
+          true
+        )
+
+      const panel = page.locator('#agent-panel-root')
+      const workSummary = panel.getByRole('button', {
+        name: enMessages.agent.workedNotConfirmedOnCanvas,
+        exact: true
+      })
+      await workSummary.click()
+      await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
+
+      const addNodeRow = panel
+        .getByRole('listitem')
+        .filter({ hasText: 'Add node' })
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toBeVisible()
+
+      sendDelayedDocUpdate()
+      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toBeVisible()
+      await expect(vueNodes.getNodeLocator(String(SECOND_NODE_ID))).toHaveCount(
+        0
+      )
+
+      sendSecondOpDocUpdate()
+      await expect(
+        vueNodes.getNodeLocator(String(SECOND_NODE_ID))
+      ).toBeVisible()
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toHaveCount(
+        0
+      )
     })
 
     test('the node does eventually land once the delayed doc_update actually arrives', async ({
@@ -420,7 +504,10 @@ test.describe(
       )
 
       const panel = page.locator('#agent-panel-root')
-      const workSummary = panel.getByRole('button', { name: /^Worked/ })
+      const workSummary = panel.getByRole('button', {
+        name: enMessages.agent.worked,
+        exact: true
+      })
       await workSummary.click()
       await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
 

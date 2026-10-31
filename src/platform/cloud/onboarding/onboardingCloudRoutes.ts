@@ -55,17 +55,16 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudLoginView.vue'),
         meta: { showTermsNotice: true },
-        beforeEnter: async (to, _from, next) => {
+        beforeEnter: async (to) => {
           if (!to.query.switchAccount) {
             const { useCurrentUser } =
               await import('@/composables/auth/useCurrentUser')
             const { isLoggedIn } = useCurrentUser()
 
             if (isLoggedIn.value) {
-              return next(await oauthConsentRedirect())
+              return oauthConsentRedirect()
             }
           }
-          next()
         }
       },
       {
@@ -74,17 +73,16 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudSignupView.vue'),
         meta: { showTermsNotice: true },
-        beforeEnter: async (to, _from, next) => {
+        beforeEnter: async (to) => {
           if (!to.query.switchAccount) {
             const { useCurrentUser } =
               await import('@/composables/auth/useCurrentUser')
             const { isLoggedIn } = useCurrentUser()
 
             if (isLoggedIn.value) {
-              return next(await oauthConsentRedirect())
+              return oauthConsentRedirect()
             }
           }
-          next()
         }
       },
       {

@@ -1,0 +1,56 @@
+{
+  "id": "missing-media",
+  "capability": "Missing media detection",
+  "description": "Scans loaded workflows (including promoted subgraph widgets) for image, video, and audio inputs whose files are not available, verifies candidates against assets, stores per-workflow results, and renders the missing-media error card.",
+  "modules": [
+    {
+      "path": "src/platform/workflowErrors/missingMedia/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingMedia/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingMedia/missingMediaGrouping.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingMedia/types.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Missing media scan finds and verifies unavailable media inputs, including promoted widgets",
+      "checks": [
+        "src/platform/workflowErrors/missingMedia/missingMediaScan.test.ts",
+        "src/platform/workflowErrors/missingMedia/missingMediaScan.promotedWidget.test.ts",
+        "src/platform/workflowErrors/missingMedia/missingMediaPipeline.test.ts",
+        "src/platform/workflowErrors/missingMedia/missingMediaStore.test.ts"
+      ]
+    },
+    {
+      "name": "Missing media card lists references and the error surfaces in the browser",
+      "checks": [
+        "src/platform/workflowErrors/missingMedia/components/MissingMediaCard.test.ts",
+        "browser_tests/tests/missingMediaFilePath.spec.ts"
+      ]
+    },
+    {
+      "name": "Flagging missing media on workflow load leaves node previews intact",
+      "checks": [
+        "src/platform/workflowErrors/missingMedia/missingMediaPreviewRegression.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "The missing-media scan and store keep reading litegraph, node definitions, assets, canvas, and workflow stores; that coupling remains visible and classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

@@ -1,13 +1,16 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
-import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { INodeOutputSlot } from '@/lib/litegraph/src/types/slots'
+import type {
+  LGraphNode,
+  LLink,
+  SubgraphOutputNode
+} from '@comfyorg/graph-model/entityRegistry'
+
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { zeroUuid } from '@/utils/uuid'
 
 import { SubgraphOutput } from './SubgraphOutput'
-import type { SubgraphOutputNode } from './SubgraphOutputNode'
 
 /**
  * A virtual slot that simply creates a new output slot when connected to.

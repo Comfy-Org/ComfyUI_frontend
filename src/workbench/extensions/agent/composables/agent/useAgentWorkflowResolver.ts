@@ -1,19 +1,19 @@
 import { computed, ref } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
-import { AgentApiError } from '../../services/agent/agentRestClient'
+import { AgentApiError } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   AgentRestClient,
   OpenTabsSnapshot
-} from '../../services/agent/agentRestClient'
-import type { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import type { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 import type {
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
-} from '../../types/workflowReference'
+} from '@/workbench/extensions/agent/types/workflowReference'
 
 type WorkflowResolverDeps = {
   workflows: Pick<

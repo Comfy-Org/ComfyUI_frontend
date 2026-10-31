@@ -4,11 +4,14 @@ import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
-import { NodeSlotType } from './types/globalEnums'
+import {
+  graphScopeOf,
+  toOwningGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 
 import {
   registerLinkTopology,

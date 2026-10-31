@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { IComboWidget } from '@comfyorg/graph-model/widgets'
 import { ComboWidget } from '@/lib/litegraph/src/widgets/ComboWidget'
 
 type LGraphCanvasType = InstanceType<typeof LGraphCanvas>

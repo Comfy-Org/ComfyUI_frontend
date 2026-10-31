@@ -1,4 +1,6 @@
 import type { TypedSchema, TypedSchemaError } from 'vee-validate'
+import { toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 import type { z } from 'zod'
 
 type IssuePath = readonly PropertyKey[]
@@ -36,12 +38,12 @@ function toTypedSchemaErrors(
 }
 
 export function toTypedSchema<TSchema extends z.ZodType>(
-  schema: TSchema
+  schema: MaybeRefOrGetter<TSchema>
 ): TypedSchema<z.input<TSchema>, z.output<TSchema>> {
   return {
     __type: 'VVTypedSchema',
     async parse(values) {
-      const result = await schema.safeParseAsync(values)
+      const result = await toValue(schema).safeParseAsync(values)
       return result.success
         ? { value: result.data, errors: [] }
         : { errors: toTypedSchemaErrors(result.error.issues) }

@@ -1,18 +1,18 @@
+import type { Point2D as Position } from '@comfyorg/shared-frontend-utils/geometry'
 import { ref, shallowRef } from 'vue'
 
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
-import type { NodeAddSource } from '@/platform/telemetry/types'
+import type { NodeAddSource } from '@comfyorg/telemetry/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { matchesWidgetName } from '@/utils/widgetBinding'
 import type { WidgetValueBinding } from '@/utils/widgetBinding'
 
 type DragMode = 'click' | 'native'
-type Position = { x: number; y: number }
 
 interface StartDragOptions {
   mode?: DragMode
