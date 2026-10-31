@@ -1,3 +1,9 @@
+import {
+  SchemaVersionError,
+  assertReadableSchema,
+  readSchemaVersion
+} from '@comfyorg/comfy-multi-player'
+
 import { assert } from '@/base/assert'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
@@ -12,7 +18,6 @@ import type {
 import { wireLog } from './crdtLog'
 import { RESEED_CONFLICT, STALE_SCHEMA_RESEED_REQUIRED } from './docFrameCodes'
 import { FollowerDoc } from './followerDoc'
-import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
 /** A document update after the follower bridge has classified its provenance. */
 export interface ClassifiedDocUpdate extends DocUpdate {
@@ -99,7 +104,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * by a later same-lineage frame that merges and leaves the doc readable
    * again — see {@link onDocUpdate}.
    */
-  private schemaError: FollowerSchemaError | null = null
+  private schemaError: SchemaVersionError | null = null
   private lastSeq: number | null = null
   private attemptFirstSeq: number | null = null
   private attemptLastSeq: number | null = null
@@ -155,7 +160,7 @@ export class LayoutFollowerBridge extends EventTarget {
   }
 
   /** The KA-11 read-gate failure that closed this bridge's read path, if any. */
-  get lastSchemaError(): FollowerSchemaError | null {
+  get lastSchemaError(): SchemaVersionError | null {
     return this.schemaError
   }
 
@@ -405,15 +410,22 @@ export class LayoutFollowerBridge extends EventTarget {
 
   private isReadableUpdate(update: DocUpdate): boolean {
     try {
-      assertReadableSchema(this.follower.doc)
+      assertReadableSchema(this.follower.doc, 'agent subscribe')
       this.schemaError = null
       return true
     } catch (error) {
-      if (!(error instanceof FollowerSchemaError)) throw error
+      if (!(error instanceof SchemaVersionError)) throw error
       this.schemaError = error
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'failure_reading_agent_doc_schema'
+      })
       this.dispatchEvent(
         new CustomEvent('schema_error', {
-          detail: { workflowId: update.workflowId, found: error.found }
+          detail: {
+            workflowId: update.workflowId,
+            found: readSchemaVersion(this.follower.doc)
+          }
         })
       )
       return false

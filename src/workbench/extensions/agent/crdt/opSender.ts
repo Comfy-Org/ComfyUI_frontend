@@ -1,34 +1,18 @@
-/**
- * The human write leg's sender (plan 3.2/3.3): takes semantic
- * {@link GraphOperation}s from the mint ports, mints wire identity ONCE, and
- * drives `doc_ops` frames through the doc frame client with bounded retries
- * that never re-mint an `op_id` (changed-payload reuse rejects host-side;
- * an unchanged resend converges through the applier's idempotency gate).
- *
- * Batches are strictly serialized: one in-flight batch at a time, FIFO, so
- * op order on the wire matches mint order. `base_version` is read at mint
- * time from the follower's last observed sequence.
- *
- * Outcome handling is deliberately the TODAY contract: `doc_ops_result` is a
- * binary applied/skipped split. The prefix-abort reconcile and per-op
- * outcome-union surfacing (lww-dropped, op_rejected, ...) land when the host
- * frame upgrade ships (a required backend dependency, recorded on the plan);
- * `onResult` is the seam they will replace.
- */
+import { inspectOps, tickLamport } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { DocOp, DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
-import {
-  chunkWireOps,
-  measureWireOp,
-  mintWireOps,
-  WIRE_MAX_OPS_PER_BATCH
-} from './opEnvelope'
-import type { SizedOp } from './opEnvelope'
+import { chunkWireOps, mintWireOps } from './opEnvelope'
 import { reportLostEdit } from './reportLostEdit'
+
+interface SizedOp {
+  op: Op
+  wire: DocOp
+  bytes: number
+}
 
 const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
@@ -89,8 +73,7 @@ export interface OpSenderDeps {
   tab: string
   /** `human:<user>:<tab>` (vocabulary §7). */
   actor(): string
-  /** The follower's last observed doc sequence (stamps `base_version`). */
-  baseVersion(): number
+  observedCounter(): number
   /**
    * Terminal per-batch report: 'acknowledged' carries the host's result;
    * 'unacknowledged' means one resend after silence also drew no result;
@@ -217,9 +200,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let queueHead = 0
   let open: { workflowId: string; ops: SizedOp[] } | null = null
   let inFlight: InFlight | null = null
-  // One Lamport cursor per workflow, cleared only by that doc's reset: the
-  // observed sequence reads 0 between a subscribe and its ack, so only the
-  // cursor keeps a re-bound workflow's stamps past ones this actor used there.
   const lastMintedVersions = new Map<string, number>()
   let detached = false
   let suspended = false
@@ -242,12 +222,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const mayReportSerializationFailure = createReportBudget()
 
   function mintBaseVersion(workflowId: string | null): number {
-    const observed = deps.baseVersion()
-    if (workflowId === null) return observed
-    const lastMinted = lastMintedVersions.get(workflowId)
-    return lastMinted === undefined
-      ? observed
-      : Math.max(observed, lastMinted + 1)
+    return tickLamport(
+      deps.observedCounter(),
+      workflowId === null ? 0 : (lastMintedVersions.get(workflowId) ?? 0)
+    )
   }
 
   function retire(batch: InFlight, answered: number): void {
@@ -462,11 +440,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     notify: (outcome: BatchOutcome, workflowId: string | null) => void,
     workflowId: string | null
   ): void {
-    for (let index = 0; index < ops.length; index += WIRE_MAX_OPS_PER_BATCH) {
+    for (let index = 0; index < ops.length; index += 256) {
       notify(
         {
           state: 'undeliverable',
-          ops: ops.slice(index, index + WIRE_MAX_OPS_PER_BATCH)
+          ops: ops.slice(index, index + 256)
         },
         workflowId
       )
@@ -478,29 +456,35 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     rejected: Op[]
     cause: unknown
   } {
-    const measured = minted.map(measureWireOp)
-    const rejections = measured.filter((result) => !result.admitted)
-    return {
-      admitted: measured.flatMap((result) =>
-        result.admitted ? [result.sized] : []
-      ),
-      rejected: rejections.map((rejection) => rejection.op),
-      cause: rejections[0]?.cause
+    const admitted: SizedOp[] = []
+    const rejected: Op[] = []
+    let cause: unknown
+    for (const op of minted) {
+      try {
+        const [inspection] = inspectOps([op])
+        const wire: DocOp = JSON.parse(
+          new TextDecoder().decode(inspection.canonical_op)
+        )
+        admitted.push({ op, wire, bytes: inspection.canonical_op.byteLength })
+      } catch (error) {
+        rejected.push(op)
+        cause ??= error
+      }
     }
+    return { admitted, rejected, cause }
   }
 
   function mintAdmission(
     operations: GraphOperation[],
     workflowId: string | null
   ): Op[] {
-    const baseVersion = mintBaseVersion(workflowId)
     const actor = deps.actor()
-    const minted = operations.flatMap((operation, index) =>
-      mintWireOps([operation], { actor, baseVersion: baseVersion + index })
-    )
-    if (workflowId !== null)
-      lastMintedVersions.set(workflowId, baseVersion + minted.length - 1)
-    return minted
+    let baseVersion = mintBaseVersion(workflowId)
+    return operations.flatMap((operation, index) => {
+      if (index > 0) baseVersion = tickLamport(baseVersion)
+      if (workflowId !== null) lastMintedVersions.set(workflowId, baseVersion)
+      return mintWireOps([operation], { actor, baseVersion })
+    })
   }
 
   function appendToOpenGroup(workflowId: string, admitted: SizedOp[]): void {

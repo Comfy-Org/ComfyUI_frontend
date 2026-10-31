@@ -60,6 +60,14 @@ describe('findLegacyAdrReferences', () => {
     ])
   })
 
+  test('ignores external ADR paths but detects a bare legacy path on the same line', () => {
+    const legacyPath = ['docs/adr/', '0005-lamport.md'].join('')
+    const url = `https://github.com/example/package/blob/main/${legacyPath}`
+    expect(findLegacyAdrReferences(url)).toEqual([])
+    const line = `${url} ${legacyPath}`
+    expect(findLegacyAdrReferences(line)).toEqual([{ line, lineNumber: 1 }])
+  })
+
   test('does not confuse an amendment date with an ADR number', () => {
     expect(
       findLegacyAdrReferences('ADR-CRDT-LAYOUT-0003 amendment (2026-08-23)')
