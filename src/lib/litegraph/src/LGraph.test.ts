@@ -922,7 +922,9 @@ describe('Store-driven serialization parity', () => {
   test('falls back safely when a stored node has no live adapter', ({
     expect
   }) => {
-    const graph = createGraph(new DummyNode())
+    const stranded = new DummyNode()
+    const graph = createGraph(stranded)
+    const strandedId = stranded.id
     graph._nodes = []
 
     expect(graph.asSerialisable().nodes).toEqual([])
@@ -935,7 +937,11 @@ describe('Store-driven serialization parity', () => {
         errorType: 'graph_serialization_state_mismatch',
         context: {
           graphId: graph.id,
-          mismatch: expect.stringMatching(/stored node .* has no live adapter/)
+          rootGraphId: graph.rootGraph.id,
+          mismatch: `stored node ${strandedId} has no live adapter`,
+          mismatchKind: 'stored_without_live_adapter',
+          nodeId: strandedId,
+          stateGraphId: graph.id
         }
       }
     )
