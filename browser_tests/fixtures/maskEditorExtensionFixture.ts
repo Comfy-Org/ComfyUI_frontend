@@ -318,8 +318,8 @@ class MaskEditorExtensionHelper {
     })
   }
 
-  async inspectSavedImage() {
-    return this.page.evaluate(async () => {
+  async inspectSavedImage(originalFilename: string) {
+    return this.page.evaluate(async (originalFilename) => {
       const node = window.app!.graph.nodes.find(
         (entry) => entry.type === 'LoadImage'
       )
@@ -349,7 +349,7 @@ class MaskEditorExtensionHelper {
         readPixels({ ...ref, channel: 'rgb' }),
         readPixels({ ...ref, channel: 'a' }),
         readPixels({
-          filename: 'image64x64.webp',
+          filename: originalFilename,
           type: 'input',
           channel: 'rgb'
         })
@@ -375,7 +375,7 @@ class MaskEditorExtensionHelper {
         changedRgbPixels,
         incorrectMaskPixels
       }
-    })
+    }, originalFilename)
   }
 
   async dispose() {

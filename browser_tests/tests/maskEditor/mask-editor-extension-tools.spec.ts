@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs'
+
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { maskEditorExtensionTest as test } from '@e2e/fixtures/maskEditorExtensionFixture'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 test.describe(
   'MaskEditor extension tools',
@@ -9,11 +12,24 @@ test.describe(
       async ({ comfyPage, comfyFiles, maskEditor, extensionTool }) => {
         await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
         await extensionTool.register()
-        await maskEditor.openDialog()
+        const filename = `mask-editor-tools-${crypto.randomUUID()}.webp`
         comfyFiles.deleteAfterTest({
-          filename: 'image64x64.webp',
+          filename,
           type: 'input'
         })
+        await comfyPage.vueNodes
+          .getNodeByTitle('Load Image')
+          .locator('input[type="file"]')
+          .setInputFiles({
+            name: filename,
+            mimeType: 'image/webp',
+            buffer: readFileSync(assetPath('image64x64.webp'))
+          })
+        await expect(maskEditor.previewImage).toHaveAttribute(
+          'src',
+          new RegExp(filename)
+        )
+        await maskEditor.reopenDialog()
       }
     )
 
@@ -45,20 +61,27 @@ test.describe(
       extensionTool
     }) => {
       const originalImage = await maskEditor.getCanvasSnapshot(0)
+      await maskEditor.dialog.locator('[data-tool="rgbPaint"]').click()
+      await maskEditor.drawStrokeOnPointerZone(maskEditor.dialog)
+      await expect.poll(() => maskEditor.pollRgbPixelCount()).toBeGreaterThan(0)
+      const originalPaint = await maskEditor.getCanvasSnapshot(1)
       await extensionTool.tool.click()
       await extensionTool.apply.click()
       await expect(extensionTool.status).toHaveText('Mask applied')
       await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(1024)
       expect(await extensionTool.getMaskAlphaValues()).toEqual([0, 255])
       expect(await maskEditor.getCanvasSnapshot(0)).toBe(originalImage)
+      expect(await maskEditor.getCanvasSnapshot(1)).toBe(originalPaint)
       const appliedMask = await maskEditor.getCanvasSnapshot(2)
       await maskEditor.dialog.getByTitle('Undo', { exact: true }).click()
       await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(0)
       expect(await maskEditor.getCanvasSnapshot(0)).toBe(originalImage)
+      expect(await maskEditor.getCanvasSnapshot(1)).toBe(originalPaint)
       await maskEditor.dialog.getByTitle('Redo', { exact: true }).click()
       await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(1024)
       expect(await maskEditor.getCanvasSnapshot(2)).toBe(appliedMask)
       expect(await maskEditor.getCanvasSnapshot(0)).toBe(originalImage)
+      expect(await maskEditor.getCanvasSnapshot(1)).toBe(originalPaint)
     })
 
     test('native Save and workflow reload preserve mask pixels, RGB, and widget values', async ({
@@ -68,6 +91,7 @@ test.describe(
       extensionTool
     }, testInfo) => {
       const originalWidgets = await extensionTool.getWidgets()
+      const originalImage = await extensionTool.getSavedImageReference()
       const dialog = maskEditor.dialog
 
       await test.step('Save the mask without persisting overlay markers or changing RGB', async () => {
@@ -86,7 +110,9 @@ test.describe(
             disposed: 1,
             unmounted: 1
           })
-        expect(await extensionTool.inspectSavedImage()).toEqual({
+        expect(
+          await extensionTool.inspectSavedImage(originalImage.filename)
+        ).toEqual({
           width: 64,
           height: 64,
           changedRgbPixels: 0,

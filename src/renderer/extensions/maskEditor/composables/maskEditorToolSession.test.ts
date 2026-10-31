@@ -220,6 +220,28 @@ describe('MaskEditor extension session contract', () => {
     expect(reportFailure).toHaveBeenCalledExactlyOnceWith(expect.any(Error))
   })
 
+  it('snapshots getter-backed overlay points without retaining caller state', () => {
+    class Point implements MaskEditorOverlayPoint {
+      readonly id = 'positive'
+      readonly color = 'blue'
+      readonly y = 2
+      readonly radius = 4
+      position = 1
+
+      get x() {
+        return this.position
+      }
+    }
+
+    const { runtime, overlay } = setup()
+    const point = new Point()
+    expect(runtime.context.setOverlay([point])).toBe(true)
+    point.position = 9
+    expect(overlay()).toEqual([
+      { id: 'positive', color: 'blue', x: 1, y: 2, radius: 4 }
+    ])
+  })
+
   it('reports a thrown session creation failure only once', () => {
     const failure = new Error('session creation failed')
     const { runtime, reportFailure } = setup(() => {
