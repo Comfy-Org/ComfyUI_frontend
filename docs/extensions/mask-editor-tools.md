@@ -96,8 +96,8 @@ order. Zero is unselected, 255 is fully selected, and intermediate values are
 partial selection. Dimensions must match the snapshot. The API replaces only
 the mask layer and records one native Undo step. RGB and paint layers are
 preserved. Normal Save performs alpha encoding and updates the source node.
-The editor copies the supplied mask buffer, so changing its bytes after a
-successful commit does not alter the committed mask.
+Changes to the caller's mask buffer after a successful commit do not alter the
+committed mask or its Undo/Redo history.
 
 Success returns `{ ok: true, revision }`. Refusals return `{ ok: false, reason }`
 where the reason is `inactive`, `unavailable`, `stale`, `invalid-mask`, or
