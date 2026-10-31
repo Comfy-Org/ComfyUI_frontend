@@ -500,7 +500,9 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       workspaceDenied: (workspaceId) =>
         useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId),
       ssoRequired: ({ session }) =>
-        presentSsoRequired('session_refused', { email: session.user.email })
+        presentSsoRequired('session_refused', { email: session.user.email }),
+      retriesLapsedSession:
+        useFeatureFlags().flags.webSessionLapseRecoveryEnabled
     })
   }
 
