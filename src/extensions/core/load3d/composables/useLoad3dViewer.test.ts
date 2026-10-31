@@ -829,6 +829,46 @@ describe('useLoad3dViewer', () => {
       expect(viewer.backgroundColor.value).toBe('#282828')
     })
 
+    it('falls back to the default config when the very first standalone load does not succeed', async () => {
+      // restoreStandaloneConfig is the only initialiser of the standalone
+      // config refs, and backgroundColor starts as ''. Skipping it on a
+      // non-'loaded' first load left the colour input bound to '', which the
+      // picker renders as #000000 rather than the #282828 default.
+      vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce('failed')
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeStandaloneViewer(containerRef, 'model.glb')
+
+      expect(viewer.backgroundColor.value).toBe('#282828')
+      expect(viewer.showGrid.value).toBe(true)
+      expect(viewer.cameraType.value).toBe('perspective')
+    })
+
+    it('keeps the previous model config and cache key in sync when a later standalone load fails', async () => {
+      // The cache key (currentModelUrl) and the config refs must move
+      // together. Restoring the failed model's config while the key still
+      // names the previous one would write this model's state into the
+      // previous model's slot on the next save.
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+      const model1 = 'model1.glb'
+      const model2 = 'model2.glb'
+
+      await viewer.initializeStandaloneViewer(containerRef, model1)
+      viewer.backgroundColor.value = '#ff0000'
+      await nextTick()
+
+      vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce('failed')
+      await viewer.initializeStandaloneViewer(containerRef, model2)
+
+      expect(viewer.backgroundColor.value).toBe('#ff0000')
+
+      // model1's slot must still hold model1's colour, not model2's.
+      await viewer.initializeStandaloneViewer(containerRef, model1)
+      expect(viewer.backgroundColor.value).toBe('#ff0000')
+    })
+
     it('warns when loading another model into the standalone viewer fails', async () => {
       const viewer = useLoad3dViewer()
       const containerRef = document.createElement('div')
