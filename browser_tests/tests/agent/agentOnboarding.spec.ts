@@ -192,4 +192,56 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       page.getByRole('dialog', { name: enMessages.agent.coachTitle })
     ).toHaveCount(0)
   })
+
+  test('Escape leaves the last card, which has no Skip button', async ({
+    page,
+    agentFlagEnabled
+  }) => {
+    await bootAgentApp(page, agentFlagEnabled, {
+      onboardingCompleted: false
+    })
+    const agentPanel = new AgentPanel(page)
+    await agentPanel.open()
+    const intro = await agentPanel.expectTourCard(
+      enMessages.agent.coachTitle,
+      enMessages.agent.coachBody,
+      '1 of 3'
+    )
+    await intro.getByRole('button', { name: enMessages.g.next }).click()
+
+    const workflow = await agentPanel.expectTourCard(
+      enMessages.agent.coachWorkflowTitle,
+      enMessages.agent.coachWorkflowBody,
+      '2 of 3'
+    )
+    await workflow.getByRole('button', { name: enMessages.g.next }).click()
+
+    const history = await agentPanel.expectTourCard(
+      enMessages.agent.coachHistoryTitle,
+      enMessages.agent.coachHistoryBody,
+      '3 of 3'
+    )
+    await expect(agentPanel.tourSkipButton(history)).toHaveCount(0)
+
+    await page.keyboard.press('Escape')
+
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByTestId('agent-coach-spotlight')).toHaveCount(0)
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          localStorage.getItem(
+            'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
+          )
+        )
+      )
+      .toBe('true')
+
+    await page.reload()
+    await waitForCloudApp(page)
+    await expect(page.locator('#agent-panel-root')).toBeVisible()
+    await expect(
+      page.getByRole('dialog', { name: enMessages.agent.coachTitle })
+    ).toHaveCount(0)
+  })
 })
