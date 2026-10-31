@@ -3043,6 +3043,10 @@
       "verifyTitle": "Verify your payment",
       "startOver": "Start over",
       "viewPricing": "View pricing details",
+      "autoTopUp": {
+        "prompt": "Running low on credits? Turn on auto top-up.",
+        "setUp": "Set up"
+      },
       "youPay": "Amount (USD)",
       "youGet": "Credits",
       "buyCredits": "Continue to payment",
