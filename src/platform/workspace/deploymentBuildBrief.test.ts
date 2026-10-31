@@ -222,3 +222,32 @@ describe(workflowDeploymentBrief, () => {
     expect(brief).toContain('Ask the user before you deploy it.')
   })
 })
+
+describe('both briefs', () => {
+  it.for([
+    {
+      brief: 'deploymentBuildBrief',
+      build: () =>
+        deploymentBuildBrief(
+          deployment,
+          [{ packId: 'comfyui-birefnet', nodeTypes: ['BiRefNet'] }],
+          []
+        )
+    },
+    {
+      brief: 'workflowDeploymentBrief',
+      build: () =>
+        workflowDeploymentBrief(
+          [{ packId: 'comfyui-birefnet', nodeTypes: ['BiRefNet'] }],
+          []
+        )
+    }
+  ])(
+    '$brief tells the agent to find the models the listed custom nodes load',
+    ({ build }) => {
+      expect(build()).toContain(
+        'The editor cannot see the models those custom nodes load, so they are not\nlisted'
+      )
+    }
+  )
+})

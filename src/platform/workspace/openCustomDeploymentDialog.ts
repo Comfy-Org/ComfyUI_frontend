@@ -12,18 +12,23 @@ import { customDeploymentPitch } from '@/platform/workspace/customDeploymentPitc
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 import { useDialogStore } from '@/stores/dialogStore'
 
+function cardOf(module: { default?: Component } | undefined): Component {
+  if (!module?.default)
+    throw new TypeError('Failed to fetch dynamically imported module')
+  return module.default
+}
+
 async function openCardDialog(
   key: string,
-  load: () => Promise<{ default: Component }>,
+  load: () => Promise<{ default?: Component } | undefined>,
   props: Record<string, unknown>
 ): Promise<boolean> {
-  const card = await load().then(
-    (module) => module.default,
-    (error: unknown) => {
+  const card = await load()
+    .then(cardOf)
+    .catch((error: unknown) => {
       useErrorHandling().toastErrorHandler(error)
       return null
-    }
-  )
+    })
   if (card === null) return false
   const dialogStore = useDialogStore()
   const hide = () => dialogStore.closeDialog({ key })
@@ -85,10 +90,12 @@ function loadWorkflowNeedsDeploymentCard() {
 
 /** Preloads the workflow deployment dialog; false if loading fails. */
 export function preloadWorkflowNeedsDeploymentDialog(): Promise<boolean> {
-  return loadWorkflowNeedsDeploymentCard().then(
-    () => true,
-    () => false
-  )
+  return loadWorkflowNeedsDeploymentCard()
+    .then(cardOf)
+    .then(
+      () => true,
+      () => false
+    )
 }
 
 /** Opens the workflow deployment dialog, replacing an earlier one. */

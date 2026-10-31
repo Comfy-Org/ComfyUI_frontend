@@ -8,7 +8,6 @@
 </template>
 
 <script setup lang="ts">
-import { uniqBy } from 'es-toolkit'
 import { useI18n } from 'vue-i18n'
 
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -22,8 +21,8 @@ import type {
   MissingItemsRow
 } from '@/platform/workspace/customDeploymentPitch'
 import { workflowDeploymentBrief } from '@/platform/workspace/deploymentBuildBrief'
-import type { MissingBuildModel } from '@/platform/workspace/deploymentBuildBrief'
 import {
+  missingModelsOf,
   missingPacksOf,
   nodesNeedingDeployment
 } from '@/platform/workspace/missingForDeployment'
@@ -40,14 +39,9 @@ const missingNodes = nodesNeedingDeployment(
   useMissingNodesErrorStore().missingNodesError?.nodeTypes ?? []
 )
 const packs = missingPacksOf(missingNodes)
-const models: MissingBuildModel[] = uniqBy(
-  useMissingModelStore().visibleMissingModelCandidates ?? [],
-  (candidate) => candidate.name
-).map((candidate) => ({
-  name: candidate.name,
-  directory: candidate.directory ?? null,
-  url: candidate.url
-}))
+const models = missingModelsOf(
+  useMissingModelStore().visibleMissingModelCandidates ?? []
+)
 
 const offer = workflowDeploymentOffer(
   useDeploymentPickStore().deployments,
@@ -59,10 +53,11 @@ function listed(names: readonly string[]): string {
   const shown = names.slice(0, NAMES_SHOWN).join(', ')
   const more = names.length - NAMES_SHOWN
   return more > 0
-    ? t('deploymentSwitcher.workflowNeedsDeployment.andMore', {
-        names: shown,
-        count: more
-      })
+    ? t(
+        'deploymentSwitcher.workflowNeedsDeployment.andMore',
+        { names: shown, count: more },
+        { escapeParameter: false }
+      )
     : shown
 }
 

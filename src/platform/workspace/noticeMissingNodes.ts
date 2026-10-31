@@ -1,5 +1,6 @@
 import { until } from '@vueuse/core'
 
+import { useAppMode } from '@/composables/useAppMode'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -7,12 +8,17 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { useWorkflowNeedsDeployment } from '@/platform/workspace/composables/useCustomDeploymentOffered'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
-import { nodesNeedingDeployment } from '@/platform/workspace/missingForDeployment'
+import { waitForDeploymentListing } from '@/platform/workspace/composables/waitForDeploymentPick'
+import {
+  missingNodeTypeName,
+  nodesNeedingDeployment
+} from '@/platform/workspace/missingForDeployment'
 import {
   openWorkflowNeedsDeploymentDialog,
   preloadWorkflowNeedsDeploymentDialog
 } from '@/platform/workspace/openCustomDeploymentDialog'
 import { openWorkflowForCheck } from '@/platform/workspace/openWorkflowForCheck'
+import { useCustomDeploymentOfferStore } from '@/platform/workspace/stores/customDeploymentOfferStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import {
   answersForWorkflow,
@@ -27,14 +33,13 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 /** How long the dialog waits for the compatibility check before it stays closed. */
 export const COMPATIBILITY_WAIT_MS = 3000
 
-function waitForListing(): Promise<void> {
-  let timeout: ReturnType<typeof setTimeout> | undefined
-  return Promise.race([
-    useDeploymentPickStore().loadOnce(),
-    new Promise<void>((resolve) => {
-      timeout = setTimeout(resolve, DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS)
-    })
-  ]).finally(() => clearTimeout(timeout))
+function firstNoticeOf(missingNodes: readonly MissingNodeType[]): boolean {
+  return (
+    missingNodes.length > 0 &&
+    useCustomDeploymentOfferStore().offerOnce(
+      missingNodes.map(missingNodeTypeName)
+    )
+  )
 }
 
 async function compatibilityAnswered(
@@ -70,11 +75,15 @@ async function offerCustomDeployment(
   const checkedWorkflow = openWorkflowForCheck(missingNodes)
   const cardLoaded = preloadWorkflowNeedsDeploymentDialog()
   const needsDeployment = useWorkflowNeedsDeployment()
-  await waitForListing()
+  await waitForDeploymentListing(DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS)
   await compatibilityAnswered(markFor, checkedWorkflow)
   await cardLoaded
+  const stillNoticed =
+    workflowStore.activeWorkflow === noticedWorkflow &&
+    useExecutionErrorStore().isErrorOverlayOpen &&
+    !useAppMode().isAppMode.value
   if (
-    workflowStore.activeWorkflow !== noticedWorkflow ||
+    !stillNoticed ||
     !needsDeployment.value ||
     !knowsWhatToOffer(markFor, checkedWorkflow)
   ) {
@@ -85,7 +94,8 @@ async function offerCustomDeployment(
 
 /**
  * Shows the error overlay for the open workflow's missing nodes and, on Comfy
- * Cloud, the deployment dialog over it once it knows what to offer.
+ * Cloud the first time this page meets them, the deployment dialog over it
+ * once it knows what to offer.
  */
 export async function noticeMissingNodes(
   nodeTypes: readonly MissingNodeType[],
@@ -93,7 +103,8 @@ export async function noticeMissingNodes(
 ): Promise<void> {
   useExecutionErrorStore().showErrorOverlay()
   const missingNodes = nodesNeedingDeployment(nodeTypes)
-  if (!useDeploymentSwitcherOffered().value || missingNodes.length === 0) return
+  if (!useDeploymentSwitcherOffered().value || !firstNoticeOf(missingNodes))
+    return
   await offerCustomDeployment(missingNodes, markFor).catch((error: unknown) => {
     reportError(error, {
       errorType: 'error_offering_custom_deployment',

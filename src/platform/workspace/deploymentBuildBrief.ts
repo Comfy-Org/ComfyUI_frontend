@@ -22,6 +22,11 @@ export interface MissingBuildModel {
   url?: string
 }
 
+const UNLISTED_MODELS = [
+  'The editor cannot see the models those custom nodes load, so they are not',
+  "listed: find them in the workflow or the packs' docs, or ask the user."
+]
+
 function inline(text: string): string {
   return text.replace(/[\p{Cc}\p{Zl}\p{Zp}`]/gu, ' ')
 }
@@ -113,8 +118,10 @@ export function deploymentBuildBrief(
     '## Where the user decides',
     '',
     'Find the pack for any node under an unknown pack, and a download link for',
-    'any model without one. Show the user what you will change in the Build,',
-    'and wait for a yes. Then cut a new release of it, as the recipe says.',
+    'any model without one.',
+    ...UNLISTED_MODELS,
+    'Show the user what you will change in the Build, and wait for a yes. Then',
+    'cut a new release of it, as the recipe says.',
     '',
     '## When you are done',
     '',
@@ -143,7 +150,9 @@ export function workflowDeploymentBrief(
     '## Where the user decides',
     '',
     'Find the pack for any node under an unknown pack, and a download link for',
-    'any model without one. Ask the user which GPU the deployment should run on.',
+    'any model without one.',
+    ...UNLISTED_MODELS,
+    'Ask the user which GPU the deployment should run on.',
     CUT_AND_REPORT_SECTION
   ].join('\n')
 }

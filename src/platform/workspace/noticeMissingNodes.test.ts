@@ -44,6 +44,10 @@ vi.mock(import('@/platform/workspace/openWorkflowForCheck'), () => ({
   })
 }))
 
+type ActiveWorkflow = NonNullable<
+  ReturnType<typeof useWorkflowStore>['activeWorkflow']
+>
+
 const deployment: WorkspaceDeployment = {
   deployment_id: 'dep-1',
   deployment_name: 'production',
@@ -111,9 +115,9 @@ function listingAnswersLater(): () => void {
 }
 
 function anotherWorkflowOpens() {
-  useWorkflowStore().activeWorkflow = fromPartial<
-    NonNullable<ReturnType<typeof useWorkflowStore>['activeWorkflow']>
-  >({ path: 'workflows/other.json' })
+  useWorkflowStore().activeWorkflow = fromPartial<ActiveWorkflow>({
+    path: 'workflows/other.json'
+  })
 }
 
 describe(noticeMissingNodes, () => {
@@ -266,17 +270,17 @@ describe(noticeMissingNodes, () => {
     {
       answers: 'within the wait',
       after: DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS - 1,
-      opens: true
+      calls: 1
     },
     {
       answers: 'after the wait',
       after: DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS,
-      opens: false
+      calls: 0
     }
   ])(
     'opens the dialog only when the deployments listing answers $answers',
-    async ({ after, opens }) => {
-      vi.useFakeTimers()
+    async ({ after, calls }) => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
       listing(false, null)
       const answer = listingAnswersLater()
       workflowMissing(UNSUPPORTED)
@@ -287,9 +291,7 @@ describe(noticeMissingNodes, () => {
       answer()
       await noticed
 
-      expect(
-        vi.mocked(openWorkflowNeedsDeploymentDialog).mock.calls
-      ).toHaveLength(opens ? 1 : 0)
+      expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledTimes(calls)
     }
   )
 
@@ -318,5 +320,60 @@ describe(noticeMissingNodes, () => {
     await noticed
 
     expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+  })
+  it.for([
+    {
+      when: 'the user closed the error overlay',
+      meanwhile: () => useExecutionErrorStore().dismissErrorOverlay()
+    },
+    {
+      when: 'another workflow is in front',
+      meanwhile: anotherWorkflowOpens
+    }
+  ])(
+    'does not open the dialog when, by the time the listing answers, $when',
+    async ({ meanwhile }) => {
+      listing(true, null)
+      const answer = listingAnswersLater()
+      workflowMissing(UNSUPPORTED)
+
+      const noticed = noticeMissingNodes(UNSUPPORTED, markFor)
+      meanwhile()
+      answer()
+      await noticed
+
+      expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+    }
+  )
+
+  it('does not open the dialog over App mode', async () => {
+    useWorkflowStore().activeWorkflow = fromPartial<ActiveWorkflow>({
+      activeMode: 'app'
+    })
+    listing(true, null)
+    workflowMissing(UNSUPPORTED)
+
+    await noticeMissingNodes(UNSUPPORTED, markFor)
+
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+    expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+  })
+
+  it('opens the dialog on its own once per page for the same missing nodes, and again for others', async () => {
+    listing(true, null)
+    workflowMissing(UNSUPPORTED)
+    await noticeMissingNodes(UNSUPPORTED, markFor)
+    await noticeMissingNodes(UNSUPPORTED, markFor)
+
+    expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
+
+    const others: MissingNodeType[] = [
+      { type: 'RMBG', cnrId: 'comfyui-rmbg', isReplaceable: false }
+    ]
+    workflowMissing(others)
+    await noticeMissingNodes(others, markFor)
+
+    expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledTimes(2)
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
   })
 })

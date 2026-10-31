@@ -3,12 +3,12 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
 
 import type { useExternalLink } from '@/composables/useExternalLink'
-import enMessages from '@/locales/en/main.json'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import type {
   DeploymentCompatibilityMark,
@@ -19,6 +19,7 @@ import {
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { testI18n } from '@/utils/__tests__/testI18n'
 
 import WorkflowNeedsDeploymentCard from './WorkflowNeedsDeploymentCard.vue'
 
@@ -56,11 +57,25 @@ vi.mock(import('@/composables/useExternalLink'), () => ({
     })
 }))
 
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-})
+const missingNodeTypes: MissingNodeType[] = [
+  { type: 'BiRefNet', cnrId: 'comfyui-birefnet', isReplaceable: false },
+  { type: 'RMBG', cnrId: 'comfyui-rmbg', isReplaceable: false },
+  { type: 'Impact', cnrId: 'comfyui-impact-pack', isReplaceable: false },
+  { type: 'KJ', cnrId: 'comfyui-kjnodes', isReplaceable: false },
+  { type: 'QwenImage21Cache', isReplaceable: false },
+  { type: 'OldSampler', cnrId: 'comfyui-old', isReplaceable: true }
+]
+
+function checkpoint(name: string): MissingModelCandidate {
+  return {
+    nodeType: 'CheckpointLoaderSimple',
+    widgetName: 'ckpt_name',
+    name,
+    directory: 'checkpoints',
+    isMissing: true,
+    isAssetSupported: false
+  }
+}
 
 function deployment(id: string): WorkspaceDeployment {
   return {
@@ -74,9 +89,15 @@ function deployment(id: string): WorkspaceDeployment {
   }
 }
 
-function renderCard(
-  checked: Record<string, DeploymentCompatibilityMark | null> = {}
-) {
+function renderCard({
+  checked = {},
+  nodeTypes = missingNodeTypes,
+  models = [checkpoint('sd_xl_base_1.0.safetensors')]
+}: {
+  checked?: Record<string, DeploymentCompatibilityMark | null>
+  nodeTypes?: MissingNodeType[]
+  models?: MissingModelCandidate[]
+} = {}) {
   const pinia = getActivePinia()!
   marks.clear()
   for (const [id, mark] of Object.entries(checked)) marks.set(id, mark)
@@ -93,27 +114,11 @@ function renderCard(
       items: Object.keys(checked).map(deployment)
     })
   )
-  useMissingNodesErrorStore(pinia).surfaceMissingNodes([
-    { type: 'BiRefNet', cnrId: 'comfyui-birefnet', isReplaceable: false },
-    { type: 'RMBG', cnrId: 'comfyui-rmbg', isReplaceable: false },
-    { type: 'Impact', cnrId: 'comfyui-impact-pack', isReplaceable: false },
-    { type: 'KJ', cnrId: 'comfyui-kjnodes', isReplaceable: false },
-    { type: 'QwenImage21Cache', isReplaceable: false },
-    { type: 'OldSampler', cnrId: 'comfyui-old', isReplaceable: true }
-  ])
-  useMissingModelStore(pinia).setMissingModels([
-    {
-      nodeType: 'BiRefNetLoader',
-      widgetName: 'model',
-      name: 'BiRefNet-general.safetensors',
-      directory: 'BiRefNet',
-      isMissing: true,
-      isAssetSupported: false
-    }
-  ])
+  useMissingNodesErrorStore(pinia).surfaceMissingNodes(nodeTypes)
+  useMissingModelStore(pinia).setMissingModels(models)
   const user = userEvent.setup()
   render(WorkflowNeedsDeploymentCard, {
-    global: { plugins: [pinia, i18n] }
+    global: { plugins: [pinia, testI18n] }
   })
   return user
 }
@@ -134,7 +139,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
         '1 missing node',
         'QwenImage21Cache',
         '1 missing model',
-        'BiRefNet-general.safetensors'
+        'sd_xl_base_1.0.safetensors'
       ].join('')
     )
     expect(
@@ -148,10 +153,30 @@ describe('WorkflowNeedsDeploymentCard', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('shows names as written in a row that lists more than three', () => {
+    renderCard({
+      nodeTypes: [
+        { type: 'BiRefNet', cnrId: 'comfyui-birefnet', isReplaceable: false }
+      ],
+      models: [
+        checkpoint('SDXL/base.safetensors'),
+        checkpoint("SDXL/Tom's=refiner.safetensors"),
+        checkpoint('SDXL/a&b.safetensors'),
+        checkpoint('SDXL/turbo.safetensors')
+      ]
+    })
+
+    expect(screen.getByTestId('custom-deployment-missing')).toHaveTextContent(
+      "SDXL/base.safetensors, SDXL/Tom's=refiner.safetensors, SDXL/a&b.safetensors, and 1 more"
+    )
+  })
+
   it('offers to switch to a deployment that runs the workflow, saying what the others lack', async () => {
     const user = renderCard({
-      experiments: { kind: 'missing', nodeTypes: ['RMBG'] },
-      production: { kind: 'runs' }
+      checked: {
+        experiments: { kind: 'missing', nodeTypes: ['RMBG'] },
+        production: { kind: 'runs' }
+      }
     })
 
     const runOn = screen.getByRole('combobox', { name: 'Run on' })
@@ -170,8 +195,10 @@ describe('WorkflowNeedsDeploymentCard', () => {
 
   it('says no deployment runs it when the check finds each one lacks nodes', () => {
     renderCard({
-      production: { kind: 'missing', nodeTypes: ['BiRefNet'] },
-      experiments: { kind: 'missing', nodeTypes: ['RMBG'] }
+      checked: {
+        production: { kind: 'missing', nodeTypes: ['BiRefNet'] },
+        experiments: { kind: 'missing', nodeTypes: ['RMBG'] }
+      }
     })
 
     expect(
@@ -185,7 +212,13 @@ describe('WorkflowNeedsDeploymentCard', () => {
   })
 
   it('copies a brief that lists every missing pack, node and model', async () => {
-    const user = renderCard()
+    const user = renderCard({
+      nodeTypes: [
+        { type: 'KJ', cnrId: 'comfyui-kjnodes', isReplaceable: false },
+        { type: 'QwenImage21Cache', isReplaceable: false },
+        { type: 'OldSampler', cnrId: 'comfyui-old', isReplaceable: true }
+      ]
+    })
 
     await user.click(screen.getByTestId('custom-deployment-agent'))
 
@@ -193,7 +226,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
     expect(brief).toContain('- Pack `comfyui-kjnodes`: `KJ`')
     expect(brief).toContain('- Pack unknown: `QwenImage21Cache`')
     expect(brief).toContain(
-      '- `BiRefNet-general.safetensors` in `models/BiRefNet`'
+      '- `sd_xl_base_1.0.safetensors` in `models/checkpoints`'
     )
     expect(brief).not.toContain('OldSampler')
   })
