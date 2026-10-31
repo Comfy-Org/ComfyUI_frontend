@@ -11,7 +11,6 @@ import { useExecutionStore } from '@/stores/executionStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
-import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 
 type JobId = JobDetail['id']
 type TaskOutput = TaskItemImpl['outputs']
