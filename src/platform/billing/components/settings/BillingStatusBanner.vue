@@ -118,7 +118,7 @@ const { section } = defineProps<{
 
 const { t } = useI18n()
 const { longDate } = useLongDate()
-const { renewalDate, subscription } = useBillingContext()
+const { nextCreditRefillAt, subscription } = useBillingContext()
 const { permissions, canReactivatePlan, workspaceType } = useBillingUI()
 const { canTopUp, topUpDenial, canManageBilling, runDeniedPaymentPastDue } =
   useBillingCapabilities()
@@ -150,7 +150,7 @@ const canManage = computed(() => permissions.value.canManageSubscription)
 const isEnterprisePlan = computed(
   () => subscription.value?.tier === 'ENTERPRISE'
 )
-const cycleResetDate = computed(() => longDate(renewalDate.value))
+const refillDate = computed(() => longDate(nextCreditRefillAt.value))
 const planEndDate = computed(() => longDate(subscription.value?.endDate))
 const planName = computed(() => formatTierName(subscription.value?.tier, false))
 
@@ -258,7 +258,7 @@ const planEndedView = (): BannerView => {
 }
 
 const outOfCreditsBody = (key: string, noDateKey: string): string =>
-  cycleResetDate.value ? t(key, { date: cycleResetDate.value }) : t(noDateKey)
+  refillDate.value ? t(key, { date: refillDate.value }) : t(noDateKey)
 
 const pausedView = (): BannerView => {
   const paused = pausedBannerCopy(canManageBilling.value)

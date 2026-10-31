@@ -38,7 +38,7 @@ const state = vi.hoisted(() => ({
     endDate: null,
     scheduledChange: null
   } as Subscription | null,
-  renewalDate: null as string | null,
+  nextCreditRefillAt: null as string | null,
   workspaceType: 'team' as WorkspaceWithRole['type'],
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
@@ -80,7 +80,8 @@ vi.mock<unknown>(
       plans: computed(() => [
         { slug: 'pro-annual', tier: 'PRO', duration: 'ANNUAL' }
       ]),
-      renewalDate: computed(() => state.renewalDate),
+      renewalDate: computed(() => '2026-12-15T00:00:00Z'),
+      nextCreditRefillAt: computed(() => state.nextCreditRefillAt),
       manageSubscription: state.manageSubscription,
       fetchStatus: vi.fn(),
       fetchBalance: vi.fn()
@@ -280,7 +281,7 @@ describe('BillingStatusBanner', () => {
       endDate: null,
       scheduledChange: null
     }
-    state.renewalDate = null
+    state.nextCreditRefillAt = null
     state.workspaceType = 'team'
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
@@ -460,7 +461,7 @@ describe('BillingStatusBanner', () => {
         scheduledChange: null,
         tier: audience === 'personal' ? 'PRO' : undefined
       }
-      state.renewalDate = '2026-11-01T00:00:00Z'
+      state.nextCreditRefillAt = '2026-11-01T00:00:00Z'
       useBillingCapabilities().canTopUp = computed(() => false)
       useBillingCapabilities().topUpDenial = computed(() => 'payment_past_due')
       useBillingCapabilities().canManageBilling =
@@ -996,29 +997,29 @@ describe('BillingStatusBanner', () => {
     it.for([
       {
         personal: false,
-        renewalDate: '2026-10-01T00:00:00Z',
+        nextCreditRefillAt: '2026-10-01T00:00:00Z',
         body: 'Your team has used all its credits. Add more credits or wait until credits refill on October 1, 2026.'
       },
       {
         personal: false,
-        renewalDate: null,
+        nextCreditRefillAt: null,
         body: 'Your team has used all its credits. Add more credits.'
       },
       {
         personal: true,
-        renewalDate: '2026-10-01T00:00:00Z',
+        nextCreditRefillAt: '2026-10-01T00:00:00Z',
         body: "You've used all your credits. Add more credits or wait until credits refill on October 1, 2026."
       },
       {
         personal: true,
-        renewalDate: null,
+        nextCreditRefillAt: null,
         body: "You've used all your credits. Add more credits."
       }
     ])(
-      'words out of credits for the audience (personal: $personal, date: $renewalDate)',
-      async ({ personal, renewalDate, body }) => {
+      'words out of credits for the audience from the served refill date (personal: $personal, refill: $nextCreditRefillAt)',
+      async ({ personal, nextCreditRefillAt, body }) => {
         if (personal) personalPlan()
-        state.renewalDate = renewalDate
+        state.nextCreditRefillAt = nextCreditRefillAt
         state.subscription = { ...state.subscription!, hasFunds: false }
         renderBanner()
 

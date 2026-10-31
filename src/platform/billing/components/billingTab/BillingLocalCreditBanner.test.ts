@@ -57,7 +57,7 @@ function arrange(options: {
   isTeamPlan?: boolean
   subscription?: SubscriptionInfo
   balance?: BalanceInfo | null
-  renewalDate?: string | null
+  nextCreditRefillAt?: string | null
   canTopUp?: boolean
   topUpDenial?: string
   canManageBilling?: boolean
@@ -83,7 +83,8 @@ function arrange(options: {
       subscription: computed(() => subscription.value),
       balance: computed(() => balance.value),
       isTeamPlan: computed(() => options.isTeamPlan ?? false),
-      renewalDate: computed(() => options.renewalDate ?? null),
+      renewalDate: computed(() => '2026-12-15T00:00:00Z'),
+      nextCreditRefillAt: computed(() => options.nextCreditRefillAt ?? null),
       billingStatus: computed(() => 'paid' as const)
     })
   )
@@ -151,7 +152,7 @@ describe('BillingLocalCreditBanner', () => {
     arrange({
       isCloud: true,
       subscription: { ...personalSubscription, hasFunds: false },
-      renewalDate: '2026-10-01T00:00:00Z'
+      nextCreditRefillAt: '2026-10-01T00:00:00Z'
     })
 
     expect(screen.getByTestId('billing-local-credit-banner')).toHaveTextContent(
@@ -174,14 +175,14 @@ describe('BillingLocalCreditBanner', () => {
     {
       name: 'a personal owner',
       isTeamPlan: false,
-      renewalDate: '2026-10-01T00:00:00Z',
+      nextCreditRefillAt: '2026-10-01T00:00:00Z',
       body: "You've used all your credits. Add more credits or wait until credits refill on October 1, 2026.",
       buttons: ['Dismiss', 'Add credits']
     },
     {
-      name: 'a team owner without a refill date',
+      name: 'a team owner without a served refill date',
       isTeamPlan: true,
-      renewalDate: null,
+      nextCreditRefillAt: null,
       body: 'Your team has used all its credits. Add more credits.',
       buttons: ['Dismiss', 'Add credits']
     },
@@ -189,16 +190,29 @@ describe('BillingLocalCreditBanner', () => {
       name: 'a team member',
       isTeamPlan: true,
       canManageSubscription: false,
-      renewalDate: '2026-10-01T00:00:00Z',
+      nextCreditRefillAt: '2026-10-01T00:00:00Z',
       body: 'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on October 1, 2026.',
       buttons: ['Dismiss']
+    },
+    {
+      name: 'a personal owner without a served refill date',
+      isTeamPlan: false,
+      nextCreditRefillAt: null,
+      body: "You've used all your credits. Add more credits.",
+      buttons: ['Dismiss', 'Add credits']
     }
   ])(
     'shows out of credits to $name',
-    ({ isTeamPlan, renewalDate, canManageSubscription, body, buttons }) => {
+    ({
+      isTeamPlan,
+      nextCreditRefillAt,
+      canManageSubscription,
+      body,
+      buttons
+    }) => {
       arrange({
         isTeamPlan,
-        renewalDate,
+        nextCreditRefillAt,
         canManageSubscription,
         subscription: { ...personalSubscription, hasFunds: false }
       })

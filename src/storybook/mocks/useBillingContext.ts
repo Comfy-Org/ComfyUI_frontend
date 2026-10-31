@@ -80,6 +80,7 @@ export function useBillingContext(): BillingContext {
     renewalDate: computed(() => state.value.renewalDate),
     renewalInvoice: computed(() => null),
     periodCreditGrant: computed(() => null),
+    nextCreditRefillAt: computed(() => null),
     getMaxSeats: (tierKey: string) => ({ creator: 5, pro: 20 })[tierKey] ?? 1,
     initialize: async () => {},
     fetchStatus: async () => {},
