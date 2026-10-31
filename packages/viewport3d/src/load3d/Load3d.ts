@@ -465,6 +465,7 @@ class Load3d extends Viewport3d {
     this.modelManager.clearModel()
     this.adapterRef.current = null
     this.hasLoadedModel = false
+    this.eventManager.emitEvent('modelCleared', null)
     this.forceRender()
   }
 

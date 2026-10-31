@@ -305,7 +305,10 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       const instance = load3d
       await restoreConfigurationsFromNode(instance, node)
       if (!isCurrentInitialization(instance, node)) return
-      if (kept) applyEntireGizmoConfig(kept)
+      if (kept) {
+        applyEntireGizmoConfig(kept)
+        refreshModelStats()
+      }
 
       node.onMouseEnter = useChainCallback(node.onMouseEnter, () => {
         load3d?.refreshViewport()
@@ -1019,8 +1022,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     modelLoadingStart: () => {
       loadingMessage.value = t('load3d.loadingModel')
       loading.value = true
-      modelStats.value = null
-      abortModelStats()
+      clearModelStats()
       if (!isFirstModelLoad) {
         modelConfig.value = {
           upDirection: 'original',
@@ -1036,6 +1038,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         }
       }
     },
+    modelCleared: () => clearModelStats(),
     modelLoadingEnd: () => {
       loadingMessage.value = ''
       loading.value = false
@@ -1191,6 +1194,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     modelStatsAbort = null
   }
 
+  const clearModelStats = () => {
+    abortModelStats()
+    modelStats.value = null
+  }
+
   const refreshModelStats = () => {
     abortModelStats()
     const controller = new AbortController()
@@ -1207,7 +1215,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   }
 
   const releaseLoad3d = (keep = false): Load3d | null => {
-    abortModelStats()
+    if (keep) abortModelStats()
+    else clearModelStats()
     handleEvents('remove')
     const released = load3d
     load3d = null
