@@ -47,17 +47,14 @@ const askAgentMock = {
   askAgentAboutIssues: vi.fn<AskAgentPort['askAgentAboutIssues']>()
 }
 
-// RightSidePanel, rendered here, is what provides the Ask agent port.
-vi.mock<unknown>(
-  // oxlint-disable-next-line comfy/no-restricted-paths
-  import('@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'),
-  () => ({
-    useAskAgentAboutIssues: () => ({
-      canAskAgent: { value: false },
-      askAgentAboutIssues: vi.fn()
-    })
+// RightSidePanel, rendered here, provides the Ask agent port, which reads the user.
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
+  useCurrentUser: () => ({
+    isLoggedIn: ref(false),
+    isAuthInitialized: ref(false),
+    resolvedUserInfo: ref(null)
   })
-)
+}))
 
 vi.mock(import('@/scripts/app'))
 
