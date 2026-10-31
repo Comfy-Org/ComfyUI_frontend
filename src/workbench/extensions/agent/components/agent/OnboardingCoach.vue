@@ -70,12 +70,10 @@ const visible = computed(() => active.value && target.value !== null)
 // Let surfaces like the What's New popup defer while a coach card is on
 // screen. The store drops the source with this component's scope on unmount.
 useOnboardingOverlayStore().registerSource(() => visible.value)
-const toolbar = ref<HTMLElement | null>(null)
 const card = ref<HTMLElement | null>(null)
 const arrowElement = ref<HTMLElement | null>(null)
 const tooltip = ref<HTMLElement | null>(null)
 const bounds = useElementBounding(target)
-const toolbarBounds = useElementBounding(toolbar)
 const tooltipBounds = useElementBounding(tooltip)
 const { width, height } = useWindowSize()
 let targetRetryTimer: ReturnType<typeof setTimeout> | undefined
@@ -93,14 +91,8 @@ function resolveTargets(): void {
   const nextTarget = active.value
     ? document.querySelector<HTMLElement>(step.value.target)
     : null
-  const nextToolbar =
-    active.value && step.value.toolbarTarget
-      ? document.querySelector<HTMLElement>(step.value.toolbarTarget)
-      : null
   if (target.value !== nextTarget) target.value = nextTarget
-  if (toolbar.value !== nextToolbar) toolbar.value = nextToolbar
   bounds.update()
-  toolbarBounds.update()
   scheduleTargetRetry()
 }
 
@@ -194,28 +186,13 @@ watch(
 )
 
 const middleware = computed<Middleware[]>(() => {
-  const result = [
+  return [
     offset({
       mainAxis: CARD_GAP,
       crossAxis: step.value?.placement === 'left-start' ? -16 : 0
-    })
+    }),
+    shift({ padding: 8, crossAxis: true })
   ]
-  if (step.value?.placement === 'graph-bottom') {
-    const bottom = toolbar.value ? toolbarBounds.top.value : bounds.bottom.value
-    result.push({
-      name: 'graphBottom',
-      fn: ({ rects }) => ({
-        x:
-          rects.reference.x +
-          (rects.reference.width - rects.floating.width) / 2,
-        y:
-          Math.min(bottom, rects.reference.y + rects.reference.height) -
-          16 -
-          rects.floating.height
-      })
-    })
-  }
-  return [...result, shift({ padding: 8, crossAxis: true })]
 })
 
 const pointsAtTarget = computed(() => step.value?.placement.startsWith('left'))
@@ -252,12 +229,17 @@ const arrowStyle = computed(() => {
 const cardBorderClass = computed(() =>
   index.value < 2 ? 'border-secondary' : 'border-smoke-500/20'
 )
+const cardStyle = computed(() => ({
+  ...floatingStyles.value,
+  opacity: isPositioned.value ? 1 : 0
+}))
 
 const {
   isPending: nudged,
   start: startNudgeTimer,
   stop: stopNudgeTimer
 } = useTimeoutFn(() => undefined, NUDGE_MS, { immediate: false })
+const nudgedAttribute = computed(() => (nudged.value ? '' : undefined))
 watch([index, active], stopNudgeTimer)
 function nudgeCard(): void {
   startNudgeTimer()
@@ -341,11 +323,8 @@ useEventListener(
           :aria-labelledby="titleId"
           :aria-describedby="describedBy"
           tabindex="-1"
-          :data-nudged="nudged ? '' : undefined"
-          :style="{
-            ...floatingStyles,
-            opacity: isPositioned ? 1 : 0
-          }"
+          :data-nudged="nudgedAttribute"
+          :style="cardStyle"
           :class="
             cn(
               'fixed box-border flex max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] flex-col gap-3 rounded-2xl border bg-background p-4 text-foreground shadow-lg transition-shadow',
@@ -408,9 +387,13 @@ useEventListener(
                 @click="previous"
                 >{{ $t('onboardingCoachmarks.back') }}</Button
               >
-              <Button variant="secondary" size="md" @click="onSkip">{{
-                $t('agent.skip')
-              }}</Button>
+              <Button
+                v-if="!isLast"
+                variant="secondary"
+                size="md"
+                @click="onSkip"
+                >{{ $t('agent.skip') }}</Button
+              >
               <Button variant="inverted" size="md" @click="onNext">{{
                 $t(advanceLabelKey)
               }}</Button>

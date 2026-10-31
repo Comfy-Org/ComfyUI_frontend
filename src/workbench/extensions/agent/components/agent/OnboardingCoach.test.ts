@@ -31,28 +31,43 @@ const STEPS: CoachStep[] = [
     placement: 'left-end'
   },
   {
-    target: '#graph',
-    title: 'Keep editing',
-    body: 'Work alongside the agent.',
-    placement: 'graph-bottom',
-    toolbarTarget: '#toolbar'
-  },
-  {
     target: '#history',
     title: 'Previous chats',
     body: 'Continue an earlier chat.',
     placement: 'left-start'
   }
 ]
+const LAST = STEPS.length - 1
 const rectangles: Record<string, DOMRect> = {
   panel: new DOMRect(950, 60, 420, 700),
   composer: new DOMRect(966, 600, 388, 144),
-  graph: new DOMRect(60, 60, 880, 700),
-  toolbar: new DOMRect(650, 700, 260, 40),
   history: new DOMRect(970, 104, 24, 24)
 }
 const tooltipRect = new DOMRect(998, 105, 84, 22)
 const ARROW_SIZE = 12
+
+function cardPlacement(card: HTMLElement, target: DOMRect) {
+  const left = parseFloat(card.style.left)
+  const top = parseFloat(card.style.top)
+  const right = left + card.offsetWidth
+  const bottom = top + card.offsetHeight
+  return {
+    inViewport:
+      left >= 8 &&
+      top >= 8 &&
+      right <= window.innerWidth - 8 &&
+      bottom <= window.innerHeight - 8,
+    besideTarget:
+      right <= target.left && top < target.bottom && bottom > target.top
+  }
+}
+
+async function expectCard(step: CoachStep, progress: string) {
+  const dialog = await screen.findByRole('dialog', { name: step.title })
+  expect(dialog).toHaveAccessibleDescription(step.body)
+  await waitFor(() => expect(screen.getByText(progress)).toBeVisible())
+  expect(localStorage.getItem(KEY)).toBe('false')
+}
 
 function mount(steps = STEPS) {
   return render(
@@ -68,7 +83,7 @@ function mount(steps = STEPS) {
         }
       },
       template:
-        '<button>Outside tour</button><div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" data-testid="history" /><button data-testid="coach-restart" @click="replay" /><OnboardingCoach ref="coach" :steps="steps" :storage-key="storageKey" />'
+        '<button>Outside tour</button><div id="panel" /><div id="composer" /><div id="history" data-testid="history" /><button data-testid="coach-restart" @click="replay" /><OnboardingCoach ref="coach" :steps="steps" :storage-key="storageKey" />'
     },
     { global: { plugins: [i18n] } }
   )
@@ -111,21 +126,15 @@ beforeEach(() => {
 })
 
 describe('OnboardingCoach', () => {
-  it('presents all four cards in order, keeps Skip available and finishes with Done', async () => {
+  it('presents every card in order and finishes with Done', async () => {
     const user = userEvent.setup()
     const { unmount } = mount()
-    for (const [index, step] of STEPS.entries()) {
-      const dialog = await screen.findByRole('dialog', { name: step.title })
-      expect(dialog).toHaveAccessibleDescription(step.body)
-      await waitFor(() =>
-        expect(screen.getByText(`${index + 1} of 4`)).toBeVisible()
-      )
-      expect(screen.getByRole('button', { name: 'Skip' })).toBeVisible()
-      expect(localStorage.getItem(KEY)).toBe('false')
-      await user.click(
-        screen.getByRole('button', { name: index === 3 ? 'Done' : 'Next' })
-      )
-    }
+    await expectCard(STEPS[0], '1 of 3')
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await expectCard(STEPS[1], '2 of 3')
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await expectCard(STEPS[2], '3 of 3')
+    await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(localStorage.getItem(KEY)).toBe('true')
     unmount()
@@ -134,7 +143,22 @@ describe('OnboardingCoach', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it.for([0, 1, 2, 3])(
+  it('offers only Done on the last card', async () => {
+    const user = userEvent.setup()
+    mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByRole('dialog', { name: STEPS[1].title })
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByRole('dialog', { name: STEPS[LAST].title })
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Done' })).toBeVisible()
+    )
+    expect(screen.queryByRole('button', { name: 'Skip' })).toBeNull()
+  })
+
+  it.for([...STEPS.keys()].slice(0, LAST))(
     'dismisses through Skip from card index %i',
     async (index) => {
       const user = userEvent.setup()
@@ -204,37 +228,22 @@ describe('OnboardingCoach', () => {
     for (const [index, step] of STEPS.entries()) {
       const dialog = await screen.findByRole('dialog', { name: step.title })
       const targetRect = rectangles[step.target.slice(1)]
-      await waitFor(() => {
-        const left = parseFloat(dialog.style.left)
-        const top = parseFloat(dialog.style.top)
-        const right = left + dialog.offsetWidth
-        const bottom = top + dialog.offsetHeight
-        expect(left).toBeGreaterThanOrEqual(8)
-        expect(top).toBeGreaterThanOrEqual(8)
-        expect(right).toBeLessThanOrEqual(window.innerWidth - 8)
-        expect(bottom).toBeLessThanOrEqual(window.innerHeight - 8)
-        if (step.placement === 'graph-bottom') {
-          const center = targetRect.left + targetRect.width / 2
-          expect(left).toBeLessThan(center)
-          expect(right).toBeGreaterThan(center)
-          expect(top).toBeGreaterThanOrEqual(targetRect.top)
-          expect(bottom).toBeLessThanOrEqual(rectangles.toolbar.top)
-        } else {
-          expect(right).toBeLessThanOrEqual(targetRect.left)
-          expect(top).toBeLessThan(targetRect.bottom)
-          expect(bottom).toBeGreaterThan(targetRect.top)
-        }
-      })
+      await waitFor(() =>
+        expect(cardPlacement(dialog, targetRect)).toEqual({
+          inViewport: true,
+          besideTarget: true
+        })
+      )
       const spotlight = screen.getByTestId('agent-coach-spotlight')
       expect(parseFloat(spotlight.style.left)).toBe(targetRect.left)
       expect(parseFloat(spotlight.style.top)).toBe(targetRect.top)
       expect(parseFloat(spotlight.style.width)).toBe(targetRect.width)
-      if (index < 3)
+      if (index < LAST)
         await user.click(screen.getByRole('button', { name: 'Next' }))
     }
   })
 
-  it.for(STEPS.filter((step) => step.placement !== 'graph-bottom'))(
+  it.for(STEPS)(
     'points the $placement card arrow at the middle of its target',
     async (step) => {
       mount([step])
@@ -253,13 +262,6 @@ describe('OnboardingCoach', () => {
       expect(arrow).not.toHaveStyle({ visibility: 'hidden' })
     }
   )
-
-  it('draws no arrow on the canvas card, which sits on its target', async () => {
-    mount([STEPS[2]])
-    await screen.findByRole('dialog', { name: STEPS[2].title })
-
-    expect(screen.queryByTestId('agent-coach-arrow')).toBeNull()
-  })
 
   it('hides the arrow when the target center is outside the arrow reach', async () => {
     const panel = rectangles.panel
@@ -367,14 +369,14 @@ describe('OnboardingCoach', () => {
   it('shows the target in its hover state with its tooltip inside the spotlight', async () => {
     const user = userEvent.setup()
     const steps = STEPS.map((step, index) =>
-      index === 3 ? { ...step, tooltip: 'Show chat history' } : step
+      index === LAST ? { ...step, tooltip: 'Show chat history' } : step
     )
     mount(steps)
     const history = screen.getByTestId('history')
     await screen.findByRole('dialog', { name: STEPS[0].title })
-    for (let i = 0; i < 3; i++)
+    for (let i = 0; i < LAST; i++)
       await user.click(screen.getByRole('button', { name: 'Next' }))
-    await screen.findByRole('dialog', { name: STEPS[3].title })
+    await screen.findByRole('dialog', { name: STEPS[LAST].title })
 
     expect(screen.getByRole('tooltip')).toHaveTextContent('Show chat history')
     expect(history).toHaveAttribute('data-coach-hover')
@@ -391,7 +393,7 @@ describe('OnboardingCoach', () => {
     })
 
     await user.click(screen.getByRole('button', { name: 'Back' }))
-    await screen.findByRole('dialog', { name: STEPS[2].title })
+    await screen.findByRole('dialog', { name: STEPS[LAST - 1].title })
     expect(screen.queryByRole('tooltip')).toBeNull()
     expect(history).not.toHaveAttribute('data-coach-hover')
   })
@@ -437,7 +439,7 @@ describe('OnboardingCoach', () => {
         components: { OnboardingCoach },
         setup: () => ({ steps: STEPS, holdNotice }),
         template:
-          '<div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" /><OnboardingCoach :steps="steps" storage-key="coach-hold" :hold-notice="holdNotice" />'
+          '<div id="panel" /><div id="composer" /><div id="history" /><OnboardingCoach :steps="steps" storage-key="coach-hold" :hold-notice="holdNotice" />'
       },
       { global: { plugins: [i18n] } }
     )
@@ -508,7 +510,7 @@ describe('OnboardingCoach', () => {
     await screen.findByRole('dialog', { name: STEPS[0].title })
     for (const index of STEPS.keys())
       await user.click(
-        screen.getByRole('button', { name: index === 3 ? 'Done' : 'Next' })
+        screen.getByRole('button', { name: index === LAST ? 'Done' : 'Next' })
       )
     expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
 
@@ -526,17 +528,18 @@ describe('OnboardingCoach', () => {
     await screen.findByRole('dialog', { name: STEPS[0].title })
     for (const index of STEPS.keys())
       await user.click(
-        screen.getByRole('button', { name: index === 3 ? 'Done' : 'Next' })
+        screen.getByRole('button', { name: index === LAST ? 'Done' : 'Next' })
       )
     expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
   })
 
   it.for([
     { advance: 0, dismiss: 'Next', step: 1, action: 'next' },
-    { advance: 2, dismiss: 'Next', step: 3, action: 'next' },
-    { advance: 3, dismiss: 'Done', step: 4, action: 'finish' },
+    { advance: 1, dismiss: 'Next', step: 2, action: 'next' },
+    { advance: 2, dismiss: 'Done', step: 3, action: 'finish' },
     { advance: 0, dismiss: 'Skip', step: 1, action: 'skip' },
-    { advance: 2, dismiss: 'Skip', step: 3, action: 'skip' },
+    { advance: 1, dismiss: 'Skip', step: 2, action: 'skip' },
+    { advance: 2, dismiss: 'Escape', step: 3, action: 'skip' },
     { advance: 1, dismiss: 'Escape', step: 2, action: 'skip' }
   ])(
     'reports $dismiss on card $step as action $action',
@@ -592,7 +595,7 @@ describe('OnboardingCoach', () => {
         components: { OnboardingCoach },
         setup: () => ({ steps, storageKey, onFinished }),
         template:
-          '<div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" /><OnboardingCoach :steps="steps" :storage-key="storageKey" @finished="onFinished" />'
+          '<div id="panel" /><div id="composer" /><div id="history" /><OnboardingCoach :steps="steps" :storage-key="storageKey" @finished="onFinished" />'
       },
       { global: { plugins: [i18n] } }
     )
