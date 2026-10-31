@@ -1165,6 +1165,22 @@ describe('agentEventTransport thinking drafts', () => {
     expect(thinkingTexts(emit.mock.calls.at(-1)?.[0] ?? message)).toEqual([])
   })
 
+  it('keeps the row live when thinking resumes after an answer draft', () => {
+    const message = drive([
+      thinkingDraft('Thinking'),
+      draft('Here is your'),
+      draft(''),
+      thinkingDraft('Thinking further')
+    ])
+
+    expect(message.parts[0]).toMatchObject({
+      type: 'thinking',
+      text: 'Thinking further',
+      state: 'streaming'
+    })
+    expect(message.thinking).toBe(true)
+  })
+
   it('opens the row above an answer draft already on screen', () => {
     const message = drive([
       draft('Here is your'),

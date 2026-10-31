@@ -378,6 +378,8 @@ export function createAgentEventTransport(
       thinkingDraft = openNewThinking()
       moveAboveAnswerDraft(thinkingDraft)
     }
+    thinkingDraft.state = 'streaming'
+    openThinking = thinkingDraft
     thinkingDraft.text = data.text
     message.thinking = true
     message.thinkingText = data.text
