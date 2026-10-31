@@ -630,6 +630,26 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentOnboardingNotShown({ reason: 'app_mode' })
       },
       {
+        method: 'trackAgentSendGated',
+        expected: {
+          gate: 'coach',
+          outcome: 'held',
+          reason: null,
+          client_message_id: 'client-message-1',
+          held_ms: null,
+          thread_id: 'thread-1'
+        },
+        invoke: (registry) =>
+          registry.trackAgentSendGated({
+            gate: 'coach',
+            outcome: 'held',
+            reason: null,
+            client_message_id: 'client-message-1',
+            held_ms: null,
+            thread_id: 'thread-1'
+          })
+      },
+      {
         method: 'trackAgentPaywallShown',
         expected: { ...paywallShownMetadata },
         invoke: (registry) =>

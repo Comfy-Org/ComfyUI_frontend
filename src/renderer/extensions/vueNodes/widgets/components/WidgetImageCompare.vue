@@ -100,7 +100,7 @@ const node = useWidgetHostNode(
   () => nodeId
 )
 
-const { beforeImages, afterImages } = useImageCompareImages(node)
+const { beforeImages, afterImages } = useImageCompareImages(node, nodeId)
 
 const containerRef = ref<HTMLElement | null>(null)
 const sliderPosition = ref(50)

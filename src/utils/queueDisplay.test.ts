@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import type { JobState } from '@/types/queue'
 import type { BuildJobDisplayCtx } from '@/utils/queueDisplay'
 import { buildJobDisplay, iconForJobState } from '@/utils/queueDisplay'

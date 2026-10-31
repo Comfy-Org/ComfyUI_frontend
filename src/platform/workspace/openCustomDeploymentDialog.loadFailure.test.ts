@@ -3,7 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { openDeployCustomNodesDialog } from './openCustomDeploymentDialog'
+import {
+  openDeployCustomNodesDialog,
+  openWorkflowNeedsDeploymentDialog,
+  preloadWorkflowNeedsDeploymentDialog
+} from './openCustomDeploymentDialog'
 
 vi.mock(
   import('@/platform/workspace/components/CustomDeploymentCard.vue'),
@@ -12,17 +16,38 @@ vi.mock(
   }
 )
 
-describe('a custom deployment dialog that fails to load', () => {
-  it('reports it, and opens nothing', async () => {
-    await expect(openDeployCustomNodesDialog()).resolves.toBe(false)
+vi.mock(
+  import('@/platform/workspace/components/WorkflowNeedsDeploymentCard.vue'),
+  () => ({ default: undefined })
+)
 
-    expect(
-      useDialogStore().dialogStack.some(
-        (entry) => entry.key === 'global-deploy-custom-nodes'
-      )
-    ).toBe(false)
-    expect(useToast().toasts).toEqual([
-      expect.objectContaining({ kind: 'error' })
-    ])
+describe('a custom deployment dialog that fails to load', () => {
+  it.for([
+    {
+      load: 'rejects',
+      open: openDeployCustomNodesDialog,
+      key: 'global-deploy-custom-nodes'
+    },
+    {
+      load: 'resolves without a component',
+      open: openWorkflowNeedsDeploymentDialog,
+      key: 'global-workflow-needs-deployment'
+    }
+  ])(
+    'reports it, and opens nothing, when its code $load',
+    async ({ open, key }) => {
+      await expect(open()).resolves.toBe(false)
+
+      expect(
+        useDialogStore().dialogStack.some((entry) => entry.key === key)
+      ).toBe(false)
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'error' })
+      ])
+    }
+  )
+
+  it('preloads nothing when the deployment dialog code resolves without a component', async () => {
+    await expect(preloadWorkflowNeedsDeploymentDialog()).resolves.toBe(false)
   })
 })

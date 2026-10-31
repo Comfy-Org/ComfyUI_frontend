@@ -1,16 +1,16 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
 import type {
   APITaskType,
   JobListItem,
   TaskType
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+} from '@comfyorg/api-client/jobTypes'
 import type {
   StatusWsMessageStatus,
   TaskOutput
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { filterPreviewableResults } from '@/utils/resultItem'
