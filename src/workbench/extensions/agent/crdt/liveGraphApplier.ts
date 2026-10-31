@@ -1412,7 +1412,14 @@ export class LiveGraphApplier {
       `widget:${String(node.id)}:${name}`,
       `Node ${String(node.id)} (${node.type}) has no widget '${name}'`,
       'agent_graph_widget_missing',
-      { nodeId: node.id, type: node.type, name }
+      {
+        nodeId: node.id,
+        type: node.type,
+        name,
+        widgetCount: serializableWidgets(node).length,
+        supportsOverflow: supportsDynamicWidgetOverflow(node),
+        overflowIndex: overflowWidgetIndex(name)
+      }
     )
   }
 
