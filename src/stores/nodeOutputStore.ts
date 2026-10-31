@@ -317,15 +317,16 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: ExecutedWsMessage['output'] | ResultItem
   ) {
     const incomingImages = 'images' in outputs ? outputs.images : undefined
-    reportError(new Error(`No node resolves execution id '${executionId}'`), {
+    const filenames = incomingImages
+      ?.filter(isResultItem)
+      .map((image) => image.filename)
+      .filter((filename): filename is string => !!filename)
+    reportError(new Error('No live node resolves the executed output'), {
       surface: 'graph',
-      errorType: 'node_output_execution_id_unresolved',
+      errorType: 'failure_resolving_node_output_execution_id',
       context: {
         executionId,
-        filenames: incomingImages
-          ?.filter(isResultItem)
-          .map((image) => image.filename)
-          .filter((filename): filename is string => !!filename)
+        filenames: filenames?.length ? filenames : undefined
       }
     })
   }

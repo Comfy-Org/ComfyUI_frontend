@@ -300,10 +300,12 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved executi
     store.setNodeOutputsByExecutionId(executionId, outputs)
 
     expect(reportError).toHaveBeenCalledWith(
-      expect.any(Error),
+      expect.objectContaining({
+        message: 'No live node resolves the executed output'
+      }),
       expect.objectContaining({
         surface: 'graph',
-        errorType: 'node_output_execution_id_unresolved',
+        errorType: 'failure_resolving_node_output_execution_id',
         context: {
           executionId,
           filenames: ['contact_sheet_00001_.png']
@@ -329,22 +331,19 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved executi
     )
   })
 
-  it('skips malformed image entries while reporting the unresolved output', () => {
+  it('omits filenames when the output carries an empty image list', () => {
     vi.mocked(
       graphTraversalUtil.executionIdToNodeLocatorId
     ).mockReturnValueOnce(undefined)
     const store = useNodeOutputStore()
     const executionId = createNodeExecutionId([toNodeId(63)])
 
-    store.setNodeOutputsByExecutionId(
-      executionId,
-      createMockOutputs(fromAny([null, { filename: 'valid.png' }]))
-    )
+    store.setNodeOutputsByExecutionId(executionId, createMockOutputs([]))
 
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
-        context: { executionId, filenames: ['valid.png'] }
+        context: { executionId, filenames: undefined }
       })
     )
   })
