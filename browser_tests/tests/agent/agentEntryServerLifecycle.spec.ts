@@ -37,7 +37,7 @@ test.describe(
         })
         await expect(starting).toHaveAttribute('aria-disabled', 'true')
         await expect(agentPanel.openButton).toHaveCount(0)
-        await starting.click()
+        await starting.click({ force: true })
         await expect(starting).toHaveAttribute('aria-pressed', 'false')
       })
 
@@ -52,7 +52,7 @@ test.describe(
           'title',
           enMessages.agent.entryFailedReason.replace('{reason}', 'not_found')
         )
-        await failed.click()
+        await failed.click({ force: true })
         await expect(failed).toHaveAttribute('aria-pressed', 'false')
       })
 
