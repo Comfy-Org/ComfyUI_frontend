@@ -432,10 +432,7 @@ describe('AttachmentChip', () => {
     expect(status).toHaveAccessibleName(errorMessage)
     expect(
       within(status).getByTestId('attachment-validation-icon')
-    ).toHaveClass(
-      'icon-[comfy--circle-alert-filled]',
-      'text-destructive'
-    )
+    ).toHaveClass('icon-[comfy--circle-alert-filled]', 'text-destructive')
     expect(
       screen.queryByRole('button', { name: 'Preview bad.mov' })
     ).not.toBeInTheDocument()
