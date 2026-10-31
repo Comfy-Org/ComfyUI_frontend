@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useServerLogs } from '@/platform/customNodes/manager/services/useServerLogs'
-import type { LogsWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { LogsWsMessage } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 
 vi.mock(import('@/scripts/api'))

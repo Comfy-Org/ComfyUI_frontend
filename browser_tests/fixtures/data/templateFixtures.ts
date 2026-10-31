@@ -1,7 +1,7 @@
 import type {
   TemplateInfo,
   WorkflowTemplates
-} from '@/platform/workflow/templates/types/template'
+} from '@comfyorg/api-client/templateTypes'
 
 export function makeTemplate(
   overrides: Partial<TemplateInfo> & Pick<TemplateInfo, 'name'>

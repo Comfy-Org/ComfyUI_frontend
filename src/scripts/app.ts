@@ -88,8 +88,8 @@ import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/wor
 import type {
   ExecutionErrorWsMessage,
   NodeExecutionOutput
-} from '@/platform/remote/comfyui/execution/types'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+} from '@comfyorg/api-client/executionTypes'
+import type { NodeError } from '@comfyorg/api-client/types'
 import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
@@ -185,8 +185,9 @@ import {
 } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
-import { PromptExecutionError, api } from './api'
-import type { ComfyApi } from './api'
+import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
+import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
+import { api } from './api'
 import { importA1111 } from './pnginfo'
 import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
 import { syncPromotedComboHostOptions } from '@/core/graph/widgets/syncPromotedComboHostOptions'

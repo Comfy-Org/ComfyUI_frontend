@@ -90,6 +90,10 @@
     {
       "path": "src/storybook/mocks/useWorkspaceUI.ts",
       "role": "application"
+    },
+    {
+      "path": "packages/account-core/src/workspaceLink.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

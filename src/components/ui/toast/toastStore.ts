@@ -21,6 +21,7 @@ export interface Toast {
 export const useToast = defineStore('toast', () => {
   const toasts = ref<Toast[]>([])
   const held = ref(false)
+  const closedByUser = new Set<ToastId>()
 
   function add(kind: ToastKind, title: string, options: ToastOptions = {}) {
     const id = options.id ?? createToastId()
@@ -80,6 +81,15 @@ export const useToast = defineStore('toast', () => {
     return removed
   }
 
+  function close(id: ToastId): boolean {
+    closedByUser.add(id)
+    return dismiss(id)
+  }
+
+  function takeClosedByUser(id: ToastId): boolean {
+    return closedByUser.delete(id)
+  }
+
   function dismissAll() {
     toasts.value = []
   }
@@ -94,6 +104,8 @@ export const useToast = defineStore('toast', () => {
     loading,
     update,
     dismiss,
+    close,
+    takeClosedByUser,
     dismissAll
   }
 })

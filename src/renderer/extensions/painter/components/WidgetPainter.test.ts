@@ -85,8 +85,8 @@ function renderWidget(initialModel = '') {
   const value = ref(initialModel)
   const Harness = defineComponent({
     components: { WidgetPainter },
-    setup: () => ({ value }),
-    template: '<WidgetPainter v-model="value" node-id="42" />'
+    setup: () => ({ value, widget: { name: 'mask', type: 'painter' } }),
+    template: '<WidgetPainter v-model="value" node-id="42" :widget />'
   })
   return render(Harness, {
     global: {
