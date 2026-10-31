@@ -1085,6 +1085,101 @@ describe('useQueueStore', () => {
     })
   })
 
+  describe('reset()', () => {
+    it('should drop cached tasks and the history snapshot flag', async () => {
+      vi.mocked(api.getQueue).mockResolvedValue({
+        Running: [createRunningJob(1, 'run-1')],
+        Pending: [createPendingJob(2, 'pend-1')]
+      })
+      vi.mocked(api.getHistory).mockResolvedValue([
+        createHistoryJob(3, 'hist-1')
+      ])
+
+      await store.update()
+      expect(store.tasks).toHaveLength(3)
+      expect(store.hasFetchedHistorySnapshot).toBe(true)
+
+      store.reset()
+
+      expect(store.runningTasks).toEqual([])
+      expect(store.pendingTasks).toEqual([])
+      expect(store.historyTasks).toEqual([])
+      expect(store.hasFetchedHistorySnapshot).toBe(false)
+    })
+
+    it('should not commit an update() that resolves after the reset', async () => {
+      let resolveQueue!: QueueResolver
+      let resolveHistory!: (value: JobListItem[]) => void
+
+      vi.mocked(api.getQueue).mockImplementation(
+        () =>
+          new Promise<QueueResponse>((resolve) => {
+            resolveQueue = resolve
+          })
+      )
+      vi.mocked(api.getHistory).mockImplementation(
+        () =>
+          new Promise<JobListItem[]>((resolve) => {
+            resolveHistory = resolve
+          })
+      )
+
+      const inFlightUpdate = store.update()
+
+      store.reset()
+
+      resolveQueue({
+        Running: [createRunningJob(1, 'run-1')],
+        Pending: [createPendingJob(2, 'pend-1')]
+      })
+      resolveHistory([createHistoryJob(3, 'hist-1')])
+      await inFlightUpdate
+
+      expect(store.tasks).toEqual([])
+      expect(store.hasFetchedHistorySnapshot).toBe(false)
+      expect(store.isLoading).toBe(false)
+    })
+
+    it('should abort the previous identity request and refetch for the new one', async () => {
+      const abortedSignals: AbortSignal[] = []
+      const settleOnAbort = <T>(signal: AbortSignal | undefined, value: T) =>
+        new Promise<T>((resolve) => {
+          signal?.addEventListener('abort', () => {
+            abortedSignals.push(signal)
+            resolve(value)
+          })
+        })
+      vi.mocked(api.getQueue).mockImplementationOnce((options) =>
+        settleOnAbort(options?.signal, {
+          Running: [createRunningJob(4, 'run-a')],
+          Pending: []
+        })
+      )
+      vi.mocked(api.getHistory).mockImplementationOnce((_max, options) =>
+        settleOnAbort(options?.signal, [createHistoryJob(5, 'hist-a')])
+      )
+
+      const previousIdentityUpdate = store.update()
+
+      store.reset()
+
+      vi.mocked(api.getQueue).mockResolvedValue({
+        Running: [createRunningJob(1, 'run-b')],
+        Pending: []
+      })
+      vi.mocked(api.getHistory).mockResolvedValue([])
+      await store.update()
+      await previousIdentityUpdate
+
+      expect(abortedSignals).toHaveLength(2)
+      await vi.waitFor(() =>
+        expect(store.runningTasks.map((t) => t.jobId)).toEqual(['run-b'])
+      )
+      expect(store.historyTasks).toEqual([])
+      expect(store.isLoading).toBe(false)
+    })
+  })
+
   describe('update deduplication (coalescing)', () => {
     it('should coalesce concurrent calls — second call does not fire its own request', async () => {
       let resolveQueue!: QueueResolver
