@@ -1275,12 +1275,10 @@ describe('Composer', () => {
 
     it('keeps a failed workflow mention retryable and consumes it only on success', async () => {
       const selectWorkflowReference = vi
-        .fn(
-          async (): Promise<WorkflowReferenceMetadata | undefined> => ({
-            id: 'saved-scratch',
-            name: 'Scratch'
-          })
-        )
+        .fn(async (): Promise<WorkflowReferenceMetadata | undefined> => ({
+          id: 'saved-scratch',
+          name: 'Scratch'
+        }))
         .mockResolvedValueOnce(undefined)
       mount({
         availableWorkflows: [{ tabPath: 'scratch.json', name: 'Scratch' }],

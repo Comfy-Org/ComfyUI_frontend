@@ -330,9 +330,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     updateDraft({
       text: draft.value,
       references: [
-        ...references.map(
-          (item): ComposerReference => ({ ...item, kind: 'workflow' })
-        ),
+        ...references.map((item): ComposerReference => ({
+          ...item,
+          kind: 'workflow'
+        })),
         ...prompt.value.references.filter((item) => item.kind !== 'workflow')
       ].sort((a, b) => a.textOffset - b.textOffset)
     })

@@ -83,9 +83,8 @@ function codeOf(code: string): AuthRefusalCode {
 function acceptedMethodsOf(accepted: readonly string[]): string | undefined {
   const methods = accepted
     .slice(0, MAX_ACCEPTED_METHODS)
-    .map(
-      (method): AcceptedAuthMethod =>
-        isOneOf(KNOWN_ACCEPTED_AUTH_METHODS, method) ? method : OTHER
+    .map((method): AcceptedAuthMethod =>
+      isOneOf(KNOWN_ACCEPTED_AUTH_METHODS, method) ? method : OTHER
     )
   return methods.length > 0 ? [...new Set(methods)].join(',') : undefined
 }

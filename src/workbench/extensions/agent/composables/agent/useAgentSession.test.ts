@@ -68,25 +68,21 @@ const telemetry = vi.mocked(telemetryProvider)
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
-    postMessage: vi.fn(
-      async (): Promise<AgentTurnAccepted> => ({
-        thread_id: 'th-1',
-        message_id: 'msg-1',
-        workflow_id: 'wf-1'
-      })
-    ),
+    postMessage: vi.fn(async (): Promise<AgentTurnAccepted> => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-1'
+    })),
     getIdentity: vi.fn(async () => ({ userId: 'user-test' })),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
     listThreads: vi.fn<AgentRestClient['listThreads']>(async () => ({
       status: 'complete',
       threads: []
     })),
-    getRunMode: vi.fn(
-      async (): Promise<AgentRunModePreference> => ({
-        mode: 'auto',
-        credit_limit: null
-      })
-    ),
+    getRunMode: vi.fn(async (): Promise<AgentRunModePreference> => ({
+      mode: 'auto',
+      credit_limit: null
+    })),
     putRunMode: vi.fn(
       async (
         preference: AgentRunModePreference
@@ -103,25 +99,19 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
       created_at: '2026-09-11T10:00:00Z',
       updated_at: '2026-09-11T10:00:00Z'
     })),
-    cancelMessage: vi.fn(
-      async (): Promise<AgentCancelAccepted> => ({
-        status: 'cancelling'
-      })
-    ),
-    answerAsk: vi.fn(
-      async (): Promise<AgentAnswerAccepted> => ({
-        status: 'answered',
-        selected: []
-      })
-    ),
+    cancelMessage: vi.fn(async (): Promise<AgentCancelAccepted> => ({
+      status: 'cancelling'
+    })),
+    answerAsk: vi.fn(async (): Promise<AgentAnswerAccepted> => ({
+      status: 'answered',
+      selected: []
+    })),
     refreshCredential: vi.fn(async () => {}),
-    uploadImage: vi.fn(
-      async (): Promise<UploadImageResponse> => ({
-        name: 'n',
-        subfolder: '',
-        type: 'input'
-      })
-    )
+    uploadImage: vi.fn(async (): Promise<UploadImageResponse> => ({
+      name: 'n',
+      subfolder: '',
+      type: 'input'
+    }))
   }
   return { ...base, ...overrides }
 }
@@ -400,26 +390,24 @@ async function restoredTurnStaysStreaming(
   conversation.setThreadId(thread)
   const successor = useAgentSession({
     rest: fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          {
-            ...historyRow(1, 'user', `cap-turn-${index}`, 'go'),
-            thread_id: thread
-          },
-          {
-            ...historyRow(
-              2,
-              'assistant',
-              `cap-turn-${index}`,
-              '',
-              capMessage(index)
-            ),
-            thread_id: thread,
-            content: {},
-            status: 'streaming'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        {
+          ...historyRow(1, 'user', `cap-turn-${index}`, 'go'),
+          thread_id: thread
+        },
+        {
+          ...historyRow(
+            2,
+            'assistant',
+            `cap-turn-${index}`,
+            '',
+            capMessage(index)
+          ),
+          thread_id: thread,
+          content: {},
+          status: 'streaming'
+        }
+      ])
     }),
     events: fakeEvents().source
   })
@@ -549,15 +537,13 @@ describe('useAgentSession (v1 composition root)', () => {
     const text =
       '[Use the saved skill /portrait](skill://portrait?description=Original)'
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', text),
-          {
-            ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
-            status: 'error'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', text),
+        {
+          ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+          status: 'error'
+        }
+      ])
     })
     const { source, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -721,14 +707,13 @@ describe('useAgentSession (v1 composition root)', () => {
     'keeps the open chat until a kept-open load %s',
     async (outcome) => {
       let answer = (_loaded: boolean) => {}
-      const getMessages = vi.fn(
-        (threadId: string): Promise<AgentMessages> =>
-          threadId === 'th-next'
-            ? new Promise((resolve, reject) => {
-                answer = (loaded) =>
-                  loaded ? resolve([]) : reject(new Error('unavailable'))
-              })
-            : Promise.resolve([])
+      const getMessages = vi.fn((threadId: string): Promise<AgentMessages> =>
+        threadId === 'th-next'
+          ? new Promise((resolve, reject) => {
+              answer = (loaded) =>
+                loaded ? resolve([]) : reject(new Error('unavailable'))
+            })
+          : Promise.resolve([])
       )
       const session = useAgentSession({
         rest: fakeRest({ getMessages }),
@@ -905,16 +890,14 @@ describe('useAgentSession (v1 composition root)', () => {
   it('(b4a) a reopen over a turn the server still runs restores it as live', async () => {
     const conversation = useAgentConversationStore()
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'turn-1', 'add an audio output node'),
-          {
-            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
-            content: {},
-            status: 'streaming'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
     })
 
     const minimized = useAgentSession({ rest, events: fakeEvents().source })
@@ -1140,18 +1123,16 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     const rest = fakeRest({
       postMessage,
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'turn-1', 'add an audio output node'),
-          historyRow(2, 'assistant', 'turn-1', 'Done.', 'msg-1'),
-          historyRow(3, 'user', 'turn-2', 'run it again', 'row-3'),
-          {
-            ...historyRow(4, 'assistant', 'turn-2', '', 'msg-2'),
-            content: {},
-            status: 'streaming'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        historyRow(2, 'assistant', 'turn-1', 'Done.', 'msg-1'),
+        historyRow(3, 'user', 'turn-2', 'run it again', 'row-3'),
+        {
+          ...historyRow(4, 'assistant', 'turn-2', '', 'msg-2'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
     })
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -1539,16 +1520,14 @@ describe('useAgentSession (v1 composition root)', () => {
 
     const reopened = useAgentSession({
       rest: fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'turn-1', 'go'),
-            {
-              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
-              content: {},
-              status: 'streaming'
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ])
       }),
       events: fakeEvents().source
     })
@@ -1730,16 +1709,14 @@ describe('useAgentSession (v1 composition root)', () => {
       // `done` is owed to it -- dropping it is the stranded turn this whole
       // change is against, and (b4d) states the same invariant.
       const second = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'turn-1', 'go'),
-            {
-              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
-              content: {},
-              status: 'streaming'
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ])
       })
       conversation.setThreadId('th-1')
       const successor = useAgentSession({
@@ -1788,16 +1765,14 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(5 * 60_000 + 1)
 
       const second = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'turn-1', 'go'),
-            {
-              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
-              content: {},
-              status: 'streaming'
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ])
       })
       conversation.setThreadId('th-1')
       const successor = useAgentSession({
@@ -2389,12 +2364,10 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('answers a run approval once and stays busy until its resolution event', async () => {
-    const answerAsk = vi.fn(
-      async (): Promise<AgentAnswerAccepted> => ({
-        status: 'answered',
-        selected: ['run']
-      })
-    )
+    const answerAsk = vi.fn(async (): Promise<AgentAnswerAccepted> => ({
+      status: 'answered',
+      selected: ['run']
+    }))
     const rest = fakeRest({ answerAsk })
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -3169,12 +3142,10 @@ describe('useAgentSession (v1 composition root)', () => {
     const PAST_ASK_RESOLUTION_GRACE_MS = 60_000
 
     const parkedOnApproval = async () => {
-      const answerAsk = vi.fn(
-        async (): Promise<AgentAnswerAccepted> => ({
-          status: 'answered',
-          selected: ['run']
-        })
-      )
+      const answerAsk = vi.fn(async (): Promise<AgentAnswerAccepted> => ({
+        status: 'answered',
+        selected: ['run']
+      }))
       const rest = fakeRest({ answerAsk })
       const events = fakeEvents()
       const session = useAgentSession({ rest, events: events.source })
@@ -3877,11 +3848,9 @@ describe('useAgentSession (v1 composition root)', () => {
   it('tracks one committed stop with its method, turn, and elapsed time', async () => {
     let currentTime = 1_000
     const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
-    const cancelMessage = vi.fn(
-      async (): Promise<AgentCancelAccepted> => ({
-        status: 'cancelling'
-      })
-    )
+    const cancelMessage = vi.fn(async (): Promise<AgentCancelAccepted> => ({
+      status: 'cancelling'
+    }))
     const { source } = fakeEvents()
     const session = useAgentSession({
       rest: fakeRest({ cancelMessage }),
@@ -3915,16 +3884,14 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     const rest = fakeRest({
       cancelMessage,
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'turn-1', 'go'),
-          {
-            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
-            content: {},
-            status: 'streaming'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'turn-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
     })
     const conversation = useAgentConversationStore()
 
@@ -3988,16 +3955,14 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     const rest = fakeRest({
       cancelMessage,
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'turn-1', 'go'),
-          {
-            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
-            content: {},
-            status: 'streaming'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'turn-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
     })
     const conversation = useAgentConversationStore()
 
@@ -4031,16 +3996,14 @@ describe('useAgentSession (v1 composition root)', () => {
         .mockRejectedValue(new AgentApiError('no turn', status, undefined))
       const rest = fakeRest({
         cancelMessage,
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'turn-1', 'go'),
-            {
-              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
-              content: {},
-              status: 'streaming'
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ])
       })
       const conversation = useAgentConversationStore()
 
@@ -4511,24 +4474,20 @@ describe('useAgentSession (v1 composition root)', () => {
             rejectPost = reject
           })
       )
-    const cancelMessage = vi.fn(
-      async (): Promise<AgentCancelAccepted> => ({
-        status: 'cancelling'
-      })
-    )
+    const cancelMessage = vi.fn(async (): Promise<AgentCancelAccepted> => ({
+      status: 'cancelling'
+    }))
     const rest = fakeRest({
       postMessage,
       cancelMessage,
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'turn-2', 'other client'),
-          {
-            ...historyRow(2, 'assistant', 'turn-2', '', 'msg-2'),
-            content: {},
-            status: 'streaming'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'turn-2', 'other client'),
+        {
+          ...historyRow(2, 'assistant', 'turn-2', '', 'msg-2'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
     })
     const { source, emit } = fakeEvents()
     const session = useAgentSession({
@@ -4582,11 +4541,9 @@ describe('useAgentSession (v1 composition root)', () => {
           })
       )
       .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
-    const cancelMessage = vi.fn(
-      async (): Promise<AgentCancelAccepted> => ({
-        status: 'cancelling'
-      })
-    )
+    const cancelMessage = vi.fn(async (): Promise<AgentCancelAccepted> => ({
+      status: 'cancelling'
+    }))
     const session = useAgentSession({
       rest: fakeRest({ postMessage, cancelMessage }),
       events: fakeEvents().source
@@ -4639,12 +4596,10 @@ describe('useAgentSession (v1 composition root)', () => {
     // reconnect transition (e.g. the socket hasn't opened yet). That must not
     // abort a turn that survived a remount.
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          historyRow(2, 'assistant', 'msg-1', 'recovered', 'msg-1')
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        historyRow(2, 'assistant', 'msg-1', 'recovered', 'msg-1')
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -4684,16 +4639,14 @@ describe('useAgentSession (v1 composition root)', () => {
   // blanks the reply on screen.
   const streamingTurnRest = () =>
     fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          {
-            ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
-            content: {},
-            status: 'streaming'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
     })
 
   it('(g3) a reconnect leaves the turn running instead of settling it', async () => {
@@ -4742,12 +4695,10 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(g5) a turn that ended during the drop is settled from its persisted row and its stale approval card is dropped', async () => {
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          historyRow(2, 'assistant', 'msg-1', 'final answer', 'msg-1')
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        historyRow(2, 'assistant', 'msg-1', 'final answer', 'msg-1')
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -4779,13 +4730,11 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(g5a) recovery preserves every persisted assistant row in a turn', async () => {
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          historyRow(2, 'assistant', 'msg-1', 'first ', 'msg-1'),
-          historyRow(3, 'assistant', 'msg-1', 'second')
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        historyRow(2, 'assistant', 'msg-1', 'first ', 'msg-1'),
+        historyRow(3, 'assistant', 'msg-1', 'second')
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -4818,14 +4767,12 @@ describe('useAgentSession (v1 composition root)', () => {
       ]
     }
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          historyRow(2, 'assistant', 'msg-1', 'before ', 'msg-1'),
-          toolRow,
-          historyRow(4, 'assistant', 'msg-1', 'after')
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        historyRow(2, 'assistant', 'msg-1', 'before ', 'msg-1'),
+        toolRow,
+        historyRow(4, 'assistant', 'msg-1', 'after')
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -4858,12 +4805,10 @@ describe('useAgentSession (v1 composition root)', () => {
       content: {}
     }
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          terminalWithoutParts
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        terminalWithoutParts
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -4890,12 +4835,10 @@ describe('useAgentSession (v1 composition root)', () => {
       status: 'error' as const
     }
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          failedWithoutParts
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        failedWithoutParts
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -4929,21 +4872,19 @@ describe('useAgentSession (v1 composition root)', () => {
     'reports a turn recovered with rows $statuses as completed: $completes',
     async ({ statuses, completes }) => {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            ...statuses.map((rowStatus, index) => ({
-              ...historyRow(
-                2 + index,
-                'assistant',
-                'msg-1',
-                'answer',
-                index === 0 ? 'msg-1' : `msg-1-${index}`
-              ),
-              status: rowStatus
-            }))
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          ...statuses.map((rowStatus, index) => ({
+            ...historyRow(
+              2 + index,
+              'assistant',
+              'msg-1',
+              'answer',
+              index === 0 ? 'msg-1' : `msg-1-${index}`
+            ),
+            status: rowStatus
+          }))
+        ])
       })
       useWorkflowStore().attachWorkflow(
         fromPartial<LoadedComfyWorkflow>({
@@ -4981,12 +4922,10 @@ describe('useAgentSession (v1 composition root)', () => {
       status: 'interrupted' as const
     }
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          interruptedWithoutParts
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        interruptedWithoutParts
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -5050,15 +4989,13 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(g6a) a stopped turn settled from REST becomes editable after reconnect', async () => {
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          {
-            ...historyRow(2, 'assistant', 'msg-1', 'interrupted', 'msg-1'),
-            status: 'interrupted'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'msg-1', 'interrupted', 'msg-1'),
+          status: 'interrupted'
+        }
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -5640,12 +5577,10 @@ describe('useAgentSession (v1 composition root)', () => {
 
   const parkedOnApprovalRest = () =>
     fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          parkedRow()
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        parkedRow()
+      ])
     })
 
   const approvalParts = (session: ReturnType<typeof useAgentSession>) => {
@@ -5820,12 +5755,10 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            parkedRow()
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          parkedRow()
+        ])
       })
       vi.mocked(rest.answerAsk).mockRejectedValue(
         new AgentApiError('already answered', 409, undefined)
@@ -6024,20 +5957,18 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            {
-              ...parkedRow(),
-              status: 'interrupted'
-            },
-            {
-              ...historyRow(3, 'assistant', 'msg-1', '', 'row-3'),
-              content: {},
-              status: 'streaming'
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          {
+            ...parkedRow(),
+            status: 'interrupted'
+          },
+          {
+            ...historyRow(3, 'assistant', 'msg-1', '', 'row-3'),
+            content: {},
+            status: 'streaming'
+          }
+        ])
       })
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -6123,12 +6054,10 @@ describe('useAgentSession (v1 composition root)', () => {
       // because hydrate and its first poll share the 0ms head of the schedule.
       let parked = false
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            parked ? parkedRow() : unparkedRow()
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          parked ? parkedRow() : unparkedRow()
+        ])
       })
       const { source, status } = fakeEvents()
       localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
@@ -6161,15 +6090,13 @@ describe('useAgentSession (v1 composition root)', () => {
     try {
       const currentAskId = 'turn-1:call-2'
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            {
-              ...parkedRow(),
-              pending_ask: { ...PARKED_ASK, ask_id: currentAskId }
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          {
+            ...parkedRow(),
+            pending_ask: { ...PARKED_ASK, ask_id: currentAskId }
+          }
+        ])
       })
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -6194,12 +6121,10 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            unparkedRow()
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          unparkedRow()
+        ])
       })
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -6222,12 +6147,10 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            unparkedRow()
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          unparkedRow()
+        ])
       })
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -6252,11 +6175,9 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go')
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go')
+        ])
       })
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -6279,16 +6200,14 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            parkedRow(),
-            {
-              ...historyRow(3, 'assistant', 'msg-1', 'done', 'row-3'),
-              status: 'complete'
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          parkedRow(),
+          {
+            ...historyRow(3, 'assistant', 'msg-1', 'done', 'row-3'),
+            status: 'complete'
+          }
+        ])
       })
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -6363,17 +6282,15 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            parkedRow(),
-            {
-              ...historyRow(3, 'assistant', 'msg-1', '', 'row-3'),
-              content: {},
-              status: 'streaming'
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          parkedRow(),
+          {
+            ...historyRow(3, 'assistant', 'msg-1', '', 'row-3'),
+            content: {},
+            status: 'streaming'
+          }
+        ])
       })
       const { source, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -7652,13 +7569,12 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(l5) a done landing during the return hydrate still renders the full reply', async () => {
     let resolveHistory: ((rows: AgentMessages) => void) | undefined
-    const getMessages = vi.fn(
-      (threadId: string): Promise<AgentMessages> =>
-        threadId === 'th-1'
-          ? new Promise((resolve) => {
-              resolveHistory = resolve
-            })
-          : Promise.resolve([])
+    const getMessages = vi.fn((threadId: string): Promise<AgentMessages> =>
+      threadId === 'th-1'
+        ? new Promise((resolve) => {
+            resolveHistory = resolve
+          })
+        : Promise.resolve([])
     )
     const rest = fakeRest({ getMessages })
     const { source, emit } = fakeEvents()
@@ -7903,13 +7819,12 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(l13) newChat during a pending thread load discards that load and keeps the stash', async () => {
     const resolvers: Array<(rows: AgentMessages) => void> = []
-    const getMessages = vi.fn(
-      (threadId: string): Promise<AgentMessages> =>
-        threadId === 'th-1'
-          ? new Promise((resolve) => {
-              resolvers.push(resolve)
-            })
-          : Promise.resolve([])
+    const getMessages = vi.fn((threadId: string): Promise<AgentMessages> =>
+      threadId === 'th-1'
+        ? new Promise((resolve) => {
+            resolvers.push(resolve)
+          })
+        : Promise.resolve([])
     )
     const rest = fakeRest({ getMessages })
     const { source, emit } = fakeEvents()
@@ -8378,12 +8293,10 @@ describe('thread resume (B17)', () => {
   })
 
   it('panel reopen refreshes the surviving conversation without losing the sent message', async () => {
-    const getMessages = vi.fn(
-      async (): Promise<AgentMessages> => [
-        historyRow(1, 'user', 'turn-A', 'live message'),
-        historyRow(2, 'assistant', 'turn-A', 'finished while closed')
-      ]
-    )
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => [
+      historyRow(1, 'user', 'turn-A', 'live message'),
+      historyRow(2, 'assistant', 'turn-A', 'finished while closed')
+    ])
     const rest = fakeRest({ getMessages })
     const first = useAgentSession({ rest, events: fakeEvents().source })
     first.start()
@@ -8540,13 +8453,11 @@ describe('thread resume (B17)', () => {
     const restored = vi.fn()
     const session = useAgentSession({
       rest: fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            latest,
-            historyRow(2, 'assistant', 'turn-a', 'Done'),
-            older
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          latest,
+          historyRow(2, 'assistant', 'turn-a', 'Done'),
+          older
+        ])
       }),
       events: fakeEvents().source,
       workflow: {

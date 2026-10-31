@@ -43,9 +43,11 @@ function history(...commits: CommitFixture[]): History {
 function historyWithGaps(gaps: number): History {
   const shas = ['head', ...Array.from({ length: gaps }, (_, i) => `gap-${i}`)]
   return history(
-    ...shas.map(
-      (sha, index): CommitFixture => [sha, shas[index + 1] ?? 'oldest', NONE]
-    ),
+    ...shas.map((sha, index): CommitFixture => [
+      sha,
+      shas[index + 1] ?? 'oldest',
+      NONE
+    ]),
     ['oldest', null, MEASURED]
   )
 }

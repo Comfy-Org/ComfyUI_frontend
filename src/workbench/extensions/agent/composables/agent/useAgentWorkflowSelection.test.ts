@@ -29,12 +29,11 @@ function setup({ tabsRestored = true }: { tabsRestored?: boolean } = {}) {
   const panel = useAgentPanelStore()
   panel.beginWorkflowRestoration()
   const warnRestoreFailed = vi.fn()
-  const listCloudWorkflows = vi.fn(
-    async (): Promise<CloudWorkflowListing> =>
-      listing([
-        { id: 'wf-saved', name: 'saved' },
-        { id: 'wf-current', name: 'current' }
-      ])
+  const listCloudWorkflows = vi.fn(async (): Promise<CloudWorkflowListing> =>
+    listing([
+      { id: 'wf-saved', name: 'saved' },
+      { id: 'wf-current', name: 'current' }
+    ])
   )
   const cloudRows = new Map([
     ['wf-saved', 1],
