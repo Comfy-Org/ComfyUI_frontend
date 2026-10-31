@@ -24,6 +24,7 @@ import {
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { api } from '@/scripts/api'
+import { registerUserFileScopeProvider } from '@/platform/workflow/core/services/userFileContext'
 import { app as comfyApp } from '@/scripts/app'
 import {
   initDefaultWorkflow,
@@ -130,6 +131,230 @@ describe('useWorkflowStore', () => {
     vi.mocked(api.storeUserData).mockResolvedValue({
       status: 200
     } as Response)
+  })
+
+  describe('saved-file identity hydration', () => {
+    const scope = { ownerId: 'user-1', workspaceId: 'workspace-1' }
+    const identity = { ...scope, id: 'c327cae8-2acf-4bfa-bb88-97948a3c008b' }
+    const snapshot = {
+      id: identity.id,
+      path: 'workflows/linked.json',
+      content: defaultGraphJSON,
+      modified: 1,
+      size: 20
+    }
+
+    beforeEach(() => registerUserFileScopeProvider(() => scope))
+
+    it('hydrates the normal persisted document from UUID-bound bytes without a lazy path read', async () => {
+      const workflow = store.hydrateSavedFile(snapshot, scope)
+      assert(workflow)
+      await store.openWorkflow(workflow)
+      expect(store.activeWorkflow).toBe(workflow)
+      expect(workflow.savedFileIdentity).toEqual(identity)
+      expect(workflow.originalContent).toBe(defaultGraphJSON)
+      expect(api.getUserData).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      undefined,
+      { ...identity, id: '78ebcb5b-028d-45e8-9f9c-b20f433c364d' }
+    ])(
+      'preserves a loaded path collision with identity %j',
+      async (savedFileIdentity) => {
+        const existing = store.createTemporary('linked.json', defaultGraph)
+        await store.openWorkflow(existing)
+        existing.size = 20
+        existing.savedFileIdentity = savedFileIdentity
+        existing.isModified = true
+        expect(store.hydrateSavedFile(snapshot, scope)).toBeNull()
+        expect(store.activeWorkflow?.instanceId).toBe(existing.instanceId)
+        expect(existing.isModified).toBe(true)
+        expect(store.openWorkflows).toEqual([existing])
+      }
+    )
+
+    it('retains the same-ID dirty tracker and moves its alias after a server rename', async () => {
+      const original = store.hydrateSavedFile(snapshot, scope)
+      assert(original)
+      await store.openWorkflow(original)
+      const tracker = original.changeTracker
+      original.isModified = true
+      const draftStore = useWorkflowDraftStoreV2()
+      draftStore.saveDraft(original.path, defaultGraphJSON, {
+        name: original.key,
+        isTemporary: false,
+        savedFileIdentity: identity
+      })
+      const renamed = { ...snapshot, path: 'workflows/renamed.json' }
+      expect(store.hydrateSavedFile(renamed, scope)).toBe(original)
+      expect(original.changeTracker).toBe(tracker)
+      expect(original.isModified).toBe(true)
+      expect(store.getWorkflowByPath(snapshot.path)).toBeNull()
+      expect(store.openWorkflows.map((workflow) => workflow.path)).toEqual([
+        renamed.path
+      ])
+      expect(draftStore.getDraft(snapshot.path)).toBeNull()
+      expect(draftStore.getDraft(renamed.path)?.savedFileIdentity).toEqual(
+        identity
+      )
+    })
+
+    it.for([
+      undefined,
+      { ...identity, id: '78ebcb5b-028d-45e8-9f9c-b20f433c364d' }
+    ])(
+      'preserves and refuses a persisted draft with identity %j',
+      (savedFileIdentity) => {
+        const drafts = useWorkflowDraftStoreV2()
+        drafts.saveDraft(snapshot.path, defaultGraphJSON, {
+          name: 'linked.json',
+          isTemporary: false,
+          savedFileIdentity
+        })
+        const before = drafts.getDraft(snapshot.path)
+        expect(store.hydrateSavedFile(snapshot, scope)).toBeNull()
+        expect(drafts.getDraft(snapshot.path)).toEqual(before)
+        expect(store.workflows).toEqual([])
+      }
+    )
+
+    it('does not certify a loaded unknown-ID document during a sidebar refresh', async () => {
+      const existing = store.createTemporary('linked.json', defaultGraph)
+      await store.openWorkflow(existing)
+      existing.size = 20
+      existing.isModified = true
+      vi.mocked(api.listUserDataFullInfo).mockResolvedValue([
+        { path: 'linked.json', id: identity.id, modified: 2, size: 20 }
+      ])
+      await store.syncWorkflows()
+      expect(existing.savedFileIdentity).toBeUndefined()
+      expect(store.hydrateSavedFile(snapshot, scope)).toBeNull()
+      expect(existing.isModified).toBe(true)
+    })
+
+    it('keeps an older same-ID draft dirty with the actual server baseline', async () => {
+      enableWorkflowPersistence()
+      const drafts = useWorkflowDraftStoreV2()
+      const dirty = JSON.stringify({
+        ...defaultGraph,
+        extra: { marker: 'unsaved draft' }
+      })
+      drafts.saveDraft(snapshot.path, dirty, {
+        name: 'linked.json',
+        isTemporary: false,
+        savedFileIdentity: identity
+      })
+      const workflow = store.hydrateSavedFile(
+        { ...snapshot, modified: Date.now() + 1000 },
+        scope
+      )
+      assert(workflow)
+      await store.openWorkflow(workflow)
+      expect(workflow.activeState?.extra?.marker).toBe('unsaved draft')
+      expect(workflow.originalContent).toBe(defaultGraphJSON)
+      expect(workflow.isModified).toBe(true)
+      expect(drafts.getDraft(snapshot.path)?.data).toBe(dirty)
+    })
+
+    it('preserves the destination draft when a server alias move cannot persist', () => {
+      const drafts = useWorkflowDraftStoreV2()
+      drafts.saveDraft('workflows/old.json', defaultGraphJSON, {
+        name: 'old.json',
+        isTemporary: false,
+        savedFileIdentity: identity
+      })
+      vi.spyOn(drafts, 'moveDraft').mockReturnValue(false)
+      expect(store.hydrateSavedFile(snapshot, scope)).toBeNull()
+      expect(drafts.getDraft('workflows/old.json')?.savedFileIdentity).toEqual(
+        identity
+      )
+      expect(store.workflows).toEqual([])
+    })
+
+    it.for([
+      { workflowIdentity: undefined, draftIdentity: identity },
+      { workflowIdentity: identity, draftIdentity: undefined },
+      {
+        workflowIdentity: identity,
+        draftIdentity: {
+          ...identity,
+          id: '78ebcb5b-028d-45e8-9f9c-b20f433c364d'
+        }
+      }
+    ])(
+      'refuses ordinary load and save across draft identity collision %j',
+      async ({ workflowIdentity, draftIdentity }) => {
+        enableWorkflowPersistence()
+        const drafts = useWorkflowDraftStoreV2()
+        drafts.saveDraft(snapshot.path, defaultGraphJSON, {
+          name: 'linked.json',
+          isTemporary: false,
+          savedFileIdentity: draftIdentity
+        })
+        const before = drafts.getDraft(snapshot.path)
+        const workflow = new ComfyWorkflow({
+          path: snapshot.path,
+          modified: 1,
+          size: 20,
+          savedFileIdentity: workflowIdentity
+        })
+        workflow.content = workflow.originalContent = defaultGraphJSON
+        await expect(workflow.load()).rejects.toThrow('draft identity')
+        expect(drafts.getDraft(snapshot.path)).toEqual(before)
+        const loaded = store.createTemporary('staged.json', defaultGraph)
+        await loaded.load()
+        loaded.updatePath(snapshot.path)
+        loaded.size = 20
+        loaded.savedFileIdentity = workflowIdentity
+        await expect(loaded.load()).rejects.toThrow('draft identity')
+        await expect(loaded.save()).rejects.toThrow('draft identity')
+        expect(api.storeUserData).not.toHaveBeenCalled()
+        expect(drafts.getDraft(snapshot.path)).toEqual(before)
+      }
+    )
+
+    it('never drops a received UUID when an older list response omits IDs', async () => {
+      vi.mocked(api.listUserDataFullInfo).mockResolvedValue([
+        { path: 'linked.json', id: identity.id, modified: 1, size: 20 }
+      ])
+      await store.syncWorkflows()
+      const workflow = store.getWorkflowByPath(snapshot.path)
+      assert(workflow)
+      expect(workflow.savedFileIdentity).toEqual(identity)
+      vi.mocked(api.listUserDataFullInfo).mockResolvedValue([
+        { path: 'linked.json', modified: 2, size: 25 }
+      ])
+      await store.syncWorkflows()
+      expect(workflow.savedFileIdentity).toEqual(identity)
+      vi.mocked(api.getUserData).mockResolvedValue(
+        new Response(defaultGraphJSON)
+      )
+      await workflow.load()
+      expect(api.getUserData).toHaveBeenCalledWith(snapshot.path, {
+        expected_id: identity.id
+      })
+    })
+
+    it('refuses a stale scope even when the document is cached', async () => {
+      const workflow = store.hydrateSavedFile(snapshot, scope)
+      assert(workflow)
+      await store.openWorkflow(workflow)
+      registerUserFileScopeProvider(() => ({ ...scope, ownerId: 'other-user' }))
+      expect(() => store.saveAs(workflow, 'workflows/clone.json')).toThrow(
+        'another authenticated scope'
+      )
+      await expect(workflow.load()).rejects.toThrow()
+      await expect(workflow.save()).rejects.toThrow()
+      await expect(workflow.saveAs('workflows/copy.json')).rejects.toThrow(
+        'another authenticated scope'
+      )
+      await expect(workflow.delete()).rejects.toThrow()
+      await expect(workflow.rename('workflows/other.json')).rejects.toThrow()
+      expect(api.storeUserData).not.toHaveBeenCalled()
+      expect(api.deleteUserData).not.toHaveBeenCalled()
+      expect(api.moveUserData).not.toHaveBeenCalled()
+    })
   })
 
   describe('syncWorkflows', () => {
@@ -417,6 +642,32 @@ describe('useWorkflowStore', () => {
   })
 
   describe('openWorkflow', () => {
+    it('does not activate or add a tab when its context changes during loading', async () => {
+      const retained = store.createTemporary('dirty.json', defaultGraph)
+      await store.openWorkflow(retained)
+      retained.isModified = true
+      const currentDocument = store.activeWorkflow
+      const incoming = new ComfyWorkflow({
+        path: 'workflows/private.json',
+        modified: 1,
+        size: 1
+      })
+      let current = true
+      vi.mocked(api.getUserData).mockImplementation(async () => {
+        current = false
+        return new Response(defaultGraphJSON)
+      })
+
+      await expect(
+        store.openWorkflow(incoming, { isCurrent: () => current })
+      ).rejects.toMatchObject({ name: 'AbortError' })
+      expect(store.activeWorkflow).toBe(currentDocument)
+      expect(store.openWorkflows.map((workflow) => workflow.path)).toEqual([
+        retained.path
+      ])
+      expect(retained.isModified).toBe(true)
+    })
+
     it('should load and open a temporary workflow', async () => {
       // Create a test workflow
       const workflow = store.createTemporary('test.json')
@@ -653,6 +904,37 @@ describe('useWorkflowStore', () => {
   })
 
   describe('renameWorkflow', () => {
+    it('keeps the active document and tracker through a real save and rename', async () => {
+      const workflow = store.createTemporary('active.json', defaultGraph)
+      await store.openWorkflow(workflow)
+      const loaded = store.activeWorkflow
+      assert(loaded)
+      const tracker = loaded.changeTracker
+      vi.mocked(api.storeUserData).mockResolvedValue(
+        Response.json({ path: 'active.json', modified: 1, size: 20 })
+      )
+      vi.mocked(api.moveUserData).mockResolvedValue(
+        Response.json({ path: 'renamed.json', modified: 2, size: 20 })
+      )
+
+      await store.saveWorkflow(loaded)
+      await store.renameWorkflow(loaded, 'workflows/renamed.json')
+
+      const replacement = new ComfyWorkflow({
+        path: loaded.path,
+        modified: 3,
+        size: 20
+      })
+      expect(store.activeWorkflow).toBe(loaded)
+      expect(store.getWorkflowByPath('workflows/active.json')).toBeNull()
+      expect(store.getWorkflowByPath('workflows/renamed.json')).toBe(loaded)
+      expect(store.openWorkflows).toEqual([loaded])
+      expect(loaded.changeTracker).toBe(tracker)
+      expect(loaded.isModified).toBe(false)
+      expect(store.isActive(workflow)).toBe(true)
+      expect(store.isActive(replacement)).toBe(false)
+    })
+
     it('should rename workflow and update bookmarks', async () => {
       const workflow = store.createTemporary('dir/test.json')
 

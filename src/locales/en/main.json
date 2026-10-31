@@ -1359,6 +1359,12 @@
     "resyncError": "Unable to resync logs after the backend reconnected. Reopen the console to retry."
   },
   "workflowService": {
+    "privateLinkLegacy": "This old workflow link is unavailable. Generate a new saved-file link or open the workflow from the Workflows sidebar.",
+    "privateLinkInvalid": "This saved workflow link is invalid. Check the link and try again.",
+    "privateLinkUnavailable": "This saved workflow is unavailable. Check that you are signed in to the right workspace and have access.",
+    "privateLinkTargetMismatch": "Could not open this saved workflow in the requested environment. Try the link again after selecting that workspace and environment.",
+    "privateLinkFileUnavailable": "This saved workflow is not linked to an editable file. Save it to the Workflows sidebar, then try the link again.",
+    "privateLinkFileMismatch": "This saved-file link conflicts with an open workflow or draft. Use Save As to preserve your edits, then reopen the link.",
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
     "enterFilenamePrompt": "Enter the filename:",
@@ -4112,6 +4118,9 @@
     "failedToSwitch": "Failed to switch workspace"
   },
   "deploymentSwitcher": {
+    "linkEnvironmentInvalid": "This environment link is invalid. Choose either the standard environment or one custom deployment.",
+    "linkEnvironmentRefused": "Couldn't open this environment",
+    "linkEnvironmentTimedOut": "This environment took too long to open. Try the link again.",
     "runOn": "Run on",
     "runningOn": "Running on",
     "comfyCloud": "Comfy Cloud",

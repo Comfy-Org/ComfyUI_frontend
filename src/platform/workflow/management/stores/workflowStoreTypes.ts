@@ -1,3 +1,4 @@
+import type { UserFileScope } from '@/platform/workflow/core/utils/userFileIdentity'
 import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type {
@@ -9,6 +10,16 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyWorkflow, LoadedComfyWorkflow } from './comfyWorkflow'
 
 export interface WorkflowStore {
+  hydrateSavedFile: (
+    snapshot: {
+      id: string
+      path: string
+      content: string
+      modified: number
+      size: number
+    },
+    scope: UserFileScope
+  ) => ComfyWorkflow | null
   activeWorkflow: LoadedComfyWorkflow | null
   attachWorkflow: (workflow: ComfyWorkflow, openIndex?: number) => void
   isActive: (workflow: ComfyWorkflow) => boolean
@@ -32,9 +43,16 @@ export interface WorkflowStore {
     workflowData?: ComfyWorkflowJSON
   ) => ComfyWorkflow
   renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
-  deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+  deleteWorkflow: (
+    workflow: ComfyWorkflow,
+    options?: { signal?: AbortSignal }
+  ) => Promise<void>
   saveAs: (existingWorkflow: ComfyWorkflow, path: string) => ComfyWorkflow
-  saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+  discardTemporaryWorkflow: (workflow: ComfyWorkflow) => void
+  saveWorkflow: (
+    workflow: ComfyWorkflow,
+    options?: { signal?: AbortSignal }
+  ) => Promise<void>
 
   workflows: ComfyWorkflow[]
   bookmarkedWorkflows: ComfyWorkflow[]

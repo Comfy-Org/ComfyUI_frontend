@@ -29,7 +29,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["keybindings"],
+  "allowedDependencies": ["keybindings", "workflow-file-identity"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

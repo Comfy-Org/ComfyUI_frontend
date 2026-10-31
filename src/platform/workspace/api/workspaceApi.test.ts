@@ -614,6 +614,18 @@ describe('workspaceApi', () => {
       )
     })
 
+    it('forwards cancellation for a standard-environment browser selection', async () => {
+      mockAxiosInstance.delete.mockResolvedValue({})
+      const controller = new AbortController()
+
+      await workspaceApi.clearDeployment('ws-1', {}, controller.signal)
+
+      expect(mockAxiosInstance.delete).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployment',
+        { headers: AUTH_HEADER, params: undefined, signal: controller.signal }
+      )
+    })
+
     it('setDefaultDeployment() sends PUT /workspaces/:id/default-deployment with the deployment', async () => {
       mockAxiosInstance.put.mockResolvedValue({})
 

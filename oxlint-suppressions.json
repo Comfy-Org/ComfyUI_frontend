@@ -676,11 +676,6 @@
       "count": 2
     }
   },
-  "src/platform/workflow/management/stores/comfyWorkflow.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
   "src/platform/workflow/management/stores/workflowStore.ts": {
     "comfy/no-reexports": {
       "count": 2
@@ -1090,11 +1085,6 @@
   "src/stores/subgraphStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 7
-    }
-  },
-  "src/stores/userFileStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 3
     }
   },
   "src/stores/userStore.ts": {
