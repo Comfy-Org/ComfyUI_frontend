@@ -55,7 +55,11 @@ import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
 import type { SelectedNode } from './useCanvasSelection'
-import type { AgentEventSource, TurnOrigin } from './useAgentSession'
+import type {
+  AgentEventSource,
+  TurnOrigin,
+  WorkflowTurnContext
+} from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
@@ -6910,6 +6914,94 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(postMessage.mock.calls[0][1].currentTabUnbound).toBe(true)
     expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
+  })
+
+  function movableTabSession(acks: (string | undefined)[]) {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>()
+    acks.forEach((workflowId, index) =>
+      postMessage.mockResolvedValueOnce({
+        thread_id: 'th-9',
+        message_id: `msg-${index + 1}`,
+        ...(workflowId === undefined ? {} : { workflow_id: workflowId })
+      })
+    )
+    const target: { context: WorkflowTurnContext } = {
+      context: { id: 'wf-a', tabPath: 'workflows/a.json' }
+    }
+    const canvas: { draft: DraftSnapshot | undefined } = {
+      draft: { content: { nodes: [{ id: 1 }], links: [] } }
+    }
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => target.context,
+        adopted: vi.fn(),
+        draft: () => canvas.draft
+      }
+    })
+    session.start()
+    return { session, postMessage, target, canvas }
+  }
+
+  it('(h10f2) an id-less reply stops suppressing the mint once the binding moves', async () => {
+    const { session, postMessage, target } = movableTabSession([
+      'wf-a',
+      undefined,
+      'wf-b',
+      'wf-minted'
+    ])
+    const unsaved = { tabPath: 'workflows/Unsaved Workflow.json' }
+
+    await session.sendMessage('on a')
+    target.context = unsaved
+    await session.sendMessage('on the unsaved tab')
+    target.context = { id: 'wf-b', tabPath: 'workflows/b.json' }
+    await session.sendMessage('on b')
+    target.context = unsaved
+    await session.sendMessage('back on the unsaved tab')
+
+    expect(postMessage.mock.calls[1][1].currentTabUnbound).toBe(true)
+    expect(postMessage.mock.calls[3][1].currentTabUnbound).toBe(true)
+  })
+
+  it('(h10f3) a tab with a recorded mint still holds a send with no canvas', async () => {
+    const { session, postMessage, target, canvas } = movableTabSession([
+      'wf-a',
+      undefined
+    ])
+
+    await session.sendMessage('on a')
+    target.context = { tabPath: 'workflows/Unsaved Workflow.json' }
+    await session.sendMessage('on the unsaved tab')
+    canvas.draft = undefined
+    const sent = await session.sendMessage('with no canvas')
+
+    expect(sent).toBe(false)
+    expect(postMessage).toHaveBeenCalledTimes(2)
+  })
+
+  it('(h10f4) a host with no canvas provider still sends', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-9',
+      message_id: 'msg-1',
+      workflow_id: 'wf-a'
+    }))
+    let context: WorkflowTurnContext = {
+      id: 'wf-a',
+      tabPath: 'workflows/a.json'
+    }
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: { current: () => context, adopted: vi.fn() }
+    })
+    session.start()
+
+    await session.sendMessage('on a')
+    context = { tabPath: 'workflows/Unsaved Workflow.json' }
+
+    expect(await session.sendMessage('on the unsaved tab')).toBe(true)
   })
 
   it('(h10g) a new chat forgets the mint a tab already requested', async () => {

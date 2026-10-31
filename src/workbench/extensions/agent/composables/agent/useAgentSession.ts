@@ -556,12 +556,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
    */
   const boundWorkflowId = ref<string | null>(rememberedWorkflowId)
 
-  /**
-   * The workflow each unsaved tab already asked the server to mint, undefined
-   * when the reply named none. Keeps a tab that could not adopt its mint from
-   * minting again on every turn. Scoped to the conversation.
-   */
-  const mintedByTab = new Map<string, string | undefined>()
+  const unadoptedMintBinding = new Map<string, string | null>()
 
   /**
    * H8 reporting state, kept beside the binding it describes: the workflow
@@ -795,6 +790,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       uiTreatment,
       { retryable: false }
     )
+  }
+
+  function forgetBinding(): void {
+    boundWorkflowId.value = null
+    rememberedWorkflowId = null
+    unadoptedMintBinding.clear()
   }
 
   function initializeWorkflowContext(hasThread: boolean): void {
@@ -1284,7 +1285,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return hasNodes(draft) || isOpenInATab(boundWorkflowId, tabs)
   }
 
-  // A blank canvas would replace the thread's built workflow with nothing.
   function hasNodes(draft: DraftSnapshot): boolean {
     const nodes = draft.content.nodes
     return Array.isArray(nodes) && nodes.length > 0
@@ -1301,9 +1301,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tabPath: string,
     boundWorkflowId: string | null
   ): boolean {
-    if (!mintedByTab.has(tabPath)) return false
-    const minted = mintedByTab.get(tabPath)
-    return minted === undefined || minted === boundWorkflowId
+    return (
+      unadoptedMintBinding.has(tabPath) &&
+      unadoptedMintBinding.get(tabPath) === boundWorkflowId
+    )
   }
 
   function rememberMint(
@@ -1315,7 +1316,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const adoptedOrHeld =
       workflowId !== undefined &&
       bindingStore.tabPathFor(workflowId) !== undefined
-    if (!adoptedOrHeld) mintedByTab.set(wfContext.tabPath, workflowId)
+    if (!adoptedOrHeld)
+      unadoptedMintBinding.set(wfContext.tabPath, boundWorkflowId.value)
   }
 
   function lacksCanvasForRemint(
@@ -1324,9 +1326,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): boolean {
     if (wfContext === undefined || wfContext.id !== undefined) return false
     if (boundWorkflowId.value === null) return false
-    if (mintAlreadyRequested(wfContext.tabPath, boundWorkflowId.value))
-      return false
-    return workflow?.draft?.(origin) === undefined
+    const readCanvas = workflow?.draft
+    return readCanvas !== undefined && readCanvas(origin) === undefined
   }
 
   function buildTargetFields(
@@ -2149,10 +2150,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.reset()
     pruneSkillTurns()
     onThreadActivated?.(null)
-    boundWorkflowId.value = null
-    rememberedWorkflowId = null
+    forgetBinding()
     pendingWorkflowBind = null
-    mintedByTab.clear()
     malformedStreamReports.clear()
     localStorage.removeItem(threadStorageKey)
     pendingThreadSource.value = source ?? null
@@ -2183,10 +2182,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       promptEditState.value = { phase: 'idle' }
       load.stashedTurn = conversationStore.activeTurnId !== null
       conversationStore.stashActiveTurn()
-      boundWorkflowId.value = null
-      rememberedWorkflowId = null
+      forgetBinding()
       pendingWorkflowBind = null
-      mintedByTab.clear()
       malformedStreamReports.clear()
       conversationStore.setThreadId(threadId)
       load.switched = keepOpenChatUntilLoaded
@@ -2932,8 +2929,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.reset()
     pruneSkillTurns()
     onThreadActivated?.(null)
-    boundWorkflowId.value = null
-    rememberedWorkflowId = null
+    forgetBinding()
     localStorage.removeItem(threadStorageKey)
   }
 
