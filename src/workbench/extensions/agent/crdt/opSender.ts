@@ -212,6 +212,7 @@ interface Admission {
   admitted: SizedOp[]
   rejected: Op[]
   cause: unknown
+  exhausted: boolean
 }
 
 interface InFlight extends WireBatch {
@@ -254,6 +255,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const mayReportLostEdit = createReportBudget()
   const mayReportSettlementFailure = createReportBudget()
   const mayReportSerializationFailure = createReportBudget()
+  const mayReportCounterExhaustion = createReportBudget()
 
   function observedFloor(): number {
     const floor = (deps.observedCounter() ?? -1) + 1
@@ -542,15 +544,23 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   function mintAdmission(
     operations: GraphOperation[],
     workflowId: string | null
-  ): Op[] {
+  ): { minted: Op[]; exhausted: boolean } {
     const baseVersion = mintBaseVersion(workflowId)
     const actor = deps.actor()
+    const highest = baseVersion + operations.length - 1
+    if (!Number.isSafeInteger(highest))
+      return {
+        minted: mintWireOps(operations, {
+          actor,
+          baseVersion: Number.MAX_SAFE_INTEGER
+        }),
+        exhausted: true
+      }
     const minted = operations.flatMap((operation, index) =>
       mintWireOps([operation], { actor, baseVersion: baseVersion + index })
     )
-    if (workflowId !== null)
-      lastMintedVersions.set(workflowId, baseVersion + minted.length - 1)
-    return minted
+    if (workflowId !== null) lastMintedVersions.set(workflowId, highest)
+    return { minted, exhausted: false }
   }
 
   function appendToOpenGroup(workflowId: string, admitted: SizedOp[]): void {
@@ -571,17 +581,18 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   function admit(operations: GraphOperation[]): void {
     if (operations.length === 0) return
     const workflowId = deps.workflowId()
-    const minted = mintAdmission(operations, workflowId)
+    const { minted, exhausted } = mintAdmission(operations, workflowId)
     const admission: Admission = {
       workflowId,
       minted,
       admitted: [],
       rejected: [],
-      cause: undefined
+      cause: undefined,
+      exhausted
     }
     const nested = admitting.length > 0
     admitting.push(admission)
-    Object.assign(admission, measureMintedOps(minted))
+    if (!exhausted) Object.assign(admission, measureMintedOps(minted))
     if (nested) return
     commitAdmissions()
   }
@@ -602,12 +613,32 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     minted,
     admitted,
     rejected,
-    cause
+    cause,
+    exhausted
   }: Admission): void {
     if (detached) {
       settleUndeliverableInBoundedGroups(
         minted,
         notifyDetachSettlement,
+        workflowId
+      )
+      return
+    }
+    if (exhausted) {
+      if (mayReportCounterExhaustion()) {
+        reportDegraded(
+          new RangeError(
+            'Agent human op counters left the safe integers; the edit was not sent'
+          ),
+          'failure_minting_agent_op_counter'
+        )
+      }
+      settleUndeliverableInBoundedGroups(
+        minted,
+        guardedSettlementNotifier(
+          'failure_settling_agent_op_sender',
+          'counter_exhausted'
+        ),
         workflowId
       )
       return

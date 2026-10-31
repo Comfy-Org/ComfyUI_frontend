@@ -697,6 +697,63 @@ describe('createOpSender', () => {
     expect(sent[0].ops[0].base_version).toBe(41)
   })
 
+  it('refuses an admission whose counter range would leave the safe integers', () => {
+    observedCounter = Number.MAX_SAFE_INTEGER - 1
+
+    sender.enqueue([addNode(1), addNode(2), addNode(3)])
+
+    expect(sent).toEqual([])
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1, 2, 3] }
+    ])
+    expect(sender.pending()).toBe(0)
+    expect(
+      settled.flatMap((outcome) => outcome.ops.map((op) => op.base_version))
+    ).toEqual([
+      Number.MAX_SAFE_INTEGER,
+      Number.MAX_SAFE_INTEGER,
+      Number.MAX_SAFE_INTEGER
+    ])
+    expect(reportsOfType('failure_minting_agent_op_counter')).toEqual([
+      [expect.any(RangeError), expect.objectContaining({ surface: 'agent' })]
+    ])
+    expect(reportsOfType('failure_syncing_agent_edit_undeliverable')).toEqual([
+      [
+        expect.any(Error),
+        expect.objectContaining({
+          context: expect.objectContaining({
+            code: 'counter_exhausted',
+            workflowId: WORKFLOW
+          })
+        })
+      ]
+    ])
+  })
+
+  it('still mints safe counters after refusing an exhausted admission', () => {
+    observedCounter = Number.MAX_SAFE_INTEGER - 1
+    sender.enqueue([addNode(1), addNode(2), addNode(3)])
+
+    observedCounter = 90
+    sender.enqueue([addNode(4)])
+
+    expect(sent[0].ops.map((op) => op.base_version)).toEqual([91])
+  })
+
+  it('admits the widest range that still fits the safe integers', () => {
+    observedCounter = Number.MAX_SAFE_INTEGER - 2
+
+    sender.enqueue([addNode(1), addNode(2)])
+
+    expect(sent[0].ops.map((op) => op.base_version)).toEqual([
+      Number.MAX_SAFE_INTEGER - 1,
+      Number.MAX_SAFE_INTEGER
+    ])
+    expect(
+      sent[0].ops.every((op) => Number.isSafeInteger(op.base_version))
+    ).toBe(true)
+  })
+
   it('never re-stamps a batch whose send threw', () => {
     transportThrows = true
     sender.enqueue([addNode(1)])
