@@ -6,14 +6,9 @@
       @update:open="(open) => onRekaOpenChange(item.key, open)"
     >
       <DialogPortal>
-        <DialogOverlay v-reka-z-index />
+        <DialogOverlay />
         <DialogContent
-          v-reka-z-index
-          v-bind="
-            item.dialogComponentProps.useAutomaticLabeling
-              ? {}
-              : { 'aria-labelledby': item.key }
-          "
+          v-bind="isNamedByHeader(item) ? { 'aria-labelledby': item.key } : {}"
           :size="
             item.dialogComponentProps.headless
               ? 'fit'
@@ -61,10 +56,18 @@
               >
                 <DialogMaximize
                   v-if="item.dialogComponentProps.maximizable"
+                  :aria-label="
+                    item.dialogComponentProps.maximized
+                      ? $t('g.restoreDialog')
+                      : $t('g.maximizeDialog')
+                  "
                   :maximized="!!item.dialogComponentProps.maximized"
                   @toggle="toggleMaximize(item)"
                 />
-                <DialogClose v-if="hasCloseButton(item)" />
+                <DialogClose
+                  v-if="hasCloseButton(item)"
+                  :aria-label="$t('g.close')"
+                />
               </div>
             </DialogHeader>
             <div
@@ -97,17 +100,16 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Dialog from '@/components/ui/dialog/Dialog.vue'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
-import DialogContent from '@/components/ui/dialog/DialogContent.vue'
-import DialogFooter from '@/components/ui/dialog/DialogFooter.vue'
-import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
-import DialogMaximize from '@/components/ui/dialog/DialogMaximize.vue'
-import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogFooter from '@comfyorg/design-system/dialog/DialogFooter'
+import DialogHeader from '@comfyorg/design-system/dialog/DialogHeader'
+import DialogMaximize from '@comfyorg/design-system/dialog/DialogMaximize'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -115,6 +117,13 @@ const dialogStore = useDialogStore()
 
 function onRekaOpenChange(key: string, open: boolean) {
   if (!open) dialogStore.closeDialog({ key })
+}
+
+function isNamedByHeader(item: DialogInstance) {
+  return (
+    !item.dialogComponentProps.headless &&
+    (!!item.headerComponent || !!item.title)
+  )
 }
 
 function hasCloseButton({ dialogComponentProps }: DialogInstance) {

@@ -1,13 +1,10 @@
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { toGroupId } from '@/types/groupId'
-import { toNodeId } from '@/types/nodeId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 import { describe, expect, it, beforeEach } from 'vitest'
 import {
@@ -85,6 +82,13 @@ describe('searchWidgets', () => {
     const widgets = [createWidget('Width', 'Number', '100', 'Image Width')]
     const result = searchWidgets(widgets, 'IMAGE width')
     expect(result).toHaveLength(1)
+  })
+
+  it('searches a legacy widget with no type by name', () => {
+    const widget = createWidget('width', 'number')
+    Reflect.deleteProperty(widget.widget, 'type')
+
+    expect(searchWidgets([widget], 'width')).toEqual([widget])
   })
 })
 

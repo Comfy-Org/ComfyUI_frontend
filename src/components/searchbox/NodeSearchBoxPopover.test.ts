@@ -1,15 +1,14 @@
 import { getActivePinia } from 'pinia'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Settings } from '@/platform/settings/types'
+import type { Settings } from '@comfyorg/settings-core/types'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
@@ -34,11 +33,6 @@ function createFilter(
     value
   }
 }
-
-const OpenDialog = defineComponent({
-  directives: { rekaZIndex: vRekaZIndex },
-  template: '<div v-reka-z-index data-testid="open-dialog" />'
-})
 
 describe('NodeSearchBoxPopover', () => {
   const i18n = createI18n({
@@ -94,15 +88,6 @@ describe('NodeSearchBoxPopover', () => {
     const pinia = getActivePinia()!
     const settingStore = useSettingStore()
     settingStore.settingValues = settings
-    settingStore.settingsById = coreSettingsById
-    useSearchBoxStore().visible = false
-    useCanvasStore().canvas = fromPartial({
-      linkConnector: {
-        events: new EventTarget(),
-        reset: vi.fn()
-      },
-      setDirty: vi.fn()
-    })
 
     const result = render(NodeSearchBoxPopover, {
       global: {
@@ -145,6 +130,15 @@ describe('NodeSearchBoxPopover', () => {
 
   beforeEach(() => {
     vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(null)
+    useSettingStore().settingsById = coreSettingsById
+    useSearchBoxStore().visible = false
+    useCanvasStore().canvas = fromPartial({
+      linkConnector: {
+        events: new EventTarget(),
+        reset: vi.fn()
+      },
+      setDirty: vi.fn()
+    })
   })
 
   describe('addFilter duplicate prevention', () => {
@@ -224,22 +218,33 @@ describe('NodeSearchBoxPopover', () => {
     expect(screen.getByLabelText('filter count')).toHaveTextContent('0')
   })
 
-  it('opens above an already open dialog', async () => {
-    render(OpenDialog)
-    const dialogZIndex = Number(screen.getByTestId('open-dialog').style.zIndex)
-    const { pinia } = renderComponent({
-      'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+  it('reopens above a later overlay using the dialog portal', async () => {
+    render(NodeSearchBoxPopover, {
+      global: {
+        plugins: [i18n, getActivePinia()!],
+        stubs: {
+          NodeSearchBox: true,
+          NodeSearchContent: true,
+          NodePreviewCard: true
+        }
+      }
     })
+    const searchBoxStore = useSearchBoxStore()
+    searchBoxStore.visible = true
+    await screen.findByRole('dialog')
+    searchBoxStore.visible = false
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
 
-    useSearchBoxStore(pinia).visible = true
-    await nextTick()
-
-    expect(
-      Number(screen.getByTestId('search-overlay').style.zIndex)
-    ).toBeGreaterThan(dialogZIndex)
-    expect(
-      Number(screen.getByTestId('search-content').style.zIndex)
-    ).toBeGreaterThan(dialogZIndex)
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const dialog = screen.getByTestId('existing-overlay')
+    searchBoxStore.visible = true
+    const searchDialog = await screen.findByRole('dialog')
+    expect(dialog.compareDocumentPosition(searchDialog)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
   })
 
   describe('addNode ghost flag (FollowCursor setting)', () => {

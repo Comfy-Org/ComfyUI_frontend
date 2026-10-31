@@ -31,9 +31,9 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const ossTest = mergeTests(test, jobsRouteFixture)
 
@@ -440,6 +440,25 @@ ossTest.describe(
   { tag: '@ui' },
   () => {
     ossTest(
+      'excludes explicit temp inputs while reporting missing permanent media',
+      async ({ comfyPage }) => {
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          'missing/missing_media_temp_annotation'
+        )
+
+        const rows = comfyPage.page.getByTestId(TestIds.dialogs.missingMediaRow)
+        await expect(rows).toHaveCount(1)
+        await expect(
+          rows.getByRole('button', {
+            name: 'Missing permanent image - image',
+            exact: true
+          })
+        ).toBeVisible()
+      }
+    )
+
+    ossTest(
       'resolves annotated output media from job history',
       async ({ comfyPage, jobsRoutes }) => {
         await jobsRoutes.mockJobsHistory(outputHistoryJobs())
@@ -738,6 +757,25 @@ cloudOutputTest.describe(
     cloudOutputTest.beforeEach(async ({ comfyPage }) => {
       await closeTemplatesDialogIfOpen(comfyPage)
     })
+
+    cloudOutputTest(
+      'excludes explicit temp inputs while reporting missing permanent media',
+      async ({ comfyPage }) => {
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          'missing/missing_media_temp_annotation'
+        )
+
+        const rows = comfyPage.page.getByTestId(TestIds.dialogs.missingMediaRow)
+        await expect(rows).toHaveCount(1)
+        await expect(
+          rows.getByRole('button', {
+            name: 'Missing permanent image - image',
+            exact: true
+          })
+        ).toBeVisible()
+      }
+    )
 
     cloudOutputTest(
       'resolves compact annotated output media from output assets',

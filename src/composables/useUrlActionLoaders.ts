@@ -1,20 +1,21 @@
 import { useRouter } from 'vue-router'
 
 import { useAssetsUrlLoader } from '@/platform/assets/composables/useAssetsUrlLoader'
-import { usePaymentReturnUrlLoader } from '@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader'
-import { usePricingTableUrlLoader } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { useTopUpUrlLoader } from '@/platform/cloud/subscription/composables/useTopUpUrlLoader'
+import { usePricingTableUrlLoader } from '@/platform/billing/subscription/composables/usePricingTableUrlLoader'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+import { useTopUpUrlLoader } from '@/platform/billing/subscription/composables/useTopUpUrlLoader'
 import {
   BILLING_WEB_RETURN_PARAMS,
   STRIPE_RETURN_PARAMS
-} from '@/platform/cloud/subscription/utils/paymentReturnUrl'
+} from '@/platform/billing/subscription/utils/paymentReturnUrl'
 import { isCloud } from '@/platform/distribution/types'
+import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
-import { reportError } from '@/platform/telemetry/reportError'
-import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useCreateWorkspaceUrlLoader } from '@/platform/account/composables/useCreateWorkspaceUrlLoader'
 import { useDeploymentUrlLoader } from '@/platform/workspace/composables/useDeploymentUrlLoader'
-import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
+import { useInviteUrlLoader } from '@/platform/account/composables/useInviteUrlLoader'
 import { useWorkspaceUrlLoader } from '@/platform/workspace/composables/useWorkspaceUrlLoader'
 
 interface UrlActionStep {
@@ -37,7 +38,6 @@ type UrlActionLoaders = {
   topUpUrlLoader: ReturnType<typeof useTopUpUrlLoader> | null
   settingsUrlLoader: ReturnType<typeof useSettingsUrlLoader> | null
   assetsUrlLoader: ReturnType<typeof useAssetsUrlLoader> | null
-  paymentReturnUrlLoader: ReturnType<typeof usePaymentReturnUrlLoader> | null
 }
 
 /**
@@ -54,11 +54,14 @@ type UrlActionLoaders = {
  * successful switch reloads the page and stops the loop before this step
  * runs, so it never re-strips a live workspace switch. `deployment` likewise:
  * the deployment link keeps both params only across its own switch reload,
- * which also stops the loop first.
+ * which also stops the loop first. `workflows` is opened at boot, which keeps
+ * it (and its preserved-query stash) beside a deployment link for the boot
+ * after the pick's reload; a link that did not reload ends here, stash too.
  */
 const HANDLED_PARAMS = [
   'workspace',
   'deployment',
+  'workflows',
   'invite',
   'create_workspace',
   'pricing',
@@ -147,20 +150,11 @@ function buildUrlActionSteps(
       run: () => loader.loadAssetsFromUrl()
     })
   }
-  // Handles the return leg of a redirect payment (Stripe appends
-  // payment_intent/redirect_status params): strips the params and refreshes
-  // billing status so the pending checkout resumes polling immediately.
-  if (loaders.paymentReturnUrlLoader) {
-    const loader = loaders.paymentReturnUrlLoader
-    steps.push({
-      failureMessage: 'Failed to handle payment return from URL:',
-      run: () => loader.loadPaymentReturnFromUrl()
-    })
-  }
 
   steps.push({
     failureMessage: 'Failed to clear handled deep-link params from the URL:',
     run: async () => {
+      clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
       const query = { ...router.currentRoute.value.query }
       if (!HANDLED_PARAMS.some((param) => param in query)) return
       for (const param of HANDLED_PARAMS) delete query[param]
@@ -236,7 +230,6 @@ export function useUrlActionLoaders() {
   const topUpUrlLoader = useIfCloud(useTopUpUrlLoader)
   const settingsUrlLoader = useIfCloud(useSettingsUrlLoader)
   const assetsUrlLoader = useIfCloud(useAssetsUrlLoader)
-  const paymentReturnUrlLoader = useIfCloud(usePaymentReturnUrlLoader)
   const subscriptionDialog = useIfCloud(useSubscriptionDialog)
 
   const steps = isCloud
@@ -249,8 +242,7 @@ export function useUrlActionLoaders() {
           pricingTableUrlLoader,
           topUpUrlLoader,
           settingsUrlLoader,
-          assetsUrlLoader,
-          paymentReturnUrlLoader
+          assetsUrlLoader
         },
         router
       )

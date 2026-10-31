@@ -3,7 +3,7 @@
     ref="container"
     :class="
       cn(
-        'flex overflow-hidden rounded-md bg-component-node-widget-background text-xs text-component-node-foreground',
+        'flex overflow-hidden rounded-md bg-input text-xs text-foreground',
         useWidgetHeight()
       )
     "
@@ -13,7 +13,7 @@
       v-if="!hideButtons"
       :aria-label="t('g.decrement')"
       data-testid="decrement"
-      class="aspect-square h-full rounded-none p-0 hover:bg-component-node-widget-background-hovered disabled:opacity-30"
+      class="aspect-square h-full rounded-none p-0 hover:bg-muted disabled:opacity-30"
       variant="muted-textonly"
       size="unset"
       :disabled="!canDecrement"
@@ -60,7 +60,7 @@
       v-if="!hideButtons"
       :aria-label="t('g.increment')"
       data-testid="increment"
-      class="aspect-square h-full rounded-none p-0 hover:bg-component-node-widget-background-hovered disabled:opacity-30"
+      class="aspect-square h-full rounded-none p-0 hover:bg-muted disabled:opacity-30"
       variant="muted-textonly"
       size="unset"
       :disabled="!canIncrement"
@@ -77,7 +77,7 @@ import { onClickOutside, usePointerSwipe, whenever } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 

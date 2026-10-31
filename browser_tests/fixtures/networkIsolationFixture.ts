@@ -13,6 +13,7 @@ import {
 } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 import type { NetworkPolicy } from '@e2e/fixtures/utils/networkPolicy'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { mockDeploymentRolloutRefusal } from '@e2e/fixtures/utils/workspaceMocks'
 
 dotenvConfig()
 
@@ -136,7 +137,7 @@ export const networkIsolationFixture = base.extend<{
     await context.route('**/*', async (route) => {
       const url = new URL(route.request().url())
       if (origins.has(url.origin)) {
-        await route.continue()
+        await route.fallback()
         return
       }
       unexpected.add(getBlockedRequestViolation(url, route.request().method()))
@@ -189,6 +190,8 @@ export const networkIsolationFixture = base.extend<{
         networkPolicy,
         liveCloudBillingConfig
       )
+    } else {
+      await mockDeploymentRolloutRefusal(context)
     }
     await use(context)
     restore()

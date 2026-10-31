@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { AgentErrorContext } from '../../../types/agentErrorContext'
+import type { AgentErrorContext } from '@/workbench/extensions/agent/types/agentErrorContext'
 
 import {
   inlineReferenceChipClass,
@@ -26,7 +26,6 @@ const isError = computed(() => context.severity === 'error')
 <template>
   <span
     data-testid="error-reference-chip"
-    tabindex="0"
     :class="inlineReferenceChipClass"
   >
     <i

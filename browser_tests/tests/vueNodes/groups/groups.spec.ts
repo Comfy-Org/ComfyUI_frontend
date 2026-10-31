@@ -3,8 +3,12 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import {
+  graphItems,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 
 const CREATE_GROUP_HOTKEY = 'Control+g'
 
@@ -126,9 +130,13 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     await comfyPage.workflow.loadWorkflow('groups/oversized_group')
     await comfyPage.keyboard.selectAll()
     await comfyPage.command.executeCommand('Comfy.Graph.FitGroupToContents')
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'vue-groups-fit-to-contents.png'
-    )
+    await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
+    await fitToViewInstant(comfyPage)
+    const region = await screenshotRegion(comfyPage.page, [
+      graphItems(comfyPage.page, 'groups'),
+      ...(await comfyPage.vueNodes.nodes.all())
+    ])
+    await region.expectScreenshot('vue-groups-fit-to-contents.png')
   })
 
   test('should move nested groups together when dragging outer group', async ({
@@ -312,7 +320,12 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
 
     const toggleBypass = () =>
-      comfyPage.page.getByTestId(TestIds.selectionToolbox.bypass).click()
+      comfyPage.selectionToolbox
+        .getByRole('button', {
+          name: 'Bypass/Unbypass Selected Nodes',
+          exact: true
+        })
+        .click()
     const bypassCount = () =>
       comfyPage.page.evaluate(
         () => graph!.nodes.filter((node) => node.mode === 4).length

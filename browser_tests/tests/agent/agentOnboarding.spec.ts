@@ -52,6 +52,52 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       .toBe('false')
   })
 
+  test('points the first card at the highlighted panel and answers clicks on it', async ({
+    page,
+    agentFlagEnabled
+  }) => {
+    await bootAgentApp(page, agentFlagEnabled, {
+      onboardingCompleted: false
+    })
+    await new AgentPanel(page).open()
+
+    const firstCard = page.getByRole('dialog', {
+      name: enMessages.agent.coachTitle
+    })
+    await expect(firstCard).toBeVisible()
+    const arrow = page.getByTestId('agent-coach-arrow')
+    const spotlight = page.getByTestId('agent-coach-spotlight')
+    await expect(arrow).toHaveCSS('visibility', 'visible')
+    await expect
+      .poll(async () => {
+        const [arrowBox, spotlightBox] = await Promise.all([
+          arrow.boundingBox(),
+          spotlight.boundingBox()
+        ])
+        if (!arrowBox || !spotlightBox) return null
+        return {
+          leftOfSpotlight: arrowBox.x < spotlightBox.x,
+          centersAligned:
+            Math.abs(
+              arrowBox.y +
+                arrowBox.height / 2 -
+                (spotlightBox.y + spotlightBox.height / 2)
+            ) < 4
+        }
+      })
+      .toEqual({ leftOfSpotlight: true, centersAligned: true })
+
+    const spotlightBox = await spotlight.boundingBox()
+    if (!spotlightBox) throw new Error('spotlight has no box')
+    await page.mouse.click(
+      spotlightBox.x + spotlightBox.width / 2,
+      spotlightBox.y + spotlightBox.height / 2
+    )
+
+    await expect(firstCard).toBeFocused()
+    await expect(firstCard).toBeVisible()
+  })
+
   test('replays the tour from the header after it has been completed', async ({
     page,
     agentFlagEnabled

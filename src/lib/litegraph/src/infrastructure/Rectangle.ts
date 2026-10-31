@@ -1,10 +1,10 @@
 import type {
   CompassCorners,
-  Point,
+  PointTuple as Point,
   ReadOnlyRect,
   ReadOnlyTypedArray,
-  Size
-} from '@/lib/litegraph/src/interfaces'
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
 
 /**
@@ -478,3 +478,11 @@ export type ReadOnlyRectangle = Omit<
   | 'resizeBottomRight'
   | 'updateTo'
 >
+
+type RegisteredRectangle = Rectangle
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface LitegraphEntityRegistry {
+    Rectangle: RegisteredRectangle
+  }
+}

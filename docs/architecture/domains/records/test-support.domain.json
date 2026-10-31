@@ -1,18 +1,10 @@
 {
   "id": "test-support",
   "capability": "Shared test infrastructure",
-  "description": "Shared technical module for disposable Pinia fixtures, Vitest setup contracts and type augmentation, graph/canvas builders, Path2D stubs, i18n fixtures, and extension-registration capture. This is test infrastructure, not a product domain or production extraction target.",
+  "description": "Shared technical module for disposable Pinia fixtures, Vitest setup contracts and type augmentation, graph/canvas builders, Path2D stubs, i18n fixtures, and the @comfyorg/test-utils fetch routing helpers. This is test infrastructure, not a product domain or production extraction target.",
   "modules": [
     {
-      "path": "src/testing/pinia.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/testing/pinia.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/vitestSetup.test.ts",
+      "path": "src/testing/**",
       "role": "integration"
     },
     {
@@ -20,45 +12,25 @@
       "role": "integration"
     },
     {
-      "path": "src/utils/__tests__/canvasSelectionTestUtils.ts",
+      "path": "src/utils/__tests__/**",
       "role": "integration"
     },
     {
-      "path": "src/utils/__tests__/canvasTestUtils.ts",
+      "path": "src/vitestSetup.test.ts",
       "role": "integration"
     },
     {
-      "path": "src/utils/__tests__/extensionTestUtils.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/utils/__tests__/extensionTestUtils.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/utils/__tests__/litegraphTestUtils.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/utils/__tests__/stubPath2D.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/utils/__tests__/testI18n.ts",
+      "path": "packages/test-utils/src/**",
       "role": "integration"
     }
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["selection-toolbox"],
   "characterizationScenarios": [
     {
       "name": "Shared test infrastructure preserves its existing behavior",
-      "checks": [
-        "src/testing/pinia.test.ts",
-        "src/vitestSetup.test.ts",
-        "src/utils/__tests__/extensionTestUtils.test.ts"
-      ]
+      "checks": ["src/testing/pinia.test.ts", "src/vitestSetup.test.ts"]
     }
   ],
   "adrs": [],

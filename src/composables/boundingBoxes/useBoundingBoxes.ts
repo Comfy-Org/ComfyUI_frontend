@@ -1,14 +1,18 @@
-import { useElementSize } from '@vueuse/core'
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
+import { useElementSize, useEventBus } from '@vueuse/core'
+import type { EventBusKey } from '@vueuse/core'
 import { cloneDeep, isEqual } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import type { Ref, ShallowRef } from 'vue'
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, readonly, ref, watch } from 'vue'
 
 import {
   applyDrag,
   boxesAt,
   fromBoundingBoxes,
   isBoundingBox,
+  isRegionList,
+  regionColor,
   tagRects,
   toBoundingBoxes
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
@@ -17,12 +21,21 @@ import type {
   HitMode,
   Region
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
+import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
+import {
+  locateWidgetNode,
+  widgetHistoryScope
+} from '@/composables/widgetHistoryScope'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useBoundingBoxesSources } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources'
-import { app } from '@/scripts/app'
-import type { BoundingBox } from '@/types/boundingBoxes'
-import type { NodeId } from '@/types/nodeId'
-import { readableTextColor, textOnColor } from '@/utils/colorUtil'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import {
+  readableTextColor,
+  textOnColor
+} from '@comfyorg/shared-frontend-utils/colorUtil'
 
 const HANDLE_PX = 8
 const DIMENSION_STEP = 16
@@ -33,6 +46,12 @@ const MAX_GRID_CELLS = 64
 const DOT_ALPHA = 0.18
 const DOT_RADIUS = 1
 
+const gridBusKey: EventBusKey<{ widgetId: string; enabled: boolean }> = Symbol(
+  'bounding-boxes-grid'
+)
+
+type RegionField = 'type' | 'text' | 'desc' | 'palette'
+
 interface InlineEditorState {
   value: string
   style: Record<string, string>
@@ -41,24 +60,26 @@ interface InlineEditorState {
 
 interface UseBoundingBoxesOptions {
   canvasEl: Readonly<ShallowRef<HTMLCanvasElement | null>>
-  canvasContainer: Readonly<ShallowRef<HTMLDivElement | null>>
   inlineEditorEl: Readonly<ShallowRef<HTMLTextAreaElement | null>>
   modelValue: Ref<BoundingBox[]>
+  widget: Pick<SimplifiedWidget, 'name' | 'nodeLocatorId'>
+  alwaysShowActive?: boolean
 }
 
 export function useBoundingBoxes(
   nodeId: NodeId,
   {
     canvasEl,
-    canvasContainer,
     inlineEditorEl,
-    modelValue
+    modelValue,
+    widget,
+    alwaysShowActive = false
   }: UseBoundingBoxesOptions
 ) {
   const focused = ref(false)
   const drawing = ref(false)
   const dragMode = ref<HitMode | null>(null)
-  const dragStartNorm = ref<{ x: number; y: number } | null>(null)
+  const dragStartNorm = ref<Point2D | null>(null)
   const boxAtStart = ref<Region | null>(null)
   const hoverIndex = ref<number | null>(null)
   const hoverTagIndex = ref<number | null>(null)
@@ -67,11 +88,12 @@ export function useBoundingBoxes(
   const grid = ref(true)
   const incomingPending = ref(false)
 
-  const { width: containerWidth } = useElementSize(canvasContainer)
+  const { width: canvasWidth, height: canvasHeight } = useElementSize(canvasEl)
 
-  const litegraphNode = computed(() =>
-    nodeId && app.canvas.graph ? app.canvas.graph.getNodeById(nodeId) : null
-  )
+  const litegraphNode = useLiveGraphNode(() => {
+    const location = locateWidgetNode(widget, nodeId)
+    return location?.graph.getNodeById(location.nodeId)
+  })
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
   const isNodeSelected = computed(() => selectedNodeIds.value.has(nodeId))
 
@@ -95,6 +117,10 @@ export function useBoundingBoxes(
     () => `${widthValue.value} / ${heightValue.value}`
   )
   const canvasStyle = computed(() => ({ aspectRatio: aspectRatio.value }))
+  const containedCanvasStyle = computed(() => ({
+    aspectRatio: aspectRatio.value,
+    width: `min(100cqw, 100cqh * ${widthValue.value} / ${heightValue.value})`
+  }))
 
   const activeRegion = computed(() =>
     activeIndex.value >= 0 ? state.value.regions[activeIndex.value] : null
@@ -240,7 +266,7 @@ export function useBoundingBoxes(
 
     if (grid.value) drawDots(ctx, W, H)
 
-    const showActive = focused.value || isNodeSelected.value
+    const showActive = alwaysShowActive || focused.value || isNodeSelected.value
     const aIdx = showActive ? activeIndex.value : -1
     const order = state.value.regions
       .map((_, i) => i)
@@ -257,7 +283,7 @@ export function useBoundingBoxes(
       const b = state.value.regions[i]
       const active = i === aIdx
       const pal = b.palette.filter(Boolean)
-      const col = pal.length ? pal[0] : '#8c8c8c'
+      const col = regionColor(b)
       const x1 = b.x * W
       const y1 = b.y * H
       const x2 = (b.x + b.w) * W
@@ -349,7 +375,7 @@ export function useBoundingBoxes(
     return out
   }
 
-  const hitTestPoint = (mN: { x: number; y: number }) => {
+  const hitTestPoint = (mN: Point2D) => {
     const { w: W, h: H } = logicalSize()
     const cands = boxesAt(
       state.value.regions,
@@ -367,7 +393,7 @@ export function useBoundingBoxes(
     )
   }
 
-  const titleAt = (mN: { x: number; y: number }) => {
+  const titleAt = (mN: Point2D) => {
     const el = canvasEl.value
     if (!el) return null
     const ctx = el.getContext('2d')
@@ -385,7 +411,7 @@ export function useBoundingBoxes(
     return null
   }
 
-  function pickForSelection(mN: { x: number; y: number }, cycle: boolean) {
+  function pickForSelection(mN: Point2D, cycle: boolean) {
     const { w: W, h: H } = logicalSize()
     const cands = boxesAt(
       state.value.regions,
@@ -471,7 +497,7 @@ export function useBoundingBoxes(
     if (b.w < 0.005 || b.h < 0.005) {
       removeRegion(activeIndex.value)
     }
-    syncState()
+    commitEdit()
   }
 
   function onCanvasPointerMove(e: PointerEvent) {
@@ -570,7 +596,7 @@ export function useBoundingBoxes(
     const b = state.value.regions[ed.index]
     b.desc = ed.value
     inlineEditor.value = null
-    syncState()
+    commitEdit()
   }
 
   function onCanvasKeyDown(e: KeyboardEvent) {
@@ -580,7 +606,7 @@ export function useBoundingBoxes(
       e.preventDefault()
       e.stopPropagation()
       removeRegion(idx)
-      syncState()
+      commitEdit()
     }
   }
 
@@ -591,11 +617,28 @@ export function useBoundingBoxes(
       activeIndex.value = Math.max(0, activeIndex.value - 1)
   }
 
-  function setActiveType(t: 'obj' | 'text') {
-    if (activeRegion.value) {
-      activeRegion.value.type = t
-      syncState()
-    }
+  function updateRegion<K extends RegionField>(
+    index: number,
+    field: K,
+    value: Region[K]
+  ) {
+    if (!hasRegion(index)) return
+    state.value.regions[index][field] = value
+    commitEdit(field === 'type' ? undefined : `${field}:${index}`)
+  }
+
+  function hasRegion(index: number) {
+    return index >= 0 && index < state.value.regions.length
+  }
+
+  function selectRegion(index: number) {
+    if (hasRegion(index)) activeIndex.value = index
+  }
+
+  function deleteRegion(index: number) {
+    if (!hasRegion(index)) return
+    removeRegion(index)
+    commitEdit()
   }
 
   function clearAll() {
@@ -603,7 +646,7 @@ export function useBoundingBoxes(
     activeIndex.value = -1
     incomingPending.value = false
     setLastIncoming([])
-    syncState()
+    commitEdit()
   }
 
   function syncState() {
@@ -615,13 +658,56 @@ export function useBoundingBoxes(
     requestDraw()
   }
 
-  watch(containerWidth, () => requestDraw())
+  function restoreRegions(value: unknown) {
+    if (!isRegionList(value)) return
+    replaceRegions(value)
+    syncState()
+  }
+
+  function replaceRegions(regions: Region[]) {
+    state.value.regions = regions
+    activeIndex.value = Math.min(
+      Math.max(activeIndex.value, regions.length ? 0 : -1),
+      regions.length - 1
+    )
+    inlineEditor.value = null
+  }
+
+  function adoptExternalValue(boxes: BoundingBox[]) {
+    if (drawing.value) return
+    const current = toBoundingBoxes(
+      state.value.regions,
+      widthValue.value,
+      heightValue.value
+    )
+    if (isEqual(boxes, current)) return
+    replaceRegions(
+      fromBoundingBoxes(boxes, widthValue.value, heightValue.value)
+    )
+    syncBaseline()
+    requestDraw()
+  }
+
+  const { canUndo, canRedo, undo, redo, commit, syncBaseline } =
+    useWidgetValueHistory({
+      scope: () => widgetHistoryScope(widget, nodeId),
+      read: () => state.value.regions,
+      apply: restoreRegions
+    })
+
+  function commitEdit(mergeKey?: string) {
+    syncState()
+    commit(mergeKey)
+  }
+
+  watch([canvasWidth, canvasHeight], () => requestDraw())
+  watch(modelValue, adoptExternalValue)
   watch(
     () => state.value.regions.length,
     () => requestDraw()
   )
-  watch(isNodeSelected, () => requestDraw())
-  watch([widthValue, heightValue], () => syncState())
+  watch([isNodeSelected, activeIndex], () => requestDraw())
+  watch([widthValue, heightValue], () => syncState(), { flush: 'post' })
 
   watch(
     litegraphNode,
@@ -632,11 +718,18 @@ export function useBoundingBoxes(
     },
     { immediate: true }
   )
+  const gridBus = useEventBus(gridBusKey)
+  gridBus.on(({ widgetId, enabled }) => {
+    if (widgetId === widgetHistoryScope(widget, nodeId)?.widgetId)
+      grid.value = enabled
+  })
   watch(grid, (enabled) => {
     const props = litegraphNode.value?.properties as
       | Record<string, unknown>
       | undefined
     if (props) props.bboxGrid = enabled
+    const widgetId = widgetHistoryScope(widget, nodeId)?.widgetId
+    if (widgetId) gridBus.emit({ widgetId, enabled })
     requestDraw()
   })
 
@@ -740,7 +833,7 @@ export function useBoundingBoxes(
     )
     activeIndex.value = state.value.regions.length ? 0 : -1
     setLastIncoming(incoming)
-    syncState()
+    commitEdit()
   }
 
   applyIncomingBoxes(incomingBoxes.value, false)
@@ -761,6 +854,7 @@ export function useBoundingBoxes(
 
   return {
     canvasStyle,
+    containedCanvasStyle,
     canvasCursor,
     focused,
     activeRegion,
@@ -775,9 +869,16 @@ export function useBoundingBoxes(
     onCanvasKeyDown,
     onInlineKeyDown,
     commitInlineEditor,
-    setActiveType,
+    regions: computed(() => state.value.regions),
+    activeIndex: readonly(activeIndex),
+    selectRegion,
+    deleteRegion,
+    updateRegion,
     clearAll,
-    syncState,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
     grid
   }
 }

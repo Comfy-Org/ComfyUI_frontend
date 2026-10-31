@@ -1,6 +1,6 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
@@ -10,12 +10,15 @@ import { useEmptyWorkflowDialog } from './useEmptyWorkflowDialog'
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/services/dialogService'))
 
-vi.mock(import('@/composables/useWorkflowTemplateSelectorDialog'), () => {
-  const templateSelectorDialog = { show: vi.fn(), hide: vi.fn() }
-  return {
-    useWorkflowTemplateSelectorDialog: () => templateSelectorDialog
+vi.mock(
+  import('@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'),
+  () => {
+    const templateSelectorDialog = { show: vi.fn(), hide: vi.fn() }
+    return {
+      useWorkflowTemplateSelectorDialog: () => templateSelectorDialog
+    }
   }
-})
+)
 
 function showDialog() {
   const options = { onEnterBuilder: vi.fn(), onDismiss: vi.fn() }

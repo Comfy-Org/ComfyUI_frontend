@@ -3,21 +3,24 @@ import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationF
 
 import type {
   BillingBalanceResponse,
+  BillingCapabilitiesResponse,
   BillingEventsResponse,
   BillingPlansResponse,
   BillingStatusResponse,
   CurrentWorkspaceResponse,
   ListMembersResponse
 } from '@comfyorg/ingest-types'
-import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import { formatCreditsFromCents } from '@comfyorg/shared-frontend-utils/creditsUtil'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
 
 const E2E_API_KEY = 'comfyui-e2e-api-key'
+const API_KEY_OWNER_ID = 'api-key-user-e2e'
 
 // Workspace-rail mocks authenticate like the real API: a request that does
 // not carry the stored key as X-API-KEY gets a 401 instead of data, so the
@@ -100,7 +103,7 @@ export const apiKeyAuthFixture = base.extend<{
       if (route.request().method() !== 'POST') return route.fallback()
       return route.fulfill({
         status: 201,
-        json: { id: 'api-key-user-e2e' } satisfies CreateCustomerResponse
+        json: { id: API_KEY_OWNER_ID } satisfies CreateCustomerResponse
       })
     })
     await page.route('**/api/workspaces/current', (route) =>
@@ -116,9 +119,19 @@ export const apiKeyAuthFixture = base.extend<{
         occupied_seats: 1,
         subscription_status: 'active',
         subscription_tier: 'TEAM',
+        ended_at: null,
         team_credit_stop: null,
         scheduled_change: null
       } satisfies BillingStatusResponse)
+    )
+    await page.route('**/api/billing/capabilities', (route) =>
+      fulfillForApiKey(route, {
+        ...createBillingCapabilities(API_KEY_WORKSPACE.id),
+        resolved_for: {
+          user_id: API_KEY_OWNER_ID,
+          workspace_id: API_KEY_WORKSPACE.id
+        }
+      } satisfies BillingCapabilitiesResponse)
     )
     await page.route('**/api/billing/balance', (route) =>
       fulfillForApiKey(route, {

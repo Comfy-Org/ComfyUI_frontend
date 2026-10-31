@@ -1,13 +1,16 @@
 /* oxlint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import BoundingBoxesEditor from './BoundingBoxesEditor.vue'
 import WidgetBoundingBoxes from './WidgetBoundingBoxes.vue'
 import boundingBoxes from '@/locales/en/main.json'
-import type { BoundingBox } from '@/types/boundingBoxes'
-import { toNodeId } from '@/types/nodeId'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const { appState } = vi.hoisted(() => {
   const appState: { node: unknown } = { node: null }
@@ -16,10 +19,21 @@ const { appState } = vi.hoisted(() => {
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    canvas: { graph: { getNodeById: () => appState.node } },
+    rootGraph: { id: 'graph' },
+    canvas: {
+      graph: { id: 'graph', getNodeById: () => appState.node }
+    },
     nodeOutputs: {},
     nodePreviewImages: {}
   }
+}))
+
+const { openBoundingBoxesDialog } = vi.hoisted(() => ({
+  openBoundingBoxesDialog: vi.fn()
+}))
+
+vi.mock(import('@/components/boundingBoxes/boundingBoxesDialog'), () => ({
+  openBoundingBoxesDialog
 }))
 
 const i18n = createI18n({
@@ -87,11 +101,17 @@ function prepCanvas(canvas: HTMLCanvasElement) {
   canvas.releasePointerCapture = () => {}
 }
 
-function renderWidget(modelValue: BoundingBox[]) {
-  const result = render(WidgetBoundingBoxes, {
-    props: { nodeId: toNodeId('1'), modelValue },
-    global: { plugins: [i18n] }
-  })
+const editorWidget = fromPartial<SimplifiedWidget>({ name: 'editor_state' })
+
+function renderWidget(modelValue: BoundingBox[], fullscreen = false) {
+  const props = { nodeId: toNodeId('1'), widget: editorWidget, modelValue }
+  const options = { global: { plugins: [i18n] } }
+  const result = fullscreen
+    ? render(BoundingBoxesEditor, {
+        ...options,
+        props: { ...props, fullscreen }
+      })
+    : render(WidgetBoundingBoxes, { ...options, props })
   const canvas = screen.getByTestId('bounding-boxes').querySelector('canvas')!
   prepCanvas(canvas)
   return { ...result, canvas }
@@ -221,5 +241,102 @@ describe('WidgetBoundingBoxes', () => {
     await fireEvent.update(editor, 'committed')
     await fireEvent.blur(editor)
     expect(lastBoxes(emitted)[0].metadata.desc).toBe('committed')
+  })
+
+  it('opens the fullscreen editor for this widget', async () => {
+    renderWidget([box()])
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Open fullscreen editor' })
+    )
+    await vi.waitFor(() =>
+      expect(openBoundingBoxesDialog).toHaveBeenCalledWith(
+        toNodeId('1'),
+        editorWidget
+      )
+    )
+  })
+})
+
+describe('WidgetBoundingBoxes fullscreen', () => {
+  const headerActions = () => {
+    const target = document.createElement('div')
+    target.id = 'bounding-boxes-header-actions'
+    document.body.appendChild(target)
+    onTestFinished(() => target.remove())
+    return target
+  }
+
+  it('moves the toolbar into the dialog header', () => {
+    const target = headerActions()
+    renderWidget([box()], true)
+
+    expect(target.textContent).toContain('Clear all')
+    expect(
+      screen.queryByRole('button', { name: 'Open fullscreen editor' })
+    ).toBeNull()
+  })
+
+  it('prompts to draw a region while the canvas is empty', () => {
+    headerActions()
+    renderWidget([], true)
+
+    expect(screen.getByText('Drag on the canvas to add a region.')).toBeTruthy()
+  })
+
+  it('lists every region in the side panel and edits any of them', async () => {
+    headerActions()
+    const { emitted } = renderWidget(
+      [
+        box({
+          metadata: { type: 'obj', text: '', desc: 'first', palette: [] }
+        }),
+        box({
+          x: 300,
+          metadata: { type: 'obj', text: '', desc: 'second', palette: [] }
+        })
+      ],
+      true
+    )
+
+    expect(screen.getAllByRole('listitem')).toHaveLength(2)
+    await fireEvent.update(screen.getByDisplayValue('second'), 'edited')
+
+    expect(lastBoxes(emitted).map((b) => b.metadata.desc)).toEqual([
+      'first',
+      'edited'
+    ])
+  })
+
+  it('selects a region by clicking its card', async () => {
+    headerActions()
+    renderWidget([box(), box({ x: 300 })], true)
+    const [first, second] = screen.getAllByRole('listitem')
+    expect(first).toHaveAttribute('aria-current', 'true')
+
+    await fireEvent.pointerDown(second)
+
+    expect(second).toHaveAttribute('aria-current', 'true')
+    expect(first).toHaveAttribute('aria-current', 'false')
+  })
+
+  it('deletes a region from its card', async () => {
+    headerActions()
+    const { emitted } = renderWidget([box(), box({ x: 300 })], true)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Delete region 02' })
+    )
+
+    expect(lastBoxes(emitted)).toEqual([box()])
+  })
+
+  it('edits the active region from the side panel', async () => {
+    headerActions()
+    const { emitted } = renderWidget([box()], true)
+    await fireEvent.update(
+      screen.getByPlaceholderText('description of this region'),
+      'side panel'
+    )
+
+    expect(lastBoxes(emitted)[0].metadata.desc).toBe('side panel')
   })
 })

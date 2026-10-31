@@ -4,7 +4,7 @@ import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFi
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 // Five wired nodes, one renamed, whose recorded turn sets widget values on
 // existing nodes. Returning to the tab re-subscribes the follower, which
@@ -26,11 +26,7 @@ test.describe(
       test.setTimeout(90_000)
       const panel = page.getByTestId('docked-agent-panel')
       const topbar = new Topbar(page)
-      const canvas = new CanvasHelper(
-        page,
-        page.locator('#graph-canvas'),
-        page.getByRole('button', { name: 'Reset View' })
-      )
+      const canvas = new CanvasHelper(page, page.locator('#graph-canvas'))
       const tabs = topbar.tabs
       const lastTurn = agentConversation.conversation.turns.length - 1
 
@@ -142,11 +138,7 @@ test.describe(
       const panel = agentConversation.panel
       const nodes = agentConversation.vueNodes
       const topbar = new Topbar(page)
-      const canvas = new CanvasHelper(
-        page,
-        page.locator('#graph-canvas'),
-        page.getByRole('button', { name: 'Reset View' })
-      )
+      const canvas = new CanvasHelper(page, page.locator('#graph-canvas'))
       const tabs = topbar.tabs
       const lastTurn = agentConversation.conversation.turns.length - 1
 
@@ -281,7 +273,8 @@ test.describe(
         (element) => getComputedStyle(element).backgroundColor
       )
       await page
-        .getByTestId(TestIds.selectionToolbox.colorPickerButton)
+        .getByTestId(TestIds.selectionToolbox.root)
+        .getByRole('button', { name: 'Color', exact: true })
         .dispatchEvent('click')
       await page
         .getByTestId(TestIds.selectionToolbox.colorRed)

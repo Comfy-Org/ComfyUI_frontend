@@ -1,8 +1,8 @@
-import { useExtensionService } from '@/services/extensionService'
+import type { ComfyExtension } from '@/types/comfy'
 
 const HIDDEN_WIDGETS = new Set(['width', 'height', 'bg_color'])
 
-useExtensionService().registerExtension({
+export const painterExtension: ComfyExtension = {
   name: 'Comfy.Painter',
 
   nodeCreated(node) {
@@ -19,4 +19,4 @@ useExtensionService().registerExtension({
       }
     }
   }
-})
+}

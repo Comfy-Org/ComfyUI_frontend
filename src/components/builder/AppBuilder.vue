@@ -7,19 +7,16 @@ import { useI18n } from 'vue-i18n'
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
-import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { NodeId } from '@/types/nodeId'
-import {
-  LGraphEventMode,
-  TitleMode
-} from '@/lib/litegraph/src/types/globalEnums'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { LGraphEventMode, TitleMode } from '@comfyorg/graph-model/globalEnums'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -185,7 +182,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
 <template>
   <div class="flex h-full flex-col">
     <div
-      class="flex h-12 items-center border-b border-border-subtle px-4 font-bold"
+      class="flex h-12 items-center border-b border-border/50 px-4 font-bold"
     >
       {{
         isArrangeMode ? t('nodeHelpPage.inputs') : t('linearMode.builder.title')
@@ -225,9 +222,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           <template v-for="entry in resolvedInputs" :key="entry.widgetId">
             <IoItem
               v-if="entry.status === 'resolved'"
-              :class="
-                cn(dragClass, 'my-2 rounded-lg bg-primary-background/30 p-2')
-              "
+              :class="cn(dragClass, 'my-2 rounded-lg bg-primary/30 p-2')"
               :title="entry.widget.label ?? entry.displayName"
               :sub-title="entry.node.title"
               can-rename
@@ -236,9 +231,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             />
             <IoItem
               v-else
-              :class="
-                cn(dragClass, 'my-2 rounded-lg bg-primary-background/30 p-2')
-              "
+              :class="cn(dragClass, 'my-2 rounded-lg bg-primary/30 p-2')"
               :title="entry.displayName"
               :sub-title="t('linearMode.builder.unknownWidget')"
               :remove="() => removeSelectedWidgetId(entry.widgetId)"
@@ -248,7 +241,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       </PropertiesAccordionItem>
       <div
         v-if="isSelectInputsMode && !appModeStore.selectedInputs.length"
-        class="m-4 flex flex-1 items-center justify-center rounded-lg border-2 border-dashed border-primary-background bg-primary-background/20 text-center text-sm text-primary-background"
+        class="m-4 flex flex-1 items-center justify-center rounded-lg border-2 border-dashed border-primary bg-primary/20 text-center text-sm text-primary"
       >
         {{ t('linearMode.builder.inputPlaceholder') }}
       </div>
@@ -281,8 +274,8 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             :class="
               cn(
                 dragClass,
-                'my-2 rounded-lg bg-warning-background/40 p-2',
-                index === 0 && 'ring-2 ring-warning-background'
+                'my-2 rounded-lg bg-warning/40 p-2',
+                index === 0 && 'ring-2 ring-warning'
               )
             "
             :title
@@ -296,7 +289,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       <div
         v-if="isSelectOutputsMode && !appModeStore.selectedOutputs.length"
         data-testid="builder-output-placeholder"
-        class="m-4 flex flex-1 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-warning-background bg-warning-background/20 text-center text-sm text-warning-background"
+        class="m-4 flex flex-1 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-warning bg-warning/20 text-center text-sm text-warning"
       >
         {{ t('linearMode.builder.outputPlaceholder') }}
         <span class="font-bold">
@@ -329,7 +322,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             v-for="[key, style] in renderedInputs"
             :key
             :style="toValue(style)"
-            class="fixed rounded-lg bg-primary-background/30"
+            class="fixed rounded-lg bg-primary/30"
           />
         </template>
         <template v-else>
@@ -339,25 +332,25 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             :style="toValue(style)"
             :class="
               cn(
-                'fixed rounded-2xl ring-5 ring-warning-background',
-                !isSelected && 'ring-warning-background/50'
+                'fixed rounded-2xl ring-5 ring-warning',
+                !isSelected && 'ring-warning/50'
               )
             "
           >
-            <div class="absolute top-0 right-0 size-8">
+            <div class="absolute top-0 right-0 size-8 cursor-pointer">
               <div
                 v-if="isSelected"
-                class="pointer-events-auto absolute -top-1/2 -right-1/2 size-full cursor-pointer rounded-lg bg-warning-background p-2"
+                class="pointer-events-auto absolute -top-1/2 -right-1/2 size-full rounded-lg bg-warning p-2"
                 @click.stop="
                   remove(appModeStore.selectedOutputs, (k) => k === key)
                 "
                 @pointerdown.stop
               >
-                <i class="icon-[lucide--check] size-full bg-base-foreground" />
+                <i class="icon-[lucide--check] size-full bg-foreground" />
               </div>
               <div
                 v-else
-                class="pointer-events-auto absolute -top-1/2 -right-1/2 size-full cursor-pointer rounded-lg bg-component-node-background ring-4 ring-warning-background/50 ring-inset"
+                class="pointer-events-auto absolute -top-1/2 -right-1/2 size-full rounded-lg bg-card ring-4 ring-warning/50 ring-inset"
                 @click.stop="appModeStore.selectedOutputs.push(key)"
                 @pointerdown.stop
               />

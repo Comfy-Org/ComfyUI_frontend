@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T">
 import { onBeforeUnmount, ref, useTemplateRef, watchPostEffect } from 'vue'
 
-import { DraggableList } from '@/scripts/ui/draggableList'
+import { DraggableList, draggableItemClass } from '@/scripts/ui/draggableList'
 
 const modelValue = defineModel<T[]>({ required: true })
 const draggableList = ref<DraggableList>()
@@ -32,8 +32,6 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <div ref="draggableItems" class="mt-0.5 space-y-0.5 px-2 pb-2">
-    <slot
-      drag-class="draggable-item drag-handle cursor-grab [&.is-draggable]:cursor-grabbing"
-    />
+    <slot :drag-class="draggableItemClass" />
   </div>
 </template>

@@ -63,9 +63,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       })
       await comfyPage.nextFrame()
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount + 1)
+      await comfyPage.expectNodeCount(initialCount + 1)
     })
 
     test('should duplicate node via context menu', async ({ comfyPage }) => {
@@ -74,9 +72,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       await openContextMenu(comfyPage, 'Load Checkpoint')
       await comfyPage.contextMenu.clickMenuItemExact('Duplicate')
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount + 1)
+      await comfyPage.expectNodeCount(initialCount + 1)
     })
 
     test('should pin and unpin node via context menu', async ({
@@ -394,9 +390,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       })
       await comfyPage.nextFrame()
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount + nodeTitles.length)
+      await comfyPage.expectNodeCount(initialCount + nodeTitles.length)
     })
 
     test('should duplicate selected nodes via context menu', async ({
@@ -407,9 +401,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       await openMultiNodeContextMenu(comfyPage, nodeTitles)
       await comfyPage.contextMenu.clickMenuItemExact('Duplicate')
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount + nodeTitles.length)
+      await comfyPage.expectNodeCount(initialCount + nodeTitles.length)
     })
 
     test('should pin and unpin selected nodes via context menu', async ({
@@ -507,9 +499,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       const subgraphNode = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
       await expect(subgraphNode).toBeVisible()
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount - nodeTitles.length + 1)
+      await comfyPage.expectNodeCount(initialCount - nodeTitles.length + 1)
     })
   })
 })

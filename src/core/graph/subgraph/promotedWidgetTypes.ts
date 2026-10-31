@@ -1,7 +1,8 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { NodeId } from '@/types/nodeId'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 
 /** Matches interior node-level errors that are not lifted to the host. */
 export interface PromotedWidgetExecutionSource {

@@ -4,13 +4,17 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ActivityRow } from '../../../services/agent/agentActivityRows'
-import { foldActivity } from '../../../services/agent/agentActivityRows'
+import type { ActivityRow } from '@/workbench/extensions/agent/services/agent/agentActivityRows'
+import { foldActivity } from '@/workbench/extensions/agent/services/agent/agentActivityRows'
 import type {
   ActivityPart,
   PartState
-} from '../../../services/agent/agentMessageParts'
-import { toolGlyph, toolLabel } from '../../../services/agent/agentToolGlyph'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { isUnconfirmedCanvasWrite } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import {
+  toolGlyph,
+  toolLabel
+} from '@/workbench/extensions/agent/services/agent/agentToolGlyph'
 
 const { parts, live = false } = defineProps<{
   parts: readonly ActivityPart[]
@@ -32,10 +36,14 @@ function labelClass(state: PartState): string {
 function glyphOf(row: ActivityRow): string {
   return row.kind === 'thinking'
     ? 'icon-[lucide--brain]'
-    : toolGlyph(row.name, row.state, row.ok)
+    : toolGlyph(row.name, row.state, row)
 }
 
 function labelOf(row: Extract<ActivityRow, { kind: 'tool' }>): string {
+  if (isUnconfirmedCanvasWrite(row))
+    return t('agent.toolNotConfirmedOnCanvas', {
+      tool: toolLabel(row.name, row.state, t)
+    })
   if (row.name === 'load_skill' && row.skill) {
     const label =
       row.state === 'streaming'
@@ -48,8 +56,6 @@ function labelOf(row: Extract<ActivityRow, { kind: 'tool' }>): string {
   return toolLabel(row.name, row.state, t)
 }
 
-// Every part object is rebuilt on each token, so a settled row is only
-// recognisable as unchanged by its contents.
 function rowSignature(row: ActivityRow): string {
   return row.kind === 'tool'
     ? JSON.stringify([
@@ -58,6 +64,7 @@ function rowSignature(row: ActivityRow): string {
         row.skill,
         row.state,
         row.ok,
+        row.canvasConfirmed,
         row.count
       ])
     : `think:${row.state}:${row.text}`
@@ -74,14 +81,13 @@ function rowSignature(row: ActivityRow): string {
       :class="cn('flex gap-2 px-2', live && 'agent-row-enter')"
     >
       <div class="flex w-4 shrink-0 flex-col items-center">
-        <span
-          :class="
-            cn('mt-0.5 size-4 shrink-0 text-muted-foreground', glyphOf(row))
-          "
+        <i
+          aria-hidden="true"
+          :class="cn('mt-0.5 text-muted-foreground', glyphOf(row))"
         />
         <span
           v-if="index < rows.length - 1"
-          class="mt-1 w-px flex-1 bg-component-node-border"
+          class="mt-1 w-px flex-1 bg-border"
         />
       </div>
       <div class="flex min-w-0 flex-1 items-start gap-2 pb-3">

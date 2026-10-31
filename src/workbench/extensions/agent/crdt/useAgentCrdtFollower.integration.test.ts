@@ -1,15 +1,14 @@
 import { mint, readSchemaVersion } from '@comfyorg/comfy-multi-player'
-import { fromPartial } from '@total-typescript/shoehorn'
+import type { DocSubscribedData, DocUpdateData } from '@comfyorg/ingest-types'
 import { getActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import * as Y from 'yjs'
 
 import { render } from '@testing-library/vue'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { api } from '@/scripts/api'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import {
@@ -18,6 +17,7 @@ import {
   DOC_HOST_SCHEMA_VERSION
 } from './__fixtures__/docHostMintedSink'
 import { encodeBase64 } from './docFrameClient'
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 const sent: string[] = []
@@ -30,11 +30,10 @@ class SinkNode extends LGraphNode {
   }
 }
 
+let agentSocket = createFakeAgentSocket()
+
 function deliver(type: string, data: unknown): void {
-  EventTarget.prototype.dispatchEvent.call(
-    api,
-    new CustomEvent(type, { detail: data })
-  )
+  agentSocket.receive(type, data)
 }
 
 describe('useAgentCrdtFollower over a live graph', () => {
@@ -43,16 +42,11 @@ describe('useAgentCrdtFollower over a live graph', () => {
     vi.stubGlobal('WebSocket', { OPEN: 1 })
     useAgentPanelStore().enabled = true
     LiteGraph.registerNodeType('Sink', SinkNode)
-    api.socket = fromPartial<WebSocket>({
-      readyState: 1,
-      send: vi.fn((frame) => {
-        if (typeof frame === 'string') sent.push(frame)
-      })
+    agentSocket = createFakeAgentSocket()
+    agentSocket.send.mockImplementation((frame) => {
+      sent.push(frame)
+      return true
     })
-  })
-
-  afterEach(() => {
-    api.socket = null
   })
 
   it('applies a frame delivered before the graph existed once the graph appears', async () => {
@@ -64,12 +58,10 @@ describe('useAgentCrdtFollower over a live graph', () => {
     const view = render(
       defineComponent({
         setup() {
-          useAgentCrdtFollower(
-            ref(WORKFLOW_ID),
-            () => null,
-            ref(true),
-            () => graph.value
-          )
+          useAgentCrdtFollower(ref(WORKFLOW_ID), {
+            transport: agentSocket.transport,
+            getGraph: () => graph.value
+          })
           return () => null
         }
       }),
@@ -81,14 +73,16 @@ describe('useAgentCrdtFollower over a live graph', () => {
         v: 1,
         workflow_id: WORKFLOW_ID,
         ok: true,
-        seq: 1
-      })
+        seq: 1,
+        lineage_seq: 1
+      } satisfies DocSubscribedData)
       deliver('doc_update', {
         v: 1,
         workflow_id: WORKFLOW_ID,
         seq: 1,
+        lineage_seq: 1,
         update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
-      })
+      } satisfies DocUpdateData)
 
       graph.value = new LGraph()
       await nextTick()
@@ -115,12 +109,10 @@ describe('useAgentCrdtFollower over a live graph', () => {
     const view = render(
       defineComponent({
         setup() {
-          useAgentCrdtFollower(
-            ref(WORKFLOW_ID),
-            () => null,
-            ref(true),
-            () => graph.value
-          )
+          useAgentCrdtFollower(ref(WORKFLOW_ID), {
+            transport: agentSocket.transport,
+            getGraph: () => graph.value
+          })
           return () => null
         }
       }),
@@ -132,14 +124,16 @@ describe('useAgentCrdtFollower over a live graph', () => {
         v: 1,
         workflow_id: WORKFLOW_ID,
         ok: true,
-        seq: 1
-      })
+        seq: 1,
+        lineage_seq: 1
+      } satisfies DocSubscribedData)
       deliver('doc_update', {
         v: 1,
         workflow_id: WORKFLOW_ID,
         seq: 1,
+        lineage_seq: 1,
         update_b64: DOC_HOST_MINTED_SINK_UPDATE_B64
-      })
+      } satisfies DocUpdateData)
       await nextTick()
 
       expect(graph.value?.getNodeById(toNodeId(99))?.type).toBe('Sink')

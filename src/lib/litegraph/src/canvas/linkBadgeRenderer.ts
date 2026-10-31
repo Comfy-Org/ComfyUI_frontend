@@ -1,11 +1,15 @@
-import type { LGraph } from '../LGraph'
-import type { LLink } from '../LLink'
+import type { LGraph, LLink } from '@comfyorg/graph-model/entityRegistry'
+
 import type { HiddenLinkBadge } from './linkBadges'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { layoutHiddenLinkBadges, queryLinkBadgeAtPoint } from './linkBadges'
+import {
+  layoutHiddenLinkBadges,
+  queryLinkBadgeAtPoint,
+  queryLinkBadgeHitAtPoint
+} from './linkBadges'
 import { getLinkEndpointPositions } from './linkGeometry'
-import { slotTypeKey } from '../utils/type'
+import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 
 export function queryHiddenLinkBadgeAtPoint(
   host: object,
@@ -23,6 +27,26 @@ export function queryHiddenLinkBadgeAtPoint(
   ) {
     return link
   }
+}
+
+/** The stack of hidden links whose pill is under a canvas point. */
+export function queryHiddenLinkStackAtPoint(
+  host: object,
+  graph: LGraph,
+  x: number,
+  y: number
+): { stackKey: string; links: LLink[] } | undefined {
+  const hit = queryLinkBadgeHitAtPoint(host, x, y)
+  if (!hit?.stackKey) return
+  const scope = graphScopeOf(graph)
+  const presentationStore = useLinkPresentationStore()
+  const links = hit.linkIds
+    .map((linkId) => graph.getLink(linkId))
+    .filter(
+      (link): link is LLink =>
+        !!link && !!presentationStore.getPresentation(scope, link.id)?.hidden
+    )
+  if (links.length) return { stackKey: hit.stackKey, links }
 }
 
 export function layoutGraphLinkBadges(
@@ -53,5 +77,5 @@ export function layoutGraphLinkBadges(
         defaultLinkColor
     })
   }
-  return layoutHiddenLinkBadges(host, ctx, hiddenLinks)
+  return layoutHiddenLinkBadges(host, ctx, hiddenLinks, scope.owningGraphId)
 }

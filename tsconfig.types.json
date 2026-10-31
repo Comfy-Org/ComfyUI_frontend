@@ -5,16 +5,44 @@
     "incremental": false,
     "noEmit": false,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@/utils/formatUtil": [
+        "./packages/shared-frontend-utils/dist-types/formatUtil.d.ts"
+      ],
+      "@/utils/networkUtil": [
+        "./packages/shared-frontend-utils/dist-types/networkUtil.d.ts"
+      ],
+      "@/utils/urlSafety": [
+        "./packages/shared-frontend-utils/dist-types/urlSafety.d.ts"
+      ],
+      "@/base/credits/comfyCredits": [
+        "./packages/shared-frontend-utils/dist-types/creditsUtil.d.ts"
+      ],
+      "@comfyorg/graph-model/*": ["./packages/graph-model/src/*"],
+      "@comfyorg/keybindings/*": ["./packages/keybindings/src/*"],
+      "@comfyorg/api-client/*": ["./packages/api-client/src/*"],
+      "@comfyorg/settings-core/*": ["./packages/settings-core/src/*"],
+      "@comfyorg/telemetry/*": ["./packages/telemetry/src/*"],
+      "@comfyorg/shared-frontend-utils/geometry": [
+        "./packages/shared-frontend-utils/src/geometry.ts"
+      ]
     }
   },
-  "include": ["src/**/*.ts", "global.d.ts"],
+  "include": [
+    "src/**/*.ts",
+    "packages/graph-model/src/**/*.ts",
+    "packages/keybindings/src/**/*.ts",
+    "packages/api-client/src/**/*.ts",
+    "packages/settings-core/src/**/*.ts",
+    "packages/telemetry/src/types.ts",
+    "packages/shared-frontend-utils/src/geometry.ts",
+    "global.d.ts"
+  ],
   "exclude": [
     "node_modules",
     "dist",
     "**/*.vue",
     "**/*.spec.ts",
-    "**/*.test.ts",
-    "src/components/**/*"
+    "**/*.test.ts"
   ]
 }

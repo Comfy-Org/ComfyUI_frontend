@@ -7,15 +7,13 @@ import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternal
 const TYPEFORM_SRC = 'https://embed.typeform.com/next/embed.js'
 const VALID_ID_PATTERN = /^[A-Za-z0-9]+$/
 
-interface TypeformGlobal {
-  load?: () => void
-}
-
 declare global {
   interface Window {
-    tf?: TypeformGlobal
+    tf?: { load?: () => void }
   }
 }
+
+type TypeformGlobal = NonNullable<Window['tf']>
 
 /** Pure validator for Typeform form IDs. Exported so feature sites can
  *  gate rendering before mounting the embed container. */

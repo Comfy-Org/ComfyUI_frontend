@@ -317,6 +317,69 @@ describe('composer draft reset (PM-1331)', () => {
   })
 })
 
+describe('composer draft presence', () => {
+  type ComposerStore = ReturnType<typeof useAgentComposerStore>
+
+  it.for([
+    { draft: 'empty', fill: () => {}, expected: false },
+    {
+      draft: 'whitespace only',
+      fill: (store: ComposerStore) => store.setText('  \n '),
+      expected: false
+    },
+    {
+      draft: 'text',
+      fill: (store: ComposerStore) => store.setText('make it blue'),
+      expected: true
+    },
+    {
+      draft: 'an attachment',
+      fill: (store: ComposerStore) =>
+        store.addAttachment({ id: 'a-1', name: 'cat.png', ref: 'cat.png' }),
+      expected: true
+    },
+    {
+      draft: 'a node reference',
+      fill: (store: ComposerStore) => {
+        store.setNodeScope('workflow-A')
+        store.setNodes([{ id: '1', title: 'KSampler' }])
+      },
+      expected: true
+    },
+    {
+      draft: 'a workflow reference',
+      fill: (store: ComposerStore) =>
+        store.setWorkflowReferences([
+          { id: 'wf-portrait', name: 'portrait', textOffset: 0 }
+        ]),
+      expected: true
+    },
+    {
+      draft: 'a skill reference',
+      fill: (store: ComposerStore) => {
+        store.setSkillScope('workspace-a')
+        store.restorePrompt({
+          text: ' ',
+          references: [
+            {
+              kind: 'skill',
+              name: 'portrait',
+              description: '',
+              scope: 'workspace-a',
+              textOffset: 0
+            }
+          ]
+        })
+      },
+      expected: true
+    }
+  ])('reports $draft as a draft: $expected', ({ fill, expected }) => {
+    const store = useAgentComposerStore()
+    fill(store)
+    expect(store.hasDraft).toBe(expected)
+  })
+})
+
 describe('composer prompt origin (PM-1474 F11)', () => {
   it('starts out typed and stays typed while the user writes', () => {
     const store = useAgentComposerStore()

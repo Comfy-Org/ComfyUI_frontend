@@ -27,7 +27,7 @@ test.describe(
         await comfyPage.vueNodes.getFixtureByTitle(CORE_NODE_TITLE)
       const customNode =
         await comfyPage.vueNodes.getFixtureByTitle(CUSTOM_NODE_TITLE)
-      const coreBadge = coreNode.root.getByTestId('comfy-badge')
+      const coreBadge = coreNode.root.getByTestId('node-badge-group-source')
       const customBadge = customNode.root.getByText(CUSTOM_BADGE_TEXT, {
         exact: true
       })

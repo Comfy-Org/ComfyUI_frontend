@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="showInput"
-    class="group-title-editor node-title-editor z-9999 p-1"
+    class="group-title-editor node-title-editor z-overlay p-1"
     :style="inputStyle"
   >
     <EditableText
@@ -23,7 +23,7 @@ import { useEventListener } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import type { CSSProperties } from 'vue'
 
-import EditableText from '@/components/common/EditableText.vue'
+import EditableText from '@comfyorg/design-system/common/EditableText'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import {
   LGraphGroup,

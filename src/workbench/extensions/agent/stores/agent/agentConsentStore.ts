@@ -1,30 +1,30 @@
-import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
+import { defineStore } from 'pinia'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   webSessionRequests,
   webSessionSend
-} from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
   getGlobalSetting,
   setGlobalSetting
 } from '@/platform/settings/globalSettingsApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useAuthStore } from '@/stores/authStore'
+import { agentSettingsAuthHeader } from '@/workbench/extensions/agent/services/agent/agentAuth'
 
 class AgentConsentAuthenticationError extends Error {
   override name = 'AgentConsentAuthenticationError'
 }
 
 export const useAgentConsentStore = defineStore('agentConsent', () => {
-  const authStore = useAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
   const { resolvedUserInfo } = useCurrentUser()
   const loadedIdentity = ref<string | null>(null)
   const acceptedIdentity = ref<string | null>(null)
   const checkSettled = ref(false)
+  const confirmedAcceptances = ref(0)
   const isChecking = computed(
     () => Boolean(currentUserId()) && !checkSettled.value
   )
@@ -95,7 +95,7 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
 
   async function requireAuth(sessionId: number, identity: string) {
     const send = webSessionRequests() ? await webSessionSend() : undefined
-    const auth = send ?? (await authStore.getWorkspaceAuthHeader())
+    const auth = send ?? (await agentSettingsAuthHeader())
     if (!stillOwns(sessionId, identity)) return null
     if (!auth) {
       throw new AgentConsentAuthenticationError(
@@ -168,6 +168,7 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
       loadedIdentity.value = identity
       acceptedIdentity.value = identity
       checkSettled.value = true
+      confirmedAcceptances.value += 1
       return true
     } catch (error) {
       if (!stillOwns(sessionId, identity)) return false
@@ -175,5 +176,13 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
     }
   }
 
-  return { accepted, identity, isChecking, ensureScope, load, accept }
+  return {
+    accepted,
+    confirmedAcceptances,
+    identity,
+    isChecking,
+    ensureScope,
+    load,
+    accept
+  }
 })

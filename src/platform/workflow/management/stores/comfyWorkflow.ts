@@ -1,16 +1,16 @@
 import { markRaw } from 'vue'
 
 import { assert } from '@/base/assert'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
-import type { SerializedNodeId } from '@/types/nodeId'
-import type { AppMode } from '@/utils/appMode'
-import type { WidgetId } from '@/types/widgetId'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { generateUUID } from '@/utils/formatUtil'
 
 export interface InputWidgetConfig {
@@ -87,6 +87,7 @@ export interface WorkflowRuntime {
   markDraftUsed(path: string): void
   isDraftPersistenceEnabled(): boolean
   promptSave(workflow: ComfyWorkflow): Promise<string | null>
+  forgetNodeHistories(rootGraphId: string): void
 }
 
 let registeredRuntime: WorkflowRuntime | null = null
@@ -103,10 +104,168 @@ function workflowRuntime(): WorkflowRuntime {
   return registeredRuntime
 }
 
+/**
+ * Coarse shape of a workflow file's stored text. Never includes the content.
+ * - `unavailable`: the text was never loaded (`null` / `undefined`)
+ * - `empty`: only whitespace
+ * - `null`: parses to JSON `null`
+ * - `object`: parses to a plain JSON object (the healthy case)
+ * - `other`: parses to an array, string, number or boolean
+ * - `unparseable`: not valid JSON
+ */
+export type OriginalContentKind =
+  | 'unavailable'
+  | 'empty'
+  | 'null'
+  | 'object'
+  | 'other'
+  | 'unparseable'
+
+export function classifyWorkflowContent(
+  content: string | null | undefined
+): OriginalContentKind {
+  if (content == null) return 'unavailable'
+  if (content.trim().length === 0) return 'empty'
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(content)
+  } catch {
+    return 'unparseable'
+  }
+  if (parsed === null) return 'null'
+  if (typeof parsed === 'object' && !Array.isArray(parsed)) return 'object'
+  return 'other'
+}
+
+/** The slice of a `ComfyWorkflow` that is safe to describe in telemetry. */
+interface WorkflowStateProbe {
+  path: string
+  isLoaded: boolean
+  isPersisted: boolean
+  isTemporary: boolean
+  changeTracker: unknown
+  initialState: unknown
+  activeState: unknown
+  originalContent: string | null
+}
+
+const reportedAnomalies = new Set<string>()
+
+/** @internal Test-only: forgets which anomalies were already reported. */
+export function resetReportedWorkflowStateAnomaliesForTests(): void {
+  reportedAnomalies.clear()
+}
+
+/**
+ * Reports a workflow whose in-memory state was not what the caller assumed
+ * (for example an active workflow with no change tracker). Each call site
+ * recovers locally; this only makes the occurrence visible so the real trigger
+ * can be found.
+ *
+ * `message` must be a static description: reporters forward it to telemetry
+ * and group on it. Diagnostic values go in the context, which carries only
+ * booleans and enum-like strings and never workflow names, paths or content.
+ * Reports are deduplicated per call site and workflow.
+ *
+ * @param method Stable name of the call site, e.g. `ComfyWorkflow.save`.
+ * @param workflow The workflow involved, when there is one.
+ * @param extra Further booleans/enums, e.g. `{ isActive: true }`.
+ */
+export function reportWorkflowStateAnomaly(
+  message: string,
+  method: string,
+  workflow?: WorkflowStateProbe,
+  extra: Record<string, boolean | number | string | undefined> = {}
+): void {
+  const key = `${method}:${workflow?.path ?? ''}`
+  if (reportedAnomalies.has(key)) return
+  reportedAnomalies.add(key)
+
+  assert(false, message, {
+    method,
+    ...(workflow && {
+      isLoaded: workflow.isLoaded,
+      hasChangeTracker: workflow.changeTracker != null,
+      hasInitialState: workflow.initialState != null,
+      hasActiveState: workflow.activeState != null,
+      isPersisted: workflow.isPersisted,
+      isTemporary: workflow.isTemporary,
+      originalContentKind: classifyWorkflowContent(workflow.originalContent)
+    }),
+    ...extra
+  })
+}
+
+/**
+ * The saved draft to overlay on a freshly loaded workflow, if there is a usable
+ * one. A stale or unparseable draft is removed.
+ */
+function readUsableDraft(
+  runtime: WorkflowRuntime,
+  workflow: ComfyWorkflow
+): { state: ComfyWorkflowJSON; content: string } | null {
+  const draft = runtime.getDraft(workflow.path)
+  if (!draft) return null
+  if (draft.updatedAt < workflow.lastModified) {
+    runtime.removeDraft(workflow.path)
+    return null
+  }
+  try {
+    return { state: JSON.parse(draft.data), content: draft.data }
+  } catch (err) {
+    console.warn('Failed to parse workflow draft, clearing it', err)
+    runtime.removeDraft(workflow.path)
+    return null
+  }
+}
+
+/**
+ * The workflow object parsed from the stored text. Anything else (nothing
+ * stored, empty text, JSON `null`, a number, an array) cannot back a change
+ * tracker: a tracker around `null` is what later reads as a missing state.
+ */
+function parseStoredWorkflow(workflow: ComfyWorkflow): ComfyWorkflowJSON {
+  const content = workflow.originalContent
+  const parsed: unknown = content?.trim() ? JSON.parse(content) : undefined
+  if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+    return parsed as ComfyWorkflowJSON
+  }
+  // `undefined` means there was nothing to parse; anything else parsed to
+  // something that is not a workflow.
+  if (parsed !== undefined) {
+    reportWorkflowStateAnomaly(
+      'Workflow content is not a JSON object',
+      'ComfyWorkflow.load',
+      workflow
+    )
+  }
+  throw new Error(
+    `Workflow content is ${parsed === undefined ? 'missing or empty' : 'not a JSON object'} for '${workflow.path}'`
+  )
+}
+
 /** i18n keys for the dialog shown when a workflow is saved without a name. */
 export interface SaveNamePrompt {
   title: string
   message: string
+}
+
+/**
+ * The serialized state to persist. An unloaded workflow has no state, and
+ * `JSON.stringify(null)` would overwrite the stored file with `null`.
+ */
+function requireActiveStateForSave(
+  workflow: ComfyWorkflow,
+  method: string
+): ComfyWorkflowJSON {
+  const state = workflow.activeState
+  if (state) return state
+  reportWorkflowStateAnomaly(
+    'Workflow saved without an active state',
+    method,
+    workflow
+  )
+  throw new Error(`Cannot save workflow '${workflow.path}' before it is loaded`)
 }
 
 export class ComfyWorkflow extends UserFile {
@@ -192,48 +351,20 @@ export class ComfyWorkflow extends UserFile {
     }
 
     const runtime = workflowRuntime()
-    let draft =
+    const draft =
       !force && runtime.isDraftPersistenceEnabled()
-        ? runtime.getDraft(this.path)
+        ? readUsableDraft(runtime, this)
         : null
-    let draftState: ComfyWorkflowJSON | null = null
-    let draftContent: string | null = null
-
-    if (draft) {
-      if (draft.updatedAt < this.lastModified) {
-        runtime.removeDraft(this.path)
-        draft = null
-      }
-    }
-
-    if (draft) {
-      try {
-        draftState = JSON.parse(draft.data)
-        draftContent = draft.data
-      } catch (err) {
-        console.warn('Failed to parse workflow draft, clearing it', err)
-        runtime.removeDraft(this.path)
-      }
-    }
 
     await super.load({ force })
 
-    if (this.originalContent == null) {
-      throw new Error(
-        `[ASSERT] Workflow content should be loaded for '${this.path}'`
-      )
-    }
-    if (this.originalContent.trim().length === 0) {
-      throw new Error(`Workflow content is empty for '${this.path}'`)
-    }
-
-    const initialState = JSON.parse(this.originalContent)
+    const initialState = parseStoredWorkflow(this)
     this.changeTracker = markRaw(
       runtime.createChangeTracker(this, initialState)
     )
-    if (draftState && draftContent) {
-      this.changeTracker.activeState = draftState
-      this.content = draftContent
+    if (draft?.state && draft.content) {
+      this.changeTracker.activeState = draft.state
+      this.content = draft.content
       this._isModified = true
       // Saved-workflow draft overlay path; direct persisted-draft restores
       // are touched in workflowDraftStoreV2.loadDraft().
@@ -243,13 +374,17 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override unload(): void {
+    const rootGraphId = this.changeTracker?.activeState.id
+    if (rootGraphId) workflowRuntime().forgetNodeHistories(rootGraphId)
     this.changeTracker = null
     this.activeMode = null
     super.unload()
   }
 
   override async save() {
-    this.content = JSON.stringify(this.activeState)
+    this.content = JSON.stringify(
+      requireActiveStateForSave(this, 'ComfyWorkflow.save')
+    )
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
     const ret = await super.save({ force: true })
@@ -265,7 +400,9 @@ export class ComfyWorkflow extends UserFile {
    * @returns this
    */
   override async saveAs(path: string) {
-    this.content = JSON.stringify(this.activeState)
+    this.content = JSON.stringify(
+      requireActiveStateForSave(this, 'ComfyWorkflow.saveAs')
+    )
     const result = await super.saveAs(path)
     workflowRuntime().removeDraft(path)
     return result

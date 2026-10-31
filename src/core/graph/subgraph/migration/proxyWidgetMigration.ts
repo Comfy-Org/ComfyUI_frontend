@@ -16,27 +16,24 @@ import type {
   ProxyWidgetQuarantineReason
 } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type {
-  IBaseWidget,
-  TWidgetValue
-} from '@/lib/litegraph/src/types/widgets'
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
+import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { LinkTopology } from '@/types/linkTopology'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
 interface LegacyProxyEntrySource extends PromotedWidgetSource {
   disambiguatingSourceNodeId?: NodeId
@@ -396,7 +393,7 @@ function applyHostValueToInput(
   entry: PendingEntry
 ): boolean {
   if (!input.widgetId || entry.isHole) return Boolean(input.widgetId)
-  return useWidgetValueStore().setValue(input.widgetId, entry.hostValue)
+  return useWidgetValueStore().restoreValue(input.widgetId, entry.hostValue)
 }
 
 function applyHostLabelToInput(
@@ -773,7 +770,7 @@ export function appendQuarantine(
 
     const input = hostNode.inputs.find((input) => input.name === inputName)
     if (input?.widgetId)
-      useWidgetValueStore().setValue(input.widgetId, hostValue)
+      useWidgetValueStore().restoreValue(input.widgetId, hostValue)
   }
 
   const existing = parseProxyWidgetErrorQuarantine(

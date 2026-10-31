@@ -3,8 +3,8 @@ import { shallowReactive } from 'vue'
 
 import { assert } from '@/base/assert'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { ISlotType } from '@/lib/litegraph/src/interfaces'
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
@@ -30,10 +30,10 @@ import {
 } from '@/lib/litegraph/src/node/slotLinks'
 import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { dynamicGroupWidget } from './dynamicGroupWidget'
 
 type MatchTypeNode = LGraphNode &
@@ -155,7 +155,7 @@ function dynamicComboWidget(
           ? useWidgetValueStore().getRestoredWidgetValue(
               graphId,
               node.id,
-              name,
+              addedWidget,
               positionalIndex
             )
           : undefined

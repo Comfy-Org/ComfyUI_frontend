@@ -10,9 +10,22 @@ if [ -n "${CI-}" ]; then
   exit 0
 fi
 
+pnpm deps:audit 1>&2
 pnpm knip 1>&2
 git fetch --quiet --no-tags origin main
+# Audit only what this branch adds. A backport branch forks from a release
+# branch (core/* or cloud/*), and its merge base with main covers the whole
+# release-branch delta, so pick the candidate base closest to HEAD.
 base="$(git merge-base HEAD FETCH_HEAD)"
+ahead="$(git rev-list --count "$base"..HEAD)"
+for ref in $(git for-each-ref --format='%(refname)' refs/remotes/origin/core refs/remotes/origin/cloud); do
+  candidate="$(git merge-base HEAD "$ref" 2>/dev/null)" || continue
+  count="$(git rev-list --count "$candidate"..HEAD)"
+  if [ "$count" -lt "$ahead" ]; then
+    base="$candidate"
+    ahead="$count"
+  fi
+done
 diff_file="$(mktemp)"
 trap 'rm -f "$diff_file"' 0
 git diff --unified=0 --relative "$base"...HEAD -- > "$diff_file"

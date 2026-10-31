@@ -2,7 +2,9 @@
 import { defineAsyncComponent, ref, watch } from 'vue'
 import type { Component } from 'vue'
 
-import Popover from '@/components/ui/Popover.vue'
+import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
+
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import type {
   SimplifiedControlWidget,
   WidgetValue
@@ -28,12 +30,19 @@ watch(controlModel, props.widget.controlWidget.update)
 <template>
   <div class="relative grid grid-cols-subgrid">
     <component :is="component" v-bind="$attrs" v-model="modelValue" :widget>
-      <Popover>
-        <template #button>
+      <PopoverRoot>
+        <PopoverTrigger as-child>
           <ValueControlButton :mode="controlModel" class="mr-1 self-center" />
-        </template>
-        <ValueControlPopover v-model="controlModel" />
-      </Popover>
+        </PopoverTrigger>
+        <PopoverContent
+          :side-offset="5"
+          dismiss-on-viewport-change
+          class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
+        >
+          <ValueControlPopover v-model="controlModel" />
+          <PopoverArrow class="fill-background stroke-border/50" />
+        </PopoverContent>
+      </PopoverRoot>
     </component>
   </div>
 </template>

@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   addWidget,
   ComponentWidgetImpl,
@@ -12,8 +12,6 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 vi.mock(import('@/utils/formatUtil'), () => ({
   generateUUID: () => 'test-uuid'
 }))
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 describe('DOMWidget Y Position Preservation', () => {
   test('ComponentWidgetImpl createCopyForNode preserves Y position and component wiring', () => {
@@ -152,5 +150,78 @@ describe('addWidget on a node that refuses the widget', () => {
 
     expect(node.widgets).not.toContain(widget)
     expect(useDomWidgetStore().widgetStates.has(widget.id)).toBe(false)
+  })
+})
+
+describe('DOM widget value accessors with a non-function getValue/setValue', () => {
+  function domWidgetWithStaleAccessors() {
+    const widget = new DOMWidgetImpl({
+      node: new LGraphNode('test-node'),
+      name: 'text',
+      type: 'custom',
+      element: document.createElement('div'),
+      options: {}
+    })
+    Reflect.set(widget.options, 'getValue', 'stale')
+    Reflect.set(widget.options, 'setValue', 'stale')
+    return widget
+  }
+
+  test('DOMWidgetImpl.value falls back to an empty string instead of throwing', () => {
+    const widget = domWidgetWithStaleAccessors()
+
+    expect(widget.value).toBe('')
+  })
+
+  test('DOMWidgetImpl.value setter still invokes the callback without throwing', () => {
+    const widget = domWidgetWithStaleAccessors()
+    const callback = vi.fn()
+    widget.callback = callback
+
+    widget.value = 'next'
+
+    expect(callback).toHaveBeenCalledWith('')
+  })
+
+  test('addDOMWidget instance value accessors tolerate a non-function getValue/setValue', () => {
+    const node = new LGraphNode('test-node')
+    const widget = node.addDOMWidget(
+      'text',
+      'custom',
+      document.createElement('div'),
+      {}
+    )
+    Reflect.set(widget.options, 'getValue', 42)
+    Reflect.set(widget.options, 'setValue', {})
+
+    expect(widget.value).toBe('')
+    expect(() => {
+      widget.value = 'next'
+    }).not.toThrow()
+  })
+
+  test('function getValue/setValue are still called with options as this', () => {
+    const node = new LGraphNode('test-node')
+    let stored = 'initial'
+    const widget = node.addDOMWidget(
+      'text',
+      'custom',
+      document.createElement('div'),
+      {
+        getValue() {
+          expect(this).toBe(widget.options)
+          return stored
+        },
+        setValue(v: string) {
+          expect(this).toBe(widget.options)
+          stored = v
+        }
+      }
+    )
+
+    expect(widget.value).toBe('initial')
+    widget.value = 'next'
+    expect(stored).toBe('next')
+    expect(widget.value).toBe('next')
   })
 })

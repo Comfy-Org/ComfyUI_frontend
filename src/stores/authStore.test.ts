@@ -7,10 +7,18 @@ import { FirebaseError } from 'firebase/app'
 import type { Auth, User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { nextTick } from 'vue'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { i18n } from '@/i18n'
 import {
@@ -23,7 +31,6 @@ import {
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
 import {
-  cachedLegacyBillingMigrationEnabled,
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
@@ -52,7 +59,7 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
 
 const mockReportError = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -121,7 +128,7 @@ function pendingJsonResponse() {
 
 vi.mock(import('firebase/auth'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 let mockResetSocket: Mock
 
@@ -331,6 +338,53 @@ describe('useAuthStore', () => {
         })
       })
     })
+
+    it('keeps the status and code on the thrown error', async () => {
+      respondToFetch(BALANCE_URL, () =>
+        Response.json(
+          { error: 'SERVICE_UNAVAILABLE', message: 'try again' },
+          { status: 503, headers: { 'Retry-After': '3600' } }
+        )
+      )
+
+      await expect(store.fetchBalance()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        status: 503,
+        code: 'SERVICE_UNAVAILABLE'
+      })
+    })
+
+    it('reports an unknown code when the failure body is not JSON', async () => {
+      respondToFetch(
+        BALANCE_URL,
+        () =>
+          new Response('upstream connect error', {
+            status: 503,
+            headers: { 'Retry-After': '3600' }
+          })
+      )
+
+      await expect(store.fetchBalance()).rejects.toMatchObject({
+        status: 503,
+        code: 'UNKNOWN_ERROR'
+      })
+    })
+
+    it('returns the balance when a 503 clears on retry', async () => {
+      vi.useFakeTimers()
+      let calls = 0
+      respondToFetch(BALANCE_URL, () =>
+        ++calls === 1
+          ? errorResponse(503, 'Balance temporarily unavailable')
+          : balanceResponse()
+      )
+
+      const pending = store.fetchBalance()
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      await expect(pending).resolves.toEqual({ balance: 0 })
+      expect(calls).toBe(2)
+    })
   })
 
   describe('password update', () => {
@@ -500,6 +554,42 @@ describe('useAuthStore', () => {
           headers: expect.objectContaining({ 'X-API-KEY': 'test-api-key' })
         })
       )
+    })
+
+    it('accessBillingPortal gives up on a billing request that hangs for 30 seconds', async () => {
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms) => {
+        const controller = new AbortController()
+        setTimeout(
+          () =>
+            controller.abort(
+              new DOMException('The operation timed out.', 'TimeoutError')
+            ),
+          ms
+        )
+        return controller.signal
+      })
+      respondToFetch(
+        BILLING_URL,
+        (_input, init) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () =>
+              reject(init.signal?.reason)
+            )
+          })
+      )
+
+      const request = store.accessBillingPortal()
+      const settled = vi.fn()
+      request.then(settled, settled)
+      await vi.advanceTimersByTimeAsync(29_999)
+      expect(settled).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(1)
+      await expect(request).rejects.toMatchObject({ name: 'TimeoutError' })
     })
 
     it('accessBillingPortal throws userNotAuthenticated when neither credential exists', async () => {
@@ -2359,7 +2449,7 @@ describe('useAuthStore', () => {
         .mockImplementationOnce(async (_route, options) => {
           options?.onAuthHeader?.(true)
           return new Response(
-            JSON.stringify({ legacy_billing_migration_enabled: false }),
+            JSON.stringify({ subscription_required: false }),
             { status: 200 }
           )
         })
@@ -2370,19 +2460,16 @@ describe('useAuthStore', () => {
       authStateCallback(accountB)
       expect(accountASignal?.aborted).toBe(true)
       expect(remoteConfigState.value).toBe('unloaded')
-      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
 
       await refreshRemoteConfig()
       resolveAccountA?.(
-        new Response(
-          JSON.stringify({ legacy_billing_migration_enabled: true }),
-          { status: 200 }
-        )
+        new Response(JSON.stringify({ subscription_required: true }), {
+          status: 200
+        })
       )
       await accountARefresh
 
-      expect(remoteConfig.value.legacy_billing_migration_enabled).toBe(false)
-      expect(cachedLegacyBillingMigrationEnabled.value).toBe(false)
+      expect(remoteConfig.value.subscription_required).toBe(false)
     })
 
     it('does not reconnect on a same-account token refresh', () => {
@@ -2688,6 +2775,25 @@ describe('useAuthStore in local/desktop distribution', () => {
       }
     )
 
+    it('returns the workspace token or refuses, never another credential', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      bridge.getWorkspaceToken.mockImplementation(async (workspaceId) =>
+        workspaceId === 'ws-a' ? 'host-token' : null
+      )
+      await startDesktopHostSession(bridge)
+
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-a' })
+      await expect(store.getWorkspaceAuthTokenOrThrow()).resolves.toBe(
+        'host-token'
+      )
+
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-b' })
+      await expect(store.getWorkspaceAuthTokenOrThrow()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
+      })
+    })
+
     it('drops the previous account state when Desktop switches accounts', async () => {
       const bridge = hostBridge({ status: 'signed_in', userId: 'host-a' })
       await startDesktopHostSession(bridge)
@@ -2773,6 +2879,7 @@ describe('store construction order', () => {
   const tokenResponse = {
     token: 'construction-token',
     expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+    user_id: 'uid-1',
     workspace: { id: 'workspace-personal', name: 'Personal', type: 'personal' },
     role: 'owner',
     permissions: ['owner:*']

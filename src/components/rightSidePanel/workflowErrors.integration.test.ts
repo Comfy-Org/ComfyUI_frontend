@@ -1,0 +1,608 @@
+import { getActivePinia, storeToRefs } from 'pinia'
+import type { Pinia } from 'pinia'
+import { render, screen, waitFor, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { nextTick } from 'vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
+import { defineComponent, provide } from 'vue'
+
+import { testI18n } from '@/utils/__tests__/testI18n'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import {
+  createTestCanvasElement,
+  createTestDragAndScale
+} from '@/utils/__tests__/canvasTestUtils'
+import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { isLGraphNode } from '@/utils/litegraphUtil'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphCanvas,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { useFocusNode } from '@/composables/canvas/useFocusNode'
+import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
+import { createWorkflowErrorManager } from '@/platform/customNodes/manager/composables/workflowErrorManager'
+
+import ErrorGroupList from '@/platform/workflowErrors/panel/ErrorGroupList.vue'
+
+vi.mock<unknown>(import('@/scripts/app'), () => {
+  const rootGraph = {
+    id: 'root',
+    nodes: [],
+    subgraphs: new Map(),
+    serialize: vi.fn(() => ({})),
+    getNodeById: vi.fn()
+  }
+  Object.assign(rootGraph, { rootGraph })
+  return {
+    app: {
+      rootGraph,
+      rootGraphOrUndefined: rootGraph
+    }
+  }
+})
+
+vi.mock<unknown>(
+  import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
+  () => ({ useAgentConsent: () => ({ withConsent: vi.fn() }) })
+)
+
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(
+  import('@/platform/distribution/types'),
+  () =>
+    ({
+      DISTRIBUTION: 'localhost',
+      get isCloud() {
+        return distribution.isCloud
+      },
+      isDesktop: false,
+      isNightly: false
+    }) as const
+)
+
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+  getNodeByExecutionId: vi.fn(),
+  getExecutionIdByNode: vi.fn(),
+  getRootParentNode: vi.fn(() => null),
+  forEachNode: vi.fn(),
+  mapAllNodes: vi.fn(() => [])
+}))
+
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
+  isLGraphNode: vi.fn(() => false)
+}))
+
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
+  useCopyToClipboard: vi.fn(() => ({
+    copyToClipboard: vi.fn()
+  }))
+}))
+
+vi.mock(
+  import('@/platform/workflowErrors/missingModel/missingModelDownload'),
+  () => ({
+    downloadModel: vi.fn(),
+    fetchModelMetadata: vi.fn().mockResolvedValue({
+      fileSize: null,
+      gatedRepoUrl: null
+    }),
+    isModelDownloadable: vi.fn(() => true),
+    toBrowsableUrl: vi.fn((url: string) => url)
+  })
+)
+
+const ROOT_GRAPH = fromPartial<LGraph>(app.rootGraph)
+const SUBGRAPH = fromPartial<Subgraph>({
+  id: 'subgraph',
+  isRootGraph: false,
+  nodes: [],
+  rootGraph: ROOT_GRAPH
+})
+app.rootGraph.subgraphs.set(SUBGRAPH.id, SUBGRAPH)
+const SAMPLER_BOUNDS = [10, 20, 30, 40] as const
+const LOADER_BOUNDS = [50, 60, 70, 80] as const
+
+function createNodeFixture(
+  id: string,
+  title: string,
+  graph: LGraph,
+  bounds: readonly [number, number, number, number]
+) {
+  const node = new LGraphNode(title)
+  node.id = toNodeId(id)
+  node.graph = graph
+  Object.defineProperty(node, 'boundingRect', {
+    value: Rectangle.from(bounds)
+  })
+  graph.nodes.push(node)
+  return node
+}
+
+let SAMPLER_NODE: LGraphNode
+let LOADER_NODE: LGraphNode
+
+function seedTwoErrorGroups(pinia: Pinia) {
+  const executionErrorStore = useExecutionErrorStore(pinia)
+  executionErrorStore.recordNodeErrors({
+    '1': {
+      class_type: 'KSampler',
+      dependent_outputs: [],
+      errors: [
+        {
+          type: 'required_input_missing',
+          message: 'Required input is missing',
+          details: '',
+          extra_info: { input_name: 'clip' }
+        }
+      ]
+    },
+    '2': {
+      class_type: 'CLIPLoader',
+      dependent_outputs: [],
+      errors: [
+        {
+          type: 'weird_error',
+          message: 'Something odd happened',
+          details: ''
+        }
+      ]
+    }
+  })
+}
+
+function renderList(pinia: Pinia) {
+  const user = userEvent.setup()
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/', component: { template: '<div />' } }]
+  })
+  const Host = defineComponent({
+    components: { ErrorGroupList },
+    setup() {
+      provide(WorkflowErrorManagerKey, createWorkflowErrorManager())
+      const { selectedItems } = storeToRefs(useCanvasStore(pinia))
+      const { focusNode } = useFocusNode()
+      return { selectedItems, focusNode }
+    },
+    template:
+      '<ErrorGroupList :selected-items="selectedItems" @locate-node="focusNode" />'
+  })
+  render(Host, {
+    global: {
+      plugins: [testI18n, pinia, router],
+      stubs: {
+        AsyncSearchInput: {
+          template: '<input />'
+        }
+      }
+    }
+  })
+  return { user }
+}
+
+function createCanvasFixture(pinia: Pinia, graph = ROOT_GRAPH) {
+  const canvas = fromPartial<LGraphCanvas>({
+    graph,
+    read_only: false,
+    subgraph: undefined,
+    canvas: createTestCanvasElement({ width: 900, height: 700 }),
+    dpr: 1,
+    ds: createTestDragAndScale(900, 700),
+    animateToBounds: vi.fn()
+  })
+  canvas.setGraph = vi.fn((nextGraph) => {
+    canvas.graph = nextGraph
+    canvas.subgraph = nextGraph.isRootGraph ? undefined : nextGraph
+  })
+  useCanvasStore(pinia).canvas = canvas
+  return canvas
+}
+
+function getSectionByTitle(title: string) {
+  const sections = screen.getAllByTestId('error-group-execution')
+  const section = sections.find((s) => within(s).queryByText(title))
+  expect(section).toBeDefined()
+  return section!
+}
+
+function isSectionExpanded(section: HTMLElement) {
+  const [header] = within(section).getAllByRole('button', { hidden: true })
+  return header.getAttribute('aria-expanded') === 'true'
+}
+
+describe('ErrorGroupList selection emphasis', () => {
+  beforeEach(() => {
+    ROOT_GRAPH.nodes.length = 0
+    SUBGRAPH.nodes.length = 0
+    SAMPLER_NODE = createNodeFixture(
+      '1',
+      'SamplerNode',
+      ROOT_GRAPH,
+      SAMPLER_BOUNDS
+    )
+    LOADER_NODE = createNodeFixture(
+      '2',
+      'LoaderNode',
+      ROOT_GRAPH,
+      LOADER_BOUNDS
+    )
+    vi.mocked(isLGraphNode).mockReturnValue(true)
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+      nodeId === '1' ? SAMPLER_NODE : LOADER_NODE
+    )
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0)
+      return 0
+    })
+  })
+
+  it('opens only the group named by view details', async () => {
+    const pinia = getActivePinia()!
+    seedTwoErrorGroups(pinia)
+    const { user } = renderList(pinia)
+
+    const samplerSection = getSectionByTitle('Missing connection')
+    const loaderSection = getSectionByTitle('Validation failed')
+    await user.click(
+      within(samplerSection).getByRole('button', { name: 'Collapse' })
+    )
+    await user.click(
+      within(loaderSection).getByRole('button', { name: 'Collapse' })
+    )
+    expect(isSectionExpanded(samplerSection)).toBe(false)
+    expect(isSectionExpanded(loaderSection)).toBe(false)
+
+    const groupKey = samplerSection.getAttribute('data-group-key')
+    if (!groupKey) throw new Error('missing group key')
+    useRightSidePanelStore(pinia).requestErrorDetails([groupKey])
+    await nextTick()
+
+    expect(isSectionExpanded(samplerSection)).toBe(true)
+    expect(isSectionExpanded(loaderSection)).toBe(false)
+    expect(
+      within(samplerSection).getByText(
+        'SamplerNode is missing a required input: clip'
+      )
+    ).toBeInTheDocument()
+    expect(
+      within(loaderSection).queryByText('Something odd happened')
+    ).not.toBeInTheDocument()
+  })
+
+  it('expands matched groups, collapses others, and restores on deselect', async () => {
+    const pinia = getActivePinia()!
+    seedTwoErrorGroups(pinia)
+    renderList(pinia)
+
+    const samplerSection = getSectionByTitle('Missing connection')
+    const loaderSection = getSectionByTitle('Validation failed')
+    expect(isSectionExpanded(samplerSection)).toBe(true)
+    expect(isSectionExpanded(loaderSection)).toBe(true)
+
+    setCanvasSelection([SAMPLER_NODE])
+    await waitFor(() => {
+      expect(isSectionExpanded(loaderSection)).toBe(false)
+    })
+    expect(isSectionExpanded(samplerSection)).toBe(true)
+
+    setCanvasSelection([])
+    await waitFor(() => {
+      expect(isSectionExpanded(loaderSection)).toBe(true)
+    })
+    expect(isSectionExpanded(samplerSection)).toBe(true)
+  })
+
+  it('expands only matched groups for a selection that predates mount', async () => {
+    const pinia = getActivePinia()!
+    seedTwoErrorGroups(pinia)
+    setCanvasSelection([SAMPLER_NODE])
+
+    renderList(pinia)
+
+    await waitFor(() => {
+      expect(isSectionExpanded(getSectionByTitle('Validation failed'))).toBe(
+        false
+      )
+    })
+    expect(isSectionExpanded(getSectionByTitle('Missing connection'))).toBe(
+      true
+    )
+  })
+
+  it('leaves manual collapse state alone for selections without errors', async () => {
+    const pinia = getActivePinia()!
+    seedTwoErrorGroups(pinia)
+    const { user } = renderList(pinia)
+
+    const loaderSection = getSectionByTitle('Validation failed')
+    const [loaderHeader] = within(loaderSection).getAllByRole('button')
+    await user.click(loaderHeader)
+    expect(isSectionExpanded(loaderSection)).toBe(false)
+
+    setCanvasSelection([
+      createNodeFixture('99', 'Unrelated', ROOT_GRAPH, [0, 0, 0, 0])
+    ])
+    await waitFor(() => {
+      // No emphasis: the strip falls back to the workflow summary
+      expect(screen.getByTestId('selection-context-strip')).toHaveTextContent(
+        '2 nodes — 2 errors'
+      )
+    })
+    expect(isSectionExpanded(loaderSection)).toBe(false)
+    expect(isSectionExpanded(getSectionByTitle('Missing connection'))).toBe(
+      true
+    )
+  })
+
+  it('always shows the strip: workflow summary by default, selection while emphasized', async () => {
+    const pinia = getActivePinia()!
+    seedTwoErrorGroups(pinia)
+    renderList(pinia)
+
+    const strip = screen.getByTestId('selection-context-strip')
+    expect(strip).toHaveTextContent('2 nodes — 2 errors')
+
+    setCanvasSelection([SAMPLER_NODE])
+    await waitFor(() => {
+      expect(strip).toHaveTextContent('SamplerNode — 1 issue')
+    })
+
+    setCanvasSelection([SAMPLER_NODE, LOADER_NODE])
+    await waitFor(() => {
+      expect(strip).toHaveTextContent('2 nodes selected — 2 issues')
+    })
+
+    setCanvasSelection([])
+    await waitFor(() => {
+      expect(strip).toHaveTextContent('2 nodes — 2 errors')
+    })
+  })
+
+  const production: WorkspaceDeployment = {
+    deployment_id: 'dep-1',
+    deployment_name: 'production',
+    build_id: 'build-7',
+    build_name: 'video-minimax-h3 copy',
+    release_id: 'rel-3',
+    status: 'ready',
+    created_at: '2026-10-01T00:00:00Z',
+    can_start: false
+  }
+
+  function showMissingModelOn(bootDeployment: WorkspaceDeployment | null) {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    const pinia = getActivePinia()!
+    useDeploymentPickStore(pinia).bootDeployment = bootDeployment
+    useMissingModelStore(pinia).setMissingModels([
+      {
+        nodeId: '1',
+        nodeType: 'VAELoader',
+        widgetName: 'vae_name',
+        name: 'qwen_image_2.1_vae.safetensors',
+        directory: 'vae',
+        isMissing: true,
+        isAssetSupported: true
+      }
+    ])
+    renderList(pinia)
+    return screen.getByTestId('errors-summary-hero')
+  }
+
+  it.for([
+    { runsOn: 'a deployment', bootDeployment: production, sendsToBuild: true },
+    { runsOn: 'Comfy Cloud', bootDeployment: null, sendsToBuild: false }
+  ])(
+    'on $runsOn, the summary sends a missing model to the Build: $sendsToBuild',
+    ({ bootDeployment, sendsToBuild }) => {
+      const hero = showMissingModelOn(bootDeployment)
+
+      expect(
+        within(hero).queryByText(
+          "Add these to production's build on Platform, then deploy a new release."
+        ) !== null
+      ).toBe(sendsToBuild)
+      expect(
+        within(hero).queryByRole('link', { name: /Edit build on Platform/ }) !==
+          null
+      ).toBe(sendsToBuild)
+      expect(
+        within(hero).queryByRole('button', {
+          name: /Build with your agent/
+        }) !== null
+      ).toBe(sendsToBuild)
+    }
+  )
+
+  it.for([
+    { runsOn: 'a deployment', bootDeployment: production, offersImport: false },
+    { runsOn: 'Comfy Cloud', bootDeployment: null, offersImport: true }
+  ])(
+    'on $runsOn, a missing model offers Comfy Cloud import: $offersImport',
+    ({ bootDeployment, offersImport }) => {
+      showMissingModelOn(bootDeployment)
+
+      const group = screen.getByTestId('error-group-missing-model')
+      expect(
+        within(group).queryByRole('button', { name: 'Import' }) !== null
+      ).toBe(offersImport)
+    }
+  )
+
+  it('asks for a reload instead of the Build once the deployment runs a newer release', () => {
+    Object.assign(useDeploymentPickStore(getActivePinia()), {
+      changeSinceBoot: 'release'
+    })
+
+    const hero = showMissingModelOn(production)
+
+    expect(
+      within(hero).getByText('Finish setup before running the workflow')
+    ).toBeInTheDocument()
+    expect(
+      within(hero).getByText(
+        'This deployment now runs a different Release. Reload to get its nodes.'
+      )
+    ).toBeInTheDocument()
+    expect(
+      within(hero).queryByRole('button', { name: /Build with your agent/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it('names the deployment in the summary as its owner wrote it', () => {
+    const hero = showMissingModelOn({
+      ...production,
+      deployment_name: "R&D's studio"
+    })
+
+    expect(
+      within(hero).getByText(
+        "Add these to R&D's studio's build on Platform, then deploy a new release."
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('labels a missing-only selection as an issue', async () => {
+    const pinia = getActivePinia()!
+    useMissingModelStore(pinia).setMissingModels([
+      {
+        nodeId: '1',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'missing.safetensors',
+        isMissing: true,
+        isAssetSupported: false
+      }
+    ])
+    renderList(pinia)
+
+    setCanvasSelection([SAMPLER_NODE])
+
+    const strip = screen.getByTestId('selection-context-strip')
+    await waitFor(() => {
+      expect(strip).toHaveTextContent('SamplerNode — 1 issue')
+    })
+    expect(strip).not.toHaveTextContent(/\berrors?\b/i)
+  })
+
+  it('preserves special characters in execution item accessible names', () => {
+    const nodeDisplayName = 'A & B <C>'
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+      nodeId === '1'
+        ? createNodeFixture(
+            SAMPLER_NODE.id,
+            nodeDisplayName,
+            ROOT_GRAPH,
+            SAMPLER_BOUNDS
+          )
+        : LOADER_NODE
+    )
+    const pinia = getActivePinia()!
+    seedTwoErrorGroups(pinia)
+
+    renderList(pinia)
+
+    expect(
+      screen.getByRole('button', { name: /Info for A & B <C>/ })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Locate A & B <C>/ })
+    ).toBeInTheDocument()
+    expect(screen.queryAllByLabelText(/&(?:amp|lt|gt);/)).toHaveLength(0)
+  })
+
+  it('locates an execution error through the real root-graph focus path', async () => {
+    const pinia = getActivePinia()!
+    seedTwoErrorGroups(pinia)
+    const { user } = renderList(pinia)
+    const canvas = createCanvasFixture(pinia, ROOT_GRAPH)
+
+    await user.click(screen.getByRole('button', { name: 'SamplerNode - clip' }))
+
+    await waitFor(() => {
+      expect(canvas.animateToBounds).toHaveBeenCalledWith(
+        SAMPLER_NODE.boundingRect,
+        { viewport: [0, 0, 900, 700] }
+      )
+    })
+    expect(canvas.setGraph).not.toHaveBeenCalled()
+  })
+
+  it('locates an execution error through the real subgraph navigation path', async () => {
+    const subgraphLoaderNode = createNodeFixture(
+      LOADER_NODE.id,
+      LOADER_NODE.title,
+      SUBGRAPH,
+      LOADER_BOUNDS
+    )
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+      nodeId === '2' ? subgraphLoaderNode : SAMPLER_NODE
+    )
+    const pinia = getActivePinia()!
+    seedTwoErrorGroups(pinia)
+    const { user } = renderList(pinia)
+    const canvas = createCanvasFixture(pinia, ROOT_GRAPH)
+
+    await user.click(screen.getByRole('button', { name: 'LoaderNode' }))
+
+    await waitFor(() => {
+      expect(canvas.subgraph).toBe(SUBGRAPH)
+      expect(canvas.setGraph).toHaveBeenCalledWith(SUBGRAPH)
+      expect(canvas.animateToBounds).toHaveBeenCalledWith(
+        subgraphLoaderNode.boundingRect,
+        { viewport: [0, 0, 900, 700] }
+      )
+    })
+  })
+})
+
+it.for([
+  { name: 'missing without a failed run', nodeErrors: null, badgeCount: 0 },
+  {
+    name: 'missing and blocked the last run',
+    nodeErrors: {
+      '1': nodeError([validationError('value_not_in_list', 'ckpt_name')])
+    },
+    badgeCount: 1
+  }
+])(
+  'blocked-run badge count is $badgeCount when $name',
+  ({ nodeErrors, badgeCount }) => {
+    const pinia = getActivePinia()!
+    useMissingModelStore(pinia).setMissingModels([
+      {
+        nodeId: '1',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'missing.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: false
+      }
+    ])
+    useExecutionErrorStore(pinia).recordNodeErrors(nodeErrors)
+
+    renderList(pinia)
+
+    expect(screen.getByTestId('error-group-missing-model')).toBeInTheDocument()
+    expect(screen.queryAllByTestId('blocked-last-run-indicator')).toHaveLength(
+      badgeCount
+    )
+  }
+)

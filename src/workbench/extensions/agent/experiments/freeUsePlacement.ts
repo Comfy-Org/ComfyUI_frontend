@@ -4,16 +4,16 @@ import {
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUseVariant
-} from '@/platform/telemetry/types'
-import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
+import { AGENT_FREE_USE_PLACEMENTS } from '@comfyorg/telemetry/types'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
-import { useAgentPanelStore } from '../stores/agent/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 export const FREE_USE_PLACEMENT_FLAG = 'agent-free-use-message-placement'
 
@@ -24,26 +24,35 @@ export const FREE_USE_VARIANTS = [
 
 export type FreeUseVariant = AgentFreeUseVariant
 
+export const LOCAL_FREE_USE_PLACEMENT = 'near-composer' satisfies FreeUseVariant
+
 function isFreeUseVariant(value: unknown): value is FreeUseVariant {
   return FREE_USE_VARIANTS.some((variant) => variant === value)
 }
 
-export function useFreeUsePlacement() {
+export function useFreeUsePlacement(isCloudDistribution: boolean) {
   const panelStore = useAgentPanelStore()
   const assigned = ref<FreeUseVariant>('control')
 
+  const sessionOverride = getSessionOverride<unknown>(FREE_USE_PLACEMENT_FLAG)
   const override =
-    getSessionOverride<unknown>(FREE_USE_PLACEMENT_FLAG) ??
-    getDevOverride<unknown>(FREE_USE_PLACEMENT_FLAG)
+    sessionOverride !== undefined
+      ? sessionOverride
+      : getDevOverride<unknown>(FREE_USE_PLACEMENT_FLAG)
   const hasQaOverride = override !== undefined
 
   function assign(): void {
     const served = remoteConfig.value[FREE_USE_PLACEMENT_FLAG]
-    if (!isFreeUseVariant(served)) return
+    if (!isFreeUseVariant(served)) {
+      assigned.value = 'control'
+      return
+    }
     assigned.value = served
     if (panelStore.reportedFreeUseExposure) return
+    const telemetry = useTelemetry()
+    if (!telemetry) return
     panelStore.reportedFreeUseExposure = true
-    useTelemetry()?.trackAgentFreeUseExposure({
+    telemetry.trackAgentFreeUseExposure({
       placement: served,
       [`$feature/${FREE_USE_PLACEMENT_FLAG}`]: served
     })
@@ -51,6 +60,8 @@ export function useFreeUsePlacement() {
 
   if (hasQaOverride) {
     if (isFreeUseVariant(override)) assigned.value = override
+  } else if (!isCloudDistribution) {
+    assigned.value = LOCAL_FREE_USE_PLACEMENT
   } else if (isAuthenticatedConfigLoaded.value) {
     assign()
   } else {
@@ -61,13 +72,31 @@ export function useFreeUsePlacement() {
     })
   }
 
+  if (!hasQaOverride && isCloudDistribution) {
+    watch(
+      () => remoteConfig.value[FREE_USE_PLACEMENT_FLAG],
+      () => {
+        if (isAuthenticatedConfigLoaded.value) assign()
+      }
+    )
+    watch(
+      () => panelStore.isOpen,
+      (isOpen) => {
+        if (isOpen && isAuthenticatedConfigLoaded.value) assign()
+      }
+    )
+  }
+
   function reportNotice(metadata: AgentFreeUseNoticeMetadata): void {
     if (hasQaOverride) return
-    if (metadata.action === 'shown') {
-      if (panelStore.reportedFreeUseImpression) return
-      panelStore.reportedFreeUseImpression = true
-    }
-    useTelemetry()?.trackAgentFreeUseNotice(metadata)
+    if (metadata.action === 'shown' && panelStore.reportedFreeUseImpression)
+      return
+    const telemetry = useTelemetry()
+    if (!telemetry) return
+    if (metadata.action === 'shown') panelStore.reportedFreeUseImpression = true
+    telemetry.trackAgentFreeUseNotice(
+      isCloudDistribution ? metadata : { ...metadata, deployment: 'local' }
+    )
   }
 
   return {

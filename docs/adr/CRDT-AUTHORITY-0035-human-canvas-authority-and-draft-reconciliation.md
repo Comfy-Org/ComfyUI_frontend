@@ -150,9 +150,12 @@ Alternatives considered and rejected:
   operations of that batch unapplied, where separate batches were independent.
   Chunking at the wire cap bounds a batch, and the ledger already models
   `unprocessed`.
-- Human operations settled `undeliverable` or `unconfirmed` (at unbind, at
-  `doc_reset`, on a dead transport) are still reported only to the dev panel;
-  surfacing them to the user is a follow-up.
+- Human operations settled `undeliverable`, `unconfirmed`, or
+  `unacknowledged` produce one `reportError` call and a dev-panel entry per
+  batch. Reports include the mint-time workflow id and termination cause.
+  `doc_reset` identifies batches superseded by the draft under decision 4,
+  so lost-edit queries can exclude them. User-facing notices for sender
+  termination remain a follow-up.
 - Two browser tabs on the same document, both agent-bound, are out of scope:
   which tab's draft wins a divergence is decided by the server's sequence
   check, not by anything the frontend promises.

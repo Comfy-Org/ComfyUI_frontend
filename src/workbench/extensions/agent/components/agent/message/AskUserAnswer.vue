@@ -4,7 +4,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { AskUserResolution } from '../../../services/agent/agentMessageParts'
+import type { AskUserResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 const { resolution, options } = defineProps<{
   resolution: AskUserResolution
@@ -20,7 +20,11 @@ const answers = computed(() => {
   return resolution.otherText
     ? [
         ...chosen,
-        t('agent.askUser.otherAnswer', { text: resolution.otherText })
+        t(
+          'agent.askUser.otherAnswer',
+          { text: resolution.otherText },
+          { escapeParameter: false }
+        )
       ]
     : chosen
 })
@@ -49,11 +53,9 @@ const STATUS_TEXT: Record<AskUserResolution['status'], string> = {
       <li
         v-for="(answer, index) in answers"
         :key="index"
-        class="flex items-start gap-2 text-base-foreground"
+        class="flex items-start gap-2 text-foreground"
       >
-        <i
-          class="mt-0.5 icon-[lucide--check] size-4 shrink-0 text-primary-background"
-        />
+        <i class="mt-0.5 icon-[lucide--check] text-primary" />
         <span class="min-w-0 wrap-break-word">{{ answer }}</span>
       </li>
     </ul>

@@ -8,7 +8,7 @@
         :disabled="!session.canUndo.value"
         @click="onRestore"
       >
-        <i class="icon-[lucide--rotate-ccw] size-4" />
+        <i class="icon-[lucide--rotate-ccw]" />
         {{ t('g.restore') }}
       </Button>
     </Teleport>
@@ -32,7 +32,7 @@ import LayerEditorCanvas from '@/renderer/extensions/layerEditor/components/Laye
 import LayerEditorToolbar from '@/renderer/extensions/layerEditor/components/LayerEditorToolbar.vue'
 import LayerPanel from '@/renderer/extensions/layerEditor/components/LayerPanel.vue'
 import LayerPropertiesPanel from '@/renderer/extensions/layerEditor/components/LayerPropertiesPanel.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import {
   saveCompositorLayerState,
   saveCompositorPreview

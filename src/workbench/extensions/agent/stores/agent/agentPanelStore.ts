@@ -1,20 +1,30 @@
 import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, readonly, ref, shallowRef, toRaw, watch } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  readonly,
+  ref,
+  shallowRef,
+  toRaw,
+  watch
+} from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   SIDEBAR_MIN_WIDTH,
   SIDE_TOOLBAR_WIDTH
 } from '@/constants/splitterConstants'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   AgentPanelCloseSource,
   AgentPanelOpenedMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
+import type { AgentServerFeature } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import type {
   CreditTransitionNoticeEvent,
@@ -24,6 +34,7 @@ import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
+const FUNDS_RECHECK_TIMEOUT_MS = 10_000
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
 
@@ -64,7 +75,6 @@ export type AgentPanelView =
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
   const consentAccepted = ref(false)
-  // writeDefaults false: no storage key planted for flag-off users.
   const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
     writeDefaults: false
   })
@@ -74,18 +84,30 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   })
   const gateSettled = ref(false)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
+  const { flags: featureFlags } = useFeatureFlags()
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
+  /** The server's `agent` feature; undefined unless its state is known. */
+  const comfyAgent = computed(() => {
+    if (import.meta.env.VITE_AGENT_STANDALONE === 'true') return undefined
+    const agent = featureFlags.agent
+    return agent?.state === 'starting' ||
+      agent?.state === 'ready' ||
+      agent?.state === 'failed'
+      ? (agent as AgentServerFeature)
+      : undefined
+  })
   const maximized = ref(false)
   const draggedWidth = ref(PANEL_MIN_WIDTH)
-  /**
-   * Width the workspace left of the panel needs: the side toolbar, plus the
-   * sidebar when one is open. The layout that owns those keeps it current, so
-   * the panel gives way the moment it would meet the sidebar.
-   */
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
+  const billingRefreshedAcceptances = ref(0)
   const reportedFreeUseExposure = ref(false)
   const reportedFreeUseImpression = ref(false)
+  const reportedCreditUsageExposure = ref(false)
+  const fundsRechecks = ref(new Map<number, string>())
+  const fundsRecheckTimeouts = new Map<number, ReturnType<typeof setTimeout>>()
+  const fundsRecheckFinished = new Map<number, () => void>()
+  let nextFundsRecheckId = 0
   const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
     null
   )
@@ -160,8 +182,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       : { mode: 'retained', workflow: null, closedPath: workflow.path }
   }
 
-  // Only a retained target can become detached. A following target belongs to
-  // the editor, including its replacement when the visible tab closes.
   watch(
     () => [targetTracking.value, ...workflowStore.openWorkflows],
     () => {
@@ -216,10 +236,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   })
 
   let openedAt: number | null = null
-  // Guards the pagehide teardown report below: true once this open epoch has
-  // reported a close, so a bfcache-frozen page that fires pagehide again
-  // (background/resume/close) can't emit a second overlapping duration for
-  // the same openedAt. A fresh epoch (open(), or the watcher below) resets it.
   let teardownReported = false
 
   function startOpenEpoch(): void {
@@ -227,6 +243,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     teardownReported = false
     reportedFreeUseExposure.value = false
     reportedFreeUseImpression.value = false
+    reportedCreditUsageExposure.value = false
   }
 
   const isVisible = computed(() => enabled.value && isOpen.value)
@@ -244,10 +261,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   const { width: windowWidth } = useWindowSize()
 
-  /**
-   * Falls below `PANEL_MIN_WIDTH` when the window leaves less room than that.
-   * A panel narrower than its minimum still beats one that leaves the window.
-   */
   const maxWidth = computed(() =>
     clamp(windowWidth.value - reservedWorkspaceWidth.value, 0, PANEL_MAX_WIDTH)
   )
@@ -298,11 +311,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     openedAt = null
   }
 
-  // pagehide is the reliable teardown signal on tab close/reload and even on
-  // some mobile Safari backgrounding, where nothing else is guaranteed to
-  // fire again. Reports the open duration without mutating isOpen/local
-  // storage, so the localStorage-backed restore-on-reload behaviour
-  // (FE-1284/PM-648) is untouched.
   useEventListener(window, 'pagehide', () => {
     if (!isVisible.value || openedAt === null || teardownReported) return
     teardownReported = true
@@ -312,11 +320,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     })
   })
 
-  // A bfcache restore resumes this same frozen interval rather than starting
-  // a new one, so the pagehide report above already closed it out. Starting
-  // a fresh interval here keeps a later close()/pagehide measuring only the
-  // time since resume, instead of re-including (and double counting) the
-  // span already reported.
   useEventListener(window, 'pageshow', (event: PageTransitionEvent) => {
     if (!event.persisted || !isVisible.value) return
     openedAt = Date.now()
@@ -372,6 +375,38 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     dispatchCreditTransitionNotice({ type: 'dismissed', identity })
   }
 
+  function beginFundsRecheck(
+    identity: string,
+    onFinished?: () => void
+  ): number {
+    const id = ++nextFundsRecheckId
+    fundsRechecks.value.set(id, identity)
+    if (onFinished) fundsRecheckFinished.set(id, onFinished)
+    fundsRecheckTimeouts.set(
+      id,
+      setTimeout(() => finishFundsRecheck(id), FUNDS_RECHECK_TIMEOUT_MS)
+    )
+    return id
+  }
+
+  function finishFundsRecheck(id: number): void {
+    clearTimeout(fundsRecheckTimeouts.get(id))
+    fundsRecheckTimeouts.delete(id)
+    fundsRechecks.value.delete(id)
+    fundsRecheckFinished.get(id)?.()
+    fundsRecheckFinished.delete(id)
+  }
+
+  function cancelFundsRechecks(): void {
+    for (const id of fundsRechecks.value.keys()) finishFundsRecheck(id)
+  }
+
+  function hasPendingFundsRecheck(identity: string): boolean {
+    return [...fundsRechecks.value.values()].includes(identity)
+  }
+
+  onScopeDispose(cancelFundsRechecks)
+
   return {
     enabled,
     consentAccepted,
@@ -382,13 +417,20 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     view,
     interruptHistorySelection,
     flagsSettled,
+    comfyAgent,
     reportedExhaustionIdentity,
+    billingRefreshedAcceptances,
     reportedFreeUseExposure,
     reportedFreeUseImpression,
+    reportedCreditUsageExposure,
     creditTransitionNotice: readonly(creditTransitionNotice),
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,
     dismissCreditTransitionNotice,
+    beginFundsRecheck,
+    finishFundsRecheck,
+    cancelFundsRechecks,
+    hasPendingFundsRecheck,
     width,
     requestedWidth,
     isOverlay,

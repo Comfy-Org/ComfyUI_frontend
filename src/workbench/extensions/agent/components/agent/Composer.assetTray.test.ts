@@ -11,14 +11,14 @@ import { defineComponent, h, nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const asset = {
   id: 'source',

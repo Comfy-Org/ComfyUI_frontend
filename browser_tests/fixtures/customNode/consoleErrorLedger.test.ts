@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   consoleErrorExclusionsForPacks,
-  customExtensionStartupErrors,
+  customNodeStartupErrors,
   isForeignExecutionNoise,
   staleRequiredConnectivityErrorRulesForPacks,
   staleRequiredStartupErrorRulesForPacks,
@@ -19,7 +19,7 @@ import { loadAllManifestPackNames } from '@e2e/fixtures/customNode/manifest'
 describe('consoleErrorLedger', () => {
   it('startup attribution excludes core boot noise and keeps extension failures', () => {
     expect(
-      customExtensionStartupErrors([
+      customNodeStartupErrors([
         'Failed to load resource: 404 [http://localhost:8188/user.css]',
         'ComfyApp graph accessed before initialization [http://localhost:8188/assets/app.js]',
         'Failed to load resource: 404 [http://localhost:8188/extensions/core/clipspace.js]',

@@ -65,7 +65,11 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
       'Workspaces only affect which credits you use.'
     )
     await expect(scopeCaption).toBeVisible()
-    await scopeCaption.locator('..').locator('.pi-info-circle').hover()
+    await panel
+      .getByRole('button', {
+        name: 'Workspaces only affect which credits you use.'
+      })
+      .hover()
     await expect(new Tooltip(page).open).toHaveText(
       'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.'
     )

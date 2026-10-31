@@ -11,7 +11,8 @@ import type {
   ColorPalettes,
   CompletedPalette,
   Palette
-} from '@/schemas/colorPaletteSchema'
+} from '@comfyorg/settings-core/colorPaletteSchema'
+import { paletteColorScheme } from '@/utils/colorPaletteTheme'
 
 export const useColorPaletteStore = defineStore('colorPalette', () => {
   const customPalettes = ref<ColorPalettes>({})
@@ -32,6 +33,9 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
       palettesLookup.value[activePaletteId.value] ?? DEFAULT_COLOR_PALETTE
     return completePalette(activePalette)
   })
+  const colorScheme = computed(() =>
+    paletteColorScheme(completedActivePalette.value)
+  )
 
   const addCustomPalette = (palette: Palette) => {
     if (palette.id in palettesLookup.value) {
@@ -104,6 +108,7 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
     palettesLookup,
     palettes,
     completedActivePalette,
+    colorScheme,
 
     // Actions
     isCustomPalette,

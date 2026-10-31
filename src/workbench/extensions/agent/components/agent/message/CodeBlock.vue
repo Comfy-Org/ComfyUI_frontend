@@ -5,8 +5,8 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
-import Button from '@/components/ui/button/Button.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import Button from '@comfyorg/design-system/button/Button'
 
 const { code, lang = 'text' } = defineProps<{
   code: string
@@ -42,17 +42,15 @@ watchDebounced(
 </script>
 
 <template>
-  <div
-    class="group relative my-2 overflow-hidden rounded-md border border-border-default"
-  >
+  <div class="group relative my-2 overflow-hidden rounded-md border">
     <div
-      class="flex items-center justify-between border-b border-border-default bg-secondary-background-hover px-3 py-1.5"
+      class="flex items-center justify-between border-b bg-accent px-3 py-1.5"
     >
       <span
         class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground"
       >
-        <span class="icon-[lucide--file-code] size-3.5" />
-        <span class="text-base-foreground">{{ lang }}</span>
+        <i aria-hidden="true" class="icon-[lucide--file-code] size-3.5" />
+        <span class="text-foreground">{{ lang }}</span>
       </span>
       <Button
         type="button"
@@ -61,7 +59,8 @@ watchDebounced(
         class="gap-1 font-mono"
         @click="copy(code)"
       >
-        <span
+        <i
+          aria-hidden="true"
           :class="
             cn(
               'size-3.5',
@@ -80,7 +79,7 @@ watchDebounced(
     />
     <pre
       v-else
-      class="overflow-x-auto p-4 font-mono text-sm text-base-foreground"
+      class="overflow-x-auto p-4 font-mono text-sm"
     ><code>{{ code }}</code></pre>
   </div>
 </template>

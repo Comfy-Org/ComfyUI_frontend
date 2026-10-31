@@ -47,4 +47,24 @@ describe('platformLink', () => {
       'https://platform.comfy.org/profile/usage'
     )
   })
+
+  it.for([
+    {
+      workspace: 'ws_team-1',
+      expected:
+        'https://platform.comfy.org/profile/usage?correlation_id=journey-1&workspace=ws_team-1'
+    },
+    {
+      workspace: null,
+      expected:
+        'https://platform.comfy.org/profile/usage?correlation_id=journey-1'
+    }
+  ])(
+    'carries the correlation id with workspace $workspace',
+    ({ workspace, expected }) => {
+      setActiveWorkspace(workspace)
+
+      expect(platformLink('/profile/usage', 'journey-1')).toBe(expected)
+    }
+  )
 })

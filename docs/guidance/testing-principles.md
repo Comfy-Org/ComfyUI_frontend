@@ -26,6 +26,27 @@ Composability is how a suite gets both (Beck, Test Desiderata).
 Rules below that cite a source restate that source's claim; the rest are this
 repository's own choices. Sources are linked at the end.
 
+## Choose behaviors before test cases
+
+- Before proposing a test, state the caller or user expectation it protects.
+  Ground it in a product requirement, a supported public contract, an observed
+  workflow, or a reproduced bug. Read implementation to understand how to
+  exercise that behavior, not to invent an expectation for every branch.
+- Check whether existing tests already protect the expectation. Add only the
+  missing behavioral guarantee. A changed function or uncovered line alone
+  does not justify a new test.
+- For an edge case, establish how it can occur through a supported entry
+  point and why its outcome matters. Rare but consequential cases can earn
+  tests, such as data loss or a network failure. Arbitrary nulls in typed
+  internal APIs, impossible state combinations, and hypothetical sequences
+  without a reachable production path do not.
+- Describe expectations above the implementation's decomposition. A unit
+  test can protect a high-level contract through a public function without
+  becoming an E2E test. Helper extraction, inlining, or a different algorithm
+  must leave its assertions valid when behavior is unchanged.
+- Use temporary probes for implementation questions during development.
+  Keep a permanent test only when it protects a behavioral contract.
+
 ## Test behavior, not structure
 
 - Assert on return values, rendered output, emitted events, persisted state,
@@ -90,9 +111,11 @@ repository's own choices. Sources are linked at the end.
   row states why it exists (boundary, regression, documented interaction). A
   constraint filter may drop only combinations production can never produce.
   Give the table a runtime budget and hold it.
-- Choose rows so a plausible wrong implementation fails: one per equivalence
-  class, both sides of each boundary, every past regression. Symmetric and
-  round inputs hide swapped arguments and off-by-one bugs.
+- After choosing a behavior worth protecting, choose rows that distinguish
+  correct and incorrect outcomes. Use meaningful input classes, both sides
+  of relevant contract boundaries, and reproduced regressions. Symmetric and
+  round inputs can hide swapped arguments and off-by-one bugs. Do not derive
+  a row from every implementation branch.
 - When test B cannot pass unless test A passes, trim B to what only B asserts.
 
 ## Isolated and deterministic
@@ -155,8 +178,9 @@ repository's own choices. Sources are linked at the end.
 
 - Line coverage shows what ran. It cannot see missing assertions. Use it to
   find code to worry about, never as a percentage to chase.
-- Cover the negative, boundary, empty, and error paths, not only the happy
-  path.
+- Select negative, boundary, empty, and error cases when they protect an
+  identified expectation in a reachable scenario, not as a checklist for
+  every function.
 - A bugfix test must fail on pre-fix code. A regression test that never went
   red pins nothing.
 
@@ -164,12 +188,16 @@ repository's own choices. Sources are linked at the end.
 
 - Diagnose the failure before touching the test. Missing expected UI is a
   probable regression, not a test to skip. Never weaken, remove, or snapshot
-  over an assertion to get green.
+  over an assertion to get green. When an assertion pins implementation
+  rather than a contract, rewrite it around the outcome or delete it if it
+  protects no required behavior. Explain that decision independently of
+  whether the current run passes.
 - Before deleting an assertion, wait, reset, or guard you did not write, read
   the commit that introduced it. Keep the guarantee or replace it with an
   equivalent.
-- Similar text that reaches different production branches, race branches, or
-  distinct failure origins is not duplication. Keep those and table the rest.
+- Similar tests earn separate cases when they protect distinct outcomes or
+  reproduce distinct reachable failures. Different internal branches or
+  failure origins alone do not justify keeping duplicate assertions.
 - After changing shared setup or lifecycle, run the whole affected suite, not
   only the targeted tests.
 

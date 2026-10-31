@@ -62,6 +62,7 @@ const ACTIVE_STATUS: BillingStatusResponse = {
   billing_status: 'paid',
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   plan_slug: 'pro-monthly',

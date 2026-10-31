@@ -8,8 +8,7 @@ import {
   LiteGraph,
   isComboWidget
 } from '@/lib/litegraph/src/litegraph'
-
-import { app } from '../../scripts/app'
+import type { ComfyExtension } from '@/types/comfy'
 
 // Adds filtering to combo context menus
 
@@ -166,7 +165,7 @@ function addFilter(
   return ctx
 }
 
-const ext = {
+export const contextMenuFilterExtension: ComfyExtension = {
   name: 'Comfy.ContextMenuFilter',
   init() {
     // Custom nodes wrap this with `orig.call(this, ...)`, so it must stay callable
@@ -178,5 +177,3 @@ const ext = {
     })
   }
 }
-
-app.registerExtension(ext)

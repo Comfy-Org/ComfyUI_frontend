@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const BYPASS_HOTKEY = 'Control+b'
 const BYPASS_CLASS = /before:bg-bypass\/60/
@@ -18,6 +19,8 @@ test.describe('Vue Node Bypass', { tag: '@vue-nodes' }, () => {
     'should allow toggling bypass on a selected node with hotkey',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
+      const [offsetX, offsetY] = await comfyPage.canvasOps.getOffset()
+      await comfyPage.canvasOps.setOffset([offsetX + 150, offsetY])
       await comfyPage.page.getByText('Load Checkpoint').click()
       await comfyPage.page.keyboard.press(BYPASS_HOTKEY)
 
@@ -26,8 +29,9 @@ test.describe('Vue Node Bypass', { tag: '@vue-nodes' }, () => {
         .filter({ hasText: 'Load Checkpoint' })
         .getByTestId('node-inner-wrapper')
       await expect(checkpointNode).toHaveClass(BYPASS_CLASS)
-      await comfyPage.expectScreenshot(
-        comfyPage.canvas,
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [checkpointNode],
         'vue-node-bypassed-state.png'
       )
 

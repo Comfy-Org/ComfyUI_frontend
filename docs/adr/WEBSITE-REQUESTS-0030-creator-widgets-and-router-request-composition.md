@@ -8,8 +8,8 @@ Deprecated — retained as the historical proposal introduced in #17382, not a
 claim of completed team architecture review or production rollout.
 
 Current Models-specific implementation guidance lives in
-[Models input presentation](../../apps/website/MODELS_INPUT_SCHEMA.md) and
-[Shared Router rendering](../../apps/website/ROUTER_RENDER.md). PR #17431 moves
+[Models input presentation](https://github.com/Comfy-Org/comfy-website/blob/main/apps/website/MODELS_INPUT_SCHEMA.md) and
+[Shared Router rendering](https://github.com/Comfy-Org/comfy-website/blob/main/apps/website/ROUTER_RENDER.md). PR #17431 moves
 ongoing documentation there; it does not erase the original design record.
 
 ## Context
@@ -69,4 +69,4 @@ unsupported optional structures while retaining a useful basic mode.
 
 Implementation, supported families, provider references, focused checks and
 remaining limitations are in
-[Models input presentation](../../apps/website/MODELS_INPUT_SCHEMA.md).
+[Models input presentation](https://github.com/Comfy-Org/comfy-website/blob/main/apps/website/MODELS_INPUT_SCHEMA.md).

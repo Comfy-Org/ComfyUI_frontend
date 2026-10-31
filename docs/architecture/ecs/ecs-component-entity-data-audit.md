@@ -71,7 +71,7 @@ Representative implementation:
   normalization.
 - `src/lib/litegraph/src/LGraphNode.ts`: `order`, `last_serialization`, and
   `serialize`.
-- `src/platform/nodeReplacement/useNodeReplacement.ts`: unknown-node discovery
+- `src/platform/workflowErrors/nodeReplacement/useNodeReplacement.ts`: unknown-node discovery
   and replacement.
 
 Representative evidence:
@@ -81,7 +81,7 @@ Representative evidence:
 - `src/lib/litegraph/src/subgraph/SubgraphSerialization.test.ts`: interface,
   membership, topology, and collision round trips.
 - `src/lib/litegraph/src/idAllocation.test.ts`: mint and observe behavior.
-- `src/platform/nodeReplacement/useNodeReplacement.test.ts`: unknown-node
+- `src/platform/workflowErrors/nodeReplacement/useNodeReplacement.test.ts`: unknown-node
   replacement and compatibility values.
 
 ### Node, group, slot, link, and layout projections

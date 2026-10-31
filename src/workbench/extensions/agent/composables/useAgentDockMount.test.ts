@@ -1,18 +1,39 @@
+import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import type { AuthUserInfo } from '@/types/authTypes'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import type { AuthUserInfo } from '@comfyorg/api-client/authTypes'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useAgentDockMount } from './useAgentDockMount'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('firebase/auth'))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
+
+const accountApi = vi.hoisted(() => ({
+  get: vi.fn(),
+  set: vi.fn(),
+  header: vi.fn()
+}))
+vi.mock(import('@/platform/settings/globalSettingsApi'), () => ({
+  getGlobalSetting: accountApi.get,
+  setGlobalSetting: accountApi.set
+}))
+vi.mock(
+  import('@/workbench/extensions/agent/services/agent/agentAuth'),
+  () => ({ agentSettingsAuthHeader: accountApi.header })
+)
+
 const billingContext = useBillingContext()
 const { loadDockedAgentPanel } = vi.hoisted(() => ({
   loadDockedAgentPanel: vi.fn(() => ({ name: 'DockedAgentPanel' }))
@@ -34,9 +55,24 @@ function getAsyncLoader(component: unknown): () => Promise<unknown> {
   return component.__asyncLoader as () => Promise<unknown>
 }
 
+const storedConsent: GlobalSetting = {
+  key: 'Comfy.AgentPanel.ConsentAccepted',
+  value: true,
+  updated_at: '2026-09-09T00:00:00Z'
+}
+
 describe('useAgentDockMount', () => {
   beforeEach(() => {
     localStorage.clear()
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-a',
+      workspaceTransitionGeneration: 0
+    })
+    useTeamWorkspaceStore().isSwitching = false
+    vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
+    accountApi.header.mockResolvedValue({ Authorization: 'Bearer token' })
+    accountApi.get.mockResolvedValue(undefined)
+    accountApi.set.mockResolvedValue(storedConsent)
     vi.mocked(useBillingContext).mockReturnValue({
       ...billingContext,
       subscription: computed(() =>
@@ -149,17 +185,8 @@ describe('useAgentDockMount', () => {
     )
   })
 
-  it('returns an inert mount on non-cloud distributions', () => {
+  it('docks only once the gate enables and the panel opens, off cloud too', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'localhost')
-
-    const { docked, DockedAgentPanel } = useAgentDockMount()
-
-    expect(docked.value).toBe(false)
-    expect(DockedAgentPanel).toBeNull()
-  })
-
-  it('docks only once the gate enables and the panel opens on cloud', async () => {
-    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     const store = useAgentPanelStore()
 
     const { docked, DockedAgentPanel } = useAgentDockMount()
@@ -180,5 +207,106 @@ describe('useAgentDockMount', () => {
     expect(loadDockedAgentPanel).toHaveBeenCalledOnce()
     store.close('close_button')
     expect(docked.value).toBe(false)
+  })
+
+  describe('billing refresh after consent', () => {
+    function configurePersistentConsentHost() {
+      useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'account-a' }))
+    }
+
+    function mountWithBilling() {
+      const fetchStatus = vi.fn(async () => {})
+      vi.mocked(useBillingContext).mockReturnValue({
+        ...billingContext,
+        fetchStatus
+      })
+      useAgentDockMount()
+      return { consent: useAgentConsentStore(), fetchStatus }
+    }
+
+    it('refreshes billing when consent is accepted while the panel is closed', async () => {
+      const { consent, fetchStatus } = mountWithBilling()
+      expect(useAgentPanelStore().isOpen).toBe(false)
+
+      consent.confirmedAcceptances += 1
+      await nextTick()
+
+      expect(fetchStatus).toHaveBeenCalledOnce()
+    })
+
+    it('refreshes billing for an acceptance recorded before any host mounted', async () => {
+      useAgentConsentStore().confirmedAcceptances += 1
+
+      const { fetchStatus } = mountWithBilling()
+
+      expect(fetchStatus).toHaveBeenCalledOnce()
+    })
+
+    it('does not refresh billing when stored consent loads', async () => {
+      const { consent, fetchStatus } = mountWithBilling()
+
+      Object.assign(consent, { accepted: true })
+      await nextTick()
+
+      expect(fetchStatus).not.toHaveBeenCalled()
+    })
+
+    it('refreshes billing from the persistent host after a confirmed Agree', async () => {
+      configurePersistentConsentHost()
+      let finishSave = (_value: GlobalSetting): void => {}
+      accountApi.set.mockImplementationOnce(
+        () =>
+          new Promise<GlobalSetting>((resolve) => {
+            finishSave = resolve
+          })
+      )
+      const { consent, fetchStatus } = mountWithBilling()
+
+      const accepting = consent.accept()
+      await vi.waitFor(() => expect(accountApi.set).toHaveBeenCalledOnce())
+      expect(fetchStatus).not.toHaveBeenCalled()
+
+      finishSave(storedConsent)
+      await expect(accepting).resolves.toBe(true)
+
+      expect(fetchStatus).toHaveBeenCalledOnce()
+    })
+
+    it('does not refresh billing when persistent consent loads', async () => {
+      configurePersistentConsentHost()
+      accountApi.get.mockResolvedValue(storedConsent)
+      const { consent, fetchStatus } = mountWithBilling()
+
+      await expect(consent.load()).resolves.toBe(true)
+
+      expect(fetchStatus).not.toHaveBeenCalled()
+    })
+
+    it('refreshes once per acceptance when both graph and linear hosts are mounted', async () => {
+      const { consent, fetchStatus } = mountWithBilling()
+      useAgentDockMount()
+
+      consent.confirmedAcceptances += 1
+      await nextTick()
+      expect(fetchStatus).toHaveBeenCalledOnce()
+
+      consent.confirmedAcceptances += 1
+      await nextTick()
+      expect(fetchStatus).toHaveBeenCalledTimes(2)
+    })
+
+    it('reports a failed refresh without rejecting', async () => {
+      const failure = new Error('status read failed')
+      const { consent, fetchStatus } = mountWithBilling()
+      fetchStatus.mockRejectedValueOnce(failure)
+
+      consent.confirmedAcceptances += 1
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(failure, {
+          surface: 'agent',
+          errorType: 'error_refreshing_agent_billing_status'
+        })
+      )
+    })
   })
 })

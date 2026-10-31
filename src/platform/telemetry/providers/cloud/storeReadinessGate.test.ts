@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 const hoisted = vi.hoisted(() => {
@@ -42,7 +42,7 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: hoisted.reportError
 }))
 
@@ -78,13 +78,13 @@ vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 import {
   markStoresPending,
   markStoresReady
 } from '@/platform/telemetry/storeReadiness'
-import { TelemetryEvents } from '@/platform/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 import { CustomerIoTelemetryProvider } from './CustomerIoTelemetryProvider'
 import { MixpanelTelemetryProvider } from './MixpanelTelemetryProvider'

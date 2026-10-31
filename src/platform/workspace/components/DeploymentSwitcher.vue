@@ -1,214 +1,273 @@
-<!-- Which developer-platform deployment this browser runs on, and the list
-     it may pick from (FE-2434). Each row is a deployment with the Release it
-     runs now; a pick follows the deployment when its owner updates it. Sits under the workspace selector in the user
-     popover. Renders nothing until a listing answers, when the account is
-     outside the rollout, and when loading fails with no listing to show; a
-     reload keeps the last listing on screen until it answers, and a listing
-     that answered stays shown when a newer load fails or never answers.
-     Shows the workspace's default deployment when an owner set one (BE-17480):
-     a browser with no pick of its own follows it, and an owner sets or
-     clears it from the panel's footer. A pick the listing no longer has
-     shows as Comfy Cloud, which is what ingest serves it. When a listing
-     shows this page now runs on other nodes than it booted with (changed
-     elsewhere), a notice under the label offers a reload. -->
 <template>
-  <div v-if="isVisible" class="relative" data-testid="deployment-switcher">
-    <button
-      ref="trigger"
-      type="button"
-      class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover disabled:cursor-wait"
-      :aria-expanded="isOpen"
-      aria-haspopup="menu"
-      aria-controls="deployment-switcher-panel"
-      :disabled="isSwitching"
-      data-testid="deployment-switcher-trigger"
-      @click="isOpen = !isOpen"
-      @keydown.escape.stop="isOpen = false"
+  <div
+    v-if="isOffered && isVisible"
+    class="flex shrink-0 items-center"
+    data-testid="deployment-switcher"
+  >
+    <Menu
+      v-model:open="isOpen"
+      :modal="false"
+      :side-offset="8"
+      :class="cn(switcherMenuWidthClass, switcherMenuMotionClass)"
     >
-      <div class="flex w-0 flex-1 items-center gap-2">
-        <i
-          class="icon-[lucide--package] size-4 shrink-0 text-muted-foreground"
-        />
-        <div class="flex min-w-0 flex-1 flex-col">
-          <span class="text-xs text-muted-foreground">
-            {{ $t('deploymentSwitcher.runningOn') }}
+      <template #trigger>
+        <Button
+          variant="secondary"
+          size="unset"
+          :disabled="isSwitching"
+          :tooltip="hoverTooltip"
+          tooltip-side="bottom"
+          :aria-label="triggerLabel"
+          class="group h-8 gap-1 rounded-lg pr-1.5 pl-2 data-[state=open]:bg-accent"
+          data-testid="deployment-switcher-trigger"
+        >
+          <span class="relative flex">
+            <DeploymentStatusIcon
+              :tone="currentTone"
+              icon-class="size-4"
+              ring-class="ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
+            />
+            <span
+              v-if="isNew"
+              class="absolute -top-0.75 -right-0.75 size-2 rounded-full bg-foreground ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
+              aria-hidden="true"
+              data-testid="deployment-switcher-new"
+            />
           </span>
-          <span
-            class="truncate text-sm text-base-foreground"
-            data-testid="deployment-switcher-current"
-          >
-            {{ currentLabel }}
-          </span>
-          <span
-            v-if="note"
-            class="text-xs text-muted-foreground"
-            :data-testid="note.testId"
-          >
-            {{ note.text }}
-          </span>
-        </div>
-      </div>
-      <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
-    </button>
-
-    <div
-      v-if="changeSinceBoot"
-      role="status"
-      class="flex items-center gap-2 px-4 pb-2 text-xs text-muted-foreground"
-      data-testid="deployment-switcher-changed"
-    >
-      <span class="min-w-0 flex-1">{{ changeMessage }}</span>
-      <Button
-        variant="secondary"
-        size="sm"
-        data-testid="deployment-switcher-reload"
-        @click="reloadPage"
-      >
-        {{ $t('deploymentSwitcher.reload') }}
-      </Button>
-    </div>
-
-    <div
-      v-if="isOpen"
-      id="deployment-switcher-panel"
-      ref="panel"
-      role="menu"
-      class="absolute top-0 right-full z-10 mr-4 flex max-h-96 w-80 flex-col overflow-hidden rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
-      data-testid="deployment-switcher-panel"
-    >
-      <div
-        class="flex scrollbar-custom min-h-0 flex-1 flex-col overflow-y-auto"
-      >
-        <DeploymentSwitcherList @choose="choose" @follow="follow" />
-      </div>
-      <DeploymentSwitcherOwnerFooter
-        v-if="canSetDefault"
-        :default-label="hasDefault ? defaultLabel : null"
-        :default-gone="goneDefaultDeploymentId !== null"
-        :can-set-picked="canSetPicked"
-        :disabled="isSwitching"
-        @set-default="changeDefault(pickedDeploymentId)"
-        @clear-default="changeDefault(null)"
+          <i
+            class="icon-[lucide--chevron-down] size-3 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
+            aria-hidden="true"
+          />
+        </Button>
+      </template>
+      <DeploymentSwitcherList
+        :switching-to
+        @choose="choose"
+        @follow="follow"
+        @set-default="changeDefault"
+        @reload="reload"
+        @create-custom-deployment="createCustomDeployment"
       />
-      <div
-        class="shrink-0 border-t border-border-default px-4 py-2 text-xs text-muted-foreground"
-      >
-        {{ $t('deploymentSwitcher.reloadNote') }}
-      </div>
-    </div>
+    </Menu>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onClickOutside } from '@vueuse/core'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useEventListener, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import DeploymentSwitcherOwnerFooter from '@/platform/workspace/components/DeploymentSwitcherOwnerFooter.vue'
-import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
-import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
-import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import {
+  DEPLOYMENT_LISTING_FOCUS_RETRY_MS,
+  DEPLOYMENT_START_POLL_MS
+} from '@/platform/workspace/api/deploymentListingTimeouts'
+import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
+import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
+import {
+  switcherMenuMotionClass,
+  switcherMenuWidthClass
+} from '@/platform/workspace/components/deploymentSwitcherStyles'
+import {
+  COMFY_CLOUD_ROW,
+  useDeploymentLabels
+} from '@/platform/workspace/composables/useDeploymentLabels'
+import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
+import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
+import {
+  confirmUnsavedWorkBeforeSwitch,
+  unsavedWorkflows
+} from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
+import { openCreateCustomDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const { t } = useI18n()
 const store = useDeploymentPickStore()
 const {
-  pickedDeploymentId,
   pickedDeployment,
-  goneDeployment,
-  defaultDeploymentId,
-  goneDefaultDeploymentId,
-  followsWorkspace,
-  canSetDefault,
   isVisible,
   isSwitching,
-  changeSinceBoot
+  listingRefused,
+  switcherOpenAsks
 } = storeToRefs(store)
+const settingStore = useSettingStore()
+const isOffered = useDeploymentSwitcherOffered()
+const { currentLabel } = useDeploymentLabels()
+const { targetLabel, withoutLeavePrompt, reloadOntoCurrent } =
+  useDeploymentSwitchGuard()
+const { pickedRow, isAnyStarting } = useDeploymentRows()
 
 const isOpen = ref(false)
-const trigger = useTemplateRef('trigger')
-const panel = useTemplateRef('panel')
+const switchingTo = ref<string | null>(null)
 
-onClickOutside(
-  panel,
-  () => {
-    isOpen.value = false
-  },
-  { ignore: [trigger] }
-)
+watch(switcherOpenAsks, () => {
+  if (!isOffered.value || !isVisible.value) return
+  isOpen.value = true
+})
+
+let pendingRetry: Promise<void> | undefined
+let lastFocusRetryAt = -Infinity
 
 onMounted(() => {
+  if (!isOffered.value) return
+  pendingRetry = store.loadOnce().finally(() => {
+    pendingRetry = undefined
+  })
+})
+
+useEventListener(window, 'focus', () => {
+  if (pendingRetry || !isOffered.value) return
+  if (isVisible.value || listingRefused.value) return
+  if (Date.now() - lastFocusRetryAt < DEPLOYMENT_LISTING_FOCUS_RETRY_MS) return
+  lastFocusRetryAt = Date.now()
+  pendingRetry = store.load().finally(() => {
+    pendingRetry = undefined
+  })
+})
+
+const markedUntilClose = ref(false)
+const isNew = computed(
+  () =>
+    markedUntilClose.value || !settingStore.get('Comfy.DeploymentSwitcher.Seen')
+)
+
+function rememberSeen() {
+  markedUntilClose.value = true
+  settingStore
+    .set('Comfy.DeploymentSwitcher.Seen', true)
+    .catch((error: unknown) =>
+      reportError(error, {
+        errorType: 'error_saving_deployment_switcher_seen',
+        surface: 'platform'
+      })
+    )
+}
+
+watch(isOpen, (open) => {
+  if (!open) {
+    markedUntilClose.value = false
+    return
+  }
   void store.load()
+  if (!settingStore.get('Comfy.DeploymentSwitcher.Seen')) rememberSeen()
 })
 
-const { currentLabel, defaultLabel } = useDeploymentLabels()
+let pendingPoll: Promise<void> | undefined
+const startPoll = useIntervalFn(
+  () => {
+    if (pendingPoll) return
+    pendingPoll = store.load().finally(() => {
+      pendingPoll = undefined
+    })
+  },
+  DEPLOYMENT_START_POLL_MS,
+  { immediate: false }
+)
+watch(
+  () => isOpen.value && isAnyStarting.value,
+  (polling) => (polling ? startPoll.resume() : startPoll.pause())
+)
 
-const hasDefault = computed(() => defaultDeploymentId.value !== null)
-/**
- * Under the label: that what this browser would run on is gone, or that it
- * has no pick of its own and so runs on the workspace default.
- */
-const note = computed(() => {
-  if (goneDeployment.value === 'pick') {
-    return {
-      testId: 'deployment-switcher-gone',
-      text: t('deploymentSwitcher.pickGone')
-    }
-  }
-  if (goneDeployment.value === 'default') {
-    return {
-      testId: 'deployment-switcher-gone',
-      text: t('deploymentSwitcher.defaultGone')
-    }
-  }
-  if (followsWorkspace.value && hasDefault.value) {
-    return {
-      testId: 'deployment-switcher-following',
-      text: t('deploymentSwitcher.workspaceDefault')
-    }
-  }
-  return null
-})
-const changeMessage = computed(() =>
-  changeSinceBoot.value === 'release'
-    ? t('deploymentSwitcher.releaseChanged')
-    : t(
-        'deploymentSwitcher.deploymentChanged',
+const currentTone = computed(() => pickedRow.value?.tone)
+const isReady = computed(
+  () => currentTone.value === undefined || currentTone.value === 'ready'
+)
+const statusLabel = computed(() =>
+  isReady.value
+    ? t(
+        'deploymentSwitcher.triggerLabel',
         { deployment: currentLabel.value },
         { escapeParameter: false }
       )
+    : t(
+        'deploymentSwitcher.triggerLabelNotReady',
+        { status: hoverTooltip.value },
+        { escapeParameter: false }
+      )
 )
-
-function reloadPage() {
-  window.location.reload()
+const triggerLabel = computed(() =>
+  isNew.value
+    ? t(
+        'deploymentSwitcher.triggerLabelNew',
+        { label: statusLabel.value },
+        { escapeParameter: false }
+      )
+    : statusLabel.value
+)
+function tooltipKey(): string {
+  if (isReady.value) return 'deploymentSwitcher.currentTooltip'
+  const action = pickedRow.value?.action
+  if (action === 'start' || action === 'retry') {
+    return currentTone.value === 'failed'
+      ? 'deploymentSwitcher.failedStartTooltip'
+      : 'deploymentSwitcher.stoppedStartTooltip'
+  }
+  return currentTone.value === 'stopped' &&
+    pickedDeployment.value?.status === 'stopped'
+    ? 'deploymentSwitcher.stoppedTooltip'
+    : 'deploymentSwitcher.notReadyTooltip'
 }
-
-const canSetPicked = computed(
-  () =>
-    pickedDeployment.value !== null &&
-    pickedDeploymentId.value !== defaultDeploymentId.value
+const hoverTooltip = computed(() =>
+  t(
+    tooltipKey(),
+    { deployment: currentLabel.value },
+    { escapeParameter: false }
+  )
 )
 
 function report(summary: string, refusal: string | null) {
   if (refusal === null) return
+  switchingTo.value = null
   isOpen.value = false
   useToast().error(summary, { description: refusal, duration: 8000 })
 }
 
-async function choose(deploymentId: string | null) {
-  report(t('deploymentSwitcher.failedToSwitch'), await store.pick(deploymentId))
+async function confirmSwitchTo(deployment: string): Promise<boolean> {
+  if (unsavedWorkflows().length > 0) isOpen.value = false
+  return confirmUnsavedWorkBeforeSwitch(deployment)
 }
 
-async function follow() {
-  report(t('deploymentSwitcher.failedToSwitch'), await store.followWorkspace())
+async function choose(deploymentId: string | null) {
+  if (!(await confirmSwitchTo(targetLabel(deploymentId)))) return
+  switchingTo.value = deploymentId ?? COMFY_CLOUD_ROW
+  report(
+    t('deploymentSwitcher.failedToSwitch'),
+    await withoutLeavePrompt(() => store.pick(deploymentId))
+  )
+}
+
+async function follow(deploymentId: string) {
+  const reloads = deploymentId !== pickedDeployment.value?.deployment_id
+  if (reloads && !(await confirmSwitchTo(targetLabel(deploymentId)))) return
+  switchingTo.value = deploymentId
+  report(
+    t('deploymentSwitcher.failedToSwitch'),
+    await withoutLeavePrompt(() => store.followWorkspace())
+  )
 }
 
 async function changeDefault(deploymentId: string | null) {
+  const reloads = store.defaultMovesThisBrowser(deploymentId)
+  if (reloads && !(await confirmSwitchTo(targetLabel(deploymentId)))) return
+  switchingTo.value = null
   report(
     t('deploymentSwitcher.failedToSetDefault'),
-    await store.setDefault(deploymentId)
+    await withoutLeavePrompt(() => store.setDefault(deploymentId))
   )
+}
+
+function createCustomDeployment() {
+  void openCreateCustomDeploymentDialog()
+}
+
+function reload() {
+  return reloadOntoCurrent(confirmSwitchTo)
 }
 </script>

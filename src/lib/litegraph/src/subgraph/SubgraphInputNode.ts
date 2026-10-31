@@ -1,30 +1,39 @@
+import type {
+  LGraphNode,
+  LinkConnector,
+  SubgraphInput,
+  SubgraphOutput
+} from '@comfyorg/graph-model/entityRegistry'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeId } from '@/types/nodeId'
+
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-import { linkIdReservations, mintLinkId } from '../idAllocation'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
-import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
+import {
+  linkIdReservations,
+  mintLinkId
+} from '@/lib/litegraph/src/idAllocation'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type {
   DefaultConnectionColors,
   ISlotType,
   Positionable
-} from '@/lib/litegraph/src/interfaces'
+} from '@comfyorg/graph-model/interfaces'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 
 import { EmptySubgraphInput } from './EmptySubgraphInput'
 import { SubgraphIONodeBase } from './SubgraphIONodeBase'
-import type { SubgraphInput } from './SubgraphInput'
-import type { SubgraphOutput } from './SubgraphOutput'
+
+import { provideSubgraphInputGuard } from './subgraphTypeGuards'
 
 export class SubgraphInputNode
   extends SubgraphIONodeBase<SubgraphInput>
@@ -287,4 +296,21 @@ export class SubgraphInputNode
 
     this.drawSlots(ctx, colorContext, fromSlot, editorAlpha)
   }
+}
+
+function isSubgraphInput(slot: unknown): slot is SubgraphInput {
+  return (
+    slot != null &&
+    typeof slot === 'object' &&
+    'parent' in slot &&
+    slot.parent instanceof SubgraphInputNode
+  )
+}
+
+provideSubgraphInputGuard(isSubgraphInput)
+
+type RegisteredSubgraphInputNode = SubgraphInputNode
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface SubgraphInputNode extends RegisteredSubgraphInputNode {}
 }

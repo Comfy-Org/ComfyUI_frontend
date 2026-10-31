@@ -312,6 +312,37 @@ describe('DynamicGroup widgets', () => {
     expect(widget('rich.0.color').value).toBe('#123456')
   })
 
+  it('restores above-max rows whose fields serialize no values', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Transient fields')
+    node.serialize_widgets = true
+    graph.add(node)
+    useWidgetStore().registerCustomWidgets({
+      TEST_TRANSIENT_FIELD: (node, name) => {
+        const widget = node.addWidget('text', name, 'transient', () => {})
+        widget.serialize = false
+        return { widget }
+      }
+    })
+    useLitegraphService().addNodeInput(node, {
+      name: 'rows',
+      type: 'COMFY_DYNAMICGROUP_V3',
+      isOptional: false,
+      min: 0,
+      max: 3,
+      template: { required: { transient: ['TEST_TRANSIENT_FIELD', {}] } }
+    })
+    const rows = node.widgets?.find((widget) => widget.name === 'rows')
+    if (!rows) throw new Error('Missing DynamicGroup controller')
+    rows.value = 4
+    const saved = node.serialize()
+    rows.value = 0
+
+    node.configure(saved)
+
+    expect(rows.value).toBe(4)
+  })
+
   it('rejects socket-only templates before creating group widgets', () => {
     const { node } = setup()
     const before = node.serialize()
@@ -824,11 +855,42 @@ describe('DynamicGroup widgets', () => {
         throw new Error('Unexpected row allocation')
       })
       expect(() => node.configure(saved)).toThrow(
-        'Invalid saved row count for DynamicGroup'
+        'Row count exceeds the allocation bound'
       )
       expect(add).not.toHaveBeenCalled()
     }
   )
+
+  it.for([false, true])(
+    'restores saved rows above max with named restoration = %s',
+    (named) => {
+      LiteGraph.namedValuesRestore = named
+      const wider = setup(0, 5)
+      wider.widget('loras').value = 4
+      wider.widget('loras.3.lora_name').value = 'C'
+      const saved = wider.node.serialize()
+      const { node, widget } = setup()
+
+      node.configure(saved)
+
+      expect(widget('loras').value).toBe(4)
+      expect(widget('loras.3.lora_name').value).toBe('C')
+    }
+  )
+
+  it('rejects an unsupported saved row count stored as a numeric string', () => {
+    LiteGraph.namedValuesRestore = false
+    const { node } = setup()
+    const saved = node.serialize()
+    saved.widgets_values = ['first', '1000000000', 'last']
+    vi.spyOn(node, 'addCustomWidget').mockImplementation(() => {
+      throw new Error('Unexpected row allocation')
+    })
+
+    expect(() => node.configure(saved)).toThrow(
+      'Row count exceeds the allocation bound'
+    )
+  })
 
   it('preserves saved values in an error node when the group definition is invalid', () => {
     const { node, graph, widget } = setup()

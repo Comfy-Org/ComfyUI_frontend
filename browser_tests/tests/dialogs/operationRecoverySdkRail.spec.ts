@@ -8,7 +8,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { PendingSubscriptionCheckout } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
+import type { PendingSubscriptionCheckout } from '@/platform/billing/utils/pendingSubscriptionCheckout'
 
 import {
   cloudAppExpect,
@@ -65,6 +65,7 @@ const STATUS_WITH_PENDING_SUBSCRIPTION = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
   max_seats: 1,

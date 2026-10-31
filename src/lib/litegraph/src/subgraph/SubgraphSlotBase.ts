@@ -1,36 +1,39 @@
-import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import type {
+  LGraphNode,
+  LLink,
+  SubgraphInput,
+  SubgraphInputNode,
+  SubgraphOutput,
+  SubgraphOutputNode
+} from '@comfyorg/graph-model/entityRegistry'
+import { canvasClass } from '@/lib/litegraph/src/canvas/canvasClassAccess'
+
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { SlotShape } from '@/lib/litegraph/src/draw'
 import { ConstrainedSize } from '@/lib/litegraph/src/infrastructure/ConstrainedSize'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type { DefaultConnectionColors } from '@comfyorg/graph-model/interfaces'
 import type {
-  DefaultConnectionColors,
-  Point,
+  PointTuple as Point,
   ReadOnlyRect,
-  Size
-} from '@/lib/litegraph/src/interfaces'
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/graph-model/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { SlotBase } from '@/lib/litegraph/src/node/SlotBase'
 import type {
   CanvasPointerEvent,
   Hoverable
-} from '@/lib/litegraph/src/types/events'
+} from '@comfyorg/graph-model/events'
 import type {
   Serialisable,
   SubgraphIO
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import type { UUID } from '@/utils/uuid'
-
-import type { SubgraphInput } from './SubgraphInput'
-import type { SubgraphInputNode } from './SubgraphInputNode'
-import type { SubgraphOutput } from './SubgraphOutput'
-import type { SubgraphOutputNode } from './SubgraphOutputNode'
 
 interface SubgraphSlotDrawOptions {
   ctx: CanvasRenderingContext2D
@@ -136,7 +139,7 @@ export abstract class SubgraphSlot
   }
 
   measure(): Readonly<Size> {
-    const width = LGraphCanvas._measureText?.(this.displayName) ?? 0
+    const width = canvasClass._measureText?.(this.displayName) ?? 0
 
     const { defaultHeight } = SubgraphSlot
     this.measurement.setValues(width + defaultHeight, defaultHeight)

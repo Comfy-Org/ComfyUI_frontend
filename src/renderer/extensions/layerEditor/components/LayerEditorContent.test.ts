@@ -12,7 +12,7 @@ import LayerEditorContent from '@/renderer/extensions/layerEditor/components/Lay
 import TopBarHeader from '@/renderer/extensions/layerEditor/components/dialog/TopBarHeader.vue'
 import { useCompositorAutoSave } from '@/renderer/extensions/compositor/composables/useCompositorAutoSave'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const {
   afterChange,
@@ -49,7 +49,7 @@ const {
   }
 }))
 
-vi.mock<unknown>(import('@/components/ui/dialog/DialogClose.vue'), () => ({
+vi.mock<unknown>(import('@comfyorg/design-system/dialog/DialogClose'), () => ({
   default: (
     _props: unknown,
     { slots }: { slots: { default?: () => unknown } }

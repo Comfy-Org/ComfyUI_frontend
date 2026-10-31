@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMemoryHistory, createRouter, useRouter } from 'vue-router'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import {
+  capturePreservedQuery,
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 
 import { useUrlActionLoaders } from './useUrlActionLoaders'
 
@@ -22,7 +27,6 @@ const mocks = vi.hoisted(() => ({
   loadTopUp: vi.fn(async () => undefined),
   loadSettings: vi.fn(),
   loadAssets: vi.fn(async () => undefined),
-  loadPaymentReturn: vi.fn(async () => undefined),
   useDeployment: vi.fn(),
   useWorkspace: vi.fn(),
   useInvite: vi.fn(),
@@ -30,8 +34,7 @@ const mocks = vi.hoisted(() => ({
   usePricingTable: vi.fn(),
   useTopUp: vi.fn(),
   useSettings: vi.fn(),
-  useAssets: vi.fn(),
-  usePaymentReturn: vi.fn()
+  useAssets: vi.fn()
 }))
 mocks.useDeployment.mockImplementation(() => ({
   loadDeploymentFromUrl: mocks.loadDeployment
@@ -57,9 +60,6 @@ mocks.useSettings.mockImplementation(() => ({
 mocks.useAssets.mockImplementation(() => ({
   loadAssetsFromUrl: mocks.loadAssets
 }))
-mocks.usePaymentReturn.mockImplementation(() => ({
-  loadPaymentReturnFromUrl: mocks.loadPaymentReturn
-}))
 
 // A real router rather than a stub: several assertions are the URL a reader
 // is left looking at, and only the real thing resolves and merges a query
@@ -83,21 +83,21 @@ vi.mock(
     useWorkspaceUrlLoader: mocks.useWorkspace
   })
 )
-vi.mock(import('@/platform/workspace/composables/useInviteUrlLoader'), () => ({
+vi.mock(import('@/platform/account/composables/useInviteUrlLoader'), () => ({
   useInviteUrlLoader: mocks.useInvite
 }))
 vi.mock(
-  import('@/platform/workspace/composables/useCreateWorkspaceUrlLoader'),
+  import('@/platform/account/composables/useCreateWorkspaceUrlLoader'),
   () => ({
     useCreateWorkspaceUrlLoader: mocks.useCreateWorkspace
   })
 )
 vi.mock(
-  import('@/platform/cloud/subscription/composables/usePricingTableUrlLoader'),
+  import('@/platform/billing/subscription/composables/usePricingTableUrlLoader'),
   () => ({ usePricingTableUrlLoader: mocks.usePricingTable })
 )
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useTopUpUrlLoader'),
+  import('@/platform/billing/subscription/composables/useTopUpUrlLoader'),
   () => ({
     useTopUpUrlLoader: mocks.useTopUp
   })
@@ -109,13 +109,9 @@ vi.mock(import('@/platform/assets/composables/useAssetsUrlLoader'), () => ({
   useAssetsUrlLoader: mocks.useAssets
 }))
 vi.mock(
-  import('@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader'),
-  () => ({ usePaymentReturnUrlLoader: mocks.usePaymentReturn })
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
-vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
-)
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 
@@ -146,9 +142,6 @@ describe('useUrlActionLoaders', () => {
     mocks.useAssets.mockImplementation(() => ({
       loadAssetsFromUrl: mocks.loadAssets
     }))
-    mocks.usePaymentReturn.mockImplementation(() => ({
-      loadPaymentReturnFromUrl: mocks.loadPaymentReturn
-    }))
     vi.mocked(useRouter).mockReturnValue(router)
     await router.replace({ path: '/', query: {} })
   })
@@ -168,9 +161,6 @@ describe('useUrlActionLoaders', () => {
     expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
   })
 
-  // The payment-return loader clears Stripe's params with history.replaceState,
-  // which the router never sees, so the sweep is built from a query that still
-  // holds them — the client secret included.
   it('does not hand back the Stripe params the router still thinks are there', async () => {
     await router.replace({
       path: '/',
@@ -226,7 +216,6 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.useTopUp).not.toHaveBeenCalled()
     expect(mocks.useSettings).not.toHaveBeenCalled()
     expect(mocks.useAssets).not.toHaveBeenCalled()
-    expect(mocks.usePaymentReturn).not.toHaveBeenCalled()
     expect(useSubscriptionDialog).not.toHaveBeenCalled()
     expect(mocks.loadDeployment).not.toHaveBeenCalled()
     expect(mocks.loadWorkspace).not.toHaveBeenCalled()
@@ -236,7 +225,6 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadTopUp).not.toHaveBeenCalled()
     expect(mocks.loadSettings).not.toHaveBeenCalled()
     expect(mocks.loadAssets).not.toHaveBeenCalled()
-    expect(mocks.loadPaymentReturn).not.toHaveBeenCalled()
     expect(
       useSubscriptionDialog().resumePendingPricingFlow
     ).not.toHaveBeenCalled()
@@ -254,7 +242,6 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadTopUp).toHaveBeenCalledOnce()
     expect(mocks.loadSettings).toHaveBeenCalledOnce()
     expect(mocks.loadAssets).toHaveBeenCalledOnce()
-    expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
   })
 
   it('opens the requested workspace before any other loader reads the URL', async () => {
@@ -292,8 +279,13 @@ describe('useUrlActionLoaders', () => {
   it('stops before every other step, the sweep included, when the deployment link reloads', async () => {
     await router.replace({
       path: '/',
-      query: { workspace: 'w-2', deployment: 'dep-1' }
+      query: { workspace: 'w-2', deployment: 'dep-1', workflows: 'build' }
     })
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.WORKFLOWS,
+      { workflows: 'build' },
+      ['workflows']
+    )
     mocks.loadDeployment.mockResolvedValueOnce(true)
 
     const { runUrlActionLoaders } = useUrlActionLoaders()
@@ -302,8 +294,39 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadWorkspace).not.toHaveBeenCalled()
     expect(router.currentRoute.value.query).toEqual({
       workspace: 'w-2',
-      deployment: 'dep-1'
+      deployment: 'dep-1',
+      workflows: 'build'
     })
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOWS, 'workflows')
+    ).toBe('build')
+  })
+
+  it('clears a workflows folder a deployment link left when it did not reload', async () => {
+    await router.replace({
+      path: '/',
+      query: { deployment: 'dep-1', workflows: 'build', workflow: 'keep-me' }
+    })
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
+  })
+
+  it('clears a workflows folder stash a deployment link left when it did not reload', async () => {
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.WORKFLOWS,
+      { workflows: 'build' },
+      ['workflows']
+    )
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOWS, 'workflows')
+    ).toBeUndefined()
   })
 
   it('clears a deployment param no loader acted on', async () => {
@@ -340,7 +363,6 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadTopUp).not.toHaveBeenCalled()
     expect(mocks.loadSettings).not.toHaveBeenCalled()
     expect(mocks.loadAssets).not.toHaveBeenCalled()
-    expect(mocks.loadPaymentReturn).not.toHaveBeenCalled()
   })
 
   // A successful switch reloads the page, so the sweep step must never run
@@ -367,7 +389,7 @@ describe('useUrlActionLoaders', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('recovers an interrupted checkout after handling the payment return', async () => {
+  it('recovers an interrupted checkout after every URL loader has run', async () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()
 
@@ -377,7 +399,7 @@ describe('useUrlActionLoaders', () => {
     expect(
       vi.mocked(useSubscriptionDialog().resumePendingPricingFlow).mock
         .invocationCallOrder[0]
-    ).toBeGreaterThan(mocks.loadPaymentReturn.mock.invocationCallOrder[0])
+    ).toBeGreaterThan(mocks.loadAssets.mock.invocationCallOrder[0])
   })
 
   it('resolves without waiting for checkout recovery to settle', async () => {
@@ -402,7 +424,7 @@ describe('useUrlActionLoaders', () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await expect(runUrlActionLoaders()).resolves.toBeUndefined()
 
-    expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
+    expect(mocks.loadAssets).toHaveBeenCalledOnce()
     await vi.waitFor(() => {
       expect(mocks.reportError).toHaveBeenCalledWith(failure, {
         surface: 'platform',
@@ -431,7 +453,7 @@ describe('useUrlActionLoaders', () => {
 
     expect(mocks.loadPricingTable).toHaveBeenCalledOnce()
     expect(mocks.loadSettings).toHaveBeenCalledOnce()
-    expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
+    expect(mocks.loadAssets).toHaveBeenCalledOnce()
   })
 
   it('isolates a settings-loader failure so it does not abort the boot chain', async () => {
@@ -442,7 +464,7 @@ describe('useUrlActionLoaders', () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await expect(runUrlActionLoaders()).resolves.toBeUndefined()
 
-    expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
+    expect(mocks.loadAssets).toHaveBeenCalledOnce()
     expect(
       useSubscriptionDialog().resumePendingPricingFlow
     ).toHaveBeenCalledOnce()

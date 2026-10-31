@@ -22,12 +22,12 @@ const { t } = useI18n()
     type="button"
     :disabled="offer === 'canceling'"
     :aria-busy="offer === 'canceling'"
-    class="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-tertiary-background px-4 text-sm font-semibold text-base-foreground hover:bg-tertiary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+    class="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-muted px-4 text-sm font-semibold text-foreground hover:bg-muted/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
     @click="emit('cancel')"
   >
     <template v-if="offer === 'canceling'">
       <i
-        class="icon-[lucide--loader-circle] size-4 motion-safe:animate-spin"
+        class="icon-[lucide--loader-circle] motion-safe:animate-spin"
         aria-hidden="true"
       />
       {{ t('checkout.fullPage.phase.canceling') }}

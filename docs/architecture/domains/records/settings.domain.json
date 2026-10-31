@@ -4,139 +4,7 @@
   "description": "User setting definitions, persistence and migration, global settings API, search and dialog navigation, LiteGraph setting sync, and the legacy app.ui.settings dialog. Keybinding, about, credits, user, workspace, secrets, and skill panels remain separate capabilities.",
   "modules": [
     {
-      "path": "src/platform/settings/types.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/settings/constants/agent.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/settings/constants/canvasNavigation.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/settings/constants/canvasNavigation.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/settings/constants/coreSettings.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/settings/constants/errorSystemSettings.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/settings/settingStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/settings/settingStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/settings/missingWarningVisibility.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/settings/missingWarningVisibility.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/settings/globalSettingsApi.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/settings/globalSettingsApi.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/settings/composables/useSettingSearch.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/settings/composables/useSettingSearch.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/settings/composables/useSettingsDialog.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/settings/composables/useSettingsDialog.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/settings/composables/useSettingsDialog.unregistered.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/settings/composables/__mocks__/useSettingsDialog.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/settings/composables/useSettingUI.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/settings/composables/useSettingUI.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/settings/composables/useSettingsHeaderCollapse.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/settings/composables/useLitegraphSettings.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/settings/composables/useLitegraphSettings.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/settings/composables/useLitegraphSettings.reactiveEdge.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/settings/composables/useSettingsUrlLoader.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/settings/composables/useSettingsUrlLoader.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/settings/composables/useSettingsUrlLoader.integration.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/settings/components/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/setting/SettingItem.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/scripts/ui/settings.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/scripts/ui/settings.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/components/common/BackgroundImageUpload.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/common/CustomFormValue.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/common/FormColorPicker.test.ts",
       "role": "presentation"
     },
     {
@@ -148,10 +16,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/common/FormItem.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/common/FormItem.vue",
       "role": "presentation"
     },
@@ -160,11 +24,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/common/FormRadioGroup.test.ts",
+      "path": "src/components/common/FormRadioGroup.vue",
       "role": "presentation"
     },
     {
-      "path": "src/components/common/FormRadioGroup.vue",
+      "path": "src/components/dialog/content/setting/SettingItem.test.ts",
       "role": "presentation"
     },
     {
@@ -172,24 +36,74 @@
       "role": "presentation"
     },
     {
-      "path": "src/stores/serverConfigStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/serverConfigStore.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/constants/serverConfig.ts",
       "role": "domain"
     },
     {
+      "path": "src/platform/settings/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/settings/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/settings/composables/useLitegraphSettings.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/settings/composables/useSettingUI.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/settings/composables/useSettingsHeaderCollapse.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/settings/composables/useSettingsUrlLoader.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/settings/constants/agent.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/settings/globalSettingsApi.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/ui/settings.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/stores/serverConfigStore.ts",
+      "role": "application"
+    },
+    {
       "path": "src/types/serverArgs.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/settings-core/src/canvasNavigation.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/settings-core/src/settingStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "packages/settings-core/src/types.ts",
       "role": "domain"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": [
+    "account",
+    "authentication",
+    "dialog-host",
+    "keybindings",
+    "telemetry"
+  ],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
@@ -218,7 +132,7 @@
         "src/platform/settings/composables/useSettingsUrlLoader.integration.test.ts",
         "src/platform/settings/components/SettingDialog.test.ts",
         "src/platform/settings/components/SettingItem.test.ts",
-        "src/platform/settings/components/ExtensionPanel.test.ts",
+        "src/platform/extensions/components/ExtensionPanel.test.ts",
         "src/components/dialog/content/setting/SettingItem.test.ts"
       ]
     },
