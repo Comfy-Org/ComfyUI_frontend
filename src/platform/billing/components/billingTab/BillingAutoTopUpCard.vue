@@ -372,13 +372,16 @@ const savedPaymentMethods = computedAsync(async () => {
   return result.status === 'ok' ? result.value : null
 }, null)
 
+function offViewKey(): ViewKey {
+  if (!needsDefaultPaymentMethod.value) return 'off'
+  return savedPaymentMethods.value?.length === 0
+    ? 'noPaymentMethod'
+    : 'noDefaultPaymentMethod'
+}
+
 function viewKey(settings: AutoReloadSettings): ViewKey {
   if (!isStatus(settings.status)) return 'off'
-  if (settings.status === 'off' && needsDefaultPaymentMethod.value) {
-    return savedPaymentMethods.value?.length === 0
-      ? 'noPaymentMethod'
-      : 'noDefaultPaymentMethod'
-  }
+  if (settings.status === 'off') return offViewKey()
   if (
     settings.status === 'failed' &&
     settings.disabled_reason === 'consecutive_declines'
