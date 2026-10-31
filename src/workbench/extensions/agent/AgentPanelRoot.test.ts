@@ -8137,6 +8137,8 @@ describe('AgentPanelRoot run approval telemetry', () => {
 
         if (url.includes('/asks/') && init?.method === 'POST')
           return answerResponse
+        if (url.includes('/assets'))
+          return json(200, { assets: [], total: 0, has_more: false })
         if (url.includes('/agent/threads')) return json(200, agentThreadList())
         if (url.includes('/workflows'))
           return json(200, {
@@ -8228,7 +8230,7 @@ describe('AgentPanelRoot run approval telemetry', () => {
       selected: ['run']
     })
     currentTime = 1_900
-    resolveAnswer(json(200, { status: 'answered' }))
+    resolveAnswer(json(200, { status: 'answered', selected: ['run'] }))
     await vi.waitFor(() =>
       expect(telemetry.trackAgentRunApprovalResolved.mock.calls).toEqual([
         [{ decision: 'open_workflow', time_to_decide_ms: 150 }],
