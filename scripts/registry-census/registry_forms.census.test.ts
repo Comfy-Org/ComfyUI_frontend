@@ -1,18 +1,4 @@
 // @vitest-environment happy-dom
-/**
- * The baseline registry form census: `proveWidgetForm` over every class in
- * `object_info.shape.json`, with no pack code loaded.
- *
- * Run through `vitest.census.config.mts`, never as part of `test:unit` and
- * never as part of the gated ecosystem matrix:
- *
- *     CENSUS_FORMS_OUT=.census/results/registry-forms.json \
- *       pnpm exec vitest run --config vitest.census.config.mts
- *
- * It is a measurement, so it asserts only that the measurement happened —
- * population size and registration success. Asserting a provable RATE here
- * would turn a census into a floor, and a refusal is the predicate working.
- */
 import fs from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
@@ -38,9 +24,6 @@ describe('registry form census', () => {
       }
       expect(registryForms.err).toBeUndefined()
       expect(registryForms.classes).toBe(classes)
-      // Every class registered, and every registered class got a verdict. Both
-      // halves matter: a registration that silently dropped classes, or a
-      // verdict loop that skipped them, would both read as a clean population.
       expect(registryForms.registered).toBe(classes)
       const verdicts = Object.values(registryForms.histogram).reduce(
         (a, b) => a + b,
