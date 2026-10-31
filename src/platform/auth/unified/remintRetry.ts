@@ -145,10 +145,7 @@ async function presentSsoRequired(present: () => unknown): Promise<void> {
  * replayed, so such a request surfaces its original `401` without a retry (no
  * current cloud caller sends one).
  *
- * `shouldRetryOn401` is the caller's gate (see {@link shouldRemintCloudRequest}):
- * flag-OFF traffic never enters the re-mint path, and that path is all the flag
- * rolls back. `retryPolicy` passes through {@link cloudRetryPolicy}, so status
- * retries and the cloud resend of a refused write run with the flag on or off.
+ * `shouldRetryOn401` is the caller's gate (see {@link shouldRemintCloudRequest}).
  *
  * `retrySignalLifecycle`, when supplied, ends the initial fetch's timeout
  * before re-minting and creates a fresh signal immediately before the retry.
