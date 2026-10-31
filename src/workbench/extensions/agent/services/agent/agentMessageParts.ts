@@ -5,6 +5,7 @@ import {
   zAgentRunApprovalContext
 } from '@comfyorg/ingest-types/zod'
 import { isEqual, uniqBy } from 'es-toolkit'
+import { microUsdToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import type {
   AgentMessages,
@@ -398,6 +399,19 @@ export interface AssistantMessage {
   streaming: boolean
   thinking: boolean
   thinkingText?: string
+  creditsUsed?: number
+}
+
+export function creditsFromChargeMicroUsd(
+  chargeMicroUsd: unknown
+): number | undefined {
+  if (
+    typeof chargeMicroUsd !== 'number' ||
+    !Number.isFinite(chargeMicroUsd) ||
+    chargeMicroUsd <= 0
+  )
+    return undefined
+  return microUsdToCredits(chargeMicroUsd)
 }
 
 export function createAssistantMessage(id: TurnId): AssistantMessage {

@@ -31,6 +31,7 @@ import { createAppRouter } from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/billing/subscription/utils/paymentReturnUrl'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { createToastId } from '@/types/toastId'
 import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
 import { api } from '@/scripts/api'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
@@ -86,7 +87,18 @@ async function startLocalAuthSession(): Promise<boolean> {
     }
     const { startLocalWebSession } =
       await import('@/platform/auth/localWeb/localWebSession')
-    return (await startLocalWebSession()) === 'sign-in-failed'
+    const signInNotice = createToastId()
+    const started = await startLocalWebSession({
+      onPopupBlocked: () =>
+        useToast().error(t('auth.desktopHost.popupBlocked'), {
+          id: signInNotice
+        }),
+      onSignInFailed: () =>
+        useToast().error(t('auth.desktopHost.signInFailed'), {
+          id: signInNotice
+        })
+    })
+    return started === 'sign-in-failed'
   })
 }
 

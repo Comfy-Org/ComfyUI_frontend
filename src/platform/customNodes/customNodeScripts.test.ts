@@ -5,6 +5,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { CustomNodeLoadFailure } from './customNodeScripts'
 import {
+  isSafeExtensionBoot,
   reportCustomNodeLoadFailures,
   shouldLoadCustomNodeScript
 } from './customNodeScripts'
@@ -13,27 +14,108 @@ describe('shouldLoadCustomNodeScript', () => {
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
     'skips the inlined Cloud extension %s in cloud builds',
     (extension) => {
-      expect(shouldLoadCustomNodeScript(extension, true)).toBe(false)
+      expect(
+        shouldLoadCustomNodeScript(extension, { isCloudBuild: true })
+      ).toBe(false)
     }
   )
 
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
     'keeps the legacy path %s available outside cloud builds',
     (extension) => {
-      expect(shouldLoadCustomNodeScript(extension, false)).toBe(true)
+      expect(
+        shouldLoadCustomNodeScript(extension, { isCloudBuild: false })
+      ).toBe(true)
     }
   )
 
   it('skips core extensions that load through the core entry point', () => {
-    expect(shouldLoadCustomNodeScript('/extensions/core/foo.js', false)).toBe(
-      false
-    )
+    expect(
+      shouldLoadCustomNodeScript('/extensions/core/foo.js', {
+        isCloudBuild: false
+      })
+    ).toBe(false)
   })
 
   it('loads other extensions', () => {
     expect(
-      shouldLoadCustomNodeScript('/extensions/comfyui-foo/main.js', true)
+      shouldLoadCustomNodeScript('/extensions/comfyui-foo/main.js', {
+        isCloudBuild: true
+      })
     ).toBe(true)
+  })
+
+  it('leaves malformed extension entries to the isolated import failure path', () => {
+    expect(
+      shouldLoadCustomNodeScript('http://', {
+        isCloudBuild: false,
+        disabledExtensionPaths: ['/extensions/agent-cushions/']
+      })
+    ).toBe(true)
+  })
+
+  it.for([
+    { extension: '/extensions/agent-cushions/main.js', expected: false },
+    {
+      extension: '/extensions/agent-cushions/nested/panel.js',
+      expected: false
+    },
+    { extension: '/extensions/agent-cushions-extra/main.js', expected: true }
+  ])(
+    'admits $extension as $expected with a disabled extension path',
+    ({ extension, expected }) => {
+      expect(
+        shouldLoadCustomNodeScript(extension, {
+          isCloudBuild: false,
+          disabledExtensionPaths: ['/extensions/agent-cushions/']
+        })
+      ).toBe(expected)
+    }
+  )
+
+  it('skips every custom extension during a safe boot', () => {
+    expect(
+      shouldLoadCustomNodeScript('/extensions/comfyui-foo/main.js', {
+        isCloudBuild: false,
+        disableAllCustomExtensions: true
+      })
+    ).toBe(false)
+  })
+})
+
+describe('loadCustomNodeScripts', () => {
+  it('keeps disabled scripts inert on the CPU-reading import path', async () => {
+    const { loadCustomNodeScripts } = await import('./customNodeScripts')
+    const { api } = await import('@/scripts/api')
+    const executed: string[] = []
+    vi.stubGlobal('recordGateScript', (script: string) => executed.push(script))
+    const attempt = crypto.randomUUID()
+    vi.spyOn(api, 'fileURL').mockImplementation(
+      (script) =>
+        `data:text/javascript,globalThis.recordGateScript(${JSON.stringify(script)})#${attempt}`
+    )
+
+    await loadCustomNodeScripts(
+      ['/extensions/blocked/main.js', '/extensions/enabled/main.js'],
+      new AbortController().signal,
+      Promise.resolve({ answer: 'none' }),
+      { disabledExtensionPaths: ['/extensions/blocked/'] }
+    )
+
+    expect(executed).toEqual(['/extensions/enabled/main.js'])
+  })
+})
+
+describe('isSafeExtensionBoot', () => {
+  it.for([
+    { search: '?safe', expected: true },
+    { search: '?safe=1', expected: true },
+    { search: '?safe=true', expected: true },
+    { search: '?safe=0', expected: false },
+    { search: '?safe=false', expected: false },
+    { search: '', expected: false }
+  ])('reads $search as $expected', ({ search, expected }) => {
+    expect(isSafeExtensionBoot(search)).toBe(expected)
   })
 })
 

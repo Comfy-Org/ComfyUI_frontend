@@ -9,6 +9,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { NavGroupData } from '@comfyorg/design-system/lib/navigation/types'
+import type { SettingDialogProps } from '@comfyorg/settings-core/types'
 
 import SettingDialog from './SettingDialog.vue'
 
@@ -25,7 +26,8 @@ const searchMocks = vi.hoisted(() => ({
   inSearch: null as unknown as Ref<boolean>,
   matchedNavItemKeys: null as unknown as Ref<Set<string>>,
   searchQuery: null as unknown as Ref<string>,
-  searchResultsCategories: null as unknown as Ref<Set<string>>
+  searchResultsCategories: null as unknown as Ref<Set<string>>,
+  handleSearch: vi.fn()
 }))
 
 vi.mock<unknown>(
@@ -63,7 +65,7 @@ vi.mock<unknown>(
       inSearch: searchMocks.inSearch,
       searchResultsCategories: searchMocks.searchResultsCategories,
       matchedNavItemKeys: searchMocks.matchedNavItemKeys,
-      handleSearch: vi.fn(),
+      handleSearch: searchMocks.handleSearch,
       getSearchResults: () => []
     })
   })
@@ -126,11 +128,15 @@ beforeEach(() => {
   searchMocks.matchedNavItemKeys = ref(new Set<string>())
   searchMocks.searchQuery = ref('')
   searchMocks.searchResultsCategories = ref(new Set<string>())
+  searchMocks.handleSearch = vi.fn()
 })
 
-function renderDialog({ modal = false }: { modal?: boolean } = {}) {
+function renderDialog({
+  modal = false,
+  props = {}
+}: { modal?: boolean; props?: Partial<SettingDialogProps> } = {}) {
   return render(SettingDialog, {
-    props: { onClose: vi.fn() },
+    props: { onClose: vi.fn(), ...props },
     global: {
       plugins: [i18n],
       stubs: {
@@ -221,6 +227,72 @@ it('falls back when the active navigation item becomes unavailable', async () =>
   expect(
     screen.queryByText('workspace-allowlist panel')
   ).not.toBeInTheDocument()
+})
+
+it('navigates to a panel requested while the dialog is already open', async () => {
+  defaultCategory.value = { key: 'workspace', label: 'Workspace', children: [] }
+  searchMocks.inSearch.value = true
+  searchMocks.searchQuery.value = 'allow'
+  const onClose = vi.fn()
+  const { rerender } = renderDialog({
+    props: { onClose, defaultPanel: 'workspace', navigationRequestId: 1 }
+  })
+  expect(await screen.findByText('workspace panel')).toBeInTheDocument()
+
+  await rerender({
+    onClose,
+    defaultPanel: 'workspace-allowlist',
+    navigationRequestId: 2
+  })
+
+  expect(
+    await screen.findByText('workspace-allowlist panel')
+  ).toBeInTheDocument()
+  expect(screen.queryByText('workspace panel')).not.toBeInTheDocument()
+  expect(searchMocks.searchQuery.value).toBe('')
+  expect(searchMocks.handleSearch).toHaveBeenCalledWith('', expect.anything())
+})
+
+it('navigates to a repeated panel request made after moving away in-dialog', async () => {
+  defaultCategory.value = { key: 'workspace', label: 'Workspace', children: [] }
+  const user = userEvent.setup()
+  const onClose = vi.fn()
+  const { rerender } = renderDialog({
+    props: { onClose, defaultPanel: 'workspace', navigationRequestId: 1 }
+  })
+  expect(await screen.findByText('workspace panel')).toBeInTheDocument()
+
+  await user.click(screen.getByRole('button', { name: 'Allowlist' }))
+  expect(
+    await screen.findByText('workspace-allowlist panel')
+  ).toBeInTheDocument()
+
+  await rerender({ onClose, defaultPanel: 'workspace', navigationRequestId: 2 })
+
+  expect(await screen.findByText('workspace panel')).toBeInTheDocument()
+  expect(
+    screen.queryByText('workspace-allowlist panel')
+  ).not.toBeInTheDocument()
+})
+
+it('ignores a requested panel that the current navigation does not offer', async () => {
+  const onClose = vi.fn()
+  const { rerender } = renderDialog({
+    props: {
+      onClose,
+      defaultPanel: 'workspace-allowlist',
+      navigationRequestId: 1
+    }
+  })
+  expect(
+    await screen.findByText('workspace-allowlist panel')
+  ).toBeInTheDocument()
+
+  await rerender({ onClose, defaultPanel: 'secrets', navigationRequestId: 2 })
+
+  expect(
+    await screen.findByText('workspace-allowlist panel')
+  ).toBeInTheDocument()
 })
 
 it('shows the workspace identity in the dialog header on workspace sections', async () => {

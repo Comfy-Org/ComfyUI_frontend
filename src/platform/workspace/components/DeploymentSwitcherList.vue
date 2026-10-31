@@ -1,5 +1,5 @@
 <template>
-  <template v-if="notice || changeSinceBoot">
+  <template v-if="notice || changeSinceBootMessage">
     <div
       v-if="notice"
       role="status"
@@ -12,13 +12,13 @@
       />
       <span class="text-pretty">{{ notice }}</span>
     </div>
-    <template v-if="changeSinceBoot">
+    <template v-if="changeSinceBootMessage">
       <p
         role="status"
         class="m-0 w-0 min-w-full px-2 py-1.5 text-xs text-pretty text-muted-foreground"
         data-testid="deployment-switcher-changed"
       >
-        {{ changeMessage }}
+        {{ changeSinceBootMessage }}
       </p>
       <MenuItem
         :class="switcherItemClass"
@@ -56,12 +56,16 @@
         :tooltip="row.tooltip"
         :tone="row.tone"
         :note="row.note"
+        :action-label="row.actionLabel"
+        :action-icon="row.actionIcon"
+        :problem="row.problem"
         :muted="row.muted"
         :switching="row.switching"
         :disabled="row.disabled"
         :data-focus-row="row.value"
+        :aria-label="row.ariaLabel"
         :data-testid="row.testId"
-        @select="choose($event, row.deploymentId)"
+        @select="chooseRow($event, row)"
       />
     </DropdownMenuRadioGroup>
   </template>
@@ -101,15 +105,25 @@ import { useI18n } from 'vue-i18n'
 
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcherBuildAction from '@/platform/workspace/components/DeploymentSwitcherBuildAction.vue'
 import DeploymentSwitcherDefaultMenu from '@/platform/workspace/components/DeploymentSwitcherDefaultMenu.vue'
 import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwitcherRow.vue'
 import { switcherItemClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
+import type { DeploymentRow } from '@/platform/workspace/composables/useDeploymentRows'
 import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
 import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocus'
+import type { DeploymentRowAction } from '@/platform/workspace/deploymentStartState'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
+
+const STOPPED_PICK_ACTIONS = new Set<DeploymentRowAction>([
+  'start',
+  'retry',
+  'open'
+])
 
 const { switchingTo } = defineProps<{
   switchingTo: string | null
@@ -133,13 +147,15 @@ const {
   goneDeployment,
   canSetDefault,
   isSwitching,
-  changeSinceBoot,
   followsWorkspace
 } = storeToRefs(useDeploymentPickStore())
-const { currentLabel } = useDeploymentLabels()
-const { sections, pickedValue } = useDeploymentRows()
+const { currentLabel, changeSinceBootMessage } = useDeploymentLabels()
+const { sections, pickedValue, pickedRow } = useDeploymentRows()
+const startStore = useDeploymentStartStore()
 const sectionLabelId = useId()
 useKeepRowFocus(sections)
+
+const platformUrl = getComfyPlatformBaseUrl()
 
 const listedSections = computed(() =>
   sections.value.map((section, index) => ({
@@ -149,9 +165,9 @@ const listedSections = computed(() =>
     rows: section.rows.map((row) => ({
       ...row,
       testId: `deployment-row-${row.deploymentId ?? 'cloud'}`,
+      muted: row.action !== 'pick' && !isSwitching.value,
       switching: isSwitching.value && switchingTo === row.value,
-      muted: !row.pickable && !isSwitching.value,
-      disabled: isSwitching.value || !row.pickable
+      disabled: isSwitching.value || row.action === 'none'
     }))
   }))
 )
@@ -159,27 +175,50 @@ const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)
 
 const notice = computed(() => {
   if (goneDeployment.value === 'pick') return t('deploymentSwitcher.pickGone')
+  const picked = pickedRow.value
+  if (picked && STOPPED_PICK_ACTIONS.has(picked.action)) {
+    return t(
+      picked.tone === 'failed'
+        ? 'deploymentSwitcher.pickFailed'
+        : 'deploymentSwitcher.pickStopped',
+      { deployment: currentLabel.value },
+      { escapeParameter: false }
+    )
+  }
   if (goneDeployment.value !== 'default') return null
   return canSetDefault.value
     ? t('deploymentSwitcher.defaultGoneOwner')
     : t('deploymentSwitcher.defaultGone')
 })
 
-const changeMessage = computed(() =>
-  changeSinceBoot.value === 'release'
-    ? t('deploymentSwitcher.releaseChanged')
-    : t(
-        'deploymentSwitcher.deploymentChanged',
-        { deployment: currentLabel.value },
-        { escapeParameter: false }
-      )
-)
-
 const switchingNote = computed(() =>
   settingStore.get('Comfy.Workflow.Persist')
     ? t('deploymentSwitcher.switchingNote')
     : t('deploymentSwitcher.switchingNoteWithoutDrafts')
 )
+
+function chooseRow(event: Event, row: DeploymentRow) {
+  if (row.action === 'pick') {
+    choose(event, row.deploymentId)
+    return
+  }
+  if (row.deploymentId === null) return
+  if (row.action === 'open') {
+    openDeploymentPage(row.deploymentId)
+    return
+  }
+  event.preventDefault()
+  if (row.action === 'none') return
+  void startStore.start(row.deploymentId)
+}
+
+function openDeploymentPage(deploymentId: string) {
+  window.open(
+    `${platformUrl}/profile/deployments/${encodeURIComponent(deploymentId)}`,
+    '_blank',
+    'noopener,noreferrer'
+  )
+}
 
 function choose(event: Event, deploymentId: string | null) {
   if (

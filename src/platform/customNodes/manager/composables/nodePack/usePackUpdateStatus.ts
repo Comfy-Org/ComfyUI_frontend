@@ -3,7 +3,7 @@ import { computed, toValue } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
-import { getPackUpdateStatus } from '@/platform/customNodes/manager/utils/packUpdateStatus'
+import { getPackUpdateStatus } from '@/platform/customNodes/manager/composables/nodePack/packUpdateStatus'
 
 export const usePackUpdateStatus = (
   nodePackSource: MaybeRefOrGetter<components['schemas']['Node']>

@@ -21,12 +21,41 @@ const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/sentry.js'
 ])
 
+export function getExtensionPath(script: string): string | undefined {
+  try {
+    const pathname = new URL(script, window.location.href).pathname
+    return pathname.match(/^\/extensions\/[^/]+\//)?.[0]
+  } catch {
+    return undefined
+  }
+}
+
+export function isSafeExtensionBoot(search: string): boolean {
+  const value = new URLSearchParams(search).get('safe')
+  return value === '' || value === '1' || value === 'true'
+}
+
 export function shouldLoadCustomNodeScript(
   script: string,
-  isCloudBuild: boolean
+  {
+    isCloudBuild,
+    disabledExtensionPaths = [],
+    disableAllCustomExtensions = false
+  }: {
+    isCloudBuild: boolean
+    disabledExtensionPaths?: readonly string[]
+    disableAllCustomExtensions?: boolean
+  }
 ): boolean {
   if (script.includes('extensions/core')) return false
-  return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(script)
+  if (isCloudBuild && INLINED_CLOUD_EXTENSIONS.has(script)) return false
+  if (disableAllCustomExtensions) return false
+
+  const extensionPath = getExtensionPath(script)
+  return (
+    extensionPath === undefined ||
+    !disabledExtensionPaths.includes(extensionPath)
+  )
 }
 
 const MAX_CUSTOM_NODE_PATH_LENGTH = 512
@@ -114,10 +143,21 @@ export function reportCustomNodeLoadFailures(
 export async function loadCustomNodeScripts(
   servedScripts: string[],
   signal: AbortSignal,
-  firstCpuServerReading: Promise<CpuServerReading> | undefined
+  firstCpuServerReading: Promise<CpuServerReading> | undefined,
+  {
+    disabledExtensionPaths = [],
+    disableAllCustomExtensions = false
+  }: {
+    disabledExtensionPaths?: readonly string[]
+    disableAllCustomExtensions?: boolean
+  } = {}
 ) {
   const scripts = servedScripts.filter((script) =>
-    shouldLoadCustomNodeScript(script, __DISTRIBUTION__ === 'cloud')
+    shouldLoadCustomNodeScript(script, {
+      isCloudBuild: __DISTRIBUTION__ === 'cloud',
+      disabledExtensionPaths,
+      disableAllCustomExtensions
+    })
   )
   if (firstCpuServerReading) {
     await bootstrapTracer.settle('bootstrap/extensions-load-custom', () =>

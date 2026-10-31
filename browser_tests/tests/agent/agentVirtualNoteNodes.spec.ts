@@ -1,7 +1,7 @@
 import type { AgentRunMode, JobsListResponse } from '@comfyorg/ingest-types'
 import { expect } from '@playwright/test'
 
-import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
+import type { ModelFolderInfo } from '@comfyorg/api-client/types'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'

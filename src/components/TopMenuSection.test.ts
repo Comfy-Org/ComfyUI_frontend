@@ -25,10 +25,7 @@ import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composabl
 
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
-import type {
-  JobListItem,
-  JobStatus
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobListItem, JobStatus } from '@comfyorg/api-client/jobTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import {
@@ -56,7 +53,7 @@ const managerSurveyDialog = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  import('@/platform/customNodes/manager/composables/useManagerSurveyDialog'),
+  import('@/platform/customNodes/manager/composables/dialogs/useManagerSurveyDialog'),
   () => ({ useManagerSurveyDialog: () => managerSurveyDialog })
 )
 
@@ -115,7 +112,9 @@ vi.mock<unknown>(
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/platform/workspace/openCustomDeploymentDialog'))
 
-vi.mock(import('@/platform/customNodes/manager/composables/useManagerDialog'))
+vi.mock(
+  import('@/platform/customNodes/manager/composables/dialogs/useManagerDialog')
+)
 
 vi.mock(import('@comfyorg/telemetry'))
 

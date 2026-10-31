@@ -206,6 +206,7 @@ import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQu
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import { waitForDeploymentListing } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
@@ -222,9 +223,9 @@ import {
   prefetchShareDialog
 } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
-import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerDialog'
 import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
-import { useManagerSurveyDialog } from '@/platform/customNodes/manager/composables/useManagerSurveyDialog'
+import { useManagerSurveyDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerSurveyDialog'
 import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -377,18 +378,8 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(legacyContentCheckRafId)
 })
 
-function waitForDeploymentListing(): Promise<void> {
-  let timeout: ReturnType<typeof setTimeout> | undefined
-  return Promise.race([
-    deploymentPickStore.loadOnce(),
-    new Promise<void>((resolve) => {
-      timeout = setTimeout(resolve, DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS)
-    })
-  ]).finally(() => clearTimeout(timeout))
-}
-
 async function pitchDeployingCustomNodes(): Promise<boolean> {
-  await waitForDeploymentListing()
+  await waitForDeploymentListing(DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS)
   if (!deploymentPickStore.isVisible) return false
   return openDeployCustomNodesDialog()
 }
