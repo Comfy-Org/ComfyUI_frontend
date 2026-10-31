@@ -12,6 +12,7 @@
   },
   "exports": {
     "./*": {
+      "@comfyorg/viewport3d": "./src/*.ts",
       "types": "./dist/*.d.ts",
       "default": "./src/*.ts"
     }

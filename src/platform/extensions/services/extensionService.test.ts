@@ -8,7 +8,7 @@ import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
 
-import { useExtensionService } from './extensionService'
+import { isGraphLoadHookOrigin, useExtensionService } from './extensionService'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('firebase/auth'))
@@ -157,7 +157,7 @@ describe('invokeExtensionsAsync', () => {
 
   type HookApp = ReturnType<typeof useApp>
 
-  it.for([
+  const nestedEntrypoints = [
     {
       entrypoint: 'loadGraphData',
       call: (app: HookApp) => app.loadGraphData()
@@ -165,13 +165,29 @@ describe('invokeExtensionsAsync', () => {
     {
       entrypoint: 'loadApiJson',
       call: (app: HookApp) => app.loadApiJson({}, 'nested.json')
-    },
-    {
-      entrypoint: 'handleFile',
-      call: (app: HookApp) => app.handleFile(new File([], 'nested.png'))
     }
-  ])(
-    'rejects $entrypoint started after an await in a graph-load hook',
+  ]
+
+  it.for(nestedEntrypoints)(
+    'refuses $entrypoint started directly in a graph-load hook',
+    async ({ call }) => {
+      let nested: Promise<unknown> | undefined
+      register({
+        name: 'nested-loader',
+        beforeLoadGraph: async (app: HookApp) => {
+          nested = call(app)
+          await nested
+        }
+      })
+
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+      await expect(nested).resolves.toBe(false)
+    }
+  )
+
+  it.for(nestedEntrypoints)(
+    'refuses $entrypoint started after an await in a graph-load hook',
     async ({ call }) => {
       let nested: Promise<unknown> | undefined
       register({
@@ -179,19 +195,134 @@ describe('invokeExtensionsAsync', () => {
         beforeLoadGraph: async (app: HookApp) => {
           await Promise.resolve()
           nested = call(app)
-          await nested.catch(() => {})
+          await nested
         }
       })
 
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-      await expect(nested).rejects.toThrow(
-        'A graph-load lifecycle hook cannot start a nested graph load'
+      await expect(nested).resolves.toBe(false)
+    }
+  )
+
+  it.for([
+    {
+      variant: 'directly',
+      wrap: (handleFile: HookApp['handleFile']) => handleFile
+    },
+    {
+      variant: 'through an async forwarding wrapper',
+      wrap:
+        (handleFile: HookApp['handleFile']) =>
+        async (...args: Parameters<HookApp['handleFile']>) => {
+          await Promise.resolve()
+          return handleFile(...args)
+        }
+    }
+  ])(
+    'marks a graph-bearing file started $variant through the hook app as hook-originated',
+    async ({ wrap }) => {
+      const file = new File(
+        [JSON.stringify({ version: 0.4, nodes: [], links: [] })],
+        'nested.json',
+        { type: 'application/json' }
       )
+      const app = useApp()
+      const handleFile = vi.fn(
+        async (
+          _handled: File,
+          _openSource?: unknown,
+          options?: unknown
+        ): Promise<false | undefined> =>
+          isGraphLoadHookOrigin(options) ? false : void 0
+      )
+      vi.spyOn(app, 'handleFile').mockImplementation(wrap(handleFile))
+      let nested: Promise<unknown> | undefined
+      register({
+        name: 'hook-file-loader',
+        beforeLoadGraph: async (hookApp: HookApp) => {
+          await Promise.resolve()
+          nested = hookApp.handleFile(file)
+          await nested
+        }
+      })
+
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+      await expect(nested).resolves.toBe(false)
+      expect(handleFile.mock.calls[0][0]).toBe(file)
+    }
+  )
+
+  it('keeps the options a hook passed to handleFile', async () => {
+    const file = new File([], 'hook.json', { type: 'application/json' })
+    const onNodeCreated = () => {}
+    const app = useApp()
+    const handleFile = vi.spyOn(app, 'handleFile').mockResolvedValue(undefined)
+    register({
+      name: 'options-passing-extension',
+      beforeLoadGraph: (hookApp: HookApp) =>
+        hookApp.handleFile(file, 'file_drop', {
+          deferWarnings: true,
+          onNodeCreated
+        })
+    })
+
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+    expect(handleFile.mock.calls[0][1]).toBe('file_drop')
+    expect(handleFile.mock.calls[0][2]).toMatchObject({
+      deferWarnings: true,
+      onNodeCreated
+    })
+  })
+
+  it.for([
+    { variant: 'a distinct file', shared: false },
+    { variant: 'the same file object', shared: true }
+  ])(
+    'gives each overlapping call its own origin for $variant',
+    async ({ shared }) => {
+      const hookFile = new File([], 'hook.json', { type: 'application/json' })
+      const independentFile = shared
+        ? hookFile
+        : new File([], 'independent.json', { type: 'application/json' })
+      const app = useApp()
+      let forward!: () => void
+      const heldForwarding = new Promise<void>((resolve) => {
+        forward = resolve
+      })
+      const origins: Record<string, boolean> = {}
+      const entry = (who: string, file: File, options?: unknown) => {
+        expect(file).toBeInstanceOf(File)
+        origins[who] = isGraphLoadHookOrigin(options)
+      }
+      vi.spyOn(app, 'handleFile').mockImplementation(
+        async (file: File, _openSource?: unknown, options?: unknown) => {
+          await heldForwarding
+          entry('hook', file, options)
+        }
+      )
+      register({
+        name: 'awaiting-extension',
+        beforeLoadGraph: (hookApp: HookApp) => hookApp.handleFile(hookFile)
+      })
+
+      const dispatch =
+        useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+      await Promise.resolve()
+      entry('independent', independentFile)
+      forward()
+      await dispatch
+
+      expect(origins).toEqual({ independent: false, hook: true })
     }
   )
 
   it('lets a retained hook app load once the hook dispatch has finished', async () => {
+    const handleFile = vi
+      .spyOn(useApp(), 'handleFile')
+      .mockResolvedValue(undefined)
     let retained: HookApp | undefined
     register({
       name: 'retaining-extension',
@@ -200,14 +331,33 @@ describe('invokeExtensionsAsync', () => {
       }
     })
     await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-    const handleFile = vi
-      .spyOn(useApp(), 'handleFile')
-      .mockResolvedValue(undefined)
     const file = new File([], 'later.png')
 
     await retained?.handleFile(file)
 
     expect(handleFile).toHaveBeenCalledWith(file)
+  })
+
+  it('does not recurse when a hook wraps a retained entrypoint', async () => {
+    const app = useApp()
+    const loadGraphData = vi
+      .spyOn(app, 'loadGraphData')
+      .mockResolvedValue(undefined)
+    register({
+      name: 'wrapping-extension',
+      beforeLoadGraph: (hookApp: HookApp) => {
+        const retained = hookApp.loadGraphData
+        hookApp.loadGraphData = async function (...args) {
+          await retained.apply(this, args)
+          return false
+        }
+      }
+    })
+
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+    await expect(app.loadGraphData()).resolves.toBe(false)
+    expect(loadGraphData).toHaveBeenCalledOnce()
   })
 
   it('silently ignores a non-function property of the same name', async () => {
