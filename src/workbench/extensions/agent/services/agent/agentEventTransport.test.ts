@@ -1160,6 +1160,18 @@ describe('agentEventTransport thinking drafts', () => {
     expect(thinkingTexts(emit.mock.calls.at(-1)?.[0] ?? message)).toEqual([])
   })
 
+  it('never settles a draft into a finished row when the tab changes', () => {
+    const message = drive([
+      thinkingDraft('unsigned'),
+      {
+        type: 'agent_active_tab',
+        data: { workflow_id: 'wf-1', message_id: 'm', thread_id: 't' }
+      }
+    ])
+
+    expect(thinkingTexts(message)).toEqual([])
+  })
+
   it('does not let an answer withdrawal take the thinking draft', () => {
     const message = drive([thinkingDraft('Still thinking'), draft('')])
 

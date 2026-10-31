@@ -311,6 +311,7 @@ export function createAgentEventTransport(
     const targetKey = `${data.workflow_id}\u0000${data.node_locator_id ?? ''}`
     if (lastTabTargetKey === targetKey) return false
     lastTabTargetKey = targetKey
+    dropThinkingDraft()
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
