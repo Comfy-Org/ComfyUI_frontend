@@ -6773,7 +6773,7 @@ describe('useAgentSession (v1 composition root)', () => {
       }
     })
     session.start()
-    return { session, postMessage }
+    return { session, postMessage, bindingStore }
   }
 
   it('(h10) a continuing turn re-flags a tab that never adopted the workflow another tab holds, with its draft', async () => {
@@ -6792,19 +6792,19 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(second.draft).toEqual(draftSnapshot)
   })
 
-  it('(h10b) a continuing turn with no draft is not re-flagged, so it cannot mint an empty workflow', async () => {
+  it('(h10b) a continuing turn with no canvas is held instead of retargeting the remembered workflow', async () => {
     let draft: DraftSnapshot | undefined = { content: { nodes: [], links: [] } }
     const { session, postMessage } = unboundTabSession({
-      acks: ['wf-other-tab', 'wf-other-tab'],
+      acks: ['wf-other-tab'],
       draft: () => draft
     })
 
     await session.sendMessage('add a text input node')
     draft = undefined
-    await session.sendMessage('and a load image node')
+    const sent = await session.sendMessage('and a load image node')
 
-    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
-    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('draft')
+    expect(sent).toBe(false)
+    expect(postMessage).toHaveBeenCalledTimes(1)
   })
 
   it('(h10c) once the re-flagged mint is adopted, the next turn names it instead of minting again', async () => {
@@ -6824,9 +6824,9 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(third.workflowId).toBe('wf-minted')
   })
 
-  it('(h10d) a continuing turn is not re-flagged when the bound workflow is open in no tab', async () => {
+  it('(h10d) a mint the tab could not adopt is not minted again', async () => {
     const { session, postMessage } = unboundTabSession({
-      acks: ['wf-closed', 'wf-closed'],
+      acks: ['wf-minted', 'wf-minted'],
       draft: () => ({ content: { nodes: [], links: [] } }),
       tabs: () => ({ open_tabs: [] })
     })
@@ -6836,6 +6836,72 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(postMessage.mock.calls[0][1].currentTabUnbound).toBe(true)
     expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
+  })
+
+  it('(h10e) a continuing turn re-flags the tab once the tab holding the remembered workflow has closed', async () => {
+    const draftSnapshot = { content: { nodes: [], links: [] } }
+    const { session, postMessage, bindingStore } = unboundTabSession({
+      acks: ['wf-other-tab', 'wf-minted'],
+      draft: () => draftSnapshot,
+      tabs: () => ({ open_tabs: [] })
+    })
+
+    await session.sendMessage('add a text input node')
+    bindingStore.unbindWorkflow('wf-other-tab')
+    await session.sendMessage('and a load image node')
+
+    const second = postMessage.mock.calls[1][1]
+    expect(second).not.toHaveProperty('workflowId')
+    expect(second.currentTabUnbound).toBe(true)
+    expect(second.draft).toEqual(draftSnapshot)
+  })
+
+  it('(h10f) a reply without a workflow id does not mint again on every later turn', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-9',
+      message_id: 'msg-1'
+    }))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/Unsaved Workflow.json' }),
+        adopted: vi.fn(),
+        draft: () => ({ content: { nodes: [], links: [] } })
+      }
+    })
+    session.start()
+
+    await session.sendMessage('add a text input node')
+    await session.sendMessage('and a load image node')
+
+    expect(postMessage.mock.calls[0][1].currentTabUnbound).toBe(true)
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
+  })
+
+  it('(h10g) a new chat forgets the mint a tab already requested', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-9',
+      message_id: 'msg-1'
+    }))
+    const conversation = useAgentConversationStore()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/Unsaved Workflow.json' }),
+        adopted: vi.fn(),
+        draft: () => ({ content: { nodes: [], links: [] } })
+      }
+    })
+    session.start()
+
+    await session.sendMessage('add a text input node')
+    session.newChat()
+    conversation.setThreadId('th-10')
+    await session.sendMessage('start over')
+
+    expect(postMessage.mock.calls[1][1].currentTabUnbound).toBe(true)
   })
 
   const LINKED_DRAFT: DraftSnapshot = {

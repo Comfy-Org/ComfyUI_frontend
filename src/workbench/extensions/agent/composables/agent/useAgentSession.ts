@@ -557,6 +557,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const boundWorkflowId = ref<string | null>(rememberedWorkflowId)
 
   /**
+   * The workflow each unsaved tab already asked the server to mint, undefined
+   * when the reply named none. Keeps a tab that could not adopt its mint from
+   * minting again on every turn. Scoped to the conversation.
+   */
+  const mintedByTab = new Map<string, string | undefined>()
+
+  /**
    * H8 reporting state, kept beside the binding it describes: the workflow
    * last reported for the current thread (suppresses the ack's re-report of a
    * transition already committed by a selection), and a target selection
@@ -1175,26 +1182,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function postTurn(
     threadId: string,
-    text: string,
-    origin: TurnOrigin,
-    wfContext: WorkflowTurnContext | undefined,
-    attachments?: SentAttachment[],
-    tags?: SentTag[],
-    workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    input: PostMessageInput,
+    wfContext: WorkflowTurnContext | undefined
   ): Promise<AgentTurnAccepted> {
-    const input = buildPostInput(
-      threadId,
-      text,
-      origin,
-      wfContext,
-      attachments,
-      tags,
-      workflowReferences,
-      selectionWorkflowId,
-      clientMessageId
-    )
     if (wfContext?.id === undefined) return rest.postMessage(threadId, input)
     return rest.postMessage(threadId, { ...input, workflowId: wfContext.id })
   }
@@ -1211,17 +1201,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     clientMessageId?: string
   ): PostMessageInput {
     const draft = workflow?.draft?.(origin)
-    const tabs = workflow?.tabs?.(origin)
     const unboundTarget = isUnboundTarget(
       wfContext,
       boundWorkflowId.value,
-      draft,
-      tabs
+      draft
     )
     const selectedWorkflowId = selectionWorkflowId?.()
     return {
       content: serializeWorkflowReferences(text, workflowReferences ?? []),
-      tabs,
+      tabs: workflow?.tabs?.(origin),
       workflowReferences: serializeReferencedWorkflows(
         workflowReferences,
         wfContext?.id
@@ -1271,19 +1259,38 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function isUnboundTarget(
     wfContext: WorkflowTurnContext | undefined,
     boundWorkflowId: string | null,
-    draft: DraftSnapshot | undefined,
-    tabs: OpenTabsSnapshot | undefined
+    draft: DraftSnapshot | undefined
   ): boolean {
     if (wfContext === undefined || wfContext.id !== undefined) return false
-    if (boundWorkflowId === null) return true
-    return draft !== undefined && isOpenInATab(boundWorkflowId, tabs)
+    if (mintAlreadyRequested(wfContext.tabPath, boundWorkflowId)) return false
+    return boundWorkflowId === null || draft !== undefined
   }
 
-  function isOpenInATab(
-    workflowId: string,
-    tabs: OpenTabsSnapshot | undefined
+  function mintAlreadyRequested(
+    tabPath: string,
+    boundWorkflowId: string | null
   ): boolean {
-    return (tabs?.open_tabs ?? []).some((tab) => tab.workflow_id === workflowId)
+    if (!mintedByTab.has(tabPath)) return false
+    const minted = mintedByTab.get(tabPath)
+    return minted === undefined || minted === boundWorkflowId
+  }
+
+  function rememberMint(tabPath: string, workflowId: string | undefined): void {
+    const holder =
+      workflowId === undefined ? undefined : bindingStore.tabPathFor(workflowId)
+    if (holder === undefined || holder === tabPath)
+      mintedByTab.set(tabPath, workflowId)
+  }
+
+  function lacksCanvasForRemint(
+    wfContext: WorkflowTurnContext | undefined,
+    origin: TurnOrigin
+  ): boolean {
+    if (wfContext === undefined || wfContext.id !== undefined) return false
+    if (boundWorkflowId.value === null) return false
+    if (mintAlreadyRequested(wfContext.tabPath, boundWorkflowId.value))
+      return false
+    return workflow?.draft?.(origin) === undefined
   }
 
   function buildTargetFields(
@@ -1522,8 +1529,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
         recordUnavailableTarget(text)
         return false
       }
+      if (lacksCanvasForRemint(wfContext, origin)) {
+        recordUnavailableTarget(text)
+        return false
+      }
       sentContext = wfContext
-      const ack = await postTurn(
+      const input = buildPostInput(
         threadAtSend,
         text,
         origin,
@@ -1534,6 +1545,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         selectionWorkflowId,
         clientMessageId
       )
+      const ack = await postTurn(threadAtSend, input, wfContext)
       accepted = true
       if (!observeAcceptedTurn(generation, onAccepted)) return false
       acceptTurn(
@@ -1545,6 +1557,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         workflowReferences,
         skillScopeAtSend
       )
+      if (input.currentTabUnbound && wfContext)
+        rememberMint(wfContext.tabPath, ack.workflow_id)
       return true
     } catch (error) {
       // Before the generation guard: the binding store is page-global and
@@ -2110,6 +2124,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     boundWorkflowId.value = null
     rememberedWorkflowId = null
     pendingWorkflowBind = null
+    mintedByTab.clear()
     malformedStreamReports.clear()
     localStorage.removeItem(threadStorageKey)
     pendingThreadSource.value = source ?? null
@@ -2143,6 +2158,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       boundWorkflowId.value = null
       rememberedWorkflowId = null
       pendingWorkflowBind = null
+      mintedByTab.clear()
       malformedStreamReports.clear()
       conversationStore.setThreadId(threadId)
       load.switched = keepOpenChatUntilLoaded
