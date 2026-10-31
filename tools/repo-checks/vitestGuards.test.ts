@@ -13,6 +13,10 @@ const PROJECTS_WITHOUT_TIMER_GUARD = [
   'packages/test-utils/vitest.config.ts (test-utils)',
   'vite.config.mts (isolated-stores)',
   'vite.config.mts (tooling)',
+  // Censuses and the ecosystem matrix execute real pack code and real
+  // node registration under REAL timers: fake timers would freeze the
+  // code under measurement, not the test around it.
+  'vitest.census.config.mts',
   'vitest.matrix.config.mts'
 ]
 

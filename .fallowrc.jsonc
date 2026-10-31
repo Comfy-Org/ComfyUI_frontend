@@ -27,7 +27,8 @@
       "entryPoints": [
         "**/.storybook/{main.ts,preview.ts,style.css}",
         "packages/ingest-types/openapi-ts.config.ts",
-        "scripts/**/*.{js,ts}"
+        "scripts/**/*.{js,ts}",
+        "vitest.*.config.mts"
       ],
       "entryPointRole": "support"
     },

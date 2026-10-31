@@ -39,6 +39,9 @@ def row(pack: str, **over: object) -> dict:
         'driveTypes': {},
         'hookErrors': [],
         'ops': {'load': {'err': '', 'sig': '{}', 'depr': '', 'desync': ''}},
+        'formAgreement': {},
+        'formProof': {'graph': {}, 'driven': {}, 'needsForm': []},
+        'registryForms': {'histogram': {}, 'refusals': {}, 'digest': ''},
     }
     base.update(over)
     return base
@@ -209,6 +212,35 @@ class HarnessGates(unittest.TestCase):
         self.assertEqual(verdict.code, 2)
         self.assertIn('selfCheck: 99 row(s)', report)
         self.assertIsNone(verdict.metrics)
+
+    def test_a_telemetry_channel_that_stops_firing_is_withheld(self) -> None:
+        for key in ('formAgreement', 'formProof', 'registryForms'):
+            rows = population()
+            for r in rows:
+                del r[key]
+            verdict = sm.evaluate(rows, {})
+            report = '\n'.join(verdict.lines)
+            self.assertEqual(verdict.code, 2, key)
+            self.assertIn('ROW SCHEMA DRIFT', report)
+            self.assertIn(key, report)
+            self.assertIsNone(verdict.metrics)
+
+    def test_a_refused_form_verdict_does_not_move_the_population_verdict(
+        self,
+    ) -> None:
+        rows = population()
+        for r in rows:
+            r['formProof'] = {
+                'graph': {'KSampler#1': 'values_replaced'},
+                'driven': {'X': '!serialize_threw'},
+                'needsForm': ['KSampler#1'],
+            }
+            r['registryForms'] = {
+                'histogram': {'values_replaced': 3857},
+                'refusals': {'KSampler': 'values_replaced'},
+                'digest': 'different-from-baseline',
+            }
+        self.assertEqual(sm.evaluate(rows, {}).code, 0)
 
     def test_renderer_mode_must_match_the_verdict_arm(self) -> None:
         legacy = sm.evaluate(population(), {}, renderer='legacy')

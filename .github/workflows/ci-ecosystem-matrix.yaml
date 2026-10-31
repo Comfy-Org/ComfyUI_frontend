@@ -252,7 +252,7 @@ jobs:
     needs: corpus
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -342,7 +342,7 @@ jobs:
           row_names=()
           for f in matrix-rows/*.json; do
             name=$(basename "$f" .json)
-            case "$name" in _manifest*) continue ;; esac
+            case "$name" in _manifest*|_registry-baseline) continue ;; esac
             row_names+=("$name")
           done
           echo "specs=$built rows=${#row_names[@]}"

@@ -50,6 +50,7 @@ const ISOLATED_STORE_TESTS = [
   'src/stores/entityIdStore.test.ts',
   'src/testing/pinia.test.ts'
 ]
+const CENSUS_TESTS = ['scripts/registry-census/*.census.test.ts']
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -1015,7 +1016,7 @@ export default defineConfig({
             './vitest.console.setup.ts',
             './vitest.network.setup.ts'
           ],
-          exclude: FRONTEND_SCRIPT_TESTS,
+          exclude: [...FRONTEND_SCRIPT_TESTS, ...CENSUS_TESTS],
           include: [
             'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',

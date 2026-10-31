@@ -81,6 +81,9 @@ EXPECTED_ROW_KEYS = (
     'storeReadErrors',
     'newTypes',
     'driveTypes',
+    'formAgreement',
+    'formProof',
+    'registryForms',
 )
 
 TELEMETRY = (

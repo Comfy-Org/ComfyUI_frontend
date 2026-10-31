@@ -87,6 +87,13 @@ python3 scripts/registry-census/fetch_corpus.py --write-pins    # bump the pins
 python3 -m unittest discover -s scripts/registry-census         # verdict unit tests
 ```
 
+**`deps:audit` is `depcruise src`, and `build_matrix.py` writes ~1.1GB of
+third-party pack JS into `src/__ecs_matrix__/`.** `tsconfig.json`,
+`.oxfmtrc.json`, `.oxlintrc.json` and `knip.config.ts` already exclude that
+path; `.dependency-cruiser.json` does too, as of the widget-form census.
+Without it, following the instructions above makes the repo unpushable with an
+OOM that `--max-old-space-size` does not save.
+
 Pure stdlib; needs `curl` and `tar` on PATH, plus `git` for `--write-pins`.
 
 ## In CI
@@ -145,6 +152,152 @@ registered.
 is `setup(app)` — `api.addEventListener`, patching `LGraphCanvas.prototype`,
 wrapping `app.graphToPrompt`, adding canvas menus — scores as a fully clean
 row. A green matrix did not catch a `setup`-dispatch regression, and cannot.
+
+## The widget-form census (telemetry rung)
+
+`proveWidgetForm` (`src/lib/litegraph/src/widgets/widgetFormProof.ts`) gates
+emitting `widgets_values_form` — a per-node declaration of which widgets
+serialize and in what order. A node carrying one is addressed through that form
+and consults no widget catalog on any leg, so a **wrong form is authoritative**
+and silently misplaces values. It therefore proves rather than derives: emit
+only where core can prove the final `widgets_values` is the array it itself
+produced from `node.widgets`.
+
+This instrument is the only thing that can give that rule a population number,
+because deriving an order breaks on precisely the mutations the battery already
+performs (`wSplice`, `wReorder`, `wConvert`, `wPushPojo`,
+`wPushForeignClass`) — which is why the predicate checks array **identity**, not
+deep equality.
+
+**None of it gates.** A refusal is the predicate working as designed on a shape
+it was built to decline, so a floor would fail the run for correct behaviour.
+
+### Three populations. Do not quote one as another.
+
+| channel                                 | population                                                                            | where                                |
+| --------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------ |
+| `registryForms` on `_registry-baseline` | every class in `object_info.shape.json`, no pack code                                 | `vitest.census.config.mts`, run once |
+| `registryForms` on a pack row           | the same sweep inside that pack's process; read as a **delta** against the baseline   | every pack row                       |
+| `formProof` on a pack row               | the battery's standard-workflow nodes, and the pack's own `registerCustomNodes` types | every pack row                       |
+
+```bash
+# 1. the baseline: every registry class, no pack code (~8s)
+CENSUS_FORMS_OUT=.census/results/rows/_registry-baseline.json \
+  pnpm exec vitest run --config vitest.census.config.mts
+# 2. the pack rows (the ordinary matrix run writes both pack channels)
+MATRIX_OUT=.census/results/rows pnpm exec vitest run --config vitest.matrix.config.mts
+# 3. the report
+python3 scripts/registry-census/census_forms.py .census/results/rows
+```
+
+### Where the node definitions come from
+
+`object_info.shape.json` is a **node-shape projection** of a real `/object_info`
+dump — 3,857 classes, 998 from core and 2,859 from 97 packs. It exists because
+`matrix_runner.ts` carries six hardcoded defs for its battery, and six classes
+is not a registry: without an `object_info`, every Python-defined pack node
+class is invisible to the census, which is where widget-shape diversity
+actually lives.
+
+The source dump lives in `Comfy-Org/cloud`
+(`services/ingest/data/object_info.json`) — the same dump the agent image bakes.
+That repo is **private** and this one is **public**, and a pack-executing job
+may hold no credential, so the projection is committed rather than fetched.
+`object_info.pin.json` records the source commit's sha256 and the population;
+`project_object_info.py` regenerates both and documents what the projection
+drops (prose and presentation) and what it keeps (everything that changes a
+widget). Verify a bump two ways: `--verify` for byte-reproducibility from the
+pinned dump, and a digest comparison between a census run against the full dump
+and one against the projection for verdict fidelity.
+
+`object_info.fixture.json` is a seven-class slice of the projection, used so the
+runner's own tests stay fast while still registering real definitions. Both test
+suites assert it is byte-identical to its entries in the projection; a drifted
+fixture would make every verdict measured through it a claim about a node shape
+that does not exist.
+
+### Why the census runs last, after every gated channel
+
+Registering 3,857 defs runs each pack's `beforeRegisterNodeDef` 3,857 times
+instead of six. **`packs free of contained hook errors` is a gated criterion
+with a measured baseline**, so folding those firings into it would move a
+required gate for a reason no pull request caused. So:
+
+- the battery still registers its own six defs, in the same place, and every
+  gated channel's denominator and baseline are unchanged;
+- the census registers the real projection afterwards, on a fresh graph, and
+  keeps its own `hookErrors` — a finding, not a floor;
+- `row.hookErrors` is read off **before** the census phase, so nothing it does
+  can reach a gated channel;
+- both census functions are total. An escaping throw would leave the
+  write-ahead stub in place, and **stub rate is itself gated** — a telemetry
+  channel must not be able to cost a row.
+
+The cost of that placement, stated because it is a real fidelity loss: the app's
+order is `addCustomNodeDefs` → `registerNodeDef` → `registerCustomNodes`, and
+the census registers _after_ `registerCustomNodes`. The harness already deviates
+from that order (see the hook table above); the census deviates by one step
+further.
+
+### What it costs, because it is not free
+
+Registering 3,857 classes and instantiating each one costs **~5.3s of CPU per
+pack** on top of the battery's ~1.5s — measured over the detection-proof corpus
+at four workers: 16.03s user CPU for 11 packs with the 7-class fixture, 74.44s
+with the full projection. At ~485 packs that is ~43 CPU-minutes added per shard,
+which is why `ecosystem-matrix`'s `timeout-minutes` went from 20 to 40.
+
+**If that becomes tight again, raise the shard count rather than the timeout.**
+The work parallelises across shards and the per-pack cost does not shrink.
+
+Note also where the matrix actually executes packs: `should-run` restricts that
+on pull requests to branches named `version-bump-*`, so an ordinary PR does not
+execute packs and the aggregate check passes without them. The census therefore
+produces its numbers on a push to `main`, on a `version-bump-*` PR, on a
+`workflow_dispatch` — or locally.
+
+### The seam, and why it is faithful in both directions
+
+`proveWidgetForm` needs the array `serialiseWidgetValues` produced **before**
+the extension serialize hook, because identity is the whole proof — and core
+hands that array to exactly one thing outside `LGraphNode`: the node's own
+`onSerialize`, which `runExtensionSerializeHook` calls with the payload itself
+(`const view = canonical`). So the runner chains one on.
+
+- **It cannot manufacture a pass.** Post-hook identity is read from the
+  _returned_ payload, so a pack hook running after ours, or a `serialize`
+  override writing after `super`, still refuses.
+- **It cannot manufacture a refusal.** Installing a hook does force the hook
+  path for a node that would otherwise have returned early, but that path
+  leaves a JSON-cloneable `widgets_values` alone: the writeback skips cloneable
+  values, and the one `Object.assign` that could overwrite the field draws from
+  `readExtensionFields`, which excludes every canonical field by construction.
+
+It is a seam, not the production call site. A producer landing inside
+`serializeFromStoreState` should be measured again from there.
+
+### `coreIsLastWriter`, and the blind spot the census measures instead of hiding
+
+`coreIsLastWriter` is a **required** option with no default, because assuming it
+is how the predicate once accepted a subgraph host. The runner answers it the
+way the predicate's docstring prescribes — comparing both serialization entry
+points against `LGraphNode.prototype`.
+
+That comparison has one hole: a pack that reassigns
+`LGraphNode.prototype.serialize` leaves every node still identical to the
+prototype, so the check reads `true` while core is no longer the last writer.
+The census cannot close it from the outside, so it records
+`registryForms.prototypePatched` — captured from references taken **before** any
+pack entry runs. A provable rate is only as good as that flag is false.
+
+### `SubgraphNode`
+
+Probed through `LGraph.convertToSubgraph` with the production
+`subgraph-created` → `registerNewSubgraph` listener, not the litegraph test
+fixture's `TestSubgraphNode` subclass — measuring that would be measuring a
+class the product never makes. Two topologies, and each records what the
+verdict would have been had `coreIsLastWriter` been answered wrongly, at this
+seam and at the call site the predicate's own docstring prescribed.
 
 ### PASS criteria
 
@@ -210,17 +363,19 @@ array-concatenation would otherwise smuggle in.
 
 ### Environment
 
-| var                    | used by            | meaning                                            |
-| ---------------------- | ------------------ | -------------------------------------------------- |
-| `CENSUS_ROOT`          | all                | state root, default `.census/`                     |
-| `MATRIX_OUT`           | runner, summarizer | directory of per-pack row JSON                     |
-| `MATRIX_PREV`          | summarizer         | baseline metrics to compare against                |
-| `MATRIX_METRICS_OUT`   | summarizer         | where to write metrics on PASS                     |
-| `MATRIX_RUN_ID`        | summarizer         | skips the delta when the baseline is this same run |
-| `MATRIX_EXPECT_SHARDS` | summarizer         | required manifest count; unset disables the check  |
-| `MATRIX_STALE_MARKER`  | summarizer         | path to `registry-stale.json`, if present          |
-| `MATRIX_RENDERER`      | summarizer         | expected `legacy` or `vue` renderer arm            |
-| `MATRIX_VUE`           | runner             | enables Nodes 2.0 when set to `1`                  |
+| var                    | used by            | meaning                                                        |
+| ---------------------- | ------------------ | -------------------------------------------------------------- |
+| `CENSUS_ROOT`          | all                | state root, default `.census/`                                 |
+| `MATRIX_OUT`           | runner, summarizer | directory of per-pack row JSON                                 |
+| `MATRIX_PREV`          | summarizer         | baseline metrics to compare against                            |
+| `MATRIX_METRICS_OUT`   | summarizer         | where to write metrics on PASS                                 |
+| `MATRIX_RUN_ID`        | summarizer         | skips the delta when the baseline is this same run             |
+| `MATRIX_EXPECT_SHARDS` | summarizer         | required manifest count; unset disables the check              |
+| `MATRIX_STALE_MARKER`  | summarizer         | path to `registry-stale.json`, if present                      |
+| `MATRIX_RENDERER`      | summarizer         | expected `legacy` or `vue` renderer arm                        |
+| `MATRIX_VUE`           | runner             | enables Nodes 2.0 when set to `1`                              |
+| `MATRIX_OBJECT_INFO`   | runner             | node defs for the census; defaults to the committed projection |
+| `CENSUS_FORMS_OUT`     | baseline census    | where the `_registry-baseline` row is written                  |
 
 ## Widget form/values agreement — a measurement, not a gate
 
