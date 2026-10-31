@@ -21,6 +21,7 @@ import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionErrorStore } from './executionErrorStore'
 import { useAuthStore } from './authStore'
 import { useQueueSettingsStore } from './queueSettingsStore'
+import { useMaskEditorExtensionStore } from '@/renderer/extensions/maskEditor/stores/maskEditorExtensionStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 
@@ -40,10 +41,6 @@ const legacySeverityKinds = new Map<
 function workspaceStoreSetup() {
   const spinner = ref(false)
   const { shift: shiftDown } = useMagicKeys()
-  /**
-   * Whether the workspace is in focus mode.
-   * When in focus mode, only the graph editor is visible.
-   */
   const focusMode = ref(false)
 
   const toastStore = useToast()
@@ -87,10 +84,11 @@ function workspaceStoreSetup() {
     execute: useCommandStore().execute
   }))
   const sidebarTab = computed(() => useSidebarTabStore())
+  const maskEditor = {
+    registerTool: useMaskEditorExtensionStore().registerTool
+  }
   const setting = computed(() => ({
     settings: useSettingStore().settingsById,
-    // Allow generic key access to settings as custom nodes may add their
-    // own settings which is not tracked by the `Setting` schema.
     // oxlint-disable-next-line typescript/no-unnecessary-type-parameters
     get: <T = unknown>(key: string): T | undefined =>
       useSettingStore().get(key as keyof Settings) as T | undefined,
@@ -162,6 +160,7 @@ function workspaceStoreSetup() {
     toast,
     queueSettings,
     command,
+    maskEditor,
     sidebarTab,
     setting,
     workflow,
@@ -170,7 +169,6 @@ function workspaceStoreSetup() {
     bottomPanel,
     user: partialUserStore,
 
-    // Execution error state (read-only, exposed for custom extensions)
     lastNodeErrors: computed(() => executionErrorStore.lastNodeErrors),
     lastExecutionError: computed(() => executionErrorStore.lastExecutionError),
 
