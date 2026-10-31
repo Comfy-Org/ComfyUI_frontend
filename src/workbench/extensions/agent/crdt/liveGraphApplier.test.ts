@@ -536,7 +536,17 @@ describe('LiveGraphApplier', () => {
 
   it.for([
     { name: '_extra_2', label: 'out-of-range', expectedOverflowIndex: 2 },
-    { name: '_extra_01', label: 'malformed', expectedOverflowIndex: null }
+    { name: '_extra_01', label: 'malformed', expectedOverflowIndex: null },
+    {
+      name: `_extra_${'9'.repeat(17)}`,
+      label: 'past the safe integers',
+      expectedOverflowIndex: null
+    },
+    {
+      name: `_extra_${'9'.repeat(400)}`,
+      label: 'past the representable numbers',
+      expectedOverflowIndex: null
+    }
   ])(
     'reports a $label overflow key instead of applying it',
     ({ name, expectedOverflowIndex }) => {

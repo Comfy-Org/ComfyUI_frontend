@@ -569,6 +569,11 @@ function overflowWidgetIndex(name: string): number | null {
   return match ? Number(match[1]) : null
 }
 
+function addressableOverflowIndex(name: string): number | null {
+  const index = overflowWidgetIndex(name)
+  return Number.isSafeInteger(index) ? index : null
+}
+
 function documentWidget(
   node: LGraphNode,
   name: string
@@ -1418,7 +1423,7 @@ export class LiveGraphApplier {
         name,
         widgetCount: serializableWidgets(node).length,
         supportsOverflow: supportsDynamicWidgetOverflow(node),
-        overflowIndex: overflowWidgetIndex(name)
+        overflowIndex: addressableOverflowIndex(name)
       }
     )
   }
