@@ -161,9 +161,6 @@ describe('AudioPreviewPlayer', () => {
 
       expect(button).toHaveAttribute('aria-pressed', 'false')
       expect(useToast().toasts).toHaveLength(1)
-      // A bare `MediaError` is not an `Error` and has no own enumerable
-      // properties, so the reporter would stringify it to `"{}"`. Assert both
-      // halves: a real `Error`, carrying the code and the native message.
       const [reported] = vi.mocked(reportError).mock.calls[0]
       expect(reported).toBeInstanceOf(Error)
       expect(reportError).toHaveBeenCalledWith(
@@ -195,12 +192,10 @@ describe('AudioPreviewPlayer', () => {
       expect(useToast().toasts).toEqual([])
     })
 
-    it('resets the shown time when the source is cleared', async () => {
+    it('resets the shown elapsed time when the source is cleared mid-playback', async () => {
       vi.spyOn(HTMLMediaElement.prototype, 'duration', 'get').mockReturnValue(
         90
       )
-      // Elapsed time must start nonzero, or dropping the `currentTime` reset
-      // leaves this test green while a user clearing at 0:27 sees `0:27 / 0:00`.
       vi.spyOn(
         HTMLMediaElement.prototype,
         'currentTime',
@@ -222,14 +217,12 @@ describe('AudioPreviewPlayer', () => {
       ['the source is cleared', (r) => r.rerender({ modelValue: undefined })],
       ['the player unmounts', (r) => r.unmount()]
     ] satisfies [string, (r: ReturnType<typeof renderPlayer>) => unknown][])(
-      'dismisses a visible error toast when %s',
+      'dismisses only its own error toast when %s',
       async ([, transition]) => {
         vi.spyOn(HTMLMediaElement.prototype, 'play').mockRejectedValue(
           notSupported()
         )
         const user = userEvent.setup()
-        // An unrelated notification proves the cleanup is targeted. Without it,
-        // dismissing every toast globally would pass all three transitions.
         const unrelatedId = useToast().info('Unrelated notice')
         const rendered = renderPlayer('http://example.com/audio.mp3')
         await user.click(screen.getByRole('button', { name: 'g.playPause' }))

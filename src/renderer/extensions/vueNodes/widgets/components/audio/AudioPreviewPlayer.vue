@@ -263,12 +263,6 @@ const handlePause = () => {
   if (audioRef.value?.paused) isPlaying.value = false
 }
 
-/**
- * `MediaError` is not an `Error`, and its `code` and `message` live on the
- * prototype as accessors, so the instance has no own enumerable properties.
- * Reporting it directly loses everything: the reporter stringifies non-Errors,
- * and `JSON.stringify(mediaError)` is `"{}"`. Keep both diagnostics instead.
- */
 const toPlaybackError = (error: MediaError | null | undefined) =>
   new Error(
     `Audio playback failed (MediaError ${error?.code ?? 'unknown'}): ${
