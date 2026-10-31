@@ -39,21 +39,15 @@ class ProjectionKeepsShape(unittest.TestCase):
         seed = out['N']['input']['required']['seed'][1]
         self.assertNotIn('tooltip', seed)
         self.assertNotIn('description', seed)
-        # Every one of these changes the widget, and two of them change whether
-        # it occupies a positional slot at all.
         for kept in ('default', 'min', 'max', 'step',
                      'control_after_generate', 'serialize'):
             self.assertIn(kept, seed)
-        # Combo option lists are shape, not prose: a combo's choices are its
-        # widget. They are kept whole and untruncated.
         self.assertEqual(out['N']['input']['required']['pick'][0], ['a', 'b'])
         self.assertEqual(out['N']['python_module'], 'custom_nodes.Thing')
         for dropped in ('display_name', 'description', 'search_aliases'):
             self.assertNotIn(dropped, out['N'])
 
     def test_copies_an_unrecognised_input_spec_verbatim(self):
-        # Reshaping a spec this projection does not understand would silently
-        # change a node's widget list, which is the one thing it must not do.
         weird = {'N': {'input': {'required': {'x': {'odd': True}}}}}
         self.assertEqual(
             proj.project(weird)['N']['input']['required']['x'], {'odd': True}
@@ -92,9 +86,6 @@ class CommittedArtefactsAgree(unittest.TestCase):
             )
 
     def test_fixture_is_a_faithful_slice_of_the_projection(self):
-        # Mirrors the TypeScript assertion, so a drifted fixture fails whichever
-        # suite runs first. Everything measured through the fixture is otherwise
-        # a statement about a node shape that does not exist.
         fixture = read_json(FIXTURE)
         self.assertTrue(fixture)
         for name, node in fixture.items():
@@ -105,9 +96,6 @@ class CommittedArtefactsAgree(unittest.TestCase):
             )
 
     def test_the_six_classes_the_battery_hardcodes_are_all_present(self):
-        # The battery still registers its own six defs, and the census
-        # re-registers them from here. If a rename dropped one, the battery and
-        # the census would silently be measuring different classes.
         for name in ('CheckpointLoaderSimple', 'CLIPTextEncode',
                      'EmptyLatentImage', 'KSampler', 'VAEDecode', 'SaveImage'):
             self.assertIn(name, self.shape)

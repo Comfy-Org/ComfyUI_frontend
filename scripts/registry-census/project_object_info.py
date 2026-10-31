@@ -29,7 +29,6 @@ is a hash of every class's verdict in sorted order:
       pnpm exec vitest run --config vitest.census.config.mts
     CENSUS_FORMS_OUT=projected.json \
       pnpm exec vitest run --config vitest.census.config.mts
-    # the two `registryForms.digest` values must be identical
 
 Do that on any bump. `--verify` is the cheaper, narrower check: that the
 committed projection is byte-for-byte what this script derives from the dump the
@@ -57,13 +56,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SHAPE = os.path.join(HERE, 'object_info.shape.json')
 PIN = os.path.join(HERE, 'object_info.pin.json')
 
-# Node-shape fields. `name` is dropped as redundant: it duplicates the map key,
-# and the loader re-derives it from the key so the two cannot disagree.
 KEEP = ('input', 'output', 'output_name', 'output_node', 'python_module')
-# Options-bag entries that are prose. Everything else in the bag is kept,
-# including `default`, `min`, `max`, `step`, `multiline`, `control_after_generate`
-# and `serialize` -- those change the widget, and two of them change whether a
-# widget occupies a positional slot at all.
 DROP_OPTS = ('tooltip', 'description')
 
 
@@ -71,10 +64,6 @@ def project_input_spec(spec):
     """Strip prose from one input's options bag, leaving the shape intact."""
     out = {}
     for name, isp in spec.items():
-        # An input spec is `[type, options?]`, where `type` is a string for a
-        # primitive and a list of choices for a combo. Anything else is a shape
-        # this projection does not understand, so it is copied verbatim rather
-        # than silently reshaped.
         if not (isinstance(isp, list) and len(isp) >= 1):
             out[name] = isp
             continue
