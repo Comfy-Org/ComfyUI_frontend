@@ -6,13 +6,16 @@
   >
     <div
       v-if="state.kind === 'loading'"
-      class="rounded-xl border border-card px-5 py-4"
+      class="rounded-xl border border-border px-5 py-4"
     >
-      <Skeleton class="h-16 w-full" />
+      <div class="flex flex-col gap-3">
+        <Skeleton class="h-4 w-1/5" />
+        <Skeleton class="h-4 w-1/2" />
+      </div>
     </div>
     <p
       v-else-if="state.kind === 'unavailable'"
-      class="m-0 flex items-center gap-1 rounded-xl border border-card px-5 py-4 text-sm text-muted-foreground"
+      class="m-0 flex items-center gap-1 rounded-xl border border-border px-5 py-4 text-sm text-muted-foreground"
       role="alert"
     >
       {{ $t('workspacePanel.billingTab.autoTopUp.unavailable') }}
@@ -24,7 +27,7 @@
       v-else-if="view"
       :class="
         cn(
-          'flex items-start justify-between gap-4 rounded-xl border px-5 py-4',
+          'flex items-center justify-between gap-4 rounded-xl border px-5 py-4',
           view.status.border
         )
       "
@@ -57,15 +60,7 @@
           data-testid="billing-auto-top-up-line"
         >
           {{ line.text }}
-          <Button
-            v-if="line.tooltip"
-            :tooltip="line.tooltip"
-            :aria-label="line.tooltip"
-            variant="muted-textonly"
-            size="icon-sm"
-          >
-            <i class="icon-[lucide--info] size-3.5" aria-hidden="true" />
-          </Button>
+          <BillingInfoTip v-if="line.tooltip" :text="line.tooltip" />
         </p>
       </div>
       <Button
@@ -75,7 +70,7 @@
         rel="noopener"
         :variant="view.status.action.variant"
         size="md"
-        class="shrink-0"
+        class="shrink-0 no-underline"
         @click="track"
       >
         {{ $t(view.status.action.label) }}
@@ -93,6 +88,7 @@ import { useI18n } from 'vue-i18n'
 
 import { formatCredits, formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
+import BillingInfoTip from '@/platform/billing/components/billingTab/BillingInfoTip.vue'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import { zAutoReloadSettings } from '@comfyorg/ingest-types/zod'
@@ -111,12 +107,11 @@ interface Line {
 }
 
 const NEUTRAL = {
-  border: 'border-card',
+  border: 'border-border',
   text: 'text-muted-foreground'
 } as const
 
 const OPEN = 'icon-[lucide--arrow-up-right]'
-const EXTERNAL = 'icon-[lucide--external-link]'
 
 const DANGER = {
   border: 'border-destructive',
@@ -134,7 +129,7 @@ const UPDATE_PAYMENT = {
   id: 'update_payment',
   label: 'workspacePanel.billingTab.autoTopUp.actions.updatePayment',
   variant: 'inverted',
-  icon: EXTERNAL
+  icon: OPEN
 } as const
 
 const STATUS = {
@@ -147,7 +142,7 @@ const STATUS = {
   turnedOff: {
     ...DANGER,
     label: 'workspacePanel.billingTab.autoTopUp.status.turnedOff',
-    dot: 'bg-destructive-background',
+    dot: 'bg-destructive',
     action: UPDATE_PAYMENT
   },
   off: {
@@ -158,19 +153,19 @@ const STATUS = {
       id: 'turn_on',
       label: 'workspacePanel.billingTab.autoTopUp.actions.turnOn',
       variant: 'secondary',
-      icon: EXTERNAL
+      icon: OPEN
     }
   },
   on_hold: {
     ...NEUTRAL,
     label: 'workspacePanel.billingTab.autoTopUp.status.onHold',
-    dot: 'bg-warning-background',
+    dot: 'bg-warning',
     action: UPDATE_PAYMENT
   },
   paused_by_budget: {
     ...NEUTRAL,
     label: 'workspacePanel.billingTab.autoTopUp.status.limitReached',
-    dot: 'bg-warning-background',
+    dot: 'bg-warning',
     action: MANAGE
   },
   maximumReached: {
@@ -182,7 +177,7 @@ const STATUS = {
   on: {
     ...NEUTRAL,
     label: 'workspacePanel.billingTab.autoTopUp.status.on',
-    dot: 'bg-success-background',
+    dot: 'bg-success',
     action: MANAGE
   }
 } as const satisfies Record<

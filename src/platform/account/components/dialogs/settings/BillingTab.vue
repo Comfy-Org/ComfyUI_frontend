@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-12" data-testid="billing-tab">
+  <div class="flex flex-col gap-12 pt-7 pb-6" data-testid="billing-tab">
     <WorkspaceHeaderMenu />
     <BillingPausedBanner
       :can-manage-billing="capabilities.canManageBilling.value"
@@ -32,7 +32,7 @@
       </h2>
       <div
         v-if="load === 'loading'"
-        class="rounded-xl border border-card px-5 py-4"
+        class="rounded-xl border border-border px-5 py-4"
         data-testid="billing-plan-skeleton"
         aria-busy="true"
       >
@@ -43,7 +43,7 @@
       </div>
       <div
         v-else-if="load === 'error'"
-        class="flex items-center justify-between gap-4 rounded-xl border border-card px-5 py-4"
+        class="flex items-center justify-between gap-4 rounded-xl border border-border px-5 py-4"
         role="alert"
         data-testid="billing-load-error"
       >
@@ -83,72 +83,78 @@
       </template>
     </section>
 
-    <section class="flex flex-col gap-3" data-testid="billing-handoff">
-      <h2 class="m-0 text-base font-medium text-foreground">
-        {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.label`) }}
-      </h2>
-      <div
-        class="flex items-center gap-4 rounded-xl border border-card px-5 py-4"
-        data-testid="billing-handoff-card"
-      >
-        <i18n-t
-          v-if="handoffAudience === 'owner'"
-          keypath="workspacePanel.billingTab.handoff.owner.line"
-          tag="p"
-          class="m-0 text-sm text-muted-foreground"
+    <div class="flex flex-col gap-6">
+      <section class="flex flex-col gap-3" data-testid="billing-handoff">
+        <h2 class="m-0 text-base font-medium text-foreground">
+          {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.label`) }}
+        </h2>
+        <div
+          class="flex items-center gap-4 rounded-xl border border-border px-5 py-4"
+          data-testid="billing-handoff-card"
         >
-          <template #platform>
-            <a
-              :href="handoffHref"
-              target="_blank"
-              rel="noopener"
-              class="text-muted-foreground underline"
-              @click="trackHandoff"
-            >
-              {{ $t('workspacePanel.billingTab.handoff.owner.platform') }}
-            </a>
-          </template>
-        </i18n-t>
+          <i18n-t
+            v-if="handoffAudience === 'owner'"
+            keypath="workspacePanel.billingTab.handoff.owner.line"
+            tag="p"
+            class="m-0 text-sm text-muted-foreground"
+          >
+            <template #platform>
+              <a
+                :href="handoffHref"
+                target="_blank"
+                rel="noopener"
+                class="text-muted-foreground underline hover:text-foreground"
+                @click="trackHandoff"
+              >
+                {{ $t('workspacePanel.billingTab.handoff.owner.platform') }}
+              </a>
+            </template>
+          </i18n-t>
+          <Button
+            as="a"
+            :href="handoffHref"
+            target="_blank"
+            rel="noopener"
+            variant="secondary"
+            size="md"
+            class="ml-auto shrink-0 no-underline"
+            @click="trackHandoff"
+          >
+            {{
+              $t(`workspacePanel.billingTab.handoff.${handoffAudience}.action`)
+            }}
+            <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
+          </Button>
+        </div>
+      </section>
+
+      <footer class="flex items-center gap-4" data-testid="billing-footer">
         <Button
           as="a"
-          :href="handoffHref"
+          :href="partnerNodesPricingHref"
           target="_blank"
           rel="noopener"
-          variant="secondary"
+          variant="muted-textonly"
           size="md"
-          class="ml-auto shrink-0"
-          @click="trackHandoff"
+          class="no-underline"
         >
-          {{
-            $t(`workspacePanel.billingTab.handoff.${handoffAudience}.action`)
-          }}
-          <i :class="handoffIcon" aria-hidden="true" />
+          <i class="icon-[lucide--coins] size-3.5" aria-hidden="true" />
+          {{ $t('workspacePanel.billingTab.footer.partnerNodesPricing') }}
         </Button>
-      </div>
-    </section>
-
-    <footer class="flex items-center gap-4" data-testid="billing-footer">
-      <Button
-        as="a"
-        :href="partnerNodesPricingHref"
-        target="_blank"
-        rel="noopener"
-        variant="muted-textonly"
-        size="md"
-      >
-        <i class="icon-[lucide--coins] size-3.5" aria-hidden="true" />
-        {{ $t('workspacePanel.billingTab.footer.partnerNodesPricing') }}
-      </Button>
-      <Button
-        variant="muted-textonly"
-        size="md"
-        :loading="isLoadingSupport"
-        @click="handleMessageSupport"
-      >
-        <i class="icon-[lucide--message-circle] size-3.5" aria-hidden="true" />
-        {{ $t('workspacePanel.billingTab.footer.messageSupport') }}
-      </Button>
-    </footer>
+        <Button
+          variant="muted-textonly"
+          size="md"
+          :loading="isLoadingSupport"
+          @click="handleMessageSupport"
+        >
+          <i
+            class="icon-[lucide--message-circle] size-3.5"
+            aria-hidden="true"
+          />
+          {{ $t('workspacePanel.billingTab.footer.messageSupport') }}
+        </Button>
+      </footer>
+    </div>
   </div>
 </template>
 
@@ -261,12 +267,6 @@ const salesVariant = computed(() =>
 const { href: handoffHref, track: trackHandoff } = usePlatformHandoff(
   () => HANDOFF[handoffAudience.value].path,
   () => ({ target: HANDOFF[handoffAudience.value].target })
-)
-
-const handoffIcon = computed(() =>
-  handoffAudience.value === 'owner'
-    ? 'icon-[lucide--arrow-up-right]'
-    : 'icon-[lucide--external-link]'
 )
 
 async function retryBalance() {
