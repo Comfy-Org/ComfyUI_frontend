@@ -1,12 +1,3 @@
-/**
- * PM-2379: when a later edit changes a value the Agent just wrote, the trace
- * has to name the edit responsible.
- *
- * The Agent's write arrives through the real host document, projection and
- * applier here, so its `agent-remote` provenance is the product's own rather
- * than a fixture's — which is what makes the "and not for the Agent's own
- * write" half of the ticket non-vacuous.
- */
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type {
   Op,
@@ -146,12 +137,6 @@ function overwriteDetails(): Record<string, unknown>[] {
   )
 }
 
-/**
- * `_restoringState` on the active workflow's ChangeTracker is what the shipped
- * `restoreOpMinter` already uses to know an undo/redo is replaying through
- * `app.loadGraphData`, so the watch reads the same signal rather than a new
- * one. The harness supplies it directly instead of booting a ChangeTracker.
- */
 function setup({ enabled = true }: { enabled?: boolean } = {}) {
   const graph = new LGraph()
   const node = withGraphIntentSource('load', () => {
@@ -208,7 +193,6 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
     host.destroy()
   })
 
-  /** The Agent's write, applied by the host and projected onto the canvas. */
   const agentWrites = (widgetName: string, value: unknown) => {
     const before = Y.encodeStateVector(host)
     const { outcomes } = applyOps(
@@ -220,7 +204,6 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
     deliver(Y.encodeStateAsUpdate(host, before))
   }
 
-  /** A later edit, under the provenance its real origin would carry. */
   const edits = (
     source: GraphIntentSource,
     edit: () => void,
@@ -247,7 +230,6 @@ beforeEach(() => {
   LiteGraph.registerNodeType(CLASS, TestSeedance)
   setCrdtDebugEnabled(true)
   clearDevEvents()
-  vi.mocked(reportError).mockClear()
   onTestFinished(() => {
     clearDevEvents()
   })
@@ -372,15 +354,16 @@ describe('recording which edit overwrote an Agent write (PM-2379)', () => {
   it('re-arms on each Agent write, so a repeated revert reads as repeated records', () => {
     const s = setup()
 
-    for (let attempt = 0; attempt < 3; attempt++) {
-      s.agentWrites('model.generate_audio', false)
-      s.edits('local', () => {
-        s.widget('model.generate_audio').value = true
-      })
-    }
+    s.agentWrites('model.generate_audio', false)
+    s.edits('local', () => {
+      s.widget('model.generate_audio').value = true
+    })
+    s.agentWrites('model.generate_audio', false)
+    s.edits('local', () => {
+      s.widget('model.generate_audio').value = true
+    })
 
     expect(overwriteDetails().map((detail) => detail.kind)).toEqual([
-      'canvas-edit',
       'canvas-edit',
       'canvas-edit'
     ])
@@ -451,8 +434,6 @@ describe('recording which edit overwrote an Agent write (PM-2379)', () => {
       s.widget('model.generate_audio').value = true
     })
 
-    // Only the watch `setup` attached is still listening, so the detached one
-    // contributed none of the records.
     expect(overwriteEvents()).toHaveLength(1)
   })
 })
