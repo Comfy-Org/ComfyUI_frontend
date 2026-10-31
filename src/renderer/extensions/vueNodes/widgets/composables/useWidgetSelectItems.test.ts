@@ -230,28 +230,16 @@ describe('useWidgetSelectItems', () => {
         query: { filename: 'x.png', type: 'output', subfolder: 'sub' }
       },
       {
-        value: '/x.png [output]',
-        query: { filename: '/x.png', type: 'output' }
+        value: '12:30.png [output]',
+        query: { filename: '12:30.png', type: 'output' }
       },
       {
-        value: '\\x.png [output]',
-        query: { filename: '\\x.png', type: 'output' }
+        value: 'pasted/12:30.png [output]',
+        query: { filename: '12:30.png', type: 'output', subfolder: 'pasted' }
       },
       {
-        value: 'sub/x.png/ [output]',
-        query: { filename: 'sub/x.png/', type: 'output' }
-      },
-      {
-        value: 'D:\\x.png [output]',
-        query: { filename: 'D:\\x.png', type: 'output' }
-      },
-      {
-        value: '1:/x.png [output]',
-        query: { filename: '1:/x.png', type: 'output' }
-      },
-      {
-        value: 'sub/../x.png [output]',
-        query: { filename: 'sub/../x.png', type: 'output' }
+        value: '12:30/x.png [output]',
+        query: { filename: 'x.png', type: 'output', subfolder: '12:30' }
       }
     ])(
       'previews the fallback for $value from its root, subfolder and filename',
@@ -265,6 +253,27 @@ describe('useWidgetSelectItems', () => {
         const [path, search] = previewUrl.split('?')
         expect(path).toBe('/api/view')
         expect(Object.fromEntries(new URLSearchParams(search))).toEqual(query)
+      }
+    )
+
+    it.for([
+      '/x.png [output]',
+      '\\x.png [output]',
+      'sub/x.png/ [output]',
+      'sub//x.png [output]',
+      'D:\\x.png [output]',
+      '1:/x.png [output]',
+      'D:x.png [output]',
+      'C:sub/x.png [output]',
+      'sub/../x.png [output]'
+    ])(
+      'shows no fallback preview for %s, which is not a plain relative path',
+      (value) => {
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref(value) })
+        )
+
+        expect(dropdownItems.value[0].preview_url).toBe('')
       }
     )
 

@@ -6,7 +6,7 @@ import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import { zAgentAnswerRequest } from '@comfyorg/ingest-types/zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
@@ -17,6 +17,10 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import {
+  thinkingDraftFrame,
+  thinkingFrame
+} from '@e2e/fixtures/data/agent/agentThinkingFrames'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
@@ -149,6 +153,55 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
 }
 
 test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
+  test('thinking appears while the model writes it, and is shown once when the round ends', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    const { panel, send } = await startTurn(page, 'Think about a fox video.')
+
+    send(thinkingDraftFrame(ids, 'The user wants'))
+    await expect(
+      panel.getByText('The user wants', { exact: true })
+    ).toBeVisible()
+
+    send(thinkingDraftFrame(ids, 'The user wants a fox video'))
+    await expect(
+      panel.getByText('The user wants a fox video', { exact: true })
+    ).toBeVisible()
+    await expect(
+      panel.getByText('The user wants', { exact: true })
+    ).toHaveCount(0)
+
+    send(
+      thinkingFrame(ids, 'The user wants a fox video, so I will render one.')
+    )
+    await expect(
+      panel.getByText('The user wants a fox video, so I will render one.', {
+        exact: true
+      })
+    ).toHaveCount(1)
+    await expect(
+      panel.getByText('The user wants a fox video', { exact: true })
+    ).toHaveCount(0)
+  })
+
+  test('a retried round takes back what the failed attempt was thinking', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    const { panel, send } = await startTurn(page, 'Think about a fox video.')
+
+    send(thinkingDraftFrame(ids, 'half a thought'))
+    await expect(
+      panel.getByText('half a thought', { exact: true })
+    ).toBeVisible()
+
+    send(thinkingDraftFrame(ids, ''))
+    await expect(
+      panel.getByText('half a thought', { exact: true })
+    ).toHaveCount(0)
+  })
+
   test('the answer appears while the model writes it, and the final answer replaces it', async ({
     page
   }) => {
@@ -254,7 +307,10 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
         async (route) => {
           const request = route.request()
           const body = zAgentAnswerRequest.parse(request.postDataJSON())
-          answeredRequests.push({ url: request.url(), selected: body.selected })
+          answeredRequests.push({
+            url: request.url(),
+            selected: body.selected
+          })
           await answerCanFinish
           await route.fulfill({
             ...jsonRoute({ status: 'answered' }),

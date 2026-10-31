@@ -1079,6 +1079,15 @@ describe('useAgentConversationStore', () => {
         ])[0]
       ]
       store.hydrate(deleteTranscript())
+      store.retireAsk('turn-1:call-1', { status: 'retired' }, 'th', false)
+      store.confirmAskPending('turn-1:call-1', 'th')
+      expect(
+        store.messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'deleteApproval')
+        )
+      ).toEqual([
+        expect.not.objectContaining({ resolution: expect.anything() })
+      ])
       store.retireAsk(
         'turn-1:call-1',
         { status: 'answered', selected: ['keep'] },
@@ -1221,6 +1230,7 @@ describe('useAgentConversationStore', () => {
     store.hydrate(parkedTranscript)
     store.retireAsk('turn-1:call-1', { status: 'retired' })
 
+    store.hydrate(parkedTranscript)
     store.hydrate(parkedTranscript)
 
     expect(
@@ -1375,6 +1385,59 @@ describe('useAgentConversationStore', () => {
     expect(store.messages).toHaveLength(0)
     expect(store.activeTurnId).toBeNull()
     expect(store.isStreaming).toBe(false)
+  })
+
+  it('reset discards foreground ask recovery state', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('foreground')
+    store.recordAskAnswer('ask-1', { selected: ['run'] })
+    store.retireAsk('ask-2', { status: 'retired' })
+
+    store.reset()
+
+    expect(store.submittedAskAnswer('ask-1')).toBeUndefined()
+    expect(store.isAskRetired('ask-2', 'foreground')).toBe(false)
+  })
+
+  it('reset preserves ask recovery state owned by a background turn', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('background')
+    store.startTurn(T1)
+    store.recordAskAnswer('ask-1', { selected: ['run'] })
+    store.retireAsk('ask-2', { status: 'retired' })
+    store.stashActiveTurn()
+
+    store.reset()
+
+    expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
+    expect(store.isAskRetired('ask-2', 'background')).toBe(true)
+  })
+
+  it('does not clear live ask state when a stale turn settlement arrives', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordAskAnswer('ask-1', { selected: ['run'] }, 'th')
+    store.retireAsk('ask-2', { status: 'retired' }, 'th', false)
+
+    store.settleTurn(
+      { threadId: 'th', messageId: 'stale' as TurnId },
+      undefined
+    )
+
+    expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
+    expect(store.isAskRetired('ask-2', 'th')).toBe(true)
+  })
+
+  it('clears provisional tombstones when the matching turn settles', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.retireAsk('ask-2', { status: 'retired' }, 'th', false)
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
+
+    expect(store.isAskRetired('ask-2', 'th')).toBe(false)
   })
 
   it('holds the thread id and clears it on reset', () => {
@@ -1963,6 +2026,56 @@ describe('useAgentConversationStore', () => {
     store.ingest(done('t1'))
     expect(store.isStreaming).toBe(false)
     expect(store.liveTurns()).toEqual([])
+  })
+
+  it.for([
+    {
+      name: 'the displayed turn',
+      turn: { threadId: 'th-front', messageId: T1 },
+      askId: 'front-ask',
+      otherAskId: 'back-ask'
+    },
+    {
+      name: 'a stashed background turn',
+      turn: { threadId: 'th-back', messageId: T2 },
+      askId: 'back-ask',
+      otherAskId: 'front-ask'
+    }
+  ])(
+    'reads back the approval showing on $name, and only that one',
+    ({ turn, askId, otherAskId }) => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-back')
+      store.startTurn(T2)
+      store.recordUser(T2, 'background prompt')
+      store.ingest(runApproval('t2', 'back-ask'))
+      store.stashActiveTurn()
+      store.setThreadId('th-front')
+      store.hydrate([])
+      store.startTurn(T1)
+      store.recordUser(T1, 'front prompt')
+      store.ingest(runApproval('t1', 'front-ask'))
+
+      expect(store.isApprovalShown(turn, askId)).toBe(true)
+      expect(store.isApprovalShown(turn, otherAskId)).toBe(false)
+      expect(store.isApprovalShown(turn, 'never-delivered')).toBe(false)
+    }
+  )
+
+  it('stops reporting an approval once its turn has settled', () => {
+    const store = useAgentConversationStore()
+    const turn = { threadId: 'th', messageId: T1 }
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(runApproval('t1', 'ask-1'))
+    expect(store.isApprovalShown(turn, 'ask-1')).toBe(true)
+
+    store.settleTurn(turn, [
+      { type: 'text', text: 'persisted final', state: 'done' }
+    ])
+
+    expect(store.isApprovalShown(turn, 'ask-1')).toBe(false)
   })
 
   it.for([

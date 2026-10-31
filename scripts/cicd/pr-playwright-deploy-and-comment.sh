@@ -1,16 +1,6 @@
 #!/bin/bash
 set -e
 
-# Deploy Playwright test reports to Cloudflare Pages and write section markdown.
-# Usage: ./pr-playwright-deploy-and-comment.sh <pr_number> <branch_name> <status>
-#
-# When SUMMARY_FILE env var is set, the generated markdown is written there
-# instead of posted as a standalone GitHub comment. The caller is then
-# responsible for upserting that content into the unified PR report via the
-# upsert-comment-section action.
-
-# Input validation
-# Validate PR number is numeric
 case "$1" in
     ''|*[!0-9]*) 
         echo "Error: PR_NUMBER must be numeric" >&2
@@ -19,14 +9,12 @@ case "$1" in
 esac
 PR_NUMBER="$1"
 
-# Sanitize and validate branch name (allow alphanumeric, dots, dashes, underscores, slashes)
 BRANCH_NAME=$(echo "$2" | sed 's/[^a-zA-Z0-9._/-]//g')
 if [ -z "$BRANCH_NAME" ]; then
     echo "Error: Invalid or empty branch name" >&2
     exit 1
 fi
 
-# Validate status parameter
 STATUS="${3:-completed}"
 case "$STATUS" in
     starting|completed) ;;
@@ -36,21 +24,18 @@ case "$STATUS" in
         ;;
 esac
 
-# Required environment variables
 : "${GITHUB_TOKEN:?GITHUB_TOKEN is required}"
 : "${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}"
 
-# Cloudflare variables only required for deployment
 if [ "$STATUS" = "completed" ]; then
     : "${CLOUDFLARE_API_TOKEN:?CLOUDFLARE_API_TOKEN is required for deployment}"
     : "${CLOUDFLARE_ACCOUNT_ID:?CLOUDFLARE_ACCOUNT_ID is required for deployment}"
 fi
 
-# Configuration
 COMMENT_MARKER="<!-- PLAYWRIGHT_TEST_STATUS -->"
 BROWSERS="chromium chromium-2x chromium-0.5x cloud desktop mobile-chrome mobile-safari"
+TEST_ROOT="browser_tests"
 
-# Install wrangler if not available (output to stderr for debugging)
 if ! command -v wrangler > /dev/null 2>&1; then
     echo "Installing wrangler v4..." >&2
     npm install -g wrangler@^4.0.0 >&2 || {
@@ -60,7 +45,6 @@ if ! command -v wrangler > /dev/null 2>&1; then
     }
 fi
 
-# Check if tsx is available, install if not
 if ! command -v tsx > /dev/null 2>&1; then
     echo "Installing tsx..." >&2
     npm install -g tsx >&2 || echo "Failed to install tsx" >&2
@@ -72,7 +56,6 @@ create_pages_project() {
         echo "Failed to create Cloudflare Pages project $1" >&2
 }
 
-# Deploy a single browser report, WARN: ensure inputs are sanitized before calling this function
 deploy_report() {
     dir="$1"
     browser="$2"
@@ -110,7 +93,6 @@ deploy_report() {
     echo "failed"
 }
 
-# Parses a Playwright counts JSON blob into "passed failed flaky skipped total" (missing fields as 0).
 parse_counts() {
     json="$1"
     if command -v jq > /dev/null 2>&1; then
@@ -130,18 +112,12 @@ count_screenshot_diffs() {
         jq -s 'map(length) | add // 0'
 }
 
-# Builds the " (✅ x / ❌ x / ⚠️ x / ⏭️ x)" suffix for a report line, or "" when there's no total.
 counts_suffix() {
     read -r passed failed flaky skipped total <<< "$(parse_counts "$1")"
     [ "${total:-0}" != "0" ] && echo " (✅ ${passed:-0} / ❌ ${failed:-0} / ⚠️ ${flaky:-0} / ⏭️ ${skipped:-0})"
     return 0
 }
 
-# Post or update GitHub comment, or write to SUMMARY_FILE if set.
-# When SUMMARY_FILE is set, the caller (workflow) is responsible for upserting
-# the content into the unified PR report via upsert-comment-section.
-# The gh-api branch below is unused in CI (SUMMARY_FILE is always set there);
-# it is retained for local/standalone runs that post a comment directly.
 post_comment() {
     body="$1"
 
@@ -155,16 +131,13 @@ post_comment() {
     echo "$body" > "$temp_file"
 
     if command -v gh > /dev/null 2>&1; then
-        # Find existing comment ID
         existing=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
             --jq ".[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" | head -1)
 
         if [ -n "$existing" ]; then
-            # Update specific comment by ID
             gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" \
                 --field body="$(cat "$temp_file")"
         else
-            # Create new comment
             gh pr comment "$PR_NUMBER" --body-file "$temp_file"
         fi
     else
@@ -175,10 +148,7 @@ post_comment() {
     rm -f "$temp_file"
 }
 
-# Main execution
 if [ "$STATUS" = "starting" ]; then
-    # When writing to SUMMARY_FILE, omit the standalone marker (the upsert
-    # action uses its own section delimiters).
     if [ -n "${SUMMARY_FILE:-}" ]; then
         comment="## 🎭 Playwright: ⏳ Running..."
     else
@@ -188,8 +158,6 @@ if [ "$STATUS" = "starting" ]; then
     post_comment "$comment"
     
 else
-    # Deploy and post completion comment
-    # Convert branch name to Cloudflare-compatible format (lowercase, only alphanumeric and dashes)
     cloudflare_branch=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | \
         sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
     
@@ -197,12 +165,10 @@ else
     echo "Available reports:"
     ls -la reports/ 2>/dev/null || echo "Reports directory not found"
 
-    # Deploy all reports in parallel and collect URLs + test counts
     temp_dir=$(mktemp -d)
     pids=""
     i=0
     
-    # Store current working directory for absolute paths
     SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
     BASE_DIR="$(pwd)"
     
@@ -219,7 +185,7 @@ else
 
                 if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
                     echo "Extracting counts from $REPORT_DIR using $EXTRACT_SCRIPT" >&2
-                    counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$url" 2>&1 || echo '{}')
+                    counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$url" "$TEST_ROOT" || echo '{}')
                     echo "Extracted counts for $browser: $counts" >&2
                     echo "$counts" > "$temp_dir/$i.counts"
                 else
@@ -236,12 +202,10 @@ else
         i=$((i + 1))
     done
     
-    # Wait for all deployments to complete
     for pid in $pids; do
         wait "$pid"
     done
     
-    # Collect URLs and counts in order
     urls=""
     all_counts=""
     missing_reports=0
@@ -275,10 +239,8 @@ else
         i=$((i + 1))
     done
     
-    # Clean up temp directory
     rm -rf "$temp_dir"
 
-    # Calculate total test counts across all browsers
     total_passed=0
     total_failed=0
     total_flaky=0
@@ -297,7 +259,6 @@ else
     done
     unset IFS
     
-    # Determine overall status (flaky tests are treated as passing)
     if [ $total_failed -gt 0 ] || [ $missing_reports -gt 0 ]; then
         status_icon="❌"
     elif [ $total_tests -gt 0 ]; then
@@ -306,7 +267,6 @@ else
         status_icon="🕵🏻"
     fi
     
-    # Build flaky indicator if any (small subtext, no warning icon)
     flaky_note=""
     if [ $total_flaky -gt 0 ]; then
         flaky_note=" · $total_flaky flaky"
@@ -317,8 +277,6 @@ else
         missing_note=", $missing_reports missing"
     fi
     
-    # Generate compact single-line comment (omit standalone marker when writing
-    # to SUMMARY_FILE — the upsert action adds its own section delimiters).
     if [ -n "${SUMMARY_FILE:-}" ]; then
         comment="## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$missing_note$flaky_note"
     else
@@ -326,7 +284,6 @@ else
 ## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$missing_note$flaky_note"
     fi
 
-    # Extract and display failed tests from all browsers (flaky tests are treated as passing)
     if [ $total_failed -gt 0 ]; then
         failed_test_lines=""
         failed_tests_label="$total_failed tests"
@@ -336,21 +293,18 @@ else
             [ -z "$counts_json" ] || [ "$counts_json" = "{}" ] && continue
             
             if command -v jq > /dev/null 2>&1; then
-                # Extract failures array from JSON
-                failures=$(echo "$counts_json" | jq -r '.failures // [] | .[]? | "\(.name)|\(.file)|\(.traceUrl // "")"')
+                failures=$(echo "$counts_json" | jq -r '.failures // [] | .[]? | "\(.name)|\(.file)|\(.reportUrl // "")"')
                 
                 if [ -n "$failures" ]; then
-                    while IFS='|' read -r test_name test_file trace_url; do
+                    while IFS='|' read -r test_name test_file report_url; do
                         [ -z "$test_name" ] && continue
                         
-                        # Convert file path to GitHub URL (relative to repo root)
                         github_file_url="https://github.com/$GITHUB_REPOSITORY/blob/$GITHUB_SHA/$test_file"
                         
-                        # Build the failed test line
                         test_line="- [$test_name]($github_file_url)"
                         
-                        if [ -n "$trace_url" ] && [ "$trace_url" != "null" ]; then
-                            test_line="$test_line: [View trace]($trace_url)"
+                        if [ -n "$report_url" ] && [ "$report_url" != "null" ]; then
+                            test_line="$test_line: [View test report]($report_url)"
                         fi
                         
                         failed_test_lines="$failed_test_lines
@@ -363,10 +317,10 @@ $test_line"
         if [ -n "$failed_test_lines" ]; then
             comment="$comment
 
-> ❌ $failed_tests_label failed. Expand the failed tests below, review their traces and fix the failures before merging.
+> ❌ $failed_tests_label failed. Expand the failed tests below, review their reports and fix the failures before merging.
 
 <details>
-<summary>❌ Failed Tests</summary>
+<summary>Failed tests</summary>
 
 ${failed_test_lines#$'\n'}
 
@@ -374,7 +328,7 @@ ${failed_test_lines#$'\n'}
         else
             comment="$comment
 
-> ❌ $failed_tests_label failed. Open the browser reports below, review the traces and fix the failures before merging."
+> ❌ $failed_tests_label failed. Open the browser reports below, review the failed tests and fix the failures before merging."
         fi
     fi
     
@@ -387,7 +341,6 @@ ${failed_test_lines#$'\n'}
 - [ ] Update Playwright expectations ($screenshot_diffs screenshot diff$diff_plural)"
     fi
 
-    # Add browser reports in collapsible section
     comment="$comment
 
 <details>
@@ -395,7 +348,6 @@ ${failed_test_lines#$'\n'}
 
 "
     
-    # Add browser results
     i=0
     deployment_failed=false
     IFS=' ' read -r -a browser_array <<< "$BROWSERS"

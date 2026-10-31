@@ -357,7 +357,10 @@ beforeEach(() => {
     reset: vi.fn(),
     stop: () => {}
   })
-  useAuthStore().currentUser = fromPartial<User>({ uid: 'account-a' })
+  useAuthStore().currentUser = fromPartial<User>({
+    uid: 'account-a',
+    getIdToken: async () => 'id-token'
+  })
   vi.spyOn(useAuthStore(), 'getUserAuthHeader').mockResolvedValue({
     Authorization: 'Bearer id-token'
   })
@@ -2211,6 +2214,27 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
         surface: 'credits_exhausted'
       })
     )
+  })
+
+  it('stays hidden on a thread the agent started, with no user message', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-agent-started')
+    conversation.messages.push({
+      id: toTurnId('msg-agent-opening'),
+      role: 'assistant',
+      parts: [
+        { type: 'text', text: 'Want me to wire that up?', state: 'done' }
+      ],
+      streaming: false,
+      thinking: false
+    })
+    await nextTick()
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
   it('stays hidden while a restored thread has not loaded any messages', async () => {
@@ -8688,7 +8712,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it.for(['workspace', 'legacy'] as const)(
-    'refreshes $ billing after successful consent before resuming the first send',
+    'leaves the $ post-consent billing refresh to the dock host on first send',
     async (billingType) => {
       makeTab('wf-42')
       mockMessagesEndpoint('wf-42')
@@ -8701,25 +8725,12 @@ describe('AgentPanelRoot workflow binding', () => {
       })
       renderWithSelectedTarget()
 
-      await sendFromComposer('build me a workflow')
-
-      expect(paywallBilling.fetchStatus).toHaveBeenCalledOnce()
-    }
-  )
-
-  it.for(['workspace', 'legacy'] as const)(
-    'refreshes $ billing when consent succeeds outside the first send',
-    async (billingType) => {
-      paywallBilling.type = billingType
-      Object.assign(useAgentConsentStore(), { accepted: false })
-      renderWithSelectedTarget()
       paywallBilling.fetchStatus.mockClear()
 
-      Object.assign(useAgentConsentStore(), { accepted: true })
+      await sendFromComposer('build me a workflow')
 
-      await waitFor(() =>
-        expect(paywallBilling.fetchStatus).toHaveBeenCalledOnce()
-      )
+      expect(withConsent).toHaveBeenCalledOnce()
+      expect(paywallBilling.fetchStatus).not.toHaveBeenCalled()
     }
   )
 
@@ -9171,7 +9182,7 @@ describe('AgentPanelRoot workflow binding', () => {
     vi.mocked(useTelemetry())!.trackAgentStarterPromptClicked.mockClear()
     renderWithSelectedTarget()
 
-    const prompt = i18n.global.t('agent.suggestedPrompts.cloud.1')
+    const prompt = i18n.global.t('agent.suggestedPrompts.treatment.cloud.1')
     await userEvent.click(await screen.findByRole('button', { name: prompt }))
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })

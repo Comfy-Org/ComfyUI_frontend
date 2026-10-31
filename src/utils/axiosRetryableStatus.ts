@@ -4,10 +4,17 @@ import type {
   AxiosResponse,
   InternalAxiosRequestConfig
 } from 'axios'
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 
-import type { RetryPolicy } from '@/utils/retryPolicy'
-import { retryDelayMs, sleep as sleepFor } from '@/utils/retryPolicy'
+import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
+import type { RetryPolicy } from '@comfyorg/api-client/retryPolicy'
+import { nextRetry, sleep as sleepFor } from '@comfyorg/api-client/retryPolicy'
+import type { StatusRetryEnd } from '@comfyorg/api-client/statusRetryTelemetry'
+import {
+  abortEnd,
+  endForStop,
+  trackStatusRetry
+} from '@comfyorg/api-client/statusRetryTelemetry'
 
 export interface AxiosRetryableStatusOptions {
   readonly policy?: RetryPolicy
@@ -37,15 +44,12 @@ function cancellationSignal(
   const controller = new AbortController()
   void config.cancelToken.promise.then(() => controller.abort())
   return signal
-    ? AbortSignal.any([signal, controller.signal])
+    ? combineAbortSignals([signal, controller.signal])
     : controller.signal
 }
 
-function fitsBudget(
-  delay: number | undefined,
-  remaining: number | undefined
-): delay is number {
-  return delay !== undefined && (remaining === undefined || delay < remaining)
+function fitsBudget(delay: number, remaining: number | undefined): boolean {
+  return remaining === undefined || delay < remaining
 }
 
 async function runAttempt(
@@ -55,7 +59,9 @@ async function runAttempt(
 ): Promise<AxiosResponse> {
   try {
     const response = await adapter(
-      remaining === undefined ? config : { ...config, timeout: remaining }
+      remaining === undefined
+        ? config
+        : { ...config, timeout: Math.max(1, remaining) }
     )
     response.config = config
     return response
@@ -65,32 +71,100 @@ async function runAttempt(
   }
 }
 
+function isTimeout(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false
+  if (error.code === AxiosError.ETIMEDOUT) return true
+  return (
+    error.code === AxiosError.ECONNABORTED && /timeout/i.test(error.message)
+  )
+}
+
+function noResponseEnd(error: unknown): StatusRetryEnd {
+  if (isTimeout(error)) return 'timeout'
+  const cancelled =
+    axios.isCancel(error) ||
+    (axios.isAxiosError(error) &&
+      (error.code === AxiosError.ERR_CANCELED ||
+        error.code === AxiosError.ECONNABORTED))
+  return cancelled ? 'cancelled' : 'network'
+}
+
+interface StatusRetryTracker {
+  scheduled(status: number): void
+  settle(end: StatusRetryEnd, attempts: number, status?: number): void
+}
+
+function statusRetryTracker(
+  config: InternalAxiosRequestConfig
+): StatusRetryTracker {
+  let lastRetryStatus: number | undefined
+  return {
+    scheduled(status) {
+      lastRetryStatus = status
+    },
+    settle(end, attempts, status) {
+      trackStatusRetry({
+        transport: 'axios',
+        method: config.method ?? 'GET',
+        url: () => axios.getUri(config),
+        end,
+        attempts,
+        finalStatus: status ?? lastRetryStatus,
+        retryScheduled: lastRetryStatus !== undefined
+      })
+    }
+  }
+}
+
+function delayOrRethrow(
+  error: unknown,
+  config: InternalAxiosRequestConfig,
+  attempt: number,
+  remaining: number | undefined,
+  tracker: StatusRetryTracker,
+  { policy, random }: AxiosRetryableStatusOptions
+): number {
+  const failed = axios.isAxiosError(error) ? error.response : undefined
+  if (!failed) {
+    tracker.settle(noResponseEnd(error), attempt)
+    throw error
+  }
+  const decision = nextRetry({
+    method: config.method ?? 'GET',
+    status: failed.status,
+    readRetryAfter: () => retryAfterHeader(failed),
+    attempt,
+    policy,
+    random
+  })
+  if (!decision.retry) {
+    tracker.settle(endForStop(decision.reason), attempt, failed.status)
+    throw error
+  }
+  tracker.scheduled(failed.status)
+  if (!fitsBudget(decision.delayMs, remaining)) {
+    tracker.settle('timeout', attempt)
+    throw error
+  }
+  return decision.delayMs
+}
+
 function retryingAdapter(
   adapter: AxiosAdapter,
-  { policy, sleep = sleepFor, random }: AxiosRetryableStatusOptions
+  options: AxiosRetryableStatusOptions
 ): AxiosAdapter {
-  function waitBeforeRetry(
-    error: unknown,
-    config: InternalAxiosRequestConfig,
-    attempt: number
-  ): number | undefined {
-    const response = axios.isAxiosError(error) ? error.response : undefined
-    if (!response) return undefined
-    return retryDelayMs({
-      method: config.method ?? 'GET',
-      status: response.status,
-      readRetryAfter: () => retryAfterHeader(response),
-      attempt,
-      policy,
-      random
-    })
-  }
+  const { sleep = sleepFor } = options
 
-  async function pause(delay: number, config: InternalAxiosRequestConfig) {
+  async function pause(
+    delay: number,
+    config: InternalAxiosRequestConfig,
+    settleAbort: (signal: AbortSignal | undefined) => void
+  ) {
     const signal = cancellationSignal(config)
     try {
       await sleep(delay, signal)
     } catch (error) {
+      settleAbort(signal)
       if (!signal?.aborted) throw error
       throw new axios.CanceledError('canceled', config)
     }
@@ -99,18 +173,32 @@ function retryingAdapter(
   return async (config) => {
     if (config.__skipStatusRetry) return adapter(config)
     const remainingMs = timeBudget(config.timeout)
+    const tracker = statusRetryTracker(config)
     let lastError: unknown
 
     for (let attempt = 1; ; attempt++) {
       const remaining = remainingMs()
-      if (remaining !== undefined && remaining <= 0) throw lastError
+      if (attempt > 1 && remaining !== undefined && remaining <= 0) {
+        tracker.settle('timeout', attempt - 1)
+        throw lastError
+      }
       try {
-        return await runAttempt(adapter, config, remaining)
+        const response = await runAttempt(adapter, config, remaining)
+        tracker.settle('answered', attempt, response.status)
+        return response
       } catch (error) {
         lastError = error
-        const delay = waitBeforeRetry(error, config, attempt)
-        if (!fitsBudget(delay, remainingMs())) throw error
-        await pause(delay, config)
+        const delay = delayOrRethrow(
+          error,
+          config,
+          attempt,
+          remainingMs(),
+          tracker,
+          options
+        )
+        await pause(delay, config, (signal) =>
+          tracker.settle(abortEnd(signal), attempt)
+        )
       }
     }
   }

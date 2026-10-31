@@ -3,12 +3,14 @@ import type { Pinia } from 'pinia'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { defineComponent, provide } from 'vue'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import {
@@ -30,7 +32,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
-import { createWorkflowErrorManager } from '@/workbench/extensions/manager/composables/workflowErrorManager'
+import { createWorkflowErrorManager } from '@/platform/customNodes/manager/composables/workflowErrorManager'
 
 import ErrorGroupList from '@/platform/workflowErrors/panel/ErrorGroupList.vue'
 
@@ -50,6 +52,20 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     }
   }
 })
+
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(
+  import('@/platform/distribution/types'),
+  () =>
+    ({
+      DISTRIBUTION: 'localhost',
+      get isCloud() {
+        return distribution.isCloud
+      },
+      isDesktop: false,
+      isNightly: false
+    }) as const
+)
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: vi.fn(),
@@ -314,6 +330,112 @@ describe('ErrorGroupList selection emphasis', () => {
     await waitFor(() => {
       expect(strip).toHaveTextContent('2 nodes — 2 errors')
     })
+  })
+
+  const production: WorkspaceDeployment = {
+    deployment_id: 'dep-1',
+    deployment_name: 'production',
+    build_id: 'build-7',
+    build_name: 'video-minimax-h3 copy',
+    release_id: 'rel-3',
+    status: 'ready',
+    created_at: '2026-10-01T00:00:00Z',
+    can_start: false
+  }
+
+  function showMissingModelOn(bootDeployment: WorkspaceDeployment | null) {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    const pinia = getActivePinia()!
+    useDeploymentPickStore(pinia).bootDeployment = bootDeployment
+    useMissingModelStore(pinia).setMissingModels([
+      {
+        nodeId: '1',
+        nodeType: 'VAELoader',
+        widgetName: 'vae_name',
+        name: 'qwen_image_2.1_vae.safetensors',
+        directory: 'vae',
+        isMissing: true,
+        isAssetSupported: true
+      }
+    ])
+    renderList(pinia)
+    return screen.getByTestId('errors-summary-hero')
+  }
+
+  it.for([
+    { runsOn: 'a deployment', bootDeployment: production, sendsToBuild: true },
+    { runsOn: 'Comfy Cloud', bootDeployment: null, sendsToBuild: false }
+  ])(
+    'on $runsOn, the summary sends a missing model to the Build: $sendsToBuild',
+    ({ bootDeployment, sendsToBuild }) => {
+      const hero = showMissingModelOn(bootDeployment)
+
+      expect(
+        within(hero).queryByText(
+          "Add these to production's build on Platform, then deploy a new release."
+        ) !== null
+      ).toBe(sendsToBuild)
+      expect(
+        within(hero).queryByRole('link', { name: /Edit build on Platform/ }) !==
+          null
+      ).toBe(sendsToBuild)
+      expect(
+        within(hero).queryByRole('button', {
+          name: /Build with your agent/
+        }) !== null
+      ).toBe(sendsToBuild)
+    }
+  )
+
+  it.for([
+    { runsOn: 'a deployment', bootDeployment: production, offersImport: false },
+    { runsOn: 'Comfy Cloud', bootDeployment: null, offersImport: true }
+  ])(
+    'on $runsOn, a missing model offers Comfy Cloud import: $offersImport',
+    ({ bootDeployment, offersImport }) => {
+      showMissingModelOn(bootDeployment)
+
+      const group = screen.getByTestId('error-group-missing-model')
+      expect(
+        within(group).queryByRole('button', { name: 'Import' }) !== null
+      ).toBe(offersImport)
+    }
+  )
+
+  it('asks for a reload instead of the Build once the deployment runs a newer release', () => {
+    Object.assign(useDeploymentPickStore(getActivePinia()), {
+      changeSinceBoot: 'release'
+    })
+
+    const hero = showMissingModelOn(production)
+
+    expect(
+      within(hero).getByText('Finish setup before running the workflow')
+    ).toBeInTheDocument()
+    expect(
+      within(hero).getByText(
+        'This deployment now runs a different Release. Reload to get its nodes.'
+      )
+    ).toBeInTheDocument()
+    expect(
+      within(hero).queryByRole('button', { name: /Build with your agent/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it('names the deployment in the summary as its owner wrote it', () => {
+    const hero = showMissingModelOn({
+      ...production,
+      deployment_name: "R&D's studio"
+    })
+
+    expect(
+      within(hero).getByText(
+        "Add these to R&D's studio's build on Platform, then deploy a new release."
+      )
+    ).toBeInTheDocument()
   })
 
   it('labels a missing-only selection as an issue', async () => {
