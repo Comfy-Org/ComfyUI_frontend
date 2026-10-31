@@ -98,7 +98,6 @@ const test = comfyPageFixture.extend<{
       route.fulfill({ status: 200, contentType: 'text/html', body: '' })
     )
     await use(page)
-    await page.unrouteAll({ behavior: 'wait' })
   },
   cloudAuth: async ({ page }, use) => {
     await use(new CloudAuthHelper(page))
