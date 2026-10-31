@@ -2723,8 +2723,6 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  // FRONT-3709: revertRejectedOps counts a host-skipped duplicate as refused,
-  // while rejectedOpNotice counts it as accepted. Flip to `it` with the fix.
   it.fails('keeps ops the host skipped when it refuses another op in the batch', async () => {
     const readyGraph = fromPartial<LGraph>({})
     const { unmount, enqueue } = mountFollower('wf-1', true, () => readyGraph)
@@ -2742,7 +2740,12 @@ describe('useAgentCrdtFollower', () => {
       seq: 10,
       applied: [ops[0].op_id],
       skipped: [ops[1].op_id],
-      failed: { index: 2, op_id: ops[2].op_id, code: 'unknown_node' }
+      failed: {
+        index: 2,
+        op_id: ops[2].op_id,
+        code: 'unknown_node',
+        message: 'Unknown node'
+      }
     })
 
     expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
