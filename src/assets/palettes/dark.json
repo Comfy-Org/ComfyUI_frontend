@@ -66,19 +66,19 @@
       "bar-shadow": "rgb(16 16 16 / 0.5) 0 0 0.5rem"
     },
     "theme": {
-      "background": "#171718",
+      "background": "#09090a",
       "foreground": "#ffffff",
-      "card": "#262729",
+      "card": "#18181a",
       "primary": "#0b8ce9",
-      "secondary": "#262729",
-      "muted": "#3c3d42",
+      "secondary": "#272729",
+      "muted": "#3f3f44",
       "muted-foreground": "#8a8a8a",
-      "accent": "#313235",
+      "accent": "#272729",
       "destructive": "#b33a3a",
-      "border": "#494a50",
+      "border": "oklch(1 0 0 / 10%)",
       "node-foreground": "#a0a0a0",
-      "node-header": "#202121",
-      "node-border": "#55565e",
+      "node-header": "#09090a",
+      "node-border": "#3f3f44",
       "warning": "#fd9903",
       "shadow-color": "rgb(0 0 0 / 0.4)"
     }
