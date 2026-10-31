@@ -310,6 +310,11 @@ describe('fetchWithRetry', () => {
           })
       ],
       [
+        'has no body',
+        () =>
+          new Response(null, { status: 503, headers: { 'Retry-After': '5' } })
+      ],
+      [
         'asks for a Retry-After past the cap',
         () => refusal(AUTH_UNAVAILABLE, { 'Retry-After': '3600' })
       ]
@@ -419,6 +424,63 @@ describe('fetchWithRetry', () => {
       expect(settled).toHaveBeenCalledExactlyOnceWith(answer)
       expect(fetchImpl).toHaveBeenCalledOnce()
       expect(sleep).not.toHaveBeenCalled()
+    })
+
+    function stalledRefusal(cancel = vi.fn()) {
+      const encoder = new TextEncoder()
+      let source!: ReadableStreamDefaultController<Uint8Array>
+      const answer = new Response(
+        new ReadableStream<Uint8Array>({
+          start: (controller) => {
+            source = controller
+            controller.enqueue(encoder.encode('{"message":'))
+          },
+          cancel
+        }),
+        { status: 503, headers: { 'Retry-After': '5' } }
+      )
+      return {
+        answer,
+        finish: (text: string) => {
+          source.enqueue(encoder.encode(text))
+          source.close()
+        }
+      }
+    }
+
+    it('stops reading a stalled refusal once the cap expires, so the caller can end its body', async () => {
+      vi.useFakeTimers()
+      const cancel = vi.fn()
+      const { answer } = stalledRefusal(cancel)
+
+      const pending = fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body: '{}' },
+        { fetchImpl: scriptedFetch(answer), sleep, random, policy }
+      )
+      await vi.advanceTimersByTimeAsync(1_000)
+      const response = await pending
+      const ended = response.body?.cancel()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(cancel).toHaveBeenCalledOnce()
+      await ended
+    })
+
+    it('leaves a stalled refusal readable when its chunks arrive after the cap', async () => {
+      vi.useFakeTimers()
+      const { answer, finish } = stalledRefusal()
+
+      const pending = fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body: '{}' },
+        { fetchImpl: scriptedFetch(answer), sleep, random, policy }
+      )
+      await vi.advanceTimersByTimeAsync(1_000)
+      const response = await pending
+      finish(`"${AUTH_UNAVAILABLE}"}`)
+
+      expect(await response.json()).toEqual({ message: AUTH_UNAVAILABLE })
     })
 
     it('sends nothing more when the signal aborts during the wait', async () => {

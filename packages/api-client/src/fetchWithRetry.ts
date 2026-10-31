@@ -53,7 +53,10 @@ async function fetchWriteAfterRefusal(
     method,
     status: first.status,
     readRetryAfter: () => first.headers.get('Retry-After'),
-    readBody: () => first.clone().json(),
+    readBody: (signal) =>
+      new Response(
+        first.clone().body?.pipeThrough(new TransformStream(), { signal })
+      ).json(),
     policy,
     random
   })

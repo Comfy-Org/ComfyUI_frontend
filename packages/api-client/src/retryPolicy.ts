@@ -71,22 +71,22 @@ export function parseRetryAfterMs(
   return Number.isNaN(at) ? undefined : Math.max(0, at - now)
 }
 
-// Temporary: BE-24676 replaces this message match with a marker from ingest.
-const SIGN_IN_CHECK_UNAVAILABLE_MESSAGE = 'authentication service unavailable'
 const SIGN_IN_REFUSAL_MAX_SENDS = 2
 const SIGN_IN_REFUSAL_BODY_READ_MAX_MS = 1_000
 
 interface SignInRefusalInput {
   readonly status: number
   readonly readRetryAfter: () => string | null | undefined
-  readonly readBody: () => unknown
+  readonly readBody: (signal: AbortSignal) => unknown
 }
 
-async function readBodyWithinCap(readBody: () => unknown): Promise<unknown> {
+async function readBodyWithinCap(
+  readBody: SignInRefusalInput['readBody']
+): Promise<unknown> {
   const reading = new AbortController()
   try {
     return await Promise.race([
-      readBody(),
+      readBody(reading.signal),
       sleep(SIGN_IN_REFUSAL_BODY_READ_MAX_MS, reading.signal)
     ])
   } finally {
@@ -94,7 +94,12 @@ async function readBodyWithinCap(readBody: () => unknown): Promise<unknown> {
   }
 }
 
-/** Whether a 503 is cloud's sign-in check refusing a request before any handler ran. */
+const SIGN_IN_CHECK_UNAVAILABLE_MESSAGE = 'authentication service unavailable'
+
+/**
+ * Whether a 503 is cloud's sign-in check refusing a request before any handler ran.
+ * The message match is temporary: BE-24676 replaces it with a marker from ingest.
+ */
 export async function isSignInCheckRefusal({
   status,
   readRetryAfter,
