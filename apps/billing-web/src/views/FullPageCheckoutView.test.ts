@@ -651,9 +651,9 @@ describe('FullPageCheckoutView', () => {
       href: 'https://testcloud.comfy.org/?workspace=ws-team'
     },
     {
-      name: "the workspace's Plan & Credits settings when this family has no destination for the target",
+      name: 'the platform it named, in the billed workspace',
       returnTo: 'platform_account',
-      href: 'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws-team'
+      href: 'https://testplatform.comfy.org/?workspace=ws-team'
     }
   ])('the back arrow goes to $name', async ({ returnTo, href }) => {
     const assign = vi
@@ -1322,7 +1322,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       ])
     })
 
-    it("goes to the workspace's Plan & Credits settings when this family has no destination for return_to", async () => {
+    it('goes back to the platform its return_to names, with the result', async () => {
       const assign = vi
         .spyOn(window.location, 'assign')
         .mockImplementation(() => {})
@@ -1341,7 +1341,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       )
 
       expect(assign).toHaveBeenCalledWith(
-        'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws-team'
+        'https://testplatform.comfy.org/?workspace=ws-team&billing_result=success&billing_ref=op_mine'
       )
     })
 
