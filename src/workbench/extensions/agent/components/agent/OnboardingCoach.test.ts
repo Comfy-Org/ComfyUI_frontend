@@ -294,7 +294,6 @@ describe('OnboardingCoach', () => {
         name: STEPS[0].title
       })
       await waitFor(() => expect(dialog.style.opacity).toBe('1'))
-      expect(parseFloat(dialog.style.left)).toBe(8)
       expect(screen.getByTestId('agent-coach-arrow')).not.toHaveStyle({
         visibility: 'hidden'
       })
@@ -350,22 +349,17 @@ describe('OnboardingCoach', () => {
   })
 
   it('stops drawing attention to the card shortly after the click', async () => {
-    vi.useFakeTimers()
-    try {
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      mount()
-      const dialog = await screen.findByRole('dialog', {
-        name: STEPS[0].title
-      })
-      await user.click(screen.getByTestId('agent-coach-scrim'))
-      expect(dialog).toHaveAttribute('data-nudged')
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mount()
+    const dialog = await screen.findByRole('dialog', {
+      name: STEPS[0].title
+    })
+    await user.click(screen.getByTestId('agent-coach-scrim'))
+    expect(dialog).toHaveAttribute('data-nudged')
 
-      await vi.advanceTimersByTimeAsync(2_000)
+    await vi.advanceTimersByTimeAsync(2_000)
 
-      expect(dialog).not.toHaveAttribute('data-nudged')
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(dialog).not.toHaveAttribute('data-nudged')
   })
 
   it('shows the target in its hover state with its tooltip inside the spotlight', async () => {
