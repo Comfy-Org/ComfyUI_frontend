@@ -2,10 +2,12 @@ import { assert, describe, expect, it, vi } from 'vitest'
 
 import { CUSTOM_NODE_FAILURES_TRUNCATED_FIELD } from '@/platform/telemetry/customNodeLoadTelemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { api } from '@/scripts/api'
 
 import type { CustomNodeLoadFailure } from './customNodeScripts'
 import {
   isSafeExtensionBoot,
+  loadCustomNodeScripts,
   reportCustomNodeLoadFailures,
   shouldLoadCustomNodeScript
 } from './customNodeScripts'
@@ -85,8 +87,6 @@ describe('shouldLoadCustomNodeScript', () => {
 
 describe('loadCustomNodeScripts', () => {
   it('keeps disabled scripts inert on the CPU-reading import path', async () => {
-    const { loadCustomNodeScripts } = await import('./customNodeScripts')
-    const { api } = await import('@/scripts/api')
     const executed: string[] = []
     vi.stubGlobal('recordGateScript', (script: string) => executed.push(script))
     const attempt = crypto.randomUUID()
