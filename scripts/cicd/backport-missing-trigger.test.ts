@@ -40,8 +40,15 @@ const workflowTokens: Record<string, string> = {
 function resolvedWarnEnv() {
   return Object.fromEntries(
     Object.entries(warnStep?.env ?? {})
-      .filter(([, value]) => value in workflowTokens)
-      .map(([name, value]) => [name, workflowTokens[value]])
+      .filter(([, value]) => value.startsWith('${{ '))
+      .filter(([name]) => name !== 'GH_REPO' && name !== 'PR_NUMBER')
+      .map(([name, value]) => {
+        const token = workflowTokens[value]
+        if (token === undefined) {
+          throw new Error(`Unmodelled token for ${name}: ${value}`)
+        }
+        return [name, token]
+      })
   )
 }
 
@@ -320,8 +327,10 @@ describe('backport warning for release labels without needs-backport', () => {
       ]
     })
 
-    pr.runWarning()
+    const result = pr.runWarning()
 
+    expect(result.status).toBe(0)
+    expect(result.stdout).not.toContain('::warning::')
     expect(pr.postedComments()).toHaveLength(0)
   })
 
@@ -346,8 +355,9 @@ describe('backport warning for release labels without needs-backport', () => {
   })
 
   it('posts with the same token the backport job uses, since the auto-provided one is refused', () => {
-    expect(warnStep?.env?.POST_TOKEN).toBe(
-      workflow.jobs?.backport?.env?.GH_TOKEN
-    )
+    const postToken = '${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}'
+
+    expect(warnStep?.env?.POST_TOKEN).toBe(postToken)
+    expect(workflow.jobs?.backport?.env?.GH_TOKEN).toBe(postToken)
   })
 })
