@@ -6,6 +6,7 @@ import type {
 } from 'axios'
 import axios, { AxiosError } from 'axios'
 
+import { combineAbortSignals } from '@/utils/abortSignal'
 import type { RetryPolicy } from '@/utils/retryPolicy'
 import { nextRetry, sleep as sleepFor } from '@/utils/retryPolicy'
 import type { StatusRetryEnd } from '@/utils/statusRetryTelemetry'
@@ -43,7 +44,7 @@ function cancellationSignal(
   const controller = new AbortController()
   void config.cancelToken.promise.then(() => controller.abort())
   return signal
-    ? AbortSignal.any([signal, controller.signal])
+    ? combineAbortSignals([signal, controller.signal])
     : controller.signal
 }
 

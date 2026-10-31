@@ -5,6 +5,7 @@ import type {
   ComfyNode,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { combineAbortSignals } from '@/utils/abortSignal'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
@@ -56,7 +57,10 @@ async function uploadTemplateInput(
   sourceRevision: string,
   signal: AbortSignal
 ): Promise<{ ok: true; path: string } | { ok: false; error: Error }> {
-  const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(120_000)])
+  const requestSignal = combineAbortSignals([
+    signal,
+    AbortSignal.timeout(120_000)
+  ])
   let operation = 'download'
   function failure(cause: unknown): { ok: false; error: Error } {
     return {
