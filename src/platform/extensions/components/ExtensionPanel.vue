@@ -12,15 +12,13 @@
       <ul>
         <li v-for="ext in changedExtensions" :key="ext.name">
           <span>
-            {{ extensionStore.isExtensionEnabled(ext.name) ? '[-]' : '[+]' }}
+            {{ isExtensionEnabled(ext.name) ? '[-]' : '[+]' }}
           </span>
           {{ ext.name }}
         </li>
-        <li v-for="path in extensionStore.changedExtensionPaths" :key="path">
+        <li v-for="path in changedExtensionPaths" :key="path">
           <span>
-            {{
-              extensionStore.isExtensionPathEnabledAtBoot(path) ? '[-]' : '[+]'
-            }}
+            {{ isExtensionPathEnabledAtBoot(path) ? '[-]' : '[+]' }}
           </span>
           {{ extensionNameFromPath(path) }}
         </li>
@@ -28,7 +26,7 @@
       <div class="flex justify-end">
         <Button
           variant="destructive"
-          :disabled="extensionStore.isSavingExtensionPaths"
+          :disabled="isSavingExtensionPaths"
           @click="applyChanges"
         >
           {{ $t('g.reloadToApplyChanges') }}
@@ -47,9 +45,9 @@
       </ToggleGroup>
     </div>
     <ExtensionPathTable
-      :paths="extensionStore.extensionPaths"
-      :enabled-by-path="extensionStore.enabledByPath"
-      :disabled="extensionStore.isSavingExtensionPaths"
+      :paths="extensionPaths"
+      :enabled-by-path="enabledByPath"
+      :disabled="isSavingExtensionPaths"
       @set-enabled="handleExtensionPathEnabled"
     />
     <ExtensionListTable
@@ -68,6 +66,7 @@
 
 <script setup lang="ts">
 import type { CheckboxCheckedState } from 'reka-ui'
+import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -105,26 +104,38 @@ const searchQuery = ref('')
 const nameSortDirection = ref<TableSortDirection | null>(null)
 
 const extensionStore = useExtensionStore()
+const {
+  agentExtensions,
+  changedExtensionPaths,
+  enabledByPath,
+  extensionPaths,
+  extensions,
+  hasThirdPartyExtensions,
+  inactiveDisabledExtensionNames,
+  isSavingExtensionPaths
+} = storeToRefs(extensionStore)
+const {
+  isCoreExtension,
+  isExtensionEnabled,
+  isExtensionPathEnabledAtBoot,
+  isExtensionReadOnly,
+  setExtensionPathEnabled
+} = extensionStore
 const settingStore = useSettingStore()
 const toast = useToast()
 
 const enabledByName = ref<Record<string, boolean>>({})
 
 const filteredExtensions = computed(() => {
-  const extensions = extensionStore.extensions
   switch (filterType.value) {
     case 'core':
-      return extensions.filter((ext) =>
-        extensionStore.isCoreExtension(ext.name)
-      )
+      return extensions.value.filter((ext) => isCoreExtension(ext.name))
     case 'custom':
-      return extensions.filter(
-        (ext) => !extensionStore.isCoreExtension(ext.name)
-      )
+      return extensions.value.filter((ext) => !isCoreExtension(ext.name))
     case 'agentCreated':
-      return extensionStore.agentExtensions
+      return agentExtensions.value
     default:
-      return extensions
+      return extensions.value
   }
 })
 
@@ -167,30 +178,25 @@ function toggleAllVisible(selected: CheckboxCheckedState) {
 }
 
 watch(
-  () => extensionStore.extensions,
+  () => extensions.value,
   (extensions) => {
     extensions.forEach((ext) => {
       if (ext.name in enabledByName.value) return
-      enabledByName.value[ext.name] = extensionStore.isExtensionEnabled(
-        ext.name
-      )
+      enabledByName.value[ext.name] = isExtensionEnabled(ext.name)
     })
   },
   { immediate: true }
 )
 
 const changedExtensions = computed(() => {
-  return extensionStore.extensions.filter(
-    (ext) =>
-      enabledByName.value[ext.name] !==
-      extensionStore.isExtensionEnabled(ext.name)
+  return extensions.value.filter(
+    (ext) => enabledByName.value[ext.name] !== isExtensionEnabled(ext.name)
   )
 })
 
 const hasChanges = computed(() => {
   return (
-    changedExtensions.value.length > 0 ||
-    extensionStore.changedExtensionPaths.length > 0
+    changedExtensions.value.length > 0 || changedExtensionPaths.value.length > 0
   )
 })
 
@@ -200,7 +206,7 @@ const updateExtensionStatus = async () => {
     .map(([name]) => name)
 
   await settingStore.set('Comfy.Extension.Disabled', [
-    ...extensionStore.inactiveDisabledExtensionNames,
+    ...inactiveDisabledExtensionNames.value,
     ...editingDisabledExtensionNames
   ])
 }
@@ -211,7 +217,7 @@ async function setExtensionEnabled(name: string, enabled: boolean) {
 }
 
 async function handleExtensionPathEnabled(path: string, enabled: boolean) {
-  const result = await extensionStore.setExtensionPathEnabled(path, enabled)
+  const result = await setExtensionPathEnabled(path, enabled)
   switch (result) {
     case 'refused':
       toast.warning(t('g.warning'), {
@@ -229,8 +235,8 @@ async function handleExtensionPathEnabled(path: string, enabled: boolean) {
 }
 
 const enableAllExtensions = async () => {
-  extensionStore.extensions.forEach((ext) => {
-    if (extensionStore.isExtensionReadOnly(ext.name)) return
+  extensions.value.forEach((ext) => {
+    if (isExtensionReadOnly(ext.name)) return
 
     enabledByName.value[ext.name] = true
   })
@@ -238,8 +244,8 @@ const enableAllExtensions = async () => {
 }
 
 const disableAllExtensions = async () => {
-  extensionStore.extensions.forEach((ext) => {
-    if (extensionStore.isExtensionReadOnly(ext.name)) return
+  extensions.value.forEach((ext) => {
+    if (isExtensionReadOnly(ext.name)) return
 
     enabledByName.value[ext.name] = false
   })
@@ -247,8 +253,8 @@ const disableAllExtensions = async () => {
 }
 
 const disableThirdPartyExtensions = async () => {
-  extensionStore.extensions.forEach((ext) => {
-    if (extensionStore.isCoreExtension(ext.name)) return
+  extensions.value.forEach((ext) => {
+    if (isCoreExtension(ext.name)) return
 
     enabledByName.value[ext.name] = false
   })
@@ -256,8 +262,8 @@ const disableThirdPartyExtensions = async () => {
 }
 
 async function disableAgentExtensions() {
-  extensionStore.agentExtensions.forEach((ext) => {
-    if (extensionStore.isExtensionReadOnly(ext.name)) return
+  agentExtensions.value.forEach((ext) => {
+    if (isExtensionReadOnly(ext.name)) return
 
     enabledByName.value[ext.name] = false
   })
@@ -277,7 +283,7 @@ const actions = computed<MenuItem[]>(() => [
     icon: 'icon-[lucide--check]',
     command: async () => {
       selectedNames.value.forEach((name) => {
-        if (!extensionStore.isExtensionReadOnly(name)) {
+        if (!isExtensionReadOnly(name)) {
           enabledByName.value[name] = true
         }
       })
@@ -289,7 +295,7 @@ const actions = computed<MenuItem[]>(() => [
     icon: 'icon-[lucide--x]',
     command: async () => {
       selectedNames.value.forEach((name) => {
-        if (!extensionStore.isExtensionReadOnly(name)) {
+        if (!isExtensionReadOnly(name)) {
           enabledByName.value[name] = false
         }
       })
@@ -313,14 +319,14 @@ const actions = computed<MenuItem[]>(() => [
     label: t('g.disableThirdParty'),
     icon: 'icon-[lucide--x]',
     command: disableThirdPartyExtensions,
-    disabled: !extensionStore.hasThirdPartyExtensions
+    disabled: !hasThirdPartyExtensions.value
   },
   {
     label: t('g.disableAgentCreated'),
     icon: 'icon-[lucide--x]',
     command: disableAgentExtensions,
-    disabled: !extensionStore.agentExtensions.some(
-      (extension) => !extensionStore.isExtensionReadOnly(extension.name)
+    disabled: !agentExtensions.value.some(
+      (extension) => !isExtensionReadOnly(extension.name)
     )
   }
 ])
