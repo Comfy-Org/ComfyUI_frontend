@@ -13,6 +13,7 @@ export async function runTransform(
     output?: string
     workflow?: string
     featureFlags?: Record<string, unknown>
+    force?: boolean
   } = {}
 ): Promise<void> {
   header('Transform Codegen → Conventions')
@@ -54,7 +55,22 @@ export async function runTransform(
     )
     process.exit(1)
   }
-  writeFileSync(outputPath, result.code)
+  try {
+    writeFileSync(
+      outputPath,
+      result.code,
+      options.force ? undefined : { flag: 'wx' }
+    )
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === 'EEXIST') {
+      console.log(
+        pc.red(`  Refusing to overwrite existing file: ${outputPath}`)
+      )
+      console.log(pc.dim('  Pass --force to overwrite.'))
+      process.exit(1)
+    }
+    throw error
+  }
 
   if (!formatFile(outputPath)) {
     console.log(
