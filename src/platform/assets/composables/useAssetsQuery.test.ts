@@ -142,6 +142,28 @@ const malformedResponses: {
   }
 ]
 
+describe('useAssetsQuery invalidation during back-off', () => {
+  it('waits out the back-off before reloading', async () => {
+    vi.useFakeTimers()
+    const list = await createList('invalidate-backoff', ['newest'], {
+      hasMore: true,
+      nextCursor: 'page-2'
+    })
+    fetchApiMock.mockResolvedValueOnce(new Response(null, { status: 500 }))
+    await list.loadMore()
+    fetchApiMock.mockResolvedValueOnce(response(['fresh']))
+
+    const invalidating = list.invalidate()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+
+    await vi.advanceTimersByTimeAsync(1000)
+    await invalidating
+    expect(fetchApiMock).toHaveBeenCalledTimes(3)
+    expect(toValue(list.items).map(({ id }) => id)).toEqual(['fresh'])
+  })
+})
+
 describe('useAssetsQuery malformed response', () => {
   it.for(malformedResponses)(
     'terminates pagination after $name',
@@ -162,6 +184,123 @@ describe('useAssetsQuery malformed response', () => {
       expect(requestedAfterCursors()).toEqual(['page-2'])
     }
   )
+})
+
+const pageFailures: { name: string; fail: () => Response }[] = [
+  { name: 'HTTP 403', fail: () => new Response(null, { status: 403 }) },
+  {
+    name: 'malformed JSON',
+    fail: () =>
+      new Response('{', { headers: { 'Content-Type': 'application/json' } })
+  },
+  {
+    name: 'an invalid response schema',
+    fail: () => Response.json({ assets: [] })
+  }
+]
+
+describe('useAssetsQuery recovery after a failed page', () => {
+  it.for(pageFailures)(
+    'resumes paging after a successful loadNew following $name',
+    async ({ name, fail }) => {
+      const list = await createList(`recover-${name}`, ['newest'], {
+        hasMore: true,
+        nextCursor: 'page-2'
+      })
+      fetchApiMock.mockResolvedValueOnce(fail())
+      await expect(list.loadMore()).resolves.toBe(false)
+      expect(toValue(list.hasMore)).toBe(false)
+
+      fetchApiMock.mockResolvedValueOnce(response(['newest']))
+      await list.loadNew()
+      expect(toValue(list.hasMore)).toBe(true)
+
+      fetchApiMock.mockResolvedValueOnce(response(['older']))
+      await expect(list.loadMore()).resolves.toBe(true)
+      expect(toValue(list.items).map(({ id }) => id)).toEqual([
+        'newest',
+        'older'
+      ])
+      expect(requestedAfterCursors()).toEqual(['page-2', null, 'page-2'])
+    }
+  )
+
+  it('keeps paging stopped after a failed loadNew until one succeeds', async () => {
+    const list = await createList('recover-load-new', ['newest'], {
+      hasMore: true,
+      nextCursor: 'page-2'
+    })
+    fetchApiMock.mockResolvedValueOnce(new Response(null, { status: 403 }))
+    await list.loadNew()
+    expect(toValue(list.hasMore)).toBe(false)
+
+    fetchApiMock.mockResolvedValueOnce(response(['newest']))
+    await list.loadNew()
+    expect(toValue(list.hasMore)).toBe(true)
+  })
+
+  it('keeps a fully loaded list stopped after a successful loadNew', async () => {
+    const list = await createList('exhausted-load-new', ['newest'])
+    fetchApiMock.mockResolvedValueOnce(response(['newest']))
+    await list.loadNew()
+
+    expect(toValue(list.hasMore)).toBe(false)
+    await expect(list.loadMore()).resolves.toBe(false)
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps a fully loaded list stopped after a transient failure', async () => {
+    vi.useFakeTimers()
+    const list = await createList('exhausted-transient', ['newest'])
+    fetchApiMock.mockResolvedValueOnce(new Response(null, { status: 500 }))
+    await list.loadNew()
+
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(toValue(list.hasMore)).toBe(false)
+  })
+
+  it('keeps a page failure after a transient failure', async () => {
+    vi.useFakeTimers()
+    const list = await createList('failed-transient', ['newest'], {
+      hasMore: true,
+      nextCursor: 'page-2'
+    })
+    fetchApiMock.mockResolvedValueOnce(new Response(null, { status: 403 }))
+    await list.loadMore()
+    fetchApiMock.mockResolvedValueOnce(new Response(null, { status: 500 }))
+    await list.loadNew()
+
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(toValue(list.hasMore)).toBe(false)
+  })
+
+  it.for(pageFailures)(
+    'keeps a fully loaded list stopped after $name',
+    async ({ name, fail }) => {
+      const list = await createList(`exhausted-${name}`, ['newest'])
+      fetchApiMock.mockResolvedValueOnce(fail())
+      await list.loadNew()
+      fetchApiMock.mockResolvedValueOnce(response(['newest']))
+      await list.loadNew()
+
+      expect(toValue(list.hasMore)).toBe(false)
+    }
+  )
+
+  it('clears a page failure on full invalidation', async () => {
+    const list = await createList('recover-invalidate', ['newest'], {
+      hasMore: true,
+      nextCursor: 'page-2'
+    })
+    fetchApiMock.mockResolvedValueOnce(new Response(null, { status: 403 }))
+    await list.loadMore()
+
+    fetchApiMock.mockResolvedValueOnce(
+      response(['newest'], { hasMore: true, nextCursor: 'page-2' })
+    )
+    await list.invalidate()
+    expect(toValue(list.hasMore)).toBe(true)
+  })
 })
 
 describe('useAssetsQuery stale invalidation', () => {
@@ -237,9 +376,8 @@ describe('useAssetsQuery loadNew pagination', () => {
         response(['newest', 'newer'], { hasMore: true, nextCursor: 'page-2' })
       )
       .mockResolvedValueOnce(
-        response(['new'], { hasMore: true, nextCursor: 'page-3' })
+        response(['new', 'newish', 'known'], { hasMore: false })
       )
-      .mockResolvedValueOnce(response(['newish'], { hasMore: false }))
 
     await list.loadNew()
 
@@ -250,7 +388,7 @@ describe('useAssetsQuery loadNew pagination', () => {
       'newish',
       'known'
     ])
-    expect(requestedAfterCursors()).toEqual([null, 'page-2', 'page-3'])
+    expect(requestedAfterCursors()).toEqual([null, 'page-2'])
   })
 
   it('stops at a known id without inserting duplicates from overlapping pages', async () => {
@@ -278,30 +416,8 @@ describe('useAssetsQuery loadNew pagination', () => {
     expect(requestedAfterCursors()).toEqual([null, 'page-2'])
   })
 
-  it('terminates when the cursor does not advance', async () => {
-    const list = await createList('stuck-cursor', ['known'])
-    fetchApiMock
-      .mockResolvedValueOnce(
-        response(['newest'], { hasMore: true, nextCursor: 'stuck' })
-      )
-      .mockResolvedValueOnce(
-        response(['newer'], { hasMore: true, nextCursor: 'stuck' })
-      )
-      .mockRejectedValue(new Error('unexpected extra page'))
-
-    await list.loadNew()
-
-    expect(fetchApiMock).toHaveBeenCalledTimes(3)
-    expect(toValue(list.items).map(({ id }) => id)).toEqual([
-      'newest',
-      'newer',
-      'known'
-    ])
-    expect(requestedAfterCursors()).toEqual([null, 'stuck'])
-  })
-
-  it('terminates when cursors cycle', async () => {
-    const list = await createList('cycling-cursor', ['known'])
+  it('rebuilds the list when the head walk finds no cached item within its page cap', async () => {
+    const list = await createList('head-cap', ['known'])
     fetchApiMock
       .mockResolvedValueOnce(
         response(['newest'], { hasMore: true, nextCursor: 'A' })
@@ -309,21 +425,40 @@ describe('useAssetsQuery loadNew pagination', () => {
       .mockResolvedValueOnce(
         response(['newer'], { hasMore: true, nextCursor: 'B' })
       )
-      .mockResolvedValueOnce(
-        response(['new'], { hasMore: true, nextCursor: 'A' })
-      )
-      .mockRejectedValue(new Error('unexpected page after cursor cycle'))
+      .mockResolvedValueOnce(response(['newest', 'newer', 'new']))
 
     await list.loadNew()
 
-    expect(fetchApiMock).toHaveBeenCalledTimes(4)
     expect(toValue(list.items).map(({ id }) => id)).toEqual([
       'newest',
       'newer',
-      'new',
-      'known'
+      'new'
     ])
-    expect(requestedAfterCursors()).toEqual([null, 'A', 'B'])
+    expect(requestedAfterCursors()).toEqual([null, 'A', null])
+  })
+
+  it('rebuilds instead of duplicating when every server id changed', async () => {
+    const list = await createList('ids-changed', ['old-b', 'old-a'])
+    fetchApiMock
+      .mockResolvedValueOnce(response(['new-b', 'new-a']))
+      .mockResolvedValueOnce(response(['new-b', 'new-a']))
+
+    await list.loadNew()
+
+    expect(toValue(list.items).map(({ id }) => id)).toEqual(['new-b', 'new-a'])
+  })
+
+  it('rebuilds once, not again on a later failed walk', async () => {
+    const list = await createList('rebuild-once', ['old'])
+    fetchApiMock
+      .mockResolvedValueOnce(response(['new']))
+      .mockResolvedValueOnce(response(['new']))
+    await list.loadNew()
+    fetchApiMock.mockResolvedValueOnce(new Response(null, { status: 403 }))
+    await list.loadNew()
+
+    expect(fetchApiMock).toHaveBeenCalledTimes(4)
+    expect(toValue(list.items).map(({ id }) => id)).toEqual(['new'])
   })
 })
 
