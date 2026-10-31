@@ -77,7 +77,7 @@
         @retry="retryBalance"
         @add-credits="addCredits('credits_panel')"
       />
-      <template v-if="flags.autoTopUpEnabled">
+      <template v-if="capabilities.autoTopUpEnabled.value">
         <template v-if="capabilities.canManageAutoTopUp.value">
           <BillingAutoTopUpCard v-if="capabilities.canTopUp.value" />
         </template>
@@ -160,7 +160,6 @@ import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
@@ -204,7 +203,6 @@ const suppressCreditBanner = computed(
     planCheckout.banner.value != null ||
     topupCheckout.banner.value != null
 )
-const { flags } = useFeatureFlags()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
 const planCreditNote = useTopUpPlanCreditCopy()
