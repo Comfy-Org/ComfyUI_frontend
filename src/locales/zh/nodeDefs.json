@@ -15434,8 +15434,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "生成一段从图像开始，并将相机移动到主体周围的新角度和距离的视频。",
+    "display_name": "MiniMax H3 Max 相机控制",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成视频的模型。"
+      },
+      "model_azimuth": {
+        "name": "方位角"
+      },
+      "model_distance": {
+        "name": "距离"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_elevation": {
+        "name": "仰角"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "提示词扩展模式"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "根据提示词和可选的音频参考继续生成视频片段。",
+    "display_name": "MiniMax H3 Max 视频延长",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成视频的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_output": {
+        "name": "输出"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_prompt_expansion": {
+        "name": "提示词扩展"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "根据提示词以及可选的参考图像和视频，使用新生成的场景替换视频中开始时间和恢复时间之间的部分。",
+    "display_name": "MiniMax H3 Max 视频插入",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成视频的模型。"
+      },
+      "model_color_match": {
+        "name": "颜色匹配"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_prompt_expansion": {
+        "name": "提示词扩展"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_resume_time": {
+        "name": "恢复时间"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_start_time": {
+        "name": "开始时间"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "为图像添加动画，使其嘴部动作跟随音频。视频时长与音频相同。",
+    "display_name": "MiniMax H3 Max 唇形同步",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "随机种"
+      },
+      "model_transcription": {
+        "name": "转录文本"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "使用参考照片中的人物替换视频中的人物，同时保留源视频的动作、镜头、剪辑和声音。",
+    "display_name": "MiniMax H3 Max 角色替换",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_enhance_realism": {
+        "name": "增强真实感"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "随机种"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "通过将视频适配到新画布并生成周围区域，使其适应新的宽高比。保留源视频的时长和声音。",
+    "display_name": "MiniMax H3 Max 视频重新构图",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "随机种"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "使用 MiniMax H3 模型，根据参考图像、视频和音频进行条件控制以生成视频。在提示词中按顺序引用参考内容：“图像 1”、“图像 2”、“视频 1”、“音频 1”，依此类推。",
+    "description": "使用 MiniMax H3 模型，根据参考图像、视频和音频生成视频。在提示词中按顺序引用参考素材：{'@'}Image1、{'@'}Image2、{'@'}Video1、{'@'}Audio1，依此类推。",
     "display_name": "MiniMax H3 参考生成视频",
     "inputs": {
       "control_after_generate": {
@@ -20272,6 +20482,33 @@
       },
       "model_seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaPVideoUpscaleNode": {
+    "description": "使用 Pruna P-Video 放大将视频放大至 720p、1080p、2K 或 4K，同时保留其宽高比和音频。",
+    "display_name": "Pruna P-Video 放大",
+    "inputs": {
+      "fps": {
+        "name": "帧率",
+        "tooltip": "输出帧率。“源视频”会保留视频的帧率，最高 60。更高帧率将通过插帧生成。输出超过 30 fps 的费用为两倍。"
+      },
+      "target": {
+        "name": "目标",
+        "tooltip": "输出像素面积：720p 约 0.9 百万像素，1080p 为 2.1，2K 为 3.7，4K 为 8.3。已达到该尺寸的视频将保持原尺寸，仅进行增强。最大长度：2400、1200、600 或 300 帧；在 24 fps 下约为 100、50、25 或 12.5 秒。"
+      },
+      "turbo": {
+        "name": "极速",
+        "tooltip": "以相同价格更快地放大，但细节更柔和。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "要放大的视频，最大 512 MiB。"
       }
     },
     "outputs": {
@@ -28459,6 +28696,24 @@
     "inputs": {
       "model_name": {
         "name": "模型名称"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "设置 VAE 编码和解码的计算数据类型，而不影响其他分支。",
+    "display_name": "VAE 计算数据类型",
+    "inputs": {
+      "dtype": {
+        "name": "数据类型",
+        "tooltip": "默认值会保留输入 VAE 的计算数据类型。"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

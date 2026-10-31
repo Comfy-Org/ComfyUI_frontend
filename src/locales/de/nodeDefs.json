@@ -15434,8 +15434,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "Generiert ein Video, das mit dem Bild beginnt und die Kamera in einen neuen Winkel und Abstand um das Motiv bewegt.",
+    "display_name": "MiniMax H3 Max-Kamerasteuerung",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Für die Videogenerierung zu verwendendes Modell."
+      },
+      "model_azimuth": {
+        "name": "Azimut"
+      },
+      "model_distance": {
+        "name": "Abstand"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_elevation": {
+        "name": "Elevation"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "prompt_expansion_mode"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "Setzt ein Video mit neuem, durch einen Prompt und optionalen Audioreferenzen gesteuerten Material fort.",
+    "display_name": "MiniMax H3 Max-Video erweitern",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Für die Videogenerierung zu verwendendes Modell."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_output": {
+        "name": "Ausgabe"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_prompt_expansion": {
+        "name": "prompt_expansion"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "Ersetzt den Teil eines Videos zwischen Start- und Fortsetzungszeit durch eine neu generierte Szene, gesteuert durch einen Prompt und optionale Referenzbilder und -videos.",
+    "display_name": "MiniMax H3 Max-Video einfügen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Für die Videogenerierung zu verwendendes Modell."
+      },
+      "model_color_match": {
+        "name": "color_match"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_prompt_expansion": {
+        "name": "prompt_expansion"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_resume_time": {
+        "name": "resume_time"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_start_time": {
+        "name": "start_time"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "Animiert ein Bild so, dass seine Mundbewegungen dem Audio folgen. Das Video ist so lang wie das Audio.",
+    "display_name": "MiniMax H3 Max-Lippensynchronisation",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Modell für die Videogenerierung."
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_transcription": {
+        "name": "Transkription"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "Ersetzt die Personen in einem Video durch die Personen aus Referenzfotos, wobei Bewegung, Kamera, Schnitte und Ton des Quellvideos beibehalten werden.",
+    "display_name": "MiniMax H3 Max Recast",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Modell für die Videogenerierung."
+      },
+      "model_enhance_realism": {
+        "name": "Realismus verbessern"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "Passt ein Video an ein neues Seitenverhältnis an, indem es auf einem neuen Canvas eingepasst und die umliegenden Bereiche generiert werden. Timing und Ton des Quellvideos bleiben erhalten.",
+    "display_name": "MiniMax H3 Max Reframe Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Modell für die Videogenerierung."
+      },
+      "model_aspect_ratio": {
+        "name": "Seitenverhältnis"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Generiert mit den MiniMax-H3-Modellen ein Video, das durch Referenzbilder, -videos und -audio konditioniert wird. Verweisen Sie im Prompt anhand ihrer Reihenfolge auf die Referenzen: „Image 1“, „Image 2“, „Video 1“, „Audio 1“ usw.",
+    "description": "Generiert ein Video basierend auf Referenzbildern, -videos und -audio mit den MiniMax-H3-Modellen. Verweisen Sie im Prompt entsprechend ihrer Reihenfolge auf die Referenzen: {'@'}Image1, {'@'}Image2, {'@'}Video1, {'@'}Audio1 usw.",
     "display_name": "MiniMax H3 Referenz zu Video",
     "inputs": {
       "control_after_generate": {
@@ -20272,6 +20482,33 @@
       },
       "model_seed": {
         "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaPVideoUpscaleNode": {
+    "description": "Skaliert ein Video mit Pruna P-Video Upscale auf 720p, 1080p, 2K oder 4K hoch und behält dabei Seitenverhältnis und Audio bei.",
+    "display_name": "Pruna P-Video Upscale",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "Ausgabe-Framerate. 'source' behält die Framerate des Videos bei, bis zu 60. Eine höhere Framerate wird interpoliert. Die Ausgabe über 30 fps kostet doppelt so viel."
+      },
+      "target": {
+        "name": "Ziel",
+        "tooltip": "Ausgabe-Pixelfläche: 720p etwa 0,9 Megapixel, 1080p 2,1, 2K 3,7, 4K 8,3. Ein bereits so großes Video behält seine Größe und wird nur verbessert. Maximale Länge: 2400, 1200, 600 bzw. 300 Frames, etwa 100, 50, 25 bzw. 12,5 Sekunden bei 24 fps."
+      },
+      "turbo": {
+        "name": "Turbo",
+        "tooltip": "Schnelleres Upscaling mit weicheren Details zum gleichen Preis."
+      },
+      "video": {
+        "name": "Video",
+        "tooltip": "Hochzuskalierendes Video mit bis zu 512 MiB."
       }
     },
     "outputs": {
@@ -28459,6 +28696,24 @@
     "inputs": {
       "model_name": {
         "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "Legt den Compute-dtype für VAE-Encoding und -Decoding fest, ohne andere Branches zu beeinflussen.",
+    "display_name": "VAE Compute Dtype",
+    "inputs": {
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Default behält den Compute-dtype des Eingabe-VAE bei."
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

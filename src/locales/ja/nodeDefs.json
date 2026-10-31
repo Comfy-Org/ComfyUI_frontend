@@ -15434,8 +15434,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "画像から開始し、被写体の周囲でカメラを新しい角度と距離へ移動させる動画を生成します。",
+    "display_name": "MiniMax H3 Max カメラ制御",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_azimuth": {
+        "name": "方位角"
+      },
+      "model_distance": {
+        "name": "距離"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_elevation": {
+        "name": "仰角"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "prompt_expansion_mode"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "プロンプトと任意の音声参照に基づく新しい映像で動画を継続します。",
+    "display_name": "MiniMax H3 Max 動画延長",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_output": {
+        "name": "出力"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_prompt_expansion": {
+        "name": "prompt_expansion"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "開始時刻から再開時刻までの動画部分を、プロンプトおよび任意の参照画像と動画に基づいて新たに生成したシーンに置き換えます。",
+    "display_name": "MiniMax H3 Max 動画挿入",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_color_match": {
+        "name": "color_match"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_prompt_expansion": {
+        "name": "prompt_expansion"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_resume_time": {
+        "name": "resume_time"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_start_time": {
+        "name": "start_time"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "画像をアニメーション化し、口の動きが音声に追従するようにします。動画の長さは音声と同じです。",
+    "display_name": "MiniMax H3 Max リップシンク",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_transcription": {
+        "name": "文字起こし"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "元動画の動き、カメラ、カット、音声を維持したまま、動画内の人物を参照写真の人物に置き換えます。",
+    "display_name": "MiniMax H3 Max リキャスト",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_enhance_realism": {
+        "name": "リアリズムを強化"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "動画を新しいキャンバスに収め、周囲の領域を生成することで、新しいアスペクト比に適応させます。元動画のタイミングと音声は維持されます。",
+    "display_name": "MiniMax H3 Max 動画リフレーム",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "MiniMax H3モデルを使用して、参照画像、動画、オーディオを条件として動画を生成します。プロンプト内では、参照を順番に「Image 1」、「Image 2」、「Video 1」、「Audio 1」などとして指定してください。",
+    "description": "MiniMax H3モデルを使用して、参照画像、動画、音声を条件として動画を生成します。プロンプト内では、参照を順番に {'@'}Image1、{'@'}Image2、{'@'}Video1、{'@'}Audio1 のように指定してください。",
     "display_name": "MiniMax H3 参照からビデオ生成",
     "inputs": {
       "control_after_generate": {
@@ -20272,6 +20482,33 @@
       },
       "model_seed": {
         "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaPVideoUpscaleNode": {
+    "description": "Pruna P-Video Upscaleを使用して、アスペクト比と音声を維持したまま動画を720p、1080p、2K、または4Kにアップスケールします。",
+    "display_name": "Pruna P-Video アップスケール",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "出力フレームレート。'source'は動画のレートを最大60まで維持します。より高いレートは補間されます。30 fpsを超える出力はコストが2倍になります。"
+      },
+      "target": {
+        "name": "ターゲット",
+        "tooltip": "出力ピクセル数: 720pは約0.9メガピクセル、1080pは2.1、2Kは3.7、4Kは8.3です。すでにこのサイズ以上の動画はサイズを維持し、強調処理のみ行われます。最大長: 2400、1200、600、または300フレーム。24 fpsでは約100、50、25、または12.5秒です。"
+      },
+      "turbo": {
+        "name": "ターボ",
+        "tooltip": "同じ価格で、ディテールはやや柔らかくなりますが、より高速にアップスケールします。"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "アップスケールする動画。最大512 MiB。"
       }
     },
     "outputs": {
@@ -28459,6 +28696,24 @@
     "inputs": {
       "model_name": {
         "name": "モデル名"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "他のブランチに影響を与えずに、VAEのエンコードとデコードに使用する演算dtypeを設定します。",
+    "display_name": "VAE 演算 dtype",
+    "inputs": {
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Defaultは入力VAEの演算dtypeを維持します。"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

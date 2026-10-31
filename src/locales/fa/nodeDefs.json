@@ -15434,8 +15434,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "ویدیویی تولید می‌کند که از تصویر آغاز می‌شود و دوربین را به زاویه و فاصله‌ای جدید پیرامون سوژه حرکت می‌دهد.",
+    "display_name": "کنترل دوربین MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_azimuth": {
+        "name": "سمت‌الرأس"
+      },
+      "model_distance": {
+        "name": "فاصله"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_elevation": {
+        "name": "ارتفاع"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "حالت_گسترش_پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "ادامه‌دادن یک ویدیو با فیلم جدید، هدایت‌شده با یک پرامپت و ارجاعات صوتی اختیاری.",
+    "display_name": "گسترش ویدیوی MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت_ابعاد"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_output": {
+        "name": "خروجی"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_prompt_expansion": {
+        "name": "گسترش_پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "بخش یک ویدیو را بین زمان‌های شروع و ادامه با صحنه‌ای تازه‌تولیدشده جایگزین می‌کند که با یک پرامپت و تصاویر و ویدیوهای مرجع اختیاری هدایت می‌شود.",
+    "display_name": "درج ویدیو MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_color_match": {
+        "name": "تطبیق_رنگ"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_prompt_expansion": {
+        "name": "گسترش_پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_resume_time": {
+        "name": "زمان_ادامه"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_start_time": {
+        "name": "زمان_شروع"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "تصویری را متحرک می‌کند تا حرکات دهان آن از صدا پیروی کند. ویدیو هم‌اندازهٔ صدا است.",
+    "display_name": "همگام‌سازی لب MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_transcription": {
+        "name": "رونویسی"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "افراد یک ویدیو را با افراد موجود در عکس‌های مرجع جایگزین می‌کند و حرکت، دوربین، برش‌ها و صدای ویدیوی منبع را حفظ می‌کند.",
+    "display_name": "MiniMax H3 Max Recast",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_enhance_realism": {
+        "name": "افزایش واقع‌گرایی"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "یک ویدیو را با قرار دادن آن روی بوم جدید و تولید نواحی پیرامونی، با نسبت ابعاد جدید سازگار می‌کند. زمان‌بندی و صدای ویدیوی منبع حفظ می‌شوند.",
+    "display_name": "MiniMax H3 Max Reframe Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "با استفاده از مدل‌های MiniMax H3، ویدئویی شرطی‌شده بر تصاویر، ویدئوها و صوت مرجع تولید کنید. در prompt به‌ترتیب به مراجع اشاره کنید: 'Image 1'، 'Image 2'، 'Video 1'، 'Audio 1' و غیره.",
+    "description": "با استفاده از مدل‌های MiniMax H3، بر پایهٔ تصاویر، ویدیوها و صدای مرجع ویدیو تولید می‌کند. در پرامپت، بر اساس ترتیبشان به مراجع ارجاع دهید: {'@'}تصویر۱، {'@'}تصویر۲، {'@'}ویدیو۱، {'@'}صدا۱ و الی آخر.",
     "display_name": "تبدیل مرجع MiniMax H3 به ویدیو",
     "inputs": {
       "control_after_generate": {
@@ -20272,6 +20482,33 @@
       },
       "model_seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaPVideoUpscaleNode": {
+    "description": "با استفاده از Pruna P-Video Upscale، ویدیو را با حفظ نسبت ابعاد و صدای آن به ۷۲۰p، ۱۰۸۰p، ۲K یا ۴K ارتقا می‌دهد.",
+    "display_name": "Pruna P-Video Upscale",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "نرخ فریم خروجی. «source» نرخ ویدیو را تا سقف ۶۰ حفظ می‌کند. نرخ بالاتر درون‌یابی می‌شود. خروجی بالاتر از ۳۰ fps دو برابر هزینه دارد."
+      },
+      "target": {
+        "name": "هدف",
+        "tooltip": "مساحت پیکسلی خروجی: ۷۲۰p حدود ۰٫۹ مگاپیکسل، ۱۰۸۰p برابر ۲٫۱، ۲K برابر ۳٫۷ و ۴K برابر ۸٫۳. ویدیویی که از پیش این‌قدر بزرگ باشد، اندازه‌اش حفظ می‌شود و فقط بهبود می‌یابد. حداکثر طول: ۲۴۰۰، ۱۲۰۰، ۶۰۰ یا ۳۰۰ فریم؛ حدود ۱۰۰، ۵۰، ۲۵ یا ۱۲٫۵ ثانیه با ۲۴ fps."
+      },
+      "turbo": {
+        "name": "توربو",
+        "tooltip": "ارتقای سریع‌تر با جزئیات نرم‌تر و همان هزینه."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیویی برای ارتقا، تا سقف ۵۱۲ MiB."
       }
     },
     "outputs": {
@@ -28459,6 +28696,24 @@
     "inputs": {
       "model_name": {
         "name": "نام مدل"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "dtype محاسباتی را برای رمزگذاری و رمزگشایی VAE تنظیم می‌کند، بدون آنکه بر شاخه‌های دیگر تأثیر بگذارد.",
+    "display_name": "نوع دادهٔ محاسباتی VAE",
+    "inputs": {
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "حالت پیش‌فرض، dtype محاسباتی VAE ورودی را حفظ می‌کند."
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

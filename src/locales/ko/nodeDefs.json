@@ -15434,8 +15434,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "이미지에서 시작하여 피사체 주변의 새로운 각도와 거리로 카메라를 이동하는 동영상을 생성합니다.",
+    "display_name": "MiniMax H3 Max 카메라 제어",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "동영상 생성에 사용할 모델입니다."
+      },
+      "model_azimuth": {
+        "name": "방위각"
+      },
+      "model_distance": {
+        "name": "거리"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_elevation": {
+        "name": "고도각"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "프롬프트 확장 모드"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "프롬프트와 선택적 오디오 참조를 기반으로 새 영상을 추가하여 동영상을 이어갑니다.",
+    "display_name": "MiniMax H3 Max 동영상 확장",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "동영상 생성에 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_output": {
+        "name": "출력"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_prompt_expansion": {
+        "name": "프롬프트 확장"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "프롬프트와 선택적 참조 이미지 및 동영상을 기반으로 시작 시간과 재개 시간 사이의 동영상 부분을 새로 생성된 장면으로 교체합니다.",
+    "display_name": "MiniMax H3 Max 동영상 삽입",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "동영상 생성에 사용할 모델입니다."
+      },
+      "model_color_match": {
+        "name": "색상 일치"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_prompt_expansion": {
+        "name": "프롬프트 확장"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_resume_time": {
+        "name": "재개 시간"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_start_time": {
+        "name": "시작 시간"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "이미지의 입 움직임이 오디오를 따르도록 애니메이션화합니다. 동영상의 길이는 오디오와 같습니다.",
+    "display_name": "MiniMax H3 Max 립싱크",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "동영상 생성에 사용할 모델입니다."
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_transcription": {
+        "name": "전사"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "소스 동영상의 움직임, 카메라, 컷 및 사운드를 유지하면서 동영상 속 인물을 참조 사진 속 인물로 교체합니다.",
+    "display_name": "MiniMax H3 Max 리캐스트",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "동영상 생성에 사용할 모델입니다."
+      },
+      "model_enhance_realism": {
+        "name": "사실감 향상"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "동영상을 새 캔버스에 맞추고 주변 영역을 생성하여 새 종횡비에 맞춥니다. 소스 동영상의 타이밍과 사운드는 유지됩니다.",
+    "display_name": "MiniMax H3 Max 동영상 리프레임",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "동영상 생성에 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "MiniMax H3 모델을 사용하여 참조 이미지, 비디오 및 오디오를 조건으로 비디오를 생성합니다. 프롬프트에서 참조 항목을 순서대로 '이미지 1', '이미지 2', '비디오 1', '오디오 1' 등으로 지칭하세요.",
+    "description": "MiniMax H3 모델을 사용하여 참조 이미지, 동영상 및 오디오를 조건으로 동영상을 생성합니다. 프롬프트에서 참조 항목을 순서대로 지정하세요: {'@'}Image1, {'@'}Image2, {'@'}Video1, {'@'}Audio1 등.",
     "display_name": "MiniMax H3 참조 기반 비디오",
     "inputs": {
       "control_after_generate": {
@@ -20272,6 +20482,33 @@
       },
       "model_seed": {
         "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaPVideoUpscaleNode": {
+    "description": "Pruna P-Video Upscale을 사용하여 종횡비와 오디오를 유지하면서 동영상을 720p, 1080p, 2K 또는 4K로 업스케일합니다.",
+    "display_name": "Pruna P-Video 업스케일",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "출력 프레임 속도입니다. 'source'는 동영상의 프레임 속도를 최대 60까지 유지합니다. 더 높은 속도는 보간됩니다. 30fps 초과 출력은 비용이 두 배입니다."
+      },
+      "target": {
+        "name": "대상",
+        "tooltip": "출력 픽셀 영역: 720p 약 0.9메가픽셀, 1080p 2.1, 2K 3.7, 4K 8.3입니다. 이미 이 크기인 동영상은 크기를 유지하고 향상만 적용됩니다. 최대 길이: 2400, 1200, 600 또는 300프레임이며, 24fps에서 약 100, 50, 25 또는 12.5초입니다."
+      },
+      "turbo": {
+        "name": "터보",
+        "tooltip": "동일한 가격으로 세부 묘사는 더 부드럽지만 더 빠르게 업스케일합니다."
+      },
+      "video": {
+        "name": "동영상",
+        "tooltip": "업스케일할 동영상입니다. 최대 512 MiB입니다."
       }
     },
     "outputs": {
@@ -28459,6 +28696,24 @@
     "inputs": {
       "model_name": {
         "name": "모델 파일명"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "다른 브랜치에 영향을 주지 않고 VAE 인코딩 및 디코딩의 연산 dtype을 설정합니다.",
+    "display_name": "VAE 연산 dtype",
+    "inputs": {
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "기본값은 입력 VAE의 연산 dtype을 유지합니다."
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

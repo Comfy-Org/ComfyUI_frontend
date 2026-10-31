@@ -15317,9 +15317,219 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "display_name": "MiniMax H3 Max Camera Control",
+    "description": "Generate a video that starts from the image and moves the camera to a new angle and distance around the subject.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_azimuth": {
+        "name": "azimuth"
+      },
+      "model_distance": {
+        "name": "distance"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_elevation": {
+        "name": "elevation"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "prompt_expansion_mode"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "display_name": "MiniMax H3 Max Extend Video",
+    "description": "Continue a video with new footage guided by a prompt and optional audio references.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_output": {
+        "name": "output"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_expansion": {
+        "name": "prompt_expansion"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "display_name": "MiniMax H3 Max Insert Video",
+    "description": "Replace the part of a video between the start and resume times with a newly generated scene, guided by a prompt and optional reference images and videos.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_color_match": {
+        "name": "color_match"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_expansion": {
+        "name": "prompt_expansion"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_resume_time": {
+        "name": "resume_time"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_start_time": {
+        "name": "start_time"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "display_name": "MiniMax H3 Max Lip Sync",
+    "description": "Animate an image so that its mouth movements follow the audio. The video is as long as the audio.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_transcription": {
+        "name": "transcription"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "display_name": "MiniMax H3 Max Recast",
+    "description": "Replace the people in a video with the people from reference photos, keeping the motion, camera, cuts and sound of the source video.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_enhance_realism": {
+        "name": "enhance_realism"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "display_name": "MiniMax H3 Max Reframe Video",
+    "description": "Adapt a video to a new aspect ratio by fitting it on a new canvas and generating the surrounding areas. The timing and sound of the source video are kept.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
     "display_name": "MiniMax H3 Reference to Video",
-    "description": "Generate video conditioned on reference images, videos, and audio using the MiniMax H3 models. Refer to the references in the prompt by their order: 'Image 1', 'Image 2', 'Video 1', 'Audio 1', and so on.",
+    "description": "Generate video conditioned on reference images, videos, and audio using the MiniMax H3 models. Refer to the references in the prompt by their order: {'@'}Image1, {'@'}Image2, {'@'}Video1, {'@'}Audio1, and so on.",
     "inputs": {
       "model": {
         "name": "model",
@@ -20272,6 +20482,33 @@
       },
       "model_seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaPVideoUpscaleNode": {
+    "display_name": "Pruna P-Video Upscale",
+    "description": "Upscales a video to 720p, 1080p, 2K or 4K using Pruna P-Video Upscale, keeping its aspect ratio and audio.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Video to upscale, up to 512 MiB."
+      },
+      "target": {
+        "name": "target",
+        "tooltip": "Output pixel area: 720p about 0.9 megapixels, 1080p 2.1, 2K 3.7, 4K 8.3. A video already this large keeps its size and is only enhanced. Maximum length: 2400, 1200, 600 or 300 frames, about 100, 50, 25 or 12.5 seconds at 24 fps."
+      },
+      "fps": {
+        "name": "fps",
+        "tooltip": "Output frame rate. 'source' keeps the rate of the video, up to 60. A higher rate is interpolated. Output above 30 fps costs twice as much."
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "Faster upscale with softer detail, at the same price."
       }
     },
     "outputs": {
@@ -28489,6 +28726,24 @@
       },
       "clip_vision_output": {
         "name": "clip_vision_output"
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "display_name": "VAE Compute Dtype",
+    "description": "Sets the compute dtype for VAE encoding and decoding without affecting other branches.",
+    "inputs": {
+      "vae": {
+        "name": "vae"
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Default keeps the input VAE's compute dtype."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

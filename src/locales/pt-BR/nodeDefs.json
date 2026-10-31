@@ -15434,8 +15434,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "Gere um vídeo que começa a partir da imagem e move a câmera para um novo ângulo e distância ao redor do sujeito.",
+    "display_name": "Controle de Câmera MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para a geração de vídeo."
+      },
+      "model_azimuth": {
+        "name": "azimute"
+      },
+      "model_distance": {
+        "name": "distância"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_elevation": {
+        "name": "elevação"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "modo_de_expansão_do_prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "Continue um vídeo com novas cenas guiadas por um prompt e referências de áudio opcionais.",
+    "display_name": "Estender Vídeo MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para a geração de vídeo."
+      },
+      "model_aspect_ratio": {
+        "name": "proporção_de_aspecto"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_output": {
+        "name": "saída"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_expansion": {
+        "name": "expansão_do_prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "Substitua a parte de um vídeo entre os momentos de início e retomada por uma cena recém-gerada, guiada por um prompt e imagens e vídeos de referência opcionais.",
+    "display_name": "Inserir Vídeo MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para a geração de vídeo."
+      },
+      "model_color_match": {
+        "name": "correspondência_de_cores"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_expansion": {
+        "name": "expansão_do_prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_resume_time": {
+        "name": "tempo_de_retomada"
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_start_time": {
+        "name": "tempo_de_início"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "Anime uma imagem para que os movimentos da boca acompanhem o áudio. O vídeo terá a mesma duração do áudio.",
+    "display_name": "Sincronização Labial MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_transcription": {
+        "name": "transcrição"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "Substitui as pessoas em um vídeo pelas pessoas de fotos de referência, mantendo o movimento, a câmera, os cortes e o som do vídeo de origem.",
+    "display_name": "MiniMax H3 Max Recast",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_enhance_realism": {
+        "name": "aprimorar_realismo"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "Adapta um vídeo a uma nova proporção de tela, ajustando-o em uma nova tela e gerando as áreas ao redor. A duração e o som do vídeo de origem são mantidos.",
+    "display_name": "MiniMax H3 Max Reframe Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_aspect_ratio": {
+        "name": "proporção_de_tela"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Gera vídeo condicionado por imagens, vídeos e áudio de referência usando os modelos MiniMax H3. Consulte as referências no prompt pela ordem: 'Imagem 1', 'Imagem 2', 'Vídeo 1', 'Áudio 1' e assim por diante.",
+    "description": "Gera vídeo condicionado por imagens, vídeos e áudio de referência usando os modelos MiniMax H3. Consulte as referências no prompt pela ordem delas: {'@'}Image1, {'@'}Image2, {'@'}Video1, {'@'}Audio1 e assim por diante.",
     "display_name": "MiniMax H3 Referência para Vídeo",
     "inputs": {
       "control_after_generate": {
@@ -20272,6 +20482,33 @@
       },
       "model_seed": {
         "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaPVideoUpscaleNode": {
+    "description": "Aumenta a resolução de um vídeo para 720p, 1080p, 2K ou 4K usando o Pruna P-Video Upscale, mantendo sua proporção de tela e seu áudio.",
+    "display_name": "Pruna P-Video Upscale",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "Taxa de quadros de saída. 'source' mantém a taxa do vídeo, até 60. Uma taxa maior é interpolada. A saída acima de 30 fps custa o dobro."
+      },
+      "target": {
+        "name": "destino",
+        "tooltip": "Área de pixels de saída: 720p cerca de 0,9 megapixels, 1080p 2,1, 2K 3,7, 4K 8,3. Um vídeo que já tenha esse tamanho mantém seu tamanho e é apenas aprimorado. Comprimento máximo: 2400, 1200, 600 ou 300 quadros, cerca de 100, 50, 25 ou 12,5 segundos a 24 fps."
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "Aumento de resolução mais rápido, com detalhes mais suaves, pelo mesmo preço."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Vídeo para aumentar a resolução, de até 512 MiB."
       }
     },
     "outputs": {
@@ -28459,6 +28696,24 @@
     "inputs": {
       "model_name": {
         "name": "nome_modelo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "Define o dtype de cálculo para codificação e decodificação do VAE sem afetar outras ramificações.",
+    "display_name": "Dtype de cálculo do VAE",
+    "inputs": {
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "O padrão mantém o dtype de cálculo do VAE de entrada."
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

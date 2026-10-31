@@ -15434,8 +15434,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "以影像為起點生成影片，並將攝影機移動至主體周圍的新角度與距離。",
+    "display_name": "MiniMax H3 Max 攝影機控制",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_azimuth": {
+        "name": "方位角"
+      },
+      "model_distance": {
+        "name": "距離"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_elevation": {
+        "name": "仰角"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "提示詞擴充模式"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "根據提示詞及可選的音訊參考，以新片段延續影片。",
+    "display_name": "MiniMax H3 Max 延伸影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_output": {
+        "name": "輸出"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_prompt_expansion": {
+        "name": "提示詞擴充"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "根據提示詞及可選的參考影像與影片，將影片中開始時間與恢復時間之間的部分替換為新生成的場景。",
+    "display_name": "MiniMax H3 Max 插入影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_color_match": {
+        "name": "色彩匹配"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_prompt_expansion": {
+        "name": "提示詞擴充"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_resume_time": {
+        "name": "恢復時間"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_start_time": {
+        "name": "開始時間"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "讓影像動起來，使其嘴部動作跟隨音訊。影片時長與音訊相同。",
+    "display_name": "MiniMax H3 Max 嘴型同步",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_transcription": {
+        "name": "轉錄文字"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "以參考照片中的人物取代影片中的人物，同時保留來源影片的動作、攝影機、剪輯與聲音。",
+    "display_name": "MiniMax H3 Max 重新選角",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_enhance_realism": {
+        "name": "增強真實感"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "將影片置入新畫布並生成周圍區域，以調整為新的長寬比。會保留來源影片的時間節奏與聲音。",
+    "display_name": "MiniMax H3 Max 重新取景影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "使用 MiniMax H3 模型，根據參考圖片、影片及音訊生成影片。在提示詞中請依序引用參考資料：「Image 1」、「Image 2」、「Video 1」、「Audio 1」等。",
+    "description": "使用 MiniMax H3 模型，根據參考圖片、影片與音訊生成影片。請依參考資料的順序在提示詞中引用：{'@'}Image1、{'@'}Image2、{'@'}Video1、{'@'}Audio1，依此類推。",
     "display_name": "MiniMax H3 參考生成影片",
     "inputs": {
       "control_after_generate": {
@@ -20272,6 +20482,33 @@
       },
       "model_seed": {
         "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaPVideoUpscaleNode": {
+    "description": "使用 Pruna P-Video Upscale 將影片升頻至 720p、1080p、2K 或 4K，同時保留其長寬比與音訊。",
+    "display_name": "Pruna P-Video 升頻",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "輸出影格率。「source」會保留影片的影格率，最高為 60。較高的影格率會以插補產生。輸出超過 30 fps 的費用為兩倍。"
+      },
+      "target": {
+        "name": "目標",
+        "tooltip": "輸出像素面積：720p 約 0.9 百萬像素、1080p 為 2.1、2K 為 3.7、4K 為 8.3。已達此尺寸的影片會維持原始尺寸，僅進行增強。最大長度：2400、1200、600 或 300 影格；以 24 fps 計算，約為 100、50、25 或 12.5 秒。"
+      },
+      "turbo": {
+        "name": "快速模式",
+        "tooltip": "以相同價格更快速地升頻，但細節較柔和。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "要升頻的影片，最大 512 MiB。"
       }
     },
     "outputs": {
@@ -28459,6 +28696,24 @@
     "inputs": {
       "model_name": {
         "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "設定 VAE 編碼與解碼的運算資料型別，不影響其他分支。",
+    "display_name": "VAE 運算資料型別",
+    "inputs": {
+      "dtype": {
+        "name": "資料型別",
+        "tooltip": "預設值會保留輸入 VAE 的運算資料型別。"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
