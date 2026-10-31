@@ -205,11 +205,14 @@ describe('asset drag on browsers without URL.parse or URL.canParse', () => {
     vi.mocked(api.apiURL).mockImplementation(
       (path) => `http://localhost:8188/api${path}`
     )
-    for (const name of ['parse', 'canParse'])
-      Object.defineProperty(URL, name, {
-        configurable: true,
-        value: undefined
-      })
+    Object.defineProperty(URL, 'parse', {
+      configurable: true,
+      value: undefined
+    })
+    Object.defineProperty(URL, 'canParse', {
+      configurable: true,
+      value: undefined
+    })
 
     expect(
       drag({
@@ -224,6 +227,7 @@ describe('asset drag on browsers without URL.parse or URL.canParse', () => {
       })
     ).toMatchObject({
       kind: 'video',
+      uri: 'http://localhost:8188/api/assets/video-id/content',
       mediaUrl:
         'http://localhost:8188/api/assets/video-id/content?disposition=inline',
       previewUrl: 'http://localhost:8188/api/view?filename=poster.png'

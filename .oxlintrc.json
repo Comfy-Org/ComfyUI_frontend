@@ -285,6 +285,7 @@
     },
     {
       "files": [
+        "apps/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
         "src/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
         "packages/**/*.{js,mjs,cjs,ts,mts,cts,vue}"
       ],
@@ -303,12 +304,12 @@
           {
             "object": "URL",
             "property": "parse",
-            "message": "Crashes on Chrome < 126. Use parseUrl from @/utils/urlSafety."
+            "message": "Crashes on Chrome < 126. Use parseUrl from @/utils/urlSafety, or try/catch around new URL() in packages."
           },
           {
             "object": "URL",
             "property": "canParse",
-            "message": "Crashes on Chrome < 120. Use parseUrl from @/utils/urlSafety."
+            "message": "Crashes on Chrome < 120. Use parseUrl from @/utils/urlSafety, or try/catch around new URL() in packages."
           }
         ]
       }
