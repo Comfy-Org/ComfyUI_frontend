@@ -18,7 +18,7 @@ import {
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 /** The host document and the socket delivering its frames to a booted app. */
-export interface OverflowPlainHost {
+interface OverflowPlainHost {
   doc: HostDoc
   socket: AgentFollowerHostSocket
   endTurn: () => void

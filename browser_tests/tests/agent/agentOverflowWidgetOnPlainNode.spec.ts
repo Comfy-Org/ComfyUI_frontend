@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
-import { overflowPlainNodeTest as test } from '@e2e/fixtures/agentOverflowPlainNodeFixture'
+import { overflowPlainNodeTest as test } from '@e2e/tests/agent/agentOverflowPlainNodeFixture'
 import { OVERFLOW_PLAIN_NODE_ID } from '@e2e/fixtures/data/agent/overflowWidgetPlainNode'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
