@@ -156,10 +156,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     convertedRestoredValues.clear()
   }
 
-  /**
-   * Converts a saved value to the type of `widget`, reporting a conversion so
-   * that a wrong workflow file is visible. One synchronous load reports once.
-   */
   function convertRestoredValue(
     graphId: UUID,
     nodeId: NodeId,

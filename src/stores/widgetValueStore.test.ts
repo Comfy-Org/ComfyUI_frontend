@@ -479,6 +479,29 @@ describe('useWidgetValueStore', () => {
       ])
     })
 
+    it('warns once per load for named restoration too', async () => {
+      const store = useWidgetValueStore()
+      store.setNodeWidgetRestoration(graphA, node, {
+        positional: [],
+        restoreNamed: true,
+        named: { width: '1536', enabled: 'false' }
+      })
+
+      expect(store.getRestoredWidgetValue(graphA, node, width, 0)).toEqual({
+        value: 1536
+      })
+      expect(store.getRestoredWidgetValue(graphA, node, enabled, 1)).toEqual({
+        value: false
+      })
+      await Promise.resolve()
+
+      expect(console.warn).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(console.warn).mock.calls[0][1]).toEqual([
+        { nodeId: node, input: 'width', stored: '1536' },
+        { nodeId: node, input: 'enabled', stored: 'false' }
+      ])
+    })
+
     it('warns again on a later load', async () => {
       const store = restore(['1536'])
 
