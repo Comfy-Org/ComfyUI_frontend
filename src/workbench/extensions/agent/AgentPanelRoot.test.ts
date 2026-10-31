@@ -9639,7 +9639,7 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
-  it('resumes following on New Chat after an explicit pick while preserving draft text', async () => {
+  it('resumes following on New Chat after an explicit pick and starts with an empty composer', async () => {
     const {
       target,
       references: [other]
@@ -9669,7 +9669,7 @@ describe('AgentPanelRoot workflow binding', () => {
     workflowStore.activeWorkflow = other
     await nextTick()
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
-    expect(screen.getByRole('textbox')).toHaveTextContent('keep this draft')
+    expect(screen.getByRole('textbox')).toHaveTextContent('')
   })
 
   it('retains the first Send target through failure, reopen and retry until New Chat', async () => {
@@ -10270,6 +10270,78 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     expect(screen.getByRole('button', { name: 'Stop' })).toBeEnabled()
     expect(openWorkflow).toHaveBeenCalledTimes(attempts)
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+    expect(workflowStore.activeWorkflow.path).toBe(other.path)
+  })
+
+  it('preserves a new unsent draft when Back leaves a failed history selection', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint(
+      'wf-42',
+      [{ id: 'wf-42', name: 'current' }],
+      [
+        agentThread({
+          id: 'th-1',
+          title: 'Previous chat',
+          last_message_at: '2026-09-25T00:00:00Z'
+        })
+      ]
+    )
+    const request = vi.mocked(fetch).getMockImplementation()
+    assert.exists(request)
+    vi.mocked(fetch).mockImplementation((input, init) =>
+      String(input).includes('/messages') && init?.method !== 'POST'
+        ? Promise.resolve(json(500, {}))
+        : request(input, init)
+    )
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Keep my new draft')
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Previous chat' })
+    )
+    await screen.findByRole('alert')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
+
+    expect(screen.getByRole('textbox')).toHaveTextContent('Keep my new draft')
+  })
+
+  it('retains staged node references when Back starts a new chat', async () => {
+    const target = makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    mockMessagesEndpoint('wf-42')
+    setupNodeSelectionCanvas()
+    renderWithSelectedTarget()
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Keep my new draft')
+    workflowStore.activeWorkflow = other
+    await nextTick()
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+    useAgentPanelStore().view = {
+      screen: 'history',
+      previousThreadId: null,
+      selection: { status: 'failed', id: 'th-1' }
+    }
+    await nextTick()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
+
+    expect(screen.getByRole('textbox')).toHaveTextContent('Keep my new draft')
+    expect(
+      screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
+    ).toBeVisible()
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
     expect(workflowStore.activeWorkflow.path).toBe(other.path)
   })
@@ -15632,33 +15704,35 @@ describe('AgentPanelRoot workflow binding', () => {
         name: i18n.global.t('agent.switchWorkflow')
       })
     ).toHaveTextContent('other')
-    expect(screen.getByRole('textbox')).toHaveTextContent('Keep this draft')
+    expect(screen.getByRole('textbox')).toHaveTextContent('')
     workflowStore.activeWorkflow = target
     await nextTick()
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Fresh prompt')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(bodies).toHaveLength(1))
     expect(bodies[0]).toMatchObject({
-      content: 'Keep this draft',
+      content: 'Fresh prompt',
       workflow_id: 'wf-42'
     })
     expect(bodies[0]).not.toHaveProperty('selection')
   })
 
   it.for(['current', 'other'] as const)(
-    'preserves carried node references through New Chat while viewing $0',
+    'drops staged node references on New Chat while viewing $0',
     async (visibleTab) => {
       const tabs = {
         current: makeTab('wf-42'),
         other: addTab('workflows/other.json')
       }
-      const bodies = mockMessagesEndpoint('wf-42')
+      mockMessagesEndpoint('wf-42')
       setupNodeSelectionCanvas()
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       useAgentPanelStore().isOpen = true
       await openMentionPicker()
       await userEvent.click(await screen.findByText('KSampler'))
-      await userEvent.paste('Keep these nodes')
+      await userEvent.paste('Edit these nodes')
       workflowStore.activeWorkflow = tabs[visibleTab]
       await nextTick()
 
@@ -15668,23 +15742,47 @@ describe('AgentPanelRoot workflow binding', () => {
         screen.getByRole('button', {
           name: i18n.global.t('agent.switchWorkflow')
         })
-      ).toHaveTextContent('current')
-      expect(screen.getByRole('textbox')).toHaveTextContent('Keep these nodes')
+      ).toHaveTextContent(visibleTab)
+      expect(screen.getByRole('textbox')).toHaveTextContent('')
       expect(
-        screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
-      ).toBeVisible()
-
-      workflowStore.activeWorkflow = addTab('workflows/third.json')
-      await nextTick()
-      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-      await vi.waitFor(() => expect(bodies).toHaveLength(1))
-      expect(bodies[0]).toMatchObject({
-        content: '@[Node: KSampler #12] Keep these nodes',
-        workflow_id: 'wf-42',
-        selection: { node_ids: ['12'], workflow_id: 'wf-42' }
-      })
+        screen.queryByRole('button', { name: 'Remove KSampler #12 reference' })
+      ).toBeNull()
     }
   )
+
+  it('restages the unchanged canvas selection in a new chat', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    const state = setupNodeSelectionCanvas()
+    renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+
+    await enterNodeSelectionMode()
+    state.selectedItems.add(state.nodes[0])
+    syncFakeSelection()
+    await nextTick()
+    expect(
+      screen.getByRole('button', {
+        name: /Remove VAE Decode #\d+ reference/
+      })
+    ).toBeVisible()
+
+    await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
+    expect(
+      screen.queryByRole('button', {
+        name: /Remove VAE Decode #\d+ reference/
+      })
+    ).toBeNull()
+
+    state.selectedItems.add(state.nodes[0])
+    syncFakeSelection()
+    await enterNodeSelectionMode()
+    expect(
+      screen.getByRole('button', {
+        name: /Remove VAE Decode #\d+ reference/
+      })
+    ).toBeVisible()
+  })
 
   it('clears old node references when selecting another workflow with the same node id', async () => {
     const {
