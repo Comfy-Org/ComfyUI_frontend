@@ -103,6 +103,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const billingRefreshedAcceptances = ref(0)
   const reportedFreeUseExposure = ref(false)
   const reportedFreeUseImpression = ref(false)
+  const reportedCreditUsageExposure = ref(false)
   const fundsRechecks = ref(new Map<number, string>())
   const fundsRecheckTimeouts = new Map<number, ReturnType<typeof setTimeout>>()
   const fundsRecheckFinished = new Map<number, () => void>()
@@ -242,6 +243,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     teardownReported = false
     reportedFreeUseExposure.value = false
     reportedFreeUseImpression.value = false
+    reportedCreditUsageExposure.value = false
   }
 
   const isVisible = computed(() => enabled.value && isOpen.value)
@@ -420,6 +422,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     billingRefreshedAcceptances,
     reportedFreeUseExposure,
     reportedFreeUseImpression,
+    reportedCreditUsageExposure,
     creditTransitionNotice: readonly(creditTransitionNotice),
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,

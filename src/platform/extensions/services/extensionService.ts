@@ -13,7 +13,7 @@ import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
-import type { AuthUserInfo } from '@/types/authTypes'
+import type { AuthUserInfo } from '@comfyorg/api-client/authTypes'
 import { useApp } from '@/scripts/appInstance'
 import { provideExtensionService } from '@/platform/extensions/services/extensionServiceAccess'
 

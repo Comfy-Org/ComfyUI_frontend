@@ -114,6 +114,7 @@ const icons = {
         :aria-label="t('g.close')"
         class="col-start-3 row-start-1"
         data-testid="toast-close"
+        @click="toast.close(item.id)"
       />
       <ToastDescription v-if="item.description" class="col-start-2 row-start-2">
         {{ item.description }}

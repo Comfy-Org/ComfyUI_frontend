@@ -83,6 +83,7 @@
     "copyMarkdown": "Copiar como markdown",
     "copyUnavailable": "Somente a conversa atual pode ser copiada nesta versão",
     "creditTransitionNotice": "Você usou seus créditos gratuitos do agente. As atividades futuras do agente usam os créditos do seu espaço de trabalho, que podem incluir créditos pagos.",
+    "creditsUsed": "O agente usou {credits} crédito | O agente usou {credits} créditos",
     "currentTab": "Aba atual",
     "delete": "Excluir",
     "deleteApproval": {

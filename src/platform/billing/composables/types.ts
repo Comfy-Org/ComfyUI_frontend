@@ -190,6 +190,8 @@ export interface BillingState {
   renewalInvoice: ComputedRef<RenewalInvoice | null>
   /** Served configured plan allowance; null when the server omits it. */
   periodCreditGrant: ComputedRef<PeriodCreditGrant | null>
+  /** Served next credit refill; null when the server omits it. */
+  nextCreditRefillAt: ComputedRef<string | null>
 }
 
 /** The rail a cancel actually ran on, fixed when the call was dispatched. */

@@ -6,7 +6,7 @@ import type {
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
 
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import { agentThreadPage } from '@e2e/fixtures/data/agent/agentThreadList'

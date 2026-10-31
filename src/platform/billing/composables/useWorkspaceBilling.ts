@@ -280,6 +280,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   const periodCreditGrant = computed(
     () => statusData.value?.period_credit_grant ?? null
   )
+  const nextCreditRefillAt = computed(
+    () => statusData.value?.next_credit_refill_at ?? null
+  )
 
   const plans = computed(() => billingPlans.plans.value)
   const currentPlanSlug = computed(
@@ -884,6 +887,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     renewalDate,
     renewalInvoice,
     periodCreditGrant,
+    nextCreditRefillAt,
     readAndAdoptPendingOperation,
 
     // Actions

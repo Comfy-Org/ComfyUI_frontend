@@ -92,7 +92,7 @@ interface Scenario {
   capabilitiesReady?: boolean
   capabilitiesResolved?: boolean
   balance?: BalanceInfo | null
-  autoTopUpFlag?: boolean
+  autoTopUpEnabled?: boolean
   canManageAutoTopUp?: boolean
   canTopUp?: boolean
   topUpDenial?: string
@@ -100,6 +100,7 @@ interface Scenario {
   billingStatus?: 'paid' | 'paused'
   hasParkedBillingOperation?: boolean
   renewalDate?: string | null
+  nextCreditRefillAt?: string | null
 }
 
 function correlationIdOf(link: HTMLElement) {
@@ -152,6 +153,7 @@ function arrange(scenario: Scenario = {}) {
       renewalDate: computed(() => scenario.renewalDate ?? null),
       currentTeamCreditStop: computed(() => null),
       periodCreditGrant: computed(() => null),
+      nextCreditRefillAt: computed(() => scenario.nextCreditRefillAt ?? null),
       initialize,
       fetchStatus,
       resubscribe
@@ -204,6 +206,12 @@ function arrange(scenario: Scenario = {}) {
           scenario.canManageAutoTopUp ?? true
         )
       ),
+      autoTopUpEnabled: computed(() =>
+        receiveServerFact(
+          'auto_top_up_enabled',
+          scenario.autoTopUpEnabled ?? true
+        )
+      ),
       autoTopUpSetup: computed(() => null),
       isReady: computed(() => scenario.capabilitiesReady ?? true),
       hasResolvedCapabilities: computed(
@@ -213,8 +221,6 @@ function arrange(scenario: Scenario = {}) {
       refresh
     })
   )
-  vi.mocked(useFeatureFlags().flags).autoTopUpEnabled =
-    scenario.autoTopUpFlag ?? true
   vi.mocked(useFreeTierQuota).mockReturnValue(
     fromPartial({
       quotaEnabled: computed(() => false),
@@ -1079,18 +1085,27 @@ describe('BillingTab', () => {
   })
 
   it.for([
-    { planKind: 'self_serve', date: 'Refills November 15, 2026' },
-    { planKind: 'sales_managed', date: null },
-    { planKind: 'none', date: null },
-    { planKind: null, date: null }
+    {
+      planKind: 'self_serve',
+      nextCreditRefillAt: '2026-12-01T00:00:00Z',
+      date: 'Refills December 1, 2026'
+    },
+    {
+      planKind: 'sales_managed',
+      nextCreditRefillAt: '2026-12-01T00:00:00Z',
+      date: 'Refills December 1, 2026'
+    },
+    { planKind: 'self_serve', nextCreditRefillAt: null, date: null },
+    { planKind: 'sales_managed', nextCreditRefillAt: null, date: null }
   ] as const)(
-    'shows a $planKind paused-plan refill date only when self-serve',
-    ({ planKind, date }) => {
+    'shows the served refill date for a $planKind plan (served: $nextCreditRefillAt), never the renewal date',
+    ({ planKind, nextCreditRefillAt, date }) => {
       arrange({
         planKind,
         billingStatus: 'paused',
         subscription: { ...activeSubscription, tier: 'ENTERPRISE' },
         renewalDate: '2026-11-15T00:00:00Z',
+        nextCreditRefillAt,
         balance: {
           amountMicros: 1000,
           currency: 'usd',
@@ -1362,7 +1377,7 @@ describe('BillingTab', () => {
             settleDetail.push(resolve)
           })
       )
-      arrange({ autoTopUpFlag: false })
+      arrange({ autoTopUpEnabled: false })
 
       await vi.waitFor(() => expect(settleDetail).toHaveLength(1))
       settleDetail[0](checkout('credits_applying', { session_id: 'cs_1' }))
@@ -1408,7 +1423,7 @@ describe('BillingTab', () => {
             settleDetail.push(resolve)
           })
       )
-      arrange({ autoTopUpFlag: false })
+      arrange({ autoTopUpEnabled: false })
       await vi.waitFor(() => expect(settleDetail).toHaveLength(1))
 
       const visibility = vi.spyOn(document, 'visibilityState', 'get')
@@ -1520,7 +1535,7 @@ describe('BillingTab', () => {
             settleDetail.push(resolve)
           })
       )
-      arrange({ autoTopUpFlag: false })
+      arrange({ autoTopUpEnabled: false })
       await vi.waitFor(() => expect(settleDetail).toHaveLength(1))
 
       vi.mocked(billingApi.listTopupCheckouts).mockClear()
@@ -1706,7 +1721,7 @@ describe('BillingTab', () => {
     it.for<{ case: string; scenario: Scenario; reads: number }>([
       {
         case: 'the flag is off',
-        scenario: { autoTopUpFlag: false },
+        scenario: { autoTopUpEnabled: false },
         reads: 0
       },
       {

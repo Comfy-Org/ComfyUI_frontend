@@ -28,11 +28,10 @@ function balanceOf(cents: {
 const activeFacts: CreditsCardFacts = {
   balance: balanceOf({ effective: 700, plan: 400, topUp: 300 }),
   planKind: 'active',
-  servedPlanKind: 'self_serve',
   billingStatus: 'paid',
   periodCreditGrant: null,
   planPoolCredits: 1000,
-  renewalDate: null,
+  nextCreditRefillAt: null,
   endDate: null
 }
 
@@ -235,51 +234,45 @@ describe('BillingCreditsCard', () => {
     meter: string | null
   }>([
     {
-      case: 'an active plan refills on its renewal date',
-      facts: { renewalDate: '2026-10-01T00:00:00Z' },
+      case: 'an active plan refills on the served refill date',
+      facts: { nextCreditRefillAt: '2026-10-01T00:00:00Z' },
       amount: '844 of 1,000',
       date: 'Refills October 1, 2026',
       used: '16% used',
       meter: '16'
     },
     {
-      case: 'a sales-managed plan has no refill date',
+      case: 'an active plan without a served refill date',
+      facts: { nextCreditRefillAt: null },
+      amount: '844 of 1,000',
+      date: '',
+      used: '16% used',
+      meter: '16'
+    },
+    {
+      case: 'a sales-managed plan refills on the served refill date',
       facts: {
         planKind: 'salesManaged',
-        servedPlanKind: 'sales_managed',
-        renewalDate: '2026-10-01T00:00:00Z'
+        nextCreditRefillAt: '2026-10-01T00:00:00Z'
       },
       amount: '844 of 1,000',
-      date: '',
+      date: 'Refills October 1, 2026',
       used: '16% used',
       meter: '16'
     },
     {
-      case: 'a plan without a served plan kind has no refill date',
-      facts: { servedPlanKind: null, renewalDate: '2026-10-01T00:00:00Z' },
+      case: 'a sales-managed plan without a served refill date',
+      facts: { planKind: 'salesManaged', nextCreditRefillAt: null },
       amount: '844 of 1,000',
       date: '',
       used: '16% used',
       meter: '16'
-    },
-    {
-      case: 'a sales-managed plan the row cannot name has no refill date',
-      facts: {
-        planKind: 'unknown',
-        servedPlanKind: 'sales_managed',
-        billingStatus: 'paused',
-        renewalDate: '2026-10-01T00:00:00Z'
-      },
-      amount: '0 of 1,000',
-      date: '',
-      used: null,
-      meter: null
     },
     {
       case: 'an ending plan is available until its end date',
       facts: {
         planKind: 'ending',
-        renewalDate: '2026-10-01T00:00:00Z',
+        nextCreditRefillAt: '2026-10-01T00:00:00Z',
         endDate: '2026-12-31T12:00:00Z'
       },
       amount: '844 of 1,000',
@@ -289,7 +282,10 @@ describe('BillingCreditsCard', () => {
     },
     {
       case: 'a plan with no known total shows no meter',
-      facts: { planPoolCredits: null, renewalDate: '2026-10-01T00:00:00Z' },
+      facts: {
+        planPoolCredits: null,
+        nextCreditRefillAt: '2026-10-01T00:00:00Z'
+      },
       amount: '844',
       date: 'Refills October 1, 2026',
       used: null,
@@ -300,7 +296,7 @@ describe('BillingCreditsCard', () => {
       facts: {
         billingStatus: 'paused',
         planKind: 'paused',
-        renewalDate: '2026-10-01T00:00:00Z'
+        nextCreditRefillAt: '2026-10-01T00:00:00Z'
       },
       amount: '0 of 1,000',
       date: 'Refills when the payment goes through',
@@ -394,12 +390,12 @@ describe('BillingCreditsCard', () => {
     expect(screen.queryByRole('meter')).toBeNull()
   })
 
-  it('waits for the payment instead of a renewal date on a paused plan', () => {
+  it('waits for the payment instead of the served refill date on a paused plan', () => {
     renderCard({
       ...activeFacts,
       billingStatus: 'paused',
       planKind: 'paused',
-      renewalDate: '2026-11-23T00:00:00Z'
+      nextCreditRefillAt: '2026-11-23T00:00:00Z'
     })
 
     expect(
