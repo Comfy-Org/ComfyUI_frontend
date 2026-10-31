@@ -651,49 +651,53 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
           settlements.push(store.getAssets('tag:models').map((a) => a.id))
         })
 
-      it.for([
-        { superseded: 'an initial load', existingAssets: [] },
-        { superseded: 'a refresh over listed models', existingAssets: ['old'] }
-      ])(
-        'keeps the caller and a joiner waiting for the replacement of $superseded',
-        async ({ existingAssets }) => {
-          const store = useAssetsStore()
-          const pages = queueModelPages()
-          if (existingAssets.length > 0) {
-            const firstLoad = store.updateModelsForTag('models')
-            pages[0].resolve(
-              makePage(existingAssets.map((id) => createMockAsset(id)))
-            )
-            await firstLoad
-          }
+      const expectCallerAndJoinerToWaitForReplacement = async (
+        store: ReturnType<typeof useAssetsStore>,
+        pages: PendingPage[]
+      ) => {
+        const settlements: string[][] = []
+        const waiters = [
+          recordSettlement(
+            store,
+            settlements,
+            store.updateModelsForTag('models')
+          ),
+          recordSettlement(
+            store,
+            settlements,
+            store.updateModelsForTag('models')
+          )
+        ]
+        const replacement = store.updateModelsForTag('models', {
+          restart: true
+        })
+        await settleMicrotasks()
 
-          const settlements: string[][] = []
-          const waiters = [
-            recordSettlement(
-              store,
-              settlements,
-              store.updateModelsForTag('models')
-            ),
-            recordSettlement(
-              store,
-              settlements,
-              store.updateModelsForTag('models')
-            )
-          ]
-          const replacement = store.updateModelsForTag('models', {
-            restart: true
-          })
-          await settleMicrotasks()
+        expect(settlements).toEqual([])
 
-          expect(settlements).toEqual([])
+        pages.at(-1)!.resolve(makePage([createMockAsset('new-lora')]))
+        await Promise.all([...waiters, replacement])
 
-          pages.at(-1)!.resolve(makePage([createMockAsset('new-lora')]))
-          await Promise.all([...waiters, replacement])
+        expect(settlements).toEqual([['new-lora'], ['new-lora']])
+        expect(store.isModelLoading('tag:models')).toBe(false)
+      }
 
-          expect(settlements).toEqual([['new-lora'], ['new-lora']])
-          expect(store.isModelLoading('tag:models')).toBe(false)
-        }
-      )
+      it('keeps the caller and a joiner waiting for the replacement of an initial load', async () => {
+        const store = useAssetsStore()
+        const pages = queueModelPages()
+
+        await expectCallerAndJoinerToWaitForReplacement(store, pages)
+      })
+
+      it('keeps the caller and a joiner waiting for the replacement of a refresh over listed models', async () => {
+        const store = useAssetsStore()
+        const pages = queueModelPages()
+        const firstLoad = store.updateModelsForTag('models')
+        pages[0].resolve(makePage([createMockAsset('old')]))
+        await firstLoad
+
+        await expectCallerAndJoinerToWaitForReplacement(store, pages)
+      })
 
       it('keeps every waiter attached across a second restart', async () => {
         const store = useAssetsStore()
@@ -810,11 +814,11 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         pages.at(-1)!.resolve(makePage([createMockAsset('installed-lora')]))
         await refresh
 
-        for (const nodeType of ['LoraLoader', 'LoraLoaderModelOnly']) {
-          expect(store.getAssets(nodeType).map((a) => a.id)).toEqual([
-            'installed-lora'
-          ])
-        }
+        expect(
+          ['LoraLoader', 'LoraLoaderModelOnly'].map((nodeType) =>
+            store.getAssets(nodeType).map((a) => a.id)
+          )
+        ).toEqual([['installed-lora'], ['installed-lora']])
       })
     })
 
