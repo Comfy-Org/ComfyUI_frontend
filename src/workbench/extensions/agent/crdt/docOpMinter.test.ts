@@ -2812,7 +2812,8 @@ describe('attachDocOpMinter', () => {
         errorType: 'agent_crdt_widget_owner_unresolved',
         context: expect.objectContaining({
           graphId: staleGraph.id,
-          nodeId: stale.id
+          nodeId: stale.id,
+          widget: stale.widgets![0].name
         })
       }),
       expect.objectContaining({
@@ -2973,6 +2974,23 @@ describe('attachDocOpMinter', () => {
         setWidget('loras.1.seed', 1),
         setWidget('loras.1.seed.0', 'randomize')
       ])
+    })
+
+    it('mints an added row default over a peer value the document holds at that index', async () => {
+      const { node, widget } = seedGroup()
+      docWidgetValue = (nodeId, name) =>
+        nodeId === node.id && name === 'loras.1.lora_name' ? 'B' : undefined
+
+      widget('loras.1').callback?.(undefined)
+      widget('loras.$add').callback?.(undefined)
+      await afterFlush()
+
+      expect(minted).toContainEqual({
+        op: 'set_widget',
+        node_id: node.id,
+        widget: 'loras.1.lora_name',
+        value: 'A'
+      })
     })
 
     function seedThreeRows() {

@@ -3,6 +3,8 @@ import type { Ref } from 'vue'
 import { computed, ref, watch } from 'vue'
 
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -37,8 +39,6 @@ const CORNER_DOT_CLASS =
 /** Minimum crop width/height in source image pixel space. */
 const MIN_CROP_SIZE = 16
 const CROP_BOX_BORDER = 1
-/** Slot the cropped image arrives on. */
-const IMAGE_INPUT_SLOT = 0
 
 /**
  * Next `isLoading` when `imageUrl` transitions. `null` means do not change
@@ -67,6 +67,15 @@ interface UseImageCropOptions {
   containerEl: Ref<HTMLDivElement | null>
   modelValue: Ref<Bounds>
   onEditEnd?: () => void
+}
+
+function imageInputSlot(node: LGraphNode): number {
+  if (node.isSubgraphNode()) return 0
+
+  const slot = node.inputs.findIndex((input) =>
+    LiteGraph.isValidConnection('IMAGE', input.type)
+  )
+  return slot === -1 ? 0 : slot
 }
 
 export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
@@ -189,7 +198,10 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     const cropNode = node.value
     if (!cropNode) return null
 
-    const sourceNode = resolveInputSourceNode(cropNode, IMAGE_INPUT_SLOT)
+    const sourceNode = resolveInputSourceNode(
+      cropNode,
+      imageInputSlot(cropNode)
+    )
     if (!sourceNode) return null
 
     return nodeOutputStore.getNodeImageUrls(sourceNode)?.[0] ?? null
