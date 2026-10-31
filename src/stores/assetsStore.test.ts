@@ -551,6 +551,47 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(modelsTagCalls()).toHaveLength(2)
     })
 
+    it('keeps the replacement models when the cancelled request answers late', async () => {
+      const store = useAssetsStore()
+      const olderLora = createMockAsset('older-lora', ['models', 'loras'])
+      const newLora = createMockAsset('new-lora', ['models', 'loras'])
+
+      let resolveCancelledPage!: (page: AssetResponse) => void
+      const cancelledPage = new Promise<AssetResponse>((resolve) => {
+        resolveCancelledPage = resolve
+      })
+      vi.mocked(assetService.getAssetsPageByTag)
+        .mockResolvedValueOnce(makePage([olderLora]))
+        .mockReturnValueOnce(cancelledPage)
+        .mockResolvedValue(makePage([olderLora, newLora]))
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage([olderLora, newLora])
+      )
+
+      await store.updateModelsForTag('models')
+      expect(store.getAssets('tag:models').map((a) => a.id)).toEqual([
+        'older-lora'
+      ])
+
+      const cancelledRequest = store.updateModelsForTag('models')
+      completeLoraDownload()
+      await vi.waitFor(() =>
+        expect(store.getAssets('tag:models').map((a) => a.id)).toContain(
+          'new-lora'
+        )
+      )
+
+      resolveCancelledPage(makePage([olderLora]))
+      await cancelledRequest
+      await settleMicrotasks()
+
+      expect(store.getAssets('tag:models').map((a) => a.id)).toEqual([
+        'older-lora',
+        'new-lora'
+      ])
+      expect(store.isModelLoading('tag:models')).toBe(false)
+    })
+
     it('stays loading while a restart supersedes an initial load', async () => {
       const store = useAssetsStore()
       const newLora = createMockAsset('new-lora', ['models', 'loras'])
@@ -745,6 +786,35 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         await refresh
 
         expect(settlements).toEqual([['installed-lora']])
+      })
+
+      it('sends one request per category when an import completes during a fetch', async () => {
+        const store = useAssetsStore()
+        const pages: PendingPage[] = []
+        vi.mocked(assetService.getAssetsPageForNodeType).mockImplementation(
+          (_nodeType, options) => abortablePage(pages, options?.signal)
+        )
+        vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+          makePage([])
+        )
+
+        const refresh = store.updateModelsForNodeType('LoraLoader')
+        expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledOnce()
+
+        completeLoraDownload()
+        await nextTick()
+        await settleMicrotasks()
+
+        expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(2)
+
+        pages.at(-1)!.resolve(makePage([createMockAsset('installed-lora')]))
+        await refresh
+
+        for (const nodeType of ['LoraLoader', 'LoraLoaderModelOnly']) {
+          expect(store.getAssets(nodeType).map((a) => a.id)).toEqual([
+            'installed-lora'
+          ])
+        }
       })
     })
 

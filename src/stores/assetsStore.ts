@@ -1,5 +1,5 @@
 import { useAsyncState, useEventListener, whenever } from '@vueuse/core'
-import { delay, difference } from 'es-toolkit'
+import { delay, difference, uniqBy } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import {
   computed,
@@ -926,16 +926,20 @@ export const useAssetsStore = defineStore('assets', () => {
         .getAllNodeProviders(modelType)
         .filter((provider) => provider.nodeDef.name)
 
-      const restart = { restart: true }
-      const nodeTypeUpdates = providers.map((provider) =>
-        updateModelsForNodeType(provider.nodeDef.name, restart).then(
-          () => provider.nodeDef.name
+      const firstProviderOfEachCategory = new Set(
+        uniqBy(providers, (provider) =>
+          modelToNodeStore.getCategoryForNodeType(provider.nodeDef.name)
         )
+      )
+      const nodeTypeUpdates = providers.map((provider) =>
+        updateModelsForNodeType(provider.nodeDef.name, {
+          restart: firstProviderOfEachCategory.has(provider)
+        }).then(() => provider.nodeDef.name)
       )
 
       const tagUpdates = [
-        updateModelsForTag(modelType, restart),
-        updateModelsForTag('models', restart)
+        updateModelsForTag(modelType, { restart: true }),
+        updateModelsForTag('models', { restart: true })
       ]
 
       const results = await Promise.allSettled([
