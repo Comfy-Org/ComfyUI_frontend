@@ -52,33 +52,18 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
+import { useCustomDeploymentOffered } from '@/platform/workspace/composables/useCustomDeploymentOffered'
 import { useMissingNodeDeploymentOffer } from '@/platform/workspace/composables/useMissingNodeDeploymentOffer'
-import { nodesNeedingDeployment } from '@/platform/workspace/missingForDeployment'
 import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
-import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const { t } = useI18n()
 const { offer, choose, isSwitching, openSwitcher } =
   useMissingNodeDeploymentOffer()
-const pickStore = useDeploymentPickStore()
-const missingNodesErrorStore = useMissingNodesErrorStore()
-const switcherOffered = useDeploymentSwitcherOffered()
+const customDeploymentOffered = useCustomDeploymentOffered()
 
 const choices = computed(() =>
   offer.value?.kind === 'choices' ? offer.value.choices : []
 )
 const first = computed(() => choices.value[0])
 const moreCount = computed(() => choices.value.length - 1)
-
-const customDeploymentOffered = computed(
-  () =>
-    switcherOffered.value &&
-    pickStore.isVisible &&
-    pickStore.bootDeployment === null &&
-    nodesNeedingDeployment(
-      missingNodesErrorStore.missingNodesError?.nodeTypes ?? []
-    ).length > 0
-)
 </script>
