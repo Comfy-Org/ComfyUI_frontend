@@ -294,6 +294,7 @@ describe('OnboardingCoach', () => {
         name: STEPS[0].title
       })
       await waitFor(() => expect(dialog.style.opacity).toBe('1'))
+      expect(parseFloat(dialog.style.left)).toBe(8)
       expect(screen.getByTestId('agent-coach-arrow')).not.toHaveStyle({
         visibility: 'hidden'
       })
