@@ -17,7 +17,6 @@ import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
-// A FREE account reads as active, so Run reaches the server and is refused there.
 const FREE_ACCOUNT_WITH_CREDITS = {
   ...LEGACY_PERSONAL_BILLING_STATUS,
   is_active: true,

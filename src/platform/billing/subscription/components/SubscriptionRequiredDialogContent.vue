@@ -31,7 +31,7 @@
       </DialogTitle>
     </div>
 
-    <CreditsLockedNotice v-if="creditsLocked" />
+    <CreditsLockedNotice v-if="creditsLocked" class="text-center" />
 
     <PricingTable
       :reason="paymentIntentSource"
@@ -117,7 +117,7 @@
             />
           </div>
 
-          <CreditsLockedNotice v-if="creditsLocked" class="text-left" />
+          <CreditsLockedNotice v-if="creditsLocked" />
 
           <p
             v-if="reason === 'out_of_credits'"

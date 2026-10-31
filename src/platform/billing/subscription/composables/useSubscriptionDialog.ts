@@ -185,11 +185,7 @@ export const useSubscriptionDialog = () => {
             dismissOnPointerDownOutside: false
           }
         })
-        trackPaywallEntry(
-          options?.reason,
-          paymentIntentSource,
-          options?.refusalType
-        )
+        trackEntry()
         return true
       }
 
@@ -204,11 +200,7 @@ export const useSubscriptionDialog = () => {
         },
         dialogComponentProps: legacyPricingDialogProps
       })
-      trackPaywallEntry(
-        options?.reason,
-        paymentIntentSource,
-        options?.refusalType
-      )
+      trackEntry()
       return true
     } catch (error) {
       reportError(error, {

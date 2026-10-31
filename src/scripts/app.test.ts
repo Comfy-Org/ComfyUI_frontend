@@ -2167,6 +2167,28 @@ describe('ComfyApp', () => {
       })
     })
 
+    it('reports no refusal type when the server sent none', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({
+          error: 'Subscription required to queue workflows',
+          node_errors: {}
+        })
+      )
+      vi.mocked(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).mockResolvedValueOnce(true)
+
+      await app.queuePrompt(0)
+
+      expect(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).toHaveBeenCalledExactlyOnceWith({
+        reason: 'subscription_required',
+        creditsLocked: false
+      })
+    })
+
     it('tells the subscription dialog when the refused account holds locked credits', async () => {
       prepareEmptyPromptQueue()
       const refusal = {

@@ -1966,7 +1966,10 @@ export class ComfyApp implements IComfyApp {
                       ? error.response.error
                       : null
                   ),
-                  ...(promptError && { refusalType: promptError.type })
+                  ...(promptError?.type &&
+                    promptError.type !== 'error' && {
+                      refusalType: promptError.type
+                    })
                 }
               )
               if (opened) {

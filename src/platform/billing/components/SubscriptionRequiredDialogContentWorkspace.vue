@@ -44,7 +44,10 @@
       </DialogTitle>
     </div>
 
-    <CreditsLockedNotice v-if="creditsLocked && checkoutStep === 'pricing'" />
+    <CreditsLockedNotice
+      v-if="creditsLocked && checkoutStep === 'pricing'"
+      class="text-center"
+    />
 
     <div
       v-if="reason === 'out_of_credits'"
