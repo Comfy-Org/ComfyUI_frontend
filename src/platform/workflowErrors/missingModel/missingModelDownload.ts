@@ -1,14 +1,12 @@
 import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
 import { reportError } from '@/platform/telemetry/reportError'
 import { isDesktop } from '@/platform/distribution/types'
+import {
+  WHITE_LISTED_URLS,
+  isModelUrlAllowlisted
+} from '@/platform/workflowErrors/missingModel/modelUrlAllowlist'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-
-const ALLOWED_SOURCES = [
-  'https://civitai.com/',
-  'https://civitai.red/',
-  'https://huggingface.co/'
-] as const
 
 // Intentionally restrictive subset of model extensions permitted for download.
 // Does not include .bin, .onnx, .gguf — see MODEL_FILE_EXTENSIONS in
@@ -20,20 +18,6 @@ const ALLOWED_SUFFIXES = [
   '.pth',
   '.pt'
 ] as const
-
-const WHITE_LISTED_URLS: ReadonlySet<string> = new Set([
-  'https://huggingface.co/stabilityai/stable-zero123/resolve/main/stable_zero123.ckpt',
-  'https://huggingface.co/TencentARC/T2I-Adapter/resolve/main/models/t2iadapter_depth_sd14v1.pth?download=true',
-  'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth',
-  'http://localhost:8188/api/devtools/fake_model.safetensors'
-])
-
-function isModelUrlAllowlisted(url: string): boolean {
-  return (
-    WHITE_LISTED_URLS.has(url) ||
-    ALLOWED_SOURCES.some((source) => url.startsWith(source))
-  )
-}
 
 const MODEL_LIBRARY_TAB_ID = 'model-library'
 

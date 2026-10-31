@@ -43,6 +43,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   appendJsonExt,
@@ -1018,9 +1019,8 @@ export const useWorkflowService = () => {
   }
 
   /**
-   * Show and clear any pending warnings (missing nodes/models) stored on the
-   * active workflow. Called after a workflow becomes visible so dialogs don't
-   * overlap with subsequent loads.
+   * Shows the missing node, model and media warnings stored on a workflow (the
+   * active one by default) and keeps them for later tab switches.
    */
   function showPendingWarnings(
     workflow?: ComfyWorkflow | null,
@@ -1039,7 +1039,7 @@ export const useWorkflowService = () => {
       missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes ?? []) &&
       !options?.silent
     ) {
-      useExecutionErrorStore().showErrorOverlay()
+      void noticeMissingNodes()
     }
     if (missingModelCandidates?.length) {
       useMissingModelStore().setMissingModels(missingModelCandidates)
@@ -1048,7 +1048,6 @@ export const useWorkflowService = () => {
       useMissingMediaStore().setMissingMedia(missingMediaCandidates)
     }
 
-    // Keep cache for future tab switches
     if (
       missingNodeTypes?.length ||
       missingModelCandidates?.length ||

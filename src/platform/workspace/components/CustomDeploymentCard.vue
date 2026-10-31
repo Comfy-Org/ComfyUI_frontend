@@ -29,7 +29,11 @@
         <i class="icon-[lucide--x]" />
       </Button>
 
-      <div class="p-2">
+      <div
+        v-if="videoSources.length > 0"
+        data-testid="custom-deployment-video"
+        class="p-2"
+      >
         <Video
           :sources="videoSources"
           :poster-src="posterSrc"
@@ -55,11 +59,36 @@
         </Video>
       </div>
 
-      <section class="flex flex-col gap-7 px-6 pt-5 pb-6 @xl:px-9 @xl:pb-8">
+      <section
+        :class="
+          cn(
+            'flex flex-col gap-7 px-6 pt-5 pb-6 @xl:px-9 @xl:pb-8',
+            videoSources.length === 0 && 'pt-9'
+          )
+        "
+      >
         <div class="flex flex-col gap-3">
-          <DialogTitle class="my-0 text-xl @xl:text-2xl">
+          <DialogTitle class="my-0 pr-8 text-xl @xl:text-2xl">
             {{ pitch.title }}
           </DialogTitle>
+          <dl
+            v-if="pitch.missing?.length"
+            data-testid="custom-deployment-missing"
+            class="my-1 flex flex-col divide-y divide-border rounded-lg border bg-secondary/40"
+          >
+            <div
+              v-for="row in pitch.missing"
+              :key="row.label"
+              class="flex flex-col gap-x-3 px-3.5 py-2 text-sm/5 @xl:flex-row"
+            >
+              <dt class="shrink-0 text-muted-foreground @xl:w-38">
+                {{ row.label }}
+              </dt>
+              <dd class="m-0 min-w-0 wrap-break-word text-foreground">
+                {{ row.names }}
+              </dd>
+            </div>
+          </dl>
           <p class="my-0 text-sm/5 text-muted-foreground">
             {{ pitch.body }}
           </p>
@@ -89,7 +118,7 @@
             :class="cn('w-full @xl:w-auto', !copied && 'gap-3')"
             data-testid="custom-deployment-agent"
             :loading="isCopying"
-            @click="copy(CUSTOM_DEPLOYMENT_BRIEF)"
+            @click="copy(pitch.brief)"
           >
             <template v-if="copied">
               <i class="icon-[lucide--check]" aria-hidden="true" />
@@ -135,7 +164,6 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import AgentMarks from '@/platform/workflow/deploy/components/AgentMarks.vue'
 import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
-import { CUSTOM_DEPLOYMENT_BRIEF } from '@/platform/workspace/customDeploymentBrief'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 
 const {

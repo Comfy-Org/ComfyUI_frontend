@@ -75,7 +75,6 @@ import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErr
 import Button from '@/components/ui/button/Button.vue'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
-import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import AgentMarks from '@/platform/workflow/deploy/components/AgentMarks.vue'
 import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
@@ -84,6 +83,7 @@ import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploym
 import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
 import type { MissingBuildPack } from '@/platform/workspace/deploymentBuildBrief'
 import { deploymentBuildBrief } from '@/platform/workspace/deploymentBuildBrief'
+import { missingNodeTypeName } from '@/platform/workspace/missingForDeployment'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const { deployment, missingPackGroups, missingModelGroups } = defineProps<{
@@ -113,14 +113,10 @@ const buildUrl = computed(() =>
     : buildsUrl
 )
 
-function nodeTypeName(nodeType: MissingNodeType): string {
-  return typeof nodeType === 'string' ? nodeType : nodeType.type
-}
-
 function buildPack(group: MissingPackGroup): MissingBuildPack {
   const pack = {
     packId: group.packId,
-    nodeTypes: group.nodeTypes.map(nodeTypeName)
+    nodeTypes: group.nodeTypes.map(missingNodeTypeName)
   }
   const unsupported =
     group.packId !== null

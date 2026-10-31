@@ -4123,6 +4123,13 @@
       "body": "Create a custom deployment that runs your custom nodes and models on Comfy Cloud, and appears under Run on for your workspace.",
       "pointNodes": "Deploy the custom or private node packs your workflows need"
     },
+    "workflowNeedsDeployment": {
+      "title": "Run this workflow on a custom deployment",
+      "missingPacks": "{count} missing node pack | {count} missing node packs",
+      "missingNodes": "{count} missing node | {count} missing nodes",
+      "missingModels": "{count} missing model | {count} missing models",
+      "andMore": "{names}, and {count} more"
+    },
     "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
     "reload": "Reload",
@@ -5175,6 +5182,8 @@
     "runsOn": "Runs on {deployment}",
     "switchDeployment": "Switch",
     "moreDeployments": "{count} more",
+    "runOnCustomDeployment": "Run it on a custom deployment",
+    "setUpCustomDeployment": "Set up",
     "missingNodes": "Some nodes are missing and need to be installed",
     "missingModels": "{count} required model is missing | {count} required models are missing",
     "missingMedia": "Some nodes are missing required inputs"
