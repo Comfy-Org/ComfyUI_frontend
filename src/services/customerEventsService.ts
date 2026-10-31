@@ -1,14 +1,13 @@
-import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { ref } from 'vue'
 
+import { useApiRequest } from '@/composables/useApiRequest'
 import { webSessionResourceHeader } from '@comfyorg/api-client/webSessionFetch'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { d, t } from '@/i18n'
 import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
-import { isAbortError } from '@/utils/typeGuardUtil'
 
 export enum EventType {
   CREDIT_ADDED = 'credit_added',
@@ -25,6 +24,8 @@ type CustomerEventsResponseQuery =
 
 export type AuditLog = components['schemas']['AuditLog']
 
+type ErrorResponse = components['schemas']['ErrorResponse']
+
 const customerApiClient = axios.create({
   headers: {
     'Content-Type': 'application/json'
@@ -35,53 +36,35 @@ attachUnifiedRemintInterceptor(customerApiClient)
 
 export const useCustomerEventsService = () => {
   const isLoading = ref(false)
-  const error = ref<string | null>(null)
   let latestRequestId = 0
 
-  const describeRequestError = (
+  const mapError = (
     err: unknown,
     context: string,
     routeSpecificErrors?: Record<number, string>
-  ): string | null => {
-    if (isAbortError(err)) return null
-
-    if (!axios.isAxiosError(err)) {
+  ): string => {
+    if (!axios.isAxiosError<Partial<ErrorResponse>>(err)) {
       return `${context} failed: ${err instanceof Error ? err.message : String(err)}`
     }
-    const axiosError = err as AxiosError<{ message: string }>
-    const status = axiosError.response?.status
-    if (status && routeSpecificErrors?.[status]) {
+
+    if (!err.response) {
+      return `${context} failed: ${err.message}`
+    }
+
+    const status = err.response.status
+    if (routeSpecificErrors?.[status]) {
       return routeSpecificErrors[status]
     }
+
     return (
-      axiosError.response?.data.message ??
-      `${context} failed with status ${status}`
+      err.response.data.message ?? `${context} failed with status ${status}`
     )
   }
 
-  const executeRequest = async <T>(
-    requestCall: () => Promise<AxiosResponse<T>>,
-    options: {
-      errorContext: string
-      routeSpecificErrors?: Record<number, string>
-    }
-  ): Promise<{ data: T | null; errorMessage: string | null }> => {
-    const { errorContext, routeSpecificErrors } = options
-
-    try {
-      const response = await requestCall()
-      return { data: response.data, errorMessage: null }
-    } catch (err) {
-      return {
-        data: null,
-        errorMessage: describeRequestError(
-          err,
-          errorContext,
-          routeSpecificErrors
-        )
-      }
-    }
-  }
+  const { error, executeRequest } = useApiRequest({
+    client: customerApiClient,
+    mapError
+  })
 
   function formatEventType(eventType: string) {
     switch (eventType) {
@@ -190,7 +173,7 @@ export const useCustomerEventsService = () => {
     } catch (err) {
       if (requestId !== latestRequestId) return null
       isLoading.value = false
-      error.value = describeRequestError(err, errorContext)
+      error.value = mapError(err, errorContext)
       return null
     }
     if (requestId !== latestRequestId) {
@@ -206,14 +189,20 @@ export const useCustomerEventsService = () => {
       return null
     }
 
-    const { data, errorMessage } = await executeRequest<CustomerEventsResponse>(
-      () =>
-        customerApiClient.get('/customers/events', {
+    const result = await executeRequest<CustomerEventsResponse>(
+      (client) =>
+        client.get('/customers/events', {
           baseURL: getComfyApiBaseUrl(),
           params: { page, limit },
           headers: authHeaders
         }),
-      { errorContext, routeSpecificErrors }
+      {
+        errorContext,
+        routeSpecificErrors,
+        isCurrent: () =>
+          requestId === latestRequestId &&
+          authStore.currentUserIdentity() === requestOwner
+      }
     )
 
     if (requestId !== latestRequestId) {
@@ -223,8 +212,7 @@ export const useCustomerEventsService = () => {
     if (authStore.currentUserIdentity() !== requestOwner) {
       return null
     }
-    error.value = errorMessage
-    return data
+    return result
   }
 
   return {
