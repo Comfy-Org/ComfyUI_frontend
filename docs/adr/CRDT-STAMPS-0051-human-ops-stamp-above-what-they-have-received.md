@@ -36,9 +36,11 @@ It either lost, or won only through the whole-document path of
 
 ## Decision
 
-1. **A counter is taken when an op is sent, not when it is queued.** A human op
-   stamps above the sequence, above the highest counter in the document the
-   follower holds, and above every counter this sender has already sent.
+1. **A counter is taken when an op is sent, not when it is queued.** The document
+   sequence is a mint-time floor, not a value the stamp must exceed: a fresh
+   sender at sequence 41 mints 41. At send, a human op stamps above the highest
+   counter in the document the follower holds and above every counter this sender
+   has already sent.
 2. **An op the wire has not carried is re-stamped on its way out.** `op_id`, actor
    and payload do not change. No host can hold the old bytes, so this is not
    changed-payload reuse of an `op_id`. One shift moves the whole batch, so its
@@ -49,6 +51,14 @@ It either lost, or won only through the whole-document path of
    drop, sequence gap or reset until the catch-up has been integrated, the sender
    holds, because a stamp taken before the catch-up cannot be above it. A deferred
    or failed projection does not hold it: the document is already current.
+5. **A counter outside the safe integers is refused, never emitted.** The applier
+   rejects a `base_version` outside them as `malformed_op` and aborts the rest of
+   the batch, so emitting one loses that edit and every edit behind it. Both ends
+   are bounded: an admission whose whole range would not fit is settled
+   `undeliverable` under `counter_exhausted` without minting or moving the
+   sender's cursor, and a held batch that cannot be lifted inside them is sent as
+   minted instead. Stamping above what the follower has received is therefore a
+   bounded guarantee, and exhaustion is surfaced rather than written to the wire.
 
 The result for a value conflict: an edit the person made without seeing the
 agent's write wins it if that edit had not reached the wire when the outage
