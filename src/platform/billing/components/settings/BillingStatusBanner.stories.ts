@@ -5,6 +5,7 @@ import { i18n } from '@/i18n'
 import type { BillingContextMockState } from '@/storybook/mocks/useBillingContext'
 import { setBillingContextMock } from '@/storybook/mocks/useBillingContext'
 import {
+  setBillingCapabilitiesMock,
   setCanSubscribeSelfServeMock,
   setCanTopUpMock
 } from '@/storybook/mocks/useBillingCapabilities'
@@ -78,6 +79,9 @@ function story(
       i18n.global.locale.value = 'en'
       setBillingContextMock({ isTeamPlan: true, ...billing })
       setWorkspaceUIMock(workspace)
+      setBillingCapabilitiesMock({
+        canManageSubscription: workspace.canManageSubscription ?? true
+      })
       setCanTopUpMock(capabilities.canTopUp ?? true)
       setCanSubscribeSelfServeMock(capabilities.canSubscribeSelfServe ?? false)
     }
@@ -305,3 +309,18 @@ export const PlanEndedPersonal: Story = story(
   }),
   personalOwner
 )
+
+export const BillingTabEndingOwner: Story = {
+  ...EndingOwner,
+  args: { section: 'billing' }
+}
+
+export const BillingTabPlanEndedOwner: Story = {
+  ...PlanEndedOwner,
+  args: { section: 'billing' }
+}
+
+export const BillingTabPlanChangeOwner: Story = {
+  ...PlanChangeOwner,
+  args: { section: 'billing' }
+}

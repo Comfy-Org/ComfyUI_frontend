@@ -1033,17 +1033,21 @@ describe('BillingTab', () => {
         arrange(scenario)
       }
 
-      it('shows Plan ending with the plan row keeping the actions', () => {
+      it('shows Plan ending with Resume plan on both the banner and the plan row', () => {
         arrangeOnCloud(ending)
 
         const banner = screen.getByRole('status')
         expect(banner).toHaveTextContent(
           'Your Pro plan ends on October 28, 2026'
         )
-        expect(within(banner).queryAllByRole('button')).toEqual([])
         expect(
-          screen.getByRole('button', { name: 'Resume plan' })
-        ).toBeInTheDocument()
+          within(banner)
+            .queryAllByRole('button')
+            .map((button) => button.textContent.trim())
+        ).toEqual(['Resume plan'])
+        expect(
+          screen.getAllByRole('button', { name: 'Resume plan' })
+        ).toHaveLength(2)
       })
 
       it('shows no lifecycle banner on an active plan', () => {
