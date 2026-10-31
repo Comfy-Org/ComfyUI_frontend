@@ -169,7 +169,7 @@ vi.mock(import('@/services/autoQueueService'), () => ({
 vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({
     registerCoreKeybindings: vi.fn(),
-    keybindHandler: vi.fn()
+    listenForKeydowns: vi.fn()
   })
 }))
 
