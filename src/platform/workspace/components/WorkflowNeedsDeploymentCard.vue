@@ -3,7 +3,6 @@
 </template>
 
 <script setup lang="ts">
-import { uniqBy } from 'es-toolkit'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -16,8 +15,8 @@ import type {
   MissingItemsRow
 } from '@/platform/workspace/customDeploymentPitch'
 import { workflowDeploymentBrief } from '@/platform/workspace/deploymentBuildBrief'
-import type { MissingBuildModel } from '@/platform/workspace/deploymentBuildBrief'
 import {
+  missingModelsOf,
   missingPacksOf,
   nodesNeedingDeployment
 } from '@/platform/workspace/missingForDeployment'
@@ -35,25 +34,19 @@ const packs = computed(() =>
     )
   )
 )
-const models = computed<MissingBuildModel[]>(() =>
-  uniqBy(
-    missingModelStore.visibleMissingModelCandidates ?? [],
-    (candidate) => candidate.name
-  ).map((candidate) => ({
-    name: candidate.name,
-    directory: candidate.directory ?? null,
-    url: candidate.url
-  }))
+const models = computed(() =>
+  missingModelsOf(missingModelStore.visibleMissingModelCandidates ?? [])
 )
 
 function listed(names: readonly string[]): string {
   const shown = names.slice(0, NAMES_SHOWN).join(', ')
   const more = names.length - NAMES_SHOWN
   return more > 0
-    ? t('deploymentSwitcher.workflowNeedsDeployment.andMore', {
-        names: shown,
-        count: more
-      })
+    ? t(
+        'deploymentSwitcher.workflowNeedsDeployment.andMore',
+        { names: shown, count: more },
+        { escapeParameter: false }
+      )
     : shown
 }
 
