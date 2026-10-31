@@ -1,3 +1,5 @@
+import { i18n } from '@/i18n'
+
 export type StarterPromptStrategy =
   | 'static'
   | 'profile'
@@ -165,10 +167,8 @@ export function normalizeStarterPromptProfile(
 
 export function selectStarterPrompts(input: {
   strategy: StarterPromptStrategy
-  locale: string
   profile: StarterPromptProfile | null
   canvasPresence: CanvasPresence
-  translate: (key: StarterPromptTranslationKey) => string
 }): StarterPromptSelection {
   const usesProfile = ['profile', 'profile_canvas'].includes(input.strategy)
   const usesCanvas = ['canvas', 'profile_canvas'].includes(input.strategy)
@@ -185,7 +185,7 @@ export function selectStarterPrompts(input: {
         CANVAS_PRESENT.repair
       ] as const)
     : profilePrompts
-  const prompts = translatePrompts(promptKeys, input.translate)
+  const prompts = translatePrompts(promptKeys)
 
   return Object.freeze({
     prompts,
@@ -226,14 +226,17 @@ function translatePrompts(
     StarterPromptTranslationKey,
     StarterPromptTranslationKey,
     StarterPromptTranslationKey
-  ],
-  translate: (key: StarterPromptTranslationKey) => string
+  ]
 ): readonly [string, string, string, string, string] {
   return [
-    translate(keys[0]),
-    translate(keys[1]),
-    translate(keys[2]),
-    translate(keys[3]),
-    translate(keys[4])
+    translateEnglish(keys[0]),
+    translateEnglish(keys[1]),
+    translateEnglish(keys[2]),
+    translateEnglish(keys[3]),
+    translateEnglish(keys[4])
   ]
+}
+
+function translateEnglish(key: StarterPromptTranslationKey): string {
+  return i18n.global.t(key, {}, { locale: 'en' })
 }
