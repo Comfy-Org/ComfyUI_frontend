@@ -688,6 +688,12 @@ watch(
   },
   { immediate: true }
 )
+// This watcher is the only publisher of who owns a queued settings write.
+// Closing the dock stops it without the account necessarily changing, so a
+// write already in flight would otherwise keep its stale claim indefinitely
+// and could still land once whoever is actually signed in by the time it
+// resolves -- not the account it was queued for.
+onBeforeUnmount(() => setOnboardingScopeOwner(null))
 const { activeTour } = storeToRefs(useOnboardingTourStore())
 const coachDeferredBy = computed(() =>
   canvasStore.linearMode

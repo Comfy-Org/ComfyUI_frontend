@@ -1083,6 +1083,82 @@ describe('AgentPanelRoot onboarding', () => {
   })
 })
 
+describe('AgentPanelRoot onboarding scope ownership', () => {
+  beforeEach(() => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-owner'
+    })
+    localStorage.removeItem('Comfy.AgentPanel.onboarded')
+    localStorage.removeItem(
+      'Comfy.AgentPanel.onboarded.account-a.workspace-owner'
+    )
+  })
+
+  afterEach(() => {
+    delete (api as { storeSetting?: unknown }).storeSetting
+  })
+
+  it('retires a completion write queued before the dock closes instead of letting it reach whoever is signed in once it resolves', async () => {
+    const storeSetting = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 200 }))
+    Object.assign(api, { storeSetting })
+    let resolveRead: (response: Response) => void = () => {}
+    respondToFetch(
+      { url: /\/settings\/Comfy\.AgentPanel\.OnboardedScopes/ },
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveRead = resolve
+        })
+    )
+
+    const panel = render(
+      defineComponent({
+        setup: () => () =>
+          h('div', [
+            h('section', { class: 'graph-canvas-panel' }, [
+              h('div', { role: 'toolbar' })
+            ]),
+            h(AgentPanelRoot)
+          ])
+      }),
+      { global: { plugins: [i18n] } }
+    )
+
+    for (const [title, button] of [
+      ['Meet your Comfy Agent', 'Next'],
+      ["Your agent edits the workflow you're viewing", 'Next'],
+      ['Let the agent run while you edit', 'Next'],
+      ['Pick up where you left off', 'Done']
+    ] as const) {
+      const dialog = await screen.findByRole('dialog', { name: title })
+      await userEvent.click(
+        within(dialog).getByRole('button', { name: button })
+      )
+    }
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await vi.waitFor(() =>
+      expect(
+        fetchRequests(/\/settings\/Comfy\.AgentPanel\.OnboardedScopes/)
+      ).toHaveLength(1)
+    )
+
+    // account-a's dock closes while its completion read is still in flight.
+    panel.unmount()
+
+    // Nothing re-publishes ownership: the account changes without the dock
+    // reopening to claim the new scope.
+    currentUserInfo.value = { id: 'account-b' }
+
+    // account-a's deferred read finally comes back after the switch.
+    resolveRead(new Response(JSON.stringify([]), { status: 200 }))
+    await setImmediate()
+    await setImmediate()
+
+    expect(storeSetting).not.toHaveBeenCalled()
+  })
+})
+
 /**
  * The transcript, for assertions that mean the INLINE paywall card - the one
  * rendered against the turn a 402 refused. The panel now also has a standing
