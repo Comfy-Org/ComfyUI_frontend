@@ -15,6 +15,18 @@ export interface MaskEditorToolDocument {
   applyMask(mask: MaskEditorMask): void
 }
 
+function isValidMask(
+  mask: MaskEditorMask,
+  dimensions: Pick<MaskEditorMask, 'width' | 'height'>
+) {
+  return (
+    mask.width === dimensions.width &&
+    mask.height === dimensions.height &&
+    mask.data instanceof Uint8Array &&
+    mask.data.length === mask.width * mask.height
+  )
+}
+
 export function createMaskEditorToolSession(
   tool: MaskEditorTool,
   document: MaskEditorToolDocument,
@@ -73,12 +85,7 @@ export function createMaskEditorToolSession(
       }
       const dimensions = call(() => document.getDimensions())
       if (!dimensions) return { ok: false, reason: 'unavailable' }
-      if (
-        mask.width !== dimensions.width ||
-        mask.height !== dimensions.height ||
-        !(mask.data instanceof Uint8Array) ||
-        mask.data.length !== mask.width * mask.height
-      )
+      if (!isValidMask(mask, dimensions))
         return { ok: false, reason: 'invalid-mask' }
       committing = true
       const applied = call(() => {
