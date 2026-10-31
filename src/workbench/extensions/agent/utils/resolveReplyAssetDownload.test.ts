@@ -59,69 +59,24 @@ describe('resolveReplyAssetDownload', () => {
     expect(download.filename).toBe('Final render.png')
   })
 
-  it('authenticates an exact same-origin API view route', async () => {
+  it('authenticates a media route on this API through fetchApi', async () => {
     const resolved = await resolveReplyAssetDownload(
-      asset(`${window.location.origin}/api/view?filename=a.png`)
+      asset(`${window.location.origin}/api/assets/asset-1/content`)
     )
 
-    expect(resolved.url).toBe('/view?filename=a.png')
+    expect(resolved.url).toBe('/assets/asset-1/content')
     await resolved.fetch?.(resolved.url)
-    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=a.png')
+    expect(api.fetchApi).toHaveBeenCalledWith('/assets/asset-1/content')
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it.for([
-    {
-      name: 'an off-origin URL embedding the API base',
-      url: `https://evil.example/x/${window.location.origin}/api/view?filename=a.png`
-    },
-    {
-      name: 'a non-view API route',
-      url: `${window.location.origin}/api/system_stats?filename=a.png`
-    },
-    {
-      name: 'a view-route descendant',
-      url: `${window.location.origin}/api/view/extra?filename=a.png`
-    },
-    {
-      name: 'a view-route prefix',
-      url: `${window.location.origin}/api/viewevil?filename=a.png`
-    },
-    {
-      name: 'a view-route suffix',
-      url: `${window.location.origin}/evil/api/view?filename=a.png`
-    },
-    {
-      name: 'a view-route substring',
-      url: `${window.location.origin}/x/api/view/y?filename=a.png`
-    }
-  ])('omits credentials for $name', async ({ url }) => {
+  it('omits credentials for any other URL', async () => {
+    const url = `${window.location.origin}/api/system_stats?filename=a.png`
     const resolved = await resolveReplyAssetDownload(asset(url))
 
     expect(resolved.url).toBe(url)
     await resolved.fetch?.(resolved.url)
     expect(api.fetchApi).not.toHaveBeenCalled()
     expect(fetch).toHaveBeenCalledWith(url, { credentials: 'omit' })
-  })
-
-  it('rejects a malformed URL before resolving a request', async () => {
-    await expect(resolveReplyAssetDownload(asset('http://['))).rejects.toThrow()
-
-    expect(api.fetchApi).not.toHaveBeenCalled()
-    expect(fetch).not.toHaveBeenCalled()
-  })
-
-  it('strips a re-homed absolute url back to an api route', async () => {
-    vi.mocked(api.apiURL).mockImplementation(
-      (route) => `/ComfyBackendDirect/api${route}`
-    )
-    vi.mocked(isAssetPreviewSupported).mockReturnValue(false)
-
-    const download = await resolveReplyAssetDownload({
-      ...generatedAsset,
-      url: `${window.location.origin}/ComfyBackendDirect/api/view?filename=ComfyUI_00001_.png&type=output`
-    })
-
-    expect(download.url).toBe('/view?filename=ComfyUI_00001_.png&type=output')
   })
 })

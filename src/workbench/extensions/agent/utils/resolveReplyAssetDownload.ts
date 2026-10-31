@@ -2,6 +2,7 @@ import {
   findOutputAsset,
   isAssetPreviewSupported
 } from '@/platform/assets/utils/assetPreviewUtil'
+import { getApiMediaRoute } from '@/platform/assets/utils/assetUrlUtil'
 import { api } from '@/scripts/api'
 import { getFilenameDetails, getPathDetails } from '@/utils/formatUtil'
 
@@ -24,21 +25,15 @@ async function displayFilename(asset: ReplyAsset): Promise<string> {
   return name ? preserveExtension(name, asset.filename) : fallback
 }
 
-/** Authenticates only the exact same-origin API view route; every other URL is fetched without credentials. */
+/** Authenticates only media routes on this page's API; every other URL is fetched without credentials. */
 export async function resolveReplyAssetDownload(
   asset: ReplyAsset
 ): Promise<FetchedAssetDownload> {
-  const candidate = new URL(asset.url, window.location.origin)
-  const apiBase = new URL(api.apiURL(''), window.location.origin)
-  const viewPath = `${apiBase.pathname.replace(/\/$/, '')}/view`
-  const trusted =
-    candidate.origin === apiBase.origin && candidate.pathname === viewPath
+  const route = getApiMediaRoute(asset.url)
   return {
-    url: trusted
-      ? `${candidate.pathname.slice(apiBase.pathname.length)}${candidate.search}`
-      : asset.url,
+    url: route ?? asset.url,
     filename: await displayFilename(asset),
-    fetch: trusted
+    fetch: route
       ? (url: string) => api.fetchApi(url)
       : (url: string) => fetch(url, { credentials: 'omit' }),
     mode: 'fetch',

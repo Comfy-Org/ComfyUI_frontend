@@ -6,6 +6,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { hasAudioType, hasImageType, hasVideoType } from '@/utils/eventUtils'
 import { formatSize, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { createSharedObjectUrl } from '@/utils/objectUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import {
   AgentApiError,
@@ -110,7 +111,7 @@ function localPreview(
   if (isHdrImageFilename(file.name)) return {}
   const playable = kind === 'video' || kind === 'audio'
   const url =
-    kind === 'image' || playable ? URL.createObjectURL(file) : undefined
+    kind === 'image' || playable ? createSharedObjectUrl(file) : undefined
   return {
     previewUrl: kind === 'image' ? url : undefined,
     mediaUrl: playable ? url : undefined

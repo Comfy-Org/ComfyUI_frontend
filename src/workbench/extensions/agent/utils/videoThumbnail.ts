@@ -1,3 +1,5 @@
+import { createSharedObjectUrl } from '@/utils/objectUrlUtil'
+
 export function createVideoThumbnail(
   source: string,
   signal: AbortSignal
@@ -40,7 +42,7 @@ export function createVideoThumbnail(
         context.drawImage(video, 0, 0, canvas.width, canvas.height)
         canvas.toBlob(
           (blob) => {
-            if (!settled) finish(blob ? URL.createObjectURL(blob) : undefined)
+            if (!settled) finish(blob ? createSharedObjectUrl(blob) : undefined)
           },
           'image/jpeg',
           0.8

@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
+import {
+  releaseSharedObjectUrl,
+  retainSharedObjectUrl
+} from '@/utils/objectUrlUtil'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import {
@@ -522,8 +526,11 @@ describe('useAttachment', () => {
     { name: 'clip.mp4', type: 'video/mp4', mediaKind: 'video' },
     { name: 'recording.webm', type: 'audio/webm', mediaKind: 'audio' }
   ])(
-    'previews picked $mediaKind while uploading and then uses its server file',
+    'previews picked $mediaKind with a shareable local URL while uploading, then uses its server file',
     async ({ name, type, mediaKind }) => {
+      const revoke = vi
+        .spyOn(URL, 'revokeObjectURL')
+        .mockImplementation(() => {})
       let resolveUpload: (result: {
         ref: string
         url: string
@@ -543,6 +550,10 @@ describe('useAttachment', () => {
         uploading: true
       })
       expect(registry.chips[0].previewUrl).toBeUndefined()
+      const localUrl = registry.chips[0].mediaUrl
+      retainSharedObjectUrl(localUrl)
+      releaseSharedObjectUrl(localUrl)
+      expect(revoke).not.toHaveBeenCalled()
       resolveUpload({
         ref: 'stored-media',
         url: '/api/view?filename=stored-media&type=input'

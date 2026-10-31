@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
+  getApiMediaRoute,
   getAssetFileUrl,
   getAssetInlineMediaUrl,
   getAssetSubfolder,
@@ -258,5 +259,97 @@ describe('getAssetFileUrl', () => {
       expect(searchParams.get('type')).toBe('output')
       expect(searchParams.get('subfolder')).toBe('3d')
     })
+  })
+})
+
+describe('getApiMediaRoute', () => {
+  const origin = window.location.origin
+
+  beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation((route) => `${origin}/api${route}`)
+  })
+
+  it.for([
+    {
+      name: 'a view route',
+      href: `${origin}/api/view?filename=a.png&type=output`,
+      route: '/view?filename=a.png&type=output'
+    },
+    {
+      name: 'a root-relative view route',
+      href: '/api/view?filename=a.png',
+      route: '/view?filename=a.png'
+    },
+    {
+      name: 'a view route with a percent-encoded query',
+      href: `${origin}/api/view?filename=Beach+photo.png&subfolder=vid%2F2026`,
+      route: '/view?filename=Beach+photo.png&subfolder=vid%2F2026'
+    },
+    {
+      name: 'an assets content route',
+      href: `${origin}/api/assets/asset-1/content?disposition=inline`,
+      route: '/assets/asset-1/content?disposition=inline'
+    },
+    {
+      name: 'a video route',
+      href: `${origin}/api/viewvideo?filename=a.mp4`,
+      route: '/viewvideo?filename=a.mp4'
+    }
+  ])('returns the route of $name on this API', ({ href, route }) => {
+    expect(getApiMediaRoute(href)).toBe(route)
+  })
+
+  it.for([
+    {
+      name: 'an off-origin URL embedding the API base',
+      href: `https://evil.example/x/${origin}/api/view?filename=a.png`
+    },
+    {
+      name: 'a non-media API route',
+      href: `${origin}/api/system_stats?filename=a.png`
+    },
+    {
+      name: 'an asset route that is not its content',
+      href: `${origin}/api/assets/asset-1`
+    },
+    {
+      name: 'a dot-segment escape from a media route',
+      href: `${origin}/api/view/../userdata?filename=a.png`
+    },
+    {
+      name: 'a view-route descendant',
+      href: `${origin}/api/view/extra?filename=a.png`
+    },
+    {
+      name: 'a view-route prefix',
+      href: `${origin}/api/viewevil?filename=a.png`
+    },
+    {
+      name: 'a view route outside the API base',
+      href: `${origin}/evil/api/view?filename=a.png`
+    },
+    {
+      name: 'an encoded slash in an asset id',
+      href: `${origin}/api/assets/..%2F..%2Fuserdata%2Fx/content`
+    },
+    {
+      name: 'a doubled API prefix',
+      href: `${origin}/api/api/view?filename=a.png`
+    },
+    { name: 'a malformed URL', href: 'http://[' }
+  ])('returns undefined for $name', ({ href }) => {
+    expect(getApiMediaRoute(href)).toBeUndefined()
+  })
+
+  it('strips a subpath install API base', () => {
+    vi.mocked(api.apiURL).mockImplementation(
+      (route) => `/ComfyBackendDirect/api${route}`
+    )
+
+    expect(
+      getApiMediaRoute(
+        `${origin}/ComfyBackendDirect/api/view?filename=a.png&type=output`
+      )
+    ).toBe('/view?filename=a.png&type=output')
   })
 })

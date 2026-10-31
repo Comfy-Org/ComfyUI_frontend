@@ -10,7 +10,6 @@ import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
-import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
@@ -22,6 +21,7 @@ import type {
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 import { isReplyAssetKind } from '@/workbench/extensions/agent/utils/replyAssets'
 import { agentMessageText } from '@/workbench/extensions/agent/utils/agentMessageText'
+import { attachmentFileUrl } from '@/workbench/extensions/agent/utils/attachmentFileUrl'
 import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
 import type { SkillReference as SkillReferenceData } from '@/workbench/extensions/agent/types/skillReference'
 import CatalogSkillReference from '@/workbench/extensions/agent/components/agent/CatalogSkillReference.vue'
@@ -158,7 +158,7 @@ function attachmentUrl(
     kind === 'video' || kind === 'audio' ? item.mediaUrl : item.previewUrl
   if (capturedUrl) return capturedUrl
   if (!item.ref || isHdrImageFilename(item.name)) return
-  return api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
+  return attachmentFileUrl({ ref: item.ref, id: item.id })
 }
 </script>
 

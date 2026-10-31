@@ -7,6 +7,11 @@ import { computed, ref, shallowReactive, shallowRef } from 'vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { AgentTurnTab } from '@/stores/workflowTabActivityStore'
 
+import {
+  releaseSharedObjectUrl,
+  retainSharedObjectUrl
+} from '@/utils/objectUrlUtil'
+
 import type {
   AgentMessages,
   RenderedAskKind,
@@ -453,6 +458,8 @@ export const useAgentConversationStore = defineStore(
         userSkillReferences.value.set(turnId, prompt.skillReference)
       else userSkillReferences.value.delete(turnId)
       if (attachments !== undefined && attachments.length > 0) {
+        attachments.forEach(retainAttachmentUrls)
+        userAttachments.value.get(turnId)?.forEach(releaseAttachmentUrls)
         userAttachments.value.set(turnId, attachments)
         rememberAttachmentNames(attachments)
       }
@@ -1329,12 +1336,19 @@ export const useAgentConversationStore = defineStore(
       settledActiveTransports.clear()
     }
 
+    function retainAttachmentUrls({ previewUrl, mediaUrl }: UserAttachment) {
+      retainSharedObjectUrl(previewUrl)
+      retainSharedObjectUrl(mediaUrl)
+    }
+
+    function releaseAttachmentUrls({ previewUrl, mediaUrl }: UserAttachment) {
+      releaseSharedObjectUrl(previewUrl)
+      releaseSharedObjectUrl(mediaUrl)
+    }
+
     function dropAttachmentPreviews(): void {
-      for (const attachments of userAttachments.value.values()) {
-        for (const { previewUrl } of attachments) {
-          if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl)
-        }
-      }
+      for (const attachments of userAttachments.value.values())
+        attachments.forEach(releaseAttachmentUrls)
       userAttachments.value = new Map()
     }
 

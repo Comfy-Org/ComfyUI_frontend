@@ -1,10 +1,14 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { nextTick, watch } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import {
+  createSharedObjectUrl,
+  releaseSharedObjectUrl
+} from '@/utils/objectUrlUtil'
 
 import type {
   AgentMessages,
@@ -1495,17 +1499,57 @@ describe('useAgentConversationStore', () => {
     })
   })
 
-  it('revokes transcript blob previews on reset and on hydrate', () => {
+  it('keeps sent blob previews alive after the composer releases them, until reset', () => {
+    vi.spyOn(URL, 'createObjectURL')
+      .mockReturnValueOnce('blob:image')
+      .mockReturnValueOnce('blob:video')
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const image = createSharedObjectUrl(new Blob())
+    const video = createSharedObjectUrl(new Blob())
     const store = useAgentConversationStore()
     store.startTurn(T1)
-    store.recordUser(T1, 'with picture', [
-      { name: 'a.png', previewUrl: 'blob:a' }
+    store.recordUser(T1, 'with media', [
+      { name: 'a.png', previewUrl: image },
+      { name: 'clip.mp4', mediaUrl: video }
     ])
-    store.reset()
-    expect(revoke).toHaveBeenCalledWith('blob:a')
+    releaseSharedObjectUrl(image)
+    releaseSharedObjectUrl(video)
+    expect(revoke).not.toHaveBeenCalled()
 
-    revoke.mockClear()
+    store.reset()
+    expect(revoke).toHaveBeenCalledTimes(2)
+    expect(revoke).toHaveBeenCalledWith('blob:image')
+    expect(revoke).toHaveBeenCalledWith('blob:video')
+  })
+
+  it('keeps a re-recorded blob preview and releases one the turn no longer shows', () => {
+    vi.spyOn(URL, 'createObjectURL')
+      .mockReturnValueOnce('blob:kept')
+      .mockReturnValueOnce('blob:replacement')
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const kept = createSharedObjectUrl(new Blob())
+    const replacement = createSharedObjectUrl(new Blob())
+    const store = useAgentConversationStore()
+    onTestFinished(() => {
+      store.reset()
+      releaseSharedObjectUrl(replacement)
+    })
+    store.startTurn(T1)
+    store.recordUser(T1, 'first', [{ name: 'a.png', previewUrl: kept }])
+    releaseSharedObjectUrl(kept)
+
+    store.recordUser(T1, 'same', [{ name: 'a.png', previewUrl: kept }])
+    expect(revoke).not.toHaveBeenCalled()
+
+    store.recordUser(T1, 'changed', [
+      { name: 'b.png', previewUrl: replacement }
+    ])
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:kept')
+  })
+
+  it('revokes transcript blob previews on hydrate', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentConversationStore()
     store.startTurn(T2)
     store.recordUser(T2, 'again', [{ name: 'b.png', previewUrl: 'blob:b' }])
     store.hydrate([])
@@ -1515,7 +1559,6 @@ describe('useAgentConversationStore', () => {
         (entry) => entry.role !== 'user' || entry.attachments === undefined
       )
     ).toBe(true)
-    revoke.mockRestore()
   })
 
   it('keeps attachment labels scoped to their thread after blob previews expire', () => {
