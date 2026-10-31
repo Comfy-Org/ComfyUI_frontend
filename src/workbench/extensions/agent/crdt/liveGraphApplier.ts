@@ -239,6 +239,7 @@ interface MalformedDocNode {
 const MAX_SHAPED_ELEMENTS = 16
 const MAX_DIAGNOSTIC_CHARS = 1024
 const OMISSION_MARKER_CHARS = 8
+const MAX_DIAGNOSTIC_LIST_CHARS = 320
 
 interface DiagnosticString {
   path: readonly (string | number)[]
@@ -264,9 +265,13 @@ function valueShape(value: unknown): string {
 }
 
 function diagnosticWidgetNames(widgets: readonly IBaseWidget[]): string[] {
-  const names = widgets
-    .slice(0, MAX_SHAPED_ELEMENTS)
-    .map((widget) => widget.name)
+  const names: string[] = []
+  let usedChars = 0
+  for (const widget of widgets.slice(0, MAX_SHAPED_ELEMENTS)) {
+    if (usedChars + widget.name.length > MAX_DIAGNOSTIC_LIST_CHARS) break
+    names.push(widget.name)
+    usedChars += widget.name.length
+  }
   const omitted = widgets.length - names.length
   if (omitted > 0) names.push(`+${omitted}`)
   return names

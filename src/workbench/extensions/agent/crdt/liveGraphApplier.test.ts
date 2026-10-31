@@ -263,11 +263,15 @@ class TestDefinedSource extends LGraphNode {
   }
 }
 
+const TEST_OVERFLOW_LONG_TYPE =
+  'TestOverflowWidgetsWithAVeryLongButValidClassNameForDynamicInputsUsedInDiagnostics'
+
 const CATALOG: WidgetCatalog = {
   types: {
     TestSource: { widget_order: ['steps'] },
     TestDefinedSource: { widget_order: [] },
     TestOverflowWidgets: { widget_order: ['known'] },
+    [TEST_OVERFLOW_LONG_TYPE]: { widget_order: ['known'] },
     TestPlainWidgets: { widget_order: ['known'] },
     TestRecordRestore: { widget_order: ['known'] },
     TestGrowingWidgets: { widget_order: ['mode'] },
@@ -336,6 +340,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestDefinedSource', TestDefinedSource)
   LiteGraph.registerNodeType('TestOverflowWidgets', TestOverflowWidgets)
+  LiteGraph.registerNodeType(TEST_OVERFLOW_LONG_TYPE, TestOverflowWidgets)
   LiteGraph.registerNodeType('TestPlainWidgets', TestPlainWidgets)
   LiteGraph.registerNodeType('TestRecordRestore', TestRecordRestore)
   LiteGraph.registerNodeType('TestGrowingWidgets', TestGrowingWidgets)
@@ -511,6 +516,51 @@ describe('LiveGraphApplier', () => {
       ...Array.from({ length: 14 }, (_, index) => `wide_${index}`),
       '+6'
     ])
+  })
+
+  it('keeps type and name intact when long widget names fill both diagnostic lists', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: TEST_OVERFLOW_LONG_TYPE,
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 42]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    if (!node) throw new Error('missing live node')
+    for (let index = 0; index < 20; index++) {
+      node.addWidget(
+        'number',
+        `model.reference_images.image_${index}.control_after_generate`,
+        index,
+        () => {}
+      )
+    }
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('_extra_50', 99)
+    })
+
+    const [, options] = vi
+      .mocked(reportError)
+      .mock.calls.find(
+        ([error]) =>
+          error instanceof Error &&
+          error.message ===
+            `Node 1 (${TEST_OVERFLOW_LONG_TYPE}) has no widget '_extra_50'`
+      ) ?? [undefined, undefined]
+    expect(options?.context?.type).toBe(TEST_OVERFLOW_LONG_TYPE)
+    expect(options?.context?.name).toBe('_extra_50')
+    expect(options?.context?.availableWidgetNames).not.toContain('')
+    expect(options?.context?.serializableWidgetNames).not.toContain('')
   })
 
   /**
