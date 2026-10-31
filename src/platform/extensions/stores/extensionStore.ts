@@ -197,7 +197,14 @@ export const useExtensionStore = defineStore('extension', () => {
   async function setExtensionPathEnabled(
     path: string,
     enabled: boolean
-  ): Promise<'saved' | 'unchanged' | 'refused' | 'unconfirmed' | undefined> {
+  ): Promise<
+    | 'saved'
+    | 'unchanged'
+    | 'refused'
+    | 'indeterminate'
+    | 'unconfirmed'
+    | undefined
+  > {
     if (isSavingExtensionPaths.value) return
 
     const previousDisabledPaths = getCurrentDisabledExtensionPaths()
@@ -211,7 +218,7 @@ export const useExtensionStore = defineStore('extension', () => {
         'Comfy.Extension.DisabledPacks',
         nextDisabledPaths
       )
-      if (result.status === 'refused') {
+      if (result.status === 'refused' || result.status === 'indeterminate') {
         const reason = result.statusText || 'Request failed'
         reportError(
           new Error(
