@@ -5977,6 +5977,45 @@ describe('AgentPanelRoot workflow binding', () => {
       }
     )
 
+    it('puts the draft back when App Mode releases the hold in the update that closes the panel', async () => {
+      Object.assign(useAgentPanelStore(), { enabled: true, isOpen: true })
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      const settleSubmission = vi.spyOn(
+        useAgentComposerStore(),
+        'settleSubmission'
+      )
+      const { unmount } = renderWithSelectedTarget()
+      await sendHeldByCoach('build me a workflow')
+      const stopCloseOnAppMode = watch(
+        () => canvasStore.linearMode,
+        () => {
+          useAgentPanelStore().close('close_button')
+          unmount()
+        },
+        { flush: 'post' }
+      )
+
+      try {
+        canvasStore.linearMode = true
+
+        await waitFor(() =>
+          expect(settleSubmission).toHaveBeenCalledWith(
+            expect.any(Number),
+            false
+          )
+        )
+      } finally {
+        stopCloseOnAppMode()
+      }
+      expect(bodies).toHaveLength(0)
+      renderWithSelectedTarget()
+      expect(await screen.findByRole('textbox')).toHaveTextContent(
+        'build me a workflow'
+      )
+      expect(bodies).toHaveLength(0)
+    })
+
     it('puts the draft back when consent is cleared before App Mode releases the hold', async () => {
       makeTab('wf-42')
       const bodies = mockMessagesEndpoint('wf-42')
