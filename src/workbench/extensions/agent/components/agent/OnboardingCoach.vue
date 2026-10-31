@@ -111,7 +111,7 @@ watch(visible, (isVisible) => {
 function reportStep(action: AgentOnboardingAction): void {
   useTelemetry()?.trackAgentOnboardingStep({
     step: index.value + 1,
-    card: steps[index.value].card,
+    card: step.value.card,
     total: steps.length,
     action
   })
