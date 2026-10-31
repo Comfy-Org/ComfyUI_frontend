@@ -35,7 +35,7 @@ import type {
 import {
   zAgentAdmissionError,
   zAgentTurnAccepted,
-  zAgentWsEvent
+  zAgentWsEvent,toTurnId
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   AgentApiError,
@@ -993,6 +993,14 @@ describe('useAgentSession (v1 composition root)', () => {
           state: 'done'
         }
       ]
+    })
+
+    conversation.reconcileSettledTurn(
+      { threadId: 'th-1', messageId: toTurnId('msg-1') },
+      [{ type: 'text', text: 'a later read', state: 'done' }]
+    )
+    expect(session.entries.value.at(-1)).toMatchObject({
+      parts: [{ type: 'thinking', text: 'live after reload' }]
     })
   })
 

@@ -2484,6 +2484,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
         })
     } finally {
       clearTimeout(deadline)
+      if (
+        generation === sessionGeneration &&
+        recoveringTurns.get(key) === state
+      )
+        conversationStore.reconcileSettledTurn(turn, undefined)
       finishRecovery(key, recovery, state, turn)
       recoveryPendingAskObservations.delete(key)
       recoveryThreadMissingCounts.delete(key)
