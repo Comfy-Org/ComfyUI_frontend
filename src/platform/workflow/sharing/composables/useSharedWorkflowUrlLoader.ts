@@ -1,18 +1,14 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { usePreservedQueryDeepLink } from '@/platform/navigation/composables/usePreservedQueryDeepLink'
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
-import {
-  clearPreservedQuery,
-  hydratePreservedQuery,
-  mergePreservedQueryIntoQuery
-} from '@/platform/navigation/preservedQueryManager'
+import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { isValidShareId } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
@@ -37,8 +33,6 @@ type OpeningAction = Exclude<DialogResult['action'], 'cancel'>
 const OPEN_SHARED_WORKFLOW_DIALOG_KEY = 'open-shared-workflow'
 
 export function useSharedWorkflowUrlLoader() {
-  const route = useRoute()
-  const router = useRouter()
   const toast = useToast()
   const { t } = useI18n()
   const workflowShareService = useWorkflowShareService()
@@ -48,30 +42,10 @@ export function useSharedWorkflowUrlLoader() {
   const { isLoggedIn } = useCurrentUser()
   const { mode, isAppMode } = useAppMode()
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
-
-  async function ensureShareQueryFromIntent() {
-    hydratePreservedQuery(SHARE_NAMESPACE)
-    const mergedQuery = mergePreservedQueryIntoQuery(
-      SHARE_NAMESPACE,
-      route.query
-    )
-
-    if (mergedQuery) {
-      await router.replace({ query: mergedQuery })
-    }
-
-    return mergedQuery ?? route.query
-  }
-
-  function cleanupUrlParams() {
-    const newQuery = { ...route.query }
-    delete newQuery.share
-    void router.replace({ query: newQuery })
-  }
+  const deepLink = usePreservedQueryDeepLink(SHARE_NAMESPACE)
 
   function clearShareIntent() {
-    cleanupUrlParams()
-    clearPreservedQuery(SHARE_NAMESPACE)
+    deepLink.strip()
   }
 
   function showOpenSharedWorkflowDialog(
@@ -112,14 +86,13 @@ export function useSharedWorkflowUrlLoader() {
   }
 
   async function loadSharedWorkflowFromUrl(): Promise<SharedWorkflowUrlLoadStatus> {
-    const query = await ensureShareQueryFromIntent()
-    const shareParam = query.share
+    const shareParam = await deepLink.hydrateAndRead()
 
-    if (shareParam == null) {
+    if (shareParam === undefined) {
       return 'not-present'
     }
 
-    if (typeof shareParam !== 'string') {
+    if (shareParam === null) {
       clearShareIntent()
       return 'not-present'
     }

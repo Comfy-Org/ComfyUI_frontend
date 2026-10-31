@@ -44,6 +44,12 @@
         "patterns": ["src/platform/keybindings/composables/useShortcutsTab.ts"]
       },
       {
+        "name": "navigation/application/public",
+        "patterns": [
+          "src/platform/navigation/composables/usePreservedQueryDeepLink.ts"
+        ]
+      },
+      {
         "name": "node-definition/domain/public",
         "patterns": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"]
       },
@@ -2312,6 +2318,7 @@
       {
         "name": "navigation/application",
         "patterns": [
+          "src/platform/navigation/composables/**",
           "src/platform/navigation/unmatchedRoute.ts",
           "src/platform/navigation/unmatchedRoute.test.ts"
         ]
@@ -4122,17 +4129,20 @@
         "allow": [
           "account/presentation/public",
           "ingest-api/domain/public",
+          "navigation/application/public",
           "server-facts/domain/public",
           "account/presentation",
           "billing/domain",
           "billing/application",
           "billing/presentation",
+          "navigation/application",
           "workspace/domain",
           "workspace/application",
           "workspace/presentation",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/presentation/outer-1",
+          "navigation/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4144,6 +4154,7 @@
           "account/integration/public",
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
+          "navigation/application/public",
           "server-facts/domain/public",
           "account/presentation",
           "account/integration",
@@ -4152,6 +4163,9 @@
           "billing/infrastructure",
           "billing/presentation",
           "billing/integration",
+          "navigation/application",
+          "navigation/infrastructure",
+          "navigation/integration",
           "workspace/domain",
           "workspace/application",
           "workspace/infrastructure",
@@ -4161,6 +4175,7 @@
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
           "billing/presentation/outer-1",
+          "navigation/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4234,6 +4249,16 @@
         ]
       },
       {
+        "from": "navigation/application/public",
+        "allow": [
+          "navigation/application/public",
+          "navigation/application",
+          "navigation/infrastructure",
+          "navigation/domain/outer-1",
+          "unclassified"
+        ]
+      },
+      {
         "from": "node-definition/domain/public",
         "allow": [
           "node-definition/domain/public",
@@ -4276,17 +4301,20 @@
         "allow": [
           "account/presentation/public",
           "ingest-api/domain/public",
+          "navigation/application/public",
           "server-facts/domain/public",
           "account/presentation",
           "billing/domain",
           "billing/application",
           "billing/presentation",
+          "navigation/application",
           "workspace/domain",
           "workspace/application",
           "workspace/presentation",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/presentation/outer-1",
+          "navigation/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4298,6 +4326,7 @@
           "account/integration/public",
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
+          "navigation/application/public",
           "server-facts/domain/public",
           "account/presentation",
           "account/integration",
@@ -4306,6 +4335,9 @@
           "billing/infrastructure",
           "billing/presentation",
           "billing/integration",
+          "navigation/application",
+          "navigation/infrastructure",
+          "navigation/integration",
           "workspace/domain",
           "workspace/application",
           "workspace/infrastructure",
@@ -4315,6 +4347,7 @@
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
           "billing/presentation/outer-1",
+          "navigation/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -6859,6 +6892,7 @@
       {
         "from": "navigation/application",
         "allow": [
+          "navigation/application/public",
           "navigation/application",
           "navigation/infrastructure",
           "navigation/domain/outer-1",
@@ -6868,6 +6902,7 @@
       {
         "from": "navigation/infrastructure",
         "allow": [
+          "navigation/application/public",
           "navigation/application",
           "navigation/infrastructure",
           "navigation/domain/outer-1",
@@ -6877,6 +6912,7 @@
       {
         "from": "navigation/integration",
         "allow": [
+          "navigation/application/public",
           "navigation/application",
           "navigation/infrastructure",
           "navigation/integration",
@@ -8323,8 +8359,12 @@
       {
         "from": "workflow-sharing/application",
         "allow": [
+          "navigation/application/public",
+          "navigation/application",
+          "navigation/infrastructure",
           "workflow-sharing/application",
           "workflow-sharing/infrastructure",
+          "navigation/domain/outer-1",
           "workflow-sharing/application/outer-1",
           "workflow-sharing/domain/outer-2",
           "unclassified"
@@ -8333,8 +8373,12 @@
       {
         "from": "workflow-sharing/infrastructure",
         "allow": [
+          "navigation/application/public",
+          "navigation/application",
+          "navigation/infrastructure",
           "workflow-sharing/application",
           "workflow-sharing/infrastructure",
+          "navigation/domain/outer-1",
           "workflow-sharing/application/outer-1",
           "workflow-sharing/domain/outer-2",
           "unclassified"
@@ -8343,8 +8387,11 @@
       {
         "from": "workflow-sharing/presentation",
         "allow": [
+          "navigation/application/public",
+          "navigation/application",
           "workflow-sharing/application",
           "workflow-sharing/presentation",
+          "navigation/domain/outer-1",
           "workflow-sharing/application/outer-1",
           "workflow-sharing/domain/outer-2",
           "unclassified"
@@ -8400,6 +8447,7 @@
           "ingest-api/domain/public",
           "server-facts/domain/public",
           "workspace/domain",
+          "navigation/domain/outer-1",
           "unclassified"
         ]
       },
@@ -8408,10 +8456,14 @@
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
+          "navigation/application/public",
           "server-facts/domain/public",
+          "navigation/application",
+          "navigation/infrastructure",
           "workspace/domain",
           "workspace/application",
           "workspace/infrastructure",
+          "navigation/domain/outer-1",
           "unclassified"
         ]
       },
@@ -8420,10 +8472,14 @@
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
+          "navigation/application/public",
           "server-facts/domain/public",
+          "navigation/application",
+          "navigation/infrastructure",
           "workspace/domain",
           "workspace/application",
           "workspace/infrastructure",
+          "navigation/domain/outer-1",
           "unclassified"
         ]
       },
@@ -8431,10 +8487,13 @@
         "from": "workspace/presentation",
         "allow": [
           "ingest-api/domain/public",
+          "navigation/application/public",
           "server-facts/domain/public",
+          "navigation/application",
           "workspace/domain",
           "workspace/application",
           "workspace/presentation",
+          "navigation/domain/outer-1",
           "unclassified"
         ]
       },
@@ -8443,12 +8502,17 @@
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
+          "navigation/application/public",
           "server-facts/domain/public",
+          "navigation/application",
+          "navigation/infrastructure",
+          "navigation/integration",
           "workspace/domain",
           "workspace/application",
           "workspace/infrastructure",
           "workspace/presentation",
           "workspace/integration",
+          "navigation/domain/outer-1",
           "unclassified"
         ]
       },
@@ -9757,8 +9821,12 @@
       {
         "from": "workflow-sharing/application/outer-1",
         "allow": [
+          "navigation/application/public",
+          "navigation/application",
+          "navigation/infrastructure",
           "workflow-sharing/application",
           "workflow-sharing/infrastructure",
+          "navigation/domain/outer-1",
           "workflow-sharing/application/outer-1",
           "workflow-sharing/domain/outer-2",
           "unclassified"
@@ -9971,7 +10039,11 @@
       },
       {
         "from": "workflow-sharing/domain/outer-2",
-        "allow": ["workflow-sharing/domain/outer-2", "unclassified"]
+        "allow": [
+          "navigation/domain/outer-1",
+          "workflow-sharing/domain/outer-2",
+          "unclassified"
+        ]
       },
       {
         "from": "cloud/application/outer-3",
@@ -10009,6 +10081,7 @@
           "ingest-api/infrastructure/public",
           "keybindings/application/public",
           "keybindings/integration/public",
+          "navigation/application/public",
           "node-definition/domain/public",
           "remote-config/infrastructure/public",
           "server-facts/domain/public",
