@@ -39,9 +39,8 @@ def row(pack: str, **over: object) -> dict:
         'driveTypes': {},
         'hookErrors': [],
         'ops': {'load': {'err': '', 'sig': '{}', 'depr': '', 'desync': ''}},
-        # Telemetry channels. Never gated on their CONTENT, but their presence
-        # is part of the row contract: see EXPECTED_ROW_KEYS.
-        'formAgreement': {'graph': {}, 'driven': {}, 'needsForm': []},
+        'formAgreement': {},
+        'formProof': {'graph': {}, 'driven': {}, 'needsForm': []},
         'registryForms': {'histogram': {}, 'refusals': {}, 'digest': ''},
     }
     base.update(over)
@@ -215,11 +214,7 @@ class HarnessGates(unittest.TestCase):
         self.assertIsNone(verdict.metrics)
 
     def test_a_telemetry_channel_that_stops_firing_is_withheld(self) -> None:
-        # The widget-form channels never gate on their content -- a refusal is
-        # the predicate working. But a channel that silently stopped being
-        # written would read as a clean population and make every green run
-        # since worth less than it looked, so its ABSENCE withholds.
-        for key in ('formAgreement', 'registryForms'):
+        for key in ('formAgreement', 'formProof', 'registryForms'):
             rows = population()
             for r in rows:
                 del r[key]
@@ -233,12 +228,9 @@ class HarnessGates(unittest.TestCase):
     def test_a_refused_form_verdict_does_not_move_the_population_verdict(
         self,
     ) -> None:
-        # The counterpart: every form refusal firing on every pack must leave
-        # the gated verdict PASS. A floor here would fail the run for the
-        # predicate declining exactly the shapes it was built to decline.
         rows = population()
         for r in rows:
-            r['formAgreement'] = {
+            r['formProof'] = {
                 'graph': {'KSampler#1': 'values_replaced'},
                 'driven': {'X': '!serialize_threw'},
                 'needsForm': ['KSampler#1'],

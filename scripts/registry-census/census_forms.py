@@ -13,7 +13,7 @@ script exists to make impossible:
                      class's verdict contributes nothing, which is the answer
                      for almost all of them, and the ones that do are named.
 
-Plus the pack-local channel the first census had: `formAgreement`, over the
+Plus the pack-local predicate channel: `formProof`, over the
 battery's standard-workflow nodes and each pack's own frontend-registered node
 types.
 
@@ -37,14 +37,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 BASELINE_PACK = '_registry-baseline'
 PIN = os.path.join(HERE, 'object_info.pin.json')
 
-# Every verdict `matrix_runner.ts` can write. Listed so a verdict the predicate
-# renames shows up as an unknown key instead of silently vanishing from a
-# percentage, and so a refusal that fired ZERO times is still printed -- a zero
-# is a finding, and an absent row reads as an unasked question.
 PREDICATE_REFUSALS = (
     'class_may_rewrite_payload',
     'replayed_serialization',
     'widgets_not_serialized',
+    'values_missing',
     'values_replaced',
     'values_not_positional',
     'length_mismatch',
@@ -78,7 +75,7 @@ def read_rows(rows_dir: str, baseline_path: str = ''):
         if row.get('incomplete'):
             stubs += 1
             continue
-        if 'formAgreement' not in row and 'registryForms' not in row:
+        if 'formProof' not in row and 'registryForms' not in row:
             missing += 1
             continue
         packs.append(row)
@@ -192,10 +189,6 @@ def report_census_phase_health(packs, measured):
     ]
     print(f'  packs that reassigned a prototype serialization entry point:'
           f' {len(patched)} {sorted(patched)[:10]}')
-
-    # The population a form would RESCUE: object-shaped values, stored whole and
-    # opaquely today, round-tripping but not name-addressable, and dropped
-    # outright by the follower because it only accepts an array.
     needs = {
         r['pack']: r['registryForms']['needsForm']
         for r in packs
@@ -232,10 +225,6 @@ def pack_effect(baseline, packs):
         measured += 1
         if forms['digest'] == baseline['digest']:
             agreeing += 1
-            continue
-        # Signed, and only where the verdict differs: a pack that merely refuses
-        # the same classes the baseline refuses has changed nothing, and a pack
-        # that makes a refused class provable has moved the number too.
         moves: collections.Counter = collections.Counter()
         theirs = forms['refusals']
         for cls in set(base) | set(theirs):
@@ -278,13 +267,13 @@ def report_pack_effect(per_pack, sample=12):
 
 
 def report_pack_local(packs):
-    """`formAgreement`: the battery's workflow nodes and packs' own types."""
+    """`formProof`: the battery's workflow nodes and packs' own types."""
     graph = collections.Counter()
     driven = collections.Counter()
     failed, needs_form = [], []
     pack_refusals = collections.defaultdict(set)
     for row in packs:
-        agreement = row.get('formAgreement')
+        agreement = row.get('formProof')
         if not agreement:
             continue
         if agreement.get('err'):
@@ -301,7 +290,7 @@ def report_pack_local(packs):
             needs_form.append(row['pack'])
 
     print('\n' + '=' * 74)
-    print('PACK-LOCAL CHANNEL  (formAgreement, as the first census measured it)')
+    print('PACK-LOCAL PREDICATE CHANNEL  (formProof)')
     print('=' * 74)
     print(f'  measurement failed on {len(failed)} packs {failed[:5]}')
     table('STANDARD-WORKFLOW NODES, post-battery', graph)

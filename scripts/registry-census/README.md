@@ -178,7 +178,7 @@ it was built to decline, so a floor would fail the run for correct behaviour.
 | --------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------ |
 | `registryForms` on `_registry-baseline` | every class in `object_info.shape.json`, no pack code                                 | `vitest.census.config.mts`, run once |
 | `registryForms` on a pack row           | the same sweep inside that pack's process; read as a **delta** against the baseline   | every pack row                       |
-| `formAgreement` on a pack row           | the battery's standard-workflow nodes, and the pack's own `registerCustomNodes` types | every pack row                       |
+| `formProof` on a pack row               | the battery's standard-workflow nodes, and the pack's own `registerCustomNodes` types | every pack row                       |
 
 ```bash
 # 1. the baseline: every registry class, no pack code (~8s)

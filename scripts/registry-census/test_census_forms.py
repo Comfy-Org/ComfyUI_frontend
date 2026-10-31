@@ -61,10 +61,8 @@ def report(rows):
 
 class ReadRows(unittest.TestCase):
     def test_baseline_is_not_counted_as_a_pack(self):
-        # It shares the output directory with pack rows. Counting it would
-        # inflate every per-pack denominator by one.
         rows = [row(cf.BASELINE_PACK, registryForms=baseline()),
-                row('p', registryForms=baseline(), formAgreement={'graph': {}})]
+                row('p', registryForms=baseline(), formProof={'graph': {}})]
         with rows_dir(rows) as d:
             b, packs, stubs, missing = cf.read_rows(d)
         self.assertIsNotNone(b)
@@ -82,7 +80,7 @@ class RegistryDelta(unittest.TestCase):
     def test_a_pack_that_changes_nothing_is_reported_as_agreeing(self):
         text, _, _ = report([
             row(cf.BASELINE_PACK, registryForms=baseline()),
-            row('quiet', registryForms=baseline(), formAgreement={'graph': {}}),
+            row('quiet', registryForms=baseline(), formProof={'graph': {}}),
         ])
         self.assertIn('that changed NO class verdict:        1', text)
         self.assertIn('no pack changed any class verdict.', text)
@@ -96,29 +94,24 @@ class RegistryDelta(unittest.TestCase):
         )
         text, _, _ = report([
             row(cf.BASELINE_PACK, registryForms=baseline()),
-            row('breaker', registryForms=broken, formAgreement={'graph': {}}),
+            row('breaker', registryForms=broken, formProof={'graph': {}}),
         ])
         self.assertIn('provable -> values_replaced', text)
         self.assertIn('breaker', text)
 
     def test_a_pack_that_makes_a_refused_class_provable_is_also_named(self):
-        # The delta has to be signed. A pack whose shim gives a class widgets
-        # it did not have moves the number too, and reading only new refusals
-        # would miss it.
         fixed = baseline(digest='other', refusals={},
                          histogram={'provable': 3})
         text, _, _ = report([
             row(cf.BASELINE_PACK, registryForms=baseline()),
-            row('fixer', registryForms=fixed, formAgreement={'graph': {}}),
+            row('fixer', registryForms=fixed, formProof={'graph': {}}),
         ])
         self.assertIn('widgets_not_serialized -> provable', text)
         self.assertIn('fixer', text)
 
     def test_missing_baseline_says_so_rather_than_reporting_zero(self):
-        # A report with no baseline could otherwise print "no pack changed any
-        # class verdict", which is true and completely misleading.
         text, _, _ = report([
-            row('p', registryForms=baseline(), formAgreement={'graph': {}})
+            row('p', registryForms=baseline(), formProof={'graph': {}})
         ])
         self.assertIn('NO BASELINE ROW', text)
 
@@ -130,7 +123,7 @@ class RegistryDelta(unittest.TestCase):
         )
         text, _, _ = report([
             row(cf.BASELINE_PACK, registryForms=baseline()),
-            row('patcher', registryForms=patched, formAgreement={'graph': {}}),
+            row('patcher', registryForms=patched, formProof={'graph': {}}),
         ])
         self.assertIn("reassigned a prototype serialization entry point: 1", text)
         self.assertIn('1 distinct  patcher', text)
@@ -138,23 +131,19 @@ class RegistryDelta(unittest.TestCase):
 
 class Tables(unittest.TestCase):
     def test_every_predicate_refusal_is_printed_even_at_zero(self):
-        # A refusal that fired zero times is a FINDING. An absent row reads as
-        # a question nobody asked.
         text, _, _ = report([
             row(cf.BASELINE_PACK, registryForms=baseline()),
             row('p', registryForms=baseline(),
-                formAgreement={'graph': {'K#1': 'provable'}, 'driven': {}}),
+                formProof={'graph': {'K#1': 'provable'}, 'driven': {}}),
         ])
         for refusal in cf.PREDICATE_REFUSALS:
             self.assertIn(refusal, text)
 
     def test_an_unknown_verdict_is_flagged_not_absorbed(self):
-        # If the predicate renames a refusal, this script must not quietly
-        # fold the new string into a percentage.
         text, _, _ = report([
             row(cf.BASELINE_PACK, registryForms=baseline()),
             row('p', registryForms=baseline(),
-                formAgreement={'graph': {'K#1': 'brand_new_refusal'},
+                formProof={'graph': {'K#1': 'brand_new_refusal'},
                                'driven': {}}),
         ])
         self.assertIn('UNKNOWN verdict', text)
@@ -164,7 +153,7 @@ class Tables(unittest.TestCase):
         text, _, _ = report([
             row(cf.BASELINE_PACK, registryForms=baseline()),
             row('sad', registryForms=baseline(digest='x', err='boom'),
-                formAgreement={'err': 'boom'}),
+                formProof={'err': 'boom'}),
         ])
         self.assertIn('measurement failed on 1 packs', text)
 
