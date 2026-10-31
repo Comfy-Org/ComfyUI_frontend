@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { i18n } from '@/i18n'
-
 import {
   normalizeStarterPromptProfile,
   selectStarterPrompts
@@ -11,8 +9,6 @@ const videoBeginner = {
   intent: 'video',
   experience: 'new'
 } as const
-
-const translate = (key: string) => i18n.global.t(key, {}, { locale: 'en' })
 
 describe('starter prompt personalization', () => {
   it.for([
@@ -60,10 +56,8 @@ describe('starter prompt personalization', () => {
     expect(
       selectStarterPrompts({
         strategy,
-        locale: 'en',
         profile: videoBeginner,
-        canvasPresence: 'present',
-        translate
+        canvasPresence: 'present'
       }).prompts
     ).toEqual(expected)
   })
@@ -71,14 +65,12 @@ describe('starter prompt personalization', () => {
   it('uses focus only for the discover slot', () => {
     const selection = selectStarterPrompts({
       strategy: 'profile',
-      locale: 'en',
       profile: {
         intent: 'workflows',
         experience: 'pro',
         focus: 'custom_nodes'
       },
-      canvasPresence: 'empty',
-      translate
+      canvasPresence: 'empty'
     })
 
     expect(selection.prompts).toEqual([
@@ -115,13 +107,11 @@ describe('starter prompt personalization', () => {
   it('ignores typed focus when the intent does not support it', () => {
     const selection = selectStarterPrompts({
       strategy: 'profile',
-      locale: 'en',
       profile: {
         intent: 'images',
         focus: 'custom_nodes'
       },
-      canvasPresence: 'empty',
-      translate
+      canvasPresence: 'empty'
     })
 
     expect(selection.prompts[3]).toBe(
@@ -132,12 +122,17 @@ describe('starter prompt personalization', () => {
   it('falls back as one English catalog when the locale is unavailable', () => {
     const selection = selectStarterPrompts({
       strategy: 'static',
-      locale: 'xx-missing',
       profile: null,
-      canvasPresence: 'empty',
-      translate
+      canvasPresence: 'empty'
     })
 
+    expect(selection.prompts).toEqual([
+      'Create a product image from a text prompt',
+      'Build an image-to-video workflow',
+      'Explain how a ComfyUI workflow works',
+      'Find the best workflow for a specific task',
+      'Diagnose and fix errors in a workflow'
+    ])
     expect(selection.locale).toBe('en')
     expect(selection.personalizationApplied).toBe(false)
   })
