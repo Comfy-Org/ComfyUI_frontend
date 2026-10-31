@@ -1,7 +1,7 @@
-import { zJobExecutionMetaEntry } from '@comfyorg/ingest-types/zod'
 import { Semaphore, delay, partition, withTimeout } from 'es-toolkit'
 
 import { t } from '@/i18n'
+import { zJobExecutionMetaEntry } from '@comfyorg/api-client/jobTypes'
 import type { ExecutionError, JobDetail } from '@comfyorg/api-client/jobTypes'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -46,6 +46,14 @@ function unknownExecutionError(): ExecutionError {
 /**
  * Returns the handler for the `reconnected` api event.
  */
+function ownDisplayNode(node: string, metaEntry: unknown) {
+  const entry = zJobExecutionMetaEntry.safeParse(metaEntry)
+  if (!entry.success) return undefined
+  const { node_id: metaNode = node, display_node: displayNode } = entry.data
+  // A cached output can carry the metadata of the node that first ran it.
+  return metaNode === node ? displayNode : undefined
+}
+
 export function useReconnectQueueRefresh() {
   const queueStore = useQueueStore()
   const executionStore = useExecutionStore()
@@ -92,10 +100,8 @@ export function useReconnectQueueRefresh() {
     }
     const displayNodes = new Map<string, string>()
     for (const [node, entry] of Object.entries(meta)) {
-      const parsed = zJobExecutionMetaEntry.safeParse(entry)
-      if (parsed.success && parsed.data.display_node) {
-        displayNodes.set(node, parsed.data.display_node)
-      }
+      const displayNode = ownDisplayNode(node, entry)
+      if (displayNode) displayNodes.set(node, displayNode)
     }
     return displayNodes
   }
@@ -165,13 +171,13 @@ export function useReconnectQueueRefresh() {
       output,
       displayNode: displayNodes?.get(node) ?? node
     }))
-    // Replayed frames replace each other on a shared display node. A node's
-    // own output finishes after the nodes it expanded into, so it goes last.
-    const [expanded, own] = partition(
+    // Frames on one display node replace each other. ComfyUI sends a node's
+    // own output before the nodes it expanded into, so those replay last.
+    const [own, expanded] = partition(
       frames,
-      ({ node, displayNode }) => node !== displayNode
+      ({ node, displayNode }) => node === displayNode
     )
-    for (const { node, output, displayNode } of [...expanded, ...own]) {
+    for (const { node, output, displayNode } of [...own, ...expanded]) {
       api.dispatchCustomEvent('executed', {
         node,
         display_node: displayNode,
