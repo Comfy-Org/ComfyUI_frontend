@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "Рецепты:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (дополнение до 226 токенов)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (рекомендуется) или t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL или Music3 Qwen/RVQ",
+    "description": "Рецепты:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (заполнение до 226 токенов)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (рекомендуется) или t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL или Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
     "display_name": "Загрузить CLIP",
     "inputs": {
       "clip_name": {
@@ -2953,6 +2953,24 @@
       },
       "model_creativity": {
         "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalVideoUpscaleNode": {
+    "description": "Увеличивает разрешение видео с помощью Crystal Video Upscaler от Clarity AI — высокоточного апскейлера, сохраняющего верность исходному материалу. Вывод ограничен 9 мегапикселями на кадр (например, 4000x2250), а длинные клипы возвращаются в более низком разрешении. Клипы выше 30 кадров/с стоят в 2 раза дороже, выше 60 кадров/с — в 3 раза дороже и так далее.",
+    "display_name": "Апскейл видео Clarity AI Crystal",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Используемая модель."
       },
       "model_scale_factor": {
         "name": "scale_factor"
@@ -5701,7 +5719,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "Преобразует текст в речь. Поддерживает указания эмоций в тексте ([happy], [whispering] в s2.1-pro; (happy) в s1) и диалоги с несколькими говорящими через теги {'@'}Voice1/{'@'}Voice2 при подключении нескольких голосов.",
+    "description": "Преобразует текст в речь. Поддерживает подсказки эмоций в тексте ([happy], [whispering] для s2.1-pro; (happy) для s1), [указания] на естественном языке и теги слов `<whisper>...</whisper>` для drama-3, а также диалоги с несколькими говорящими через теги {'@'}Voice1/{'@'}Voice2 при подключении нескольких голосов.",
     "display_name": "Fish Audio: текст в речь",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +5911,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "Создаёт изображение с помощью FLUX 3 по промпту или редактирует и объединяет до 10 референсных изображений. Ссылайтесь на референсы в промпте как на изображение 1, изображение 2 и так далее.",
-    "display_name": "Flux 3 Изображение",
+    "description": "Создаёт изображение с помощью FLUX 3 Image по запросу либо редактирует и объединяет до 10 эталонных изображений. Ссылайтесь на эталонные изображения в запросе как image 1, image 2 и так далее.",
+    "display_name": "FLUX 3 Image",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5988,6 +6006,26 @@
       }
     }
   },
+  "Flux3LayoutPrompt": {
+    "description": "Добавляет поля из Create Bounding Boxes в запрос FLUX 3 Image в качестве таблицы макета.",
+    "display_name": "Запрос макета FLUX 3 Image",
+    "inputs": {
+      "element": {
+        "name": "element",
+        "tooltip": "Элементы запроса из узла Create Bounding Boxes. Палитры цветов не используются — опишите цвета в описании."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текст запроса. Сошлитесь на поле N как <obj_N>, чтобы связать с ним слова."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "description": "Генерирует видео с синхронизированным звуком по текстовому prompt через FLUX 3.",
     "display_name": "Flux 3: Текст в видео",
@@ -6067,7 +6105,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "Клип для продолжения."
+        "tooltip": "Клип для продолжения. Клипы с площадью более 3840x2160 пикселей уменьшаются, чтобы соответствовать ограничению."
       }
     },
     "outputs": {
@@ -7223,6 +7261,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "Возвращает длину, число аудиоканалов и размер пакета аудиолатента.",
+    "display_name": "Получить размер аудиолатента",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Аудиолатент или аудио-/видеолатент для проверки."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "length",
+        "tooltip": "Длина аудиолатента."
+      },
+      "1": {
+        "name": "audio_channels",
+        "tooltip": "Число аудиоканалов. Латенты без измерения аудиоканалов имеют один канал."
+      },
+      "2": {
+        "name": "batch_size",
+        "tooltip": "Число латентов в пакете."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "Извлекает параметры IC-LoRA из метаданных safetensors модели, загруженной через LoRA, и выводит их для LTXVAddGuide (например, reference_downscale_factor).",
     "display_name": "Получить параметры IC-LoRA",
@@ -7275,6 +7337,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "Возвращает ширину, высоту, число кадров и размер пакета латента изображения или видео.",
+    "display_name": "Получить размер латента изображения/видео",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Латент изображения или видео для проверки."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "width",
+        "tooltip": "Ширина латента."
+      },
+      "1": {
+        "name": "height",
+        "tooltip": "Высота латента."
+      },
+      "2": {
+        "name": "frames",
+        "tooltip": "Число кадров латента. Латенты изображений имеют один кадр."
+      },
+      "3": {
+        "name": "batch_size",
+        "tooltip": "Число латентов в пакете."
       }
     }
   },
@@ -8046,6 +8136,67 @@
       }
     }
   },
+  "HeyGenVoiceCloneNode": {
+    "description": "Клонируйте голос по записи одного говорящего с помощью HeyGen Voice 1.0. Подключите voice_id к HeyGen Voice 1.0 Text to Speech или к custom_voice_id в HeyGen Avatar Video и HeyGen Talking Photo.",
+    "display_name": "Мгновенное клонирование голоса HeyGen 1.0",
+    "inputs": {
+      "audio": {
+        "name": "аудио",
+        "tooltip": "Запись одного говорящего. Используйте не менее 10 секунд чёткой речи; используются только первые 3 минуты."
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "language": {
+        "name": "язык",
+        "tooltip": "Язык, на котором говорят в записи."
+      },
+      "remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Измените seed, чтобы снова клонировать запись; каждый клон будет иметь слегка отличающийся голос."
+      },
+      "similarity": {
+        "name": "сходство",
+        "tooltip": "Насколько точно голос соответствует записи."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "Озвучивайте текст голосом, клонированным с помощью HeyGen Voice 1.0 Instant Clone.",
+    "display_name": "HeyGen Voice 1.0: преобразование текста в речь",
+    "inputs": {
+      "model": {
+        "name": "модель",
+        "tooltip": "heygen-voice-1-turbo работает быстрее и стоит вдвое дешевле."
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "язык"
+      },
+      "model_text": {
+        "name": "текст"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "Усредняет выход модели по нескольким смещённым позициям сетки патчей на поздних этапах сэмплирования. Устраняет швы.",
     "display_name": "Сглаживание швов патчей HiDream-O1",
@@ -8106,6 +8257,33 @@
       },
       "1": {
         "name": "отрицательный",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "description": "Преобразуйте видео, используя новых персонажей, локации или стили из эталонных изображений, сохраняя движение, движение камеры и тайминг.",
+    "display_name": "Higgsfield Genjutsu: перенос движения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для использования."
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9263,6 +9441,28 @@
       },
       "rotation": {
         "name": "вращение"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "Расширяет яркость sRGB до HDR Rec.2020 HLG. Сохраняйте результат с выбранным цветовым пространством HDR. Альфа-канал сохраняется.",
+    "display_name": "Преобразовать SDR в HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "алгоритм",
+        "tooltip": "Рациональное расширение в стиле Lottes, смешанное с калиброванной монотонной кривой логарифмического усиления."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Изображения SDR в sRGB."
       }
     },
     "outputs": {
@@ -10563,6 +10763,41 @@
     "outputs": {
       "0": {
         "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "Редактируйте изображения с помощью Krea 3 или создавайте новое изображение из текста, если изображение не подключено.",
+    "display_name": "Изображение Krea 3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_precise_edit": {
+        "name": "точное_редактирование"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_thinking_mode": {
+        "name": "режим_размышления"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13162,6 +13397,83 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageControl": {
+    "description": "Добавляет область цвета и карты глубины для адаптера управления цветом/глубиной MOSS-Image, загруженного с помощью загрузчика LoRA.",
+    "display_name": "Управление цветом/глубиной MOSS-Image",
+    "inputs": {
+      "color_map": {
+        "name": "карта_цвета",
+        "tooltip": "По одному плоскому цвету для каждой области в выходном разрешении. Цвета служат только идентификаторами областей."
+      },
+      "depth_map": {
+        "name": "карта_глубины",
+        "tooltip": "Карта глубины в выходном разрешении: ближние области белые."
+      },
+      "end_percent": {
+        "name": "процент_окончания",
+        "tooltip": "Процент сэмплирования, на котором заканчивается управление. Раннее завершение сохраняет компоновку и глубину, а на остальных шагах формы становятся менее строгими."
+      },
+      "negative": {
+        "name": "негативный"
+      },
+      "positive": {
+        "name": "позитивный"
+      },
+      "start_percent": {
+        "name": "процент_начала",
+        "tooltip": "Процент сэмплирования, с которого начинается управление."
+      },
+      "strength": {
+        "name": "сила",
+        "tooltip": "Масштабирует вклад карт в токены изображения. 0.0 соответствует отсутствию карт, 1.0 — значению силы, использованному при обучении."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "позитивный",
+        "tooltip": null
+      },
+      "1": {
+        "name": "негативный",
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "Создаёт промпт компоновки MOSS-Image на основе промпта и рамок из «Создать ограничивающие рамки».",
+    "display_name": "Промпт компоновки MOSS-Image",
+    "inputs": {
+      "character_boxes": {
+        "name": "рамки_персонажей",
+        "tooltip": "Номера рамок объектов, которые следует пометить как персонажей, а не объекты, как отмечено в предпросмотре «Создать ограничивающие рамки», например «1, 3»."
+      },
+      "element": {
+        "name": "элемент",
+        "tooltip": "Элементы промпта из узла «Создать ограничивающие рамки». Описание является подписью рамки, а текстовые рамки также отображают свой текст."
+      },
+      "height": {
+        "name": "высота",
+        "tooltip": "Высота создаваемого изображения; рамки размещаются в его пикселях."
+      },
+      "prompt": {
+        "name": "промпт",
+        "tooltip": "Описание всего изображения."
+      },
+      "width": {
+        "name": "ширина",
+        "tooltip": "Ширина создаваемого изображения; рамки размещаются в его пикселях."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "промпт",
         "tooltip": null
       }
     }
@@ -18889,7 +19201,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Сколько рассуждений модель выполняет перед рисованием. Более высокие уровни улучшают детализацию и требуют больше токенов. Используется только моделями Arrow 2."
+        "tooltip": "Количество рассуждений, выполняемых моделью перед рисованием. Более высокие уровни улучшают детализацию и расходуют больше токенов."
       },
       "seed": {
         "name": "seed",
@@ -18977,7 +19289,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Сколько рассуждений модель выполняет перед рисованием. Более высокие уровни улучшают детализацию и требуют больше токенов. Используется только моделями Arrow 2."
+        "tooltip": "Количество рассуждений, выполняемых моделью перед рисованием. Более высокие уровни улучшают детализацию и расходуют больше токенов."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19836,6 +20148,42 @@
       }
     }
   },
+  "ReferenceMultiLatent": {
+    "description": "Кодирует референсные изображения и добавляет их латенты к позитивному и необязательному негативному кондиционированию для моделей редактирования.",
+    "display_name": "Установить референсный мульти-латент",
+    "inputs": {
+      "images": {
+        "name": "изображения"
+      },
+      "negative": {
+        "name": "негативный"
+      },
+      "positive": {
+        "name": "позитивный"
+      },
+      "resolution": {
+        "name": "разрешение"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Если vae не подключён, эталонные изображения игнорируются."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "позитивный",
+        "tooltip": null
+      },
+      "1": {
+        "name": "негативный",
+        "tooltip": "Возвращает позитивный выход, если негативное кондиционирование не подключено."
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "Первый эталонный latent, умноженный на 0.0, или пустой квадратный latent с выбранным разрешением."
+      }
+    }
+  },
   "ReferenceTimbreAudio": {
     "description": "Этот узел задаёт эталонное аудио для тембра (для ace step 1.5)",
     "display_name": "ReferenceTimbreAudio",
@@ -19950,7 +20298,7 @@
     "inputs": {
       "band": {
         "name": "полоса",
-        "tooltip": "Ширина узкой полосы в воксельных единицах. В режиме UDF также смещает поверхность."
+        "tooltip": "Ширина узкой полосы в единицах вокселей. В режиме udf также смещает поверхность; в режиме solid это радиус замыкания: изломы скругляются, а зазоры перекрываются на этом размере; поверхность располагается на полвокселя наружу."
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -19977,7 +20325,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf: устойчив к неаккуратному/немногообразному вводу. sdf: чистая единая поверхность с восстановлением острых деталей QEF (Quadratic Error Function), но требует согласованного порядка обхода."
+        "tooltip": "udf: устойчив к неаккуратным/немногообразным входным данным. sdf: чистая единая поверхность с восстановлением острых элементов с помощью QEF (Quadratic Error Function), но требует согласованной ориентации. solid: одно водонепроницаемое тело из неаккуратных входных данных: глобальный разрез графа внутри/снаружи (CelloCut) удаляет двойные оболочки и закрывает небольшие отверстия. Медленнее."
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"
