@@ -358,13 +358,17 @@ function useBillingContextInternal(): BillingContext {
     }
   }
 
-  // Passive reads do nothing while unknown; the watcher above re-initializes
-  // once the workspace type loads.
+  function deferFreshReadUntilRoutingKnown(
+    options?: BillingStatusReadOptions
+  ): void {
+    freshStatusReadOwed ||= options?.fresh === true
+  }
+
   async function fetchStatus(
     options?: BillingStatusReadOptions
   ): Promise<void> {
     if (type.value === 'unknown') {
-      freshStatusReadOwed ||= options?.fresh === true
+      deferFreshReadUntilRoutingKnown(options)
       return
     }
     return activeContext.value.fetchStatus(options)
