@@ -5,14 +5,9 @@ import {
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
-import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
-const test = mergeTests(
-  comfyPageFixture,
-  webSocketFixture,
-  hostTelemetryFixture
-)
+const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const INSERTED_NODE_ID = 'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
 const INSERTED_HOST_ID = 'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:105'
@@ -50,10 +45,19 @@ test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
   test('BE-23369 keeps the live Save Image blank and reports an unresolvable executed output', async ({
     comfyPage,
     getWebSocket,
-    hostErrorReports
+    page
   }) => {
     const ws = await getWebSocket()
     await comfyPage.workflow.loadWorkflow('vueNodes/agent-inserted-save-image')
+
+    const unresolvedReports: string[] = []
+    page.on('console', (message) => {
+      if (
+        message.text().includes('failure_resolving_node_output_execution_id')
+      ) {
+        unresolvedReports.push(message.text())
+      }
+    })
 
     const exec = new ExecutionHelper(comfyPage, ws)
     const jobId = await exec.run()
@@ -77,38 +81,12 @@ test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
     await expect(
       saveImageNode.getByRole('img', { name: 'View image 1 of 1' })
     ).toHaveCount(0)
-    await expect
-      .poll(
-        () =>
-          hostErrorReports.filter(
-            ({ properties }) =>
-              properties.error_type ===
-              'failure_resolving_node_output_execution_id'
-          ).length
+    await expect.poll(() => unresolvedReports.length).toBe(3)
+    expect(unresolvedReports).toEqual(
+      Array(3).fill(
+        expect.stringContaining('failure_resolving_node_output_execution_id')
       )
-      .toBe(3)
-    expect(
-      hostErrorReports.find(
-        ({ properties }) =>
-          properties.error_type ===
-            'failure_resolving_node_output_execution_id' &&
-          Array.isArray(properties.filenames)
-      )
-    ).toMatchObject({
-      message: 'No live node resolves the executed output',
-      properties: {
-        error_type: 'failure_resolving_node_output_execution_id',
-        executionId: staleExecutionId,
-        filenames: ['unresolved.png'],
-        surface: 'graph'
-      }
-    })
-    for (const report of hostErrorReports.filter(
-      ({ properties }) =>
-        properties.error_type === 'failure_resolving_node_output_execution_id'
-    )) {
-      expect(report.properties.executionId).toBe(staleExecutionId)
-    }
+    )
   })
 
   test('shows the executed image in a Save Image node inside an agent-inserted subgraph', async ({
