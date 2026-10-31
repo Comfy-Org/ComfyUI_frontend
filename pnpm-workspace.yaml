@@ -26,7 +26,7 @@ catalog:
   '@iconify/utils': ^3.1.0
   '@intlify/eslint-plugin-vue-i18n': ^4.5.1
   '@pinia/testing': 2.0.1
-  '@playwright/test': ^1.64.1
+  '@playwright/test': 1.63.0
   '@sentry/vite-plugin': ^11.10.0
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^2.3.1
@@ -69,7 +69,7 @@ catalog:
   eslint-import-resolver-typescript: ^4.4.5
   eslint-plugin-better-tailwindcss: ^4.10.0
   eslint-plugin-import-x: ^4.17.1
-  eslint-plugin-oxlint: 1.90.0
+  eslint-plugin-oxlint: 1.77.0
   eslint-plugin-playwright: ^2.12.1
   eslint-plugin-regexp: ^3.3.2
   eslint-plugin-storybook: ^10.6.5
@@ -96,8 +96,8 @@ catalog:
   monocart-coverage-reports: ^3.2.0
   openai: ^7.45.1
   oxfmt: ^0.75.0
-  oxlint: ^1.90.0
-  oxlint-tsgolint: ^7.0.2005
+  oxlint: 1.77.0
+  oxlint-tsgolint: 7.0.2001
   picocolors: ^1.1.1
   pinia: ^4.0.2
   postcss-html: ^2.0.0
@@ -132,7 +132,7 @@ catalog:
   vue-eslint-parser: ^10.4.1
   vue-i18n: ^11.4.8
   vue-router: ^5.2.0
-  vue-tsc: ^3.3.14
+  vue-tsc: 3.3.11
   wwobjloader2: ^6.2.1
   yaml: ^2.9.1
   yjs: ^13.6.32
@@ -161,6 +161,7 @@ allowBuilds:
 
 overrides:
   vite: 'catalog:'
+  'unplugin-dts>@vue/language-core': 3.3.11
   '@tiptap/pm': 3.31.0
   prettier: 3.9.5
   # Security overrides

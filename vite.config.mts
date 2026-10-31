@@ -737,7 +737,9 @@ export default defineConfig({
           {
             name: 'validate-sentry-upload-config',
             apply: 'build' as const,
-            configResolved: () => resolveSentryUploadConfig(process.env)
+            configResolved: () => {
+              resolveSentryUploadConfig(process.env)
+            }
           },
           ...(SENTRY_UPLOAD ? [sentryVitePlugin(SENTRY_UPLOAD)] : [])
         ]
