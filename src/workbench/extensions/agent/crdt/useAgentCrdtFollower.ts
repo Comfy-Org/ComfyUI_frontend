@@ -9,7 +9,11 @@ import {
 } from 'vue'
 import type { Ref } from 'vue'
 
-import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
+import {
+  observedDocCounter,
+  SCHEMA_VERSION,
+  SchemaVersionError
+} from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -469,6 +473,13 @@ function startAgentCrdtFollower(
     catchUpAwaitingProjectionFor = null
   }
 
+  function followerDocIsBehind(): boolean {
+    return (
+      bridge.isCatchingUp ||
+      (syncCanvasMayBeStale.value && catchUpAwaitingProjectionFor === null)
+    )
+  }
+
   function clearCanvasStaleness(): void {
     syncCanvasMayBeStale.value = false
     projectionFailureFor.value = null
@@ -564,8 +575,10 @@ function startAgentCrdtFollower(
     noteSettledHumanOps(outcome)
   }
 
+  let counterReadFailureReported = false
   const sender = createOpSender({
-    sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
+    sendOps: (target, tab, ops) =>
+      !followerDocIsBehind() && client.sendOps(target, tab, ops),
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
         // `docFrameClient` already validated this into a DocOpsResult, which
@@ -584,6 +597,29 @@ function startAgentCrdtFollower(
     },
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,
+    observedCounter: () => {
+      try {
+        return observedDocCounter(bridge.follower.doc)
+      } catch (error) {
+        if (
+          !counterReadFailureReported &&
+          !(error instanceof SchemaVersionError)
+        ) {
+          counterReadFailureReported = true
+          reportError(error, {
+            surface: 'agent',
+            errorType: 'failure_reading_agent_doc_counter',
+            tags: {
+              feature_area: 'agent',
+              operation: 'sync',
+              outcome: 'degraded'
+            },
+            level: 'warning'
+          })
+        }
+        return undefined
+      }
+    },
     onBatchSettled: settleHumanOps
   })
   const coalescer = createOpCoalescer((operations) => {
@@ -840,6 +876,7 @@ function startAgentCrdtFollower(
     if (!update.catchUp) return
     if (outcome.applied) clearSyncStaleness()
     else catchUpAwaitingProjectionFor = update.workflowId
+    sender.retryTransport()
   }
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return

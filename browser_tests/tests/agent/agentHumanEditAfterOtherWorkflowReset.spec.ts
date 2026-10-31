@@ -61,13 +61,14 @@ test.describe(
         await expect(
           agentConversation.vueNodes.getNodeLocator(secondNodeId)
         ).toBeVisible()
+        agentConversation.resumeWorkflowSubscribe(recordedWorkflowId)
+        await agentConversation.waitForHumanOps(2)
         expect(
           await agentConversation.humanAddNodeBaseVersion(
             recordedWorkflowId,
             secondNodeId
           )
         ).toBeGreaterThan(firstBaseVersion)
-        agentConversation.resumeWorkflowSubscribe(recordedWorkflowId)
       })
     })
   }

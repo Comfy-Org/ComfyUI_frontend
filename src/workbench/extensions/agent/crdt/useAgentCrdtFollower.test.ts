@@ -64,10 +64,12 @@ const bridgeState = (() => {
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
     isSubscribeBaselineIntegrated = false
+    isCatchingUp = false
     follower = {
       updatesApplied: 0,
       doc: {
-        getMap: () => ({ toJSON: () => ({}) })
+        share: new Map(),
+        getMap: () => ({ toJSON: () => ({}), get: () => undefined })
       }
     }
   }
@@ -1477,7 +1479,10 @@ describe('useAgentCrdtFollower', () => {
     // and clear applied state without arming a lineage replacement.
     const replacementFollower = {
       updatesApplied: 7,
-      doc: { getMap: () => ({ toJSON: () => ({}) }) }
+      doc: {
+        share: new Map(),
+        getMap: () => ({ toJSON: () => ({}), get: () => undefined })
+      }
     }
     const initialFollower = bridge().follower
     bridge().subscribe.mockImplementationOnce((nextWorkflowId: string) => {
@@ -2477,7 +2482,10 @@ describe('useAgentCrdtFollower', () => {
 
     it('arms a lineage replacement on a doc_reset and rebinds the replacement document', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
-      const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
+      const replacementDoc = {
+        share: new Map(),
+        getMap: () => ({ toJSON: () => ({}), get: () => undefined })
+      }
 
       dispatchFrame('doc_reset', {
         workflowId: 'wf-1',
@@ -3018,6 +3026,113 @@ describe('useAgentCrdtFollower', () => {
     expect(resent[0]).toMatchObject({ op: 'set_widget', node_id: '1' })
     expect(resent[0].op_id).toBe(refused[0].op_id)
     expect(resent[0].base_version).toBe(refused[0].base_version)
+    unmount()
+  })
+
+  it('holds a human edit until the reconnect catch-up has landed', async () => {
+    vi.useFakeTimers()
+    const edit: GraphOperation = {
+      op: 'set_widget',
+      node_id: '1',
+      widget: 'cfg',
+      value: 4.5
+    }
+    const { enqueue, unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', {
+      ok: true,
+      workflow_id: 'wf-1',
+      seq: 1
+    })
+    agentSocket.drop()
+
+    enqueue([edit])
+    await Promise.resolve()
+    agentSocket.open()
+    dispatchFrame('doc_subscribed', {
+      ok: true,
+      workflow_id: 'wf-1',
+      seq: 44
+    })
+    vi.advanceTimersByTime(10_000)
+
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 44,
+      catchUp: true
+    })
+
+    expect(clientState.sendOps).toHaveBeenCalledOnce()
+    expect(clientState.sendOps.mock.calls[0][2][0]).toMatchObject({
+      op: 'set_widget',
+      widget: 'cfg'
+    })
+    unmount()
+  })
+
+  it('sends a held human edit once a deferred catch-up has integrated', async () => {
+    vi.useFakeTimers()
+    const edit: GraphOperation = {
+      op: 'set_widget',
+      node_id: '1',
+      widget: 'cfg',
+      value: 4.5
+    }
+    const { enqueue, status, unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', {
+      ok: true,
+      workflow_id: 'wf-1',
+      seq: 1
+    })
+    agentSocket.drop()
+
+    enqueue([edit])
+    await Promise.resolve()
+    agentSocket.open()
+    dispatchFrame('doc_subscribed', {
+      ok: true,
+      workflow_id: 'wf-1',
+      seq: 44
+    })
+    vi.advanceTimersByTime(10_000)
+
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+
+    projectionState.applyFrame.mockReturnValueOnce(projectionState.notApplied())
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 44,
+      catchUp: true
+    })
+
+    expect(status().canvasMayBeStale).toBe(true)
+    expect(clientState.sendOps).toHaveBeenCalledOnce()
+    expect(clientState.sendOps.mock.calls[0][2][0]).toMatchObject({
+      op: 'set_widget',
+      widget: 'cfg'
+    })
+    unmount()
+  })
+
+  it('holds a human edit made before a fresh subscribe has caught up', async () => {
+    vi.useFakeTimers()
+    const { enqueue, unmount } = mountFollower('wf-1')
+    bridge().isCatchingUp = true
+
+    enqueue([{ op: 'set_widget', node_id: '1', widget: 'cfg', value: 4.5 }])
+    await Promise.resolve()
+    vi.advanceTimersByTime(10_000)
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+
+    bridge().isCatchingUp = false
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 44,
+      catchUp: true
+    })
+
+    expect(clientState.sendOps).toHaveBeenCalledOnce()
     unmount()
   })
 

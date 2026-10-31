@@ -104,6 +104,7 @@ function setupRaceUntilReturn() {
     tab: 'tab-1',
     actor: () => 'human:test-user:tab-1',
     baseVersion: () => frameSeq,
+    observedCounter: () => undefined,
     onBatchSettled: (outcome) => settled.push(outcome)
   })
   const projection = new AgentCrdtProjection(() => graph)

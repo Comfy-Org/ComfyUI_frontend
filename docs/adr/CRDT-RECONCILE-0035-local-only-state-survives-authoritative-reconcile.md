@@ -171,13 +171,17 @@ bound document's root graph is mintable; an op for another graph, or for the
 interior of a subgraph, is not minted and is reported once per flush. A batch ends in
 exactly one of four outcomes:
 
-| Outcome          | Produced when                                                                                                                                               | Time bound                                       |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `acknowledged`   | a result arrives for the batch's op ids (an anonymous failure also counts when a send happened)                                                             | none, the result decides                         |
-| `unacknowledged` | no result within the result timeout, after one silent resend of the same ops                                                                                | about 20 seconds from the first send, tab active |
-| `unconfirmed`    | the batch was sent, then the sender was unbound, aborted by a `doc_reset`, detached, or its subscribe was refused                                           | immediate on the event                           |
-| `undeliverable`  | the batch was never sent (queued or detached), or the transport refused it for the whole retry budget (five retries, six tries in all, half a second apart) | about 2.5 seconds of retry, or immediate         |
+| Outcome          | Produced when                                                                                                     | Time bound                                       |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `acknowledged`   | a result arrives for the batch's op ids (an anonymous failure also counts when a send happened)                   | none, the result decides                         |
+| `unacknowledged` | no result within the result timeout, after one silent resend of the same ops                                      | about 20 seconds from the first send, tab active |
+| `unconfirmed`    | the batch was sent, then the sender was unbound, aborted by a `doc_reset`, detached, or its subscribe was refused | immediate on the event                           |
+| `undeliverable`  | the batch was never sent and its document was unbound, reset or detached                                          | immediate on the event                           |
 
+A transport that refuses the batch for the whole retry budget (five retries,
+six tries in all, half a second apart) holds it instead of settling it; the
+held batch goes out once the reconnect's catch-up lands, re-stamped under
+[CRDT-STAMPS-0051](CRDT-STAMPS-0051-human-ops-stamp-above-what-they-have-received.md).
 A suspension parks the batch instead of sending or settling it. A resume
 sends it again, unless the sender is now bound to a different workflow, in
 which case it settles `unconfirmed` or `undeliverable`. A `doc_reset` aborts
@@ -249,7 +253,8 @@ local write arrived and applying it would rewind what the user typed. The
 hold lifts when the document catches up (an own-actor echo), when a settled
 op carries the register's latest value, or on a `doc_reset`. The follower
 settles holds for every outcome state, so a timed-out write stops being held
-and the next remote value overwrites the local one. This is the one place
+and the next remote value overwrites the local one. A batch held through an
+outage has not settled, so its hold survives the catch-up. This is the one place
 where the first requirement is bounded by sender settlement instead of by
 confirmation.
 
