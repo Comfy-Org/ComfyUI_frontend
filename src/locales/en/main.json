@@ -3651,6 +3651,10 @@
         "onHold": "No default payment method. Set one to resume auto top-up.",
         "paused": "Monthly limit reached. Resumes {date}.",
         "pausedNoDate": "Monthly limit reached.",
+        "pausedByRemainder": "Next top-up would go over your monthly limit. Resumes {date}.",
+        "pausedByRemainderNoDate": "Next top-up would go over your monthly limit.",
+        "maximumReached": "Monthly maximum reached. Resets {date}.",
+        "maximumReachedNoDate": "Monthly maximum reached.",
         "rule": "Tops up to {target} credits when below {threshold} credits.",
         "status": {
           "failed": "Failed",
@@ -3658,7 +3662,8 @@
           "off": "Off",
           "on": "On",
           "onHold": "On hold",
-          "limitReached": "Limit reached"
+          "limitReached": "Limit reached",
+          "maximumReached": "Maximum reached"
         },
         "title": "Auto top-up",
         "unavailable": "Couldn't load auto top-up."
