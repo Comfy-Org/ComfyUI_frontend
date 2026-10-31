@@ -24,6 +24,7 @@ function setup(session: MaskEditorToolSession = {}) {
   }
   const document: MaskEditorToolDocument = {
     getRevision: () => revision,
+    getDimensions: () => ({ width: image.width, height: image.height }),
     readImage: () => ({ image, revision }),
     applyMask: (next) => {
       mask = next
@@ -58,14 +59,16 @@ describe('MaskEditor extension session contract', () => {
   it('reads the current image and applies an independent single-channel mask', () => {
     const { runtime, mask } = setup()
     const snapshot = runtime.context.readImage()
+    const supplied = { ...result, data: result.data.slice() }
     expect(snapshot?.image.width).toBe(3)
-    expect(runtime.context.commitMask(result, { expectedRevision: 1 })).toEqual(
-      {
-        ok: true,
-        revision: 2
-      }
-    )
-    expect(mask().data).toEqual(result.data)
+    expect(
+      runtime.context.commitMask(supplied, { expectedRevision: 1 })
+    ).toEqual({
+      ok: true,
+      revision: 2
+    })
+    supplied.data.fill(42)
+    expect(mask().data).toEqual(new Uint8Array([0, 255, 128, 255, 0, 0]))
     expect(snapshot?.image.data).toEqual(new Uint8ClampedArray(24).fill(255))
   })
 

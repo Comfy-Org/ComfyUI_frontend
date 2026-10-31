@@ -10,6 +10,7 @@ import type {
 
 export interface MaskEditorToolDocument {
   readImage(): MaskEditorImageSnapshot | undefined
+  getDimensions(): Pick<MaskEditorMask, 'width' | 'height'> | undefined
   getRevision(): number
   applyMask(mask: MaskEditorMask): void
 }
@@ -62,11 +63,11 @@ export function createMaskEditorToolSession(
       if (expectedRevision !== document.getRevision()) {
         return { ok: false, reason: 'stale' }
       }
-      const snapshot = context.readImage()
-      if (!snapshot) return { ok: false, reason: 'unavailable' }
+      const dimensions = call(() => document.getDimensions())
+      if (!dimensions) return { ok: false, reason: 'unavailable' }
       if (
-        mask.width !== snapshot.image.width ||
-        mask.height !== snapshot.image.height ||
+        mask.width !== dimensions.width ||
+        mask.height !== dimensions.height ||
         !(mask.data instanceof Uint8Array) ||
         mask.data.length !== mask.width * mask.height
       )

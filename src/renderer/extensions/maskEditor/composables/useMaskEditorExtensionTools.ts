@@ -2,6 +2,7 @@ import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 import { once } from 'es-toolkit'
 
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { useCoordinateTransform } from '@comfyorg/mask-editor/useCoordinateTransform'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
@@ -16,6 +17,7 @@ import { createMaskEditorToolSession } from './maskEditorToolSession'
 
 export function useMaskEditorExtensionTools() {
   const editor = useMaskEditorStore()
+  const coordinateTransform = useCoordinateTransform()
   const registry = useMaskEditorExtensionStore()
   const points = shallowRef<readonly MaskEditorOverlayPoint[]>([])
   const active = shallowRef<{
@@ -23,7 +25,7 @@ export function useMaskEditorExtensionTools() {
     runtime: ReturnType<typeof createMaskEditorToolSession>
   }>()
 
-  function readImage() {
+  function getDimensions() {
     const { imgCtx, imgCanvas, maskCtx, rgbCtx } = editor
     if (
       !imgCtx ||
@@ -34,8 +36,15 @@ export function useMaskEditorExtensionTools() {
     ) {
       return undefined
     }
+    return editor.canvasHistory.dimensions
+  }
+
+  function readImage() {
+    const dimensions = getDimensions()
+    const { imgCtx } = editor
+    if (!dimensions || !imgCtx) return undefined
     return {
-      image: imgCtx.getImageData(0, 0, imgCanvas.width, imgCanvas.height),
+      image: imgCtx.getImageData(0, 0, dimensions.width, dimensions.height),
       revision: editor.canvasHistory.revision
     }
   }
@@ -74,6 +83,7 @@ export function useMaskEditorExtensionTools() {
       tool,
       {
         readImage,
+        getDimensions,
         applyMask,
         getRevision: () => editor.canvasHistory.revision
       },
@@ -100,11 +110,13 @@ export function useMaskEditorExtensionTools() {
   async function handlePointer(event: PointerEvent) {
     const current = active.value
     const canvas = editor.maskCanvas
-    if (!current || !canvas) return
-    const rect = canvas.getBoundingClientRect()
-    if (!rect.width || !rect.height) return
-    const x = ((event.clientX - rect.left) * canvas.width) / rect.width
-    const y = ((event.clientY - rect.top) * canvas.height) / rect.height
+    if (!current || !canvas || !editor.pointerZone || !editor.canvasContainer)
+      return
+    const { x, y } = coordinateTransform.screenToCanvas({
+      x: event.offsetX,
+      y: event.offsetY
+    })
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return
     const phase =
       event.type === 'pointerdown'
         ? 'down'
