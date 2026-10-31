@@ -5,7 +5,8 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import {
   openDeployCustomNodesDialog,
-  openWorkflowNeedsDeploymentDialog
+  openWorkflowNeedsDeploymentDialog,
+  preloadWorkflowNeedsDeploymentDialog
 } from './openCustomDeploymentDialog'
 
 vi.mock(
@@ -45,4 +46,8 @@ describe('a custom deployment dialog that fails to load', () => {
       ])
     }
   )
+
+  it('preloads nothing when the deployment dialog code resolves without a component', async () => {
+    await expect(preloadWorkflowNeedsDeploymentDialog()).resolves.toBe(false)
+  })
 })

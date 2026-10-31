@@ -53,15 +53,15 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useCustomDeploymentOffered } from '@/platform/workspace/composables/useCustomDeploymentOffered'
-import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { useMissingNodeDeploymentOffer } from '@/platform/workspace/composables/useMissingNodeDeploymentOffer'
 import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 
 const { t } = useI18n()
 const { offer, choose, isSwitching, openSwitcher } =
   useMissingNodeDeploymentOffer()
-const { deploymentsThatRunIt } = useDeploymentCompatibility()
-const customDeploymentOffered = useCustomDeploymentOffered(deploymentsThatRunIt)
+const customDeploymentOffered = useCustomDeploymentOffered(
+  () => offer.value?.kind === 'none'
+)
 
 const choices = computed(() =>
   offer.value?.kind === 'choices' ? offer.value.choices : []
