@@ -2157,6 +2157,39 @@ describe('useAgentConversationStore', () => {
     ])
   })
 
+  it('keeps a live tool start time when recovery settles persisted parts', () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_234)
+    try {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(toolCall('t1', 'add_node', 'running'))
+
+      store.settleTurn({ threadId: 'th', messageId: T1 }, [
+        {
+          type: 'tool',
+          callId: 'call-add_node',
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        }
+      ])
+
+      expect(store.messages[0].parts).toEqual([
+        {
+          type: 'tool',
+          callId: 'call-add_node',
+          name: 'add_node',
+          state: 'done',
+          ok: true,
+          startedAtMs: 1_234
+        }
+      ])
+    } finally {
+      now.mockRestore()
+    }
+  })
+
   it('finalizes locally streaming parts when an empty successful row settles the turn', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
