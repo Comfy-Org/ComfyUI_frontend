@@ -12,6 +12,11 @@ import { z } from 'zod'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
 import { zTaskOutput } from '@/platform/remote/comfyui/execution/types'
 
+export const zJobExecutionMetaEntry = z.object({
+  display_node: z.string().optional(),
+  node_id: z.string().optional()
+})
+
 const zJobStatus = z.enum([
   'pending',
   'in_progress',
