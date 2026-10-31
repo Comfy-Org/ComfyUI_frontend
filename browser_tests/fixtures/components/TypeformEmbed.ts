@@ -3,7 +3,7 @@ import type { Locator, Page } from '@playwright/test'
 const TYPEFORM_SCRIPT = 'https://embed.typeform.com/next/embed.js'
 
 export class TypeformEmbed {
-  readonly root: Locator
+  public readonly root: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.getByTestId('typeform-embed')
