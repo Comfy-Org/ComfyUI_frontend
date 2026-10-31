@@ -9,7 +9,7 @@ import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
+import { webSessionResourceHeader } from '@comfyorg/api-client/webSessionFetch'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import type { BillingStatusResponse } from '@comfyorg/billing-core'
@@ -162,7 +162,7 @@ vi.mock<unknown>(
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
+vi.mock(import('@comfyorg/api-client/webSessionFetch'), { spy: true })
 
 const mockReadStatus = vi.fn<BillingReadRail['readStatus']>()
 
@@ -1273,6 +1273,7 @@ describe('useSubscription', () => {
     })
 
     it('reports at the deadline without another lifecycle event', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({

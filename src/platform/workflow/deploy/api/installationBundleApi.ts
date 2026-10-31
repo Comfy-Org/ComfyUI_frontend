@@ -9,7 +9,7 @@ import {
 import { z } from 'zod'
 
 import { api } from '@/scripts/api'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 
 const BUNDLE_TIMEOUT_MS = 90_000
 

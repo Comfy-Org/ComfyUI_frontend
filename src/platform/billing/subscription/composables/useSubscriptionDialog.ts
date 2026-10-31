@@ -1,4 +1,3 @@
-import { defineAsyncComponent } from 'vue'
 import { useDialogService } from '@/services/dialogService'
 import { openTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -11,6 +10,7 @@ import {
 } from '@comfyorg/account-ui/billing/catalog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type {
   SubscriptionCheckoutSelection,
@@ -64,10 +64,7 @@ export const useSubscriptionDialog = () => {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   }
 
-  // Fired here — the choke point every paywall/pricing dialog variant passes
-  // through — so both the legacy and workspace billing paths emit it.
   function trackModalOpened(reason?: PaymentIntentSource) {
-    // Resolved lazily to avoid the useBillingContext import cycle (see below).
     const { tier } = useBillingContext()
     useTelemetry()?.trackSubscription('modal_opened', {
       current_tier: tier.value?.toLowerCase(),
@@ -87,126 +84,122 @@ export const useSubscriptionDialog = () => {
     })
   }
 
-  function showInactiveMemberDialog(
+  function trackPaywallEntry(
+    reason?: PaymentIntentSource,
     paymentIntentSource?: PaymentIntentSource
-  ): boolean {
+  ) {
+    trackModalOpened(reason)
+    trackPaywallShown(paymentIntentSource)
+  }
+
+  async function showInactiveMemberDialog(
+    paymentIntentSource?: PaymentIntentSource
+  ): Promise<boolean> {
     if (!shouldUseWorkspaceBilling.value) return false
 
     const { permissions } = useBillingUI()
     if (permissions.value.canManageSubscription) return false
 
-    trackPaywallShown(paymentIntentSource)
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
-      component: defineAsyncComponent(
-        () =>
-          import('@/platform/billing/components/SubscriptionInactiveMemberDialog.vue')
-      ),
+      component: (
+        await import('@/platform/billing/components/SubscriptionInactiveMemberDialog.vue')
+      ).default,
       props: { onClose: hide }
     })
+    trackPaywallShown(paymentIntentSource)
     return true
   }
 
-  function showPricingTable(options?: SubscriptionDialogOptions) {
-    if (!isCloud) return
-    const paymentIntentSource = paymentIntentSourceOf(options)
-    if (showInactiveMemberDialog(paymentIntentSource)) return
+  async function showPricingTable(
+    options?: SubscriptionDialogOptions
+  ): Promise<boolean> {
+    if (!isCloud) return false
+    try {
+      const paymentIntentSource = paymentIntentSourceOf(options)
+      if (await showInactiveMemberDialog(paymentIntentSource)) return true
 
-    trackModalOpened(options?.reason)
-    trackPaywallShown(paymentIntentSource)
+      const legacyPricingDialogProps = {
+        dismissOnPointerDownOutside: false
+      } as const
 
-    const legacyPricingDialogProps = {
-      dismissOnPointerDownOutside: false
-    } as const
+      if (shouldUseUnifiedPricing.value) {
+        const { currentPlanSlug, isLegacyTeamPlan, isTeamPlan } =
+          useBillingContext()
+        if (isLegacyTeamPlan.value) {
+          const personalInitialCheckout =
+            options?.initialCheckout?.planMode === 'personal'
+              ? options.initialCheckout
+              : undefined
+          dialogService.showLayoutDialog({
+            key: DIALOG_KEY,
+            component: (
+              await import('@/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.vue')
+            ).default,
+            props: {
+              onClose: hide,
+              reason: options?.reason,
+              paymentIntentSource,
+              ...(personalInitialCheckout
+                ? {
+                    initialCheckout: personalInitialCheckout,
+                    isPersonal: true
+                  }
+                : {})
+            },
+            dialogComponentProps: legacyPricingDialogProps
+          })
+          trackPaywallEntry(options?.reason, paymentIntentSource)
+          return true
+        }
 
-    // Jun-5 model: a single unified pricing table (personal/team plan toggle on
-    // one workspace). The billing rail still selects the checkout and top-up
-    // backend, but does not select the pricing table.
-    if (shouldUseUnifiedPricing.value) {
-      // Existing per-member (legacy) team subscribers keep the old tier-based
-      // team table; the unified credit-slider table is for everyone else.
-      // Resolved lazily (not at composable setup): these three composables form
-      // an import cycle (useBillingContext -> useWorkspaceBilling ->
-      // useSubscriptionDialog), so a setup-time read would deref the shared
-      // context before its state is constructed.
-      const { currentPlanSlug, isLegacyTeamPlan, isTeamPlan } =
-        useBillingContext()
-      if (isLegacyTeamPlan.value) {
-        const personalInitialCheckout =
-          options?.initialCheckout?.planMode === 'personal'
-            ? options.initialCheckout
-            : undefined
         dialogService.showLayoutDialog({
           key: DIALOG_KEY,
-          component: defineAsyncComponent(
-            () =>
-              import('@/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.vue')
-          ),
+          component: (
+            await import('@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue')
+          ).default,
           props: {
             onClose: hide,
             reason: options?.reason,
             paymentIntentSource,
-            ...(personalInitialCheckout
-              ? {
-                  initialCheckout: personalInitialCheckout,
-                  isPersonal: true
-                }
-              : {})
+            initialCheckout: options?.initialCheckout,
+            initialPlanMode: getInitialPlanMode(
+              options?.planMode,
+              isTeamPlan.value,
+              currentPlanSlug.value !== null,
+              workspaceStore.isInPersonalWorkspace
+            )
           },
-          dialogComponentProps: legacyPricingDialogProps
+          dialogComponentProps: {
+            dismissOnPointerDownOutside: false
+          }
         })
-        return
+        trackPaywallEntry(options?.reason, paymentIntentSource)
+        return true
       }
 
       dialogService.showLayoutDialog({
         key: DIALOG_KEY,
-        component: defineAsyncComponent(
-          () =>
-            import('@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue')
-        ),
+        component: (
+          await import('@/platform/billing/subscription/components/SubscriptionRequiredDialogContent.vue')
+        ).default,
         props: {
           onClose: hide,
           reason: options?.reason,
           paymentIntentSource,
-          initialCheckout: options?.initialCheckout,
-          initialPlanMode: getInitialPlanMode(
-            options?.planMode,
-            isTeamPlan.value,
-            currentPlanSlug.value !== null,
-            workspaceStore.isInPersonalWorkspace
-          )
+          onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
         },
-        dialogComponentProps: {
-          // A scrim click mid-checkout would silently discard typed card
-          // details and any pending 3DS state; the X is the only close.
-          dismissOnPointerDownOutside: false
-        }
+        dialogComponentProps: legacyPricingDialogProps
       })
-      return
+      trackPaywallEntry(options?.reason, paymentIntentSource)
+      return true
+    } catch (error) {
+      reportError(error, {
+        surface: 'billing',
+        errorType: 'error_opening_subscription_dialog'
+      })
+      return false
     }
-
-    dialogService.showLayoutDialog({
-      key: DIALOG_KEY,
-      component: defineAsyncComponent(
-        () =>
-          import('@/platform/billing/subscription/components/SubscriptionRequiredDialogContent.vue')
-      ),
-      props: {
-        onClose: hide,
-        reason: options?.reason,
-        paymentIntentSource,
-        onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
-      },
-      dialogComponentProps: legacyPricingDialogProps
-    })
-  }
-
-  function show(options?: SubscriptionDialogOptions) {
-    if (isCloud && showInactiveMemberDialog(paymentIntentSourceOf(options))) {
-      return
-    }
-
-    showPricingTable(options)
   }
 
   function startTeamWorkspaceUpgradeFlow() {
@@ -222,7 +215,7 @@ export const useSubscriptionDialog = () => {
         '[useSubscriptionDialog] Failed to open team workspaces dialog:',
         error
       )
-      showPricingTable()
+      void showPricingTable()
     })
   }
 
@@ -280,9 +273,6 @@ export const useSubscriptionDialog = () => {
       return
     }
 
-    // The host pointer stays as it is: it carries the tier/cycle selection the
-    // pricing dialog restores below, which the SDK's scope-keyed pointer
-    // deliberately does not. Only who drives the operation moves.
     const operation = flags.billingSdkSubscriptionRailEnabled
       ? await useBillingSdkStore().recoverPendingOperation(pending.operationId)
       : await useBillingOperationStore().startOperation(
@@ -297,8 +287,6 @@ export const useSubscriptionDialog = () => {
             attemptStartedAt: pending.attemptedAt
           }
         )
-    // Nothing to adopt: the server names no pending operation for this scope,
-    // so the parked pointer is stale and the customer is not mid-checkout.
     if (!operation) {
       clearPendingSubscriptionCheckout(pending.operationId)
       return
@@ -310,13 +298,13 @@ export const useSubscriptionDialog = () => {
     if (operation.status !== 'failed') return
 
     const initialCheckout = await restoreCheckoutSelection(pending)
-    showPricingTable({
+    await showPricingTable({
       planMode: pending.selection.planMode,
       ...(initialCheckout && { initialCheckout })
     })
   }
 
-  function resumePendingPricingFlow(): Promise<void> | void {
+  async function resumePendingPricingFlow(): Promise<void> {
     const pendingCheckout = getPendingSubscriptionCheckout()
     if (pendingCheckout) return resumePendingCheckout(pendingCheckout)
 
@@ -326,18 +314,18 @@ export const useSubscriptionDialog = () => {
       sessionStorage.removeItem(RESUME_PRICING_KEY)
 
       if (!workspaceStore.isInPersonalWorkspace) {
-        showPricingTable({
+        await showPricingTable({
           reason: 'team_upgrade_resume',
           planMode: 'team'
         })
       }
     } catch {
-      // sessionStorage may be unavailable
+      return
     }
   }
 
   return {
-    show,
+    show: showPricingTable,
     showPricingTable,
     hide,
     startTeamWorkspaceUpgradeFlow,

@@ -1,7 +1,7 @@
 import { useEventListener } from '@vueuse/core'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
-import type { ProgressTextWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ProgressTextWsMessage } from '@comfyorg/api-client/executionTypes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'

@@ -12,35 +12,15 @@
       "role": "application"
     },
     {
-      "path": "src/utils/executionUtil.stability.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/utils/executionUtil.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/utils/executionUtil.ts",
       "role": "application"
-    },
-    {
-      "path": "src/utils/fileUtil.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/utils/fileUtil.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/utils/jsonUtil.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/jsonUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/linkFixer.test.ts",
       "role": "domain"
     },
     {

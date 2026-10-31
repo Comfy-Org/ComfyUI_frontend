@@ -2,6 +2,7 @@ import { assert, describe, expect, it } from 'vitest'
 
 import type { AskUserResolution, MessagePart } from './agentMessageParts'
 import {
+  isCreditsStopPart,
   retireAskParts,
   toAskOrNoticePart,
   toAskPart,
@@ -298,6 +299,60 @@ describe('toAskPart delete_approval', () => {
   })
 })
 
+describe('toAskPart paused', () => {
+  const pausedAsk = (ask: Partial<AskInput> = {}): AskInput =>
+    askUser({
+      kind: 'paused',
+      prompt: 'Paused until credits are added.',
+      options: [{ id: 'resume', label: 'Resume' }],
+      context: {
+        message: 'Paused until credits are added.',
+        reason: 'no_funds',
+        recheck_after_seconds: 60
+      },
+      ...ask
+    })
+
+  it('carries the server reason, copy and recheck window through', () => {
+    expect(toAskPart(pausedAsk())).toEqual({
+      type: 'paused',
+      askId: 'turn-1:call-1',
+      prompt: 'Paused until credits are added.',
+      message: 'Paused until credits are added.',
+      reason: 'no_funds',
+      recheckAfterSeconds: 60
+    })
+  })
+
+  it('accepts a Resume option when selecting it is optional on the wire', () => {
+    expect(toAskPart(pausedAsk({ min_selections: 0 }))).toMatchObject({
+      type: 'paused',
+      askId: 'turn-1:call-1'
+    })
+  })
+
+  it.for<{ name: string; ask: Partial<AskInput> }>([
+    {
+      name: 'a selection minimum Resume cannot meet',
+      ask: { min_selections: 2 }
+    },
+    { name: 'a selection maximum above one', ask: { max_selections: 2 } },
+    { name: 'free text beside Resume', ask: { allow_other: true } },
+    {
+      name: 'an option set that is not just Resume',
+      ask: {
+        options: [
+          { id: 'resume', label: 'Resume' },
+          { id: 'stop', label: 'Stop' }
+        ]
+      }
+    },
+    { name: 'no pause context at all', ask: { context: undefined } }
+  ])('renders nothing for $name', ({ ask }) => {
+    expect(toAskPart(pausedAsk(ask))).toBeUndefined()
+  })
+})
+
 describe('toAskOrNoticePart', () => {
   it('stands a notice in for an ask it cannot render', () => {
     expect(toAskOrNoticePart(askUser({ kind: 'paused' }))).toEqual({
@@ -359,6 +414,29 @@ describe('retireAskParts', () => {
       parts[1],
       question
     ])
+  })
+
+  const pause: MessagePart = {
+    type: 'paused',
+    askId: 'pause',
+    prompt: 'Paused until credits are added.',
+    message: 'Paused until credits are added.',
+    reason: 'no_funds',
+    recheckAfterSeconds: 60
+  }
+
+  it.for<AskUserResolution>([
+    { status: 'answered', selected: ['resume'] },
+    { status: 'closed' },
+    { status: 'retired' }
+  ])('drops a pause the server settled as $status', (resolution) => {
+    expect(retireAskParts([pause], 'pause', resolution)).toEqual([])
+  })
+
+  it('keeps a pause whose answer was never confirmed', () => {
+    expect(retireAskParts([pause], 'pause', { status: 'unconfirmed' })).toEqual(
+      [pause]
+    )
   })
 
   it('keeps an ask_user card read-only with its resolution', () => {
@@ -498,5 +576,46 @@ describe('toAskResolution', () => {
     }
   ])('reads $name', ({ data, expected }) => {
     expect(toAskResolution(data)).toEqual(expected)
+  })
+})
+
+describe('isCreditsStopPart', () => {
+  it.for<{ name: string; part: MessagePart; expected: boolean }>([
+    {
+      name: 'a refused-send paywall',
+      part: { type: 'paywall' },
+      expected: true
+    },
+    {
+      name: 'an admission pause for no funds',
+      part: {
+        type: 'paused',
+        askId: 'pause',
+        prompt: 'p',
+        message: 'm',
+        reason: 'no_funds',
+        recheckAfterSeconds: 60
+      },
+      expected: true
+    },
+    {
+      name: 'an administrator pause',
+      part: {
+        type: 'paused',
+        askId: 'pause',
+        prompt: 'p',
+        message: 'm',
+        reason: 'workspace_paused',
+        recheckAfterSeconds: 60
+      },
+      expected: false
+    },
+    {
+      name: 'a run approval',
+      part: { type: 'runApproval', askId: 'run' },
+      expected: false
+    }
+  ])('reports $expected for $name', ({ part, expected }) => {
+    expect(isCreditsStopPart(part)).toBe(expected)
   })
 })

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ComfyApi } from '@/scripts/api'
+import { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 
 class FakeWebSocket {
   static readonly OPEN = 1
@@ -48,7 +48,11 @@ describe('ComfyApi type-4 preview metadata', () => {
   beforeEach(async () => {
     FakeWebSocket.instances = []
     vi.stubGlobal('WebSocket', FakeWebSocket)
-    api = new ComfyApi()
+    api = new ComfyApi({
+      isCloud: false,
+      featureFlagOverride: () => undefined,
+      onFreeMemory: () => {}
+    })
     await api.init()
   })
 
