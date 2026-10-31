@@ -6143,7 +6143,63 @@
           "Explain how a ComfyUI workflow works",
           "Find the best workflow for a specific task",
           "Diagnose and fix errors in a workflow"
-        ]
+        ],
+        "personalizedV2": {
+          "static": {
+            "create": "Create a product image from a text prompt",
+            "build": "Build an image-to-video workflow",
+            "learn": "Explain how a ComfyUI workflow works",
+            "discover": "Find the best workflow for a specific task",
+            "repair": "Diagnose and fix errors in a workflow"
+          },
+          "intent": {
+            "images": {
+              "create": "Create an image from a text prompt",
+              "build": "Build an image-generation workflow",
+              "discover": "Find the best image workflow for a specific task",
+              "repair": "Help me diagnose an image workflow error"
+            },
+            "video": {
+              "create": "Create an image for a video",
+              "build": "Build an image-to-video workflow",
+              "discover": "Find the best video workflow for a specific task",
+              "repair": "Help me diagnose a video workflow error"
+            },
+            "workflows": {
+              "create": "Create something with a workflow",
+              "build": "Build a reusable workflow",
+              "discover": "Find a workflow for a specific task",
+              "repair": "Help me diagnose a workflow error"
+            },
+            "appsApi": {
+              "create": "Create an asset for an app",
+              "build": "Build an API-ready workflow",
+              "discover": "Find a workflow suitable for an API",
+              "repair": "Help me diagnose an API workflow error"
+            },
+            "exploring": {
+              "create": "Create something to learn ComfyUI",
+              "build": "Build a simple starter workflow",
+              "discover": "Show me a useful workflow to try",
+              "repair": "Help me diagnose a workflow error"
+            }
+          },
+          "experience": {
+            "new": "Teach me how ComfyUI workflows work",
+            "some": "Explain how a ComfyUI workflow works",
+            "pro": "Explain the architecture of a ComfyUI workflow"
+          },
+          "focus": {
+            "customNodes": "Find useful custom nodes for my workflow",
+            "pipelines": "Show me a production workflow pipeline",
+            "products": "Show me how to integrate a workflow into a product"
+          },
+          "canvas": {
+            "learn": "Explain this workflow",
+            "discover": "Suggest the next improvement to this workflow",
+            "repair": "Diagnose and fix errors in this workflow"
+          }
+        }
       }
     },
     "attach": "Attach a file",
