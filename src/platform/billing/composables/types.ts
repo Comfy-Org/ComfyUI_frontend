@@ -110,6 +110,10 @@ export interface BalanceInfo {
   minTopupCents?: number
   /** Served `min_topup_credits`. Absent when the balance response omits it. */
   minTopupCredits?: number
+  /** Served `max_topup_cents`. Absent when the balance response omits it. */
+  maxTopupCents?: number
+  /** Served `max_topup_credits`. Absent when the balance response omits it. */
+  maxTopupCredits?: number
   /** Served `low_balance`. Absent when the balance response omits it. */
   lowBalance?: boolean
 }

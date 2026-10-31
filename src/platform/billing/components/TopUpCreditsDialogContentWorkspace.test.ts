@@ -752,15 +752,40 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     minTopupCents: 2_500,
     minTopupCredits: 5_275
   }
+  const SERVED_MAXIMUM: Partial<BalanceInfo> = {
+    maxTopupCents: 5_000,
+    maxTopupCredits: 10_550
+  }
 
-  it('blocks an amount below the served minimum and names it', async () => {
-    renderWithBalance(SERVED_MINIMUM)
+  it.for<{
+    name: string
+    balance: Partial<BalanceInfo>
+    preset: string
+    message: RegExp
+  }>([
+    {
+      name: 'below the served minimum',
+      balance: SERVED_MINIMUM,
+      preset: '$10',
+      message: /5,275 credits minimum/
+    },
+    {
+      name: 'above the served maximum',
+      balance: SERVED_MAXIMUM,
+      preset: '$100',
+      message: /10,550 credits maximum/
+    }
+  ])(
+    'blocks an amount $name and names the bound',
+    async ({ balance, preset, message }) => {
+      renderWithBalance(balance)
 
-    await userEvent.click(screen.getByRole('button', { name: '$10' }))
+      await userEvent.click(screen.getByRole('button', { name: preset }))
 
-    expect(screen.getByRole('button', { name: 'Add credits' })).toBeDisabled()
-    expect(screen.getByText('5,275 credits minimum')).toBeVisible()
-  })
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeDisabled()
+      expect(screen.getByText(message)).toBeVisible()
+    }
+  )
 
   it.for<{ name: string; balance: Partial<BalanceInfo>; preset: string }>([
     { name: 'at the served minimum', balance: SERVED_MINIMUM, preset: '$25' },
@@ -769,6 +794,17 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       name: 'above $5 when the minimum has no served credits',
       balance: { minTopupCents: 2_500 },
       preset: '$10'
+    },
+    { name: 'at the served maximum', balance: SERVED_MAXIMUM, preset: '$50' },
+    {
+      name: 'under $10,000 when no maximum is served',
+      balance: {},
+      preset: '$100'
+    },
+    {
+      name: 'under $10,000 when the maximum has no served credits',
+      balance: { maxTopupCents: 5_000 },
+      preset: '$100'
     }
   ])('allows an amount $name', async ({ balance, preset }) => {
     renderWithBalance(balance)

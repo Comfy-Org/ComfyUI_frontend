@@ -263,6 +263,8 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       suggestedTopupAmountCents: data.suggested_topup_amount_cents,
       minTopupCents: data.min_topup_cents,
       minTopupCredits: data.min_topup_credits,
+      maxTopupCents: data.max_topup_cents,
+      maxTopupCredits: data.max_topup_credits,
       lowBalance: data.low_balance
     }
   })
