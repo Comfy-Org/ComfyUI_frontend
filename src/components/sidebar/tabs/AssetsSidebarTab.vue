@@ -151,6 +151,7 @@
   <MediaLightbox
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
+    @context-menu="handleLightboxContextMenu"
   />
   <Menu
     :id="contextMenuId"
@@ -353,7 +354,6 @@ const loading = computed(() => toValue(currentAssets.value.isLoading))
 const mediaAssets = computed(() => toValue(currentAssets.value.items))
 
 const galleryActiveIndex = ref(-1)
-const currentGalleryAssetId = ref<string | null>(null)
 
 const DEFAULT_SKELETON_COUNT = 6
 const skeletonCount = computed(() =>
@@ -444,21 +444,19 @@ const showEmptyState = computed(
 )
 
 watch(visibleAssets, (newAssets) => {
-  // Alternative: keep hidden selections and surface them in UI; for now prune
-  // so selection stays consistent with what this view can act on.
   reconcileSelection(newAssets)
-  if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
-    const newIndex = previewableVisibleAssets.value.findIndex(
-      (asset) => asset.id === currentGalleryAssetId.value
-    )
-    galleryActiveIndex.value = newIndex
-  }
 })
 
-watch(galleryActiveIndex, (index) => {
-  if (index === -1) {
-    currentGalleryAssetId.value = null
-  }
+watch(previewableVisibleAssets, (nextAssets, previousAssets) => {
+  const index = galleryActiveIndex.value
+  if (index === -1) return
+
+  const activeId = previousAssets?.[index]?.id
+  if (!activeId) return
+
+  galleryActiveIndex.value = nextAssets.findIndex(
+    (asset) => asset.id === activeId
+  )
 })
 
 const galleryItems = computed<AugmentedResultItem[]>(() => {
@@ -470,7 +468,8 @@ const galleryItems = computed<AugmentedResultItem[]>(() => {
       type: 'output',
       nodeId: '0',
       mediaType: mediaType === 'image' ? 'images' : mediaType,
-      url: getAssetInlineMediaUrl(asset)
+      url: getAssetInlineMediaUrl(asset),
+      downloadUrl: getAssetFileUrl(asset)
     }
   })
 })
@@ -504,7 +503,16 @@ function handleAssetSelectionToggle(asset: AssetItem) {
   toggleAssetSelection(asset, index, visibleAssets.value)
 }
 
-function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
+function handleLightboxContextMenu(event: MouseEvent) {
+  const asset = previewableVisibleAssets.value[galleryActiveIndex.value]
+  if (asset) handleAssetContextMenu(event, asset, { inViewer: true })
+}
+
+function handleAssetContextMenu(
+  event: MouseEvent,
+  asset: AssetItem,
+  { inViewer = false }: { inViewer?: boolean } = {}
+) {
   const assetType = getAssetType(asset.tags)
   const canDelete =
     shouldShowDeleteButton.value &&
@@ -555,8 +563,9 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
         label: t('mediaAsset.actions.inspect'),
         icon: 'icon-[lucide--zoom-in]',
         visible:
-          isPreviewableMediaType(getMediaTypeFromFilename(asset.name)) ||
-          isHdrImageFilename(asset.name),
+          !inViewer &&
+          (isPreviewableMediaType(getMediaTypeFromFilename(asset.name)) ||
+            isHdrImageFilename(asset.name)),
         command: () => handleZoomClick(asset)
       },
       {
@@ -655,7 +664,6 @@ const handleZoomClick = (asset: AssetItem) => {
     return
   }
 
-  currentGalleryAssetId.value = asset.id
   const index = previewableVisibleAssets.value.findIndex(
     (a) => a.id === asset.id
   )

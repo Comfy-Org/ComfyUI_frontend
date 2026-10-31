@@ -1,12 +1,21 @@
 import userEvent from '@testing-library/user-event'
-import { fireEvent, render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useAssetDownload } from '@/composables/useAssetDownload'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 import MediaLightbox from './MediaLightbox.vue'
+
+const downloadFiles = vi.fn()
+
+vi.mock(import('@/composables/useAssetDownload'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(useAssetDownload).mockReturnValue({ downloadFiles })
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -18,6 +27,8 @@ const i18n = createI18n({
         gallery: 'Gallery',
         previous: 'Previous',
         next: 'Next',
+        download: 'Download',
+        moreOptions: 'More Options',
         videoFailedToLoad: 'Video failed to load',
         textFailedToLoad: 'Text failed to load'
       }
@@ -32,7 +43,8 @@ type MockResultItem = AugmentedResultItem & {
 describe('MediaLightbox', () => {
   const mockComfyImage = {
     name: 'ComfyImage',
-    template: '<div class="mock-comfy-image" data-testid="comfy-image"></div>',
+    template:
+      '<img class="mock-comfy-image" data-testid="comfy-image" :src="src" :alt="alt" />',
     props: ['src', 'contain', 'alt']
   }
 
@@ -66,7 +78,7 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: '456',
       mediaType: 'images',
-      url: 'image2.jpg',
+      url: '/api/assets/2/preview',
       id: '2'
     },
     {
@@ -134,6 +146,305 @@ describe('MediaLightbox', () => {
     expect(screen.queryByLabelText('Next')).not.toBeInTheDocument()
   })
 
+  it('shows the file name of the item being viewed', async () => {
+    renderGallery()
+    await nextTick()
+
+    expect(screen.getByTestId('lightbox-filename')).toHaveTextContent(
+      'image1.jpg'
+    )
+  })
+
+  it('keeps the file name in sync with navigation', async () => {
+    const { rerender } = renderGallery({ activeIndex: 0 })
+    await nextTick()
+
+    await rerender({ allGalleryItems: mockGalleryItems, activeIndex: 1 })
+    await nextTick()
+
+    expect(screen.getByTestId('lightbox-filename')).toHaveTextContent(
+      'image2.jpg'
+    )
+  })
+
+  it('downloads the item being viewed under its own file name', async () => {
+    const { user } = renderGallery({ activeIndex: 1 })
+    await nextTick()
+
+    await user.click(screen.getByLabelText('Download'))
+
+    expect(downloadFiles.mock.calls[0][0][0]).toMatchObject({
+      url: '/api/assets/2/preview',
+      filename: 'image2.jpg'
+    })
+  })
+
+  it('downloads the item file rather than the preview it renders', async () => {
+    const { user } = renderGallery({
+      allGalleryItems: [
+        {
+          ...mockGalleryItems[0],
+          url: '/api/assets/1/preview',
+          downloadUrl: '/api/assets/1/content'
+        }
+      ]
+    })
+    await nextTick()
+
+    await user.click(screen.getByLabelText('Download'))
+
+    expect(downloadFiles.mock.calls[0][0][0]).toMatchObject({
+      url: '/api/assets/1/content',
+      filename: 'image1.jpg'
+    })
+  })
+
+  describe('more options menu', () => {
+    it('hides the more options button without a context-menu listener', async () => {
+      renderGallery()
+      await nextTick()
+
+      expect(screen.queryByLabelText('More Options')).not.toBeInTheDocument()
+    })
+
+    it('emits context-menu when the more options button is clicked', async () => {
+      const onContextMenu = vi.fn()
+      const { user } = renderGallery({ onContextMenu })
+      await nextTick()
+
+      await user.click(screen.getByLabelText('More Options'))
+
+      expect(onContextMenu).toHaveBeenCalledTimes(1)
+      expect(onContextMenu.mock.calls[0][0]).toBeInstanceOf(MouseEvent)
+    })
+
+    it('shows the more options button when the listener arrives after mount', async () => {
+      const { rerender } = renderGallery()
+      await nextTick()
+
+      expect(screen.queryByLabelText('More Options')).not.toBeInTheDocument()
+
+      await rerender({
+        allGalleryItems: mockGalleryItems,
+        activeIndex: 0,
+        onContextMenu: vi.fn()
+      })
+      await nextTick()
+
+      expect(screen.getByLabelText('More Options')).toBeInTheDocument()
+    })
+  })
+
+  describe('caption reveal and auto-hide', () => {
+    const caption = () => screen.getByTestId('lightbox-caption')
+
+    const finishImageLoad = (filename: string) => {
+      screen.getByAltText(filename).dispatchEvent(new Event('load'))
+    }
+
+    it('reveals the caption again after it auto-hides', async () => {
+      vi.useFakeTimers()
+      try {
+        const { user } = renderGallery()
+        await screen.findByTestId('lightbox-content')
+        await nextTick()
+        finishImageLoad('image1.jpg')
+        await nextTick()
+        expect(caption()).toHaveClass('opacity-100')
+
+        await vi.advanceTimersByTimeAsync(2000)
+        await nextTick()
+        expect(caption()).toHaveClass('opacity-0')
+
+        await user.hover(screen.getByTestId('lightbox-content'))
+
+        expect(caption()).toHaveClass('opacity-100')
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('auto-hides the caption 2 seconds after the last pointer movement', async () => {
+      vi.useFakeTimers()
+      try {
+        const { user } = renderGallery()
+        await screen.findByTestId('lightbox-content')
+        await nextTick()
+        finishImageLoad('image1.jpg')
+        await nextTick()
+        expect(caption()).toHaveClass('opacity-100')
+
+        await user.hover(screen.getByTestId('lightbox-content'))
+        expect(caption()).toHaveClass('opacity-100')
+
+        await vi.advanceTimersByTimeAsync(2000)
+        await nextTick()
+
+        expect(caption()).toHaveClass('opacity-0')
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('keeps the caption hidden after navigation until the new image loads', async () => {
+      vi.useFakeTimers()
+      try {
+        const { rerender } = renderGallery({ activeIndex: 0 })
+        await screen.findByTestId('lightbox-content')
+        await nextTick()
+        finishImageLoad('image1.jpg')
+        await nextTick()
+        await vi.advanceTimersByTimeAsync(2000)
+        await nextTick()
+        expect(caption()).toHaveClass('opacity-0')
+
+        await rerender({
+          allGalleryItems: mockGalleryItems,
+          activeIndex: 1
+        })
+        await nextTick()
+        await nextTick()
+
+        expect(caption()).toHaveTextContent('image2.jpg')
+        expect(caption()).toHaveClass('opacity-0')
+
+        finishImageLoad('image2.jpg')
+        await nextTick()
+
+        expect(caption()).toHaveClass('opacity-100')
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('keeps the caption visible while hovered and hides it on leave', async () => {
+      vi.useFakeTimers()
+      try {
+        const { user } = renderGallery()
+        await nextTick()
+
+        await user.hover(caption())
+        await vi.advanceTimersByTimeAsync(5000)
+        await nextTick()
+
+        expect(caption()).toHaveClass('opacity-100')
+
+        await user.unhover(caption())
+        await nextTick()
+
+        expect(caption()).toHaveClass('opacity-0')
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('reveals the caption for an image that was already complete on mount', async () => {
+      const complete = vi
+        .spyOn(HTMLImageElement.prototype, 'complete', 'get')
+        .mockReturnValue(true)
+      const naturalWidth = vi
+        .spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get')
+        .mockReturnValue(64)
+      try {
+        renderGallery()
+        await screen.findByTestId('lightbox-content')
+        await nextTick()
+
+        expect(caption()).toHaveClass('opacity-100')
+      } finally {
+        complete.mockRestore()
+        naturalWidth.mockRestore()
+      }
+    })
+
+    it('ignores a late load from the item that was replaced', async () => {
+      const { rerender } = renderGallery({ activeIndex: 0 })
+      await screen.findByTestId('lightbox-content')
+      await nextTick()
+      const replaced = screen.getByAltText('image1.jpg')
+
+      await rerender({ allGalleryItems: mockGalleryItems, activeIndex: 1 })
+      await nextTick()
+      await nextTick()
+
+      expect(caption()).toHaveTextContent('image2.jpg')
+      expect(caption()).toHaveClass('opacity-0')
+
+      replaced.dispatchEvent(new Event('load'))
+      await nextTick()
+
+      expect(caption()).toHaveClass('opacity-0')
+
+      screen.getByAltText('image2.jpg').dispatchEvent(new Event('load'))
+      await nextTick()
+
+      expect(caption()).toHaveClass('opacity-100')
+    })
+  })
+
+  it('keeps focus in the viewer when a consumer re-anchors to the same item', async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(MediaLightbox, {
+      global: { plugins: [i18n] },
+      props: { allGalleryItems: mockGalleryItems, activeIndex: 0 }
+    })
+    await nextTick()
+
+    const download = screen.getByLabelText('Download')
+    await user.click(download)
+    expect(download).toHaveFocus()
+
+    await rerender({
+      allGalleryItems: [
+        mockGalleryItems[2],
+        mockGalleryItems[0],
+        mockGalleryItems[1]
+      ],
+      activeIndex: 1
+    })
+    await nextTick()
+    await nextTick()
+
+    expect(download).toHaveFocus()
+  })
+
+  it('returns focus to the trigger after navigating and closing', async () => {
+    const GalleryHost = defineComponent({
+      components: { MediaLightbox },
+      setup: () => ({ activeIndex: ref(-1), items: mockGalleryItems }),
+      template: `
+        <button @click="activeIndex = 0">Open viewer</button>
+        <MediaLightbox
+          v-model:active-index="activeIndex"
+          :all-gallery-items="items"
+        />
+      `
+    })
+    const user = userEvent.setup()
+    render(GalleryHost, {
+      global: {
+        plugins: [i18n],
+        components: {
+          ComfyImage: mockComfyImage,
+          ResultVideo: mockResultVideo,
+          ResultAudio: mockResultAudio
+        }
+      }
+    })
+
+    const trigger = screen.getByRole('button', { name: 'Open viewer' })
+    await user.click(trigger)
+    await nextTick()
+
+    await user.click(screen.getByLabelText('Next'))
+    await nextTick()
+
+    await user.click(screen.getByLabelText('Close'))
+    await nextTick()
+
+    expect(trigger).toHaveFocus()
+  })
+
   it('shows gallery when activeIndex changes from -1', async () => {
     const { rerender, container } = renderGallery({ activeIndex: -1 })
 
@@ -187,57 +498,47 @@ describe('MediaLightbox', () => {
     expect(screen.queryByText('Text failed to load')).not.toBeInTheDocument()
   })
 
-  /* oxlint-disable testing-library/prefer-user-event -- keyDown on dialog element for navigation, not text input */
   describe('keyboard navigation', () => {
     it('navigates to next item on ArrowRight', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'ArrowRight'
-      })
+      await user.keyboard('{ArrowRight}')
       await nextTick()
 
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(1)
     })
 
     it('navigates to previous item on ArrowLeft', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 1 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 1 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'ArrowLeft'
-      })
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(0)
     })
 
     it('wraps to last item on ArrowLeft from first', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'ArrowLeft'
-      })
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(2)
     })
 
     it('closes gallery on Escape', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'Escape'
-      })
+      await user.keyboard('{Escape}')
       await nextTick()
 
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
     })
   })
-  /* oxlint-enable testing-library/prefer-user-event */
 
   /* oxlint-disable testing-library/no-node-access -- element identity is the behavior under test: the browser only keeps a video's buffer if the same node survives navigation. The real Teleport must render (the test-utils teleport stub remounts its subtree and would defeat KeepAlive), so queries go through document.body. */
   describe('video retention across navigation', () => {

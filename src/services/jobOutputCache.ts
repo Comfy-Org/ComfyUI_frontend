@@ -25,6 +25,7 @@ import { parseTaskOutput } from '@/stores/resultItemParsing'
 interface OutputsTask {
   readonly jobId: string
   readonly outputsCount: number | undefined
+  readonly isHistory: boolean
   readonly previewableOutputs: readonly AugmentedResultItem[]
   loadFullOutputs(): Promise<OutputsTask>
 }
@@ -73,7 +74,7 @@ export async function getOutputsForTask(
     return [...task.previewableOutputs]
   }
 
-  const cached = taskCache.get(requestId)
+  const cached = task.isHistory ? taskCache.get(requestId) : undefined
   if (cached) {
     return [...cached.previewableOutputs]
   }
@@ -86,7 +87,8 @@ export async function getOutputsForTask(
       return null
     }
 
-    taskCache.set(requestId, loadedTask)
+    if (task.isHistory && loadedTask !== task)
+      taskCache.set(requestId, loadedTask)
     return [...loadedTask.previewableOutputs]
   } catch (error) {
     if (latestTaskRequestId !== requestId) return null
@@ -109,14 +111,15 @@ export function getPreviewableOutputsFromJobDetail(
 // ===== Job Detail Caching =====
 
 export async function getJobDetail(
-  jobId: string
+  jobId: string,
+  options: { requireOutputs?: boolean } = {}
 ): Promise<JobDetail | undefined> {
   const cached = jobDetailCache.get(jobId)
-  if (cached) return cached
+  if (cached && (!options.requireOutputs || cached.outputs)) return cached
 
   try {
     const detail = await api.getJobDetail(jobId)
-    if (detail) {
+    if (detail && (!options.requireOutputs || detail.outputs)) {
       jobDetailCache.set(jobId, detail)
     }
     return detail
