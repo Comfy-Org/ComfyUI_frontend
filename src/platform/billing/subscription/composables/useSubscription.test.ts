@@ -701,6 +701,7 @@ describe('useSubscription', () => {
 
       const startup = fetchStatusDirect()
       const fresh = fetchStatusDirect({ fresh: true })
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(1)
       resolveStartup(
         buildStatus({ is_active: true, renewal_date: 'before-consent' })
       )
