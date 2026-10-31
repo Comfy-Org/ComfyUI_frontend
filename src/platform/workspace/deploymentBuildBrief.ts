@@ -28,7 +28,9 @@ const UNLISTED_MODELS = [
 ]
 
 function inline(text: string): string {
-  return text.replace(/[\p{Cc}\p{Zl}\p{Zp}`]/gu, ' ')
+  return text
+    .replace(/[\p{Cf}\p{Default_Ignorable_Code_Point}]/gu, '')
+    .replace(/[\p{Cc}\p{Zl}\p{Zp}`]/gu, ' ')
 }
 
 function packLine({ packId, nodeTypes }: MissingBuildPack): string {

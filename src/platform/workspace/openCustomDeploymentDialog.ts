@@ -1,3 +1,4 @@
+import { nextTick } from 'vue'
 import type { Component } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -81,12 +82,32 @@ export function openDeployCustomNodesDialog(): Promise<boolean> {
   })
 }
 
-/** Opens the needs-a-custom-deployment dialog; false if it could not load. */
-export function openWorkflowNeedsDeploymentDialog(): Promise<boolean> {
+const WORKFLOW_NEEDS_DEPLOYMENT_KEY = 'global-workflow-needs-deployment'
+
+function loadWorkflowNeedsDeploymentCard() {
+  return import('@/platform/workspace/components/WorkflowNeedsDeploymentCard.vue')
+}
+
+/** Preloads the workflow deployment dialog; false if loading fails. */
+export function preloadWorkflowNeedsDeploymentDialog(): Promise<boolean> {
+  return loadWorkflowNeedsDeploymentCard()
+    .then(cardOf)
+    .then(
+      () => true,
+      () => false
+    )
+}
+
+/** Opens the workflow deployment dialog, replacing an earlier one. */
+export async function openWorkflowNeedsDeploymentDialog(): Promise<boolean> {
+  const dialogStore = useDialogStore()
+  if (dialogStore.isDialogOpen(WORKFLOW_NEEDS_DEPLOYMENT_KEY)) {
+    dialogStore.closeDialog({ key: WORKFLOW_NEEDS_DEPLOYMENT_KEY })
+    await nextTick()
+  }
   return openCardDialog(
-    'global-workflow-needs-deployment',
-    () =>
-      import('@/platform/workspace/components/WorkflowNeedsDeploymentCard.vue'),
+    WORKFLOW_NEEDS_DEPLOYMENT_KEY,
+    loadWorkflowNeedsDeploymentCard,
     {}
   )
 }
