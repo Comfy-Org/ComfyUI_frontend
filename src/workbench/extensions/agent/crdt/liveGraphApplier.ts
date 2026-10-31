@@ -43,6 +43,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
+import { withLiveAgentTurnWrites } from './agentRemoteProvenance'
 import {
   allSubgraphDefinitions,
   readSubgraphDefinitions,
@@ -857,7 +858,10 @@ export class LiveGraphApplier {
     return withActor(context.actor, () => {
       this.deps.getCanvas?.()?.emitBeforeChange()
       try {
-        return withGraphIntentSource('agent-remote', fn)
+        return withLiveAgentTurnWrites(
+          { isLiveAgentTurn: context.liveAgentTurn === true },
+          () => withGraphIntentSource('agent-remote', fn)
+        )
       } finally {
         graph.setDirtyCanvas(true, true)
         this.deps.getCanvas?.()?.emitAfterChange()

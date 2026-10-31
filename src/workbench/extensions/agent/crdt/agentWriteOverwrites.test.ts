@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import {
+  emitGraphIntent,
   onGraphIntent,
   withGraphIntentSource
 } from '@/lib/litegraph/src/graphIntents'
@@ -137,7 +138,13 @@ function overwriteDetails(): Record<string, unknown>[] {
   )
 }
 
+interface FrameProvenance {
+  actor?: string
+  catchUp?: boolean
+}
+
 function setup({ enabled = true }: { enabled?: boolean } = {}) {
+  let gateOpen = enabled
   const graph = new LGraph()
   const node = withGraphIntentSource('load', () => {
     const created = LiteGraph.createNode(CLASS)
@@ -158,18 +165,21 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
   const follower = new FollowerDoc()
   const projection = new AgentCrdtProjection(() => graph)
   let seq = 0
-  const deliver = (update: Uint8Array) => {
+  const deliver = (update: Uint8Array, provenance: FrameProvenance = {}) => {
     follower.applyRemoteUpdate(update)
     projection.applyFrame({
       workflowId: WORKFLOW_ID,
       seq: ++seq,
       update,
-      actor: HOST_ACTOR,
-      opIds: []
+      actor: provenance.actor ?? AGENT_ACTOR,
+      opIds: [],
+      catchUp: provenance.catchUp ?? false
     })
   }
   projection.bind(WORKFLOW_ID, follower)
-  deliver(Y.encodeStateAsUpdate(host))
+  // The first frame is the host's baseline, which is a catch-up sync rather
+  // than a turn's writes.
+  deliver(Y.encodeStateAsUpdate(host), { actor: HOST_ACTOR, catchUp: true })
 
   const sourcesOf = new Map<string, GraphIntentSource[]>()
   const stopRecording = onGraphIntent((event: GraphIntentEvent) => {
@@ -181,7 +191,7 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
 
   let isRestoringState = false
   const watch = attachAgentWriteOverwriteWatch({
-    isEnabled: () => enabled,
+    isEnabled: () => gateOpen,
     isRestoringState: () => isRestoringState
   })
 
@@ -193,7 +203,11 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
     host.destroy()
   })
 
-  const agentWrites = (widgetName: string, value: unknown) => {
+  const remoteWrites = (
+    widgetName: string,
+    value: unknown,
+    provenance: FrameProvenance = {}
+  ) => {
     const before = Y.encodeStateVector(host)
     const { outcomes } = applyOps(
       host,
@@ -201,8 +215,10 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
       CATALOG
     )
     expect(outcomes.map((outcome) => outcome.outcome)).toEqual(['applied'])
-    deliver(Y.encodeStateAsUpdate(host, before))
+    deliver(Y.encodeStateAsUpdate(host, before), provenance)
   }
+  const agentWrites = (widgetName: string, value: unknown) =>
+    remoteWrites(widgetName, value)
 
   const edits = (
     source: GraphIntentSource,
@@ -218,9 +234,15 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
   }
 
   return {
+    graph,
+    node,
     widget,
     agentWrites,
+    remoteWrites,
     edits,
+    setGateOpen: (open: boolean) => {
+      gateOpen = open
+    },
     sourcesFor: (name: string) => sourcesOf.get(name) ?? [],
     nodeId: String(node.id)
   }
@@ -419,6 +441,148 @@ describe('recording which edit overwrote an Agent write (PM-2379)', () => {
 
     expect(overwriteEvents()).toEqual([])
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('ignores a catch-up frame: it is a sync, not a turn the Agent took', () => {
+    const s = setup()
+    s.remoteWrites('model.generate_audio', false, { catchUp: true })
+
+    s.edits('local', () => {
+      s.widget('model.generate_audio').value = true
+    })
+
+    expect(overwriteEvents()).toEqual([])
+  })
+
+  it('ignores a frame another tab’s person authored', () => {
+    const s = setup()
+    s.remoteWrites('model.generate_audio', false, {
+      actor: 'human:someone-else:tab2'
+    })
+
+    s.edits('local', () => {
+      s.widget('model.generate_audio').value = true
+    })
+
+    expect(overwriteEvents()).toEqual([])
+  })
+
+  it('forgets an Agent write a later non-Agent frame replaced', () => {
+    const s = setup()
+    s.agentWrites('model.generate_audio', false)
+
+    s.remoteWrites('model.generate_audio', true, { catchUp: true })
+    s.edits('local', () => {
+      s.widget('model.generate_audio').value = false
+    })
+
+    expect(overwriteEvents()).toEqual([])
+  })
+
+  it('names an automatic write during a restore as the replay, not the person', () => {
+    const s = setup()
+    s.agentWrites('model.generate_audio', false)
+
+    // `local` is the default source for anything outside an explicit scope,
+    // so a normalization watcher or `afterConfigureGraph` hook running under
+    // a restore arrives as `local`.
+    s.edits(
+      'local',
+      () => {
+        s.widget('model.generate_audio').value = true
+      },
+      { restoring: true }
+    )
+
+    expect(overwriteDetails()).toHaveLength(1)
+    expect(overwriteDetails()[0]).toMatchObject({ kind: 'undo-redo-restore' })
+  })
+
+  it('forgets a removed node whatever removed it, not only a local delete', () => {
+    const s = setup()
+    s.agentWrites('model.generate_audio', false)
+
+    // An Agent delete and `configure({ clearGraph: true })` are not `local`.
+    // Node ids are reused, so an entry kept past the removal is charged to
+    // whoever next occupies that id and widget name.
+    withGraphIntentSource('agent-remote', () => {
+      s.graph.remove(s.node)
+    })
+    withGraphIntentSource('load', () => {
+      s.graph.add(s.node)
+    })
+
+    s.edits('local', () => {
+      s.widget('model.generate_audio').value = true
+    })
+
+    expect(overwriteEvents()).toEqual([])
+  })
+
+  it('keys a removal by the root graph, not the subgraph holding the node', () => {
+    const s = setup()
+    s.agentWrites('model.generate_audio', false)
+
+    // Widget registers are keyed by the root graph id, while a `remove_node`
+    // carries the graph that held the node — a subgraph for an interior one.
+    // Keying the removal by that graph's own id would never match.
+    emitGraphIntent({
+      type: 'remove_node',
+      graph: {
+        id: 'some-interior-subgraph',
+        rootGraph: s.graph
+      } as unknown as LGraph,
+      node: s.node,
+      removedLinkIds: []
+    })
+
+    s.edits('local', () => {
+      s.widget('model.generate_audio').value = true
+    })
+
+    expect(overwriteEvents()).toEqual([])
+  })
+
+  it('drops what it remembered while the gate was closed', () => {
+    const s = setup()
+    s.agentWrites('model.duration', 9)
+
+    // The edit made while the gate was closed is the one that overwrote the
+    // Agent's value, and it is invisible. Comparing the next edit against the
+    // Agent's stale value would blame it for an overwrite it did not make,
+    // with a `ms_since_agent_write` spanning the whole closed window.
+    s.setGateOpen(false)
+    s.edits('local', () => {
+      s.widget('model.duration').value = 7
+    })
+    s.setGateOpen(true)
+    s.edits('local', () => {
+      s.widget('model.duration').value = 6
+    })
+
+    expect(overwriteEvents()).toEqual([])
+  })
+
+  it('caps telemetry reports per session, but keeps recording locally', () => {
+    const s = setup()
+    const cycles = 40
+
+    for (let index = 0; index < cycles; index++) {
+      s.agentWrites('model.generate_audio', false)
+      s.edits('local', () => {
+        s.widget('model.generate_audio').value = true
+      })
+    }
+
+    expect(overwriteEvents()).toHaveLength(cycles)
+    const reports = vi
+      .mocked(reportError)
+      .mock.calls.filter(
+        ([, context]) =>
+          (context as { errorType?: string } | undefined)?.errorType ===
+          'agent_write_overwritten'
+      )
+    expect(reports).toHaveLength(32)
   })
 
   it('stops recording once detached', () => {
