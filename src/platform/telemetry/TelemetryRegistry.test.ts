@@ -628,7 +628,8 @@ describe('TelemetryRegistry', () => {
           reason: null,
           client_message_id: 'client-message-1',
           held_ms: null,
-          thread_id: 'thread-1'
+          thread_id: 'thread-1',
+          client_session_id: 'client-session-1'
         },
         invoke: (registry) =>
           registry.trackAgentSendGated({
@@ -637,7 +638,8 @@ describe('TelemetryRegistry', () => {
             reason: null,
             client_message_id: 'client-message-1',
             held_ms: null,
-            thread_id: 'thread-1'
+            thread_id: 'thread-1',
+            client_session_id: 'client-session-1'
           })
       },
       {
