@@ -437,6 +437,10 @@ export const useAssetsStore = defineStore('assets', () => {
     const pendingRequestByCategory = new Map<string, ModelPaginationState>()
     const pendingPromiseByCategory = new Map<string, Promise<void>>()
     const abortByCategory = new Map<string, AbortController>()
+    const replacementBySupersededFetch = new WeakMap<
+      AbortController,
+      Promise<void>
+    >()
 
     function createState(
       existingAssets?: Map<string, AssetItem>
@@ -542,7 +546,8 @@ export const useAssetsStore = defineStore('assets', () => {
       const existingState = modelStateByCategory.value.get(category)
       const state = createState(existingState?.assets)
 
-      abortByCategory.get(category)?.abort()
+      const supersededFetch = abortByCategory.get(category)
+      supersededFetch?.abort()
       const controller = new AbortController()
       abortByCategory.set(category, controller)
 
@@ -665,7 +670,12 @@ export const useAssetsStore = defineStore('assets', () => {
         }
       }
 
-      const promise = loadBatches()
+      const promise = loadBatches().then(() =>
+        replacementBySupersededFetch.get(controller)
+      )
+      if (supersededFetch) {
+        replacementBySupersededFetch.set(supersededFetch, promise)
+      }
       pendingPromiseByCategory.set(category, promise)
       try {
         await promise

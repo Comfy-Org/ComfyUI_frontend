@@ -11,6 +11,8 @@ import type {
   AssetResponse
 } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import { verifyAssetSupportedCandidates } from '@/platform/workflowErrors/missingModel/missingModelScan'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { api } from '@/scripts/api'
 
@@ -504,6 +506,22 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         .mocked(assetService.getAssetsPageByTag)
         .mock.calls.filter(([tag]) => tag === 'models')
 
+    const settleMicrotasks = () =>
+      new Promise((resolve) => setTimeout(resolve, 0))
+
+    interface PendingPage {
+      resolve: (page: AssetResponse) => void
+      reject: (error: Error) => void
+    }
+
+    const abortablePage = (pages: PendingPage[], signal?: AbortSignal) =>
+      new Promise<AssetResponse>((resolve, reject) => {
+        pages.push({ resolve, reject })
+        signal?.addEventListener('abort', () =>
+          reject(new DOMException('Aborted', 'AbortError'))
+        )
+      })
+
     it('refetches the models library when a download completes during an in-flight fetch', async () => {
       const store = useAssetsStore()
       const newLora = createMockAsset('new-lora', ['models', 'loras'])
@@ -562,17 +580,180 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       completeLoraDownload()
       await nextTick()
       expect(modelsTagCalls()).toHaveLength(2)
-      await initialLoad
+      await settleMicrotasks()
 
       expect(store.isModelLoading('tag:models')).toBe(true)
 
       resolveFreshPage(makePage([newLora]))
-      await vi.waitFor(() =>
-        expect(store.getAssets('tag:models').map((a) => a.id)).toEqual([
-          'new-lora'
-        ])
-      )
+      await initialLoad
+
+      expect(store.getAssets('tag:models').map((a) => a.id)).toEqual([
+        'new-lora'
+      ])
       expect(store.isModelLoading('tag:models')).toBe(false)
+    })
+
+    describe('when a restart supersedes a running refresh', () => {
+      const queueModelPages = () => {
+        const pages: PendingPage[] = []
+        vi.mocked(assetService.getAssetsPageByTag).mockImplementation(
+          (_tag, _includePublic, options) =>
+            abortablePage(pages, options?.signal)
+        )
+        return pages
+      }
+
+      const recordSettlement = (
+        store: ReturnType<typeof useAssetsStore>,
+        settlements: string[][],
+        refresh: Promise<void>
+      ) =>
+        refresh.then(() => {
+          settlements.push(store.getAssets('tag:models').map((a) => a.id))
+        })
+
+      it.for([
+        { superseded: 'an initial load', existingAssets: [] },
+        { superseded: 'a refresh over listed models', existingAssets: ['old'] }
+      ])(
+        'keeps the caller and a joiner waiting for the replacement of $superseded',
+        async ({ existingAssets }) => {
+          const store = useAssetsStore()
+          const pages = queueModelPages()
+          if (existingAssets.length > 0) {
+            const firstLoad = store.updateModelsForTag('models')
+            pages[0].resolve(
+              makePage(existingAssets.map((id) => createMockAsset(id)))
+            )
+            await firstLoad
+          }
+
+          const settlements: string[][] = []
+          const waiters = [
+            recordSettlement(
+              store,
+              settlements,
+              store.updateModelsForTag('models')
+            ),
+            recordSettlement(
+              store,
+              settlements,
+              store.updateModelsForTag('models')
+            )
+          ]
+          const replacement = store.updateModelsForTag('models', {
+            restart: true
+          })
+          await settleMicrotasks()
+
+          expect(settlements).toEqual([])
+
+          pages.at(-1)!.resolve(makePage([createMockAsset('new-lora')]))
+          await Promise.all([...waiters, replacement])
+
+          expect(settlements).toEqual([['new-lora'], ['new-lora']])
+          expect(store.isModelLoading('tag:models')).toBe(false)
+        }
+      )
+
+      it('keeps every waiter attached across a second restart', async () => {
+        const store = useAssetsStore()
+        const pages = queueModelPages()
+        const settlements: string[][] = []
+
+        const original = recordSettlement(
+          store,
+          settlements,
+          store.updateModelsForTag('models')
+        )
+        void store.updateModelsForTag('models', { restart: true })
+        const joinerOfFirstReplacement = recordSettlement(
+          store,
+          settlements,
+          store.updateModelsForTag('models')
+        )
+        const secondReplacement = store.updateModelsForTag('models', {
+          restart: true
+        })
+        await settleMicrotasks()
+
+        expect(settlements).toEqual([])
+
+        pages[2].resolve(makePage([createMockAsset('new-lora')]))
+        await Promise.all([
+          original,
+          joinerOfFirstReplacement,
+          secondReplacement
+        ])
+
+        expect(settlements).toEqual([['new-lora'], ['new-lora']])
+        expect(store.isModelLoading('tag:models')).toBe(false)
+      })
+
+      it('records a failed replacement without rejecting the waiters', async () => {
+        const store = useAssetsStore()
+        const pages = queueModelPages()
+        const failure = new Error('offline')
+
+        const caller = store.updateModelsForTag('models')
+        const joiner = store.updateModelsForTag('models')
+        const replacement = store.updateModelsForTag('models', {
+          restart: true
+        })
+        await settleMicrotasks()
+        pages[1].reject(failure)
+
+        await expect(
+          Promise.all([caller, joiner, replacement])
+        ).resolves.toBeDefined()
+        expect(store.getError('tag:models')).toBe(failure)
+        expect(store.isModelLoading('tag:models')).toBe(false)
+      })
+
+      it('releases the waiters when the category is invalidated during the replacement', async () => {
+        const store = useAssetsStore()
+        queueModelPages()
+
+        const caller = store.updateModelsForTag('models')
+        const replacement = store.updateModelsForTag('models', {
+          restart: true
+        })
+        store.invalidateCategory('tag:models')
+
+        await expect(Promise.all([caller, replacement])).resolves.toBeDefined()
+      })
+
+      it('reports an installed model as present when an import completes during verification', async () => {
+        useAssetsStore()
+        const pages: PendingPage[] = []
+        vi.mocked(assetService.getAssetsPageForNodeType).mockImplementation(
+          (_nodeType, options) => abortablePage(pages, options?.signal)
+        )
+        vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+          makePage([])
+        )
+        const installedLora = createMockAsset('installed-lora')
+        const candidate = fromPartial<MissingModelCandidate>({
+          name: installedLora.name,
+          nodeType: 'LoraLoader',
+          isAssetSupported: true
+        })
+
+        const verification = verifyAssetSupportedCandidates([candidate])
+        await settleMicrotasks()
+        expect(pages).toHaveLength(1)
+
+        completeLoraDownload()
+        await nextTick()
+        await settleMicrotasks()
+
+        expect(candidate.isMissing).toBeUndefined()
+
+        pages.at(-1)!.resolve(makePage([installedLora]))
+        await verification
+
+        expect(candidate.isMissing).toBe(false)
+      })
     })
 
     it('joins the in-flight models fetch when no restart is requested', async () => {
