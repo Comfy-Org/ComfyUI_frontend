@@ -586,6 +586,14 @@ describe('useSubscriptionDialog', () => {
         })
       })
 
+      it('carries locked credits to the unified table', async () => {
+        useUnifiedWorkspaceRouting()
+
+        await useSubscriptionDialog().showPricingTable({ creditsLocked: true })
+
+        expect(contentProps()).toMatchObject({ creditsLocked: true })
+      })
+
       it('carries it to the legacy team table', async () => {
         useUnifiedWorkspaceRouting()
         mockIsLegacyTeamPlan.value = true

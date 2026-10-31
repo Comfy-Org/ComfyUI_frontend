@@ -28,6 +28,8 @@
       </DialogTitle>
     </div>
 
+    <CreditsLockedNotice v-if="creditsLocked && checkoutStep === 'pricing'" />
+
     <div
       v-if="reason === 'out_of_credits'"
       class="text-center text-muted-foreground"
@@ -124,6 +126,7 @@ import type { SubscriptionCheckoutSelection } from '@/platform/billing/composabl
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'
 
+import CreditsLockedNotice from './CreditsLockedNotice.vue'
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
@@ -133,12 +136,14 @@ const {
   onClose,
   reason,
   paymentIntentSource,
+  creditsLocked,
   initialPlanMode,
   initialCheckout
 } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
   paymentIntentSource: PaymentIntentSource | undefined
+  creditsLocked?: boolean
   initialPlanMode?: 'personal' | 'team'
   initialCheckout?: SubscriptionCheckoutSelection
 }>()
