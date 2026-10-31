@@ -928,8 +928,11 @@ export type AgentOnboardingAction = 'next' | 'finish' | 'skip'
  * `finish` marks completion, so the gap from `agent_onboarding_shown` is the
  * onboarding time.
  */
+export type AgentOnboardingCard = 'intro' | 'workflow' | 'history'
 export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
   step: number
+  card: AgentOnboardingCard
+  total: number
   action: AgentOnboardingAction
 }
 /**
