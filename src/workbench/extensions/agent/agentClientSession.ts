@@ -1,10 +1,9 @@
+import { createUuidv4 } from '@/utils/uuid'
+
 let clientSessionId: string | undefined
 
-/**
- * An opaque id for this page load. It exists before any agent thread does, so a
- * feedback report with no thread can still be joined to the send telemetry.
- */
+/** An opaque id for this page load. */
 export function agentClientSessionId(): string {
-  clientSessionId ??= crypto.randomUUID()
+  clientSessionId ??= createUuidv4()
   return clientSessionId
 }

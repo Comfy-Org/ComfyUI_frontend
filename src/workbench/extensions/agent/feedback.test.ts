@@ -27,13 +27,14 @@ vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-const idleState = (consent: 'unchecked' | 'not_accepted') =>
-  [
+function idleState(consent: 'unchecked' | 'signed_out') {
+  return [
     `client=${agentClientSessionId()}`,
     `consent=${consent}`,
     'held=none',
     'composer=idle'
   ].join(',')
+}
 
 describe('openFeedbackDialog (agent)', () => {
   beforeEach(() => {
@@ -104,7 +105,7 @@ describe('openFeedbackDialog (agent)', () => {
 
     expect(openTypeformDialog).toHaveBeenCalledWith(
       expect.objectContaining({
-        hiddenFields: `distribution=ccloud,source=agent-panel,version=1.55.4,${idleState('not_accepted')}`
+        hiddenFields: `distribution=ccloud,source=agent-panel,version=1.55.4,${idleState('signed_out')}`
       })
     )
   })
@@ -125,7 +126,7 @@ describe('openFeedbackDialog (agent)', () => {
           'email=alpha\\,graph=private@example.com',
           'version=1.55.4',
           'os=MacIntel',
-          idleState('not_accepted')
+          idleState('signed_out')
         ].join(',')
       })
     )
@@ -159,6 +160,7 @@ describe('openFeedbackDialog (agent)', () => {
 
     it('tells a finished consent check from one that never settled', () => {
       useAgentPanelStore().enabled = true
+      useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-264' }))
       const consent = useAgentConsentStore()
 
       Object.assign(consent, { isChecking: true })
@@ -168,6 +170,14 @@ describe('openFeedbackDialog (agent)', () => {
       Object.assign(consent, { isChecking: false })
       openFeedbackDialog('agent-panel')
       expect(sentFields()).toContain('consent=not_accepted')
+
+      Object.assign(consent, { checkFailed: true })
+      openFeedbackDialog('agent-panel')
+      expect(sentFields()).toContain('consent=check_failed')
+
+      useCurrentUser().resolvedUserInfo = computed(() => null)
+      openFeedbackDialog('agent-panel')
+      expect(sentFields()).toContain('consent=signed_out')
     })
 
     it('reports no hold as an explicit value, not a missing field', () => {

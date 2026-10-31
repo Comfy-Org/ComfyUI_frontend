@@ -26,17 +26,18 @@ describe('useAgentSendGates', () => {
   })
 
   it('exposes the gate holding a send until the hold ends', () => {
-    const gates = useAgentSendGates(() => null)
+    const onHeldGateChange = vi.fn()
+    const gates = useAgentSendGates(() => null, onHeldGateChange)
 
     gates.hold('consent', 'client-message-1')
     gates.hold('coach', 'client-message-1')
-    expect(gates.heldGate.value).toBe('coach')
+    expect(onHeldGateChange).toHaveBeenLastCalledWith('coach')
 
     gates.end({ gate: 'coach', outcome: 'released', reason: 'finished' })
-    expect(gates.heldGate.value).toBe('consent')
+    expect(onHeldGateChange).toHaveBeenLastCalledWith('consent')
 
     gates.end({ gate: 'consent', outcome: 'released', reason: 'accepted' })
-    expect(gates.heldGate.value).toBeNull()
+    expect(onHeldGateChange).toHaveBeenLastCalledWith(null)
   })
 
   it('reports only the first end of a hold', () => {

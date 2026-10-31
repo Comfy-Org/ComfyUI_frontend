@@ -8,10 +8,12 @@ import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 
-function consentState(): 'accepted' | 'not_accepted' | 'unchecked' {
+function consentState(signedIn: boolean) {
   const consent = useAgentConsentStore()
   if (consent.accepted) return 'accepted'
-  return consent.isChecking ? 'unchecked' : 'not_accepted'
+  if (!signedIn) return 'signed_out'
+  if (consent.isChecking) return 'unchecked'
+  return consent.checkFailed ? 'check_failed' : 'not_accepted'
 }
 
 export function openFeedbackDialog(source: FeedbackSource) {
@@ -30,7 +32,7 @@ export function openFeedbackDialog(source: FeedbackSource) {
       os: navigator.platform,
       session: useAgentConversationStore().threadId,
       client: agentClientSessionId(),
-      consent: consentState(),
+      consent: consentState(Boolean(resolvedUserInfo.value?.id)),
       held: heldSendGate ?? 'none',
       composer: useAgentComposerStore().submission?.phase ?? 'idle'
     }

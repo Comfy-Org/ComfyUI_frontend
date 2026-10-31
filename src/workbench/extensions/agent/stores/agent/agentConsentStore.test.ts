@@ -78,6 +78,7 @@ describe('agentConsentStore', () => {
     accountApi.header.mockResolvedValueOnce(null)
     const store = useAgentConsentStore()
     await expect(store.load()).rejects.toThrow('authentication is required')
+    expect(store.checkFailed).toBe(true)
     expect(store).toMatchObject({ isChecking: false })
   })
 

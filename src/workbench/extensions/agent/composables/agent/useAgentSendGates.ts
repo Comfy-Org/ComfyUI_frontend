@@ -1,5 +1,3 @@
-import { ref } from 'vue'
-
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   AgentCoachDropReason,
@@ -10,7 +8,7 @@ import type {
 
 import { agentClientSessionId } from '@/workbench/extensions/agent/agentClientSession'
 
-type HeldGate = 'consent' | 'coach'
+export type HeldGate = 'consent' | 'coach'
 
 export type CoachHoldEnd =
   | { outcome: 'released'; reason: AgentCoachReleaseReason }
@@ -29,12 +27,14 @@ interface Hold {
 }
 
 /** Reports what happens to a send before its turn POST. */
-export function useAgentSendGates(threadId: () => string | null) {
+export function useAgentSendGates(
+  threadId: () => string | null,
+  onHeldGateChange?: (gate: HeldGate | null) => void
+) {
   const holds = new Set<Hold>()
-  const heldGate = ref<HeldGate | null>(null)
 
   function syncHeldGate(): void {
-    heldGate.value = [...holds].at(-1)?.gate ?? null
+    onHeldGateChange?.([...holds].at(-1)?.gate ?? null)
   }
 
   function hold(gate: HeldGate, clientMessageId: string): void {
@@ -85,5 +85,5 @@ export function useAgentSendGates(threadId: () => string | null) {
     })
   }
 
-  return { heldGate, hold, end, rejectDraft }
+  return { hold, end, rejectDraft }
 }

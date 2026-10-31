@@ -31,6 +31,7 @@ import type {
   CreditTransitionNoticeState
 } from './creditTransitionNoticeState'
 import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
+import type { HeldGate } from '@/workbench/extensions/agent/composables/agent/useAgentSendGates'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
@@ -83,8 +84,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     writeDefaults: false
   })
   const gateSettled = ref(false)
-  /** The gate holding a send back from the turn POST, if one is. */
-  const heldSendGate = ref<'consent' | 'coach' | null>(null)
+  const heldSendGate = ref<HeldGate | null>(null)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
   const { flags: featureFlags } = useFeatureFlags()
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)

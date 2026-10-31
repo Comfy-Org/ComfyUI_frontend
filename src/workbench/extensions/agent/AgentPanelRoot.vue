@@ -697,17 +697,12 @@ const coachDeferredBy = computed(() =>
         ? 'dialog_open'
         : null
 )
-const sendGates = useAgentSendGates(() => threadId.value)
-watch(
-  sendGates.heldGate,
+const sendGates = useAgentSendGates(
+  () => threadId.value,
   (gate) => {
     agentPanelStore.heldSendGate = gate
-  },
-  { flush: 'sync' }
+  }
 )
-onBeforeUnmount(() => {
-  agentPanelStore.heldSendGate = null
-})
 const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
 function releaseCoachCompletionWaiters(
   holdEnd: CoachHoldEnd,
