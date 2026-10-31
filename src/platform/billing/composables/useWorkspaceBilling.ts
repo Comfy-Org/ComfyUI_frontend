@@ -261,6 +261,10 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       prepaidBalanceMicros: data.prepaid_balance_micros ?? 0,
       cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0,
       suggestedTopupAmountCents: data.suggested_topup_amount_cents,
+      minTopupCents: data.min_topup_cents,
+      minTopupCredits: data.min_topup_credits,
+      maxTopupCents: data.max_topup_cents,
+      maxTopupCredits: data.max_topup_credits,
       lowBalance: data.low_balance
     }
   })
