@@ -1696,7 +1696,7 @@ describe('TabErrors.vue', () => {
     const icon = screen.getByTestId('panel-tab-icon')
     expect(icon).toHaveAccessibleName('Setup required')
     expect(icon.className).toContain('icon-[comfy--triangle-alert-filled]')
-    expect(icon.className).toContain('bg-warning-background')
+    expect(icon.className).toContain('bg-warning')
   })
 
   it('uses error severity for an unabsorbed node validation error', () => {

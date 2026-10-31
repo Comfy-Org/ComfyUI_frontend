@@ -363,7 +363,7 @@ describe('ErrorOverlay', () => {
 
     expect(screen.getByTestId('error-overlay-icon')).toHaveClass(
       'icon-[comfy--triangle-alert-filled]',
-      'text-warning-background',
+      'text-warning',
       'size-5'
     )
   })

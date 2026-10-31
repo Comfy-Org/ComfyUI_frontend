@@ -434,7 +434,7 @@ describe('AttachmentChip', () => {
       within(status).getByTestId('attachment-validation-icon')
     ).toHaveClass(
       'icon-[comfy--circle-alert-filled]',
-      'text-destructive-background-hover'
+      'text-destructive'
     )
     expect(
       screen.queryByRole('button', { name: 'Preview bad.mov' })
