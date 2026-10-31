@@ -229,6 +229,22 @@ function interleaveLocalParts(
   return mergedParts
 }
 
+function preserveLiveToolStartTimes(
+  persistedParts: AssistantMessage['parts'],
+  liveParts: AssistantMessage['parts']
+): AssistantMessage['parts'] {
+  const startsByCallId = new Map<string, number>()
+  for (const part of liveParts) {
+    if (part.type === 'tool' && part.startedAtMs !== undefined)
+      startsByCallId.set(part.callId, part.startedAtMs)
+  }
+  return persistedParts.map((part) => {
+    if (part.type !== 'tool' || part.startedAtMs !== undefined) return part
+    const startedAtMs = startsByCallId.get(part.callId)
+    return startedAtMs === undefined ? part : { ...part, startedAtMs }
+  })
+}
+
 function finishWithPersistedParts(
   message: AssistantMessage,
   persistedParts: AssistantMessage['parts'] | undefined
@@ -252,7 +268,7 @@ function finishWithPersistedParts(
     (part) => part.type === 'thinking'
   )
   message.parts = interleaveLocalParts(
-    persistedParts,
+    preserveLiveToolStartTimes(persistedParts, message.parts),
     anchorLocalParts(message.parts).filter(
       ({ part }) => !persistedHasThinking || part.type !== 'thinking'
     )
