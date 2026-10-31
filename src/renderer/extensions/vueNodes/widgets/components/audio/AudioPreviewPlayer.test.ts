@@ -86,7 +86,6 @@ describe('AudioPreviewPlayer', () => {
       const user = userEvent.setup()
 
       renderPlayer('http://example.com/audio.ogg')
-      pause.mockClear()
       const button = screen.getByRole('button', { name: 'g.playPause' })
 
       await user.click(button)
@@ -199,6 +198,27 @@ describe('AudioPreviewPlayer', () => {
 
       expect(screen.queryByText(/1:30/)).not.toBeInTheDocument()
     })
+
+    it.for([
+      ['the source is replaced', (r) => r.rerender({ modelValue: 'b.mp3' })],
+      ['the source is cleared', (r) => r.rerender({ modelValue: undefined })],
+      ['the player unmounts', (r) => r.unmount()]
+    ] satisfies [string, (r: ReturnType<typeof renderPlayer>) => unknown][])(
+      'dismisses a visible error toast when %s',
+      async ([, transition]) => {
+        vi.spyOn(HTMLMediaElement.prototype, 'play').mockRejectedValue(
+          notSupported()
+        )
+        const user = userEvent.setup()
+        const rendered = renderPlayer('http://example.com/audio.mp3')
+        await user.click(screen.getByRole('button', { name: 'g.playPause' }))
+        expect(useToast().toasts).toHaveLength(1)
+
+        await transition(rendered)
+
+        expect(useToast().toasts).toEqual([])
+      }
+    )
 
     it('dismisses the playback error toast after a successful retry', async () => {
       vi.spyOn(HTMLMediaElement.prototype, 'play')
@@ -341,7 +361,6 @@ describe('AudioPreviewPlayer', () => {
       const user = userEvent.setup()
 
       renderPlayer('http://example.com/audio.mp3')
-      pause.mockClear()
       const button = screen.getByRole('button', { name: 'g.playPause' })
 
       await user.click(button)
