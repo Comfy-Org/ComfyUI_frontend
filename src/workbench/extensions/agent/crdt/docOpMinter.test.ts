@@ -90,6 +90,24 @@ class TestAutogrowSink extends LGraphNode {
   }
 }
 
+class TestIntSource extends LGraphNode {
+  constructor() {
+    super('Test Int Source')
+    this.addOutput('INT', 'INT')
+  }
+}
+
+class TestLoadVideo extends LGraphNode {
+  constructor() {
+    super('Test Load Video')
+    this.addInput('frame_load_cap', 'INT', {
+      widget: { name: 'frame_load_cap' }
+    })
+    this.addWidget('number', 'frame_load_cap', 1000, () => {})
+    this.serialize_widgets = true
+  }
+}
+
 class TestNote extends LGraphNode {
   override isVirtualNode = true
   constructor() {
@@ -150,7 +168,9 @@ const CATALOG: WidgetCatalog = {
     TestSource: { widget_order: ['steps'] },
     TestSink: { widget_order: [] },
     TestAutogrowSink: { widget_order: [] },
-    TestPrompt: { widget_order: ['text'] }
+    TestPrompt: { widget_order: ['text'] },
+    TestIntSource: { widget_order: [] },
+    TestLoadVideo: { widget_order: ['frame_load_cap'] }
   }
 }
 
@@ -289,6 +309,8 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestSink', TestSink)
   LiteGraph.registerNodeType('TestAutogrowSink', TestAutogrowSink)
+  LiteGraph.registerNodeType('TestIntSource', TestIntSource)
+  LiteGraph.registerNodeType('TestLoadVideo', TestLoadVideo)
   LiteGraph.registerNodeType('TestNote', TestNote)
   LiteGraph.registerNodeType('TestPrompt', TestPrompt)
   LiteGraph.registerNodeType('TestDynamicGroup', TestDynamicGroup)
@@ -1104,6 +1126,55 @@ describe('attachDocOpMinter', () => {
         { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
         { name: `${IMAGES_GROUP}.image_2`, link: sink.inputs[1].link },
         { name: `${IMAGES_GROUP}.image_3`, link: handWired }
+      ])
+      doc.destroy()
+    })
+
+    it('grows a widget input the agent-built document lacks when an undo/redo restore brings its link back', async () => {
+      const source = new TestIntSource()
+      const video = new TestLoadVideo()
+      withGraphIntentSource('load', () => {
+        graph.add(source)
+        graph.add(video)
+      })
+      const workflow = graph.serialize() as unknown as WorkflowJSON
+      const doc = mint(
+        {
+          ...workflow,
+          nodes: workflow.nodes.map((node) =>
+            String(node.id) === String(video.id)
+              ? { ...node, inputs: [] }
+              : node
+          )
+        },
+        CATALOG
+      )
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+
+      await restoreThrough(() => source.connect(0, video, 0))
+      await afterFlush()
+
+      const restored = video.inputs[0].link
+      expect(minted).toEqual([
+        {
+          op: 'connect',
+          link_id: restored,
+          from_node: source.id,
+          from_slot: 0,
+          to_node: video.id,
+          to_slot: null,
+          link_type: 'INT',
+          grow: {
+            name: 'frame_load_cap',
+            type: 'INT',
+            widget: 'frame_load_cap'
+          }
+        }
+      ])
+      expect(applyMinted(doc, minted)).toEqual(['applied'])
+      expect(docInputs(doc, video.id)).toEqual([
+        { name: 'frame_load_cap', link: restored }
       ])
       doc.destroy()
     })
