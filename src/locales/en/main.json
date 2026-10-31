@@ -5131,6 +5131,7 @@
     "hideAdvancedInputsButton": "Hide advanced inputs",
     "hideAdvancedShort": "Hide advanced",
     "errors": "Issues",
+    "missingResourcesWarning": "Missing resources",
     "noErrors": "No issues",
     "errorsDetected": "Error detected | Errors detected",
     "selectedNodeErrors": "{node} — {count} issue | {node} — {count} issues",
