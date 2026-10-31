@@ -1,5 +1,6 @@
 import { onScopeDispose } from 'vue'
 
+import { getStorageScope } from '@/platform/workflow/persistence/base/storageIO'
 import type { AgentThreadSummary } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AgentRestClient,
@@ -188,8 +189,11 @@ export function useAgentChatHistoryRefresh({
     if (controller.signal.aborted) return 'aborted'
     const { signal } = controller
     const generation = ++latestStartedRefresh
+    const owner = getStorageScope()
     if (uiTreatment === 'error_overlay') latestSurfacedRefresh = generation
     const result = await listThreads({ signal, workflowId })
+    if (signal.aborted) return 'aborted'
+    if (owner !== getStorageScope()) return 'superseded'
     return applyRefreshResult(result, generation, uiTreatment, workflowId)
   }
 

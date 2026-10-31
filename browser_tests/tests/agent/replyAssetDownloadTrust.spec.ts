@@ -7,6 +7,7 @@ import type {
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import {
   agentTest as test,
   bootAgentApp
@@ -73,7 +74,9 @@ test.describe(
         route.fulfill(jsonRoute(messages))
       )
       await page.addInitScript(({ key, id }) => localStorage.setItem(key, id), {
-        key: StorageKeys.agentThread('personal'),
+        key: StorageKeys.agentThread(
+          unsafeStorageScope('cloud:test-user-e2e:ws-personal')
+        ),
         id: threadId
       })
       cookieByAsset = new Map<string, string | null>()

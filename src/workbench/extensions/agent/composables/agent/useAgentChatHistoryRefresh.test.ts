@@ -6,6 +6,8 @@ import type {
   AgentRestClient,
   ThreadListing
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import { useAgentChatHistoryStore } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentChatHistoryRefresh } from './useAgentChatHistoryRefresh'
 
@@ -40,6 +42,9 @@ function deferredListing() {
 }
 
 function setup() {
+  vi.spyOn(storageIO, 'getStorageScope').mockReturnValue(
+    unsafeStorageScope('personal')
+  )
   const scope = effectScope()
   onTestFinished(() => scope.stop())
   const history = useAgentChatHistoryStore()
@@ -134,6 +139,26 @@ describe('useAgentChatHistoryRefresh', () => {
       expect(onFailure).not.toHaveBeenCalled()
     }
   )
+
+  it('ignores an in-flight listing after its storage scope is replaced', async () => {
+    const { history, listThreads, onFailure, refreshHistory } = setup()
+    const pending = deferredListing()
+    vi.mocked(storageIO.getStorageScope).mockReturnValue(
+      unsafeStorageScope('cloud:user-a:workspace-a')
+    )
+    listThreads.mockReturnValueOnce(pending.promise)
+    const refresh = refreshHistory()
+
+    history.replaceAll([])
+    vi.mocked(storageIO.getStorageScope).mockReturnValue(
+      unsafeStorageScope('cloud:user-b:workspace-b')
+    )
+    pending.resolve(completedListing('user-a-thread'))
+
+    await expect(refresh).resolves.toBe('superseded')
+    expect(history.sessions).toEqual([])
+    expect(onFailure).not.toHaveBeenCalled()
+  })
 
   it('applies an older successful refresh after a newer refresh fails', async () => {
     const { history, listThreads, onFailure, refreshHistory } = setup()

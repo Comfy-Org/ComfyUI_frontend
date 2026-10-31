@@ -153,6 +153,23 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const isOpen = (workflow: ComfyWorkflow) =>
     openWorkflowPathSet.value.has(workflow.path)
 
+  let syncGeneration = 0
+  let syncedGeneration = -1
+
+  const clearWorkflowCatalog = () => {
+    for (const workflow of workflows.value) workflow.unload()
+    activeWorkflow.value = null
+    openWorkflowPaths.value = []
+    tabActivationHistory.value = []
+    workflowLookup.value = {}
+  }
+
+  function resetForIdentityChange() {
+    syncGeneration++
+    clearWorkflowCatalog()
+    useWorkflowBookmarkStore().resetForIdentityChange()
+  }
+
   /**
    * Add paths to the list of open workflow paths without loading the files
    * or changing the active workflow.
@@ -478,17 +495,26 @@ export const useWorkflowStore = defineStore('workflow', () => {
   )
 
   async function syncWorkflows(dir: string = '') {
-    return executeSyncWorkflows(0, dir)
+    const generation = syncGeneration
+    const result = await executeSyncWorkflows(0, dir)
+    if (generation === syncGeneration) syncedGeneration = generation
+    return result
   }
 
   async function loadWorkflows(): Promise<void> {
-    if (isSyncReady.value) return
+    if (
+      isSyncReady.value &&
+      syncedGeneration === syncGeneration &&
+      !isSyncLoading.value
+    )
+      return
 
     if (isSyncLoading.value) {
       await until(isSyncLoading).toBe(false)
-      return
+      if (syncedGeneration === syncGeneration) return
     }
 
+    clearWorkflowCatalog()
     await syncWorkflows()
   }
 
@@ -762,6 +788,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     getMostRecentWorkflow,
     openWorkflow,
     openWorkflowsInBackground,
+    resetForIdentityChange,
     isOpen,
     isBusy,
     closeWorkflow,
@@ -839,11 +866,16 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
     await setBookmarked(path, !bookmarks.value.has(path))
   }
 
+  function resetForIdentityChange(): void {
+    bookmarks.value = new Set()
+  }
+
   return {
     isBookmarked,
     loadBookmarks,
     saveBookmarks,
     setBookmarked,
-    toggleBookmarked
+    toggleBookmarked,
+    resetForIdentityChange
   }
 })

@@ -132,6 +132,15 @@ describe('useWorkflowStore', () => {
     } as Response)
   })
 
+  it('drops workflow bookmarks at an identity boundary', async () => {
+    await bookmarkStore.setBookmarked('workflows/a.json', true)
+    expect(bookmarkStore.isBookmarked('workflows/a.json')).toBe(true)
+
+    store.resetForIdentityChange()
+
+    expect(bookmarkStore.isBookmarked('workflows/a.json')).toBe(false)
+  })
+
   describe('syncWorkflows', () => {
     it('should sync workflows', async () => {
       await syncRemoteWorkflows(['a.json', 'b.json'])

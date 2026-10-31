@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 
 import {
   agentTest as test,
@@ -34,7 +35,11 @@ test.describe(
       await page.addInitScript(
         ({ key, threadId }) => localStorage.setItem(key, threadId),
         {
-          key: StorageKeys.agentThread(agentHistoryBackFailure.workspaceId),
+          key: StorageKeys.agentThread(
+            unsafeStorageScope(
+              `cloud:test-user-e2e:ws-${agentHistoryBackFailure.workspaceId}`
+            )
+          ),
           threadId: agentHistoryBackFailure.threadId
         }
       )

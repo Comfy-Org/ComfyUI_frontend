@@ -1,6 +1,7 @@
 import type { AgentMessage } from '@comfyorg/ingest-types'
 
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
@@ -11,7 +12,7 @@ import {
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
-const WORKSPACE_ID = 'personal'
+const STORAGE_SCOPE = unsafeStorageScope('cloud:test-user-e2e:ws-personal')
 const THREAD_ID = 'b0f1b6d6-94ad-4d0f-9f0c-7f0b2f9a1d31'
 const AGENT_TURN_ID = '8f0a9c2e-5d41-4a7b-9b2f-13c6e0a44b02'
 const USER_TURN_ID = '2b7c4d10-6e85-4c13-8a41-9f5d7e6c0b14'
@@ -86,7 +87,7 @@ export const test = agentTest.extend<{
       await page.addInitScript(
         ({ key, threadId }) => localStorage.setItem(key, threadId),
         {
-          key: StorageKeys.agentThread(WORKSPACE_ID),
+          key: StorageKeys.agentThread(STORAGE_SCOPE),
           threadId: THREAD_ID
         }
       )

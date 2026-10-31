@@ -37,7 +37,7 @@ export function useUpdatePassword(requestSignIn: () => Promise<boolean>) {
         return
       }
 
-      await authStore.logout()
+      await authStore.logout(authStore.currentUserIdentity())
 
       if (await requestSignIn()) {
         await retry(...args)

@@ -18,7 +18,12 @@ vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import {
+  setStorageIdentity,
+  setStorageWorkspaceId
+} from '@/platform/workflow/persistence/base/storageIO'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import { api } from '@/scripts/api'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -49,6 +54,7 @@ import type {
   PostMessageInput
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type { AskUserResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { useAgentChatHistoryStore } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
@@ -64,6 +70,8 @@ vi.mock(import('@comfyorg/telemetry'))
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
 const telemetry = vi.mocked(telemetryProvider)
+const scope = (value: string) =>
+  unsafeStorageScope(value.includes(':') ? `cloud:${value}` : value)
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
@@ -434,6 +442,12 @@ describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     localStorage.clear()
     sessionStorage.clear()
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'personal', id: null })
+    )
+    setStorageIdentity('user-test')
+    setStorageWorkspaceId('personal')
     vi.mocked(reportError).mockClear()
     telemetry.trackAgentStopClicked.mockClear()
   })
@@ -617,6 +631,597 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(false)
   })
 
+  it('rejects a delayed turn acknowledgement after the storage owner changes', async () => {
+    let resolveAck: ((ack: AgentTurnAccepted) => void) | undefined
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolveAck = resolve
+        })
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    const pendingSend = session.sendMessage('account A turn')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    expect(session.entries.value).toEqual([])
+    expect(session.threadId.value).toBeNull()
+
+    resolveAck?.({
+      thread_id: 'thread-a',
+      message_id: 'message-a',
+      workflow_id: 'workflow-a'
+    })
+
+    await expect(pendingSend).resolves.toBe(false)
+    expect(session.entries.value).toEqual([])
+    expect(session.threadId.value).toBeNull()
+    expect(
+      localStorage.getItem(StorageKeys.agentThread(scope('user-b:personal')))
+    ).toBeNull()
+    setStorageIdentity('user-test')
+    session.stop()
+    await Promise.resolve()
+  })
+
+  it("does not let owner A's completion release owner B's send slot", async () => {
+    const acknowledgements: Array<(ack: AgentTurnAccepted) => void> = []
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          acknowledgements.push(resolve)
+        })
+    )
+    const cancelMessage = vi
+      .fn<AgentRestClient['cancelMessage']>()
+      .mockResolvedValue({ status: 'cancelling' })
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, cancelMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    const ownerASend = session.sendMessage('account A turn')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    const ownerBSend = session.sendMessage('account B turn')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(2))
+
+    acknowledgements[0]?.({
+      thread_id: 'thread-a',
+      message_id: 'message-a'
+    })
+    await expect(ownerASend).resolves.toBe(false)
+    expect(session.isSending.value).toBe(true)
+    await expect(session.sendMessage('must stay blocked')).resolves.toBe(false)
+    expect(postMessage).toHaveBeenCalledTimes(2)
+
+    await session.stopTurn('button')
+    acknowledgements[1]?.({
+      thread_id: 'thread-b',
+      message_id: 'message-b'
+    })
+    await expect(ownerBSend).resolves.toBe(true)
+    await vi.waitFor(() =>
+      expect(cancelMessage).toHaveBeenCalledWith('thread-b', 'message-b')
+    )
+
+    setStorageIdentity('user-test')
+    session.stop()
+  })
+
+  it('resets public and delayed session state when the storage owner changes', async () => {
+    const answerAsk = vi.fn<AgentRestClient['answerAsk']>(async () => ({
+      status: 'answered'
+    }))
+    const events = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: events.source
+    })
+    session.start()
+    events.status(true)
+    await session.sendMessage('account A turn')
+    events.emit(runApproval('msg-1', 'ask-shared'))
+    await expect(
+      session.answerAsk('ask-shared', { selected: ['run'] })
+    ).resolves.toBe(true)
+    expect(session.answeringAskIds.value).toEqual(new Set(['ask-shared']))
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+
+    expect(session.entries.value).toEqual([])
+    expect(session.threadId.value).toBeNull()
+    expect(session.answeringAskIds.value).toEqual(new Set())
+    expect(session.notices.value).toEqual([])
+    expect(session.boundWorkflowId.value).toBeNull()
+    expect(session.isSending.value).toBe(false)
+
+    await session.sendMessage('account B turn')
+    events.emit(runApproval('msg-1', 'ask-shared'))
+    vi.useFakeTimers()
+    await vi.advanceTimersByTimeAsync(60_000)
+    vi.useRealTimers()
+    expect(
+      useAgentConversationStore().messages.some((message) =>
+        message.parts.some((part) => part.type === 'runApproval')
+      )
+    ).toBe(true)
+    events.emit(askResolved('msg-1', 'ask-shared', ['cancel']))
+    expect(session.notices.value).toEqual([])
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'agent_ask_answer_superseded'
+      })
+    )
+    setStorageIdentity('user-test')
+    session.stop()
+  })
+
+  it.for(['success', 'failure'] as const)(
+    "ignores owner A's delayed stop %s after owner B takes over",
+    async (outcome) => {
+      let settleCancellation:
+        | ((accepted: AgentCancelAccepted) => void)
+        | undefined
+      let rejectCancellation: ((error: Error) => void) | undefined
+      const cancelMessage = vi.fn<AgentRestClient['cancelMessage']>(
+        () =>
+          new Promise<AgentCancelAccepted>((resolve, reject) => {
+            settleCancellation = resolve
+            rejectCancellation = reject
+          })
+      )
+      const session = useAgentSession({
+        rest: fakeRest({ cancelMessage }),
+        events: fakeEvents().source
+      })
+      session.start()
+      await session.sendMessage('account A turn')
+      const pendingStop = session.stopTurn('button')
+      await vi.waitFor(() => expect(cancelMessage).toHaveBeenCalledOnce())
+
+      setStorageIdentity('user-b')
+      setStorageWorkspaceId('personal')
+
+      if (outcome === 'success') {
+        settleCancellation?.({ status: 'cancelling' })
+      } else {
+        rejectCancellation?.(new Error('account A delayed failure'))
+      }
+      await pendingStop
+
+      expect(telemetry.trackAgentStopClicked).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
+      expect(session.notices.value).toEqual([])
+      expect(session.editableTurnId.value).toBeNull()
+      setStorageIdentity('user-test')
+      session.stop()
+    }
+  )
+
+  it("does not treat owner B's same-id turn as owner A's restored snapshot", async () => {
+    const streamingHistory: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ]
+    const getMessages = vi.fn(
+      async (): Promise<AgentMessages> => streamingHistory
+    )
+    const cancelMessage = vi
+      .fn<AgentRestClient['cancelMessage']>()
+      .mockRejectedValue(
+        new AgentApiError('turn is no longer running', 404, undefined)
+      )
+    const rest = fakeRest({ getMessages, cancelMessage })
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('owner A turn')
+    minimized.stop()
+    await Promise.resolve()
+
+    const ownerSession = useAgentSession({ rest, events: fakeEvents().source })
+    ownerSession.start()
+    await vi.waitFor(() => expect(ownerSession.isStreaming.value).toBe(true))
+    const hydrationCallCount = getMessages.mock.calls.length
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    await ownerSession.sendMessage('owner B turn')
+    await ownerSession.stopTurn('button')
+
+    expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
+    expect(getMessages).toHaveBeenCalledTimes(hydrationCallCount)
+    expect(ownerSession.isStreaming.value).toBe(true)
+    expect(useAgentConversationStore().activeTurnId).toBe('msg-1')
+
+    setStorageIdentity('user-test')
+    ownerSession.stop()
+  })
+
+  it('fences stale snapshot reconciliation across A-to-B-to-A same-id reuse', async () => {
+    const streamingHistory: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ]
+    const terminalHistory: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'go'),
+      historyRow(2, 'assistant', 'turn-1', 'done', 'msg-1')
+    ]
+    const reconcileDeliveries: Array<(history: AgentMessages) => void> = []
+    let holdReconciliations = false
+    const getMessages = vi.fn<(threadId: string) => Promise<AgentMessages>>(
+      () => {
+        if (!holdReconciliations) return Promise.resolve(streamingHistory)
+        return new Promise<AgentMessages>((resolve) => {
+          reconcileDeliveries.push(resolve)
+        })
+      }
+    )
+    const cancelMessage = vi
+      .fn<AgentRestClient['cancelMessage']>()
+      .mockRejectedValue(
+        new AgentApiError('turn is no longer running', 404, undefined)
+      )
+    const rest = fakeRest({ getMessages, cancelMessage })
+    const conversation = useAgentConversationStore()
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('owner A turn')
+    minimized.stop()
+    await Promise.resolve()
+
+    const ownerSession = useAgentSession({ rest, events: fakeEvents().source })
+    ownerSession.start()
+    await vi.waitFor(() => expect(ownerSession.isStreaming.value).toBe(true))
+    holdReconciliations = true
+    const staleStop = ownerSession.stopTurn('button')
+    await vi.waitFor(() => expect(reconcileDeliveries).toHaveLength(1))
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    setStorageIdentity('user-test')
+    holdReconciliations = false
+    await ownerSession.loadThread('th-1')
+    expect(conversation.activeTurnId).toBe('msg-1')
+
+    holdReconciliations = true
+    const currentStop = ownerSession.stopTurn('button')
+    await vi.waitFor(() => expect(reconcileDeliveries).toHaveLength(3))
+
+    const staleReconciliation = reconcileDeliveries[0]
+    assert.exists(staleReconciliation)
+    staleReconciliation(terminalHistory)
+    await staleStop
+
+    expect(conversation.activeTurnId).toBe('msg-1')
+    expect(ownerSession.isStreaming.value).toBe(true)
+    await ownerSession.stopTurn('button')
+    expect(cancelMessage).toHaveBeenCalledTimes(2)
+    expect(reconcileDeliveries).toHaveLength(3)
+
+    const currentReconciliation = reconcileDeliveries[1]
+    assert.exists(currentReconciliation)
+    currentReconciliation(terminalHistory)
+    await currentStop
+    expect(conversation.activeTurnId).toBeNull()
+    expect(ownerSession.isStreaming.value).toBe(false)
+
+    ownerSession.stop()
+  })
+
+  it('fences stale turn recovery across A-to-B-to-A same-id reuse', async () => {
+    const recoveryDeliveries: Array<(history: AgentMessages) => void> = []
+    let deliveredResponses = 0
+    const getMessages = vi.fn(() =>
+      new Promise<AgentMessages>((resolve) => {
+        recoveryDeliveries.push(resolve)
+      }).then((history) => {
+        deliveredResponses++
+        return history
+      })
+    )
+    const events = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: events.source
+    })
+    const conversation = useAgentConversationStore()
+    session.start()
+    events.status(true)
+    await session.sendMessage('owner A old turn')
+    events.emit(delta('msg-1', 'old partial'))
+
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(recoveryDeliveries).toHaveLength(1))
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    setStorageIdentity('user-test')
+    await session.sendMessage('owner A new turn')
+    events.emit(delta('msg-1', 'new partial'))
+    expect(conversation.activeTurnId).toBe('msg-1')
+
+    recoveryDeliveries[0]?.([
+      historyRow(1, 'user', 'msg-1', 'owner A old turn'),
+      historyRow(2, 'assistant', 'msg-1', 'old done', 'msg-1')
+    ])
+    await vi.waitFor(() => expect(deliveredResponses).toBe(1))
+
+    expect(conversation.activeTurnId).toBe('msg-1')
+    expect(session.isStreaming.value).toBe(true)
+    const assistant = session.entries.value.at(-1)
+    assert(assistant?.role === 'assistant')
+    expect(assistant.parts).toEqual([
+      { type: 'text', text: 'new partial', state: 'streaming' }
+    ])
+
+    session.stop()
+  })
+
+  it('starts a fresh recovery after A-to-B-to-A reuses the same turn ids', async () => {
+    const recoveryDeliveries: Array<(history: AgentMessages) => void> = []
+    const getMessages = vi.fn(
+      () =>
+        new Promise<AgentMessages>((resolve) => {
+          recoveryDeliveries.push(resolve)
+        })
+    )
+    const events = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: events.source
+    })
+    session.start()
+    events.status(true)
+    await session.sendMessage('owner A old turn')
+    events.emit(delta('msg-1', 'old partial'))
+
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(recoveryDeliveries).toHaveLength(1))
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    setStorageIdentity('user-test')
+    await session.sendMessage('owner A new turn')
+    events.emit(delta('msg-1', 'new partial'))
+
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(recoveryDeliveries).toHaveLength(2))
+
+    recoveryDeliveries[1]?.([
+      historyRow(1, 'user', 'msg-1', 'owner A new turn'),
+      historyRow(2, 'assistant', 'msg-1', 'new done', 'msg-1')
+    ])
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+
+    session.stop()
+  })
+
+  it('does not poll a turn twice after an aborted owner-A recovery settles', async () => {
+    const recoveryDeliveries: Array<(history: AgentMessages) => void> = []
+    const getMessages = vi.fn(
+      () =>
+        new Promise<AgentMessages>((resolve) => {
+          recoveryDeliveries.push(resolve)
+        })
+    )
+    const events = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: events.source
+    })
+    session.start()
+    events.status(true)
+    await session.sendMessage('owner A old turn')
+    events.emit(delta('msg-1', 'old partial'))
+
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(recoveryDeliveries).toHaveLength(1))
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    setStorageIdentity('user-test')
+    await session.sendMessage('owner A new turn')
+    events.emit(delta('msg-1', 'new partial'))
+
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(recoveryDeliveries).toHaveLength(2))
+
+    const staleRecovery = recoveryDeliveries[0]
+    assert.exists(staleRecovery)
+    staleRecovery([
+      historyRow(1, 'user', 'msg-1', 'owner A old turn'),
+      historyRow(2, 'assistant', 'msg-1', 'old done', 'msg-1')
+    ])
+    await vi.advanceTimersByTimeAsync(0)
+
+    events.status(false)
+    events.status(true)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(recoveryDeliveries).toHaveLength(3)
+    expect(getMessages).toHaveBeenCalledTimes(3)
+
+    const currentRecovery = recoveryDeliveries[2]
+    assert.exists(currentRecovery)
+    currentRecovery([
+      historyRow(1, 'user', 'msg-1', 'owner A new turn'),
+      historyRow(2, 'assistant', 'msg-1', 'new done', 'msg-1')
+    ])
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+
+    session.stop()
+  })
+
+  it('keeps same-owner background recovery current after newChat', async () => {
+    let deliverRecovery: ((history: AgentMessages) => void) | undefined
+    const getMessages = vi.fn(
+      () =>
+        new Promise<AgentMessages>((resolve) => {
+          deliverRecovery = resolve
+        })
+    )
+    const events = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: events.source
+    })
+    const conversation = useAgentConversationStore()
+    session.start()
+    events.status(true)
+    await session.sendMessage('background turn')
+    events.emit(delta('msg-1', 'partial'))
+
+    events.status(false)
+    events.status(true)
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledOnce())
+
+    session.newChat()
+    deliverRecovery?.([
+      historyRow(1, 'user', 'msg-1', 'background turn'),
+      historyRow(2, 'assistant', 'msg-1', 'done', 'msg-1')
+    ])
+
+    await vi.waitFor(() => expect(conversation.liveTurns()).toEqual([]))
+    session.stop()
+  })
+
+  it('watches storage ownership only while started and resumes once', async () => {
+    const conversationStore = useAgentConversationStore()
+    const historyStore = useAgentChatHistoryStore()
+    const reset = vi.spyOn(conversationStore, 'resetForStorageOwnerTransition')
+    const resetHistory = vi.spyOn(
+      historyStore,
+      'resetForStorageOwnerTransition'
+    )
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.sendMessage('account A turn')
+    session.stop()
+    await Promise.resolve()
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    expect(reset).not.toHaveBeenCalled()
+
+    session.start({ restore: false })
+    expect(reset).toHaveBeenCalledOnce()
+    expect(resetHistory).toHaveBeenCalledOnce()
+    await session.sendMessage('account B turn')
+
+    setStorageIdentity('user-c')
+    setStorageWorkspaceId('personal')
+    expect(reset).toHaveBeenCalledTimes(2)
+    expect(resetHistory).toHaveBeenCalledTimes(2)
+    expect(session.entries.value).toEqual([])
+
+    setStorageIdentity('user-test')
+    session.stop()
+  })
+
+  it("rejects owner A's initial hydration after owner B replaces it", async () => {
+    let resolveHistory: ((messages: AgentMessages) => void) | undefined
+    const getMessages = vi.fn(
+      () =>
+        new Promise<AgentMessages>((resolve) => {
+          resolveHistory = resolve
+        })
+    )
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:personal')),
+      'thread-a'
+    )
+    const events = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: events.source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledOnce())
+    events.emit(delta('message-a', 'owner A'))
+
+    setStorageIdentity('user-b')
+    resolveHistory?.([
+      historyRow(1, 'assistant', 'message-a', 'owner A', 'message-a')
+    ])
+    await Promise.resolve()
+
+    expect(session.entries.value).toEqual([])
+    expect(session.threadId.value).toBeNull()
+    setStorageIdentity('user-test')
+    session.stop()
+  })
+
+  it("does not let owner A's delayed refusal delete owner B's same-id binding", async () => {
+    const tabPath = 'workflows/shared.json'
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-shared', tabPath)
+    const disowned = vi.fn()
+    let rejectPost: ((error: Error) => void) | undefined
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise((_, reject) => {
+          rejectPost = reject
+        })
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ id: 'wf-shared', tabPath }),
+        adopted: vi.fn(),
+        disowned
+      }
+    })
+    session.start()
+    const pendingSend = session.sendMessage('account A turn')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    setStorageIdentity('user-b')
+    setStorageWorkspaceId('personal')
+    await nextTick()
+    bindings.bind('wf-shared', tabPath)
+    rejectPost?.(
+      new AgentApiError('workflow not found or access denied', 403, {
+        error: 'workflow not found or access denied'
+      })
+    )
+
+    await expect(pendingSend).resolves.toBe(false)
+    expect(bindings.tabPathFor('wf-shared')).toBe(tabPath)
+    expect(disowned).not.toHaveBeenCalled()
+    setStorageIdentity('user-test')
+    session.stop()
+  })
+
   it('tracks each durable thread start once with its initiating source', async () => {
     const onThreadStarted = vi.fn()
     const { source } = fakeEvents()
@@ -791,7 +1396,9 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(opened).toBe(false)
       expect(onThreadActivated).not.toHaveBeenCalledWith('th-next')
       expect(
-        localStorage.getItem(StorageKeys.agentThread('personal'))
+        localStorage.getItem(
+          StorageKeys.agentThread(scope('user-test:personal'))
+        )
       ).toBeNull()
       expect(session.notices.value).toEqual([])
       session.stop()
@@ -817,9 +1424,9 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(opened).toBe(false)
     expect(session.threadId.value).toBe('th-next')
     expect(onThreadActivated).toHaveBeenLastCalledWith('th-next')
-    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
-      'th-next'
-    )
+    expect(
+      localStorage.getItem(StorageKeys.agentThread(scope('user-test:personal')))
+    ).toBe('th-next')
     session.stop()
   })
 
@@ -2066,7 +2673,9 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await expect(send).resolves.toBe(false)
     expect(onAccepted).toHaveBeenCalledOnce()
-    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
+    expect(
+      localStorage.getItem(StorageKeys.agentThread(scope('user-test:personal')))
+    ).toBeNull()
   })
 
   it('(b5) a stop followed by a successor start in the same microtask window skips the abort', async () => {
@@ -2128,7 +2737,10 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(b8) a stale boot hydrate cannot kill a turn started after a remount', async () => {
     const conversation = useAgentConversationStore()
-    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-9')
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:personal')),
+      'th-9'
+    )
     const resolvers: Array<(rows: []) => void> = []
     const getMessages = vi.fn(
       () =>
@@ -3187,6 +3799,49 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
       expect(session.notices.value).toEqual([])
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('does not retry an answer after the storage owner changes', async () => {
+      let rejectFirstAttempt: ((error: Error) => void) | undefined
+      const answerAsk = vi.fn<AgentRestClient['answerAsk']>(() => {
+        if (rejectFirstAttempt !== undefined)
+          return Promise.resolve({ status: 'answered' })
+        return new Promise((_, reject) => {
+          rejectFirstAttempt = reject
+        })
+      })
+      const events = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: events.source
+      })
+      session.start()
+      events.status(true)
+      await session.sendMessage('build it and run it')
+      events.emit(runApproval('msg-1'))
+
+      vi.useFakeTimers()
+      try {
+        const answered = session.answerAsk('turn-1:call-1', {
+          selected: ['run']
+        })
+        await vi.waitFor(() => expect(answerAsk).toHaveBeenCalledOnce())
+        rejectFirstAttempt?.(
+          new AgentApiError('failed to wake the turn', 500, undefined)
+        )
+        await Promise.resolve()
+
+        setStorageIdentity('user-b')
+        setStorageWorkspaceId('personal')
+        await vi.advanceTimersByTimeAsync(PAST_ANSWER_RETRY_BACKOFF_MS)
+
+        await expect(answered).resolves.toBe(false)
+        expect(answerAsk).toHaveBeenCalledOnce()
+      } finally {
+        vi.useRealTimers()
+        setStorageIdentity('user-test')
+        session.stop()
+      }
     })
 
     // commitAsk arms a grace timer when the turn is still attached, because
@@ -5096,7 +5751,11 @@ describe('useAgentSession (v1 composition root)', () => {
       'Comfy.Workspace.Current',
       JSON.stringify({ type: 'team', id: 'workspace-b' })
     )
-    localStorage.setItem(StorageKeys.agentThread('workspace-a'), 'th-a')
+    setStorageWorkspaceId('workspace-b')
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:workspace-a')),
+      'th-a'
+    )
     const rest = fakeRest({
       getMessages: vi.fn(async (): Promise<AgentMessages> => {
         throw new AgentApiError('gone', 404, undefined)
@@ -5115,9 +5774,11 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
-    expect(localStorage.getItem(StorageKeys.agentThread('workspace-b'))).toBe(
-      'th-1'
-    )
+    expect(
+      localStorage.getItem(
+        StorageKeys.agentThread(scope('user-test:workspace-b'))
+      )
+    ).toBe('th-1')
 
     status(false)
     status(true)
@@ -5127,11 +5788,15 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(onThreadActivated).toHaveBeenLastCalledWith(null)
     expect(session.boundWorkflowId.value).toBeNull()
     expect(
-      localStorage.getItem(StorageKeys.agentThread('workspace-b'))
+      localStorage.getItem(
+        StorageKeys.agentThread(scope('user-test:workspace-b'))
+      )
     ).toBeNull()
-    expect(localStorage.getItem(StorageKeys.agentThread('workspace-a'))).toBe(
-      'th-a'
-    )
+    expect(
+      localStorage.getItem(
+        StorageKeys.agentThread(scope('user-test:workspace-a'))
+      )
+    ).toBe('th-a')
 
     await session.sendMessage('again')
     expect(vi.mocked(rest.postMessage).mock.calls.at(-1)?.[0]).toBe('new')
@@ -5185,9 +5850,9 @@ describe('useAgentSession (v1 composition root)', () => {
       role: 'assistant',
       parts: [{ type: 'text', text: 'two', state: 'done' }]
     })
-    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
-      'th-2'
-    )
+    expect(
+      localStorage.getItem(StorageKeys.agentThread(scope('user-test:personal')))
+    ).toBe('th-2')
   })
 
   it('(g18) a history fetch that never answers stops at its deadline', async () => {
@@ -5640,7 +6305,10 @@ describe('useAgentSession (v1 composition root)', () => {
         new AgentApiError('already answered', 409, undefined)
       )
       const { source, status } = fakeEvents()
-      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      localStorage.setItem(
+        StorageKeys.agentThread(scope('user-test:personal')),
+        'th-1'
+      )
       const session = useAgentSession({ rest, events: source })
       session.start()
       status(true)
@@ -5685,7 +6353,10 @@ describe('useAgentSession (v1 composition root)', () => {
           .mockRejectedValue(new AgentApiError('backend blip', 500, undefined))
       })
       const { source, status } = fakeEvents()
-      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      localStorage.setItem(
+        StorageKeys.agentThread(scope('user-test:personal')),
+        'th-1'
+      )
       const session = useAgentSession({ rest, events: source })
       session.start()
       status(true)
@@ -5801,7 +6472,10 @@ describe('useAgentSession (v1 composition root)', () => {
         new AgentApiError('already answered', 409, undefined)
       )
       const firstEvents = fakeEvents()
-      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      localStorage.setItem(
+        StorageKeys.agentThread(scope('user-test:personal')),
+        'th-1'
+      )
       const first = useAgentSession({ rest, events: firstEvents.source })
       first.start()
       firstEvents.status(true)
@@ -5896,7 +6570,10 @@ describe('useAgentSession (v1 composition root)', () => {
           )
       })
       const { source, status } = fakeEvents()
-      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      localStorage.setItem(
+        StorageKeys.agentThread(scope('user-test:personal')),
+        'th-1'
+      )
       const session = useAgentSession({ rest, events: source })
       useAgentConversationStore().ingest(
         zAgentWsEvent.parse(runApproval('msg-1'))
@@ -5940,7 +6617,10 @@ describe('useAgentSession (v1 composition root)', () => {
         )
       })
       const { source, status } = fakeEvents()
-      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      localStorage.setItem(
+        StorageKeys.agentThread(scope('user-test:personal')),
+        'th-1'
+      )
       const session = useAgentSession({ rest, events: source })
       session.start()
       status(true)
@@ -6214,7 +6894,10 @@ describe('useAgentSession (v1 composition root)', () => {
         .mockResolvedValue([historyRow(1, 'user', 'msg-1', 'go'), parkedRow()])
       const rest = fakeRest({ getMessages })
       const { source, status } = fakeEvents()
-      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      localStorage.setItem(
+        StorageKeys.agentThread(scope('user-test:personal')),
+        'th-1'
+      )
       const session = useAgentSession({ rest, events: source })
       session.start()
       status(true)
@@ -7025,7 +7708,10 @@ describe('useAgentSession (v1 composition root)', () => {
     )
     await nextTick()
     useAgentWorkflowTabBindingStore().$dispose()
-    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-existing')
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:personal')),
+      'th-existing'
+    )
 
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-existing',
@@ -7665,9 +8351,9 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.loadThread('th-gone')
     expect(session.threadId.value).toBeNull()
-    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
-      'th-1'
-    )
+    expect(
+      localStorage.getItem(StorageKeys.agentThread(scope('user-test:personal')))
+    ).toBe('th-1')
 
     await session.loadThread('th-1')
     expect(session.isStreaming.value).toBe(true)
@@ -8099,10 +8785,20 @@ describe('thread resume (B17)', () => {
 
   beforeEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'personal', id: null })
+    )
+    setStorageIdentity('user-test')
+    setStorageWorkspaceId('personal')
   })
 
   it('restores the persisted thread and hydrates its transcript on start', async () => {
-    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-9')
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:personal')),
+      'th-9'
+    )
     const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
     const session = useAgentSession({
       rest: fakeRest({ getMessages }),
@@ -8120,7 +8816,10 @@ describe('thread resume (B17)', () => {
   })
 
   it('reconciles a hydrated streaming turn without waiting for a socket transition', async () => {
-    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-9')
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:personal')),
+      'th-9'
+    )
     const streaming = HISTORY.map((row) =>
       row.role === 'assistant'
         ? { ...row, status: 'streaming' as const, content: {} }
@@ -8146,7 +8845,10 @@ describe('thread resume (B17)', () => {
   })
 
   it('forgets a stale persisted thread on 404 without surfacing an error', async () => {
-    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-gone')
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:personal')),
+      'th-gone'
+    )
     const onThreadActivated = vi.fn()
     const getMessages = vi.fn(async (): Promise<AgentMessages> => {
       throw new AgentApiError('not found', 404, null)
@@ -8159,7 +8861,9 @@ describe('thread resume (B17)', () => {
     session.start()
     await vi.waitFor(() =>
       expect(
-        localStorage.getItem(StorageKeys.agentThread('personal'))
+        localStorage.getItem(
+          StorageKeys.agentThread(scope('user-test:personal'))
+        )
       ).toBeNull()
     )
     expect(session.threadId.value).toBeNull()
@@ -8177,12 +8881,14 @@ describe('thread resume (B17)', () => {
     })
     session.start()
     await session.sendMessage('hello')
-    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
-      'th-1'
-    )
+    expect(
+      localStorage.getItem(StorageKeys.agentThread(scope('user-test:personal')))
+    ).toBe('th-1')
 
     session.newChat()
-    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
+    expect(
+      localStorage.getItem(StorageKeys.agentThread(scope('user-test:personal')))
+    ).toBeNull()
     expect(useAgentConversationStore().threadId).toBeNull()
   })
 
@@ -8230,9 +8936,9 @@ describe('thread resume (B17)', () => {
 
     expect(getMessages).toHaveBeenCalledWith('th-9')
     expect(session.threadId.value).toBe('th-9')
-    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
-      'th-9'
-    )
+    expect(
+      localStorage.getItem(StorageKeys.agentThread(scope('user-test:personal')))
+    ).toBe('th-9')
     await vi.waitFor(() => expect(session.entries.value).toHaveLength(2))
     expect(session.entries.value[0]).toMatchObject({
       role: 'user',
@@ -8260,8 +8966,15 @@ describe('thread resume (B17)', () => {
       'Comfy.Workspace.Current',
       JSON.stringify({ type: 'team', id: 'workspace-b' })
     )
-    localStorage.setItem(StorageKeys.agentThread('workspace-a'), 'th-a')
-    localStorage.setItem(StorageKeys.agentThread('workspace-b'), 'th-b')
+    setStorageWorkspaceId('workspace-b')
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:workspace-a')),
+      'th-a'
+    )
+    localStorage.setItem(
+      StorageKeys.agentThread(scope('user-test:workspace-b')),
+      'th-b'
+    )
     const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
     const session = useAgentSession({
       rest: fakeRest({ getMessages }),
@@ -8272,9 +8985,11 @@ describe('thread resume (B17)', () => {
 
     await vi.waitFor(() => expect(getMessages).toHaveBeenCalledWith('th-b'))
     expect(session.threadId.value).toBe('th-b')
-    expect(localStorage.getItem(StorageKeys.agentThread('workspace-a'))).toBe(
-      'th-a'
-    )
+    expect(
+      localStorage.getItem(
+        StorageKeys.agentThread(scope('user-test:workspace-a'))
+      )
+    ).toBe('th-a')
   })
 
   it('invalidates an in-flight workflow restoration when starting a new chat', async () => {

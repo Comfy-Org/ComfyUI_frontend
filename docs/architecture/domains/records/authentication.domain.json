@@ -269,8 +269,15 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["account", "ingest-api", "keybindings", "telemetry"],
-  "allowedConsumers": ["agent", "settings"],
+  "allowedDependencies": [
+    "account",
+    "cloud",
+    "ingest-api",
+    "keybindings",
+    "telemetry",
+    "workflow-persistence"
+  ],
+  "allowedConsumers": ["agent", "settings", "workflow-persistence"],
   "characterizationScenarios": [
     {
       "name": "Firebase identity drives sign-in, sign-out, current-user projection, and auth headers",

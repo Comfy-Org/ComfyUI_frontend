@@ -84,7 +84,9 @@
     "fuse.js",
     // Imported by the bundled tailwind-utils cn(), kept external so published
     // consumers install it with its license.
-    "tailwind-merge"
+    "tailwind-merge",
+    "typescript-native-bridge",
+    "mime-types"
   ],
 
   "ignoreUnresolvedImports": [

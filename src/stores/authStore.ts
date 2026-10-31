@@ -222,6 +222,14 @@ export const useAuthStore = defineStore('auth', () => {
   const sessionOnlyRequests = (): WebSessionRequests | undefined =>
     sessionOnlyUser.value ? webSessionRequests() : undefined
 
+  function currentUserIdentity(): string | null {
+    return isDesktopHostSignedIn()
+      ? (desktopHostUser.value?.id ?? null)
+      : (sessionUser.value?.id ??
+          currentUser.value?.uid ??
+          useApiKeyAuthStore().getApiKey())
+  }
+
   function getShareAuthMetadata() {
     const shareId = getPreservedQueryParam(
       PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
@@ -232,24 +240,31 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * Drops the previous account's state when the signed-in identity changes
-   * or signs out, whichever source (Firebase or the Desktop host) changed it.
+   * Drops state owned by the previous storage identity. Account-scoped config
+   * follows user accounts, not credential-only API-key transitions.
    */
   const resetAccountState = (
-    previousUserId: string | null,
-    nextUserId: string | null
+    previousStorageIdentity: string | null,
+    nextStorageIdentity: string | null,
+    previousAccountId = previousStorageIdentity,
+    nextAccountId = nextStorageIdentity
   ): void => {
     const identityChanged =
-      previousUserId !== null && previousUserId !== nextUserId
+      previousStorageIdentity !== null &&
+      previousStorageIdentity !== nextStorageIdentity
+    const accountChanged =
+      previousAccountId !== null && previousAccountId !== nextAccountId
 
-    if (nextUserId === null || identityChanged) {
+    if (nextStorageIdentity === null || identityChanged) {
       useWorkspaceAuthStore().clearWorkspaceContext()
       mintUnifiedToken.clear()
       void partnerNodeTokens.revokeAll()
     }
     if (identityChanged) {
-      clearOnboardingReplay(previousUserId)
       useTeamWorkspaceStore().resetForIdentityChange()
+    }
+    if (accountChanged) {
+      clearOnboardingReplay(previousAccountId)
       invalidateRemoteConfig()
     }
 
@@ -273,8 +288,27 @@ export const useAuthStore = defineStore('auth', () => {
     customerRecoveryIdentity = null
   }
 
-  firebaseIdentity.onUserChanged((user) => {
-    resetAccountState(currentUser.value?.uid ?? null, user?.uid ?? null)
+  function currentAccountIdentity(): string | null {
+    return currentUser.value?.uid ?? sessionUser.value?.id ?? null
+  }
+
+  function nextAccountIdentity(user: User | null): string | null {
+    return user?.uid ?? sessionUser.value?.id ?? null
+  }
+
+  function nextStorageIdentity(user: User | null): string | null {
+    return (
+      user?.uid ?? sessionUser.value?.id ?? useApiKeyAuthStore().getApiKey()
+    )
+  }
+
+  function handleFirebaseUserChanged(user: User | null): void {
+    resetAccountState(
+      currentUserIdentity(),
+      nextStorageIdentity(user),
+      currentAccountIdentity(),
+      nextAccountIdentity(user)
+    )
 
     currentUser.value = user
     isInitialized.value = true
@@ -287,7 +321,9 @@ export const useAuthStore = defineStore('auth', () => {
       // mints instead, and only for a tab the session did not sign in.
       void mintUnifiedToken(user.uid)
     }
-  })
+  }
+
+  firebaseIdentity.onUserChanged(handleFirebaseUserChanged)
 
   watch(
     () => desktopHostUser.value?.id ?? null,
@@ -473,16 +509,8 @@ export const useAuthStore = defineStore('auth', () => {
     Record<string, string>
   > | null> => (await webSessionResourceHeader()) ?? (await getUserAuthHeader())
 
-  const currentUserIdentity = (): string | null =>
-    isDesktopHostSignedIn()
-      ? (desktopHostUser.value?.id ?? null)
-      : (sessionUser.value?.id ??
-        currentUser.value?.uid ??
-        useApiKeyAuthStore().getApiKey())
-
   const currentUserCredentialIdentity = (): string | null =>
     currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
-
   /**
    * Response data from a user-scoped endpoint belongs to the identity that
    * asked for it. A 200 bypasses the recovery guards in
@@ -1016,21 +1044,54 @@ export const useAuthStore = defineStore('auth', () => {
     return currentUser.value?.uid === user?.uid ? token : undefined
   }
 
-  const logout = async (): Promise<void> =>
+  const captureLogoutFallbackIdentities = (): {
+    apiKeyStore: ReturnType<typeof useApiKeyAuthStore>
+    identities: Set<string>
+  } => {
+    const apiKeyStore = useApiKeyAuthStore()
+    const identities = new Set<string>()
+    const sessionIdentity = sessionUser.value?.id
+    const firebaseIdentityId = currentUser.value?.uid
+    const apiKeyIdentity = apiKeyStore.getApiKey()
+    if (sessionIdentity) identities.add(sessionIdentity)
+    if (firebaseIdentityId) identities.add(firebaseIdentityId)
+    if (apiKeyIdentity) identities.add(apiKeyIdentity)
+    return { apiKeyStore, identities }
+  }
+
+  const signOutDesktopHostForLogout = async (): Promise<boolean> => {
+    const signsOutDesktopHost = isDesktopHostSignedIn()
+    if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
+      throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
+    }
+    return signsOutDesktopHost
+  }
+
+  const logoutIdentityStillOwned = (
+    expectedIdentity: string | null,
+    fallbackIdentities: Set<string>
+  ): boolean => {
+    const remainingIdentity = currentUserIdentity()
+    return (
+      remainingIdentity === null ||
+      remainingIdentity === expectedIdentity ||
+      fallbackIdentities.has(remainingIdentity)
+    )
+  }
+
+  const logout = async (expectedIdentity: string | null): Promise<void> =>
     executeAuthAction(async () => {
+      const { apiKeyStore, identities } = captureLogoutFallbackIdentities()
       await revokePartnerNodeLogin()
-      const signsOutDesktopHost = isDesktopHostSignedIn()
-      if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
-        throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
-      }
+      const signsOutDesktopHost = await signOutDesktopHostForLogout()
       // Local and Desktop keep the key: partner nodes run on it. A Desktop
       // host logout drops it, or an earlier session's key would take over.
       const dropsStoredApiKey =
         signsOutDesktopHost ||
         (flags.ssoEnabled && flags.unifiedWebSessionEnabled)
       await useCloudWebSessionStore().signOut()
+      if (!logoutIdentityStillOwned(expectedIdentity, identities)) return
       if (currentUser.value) await firebaseIdentity.signOut()
-      const apiKeyStore = useApiKeyAuthStore()
       if (dropsStoredApiKey && apiKeyStore.getApiKey() !== null) {
         await apiKeyStore.clearStoredApiKey()
       }
