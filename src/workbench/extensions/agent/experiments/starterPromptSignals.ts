@@ -6,18 +6,6 @@ import type {
 } from '@/workbench/extensions/agent/experiments/starterPromptPersonalization'
 import { normalizeStarterPromptProfile } from '@/workbench/extensions/agent/experiments/starterPromptPersonalization'
 
-/**
- * Signal adapters for the personalized starter prompt selector.
- *
- * Both adapters are read-only and fail closed: an unreadable profile or an
- * unavailable graph degrades to the static baseline rather than surfacing an
- * error, because starter prompts render before the user has typed anything.
- *
- * Nothing calls these yet. The V2 strategies stay inactive until the
- * experiment flag, telemetry, and black-box coverage land.
- */
-
-/** Settings key the Cloud onboarding survey writes its answers under. */
 const ONBOARDING_SURVEY_KEY = 'onboarding_survey'
 
 export type StarterPromptProfileRead =
@@ -30,9 +18,8 @@ const UNAVAILABLE: StarterPromptProfileRead = Object.freeze({
 })
 
 /**
- * Reads the stored onboarding survey answers and keeps only the three fields
- * the selector consumes. Returns `unavailable` for a missing, empty,
- * unreadable, or unrecognized survey; never throws and never retries.
+ * Reads the stored onboarding survey. Resolves to `unavailable` for a missing,
+ * empty, unreadable, or unrecognized survey; never rejects and never retries.
  */
 export async function readStarterPromptProfile(
   signal?: AbortSignal
@@ -50,32 +37,23 @@ export async function readStarterPromptProfile(
     return UNAVAILABLE
   }
 
-  const answers = storedSurveyValue(payload)
+  const answers = nonEmptySurveyAnswersFromSettingsPayload(payload)
   if (!answers) return UNAVAILABLE
   const profile = normalizeStarterPromptProfile(answers)
   if (!profile) return UNAVAILABLE
   return Object.freeze({ source: 'survey', profile })
 }
 
-/**
- * Maps the graph the panel is attached to onto the selector's canvas signal.
- * `present` only when the graph actually holds a node, so an attached but
- * empty canvas reads the same as no canvas at all.
- *
- * The graph is passed in rather than read from a store: `workbench/` cannot
- * import `renderer/`, and the panel that will call this already holds it.
- */
+/** Reads `present` only when the given graph holds at least one node. */
 export function canvasPresenceOf(
   graph: { nodes?: { length: number } | null } | null | undefined
 ): CanvasPresence {
   return (graph?.nodes?.length ?? 0) > 0 ? 'present' : 'empty'
 }
 
-/**
- * The settings endpoint answers `{ value: <stored> }`, and an unanswered
- * survey is recorded as `null` or `{}`.
- */
-function storedSurveyValue(payload: unknown): Record<string, unknown> | null {
+function nonEmptySurveyAnswersFromSettingsPayload(
+  payload: unknown
+): Record<string, unknown> | null {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
     return null
   }
