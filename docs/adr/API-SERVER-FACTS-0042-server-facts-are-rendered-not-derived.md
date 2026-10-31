@@ -4,7 +4,7 @@ Date: 2026-10-09
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -52,24 +52,60 @@ subscription or resource that would stay true with no UI:
 1. **The server fact alone decides entitlement.** A gate renders one server
    fact as received. It does not combine that fact with another server fact
    or a value derived from one (role, tier, plan state, seats, `isCloud`)
-   through `&&`, `||`, `??`, a ternary, arithmetic, a comparison or a helper.
-   It also does not choose which fact answers the question. Local, transient
-   UI state (loading, an in-flight request, form validity) may delay or
-   disable the control, as in `canTopUp && !isLoading`. It never grants
-   entitlement or stands in for a server field.
-2. **`isCloud` decides which build ships, not what a user may do.** Off
+   through `&&`, `||`, `??`, a ternary, arithmetic, a comparison between
+   them, or a helper. Local, transient UI state (loading, an in-flight
+   request, form validity) may delay or disable the control, as in
+   `canTopUp && !isLoading`. It never grants entitlement or stands in for a
+   server field.
+2. **"As received" means as the API documents it.** Comparing one field
+   with a value its API documentation defines as the answer to this
+   question is rendering, not deriving: `deployment.status === 'ready'`,
+   where the spec says a job is taken only while the deployment is ready,
+   renders readiness. Using a field the API does not document as the answer
+   is a proxy, and a proxy is derivation even with no operator around it:
+   `role === 'owner'` for "may set the default deployment", or
+   `can_change_seats` for member management. A field typed as an open
+   `string` that is compared with a documented literal should get an enum
+   in the spec; that is a request to the backend, not a reason to block the
+   frontend change.
+3. **The UI may narrow what the server permits on one documented fact.**
+   Hiding or disabling an action the server would accept is a UX decision.
+   It follows rules 1 and 2: the narrowing rests on one fact read as the API
+   documents it. When the spec then contradicts the UI (for example, "any
+   status may be picked" while the UI offers only ready deployments), the
+   spec is updated to match; the frontend change is not blocked on it.
+4. **`isCloud` decides which build ships, not what a user may do.** Off
    Cloud, a local provider answers the same fact.
-3. **A failed read uses the default its contract names.** Never fall back to
+5. **A failed read uses the default its contract names.** Never fall back to
    a role or a tier.
-4. **A fact the API does not emit yet is a backend ticket.** Until the ticket
+6. **A fact the API does not emit yet is a backend ticket.** Until the ticket
    lands, wrap the interim expression in `pendingServerFact('<ticket>', expr)`.
    Never substitute another field. `can_change_seats` is not member
    management.
-5. **Choosing which server field answers a UI question needs review from
-   the backend team that owns the field.**
+7. **Choosing which server field answers a UI question needs review from
+   the backend team that owns the field.** When the API documentation
+   already names the field as the answer (rule 2), that documentation is
+   the review.
 
 Presentation stays on the client: formatting, translation, sorting, layout,
 and local UI state such as loading, open panels and form validation.
+
+### Classifying a gate
+
+The deciding question is: does the API document this field as the answer to
+this question?
+
+| Gate                                                                  | Kind                    | Outcome                                      |
+| --------------------------------------------------------------------- | ----------------------- | -------------------------------------------- |
+| `can_invite_members`                                                  | Fact as received        | Allowed                                      |
+| `deployment.status === 'ready'`, spec: a job is taken only when ready | Documented value        | Allowed; ask for an enum if `status` is open |
+| `role === 'owner'` for "may set the default deployment"               | Proxy                   | Backend ticket and `pendingServerFact`       |
+| `isPlanEnded && canManageSubscription` OR'd onto `can_invite_members` | Combination             | Blocked                                      |
+| `isCloud ? can_change_seats : role`                                   | Proxy and combination   | Blocked                                      |
+| `canTopUp && !isLoading`                                              | Fact and local UI state | Allowed                                      |
+
+A blocking review finding quotes the field's API documentation and the rule
+it breaks. Without that quote it is a question, not a block.
 
 The rule is to be enforced by checks that fail, not by prose. None of
 them ships with this ADR; each lands in its own change, tracked under
@@ -87,7 +123,7 @@ FE-3349 (TDD "Server-fact guardrails"):
   starting with the members panel (FE-3361); the lint gate holds the line on
   surfaces not yet migrated. Only a fact provider may call its constructor,
   `receiveServerFact`: the module that decodes the API response, or an
-  off-Cloud local provider that answers the same fact (rule 2). Each provider
+  off-Cloud local provider that answers the same fact (rule 4). Each provider
   is listed in the rule (`comfy/no-stray-server-fact-constructor`).
 
 Until those land, this ADR and the `AGENTS.md` line are the only guidance.
@@ -115,7 +151,7 @@ Until those land, this ADR and the `AGENTS.md` line are the only guidance.
 - A missing fact becomes a visible backend ticket instead of a silent client
   proxy.
 - Reviewers and agents get a mechanical test: is this gate one server fact,
-  as received?
+  read as the API documents it?
 
 ### Negative
 

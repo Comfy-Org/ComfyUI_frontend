@@ -32,7 +32,8 @@ export type SnapshotReview =
   | { ok: false; detail: string }
 
 const AGENT_GUIDANCE = [
-  'Render each server fact as received: no &&, ||, ??, ternary, comparison or helper around it, and do not choose which fact answers the question.',
+  'Render each server fact as the API documents it: no &&, ||, ??, ternary, comparison or helper that joins it with another fact, and no field the API does not document as the answer.',
+  "Comparing one field with a value its spec defines as the answer is rendering, as in status === 'ready' where ready means a job is taken.",
   'Local UI state (loading, in-flight, validity) may only narrow it, as in canTopUp && !isLoading.',
   "If the UI needs a fact the API does not emit, open a backend ticket and wrap the interim expression in pendingServerFact('BE-xxxx', ...).",
   'Never substitute another field: can_change_seats is not member management.',
