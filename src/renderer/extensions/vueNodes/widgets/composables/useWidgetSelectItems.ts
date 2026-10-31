@@ -31,6 +31,7 @@ import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil
 import type { AssetKind } from '@/types/widgetTypes'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import type { PagedList } from '@/utils/pagedList'
 
@@ -50,6 +51,18 @@ function getDisplayLabel(
 
 function assetKindToMediaType(kind: AssetKind): string {
   return kind === 'mesh' ? '3D' : kind
+}
+
+function getAssetMediaType(asset: AssetItem): string {
+  return isHdrImageFilename(asset.name)
+    ? 'image'
+    : getMediaTypeFromFilename(asset.name)
+}
+
+function getStoredHdrPreviewUrl(asset: AssetItem): string | undefined {
+  return asset.preview_id && isHdrImageFilename(asset.name)
+    ? hdrPreviewAssetUrl(asset.preview_id)
+    : undefined
 }
 
 function getMediaUrl(
@@ -242,7 +255,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     const missing = missingMediaValues.value
     for (const asset of assets) {
-      if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
+      if (getAssetMediaType(asset) !== targetMediaType) continue
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
       const filenameForUrl = getAssetUrlFilename(asset)
@@ -259,7 +272,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         preview_url:
           kind === 'mesh'
             ? ''
-            : asset.preview_url || getMediaUrl(filenameForUrl, 'output', kind),
+            : (getStoredHdrPreviewUrl(asset) ??
+              (asset.preview_url ||
+                getMediaUrl(filenameForUrl, 'output', kind))),
         name: annotatedPath,
         label: getDisplayLabel(displayLabel, labelFn)
       })
