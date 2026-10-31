@@ -310,6 +310,40 @@ describe('ErrorOverlay deployment offer', () => {
     expect(screen.getByTestId('error-overlay')).toBeInTheDocument()
   })
 
+  it('waits for the check to find no deployment runs the workflow before offering a custom deployment', async () => {
+    onComfyCloud([plain, agencyA])
+    useMissingNodesErrorStore().setMissingNodeTypes(NO_REPLACEMENT)
+    let answerCheck: (compatibility: DeploymentCompatibility) => void = () => {}
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockReturnValue(
+      new Promise((resolve) => {
+        answerCheck = resolve
+      })
+    )
+    renderNotice()
+    await waitFor(() =>
+      expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalled()
+    )
+    expect(customDeploymentOffer()).toBeNull()
+
+    answerCheck(answer([], [plain, agencyA]))
+
+    expect(
+      await screen.findByTestId('error-overlay-custom-deployment-offer')
+    ).toHaveTextContent('Run it on a custom deployment')
+  })
+
+  it('offers no custom deployment to a workspace with deployments when the check fails', async () => {
+    onComfyCloud([plain, agencyA])
+    useMissingNodesErrorStore().setMissingNodeTypes(NO_REPLACEMENT)
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockRejectedValue(
+      new Error('404')
+    )
+    renderNotice()
+    await compatibilityAnswered()
+
+    expect(customDeploymentOffer()).toBeNull()
+  })
+
   it('offers Switch instead of a custom deployment when a deployment runs the workflow', async () => {
     onComfyCloud([plain, agencyA])
     useMissingNodesErrorStore().setMissingNodeTypes(NO_REPLACEMENT)

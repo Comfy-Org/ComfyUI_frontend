@@ -39,12 +39,16 @@ const UNSUPPORTED: MissingNodeType[] = [
   { type: 'BiRefNet', cnrId: 'comfyui-birefnet', isReplaceable: false }
 ]
 
-function listing(served: boolean, bootDeployment: WorkspaceDeployment | null) {
+function listing(
+  served: boolean,
+  bootDeployment: WorkspaceDeployment | null,
+  items: WorkspaceDeployment[] = []
+) {
   const store = useDeploymentPickStore()
   store.state = served
     ? reduceDeploymentPick(
         { phase: 'idle' },
-        loadedEvent({ builds_visible: true, items: [] })
+        loadedEvent({ builds_visible: true, items })
       )
     : { phase: 'hidden' }
   store.bootDeployment = bootDeployment
@@ -71,7 +75,7 @@ describe(noticeMissingNodes, () => {
     vi.mocked(openWorkflowNeedsDeploymentDialog).mockResolvedValue(true)
   })
 
-  it('opens the custom deployment dialog over the error overlay on Comfy Cloud, to an account served the deployments listing', async () => {
+  it('opens the custom deployment dialog over the error overlay on Comfy Cloud, to a workspace served an empty deployments listing', async () => {
     listing(true, null)
     workflowMissing(UNSUPPORTED)
 
@@ -82,22 +86,42 @@ describe(noticeMissingNodes, () => {
   })
 
   it.for([
-    { when: 'the editor is not on Comfy Cloud', offer: false, boot: null },
-    { when: 'it runs on a deployment', offer: true, boot: deployment }
+    {
+      when: 'the editor is not on Comfy Cloud',
+      offer: false,
+      boot: null,
+      deployments: []
+    },
+    {
+      when: 'it runs on a deployment',
+      offer: true,
+      boot: deployment,
+      deployments: []
+    },
+    {
+      when: 'the workspace has a deployment that might run the workflow',
+      offer: true,
+      boot: null,
+      deployments: [deployment]
+    }
   ] satisfies {
     when: string
     offer: boolean
     boot: WorkspaceDeployment | null
-  }[])('shows only the error overlay when $when', async ({ offer, boot }) => {
-    offered.value = offer
-    listing(true, boot)
-    workflowMissing(UNSUPPORTED)
+    deployments: WorkspaceDeployment[]
+  }[])(
+    'shows only the error overlay when $when',
+    async ({ offer, boot, deployments }) => {
+      offered.value = offer
+      listing(true, boot, deployments)
+      workflowMissing(UNSUPPORTED)
 
-    await noticeMissingNodes()
+      await noticeMissingNodes()
 
-    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
-    expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
-  })
+      expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+      expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+    }
+  )
 
   it('shows the error overlay before the deployments listing answers', () => {
     listingAnswersLater()

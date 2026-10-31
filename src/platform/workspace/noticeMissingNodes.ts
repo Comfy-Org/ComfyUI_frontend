@@ -17,14 +17,14 @@ function waitForListing(): Promise<void> {
 }
 
 async function offerCustomDeployment(): Promise<void> {
-  const offered = useCustomDeploymentOffered()
+  const offered = useCustomDeploymentOffered(null)
   await waitForListing()
   if (offered.value) await openWorkflowNeedsDeploymentDialog()
 }
 
 /**
- * Shows the error overlay for the open workflow's missing nodes and, on Comfy
- * Cloud, the custom deployment dialog over it for nodes with no replacement.
+ * Shows the error overlay for the open workflow's missing nodes and, to a Comfy
+ * Cloud workspace with no deployments, the custom deployment dialog over it.
  */
 export async function noticeMissingNodes(): Promise<void> {
   useExecutionErrorStore().showErrorOverlay()

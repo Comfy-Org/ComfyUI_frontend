@@ -53,13 +53,15 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useCustomDeploymentOffered } from '@/platform/workspace/composables/useCustomDeploymentOffered'
+import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { useMissingNodeDeploymentOffer } from '@/platform/workspace/composables/useMissingNodeDeploymentOffer'
 import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 
 const { t } = useI18n()
 const { offer, choose, isSwitching, openSwitcher } =
   useMissingNodeDeploymentOffer()
-const customDeploymentOffered = useCustomDeploymentOffered()
+const { deploymentsThatRunIt } = useDeploymentCompatibility()
+const customDeploymentOffered = useCustomDeploymentOffered(deploymentsThatRunIt)
 
 const choices = computed(() =>
   offer.value?.kind === 'choices' ? offer.value.choices : []
