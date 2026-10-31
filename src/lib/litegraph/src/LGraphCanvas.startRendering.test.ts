@@ -73,10 +73,12 @@ describe('LGraphCanvas.startRendering', () => {
     expect(reportError).toHaveBeenCalledOnce()
   })
 
-  it('reports each distinct drawing failure once', () => {
+  it.for([
+    { name: 'same type, different message', second: new TypeError('second') },
+    { name: 'different type, same message', second: new RangeError('first') }
+  ])('reports each distinct drawing failure once: $name', ({ second }) => {
     const { runFrames } = captureFrames()
     const first = new TypeError('first')
-    const second = new RangeError('second')
     vi.spyOn(LGraphCanvas.prototype, 'draw')
       .mockImplementation(() => {})
       .mockImplementationOnce(() => {
@@ -132,7 +134,11 @@ describe('LGraphCanvas.startRendering', () => {
 
   it('reports a failure that first happens on a later frame and keeps rendering', () => {
     const { runNextFrame, frames } = captureFrames()
-    const drawFailure = new TypeError('later')
+    // Null-prototype: cannot be string-coerced, so building the failure key
+    // must not abort recovery before the next frame is scheduled.
+    const drawFailure: unknown = Object.assign(Object.create(null), {
+      message: 'extension draw failed'
+    })
     vi.spyOn(LGraphCanvas.prototype, 'draw')
       .mockImplementation(() => {})
       .mockImplementationOnce(() => {})

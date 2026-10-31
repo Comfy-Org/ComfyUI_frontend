@@ -2514,13 +2514,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.is_rendering = true
     let isFirstFrame = true
     let failedFrames = 0
-    const reportedFailures = new Set<string>()
+    const reportedFailures = new Set<unknown>()
 
     const reportFrameFailure = (cause: unknown) => {
       const key =
-        cause instanceof Error
-          ? `${cause.name}:${cause.message}`
-          : String(cause)
+        cause instanceof Error ? `${cause.name}:${cause.message}` : cause
       if (reportedFailures.has(key)) return
       reportedFailures.add(key)
       reportError(cause, {

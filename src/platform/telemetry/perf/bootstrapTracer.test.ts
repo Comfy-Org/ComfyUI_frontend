@@ -288,6 +288,7 @@ describe('bootstrapTracer', () => {
         .mocked(telemetry.trackBootstrapComplete)
         .mock.calls.map(([metadata]) => metadata.outcome)
     ).toEqual(['timed_out', 'completed'])
+    expect(tracer.outcome).toBe('completed')
   })
 
   it('suspends cancellation reporting and lets a replacement complete', async () => {
