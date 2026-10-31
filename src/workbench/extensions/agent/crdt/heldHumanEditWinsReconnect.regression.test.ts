@@ -82,11 +82,6 @@ function parseWireOps(ops: readonly DocOp[]): Op[] {
   )
 }
 
-function cfgOf(doc: ReturnType<typeof mint>): unknown {
-  const node = readGraph(doc).nodes['1'] as { widgets?: { cfg?: unknown } }
-  return node.widgets?.cfg
-}
-
 describe('a human edit across a reconnect, against the real applier', () => {
   let doc: ReturnType<typeof mint>
   let transportUp: boolean
@@ -146,7 +141,7 @@ describe('a human edit across a reconnect, against the real applier', () => {
     transportUp = true
     sender.retryTransport()
 
-    expect(cfgOf(doc)).toBe(4.5)
+    expect(readGraph(doc).nodes['1'].widgets).toEqual({ cfg: 4.5 })
   })
 
   it('wins a register whose counter ran ahead of the document sequence', () => {
@@ -154,7 +149,7 @@ describe('a human edit across a reconnect, against the real applier', () => {
 
     sender.enqueue([setCfg(4.5)])
 
-    expect(cfgOf(doc)).toBe(4.5)
+    expect(readGraph(doc).nodes['1'].widgets).toEqual({ cfg: 4.5 })
   })
 
   it('leaves a later agent write able to win over the human edit', () => {
@@ -163,6 +158,6 @@ describe('a human edit across a reconnect, against the real applier', () => {
 
     applyOps(doc, [agentSetCfg(11, (counter ?? 0) + 1)], CATALOG)
 
-    expect(cfgOf(doc)).toBe(11)
+    expect(readGraph(doc).nodes['1'].widgets).toEqual({ cfg: 11 })
   })
 })
