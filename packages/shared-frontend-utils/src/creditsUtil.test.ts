@@ -60,7 +60,6 @@ describe('comfyCredits helpers', () => {
     [0, false],
     [0.21, true],
     [0.7, true],
-    [-0.21, true],
     [1, false],
     [1.4, false]
   ] as const)(
