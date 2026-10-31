@@ -56,4 +56,29 @@ describe('resolveWidgetValueAsset', () => {
       expect(asset?.preview_id).toBe(previewId)
     }
   )
+
+  it.for([
+    { value: 'sky.exr [output]', previewId: 'root-preview' },
+    { value: 'renders/sky.exr [output]', previewId: 'renders-preview' },
+    { value: 'renders\\sky.exr [output]', previewId: 'renders-preview' }
+  ])(
+    'resolves unhashed $value by its subfolder',
+    async ({ value, previewId }) => {
+      const store = useAssetsStore()
+      store.outputAssets = fromPartial({
+        items: [
+          {
+            name: 'sky.exr',
+            user_metadata: { subfolder: 'renders' },
+            preview_id: 'renders-preview'
+          },
+          { name: 'sky.exr', preview_id: 'root-preview' }
+        ]
+      })
+
+      const asset = await resolveWidgetValueAsset(value)
+
+      expect(asset?.preview_id).toBe(previewId)
+    }
+  )
 })
