@@ -4666,6 +4666,78 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useToast().toasts).toEqual([])
   })
 
+  it.for(['Flux.dev', 'render.v2', 'Upscale 1.5x'])(
+    'attaches a hashed image card labelled %s by its stored file name',
+    async (label) => {
+      const uploaded = stubUploadFetch()
+      renderWithSelectedTarget()
+      await nextTick()
+      const data = assetPanelDrag(label, {
+        name: 'abcdef0123456789.png',
+        hash: 'blake3:abcdef0123456789'
+      })
+
+      dispatchDrag(screen.getByRole('textbox'), 'drop', data)
+
+      await screen.findByRole('group', { name: label })
+      expect(useAgentComposerStore().attachments).toEqual([
+        expect.objectContaining({
+          name: label,
+          ref: 'blake3:abcdef0123456789'
+        })
+      ])
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      await userEvent.type(screen.getByRole('textbox'), 'Describe this')
+      expect(screen.getByRole('button', { name: 'Send' })).not.toHaveAttribute(
+        'aria-disabled'
+      )
+      expect(uploaded).toEqual([])
+    }
+  )
+
+  it('refuses a hashed card whose stored file is a refused type behind an extensionless label', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    const data = assetPanelDrag('My scene', {
+      name: 'abcdef0123456789.usdz',
+      hash: 'blake3:abcdef0123456789'
+    })
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', data)
+
+    expect(
+      await screen.findByRole('status', {
+        name: unsupportedTypeMessage('My scene')
+      })
+    ).toBeVisible()
+    expect(useAgentComposerStore().attachments).toEqual([
+      expect.objectContaining({
+        name: 'My scene',
+        ref: '',
+        validationError: 'unsupported-type'
+      })
+    ])
+    expect(fetchRequests(data.getData('text/uri-list'))).toEqual([])
+    expect(uploaded).toEqual([])
+  })
+
+  it('uploads a hashed card it has to fetch under its stored file name', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    const data = assetPanelDrag('Holiday.v2', {
+      name: 'abcdef0123456789.heic',
+      hash: 'blake3:abcdef0123456789'
+    })
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', data)
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['abcdef0123456789.heic']))
+    expect(fetchRequests(data.getData('text/uri-list'))).toHaveLength(1)
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
   it('attaches a dropped workflow json to the chat instead of the graph loader', async () => {
     stubUploadFetch()
     renderWithSelectedTarget()
