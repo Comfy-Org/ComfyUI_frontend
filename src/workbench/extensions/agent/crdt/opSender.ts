@@ -91,12 +91,7 @@ export interface OpSenderDeps {
   actor(): string
   /** The follower's last observed doc sequence (a floor for `base_version`). */
   baseVersion(): number
-  /**
-   * The highest Lamport counter in the document the follower holds, or
-   * undefined when it has none. Stamps stay above it: comparing under the
-   * applier's `[base_version, actor, op_id]` key, an op below a counter this
-   * client has already received would lose to a write its author can see.
-   */
+  /** The highest Lamport counter in the document the follower holds. */
   observedCounter(): number | undefined
   /**
    * Terminal per-batch report: 'acknowledged' carries the host's result;
