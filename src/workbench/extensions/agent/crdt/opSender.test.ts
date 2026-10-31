@@ -697,6 +697,25 @@ describe('createOpSender', () => {
     expect(sent[0].ops[0].base_version).toBe(41)
   })
 
+  it('leaves a held batch as minted when only its highest op would overflow', () => {
+    transportUp = false
+    sender.enqueue([addNode(1), addNode(2)])
+    vi.advanceTimersByTime(500 * 6)
+    expect(sender.pendingOps()[0].ops.map((op) => op.base_version)).toEqual([
+      41, 42
+    ])
+
+    observedCounter = Number.MAX_SAFE_INTEGER - 1
+    transportUp = true
+    sender.retryTransport()
+
+    expect(sent[0].ops.map((op) => op.base_version)).toEqual([41, 42])
+    expect(sent[0].ops.map((op) => op.stamp)).toEqual([
+      [41, ACTOR],
+      [42, ACTOR]
+    ])
+  })
+
   it('refuses an admission whose counter range would leave the safe integers', () => {
     observedCounter = Number.MAX_SAFE_INTEGER - 1
 
