@@ -55,10 +55,10 @@ It either lost, or won only through the whole-document path of
    rejects a `base_version` outside them as `malformed_op` and aborts the rest of
    the batch, so emitting one loses that edit and every edit behind it. Both ends
    are bounded: an admission whose whole range would not fit is settled
-   `undeliverable` under `counter_exhausted` without minting or moving the
-   sender's cursor, and a held batch that cannot be lifted inside them is sent as
-   minted instead. Stamping above what the follower has received is therefore a
-   bounded guarantee, and exhaustion is surfaced rather than written to the wire.
+   `undeliverable` under `counter_exhausted` without admitting unsafe envelopes
+   or moving the sender's cursor. A held batch that cannot be lifted inside them
+   is sent as minted, without an exhaustion-specific report. Stamping above what
+   the follower has received is therefore a bounded guarantee.
 
 The result for a value conflict: an edit the person made without seeing the
 agent's write wins it if that edit had not reached the wire when the outage
