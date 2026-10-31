@@ -9,7 +9,7 @@ import type {
   NodeExecutionOutput,
   NodeOutputWith,
   ResultItem
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import type { ComfyExtension } from '@/types/comfy'
 
 type SaveMeshOutput = NodeOutputWith<{

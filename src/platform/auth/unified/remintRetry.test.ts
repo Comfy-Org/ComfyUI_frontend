@@ -15,7 +15,7 @@ import {
   fetchWithUnifiedRemint
 } from '@/platform/auth/unified/remintRetry'
 import { attachRetryableStatusRetry } from '@/utils/axiosRetryableStatus'
-import { NO_RETRY_POLICY } from '@/utils/retryPolicy'
+import { NO_RETRY_POLICY } from '@comfyorg/api-client/retryPolicy'
 
 vi.mock(import('@comfyorg/telemetry'))
 

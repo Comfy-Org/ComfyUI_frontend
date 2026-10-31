@@ -6,14 +6,15 @@ import type {
 } from 'axios'
 import axios, { AxiosError } from 'axios'
 
-import type { RetryPolicy } from '@/utils/retryPolicy'
-import { nextRetry, sleep as sleepFor } from '@/utils/retryPolicy'
-import type { StatusRetryEnd } from '@/utils/statusRetryTelemetry'
+import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
+import type { RetryPolicy } from '@comfyorg/api-client/retryPolicy'
+import { nextRetry, sleep as sleepFor } from '@comfyorg/api-client/retryPolicy'
+import type { StatusRetryEnd } from '@comfyorg/api-client/statusRetryTelemetry'
 import {
   abortEnd,
   endForStop,
   trackStatusRetry
-} from '@/utils/statusRetryTelemetry'
+} from '@comfyorg/api-client/statusRetryTelemetry'
 
 export interface AxiosRetryableStatusOptions {
   readonly policy?: RetryPolicy
@@ -43,7 +44,7 @@ function cancellationSignal(
   const controller = new AbortController()
   void config.cancelToken.promise.then(() => controller.abort())
   return signal
-    ? AbortSignal.any([signal, controller.signal])
+    ? combineAbortSignals([signal, controller.signal])
     : controller.signal
 }
 

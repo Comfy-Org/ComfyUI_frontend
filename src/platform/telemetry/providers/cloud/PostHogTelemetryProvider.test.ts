@@ -1160,6 +1160,26 @@ describe('PostHogTelemetryProvider', () => {
             step: 2
           }),
         properties: { reason: 'target_missing', step: 2 }
+      },
+      {
+        event: TelemetryEvents.AGENT_SEND_GATED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentSendGated({
+            gate: 'consent',
+            outcome: 'dropped',
+            reason: 'dismissed',
+            client_message_id: 'client-message-1',
+            held_ms: 1200,
+            thread_id: null
+          }),
+        properties: {
+          gate: 'consent',
+          outcome: 'dropped',
+          reason: 'dismissed',
+          client_message_id: 'client-message-1',
+          held_ms: 1200,
+          thread_id: null
+        }
       }
     ])(
       'captures $event with its properties',

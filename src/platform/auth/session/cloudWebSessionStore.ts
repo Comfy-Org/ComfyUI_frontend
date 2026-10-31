@@ -58,12 +58,12 @@ import {
   isSsoSession,
   rememberSignedInSession
 } from '@/platform/auth/session/ssoReentryStorage'
-import type { WebSessionRequestScope } from '@/platform/auth/session/webSessionFetch'
+import type { WebSessionRequestScope } from '@comfyorg/api-client/webSessionFetch'
 import {
   fetchOnWebSession,
   provideWebSessionRequests,
   WebSessionTokenError
-} from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
