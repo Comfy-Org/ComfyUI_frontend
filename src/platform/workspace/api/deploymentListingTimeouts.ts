@@ -37,3 +37,9 @@ export const DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS = 5_000
 
 /** Minimum gap between focus-triggered listing retries. */
 export const DEPLOYMENT_LISTING_FOCUS_RETRY_MS = 60_000
+
+/** How long a Start request may take once sent. */
+export const DEPLOYMENT_START_TIMEOUT_MS = 30_000
+
+/** How often the open menu refreshes the listing while a deployment starts. */
+export const DEPLOYMENT_START_POLL_MS = 5_000
