@@ -102,7 +102,8 @@ class NodeSlotReference {
         const node = window.app!.canvas.graph!.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
 
-        const rawPos = node.getConnectionPos(type === 'input', index)
+        const rawPos =
+          type === 'input' ? node.getInputPos(index) : node.getOutputPos(index)
         // page.mouse needs page coords. canvasPosToClientPos applies the
         // canvas transform AND the canvas element's client offset, so it
         // survives pack JS injecting chrome above the canvas (e.g. rgthree's
