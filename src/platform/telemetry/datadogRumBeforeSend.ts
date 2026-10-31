@@ -6,7 +6,10 @@ import type {
   RumViewEvent
 } from '@datadog/browser-rum'
 
-import { isRumErrorNoise } from '@comfyorg/shared-frontend-utils/telemetry'
+import {
+  isRumErrorNoise,
+  namesRumNoiseHost
+} from '@comfyorg/shared-frontend-utils/telemetry'
 
 import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
 
@@ -26,6 +29,28 @@ const FIREBASE_PENDING_PROMISE_ASSERTION =
   'INTERNAL ASSERTION FAILED: Pending promise was never set'
 const FIREBASE_PENDING_PROMISE_FINGERPRINT = 'firebase-auth-pending-promise'
 
+/** V8 (`at fn (url:1:2)`) and SpiderMonkey (`fn@url:1:2`) frame shapes. */
+function isStackFrameLine(line: string): boolean {
+  return /^\s*at\s/.test(line) || /@https?:\/\//.test(line)
+}
+
+function stackFrameLines(stack?: string): string[] {
+  return stack?.split('\n').filter(isStackFrameLine) ?? []
+}
+
+/**
+ * Only real stack frames decide origin. A report's `stack` is prefixed by its
+ * message header (`csp_violation: '<blockedURI>' blocked by ...`), so scanning
+ * every line lets a vendor- or attacker-controlled blocked URI such as
+ * `https://cdn.vendor.com/assets/pixel.js` read as first party, or one
+ * containing `/extensions/<name>/` be attributed to an extension that does not
+ * exist.
+ */
+function classifyRumStackOrigin(stack?: string): TelemetryErrorOrigin {
+  if (!stack) return { origin: 'third_party' }
+  return classifyTelemetryErrorOrigin(stackFrameLines(stack).join('\n'))
+}
+
 function fingerprintFirebasePendingPromise(event: RumErrorEvent): void {
   if (event.error.message.endsWith(FIREBASE_PENDING_PROMISE_ASSERTION)) {
     event.error.fingerprint = FIREBASE_PENDING_PROMISE_FINGERPRINT
@@ -44,10 +69,21 @@ function isConsoleEchoOfReportedAssertion(event: RumErrorEvent): boolean {
   )
 }
 
+/** Our own code tripping the CSP is a defect even when the blocked host is a tracker. */
+function isFirstPartyCspViolation(event: RumErrorEvent): boolean {
+  const { message, stack } = event.error
+  return (
+    message.startsWith('csp_violation:') &&
+    !stackFrameLines(stack).some(namesRumNoiseHost) &&
+    classifyRumStackOrigin(stack).origin === 'first_party'
+  )
+}
+
 function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
   if (event.type !== 'error') return true
   if (isConsoleEchoOfReportedAssertion(event)) return false
   if (hasUnmodifiableUrlMetadata(event)) return false
+  if (isFirstPartyCspViolation(event)) return true
   return !isRumErrorNoise(event.error)
 }
 
@@ -70,7 +106,7 @@ function tagRumErrorOrigin(event: RumErrorEvent): void {
     const context = event.context ?? {}
     const errorOrigin = isCustomNodeLoadReport(context)
       ? classifyCustomNodeLoadReport(context, event.error.stack)
-      : classifyTelemetryErrorOrigin(event.error.stack)
+      : classifyRumStackOrigin(event.error.stack)
     const existingErrorContext = event.context?.error
     const errorContext =
       typeof existingErrorContext === 'object' && existingErrorContext !== null
@@ -166,7 +202,7 @@ function classifyCustomNodeLoadReport(
 
   return origins.length > 0
     ? { origin: 'first_party' }
-    : classifyTelemetryErrorOrigin(stack)
+    : classifyRumStackOrigin(stack)
 }
 
 function isCustomNodeLoadReport(context: Record<string, unknown>): boolean {
