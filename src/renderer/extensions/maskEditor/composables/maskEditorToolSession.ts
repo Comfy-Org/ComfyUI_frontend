@@ -72,6 +72,8 @@ export function createMaskEditorToolSession(
         !overlay.every(
           (point): point is MaskEditorOverlayPoint =>
             point != null &&
+            typeof point.id === 'string' &&
+            typeof point.color === 'string' &&
             Number.isFinite(point.x) &&
             Number.isFinite(point.y) &&
             Number.isFinite(point.radius) &&
@@ -117,13 +119,23 @@ export function createMaskEditorToolSession(
     call(() => session.dispose?.())
   }
 
-  const created = call(() => tool.createSession(context))
+  const created = call(() => {
+    const candidate: unknown = tool.createSession(context)
+    if (candidate === null || typeof candidate !== 'object') return undefined
+    if ('then' in candidate && typeof candidate.then === 'function') {
+      void Promise.resolve(candidate).catch(() => undefined)
+      return undefined
+    }
+    return candidate
+  })
   if (created) {
     session = created
     if (isDisposed()) call(() => session.dispose?.())
   } else if (!isDisposed()) {
     dispose()
-    reportFailure(new Error('MaskEditor tool did not return a session'))
+    reportFailure(
+      new Error('MaskEditor tool must return a synchronous session')
+    )
   }
 
   return {

@@ -5,6 +5,7 @@ import type { MaskEditorToolDocument } from './maskEditorToolSession'
 import type {
   MaskEditorMask,
   MaskEditorOverlayPoint,
+  MaskEditorPointerEvent,
   MaskEditorTool
 } from '@comfyorg/mask-editor/extensionTypes'
 
@@ -53,6 +54,22 @@ const result: MaskEditorMask = {
   width: 3,
   height: 2,
   data: new Uint8Array([0, 255, 128, 255, 0, 0])
+}
+
+const pointerEvent: MaskEditorPointerEvent = {
+  phase: 'down',
+  x: 1,
+  y: 1,
+  inBounds: true,
+  pointerId: 1,
+  pointerType: 'mouse',
+  button: 0,
+  buttons: 1,
+  pressure: 0.5,
+  altKey: false,
+  ctrlKey: false,
+  metaKey: false,
+  shiftKey: false
 }
 
 describe('MaskEditor extension session contract', () => {
@@ -198,7 +215,15 @@ describe('MaskEditor extension session contract', () => {
     { name: 'missing array', invalid: undefined },
     { name: 'non-array', invalid: {} },
     { name: 'null point', invalid: [null] },
-    { name: 'sparse array', invalid: Object.assign([], { length: 1 }) }
+    { name: 'sparse array', invalid: Object.assign([], { length: 1 }) },
+    {
+      name: 'non-string identity',
+      invalid: [{ id: 7, x: 1, y: 1, radius: 4, color: 'blue' }]
+    },
+    {
+      name: 'non-string color',
+      invalid: [{ id: 'positive', x: 1, y: 1, radius: 4, color: {} }]
+    }
   ])(
     'preserves the overlay on invalid JavaScript points: $name',
     ({ invalid }) => {
@@ -216,6 +241,22 @@ describe('MaskEditor extension session contract', () => {
     const { runtime, reportFailure } = setup(
       vi.fn<MaskEditorTool['createSession']>()
     )
+    expect(runtime.context.signal.aborted).toBe(true)
+    expect(reportFailure).toHaveBeenCalledExactlyOnceWith(expect.any(Error))
+  })
+
+  it.for([
+    { name: 'primitive', returned: () => 7 },
+    { name: 'async factory', returned: () => Promise.resolve({}) },
+    {
+      name: 'rejected async factory',
+      returned: () => Promise.reject(new Error('Async creation failed'))
+    }
+  ])('rejects an invalid JavaScript session: $name', async ({ returned }) => {
+    const createSession = vi.fn<MaskEditorTool['createSession']>()
+    Reflect.apply(createSession.mockReturnValue, createSession, [returned()])
+    const { runtime, reportFailure } = setup(createSession)
+    await Promise.resolve()
     expect(runtime.context.signal.aborted).toBe(true)
     expect(reportFailure).toHaveBeenCalledExactlyOnceWith(expect.any(Error))
   })
@@ -249,5 +290,69 @@ describe('MaskEditor extension session contract', () => {
     })
     expect(runtime.context.signal.aborted).toBe(true)
     expect(reportFailure).toHaveBeenCalledExactlyOnceWith(failure)
+  })
+
+  it('refuses an unavailable document without closing the session', () => {
+    const { runtime, document, mask, reportFailure } = setup()
+    vi.spyOn(document, 'getDimensions').mockReturnValue(undefined)
+    expect(runtime.context.commitMask(result, { expectedRevision: 1 })).toEqual(
+      { ok: false, reason: 'unavailable' }
+    )
+    expect(mask().data).toEqual(new Uint8Array(6))
+    expect(runtime.context.signal.aborted).toBe(false)
+    expect(reportFailure).not.toHaveBeenCalled()
+  })
+
+  it('reports a failed mask application once and closes the session', () => {
+    const failure = new Error('Canvas write failed')
+    const { runtime, document, reportFailure } = setup()
+    vi.spyOn(document, 'applyMask').mockImplementation(() => {
+      throw failure
+    })
+    expect(runtime.context.commitMask(result, { expectedRevision: 1 })).toEqual(
+      { ok: false, reason: 'failed' }
+    )
+    expect(runtime.context.signal.aborted).toBe(true)
+    expect(reportFailure).toHaveBeenCalledExactlyOnceWith(failure)
+  })
+
+  it('reports an active pointer rejection once and disposes the session', async () => {
+    const failure = new Error('Point processing failed')
+    const dispose = vi.fn()
+    const { runtime, reportFailure } = setup(() => ({
+      onPointer: async () => {
+        throw failure
+      },
+      dispose
+    }))
+    await runtime.pointer(pointerEvent)
+    expect(runtime.context.signal.aborted).toBe(true)
+    expect(dispose).toHaveBeenCalledExactlyOnceWith()
+    expect(reportFailure).toHaveBeenCalledExactlyOnceWith(failure)
+  })
+
+  it('keeps the current document session when an obsolete pointer callback rejects', async () => {
+    const failure = new Error('Obsolete point processing failed')
+    const reject = vi.fn<() => void>()
+    const pending = new Promise<void>((_, rejectPromise) => {
+      reject.mockImplementation(() => rejectPromise(failure))
+    })
+    const dispose = vi.fn()
+    const { runtime, reportFailure } = setup(() => ({
+      onPointer: () => pending,
+      dispose
+    }))
+    const oldSignal = runtime.context.signal
+    const callback = runtime.pointer(pointerEvent)
+    runtime.documentChanged()
+    reject()
+    await callback
+    expect(oldSignal.aborted).toBe(true)
+    expect(runtime.context.signal.aborted).toBe(false)
+    expect(dispose).not.toHaveBeenCalled()
+    expect(reportFailure).not.toHaveBeenCalled()
+    expect(runtime.context.commitMask(result, { expectedRevision: 1 })).toEqual(
+      { ok: true, revision: 2 }
+    )
   })
 })

@@ -37,8 +37,9 @@ the extension. A puzzle icon is used when no icon is supplied.
 
 ## Active sessions
 
-`createSession(context)` runs when the user selects the tool. It returns a
-`MaskEditorToolSession` with optional callbacks:
+`createSession(context)` runs when the user selects the tool. It synchronously
+returns a `MaskEditorToolSession` with optional callbacks. Promise-returning
+factories are rejected and reported.
 
 | Callback                     | Contract                                                                                                                                                                                                                                    |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -116,8 +117,8 @@ Use unique IDs and valid CSS colors. The frontend scales and moves markers
 with the image, and excludes them from snapshots, mask history, and Save.
 
 Overlays clear on external document changes and session disposal. The method
-returns `false` for a closed session or invalid coordinates/radii. Calls from
-a closed session cannot affect a later editor.
+returns `false` for a closed session, invalid coordinates/radii, or non-string
+IDs/colors. Calls from a closed session cannot affect a later editor.
 
 Public TypeScript contracts are exported from the frontend types entry point
 as `MaskEditorExtensionAPI`, `MaskEditorTool`, `MaskEditorToolContext`, `MaskEditorToolSession`,
