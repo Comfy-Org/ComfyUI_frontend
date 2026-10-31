@@ -325,7 +325,7 @@ async function runBatch(
         ids.push(String(node.id))
         allIds.push(String(node.id))
         nodeIdByKey[spec.key] = String(node.id)
-        for (const [name, value] of Object.entries(spec.widgetInputs)) {
+        for (const [name, value] of Object.entries(spec.widgetInputs ?? {})) {
           const widget = node.widgets?.find(
             (candidate) => candidate.name === name
           )
