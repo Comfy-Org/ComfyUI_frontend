@@ -6750,11 +6750,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "Amplía un vídeo entre 1,5 y 3 veces con superresolución FLUX, preservando la fuente con precisión o mejorando creativamente sus detalles.",
-    "display_name": "Ampliación de vídeo Flux",
+    "display_name": "Ampliación de vídeo Flux (heredada)",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "Reduce automáticamente la escala de las fuentes de más de 3840x2160 píxeles de área para ajustarlas al límite de entrada. Se conserva la relación de aspecto; los vídeos más pequeños no se modifican."
+        "tooltip": "Reduce automáticamente la escala de las fuentes cuya área supere los 2560x1440 píxeles para ajustarse al límite de entrada. Se conserva la relación de aspecto; los vídeos más pequeños no se modifican."
       },
       "control_after_generate": {
         "name": "control después de generar"
@@ -6782,6 +6782,48 @@
       "video": {
         "name": "vídeo",
         "tooltip": "Clip de origen de 1 a 20 segundos con una relación de aspecto entre 1:4 y 4:1. La salida se procesa a 24 fps y se limita a unos 14,4 megapíxeles por fotograma."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "Amplía un vídeo a 1080p, 2K o 4K, o entre 1,5 y 3 veces, con superresolución FLUX, ya sea preservando la fuente con precisión o mejorando creativamente sus detalles.",
+    "display_name": "Ampliación de vídeo Flux",
+    "inputs": {
+      "auto_downscale": {
+        "name": "reducción_de_escala_automática",
+        "tooltip": "Reduce la escala de las fuentes demasiado grandes en lugar de rechazarlas: con un área superior a 2560x1440 píxeles o superior a dos tercios de la resolución objetivo (el factor mínimo es 1.5x). Se conserva la relación de aspecto."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "'creative' restaura e inventa detalles finos; es ideal para material generado, texturas y paisajes. 'precise' mejora la nitidez de la fuente sin cambiarla, para rostros, productos y material real."
+      },
+      "prompt": {
+        "name": "indicador",
+        "tooltip": "Descripción opcional del clip que guía los detalles mejorados. Déjalo vacío para una ampliación neutra."
+      },
+      "safety_tolerance": {
+        "name": "tolerancia_de_seguridad",
+        "tooltip": "Tolerancia de moderación; 0 es el valor más estricto."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para determinar si el nodo debe volver a ejecutarse; FLUX elige su propia semilla, por lo que los resultados reales no son deterministas independientemente de este valor."
+      },
+      "target_resolution": {
+        "name": "resolución_objetivo",
+        "tooltip": "2K, 4K y 1080p ajustan la salida dentro de 2560x1440, 3840x2160 o 1920x1080 (invertido para clips verticales). Una fuente demasiado pequeña para llenarlo con el máximo de 3x se amplía 3x y resulta más pequeña."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Clip de origen de 1 a 20 segundos con una relación de aspecto entre 1:4 y 4:1. La salida se procesa a 24 fps y se limita a aproximadamente 14,4 megapíxeles por fotograma."
       }
     },
     "outputs": {
@@ -9039,7 +9081,7 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Edita una imagen guiándose por un prompt de texto mediante la edición precisa de Ideogram 4.5: solo cambia lo que solicita el prompt, los píxeles no modificados permanecen idénticos y la salida conserva el tamaño de la imagen 1 (las imágenes de más de ~4 MP se reducen primero). Acepta hasta 4 imágenes de referencia.",
+    "description": "Edita una imagen guiándose por un indicador de texto mediante la edición precisa de Ideogram 4.5: solo cambia lo que solicita el indicador, los píxeles intactos permanecen idénticos y la salida conserva el tamaño de la imagen 1 (las imágenes de más de ~4 MP se reducen primero). También puede editar una única región, definida por una máscara o cuadros delimitadores, y devolver la imagen a tamaño completo. Acepta hasta 4 imágenes de referencia (3 con context_window_mask).",
     "display_name": "Edición precisa de Ideogram 4.5",
     "inputs": {
       "control_after_generate": {
@@ -9048,6 +9090,9 @@
       "model": {
         "name": "modelo",
         "tooltip": "Modelo que se utilizará."
+      },
+      "model_context_window": {
+        "name": "ventana_de_contexto"
       },
       "model_prompt": {
         "name": "prompt"
@@ -15062,6 +15107,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "description": "Establece ventanas de contexto para MiniMax H3. Las ventanas comienzan en los fragmentos de 17 fotogramas del modelo para mantener sincronizados el vídeo y el audio.",
+    "display_name": "Ventanas de contexto MiniMax H3",
+    "inputs": {
+      "context_length": {
+        "name": "longitud_de_contexto",
+        "tooltip": "La longitud de la ventana de contexto en fotogramas reales. Debe ser 17*n + 5."
+      },
+      "context_overlap": {
+        "name": "solapamiento_de_contexto",
+        "tooltip": "El solapamiento de la ventana de contexto en fotogramas reales. Debe ser 17*n + 5."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "Indica si se aplica la mezcla aleatoria de ruido FreeNoise; mejora la transición entre ventanas."
+      },
+      "fuse_method": {
+        "name": "método_de_fusión",
+        "tooltip": "El método que se utilizará para fusionar las ventanas de contexto."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "El modelo al que se aplicarán ventanas de contexto durante el muestreo."
+      },
+      "split_conds_to_windows": {
+        "name": "dividir_condicionamientos_en_ventanas",
+        "tooltip": "Indica si se dividen varios condicionamientos (creados por ConditionCombine) en cada ventana según el índice de región."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "El modelo con ventanas de contexto aplicadas durante el muestreo."
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "description": "Aplica un MiniMax H3 Fun ControlNet a un modelo de texto a vídeo como parche de modelo.",
     "display_name": "Aplicar MiniMax H3 Fun ControlNet",
@@ -15137,6 +15217,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "Redimensiona el vídeo de un latent de MiniMax H3 con un modelo de ampliación de latent; el audio pasa sin cambios.",
+    "display_name": "Ampliación de latent MiniMax H3 con modelo",
+    "inputs": {
+      "height": {
+        "name": "alto"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "samples": {
+        "name": "muestras"
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
