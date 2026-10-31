@@ -486,11 +486,6 @@
       "count": 1
     }
   },
-  "src/platform/auth/session/useSessionCookie.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 5
-    }
-  },
   "src/platform/auth/unified/remintRetry.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
@@ -704,11 +699,6 @@
   "src/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/platform/workflow/sharing/services/comfyHubService.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 7
     }
   },
   "src/platform/workflow/sharing/services/workflowShareService.ts": {

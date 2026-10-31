@@ -2,7 +2,6 @@ import type {
   OAuthConsentChallenge as GeneratedOAuthConsentChallenge,
   OAuthConsentChallengeWorkspace
 } from '@comfyorg/ingest-types'
-import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 
 import { isLoopbackHost } from '@/utils/hostWhitelist'
 
@@ -14,6 +13,11 @@ import { isLoopbackHost } from '@/utils/hostWhitelist'
 // redirect rules to boot — the symptom looks like "CORS error" on a fetch
 // initiated from /oauth/authorize). The Vite proxy / production ingress is
 // the single point of routing.
+
+import {
+  UNKNOWN_ERROR_CODE,
+  parseErrorResponse
+} from '@/platform/remote/comfyui/errors'
 
 export type OAuthWorkspace = OAuthConsentChallengeWorkspace
 
@@ -100,12 +104,11 @@ export class OAuthApiError extends Error {
 }
 
 async function readApiError(response: Response): Promise<OAuthApiError> {
-  const body: unknown = await response.json().catch(() => null)
-  const parsed = zErrorResponse.partial().safeParse(body).data
+  const { code, message } = await parseErrorResponse(response)
   return new OAuthApiError(
-    parsed?.message ?? response.statusText,
+    message,
     response.status,
-    parsed?.code
+    code === UNKNOWN_ERROR_CODE ? undefined : code
   )
 }
 

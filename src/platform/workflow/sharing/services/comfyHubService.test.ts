@@ -5,12 +5,18 @@ vi.mock(import('@/scripts/api'))
 
 const { useComfyHubService } = await import('./comfyHubService')
 
-function mockJsonResponse(payload: unknown, ok = true, status = 200): Response {
-  return {
-    ok,
-    status,
-    json: async () => payload
-  } as Response
+function mockJsonResponse(payload: unknown): Response {
+  return new Response(JSON.stringify(payload), {
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
+
+function mockErrorResponse(
+  body: string,
+  status = 500,
+  statusText = 'Internal Server Error'
+): Response {
+  return new Response(body, { status, statusText })
 }
 
 describe('useComfyHubService', () => {
@@ -187,5 +193,46 @@ describe('useComfyHubService', () => {
       profilePictureUrl: 'https://cdn.example.com/avatar.png',
       coverImageUrl: undefined
     })
+  })
+
+  it('surfaces the server message from a failed request', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      mockErrorResponse(
+        JSON.stringify({ code: 'USERNAME_TAKEN', message: 'Username taken' }),
+        409,
+        'Conflict'
+      )
+    )
+
+    const service = useComfyHubService()
+    await expect(
+      service.createProfile({ workspaceId: 'workspace-1', username: 'builder' })
+    ).rejects.toThrow('Username taken')
+  })
+
+  it('surfaces a plain-text proxy body instead of dropping it', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      mockErrorResponse('upstream connect error', 502, 'Bad Gateway')
+    )
+
+    const service = useComfyHubService()
+    await expect(
+      service.uploadFileToPresignedUrl({
+        uploadUrl: 'https://upload.example.com/object',
+        file: new File(['payload'], 'avatar.png', { type: 'image/png' }),
+        contentType: 'image/png'
+      })
+    ).rejects.toThrow('upstream connect error')
+  })
+
+  it('keeps the operation-specific fallback when the body carries no message', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      mockErrorResponse('', 502, 'Bad Gateway')
+    )
+
+    const service = useComfyHubService()
+    await expect(service.fetchTagLabels()).rejects.toThrow(
+      'Failed to fetch hub labels'
+    )
   })
 })
