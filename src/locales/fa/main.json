@@ -6194,6 +6194,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "ایجاد محیط کاری جدید",
     "failedToSwitch": "تغییر فضای کاری ناموفق بود",
+    "managedByOrganization": "سازمان شما workspaceهایتان را مدیریت می‌کند؛ بنابراین نمی‌توانید workspace جدیدی ایجاد کنید.",
     "maxWorkspacesReached": "شما فقط می‌توانید مالک ۱۰ محیط کاری باشید. برای ایجاد محیط کاری جدید، یکی را حذف کنید.",
     "personal": "شخصی",
     "roleMember": "عضو",

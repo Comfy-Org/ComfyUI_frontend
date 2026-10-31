@@ -6194,6 +6194,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "新しいワークスペースを作成",
     "failedToSwitch": "ワークスペースの切り替えに失敗しました",
+    "managedByOrganization": "組織がワークスペースを管理しているため、新しいワークスペースを作成できません。",
     "maxWorkspacesReached": "所有できるワークスペースは10個までです。新しく作成するには1つ削除してください。",
     "personal": "個人用",
     "roleMember": "メンバー",

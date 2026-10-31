@@ -6194,6 +6194,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "إنشاء مساحة عمل جديدة",
     "failedToSwitch": "فشل في تبديل مساحة العمل",
+    "managedByOrganization": "تدير مؤسستك مساحات العمل الخاصة بك، لذا لا يمكنك إنشاء واحدة.",
     "maxWorkspacesReached": "يمكنك امتلاك ١٠ مساحات عمل فقط. احذف واحدة لإنشاء مساحة جديدة.",
     "personal": "شخصي",
     "roleMember": "عضو",

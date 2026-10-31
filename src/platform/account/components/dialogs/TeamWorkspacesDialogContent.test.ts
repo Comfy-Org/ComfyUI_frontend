@@ -210,7 +210,7 @@ describe('TeamWorkspacesDialogContent', () => {
     it.for([
       {
         reason: 'organization_managed',
-        notice: 'workspaceSwitcher.organizationManagesWorkspaces'
+        notice: 'workspaceSwitcher.managedByOrganization'
       },
       {
         reason: 'owned_workspace_limit',

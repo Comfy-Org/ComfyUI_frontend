@@ -84,15 +84,7 @@
     </div>
 
     <div v-if="isCloud" class="shrink-0 border-t p-2">
-      <p
-        v-if="createWorkspaceRefusal === 'organization_managed'"
-        class="m-0 p-2 text-sm text-muted-foreground"
-      >
-        {{ createRefusal }}
-      </p>
       <div
-        v-else
-        data-testid="create-workspace-entry"
         :class="
           cn(
             'flex h-12 w-full items-center gap-2 rounded-sm p-2',
@@ -177,7 +169,6 @@ const {
   workspaceId,
   workspaces,
   canCreateWorkspace,
-  createWorkspaceRefusal,
   isFetchingWorkspaces,
   isSwitching
 } = storeToRefs(workspaceStore)

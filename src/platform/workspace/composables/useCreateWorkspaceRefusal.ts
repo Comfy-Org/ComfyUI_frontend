@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const REFUSAL_KEYS = {
-  organization_managed: 'workspaceSwitcher.organizationManagesWorkspaces',
+  organization_managed: 'workspaceSwitcher.managedByOrganization',
   owned_workspace_limit: 'workspaceSwitcher.maxWorkspacesReached',
   unknown: 'workspaceSwitcher.cannotCreateWorkspace'
 } as const

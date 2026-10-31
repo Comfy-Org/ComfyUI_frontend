@@ -6194,6 +6194,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "Crear nuevo espacio de trabajo",
     "failedToSwitch": "No se pudo cambiar el espacio de trabajo",
+    "managedByOrganization": "Tu organización administra tus espacios de trabajo, por lo que no puedes crear uno.",
     "maxWorkspacesReached": "Solo puedes ser propietario de 10 espacios de trabajo. Elimina uno para crear uno nuevo.",
     "personal": "Personal",
     "roleMember": "Miembro",

@@ -4097,8 +4097,8 @@
     "roleMember": "Member",
     "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own {max} workspaces. Delete one to create a new one.",
+    "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
     "cannotCreateWorkspace": "You can't create a workspace on this account right now.",
-    "organizationManagesWorkspaces": "Your organization manages workspaces for this account.",
     "failedToSwitch": "Failed to switch workspace"
   },
   "deploymentSwitcher": {

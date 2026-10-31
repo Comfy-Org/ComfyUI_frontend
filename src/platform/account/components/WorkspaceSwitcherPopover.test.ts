@@ -39,8 +39,8 @@ const i18n = createI18n({
         createWorkspace: 'Create a team workspace',
         maxWorkspacesReached:
           'You can only own {max} workspaces. Delete one to create a new one.',
-        organizationManagesWorkspaces:
-          'Your organization manages workspaces for this account.',
+        managedByOrganization:
+          "Your organization manages your workspaces, so you can't create one.",
         cannotCreateWorkspace:
           "You can't create a workspace on this account right now."
       },
@@ -278,22 +278,16 @@ describe('WorkspaceSwitcherPopover', () => {
   it.for([
     {
       reason: 'organization_managed',
-      notice: 'Your organization manages workspaces for this account.',
-      showsEntry: false
+      notice: /Your organization manages your workspaces/
     },
     {
       reason: 'owned_workspace_limit',
-      notice: /You can only own 25 workspaces/,
-      showsEntry: true
+      notice: /You can only own 25 workspaces/
     },
-    {
-      reason: undefined,
-      notice: /can't create a workspace on this account/,
-      showsEntry: true
-    }
+    { reason: undefined, notice: /can't create a workspace on this account/ }
   ] as const)(
     'renders the served refusal ($reason) in place of creating',
-    async ({ reason, notice, showsEntry }) => {
+    async ({ reason, notice }) => {
       const store = useTeamWorkspaceStore()
       store.$patch({
         serverRefusesCreation: true,
@@ -306,9 +300,6 @@ describe('WorkspaceSwitcherPopover', () => {
 
       expect(screen.queryByText('Create a team workspace')).toBeNull()
       expect(emitted().create).toBeUndefined()
-      expect(screen.queryByTestId('create-workspace-entry') !== null).toBe(
-        showsEntry
-      )
     }
   )
 
