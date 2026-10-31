@@ -64,7 +64,10 @@ test.describe('Agent feedback diagnostics', { tag: ['@cloud', '@ui'] }, () => {
     )
     await expect(typeform.root).toHaveAttribute(
       'data-tf-hidden',
-      typeform.hiddenField('client', '[0-9a-f-]{36}')
+      typeform.hiddenField(
+        'client',
+        '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+      )
     )
     await expect(typeform.root).not.toHaveAttribute(
       'data-tf-hidden',
