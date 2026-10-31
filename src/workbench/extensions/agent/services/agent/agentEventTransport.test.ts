@@ -1318,6 +1318,29 @@ describe('agentEventTransport reply drafts', () => {
     expect(textParts(message)).toEqual([])
   })
 
+  it("drops a later round's draft at a run card once the remember call has finished", () => {
+    const message = drive([
+      draft('Saved, generating now.'),
+      toolCall('remember', 'running'),
+      toolCall('remember', 'success'),
+      draft('Saved, generating now. Validates clean.'),
+      runApproval()
+    ])
+
+    expect(textParts(message)).toEqual([])
+  })
+
+  it('drops narration at a run card once the remember call has finished', () => {
+    const message = drive([
+      draft('Saved, generating now.'),
+      toolCall('remember', 'success'),
+      thinking('Saved, generating now.'),
+      runApproval()
+    ])
+
+    expect(textParts(message)).toEqual([])
+  })
+
   it('still drops the draft at an ask no answer tool is waiting on', () => {
     const message = drive([
       draft('Validates clean.'),

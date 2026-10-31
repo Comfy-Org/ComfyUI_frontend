@@ -105,8 +105,8 @@ export interface AgentEventTransport {
 /**
  * Bookkeeping tools the backend holds a round's text for instead of narrating
  * it (cloud `answerToolNames`, ADR-033). Their call does not end the answer, so
- * the draft stays on screen, including while the call waits on an approval
- * card. If the round turns out to be narration, the next real tool call or the
+ * the draft stays on screen, including while the still-running call waits on
+ * its approval card. If the round turns out to be narration, the next real tool call or the
  * turn's end still drops it.
  */
 const ANSWER_TOOL_NAMES: ReadonlySet<string> = new Set(['remember', 'forget'])
@@ -129,7 +129,7 @@ export function createAgentEventTransport(
 ): AgentEventTransport {
   let openText: TextPart | null = null
   let draft: TextPart | null = null
-  let answerDraftKept = false
+  let answerToolRunning = false
   let openThinking: ThinkingPart | null = null
   let openThinkingStartedAt = 0
   let thinkingDraft: ThinkingPart | null = null
@@ -348,7 +348,7 @@ export function createAgentEventTransport(
     }
     const part = toAskOrNoticePart(data)
     if (part.type === 'askUnavailable') reportUnrenderedAsk(data)
-    if (!answerDraftKept) dropDraft()
+    if (!answerToolRunning) dropDraft()
     dropThinkingDraft()
     closeOpenText()
     closeOpenThinking()
@@ -454,7 +454,6 @@ export function createAgentEventTransport(
     const stale = draft
     message.parts = message.parts.filter((part) => part !== stale)
     draft = null
-    answerDraftKept = false
   }
 
   function dropDrafts(): void {
@@ -509,7 +508,7 @@ export function createAgentEventTransport(
         return true
       case 'agent_tool_call':
         if (ANSWER_TOOL_NAMES.has(event.data.tool_name)) {
-          answerDraftKept = draft !== null
+          answerToolRunning = event.data.status === 'running'
           dropThinkingDraft()
         } else {
           dropDrafts()
