@@ -387,11 +387,21 @@ describe('LiveGraphApplier', () => {
     expect(
       graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
     ).toEqual([11, 20])
+    // On a fixed-widget-list node (no dynamic combo), supportsOverflow: false
+    // distinguishes this catalog/serialize-slot-count mismatch from the
+    // autogrow positional drift the dynamic-combo tests above cover.
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({
         message: "Node 1 (TestPlainWidgets) has no widget '_extra_1'"
       }),
-      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      expect.objectContaining({
+        errorType: 'agent_graph_widget_missing',
+        context: expect.objectContaining({
+          widgetCount: 2,
+          supportsOverflow: false,
+          overflowIndex: 1
+        })
+      })
     )
   })
 
@@ -414,11 +424,21 @@ describe('LiveGraphApplier', () => {
     expect(
       graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
     ).toEqual([11, 20])
+    // On a fixed-widget-list node (no dynamic combo), supportsOverflow: false
+    // distinguishes this catalog/serialize-slot-count mismatch from the
+    // autogrow positional drift the dynamic-combo tests above cover.
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({
         message: "Node 1 (TestPlainWidgets) has no widget '_extra_1'"
       }),
-      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      expect.objectContaining({
+        errorType: 'agent_graph_widget_missing',
+        context: expect.objectContaining({
+          widgetCount: 2,
+          supportsOverflow: false,
+          overflowIndex: 1
+        })
+      })
     )
   })
 
@@ -521,42 +541,55 @@ describe('LiveGraphApplier', () => {
   })
 
   it.for([
-    { name: '_extra_2', label: 'out-of-range' },
-    { name: '_extra_01', label: 'malformed' }
-  ])('reports a $label overflow key instead of applying it', ({ name }) => {
-    const { graph, doc, applyCollected, applyEdit } = setup({
-      nodes: [
-        {
-          id: 1,
-          type: 'TestOverflowWidgets',
-          pos: [0, 0],
-          size: [210, 100],
-          widgets_values: [11, 42]
-        }
-      ],
-      links: []
-    })
-    applyCollected()
-    const before = graph
-      .getNodeById(toNodeId(1))
-      ?.widgets?.map((widget) => widget.value)
+    { name: '_extra_2', label: 'out-of-range', expectedOverflowIndex: 2 },
+    { name: '_extra_01', label: 'malformed', expectedOverflowIndex: null }
+  ])(
+    'reports a $label overflow key instead of applying it',
+    ({ name, expectedOverflowIndex }) => {
+      const { graph, doc, applyCollected, applyEdit } = setup({
+        nodes: [
+          {
+            id: 1,
+            type: 'TestOverflowWidgets',
+            pos: [0, 0],
+            size: [210, 100],
+            widgets_values: [11, 42]
+          }
+        ],
+        links: []
+      })
+      applyCollected()
+      const before = graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map((widget) => widget.value)
 
-    applyEdit(() => {
-      const widgets = nodesMap(doc).get('1')?.get('widgets')
-      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
-      widgets.set(name, 99)
-    })
+      applyEdit(() => {
+        const widgets = nodesMap(doc).get('1')?.get('widgets')
+        if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+        widgets.set(name, 99)
+      })
 
-    expect(
-      graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
-    ).toEqual(before)
-    expect(reportError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: `Node 1 (TestOverflowWidgets) has no widget '${name}'`
-      }),
-      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
-    )
-  })
+      expect(
+        graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+      ).toEqual(before)
+      // Distinguishes autogrow positional drift (supportsOverflow: true, an
+      // overflowIndex past widgetCount) from a malformed/unaddressable key
+      // (overflowIndex: null) the next time this family fires in production.
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: `Node 1 (TestOverflowWidgets) has no widget '${name}'`
+        }),
+        expect.objectContaining({
+          errorType: 'agent_graph_widget_missing',
+          context: expect.objectContaining({
+            widgetCount: 2,
+            supportsOverflow: true,
+            overflowIndex: expectedOverflowIndex
+          })
+        })
+      )
+    }
+  )
 
   it('keeps a named entry authoritative over its own overflow alias', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
