@@ -1,5 +1,4 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { useMediaControls } from '@vueuse/core'
 import { effectScope, nextTick, ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -7,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useWaveAudioPlayer } from './useWaveAudioPlayer'
 import { useToast } from '@/components/ui/toast/toastStore'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 vi.mock(import('@vueuse/core'), { spy: true })
@@ -29,7 +29,7 @@ afterEach(() => {
 })
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@comfyorg/telemetry/reportError'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 describe('useWaveAudioPlayer', () => {
   it('initializes with default bar count', () => {
