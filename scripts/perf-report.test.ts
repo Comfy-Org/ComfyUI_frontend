@@ -201,6 +201,7 @@ describe('perf-report baseline comparison', () => {
     )
     expect(output).toContain('| steady: p95 frame time | 17ms | 1ms |')
     expect(output).toContain('| steady: TBT | 0ms | 0ms |')
+    expect(output).not.toMatch(/\| steady: p95 frame time \| [▁▂▃▄▅▆▇█]+ \|/)
   })
 
   it('flags a real frame time regression against sampled history', () => {

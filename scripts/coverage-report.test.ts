@@ -15,7 +15,6 @@ const TRACEFILE = Array.from(
     `SF:src/components/Component${index}.vue\nDA:1,1\nDA:2,0\nLF:2\nLH:1\nend_of_record\n`
 ).join('')
 
-/** A string is written verbatim, so cases can supply unparseable metadata. */
 function render(
   metadata: Record<string, unknown> | string | null,
   tracefile = TRACEFILE

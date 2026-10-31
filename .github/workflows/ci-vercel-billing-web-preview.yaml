@@ -133,7 +133,7 @@ jobs:
             <summary>Details</summary>
 
             **Links**
-            - 🔗 Stable: ${{ steps.urls.outputs.stable-url }}
+            - 🔗 Preview: ${{ steps.urls.outputs.stable-url }}
             - 📌 This commit: ${{ steps.deploy.outputs.url }}
 
             </details>
