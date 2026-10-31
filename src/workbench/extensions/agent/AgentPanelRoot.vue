@@ -699,6 +699,9 @@ const coachDeferredBy = computed(() =>
 )
 const sendGates = useAgentSendGates(() => threadId.value)
 const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
+// A release in the update that closes the panel resolves its waiter before the
+// awaiting send can resume, so the close has to revoke it after the fact.
+let coachReleaseRevoked = false
 function releaseCoachCompletionWaiters(
   holdEnd: CoachHoldEnd,
   proceed = true
@@ -760,9 +763,10 @@ async function waitForCoachCompletion(
   sendHeldByCoach.value = true
   sendGates.hold('coach', clientMessageId)
   try {
-    return await new Promise<boolean>((resolve) =>
+    const proceed = await new Promise<boolean>((resolve) =>
       coachCompletionWaiters.add(resolve)
     )
+    return proceed && !coachReleaseRevoked
   } finally {
     sendHeldByCoach.value = false
   }
@@ -1687,11 +1691,13 @@ onBeforeUnmount(() => {
           outcome: 'released',
           reason: `deferred_${deferredBy}`
         })
-      else
+      else {
+        coachReleaseRevoked = true
         releaseCoachCompletionWaiters(
           { outcome: 'dropped', reason: 'panel_closed' },
           false
         )
+      }
     },
     invalidateConsentHeldSubmission: () => {
       if (
