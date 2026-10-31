@@ -1,11 +1,22 @@
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useToast } from '@/components/ui/toast/toastStore'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import AudioPreviewPlayer from '@/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue'
+
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn()
@@ -83,9 +94,9 @@ describe('AudioPreviewPlayer', () => {
 
       expect(play).toHaveBeenCalledTimes(2)
       expect(pause).not.toHaveBeenCalled()
-      expect(console.warn).toHaveBeenCalledWith(
-        'Audio playback failed:',
-        expect.any(DOMException)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(DOMException),
+        expect.objectContaining({ errorType: 'error_playing_audio' })
       )
       expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
@@ -94,6 +105,99 @@ describe('AudioPreviewPlayer', () => {
         })
       )
       expect(useToast().toasts).toHaveLength(1)
+    })
+
+    it('reloads a failed source before retrying', async () => {
+      const play = vi
+        .spyOn(HTMLMediaElement.prototype, 'play')
+        .mockResolvedValue(undefined)
+      const load = vi
+        .spyOn(HTMLMediaElement.prototype, 'load')
+        .mockImplementation(() => {})
+      const user = userEvent.setup()
+
+      renderPlayer('http://example.com/audio.ogg')
+      load.mockClear()
+      vi.spyOn(HTMLMediaElement.prototype, 'error', 'get').mockReturnValue(
+        fromPartial<MediaError>({ code: 4 })
+      )
+
+      await user.click(screen.getByRole('button', { name: 'g.playPause' }))
+
+      expect(load).toHaveBeenCalledTimes(1)
+      expect(load.mock.invocationCallOrder[0]).toBeLessThan(
+        play.mock.invocationCallOrder[0]
+      )
+    })
+
+    it('follows a pause that came from outside the player', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(
+        true
+      )
+      const user = userEvent.setup()
+
+      const { container } = renderPlayer('http://example.com/audio.mp3')
+      const button = screen.getByRole('button', { name: 'g.playPause' })
+      await user.click(button)
+      expect(button).toHaveAttribute('aria-pressed', 'true')
+
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the media element is hidden and exposes no role
+      await fireEvent(container.querySelector('audio')!, new Event('pause'))
+
+      expect(button).toHaveAttribute('aria-pressed', 'false')
+    })
+
+    it('shows the error toast when playback fails after it started', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+      const user = userEvent.setup()
+
+      const { container } = renderPlayer('http://example.com/audio.mp3')
+      const button = screen.getByRole('button', { name: 'g.playPause' })
+      await user.click(button)
+
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the media element is hidden and exposes no role
+      await fireEvent.error(container.querySelector('audio')!)
+
+      expect(button).toHaveAttribute('aria-pressed', 'false')
+      expect(useToast().toasts).toHaveLength(1)
+    })
+
+    it('dismisses the error toast when a retry is paused', async () => {
+      const play = vi
+        .spyOn(HTMLMediaElement.prototype, 'play')
+        .mockRejectedValueOnce(notSupported())
+        .mockImplementationOnce(() => new Promise<void>(() => {}))
+      vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
+      const user = userEvent.setup()
+
+      renderPlayer('http://example.com/audio.mp3')
+      const button = screen.getByRole('button', { name: 'g.playPause' })
+      await user.click(button)
+      expect(useToast().toasts).toHaveLength(1)
+
+      await user.click(button)
+      await user.click(button)
+
+      expect(play).toHaveBeenCalledTimes(2)
+      expect(useToast().toasts).toEqual([])
+    })
+
+    it('resets the shown time when the source is cleared', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'duration', 'get').mockReturnValue(
+        90
+      )
+
+      const { container, rerender } = renderPlayer(
+        'http://example.com/audio.mp3'
+      )
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the media element is hidden and exposes no role
+      await fireEvent.loadedMetadata(container.querySelector('audio')!)
+      expect(screen.getByText(/1:30/)).toBeInTheDocument()
+
+      await rerender({ modelValue: undefined })
+
+      expect(screen.queryByText(/1:30/)).not.toBeInTheDocument()
     })
 
     it('dismisses the playback error toast after a successful retry', async () => {
@@ -217,10 +321,7 @@ describe('AudioPreviewPlayer', () => {
       await user.click(button)
 
       expect(play).toHaveBeenCalledTimes(2)
-      expect(console.warn).not.toHaveBeenCalledWith(
-        'Audio playback failed:',
-        expect.anything()
-      )
+      expect(reportError).not.toHaveBeenCalled()
       expect(useToast().toasts).toEqual([])
     })
 
@@ -251,10 +352,7 @@ describe('AudioPreviewPlayer', () => {
 
       expect(play).toHaveBeenCalledTimes(2)
       expect(pause).toHaveBeenCalledTimes(2)
-      expect(console.warn).not.toHaveBeenCalledWith(
-        'Audio playback failed:',
-        expect.anything()
-      )
+      expect(reportError).not.toHaveBeenCalled()
       expect(useToast().toasts).toEqual([])
     })
   })

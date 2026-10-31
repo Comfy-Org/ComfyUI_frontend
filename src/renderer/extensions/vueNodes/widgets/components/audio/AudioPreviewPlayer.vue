@@ -11,6 +11,8 @@
         @loadedmetadata="handleLoadedMetadata"
         @timeupdate="handleTimeUpdate"
         @ended="handleEnded"
+        @pause="handlePause"
+        @error="handleError"
       />
 
       <!-- Left Actions -->
@@ -126,6 +128,8 @@
 import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createToastId } from '@/types/toastId'
 
@@ -183,23 +187,36 @@ const togglePlayPause = async () => {
   if (isPlaying.value) {
     audio.pause()
     isPlaying.value = false
+    toast.dismiss(playbackErrorToastId)
     return
   }
 
   isPlaying.value = true
   try {
+    if (audio.error) audio.load()
     await audio.play()
     if (attempt === playAttempt) toast.dismiss(playbackErrorToastId)
   } catch (error) {
     if (attempt !== playAttempt) return
     isPlaying.value = false
-    if (error instanceof DOMException && error.name === 'AbortError') return
-    console.warn('Audio playback failed:', error)
-    toast.error(t('g.error'), {
-      id: playbackErrorToastId,
-      description: t('g.audioPlaybackFailed')
-    })
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      toast.dismiss(playbackErrorToastId)
+      return
+    }
+    showPlaybackError(error)
   }
+}
+
+function showPlaybackError(error: unknown) {
+  reportError(error, {
+    errorType: 'error_playing_audio',
+    surface: 'graph',
+    level: 'warning'
+  })
+  toast.error(t('g.error'), {
+    id: playbackErrorToastId,
+    description: t('g.audioPlaybackFailed')
+  })
 }
 
 const handleDownload = () => {
@@ -239,6 +256,16 @@ const handleTimeUpdate = () => {
   if (audioRef.value) {
     currentTime.value = audioRef.value.currentTime
   }
+}
+
+const handlePause = () => {
+  if (audioRef.value?.paused) isPlaying.value = false
+}
+
+const handleError = () => {
+  if (!isPlaying.value) return
+  isPlaying.value = false
+  showPlaybackError(audioRef.value?.error)
 }
 
 const handleEnded = () => {
@@ -300,6 +327,11 @@ watch(modelValue, (value) => {
   isPlaying.value = false
   toast.dismiss(playbackErrorToastId)
   audioRef.value?.pause()
-  if (value) audioRef.value?.load()
+  if (value) {
+    audioRef.value?.load()
+    return
+  }
+  currentTime.value = 0
+  duration.value = 0
 })
 </script>
