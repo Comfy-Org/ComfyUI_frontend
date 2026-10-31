@@ -1190,6 +1190,21 @@ describe('agentEventTransport thinking drafts', () => {
     expect(message.parts.map((part) => part.type)).toEqual(['thinking', 'text'])
   })
 
+  it('keeps the rounds in arrival order under an answer draft that never settled', () => {
+    const message = drive([
+      draft('Here is your'),
+      thinking('First thought.'),
+      thinkingDraft('Second thought')
+    ])
+
+    expect(thinkingTexts(message)).toEqual(['First thought.', 'Second thought'])
+    expect(message.parts.map((part) => part.type)).toEqual([
+      'thinking',
+      'thinking',
+      'text'
+    ])
+  })
+
   it('does not let an answer withdrawal take the thinking draft', () => {
     const message = drive([thinkingDraft('Still thinking'), draft('')])
 

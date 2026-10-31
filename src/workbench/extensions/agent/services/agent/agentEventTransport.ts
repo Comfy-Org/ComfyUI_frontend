@@ -376,7 +376,7 @@ export function createAgentEventTransport(
       closeOpenText()
       closeOpenThinking()
       thinkingDraft = openNewThinking()
-      moveAboveAnswerDraft(thinkingDraft)
+      keepAnswerDraftLast()
     }
     thinkingDraft.state = 'streaming'
     openThinking = thinkingDraft
@@ -385,11 +385,10 @@ export function createAgentEventTransport(
     message.thinkingText = data.text
   }
 
-  function moveAboveAnswerDraft(part: ThinkingPart): void {
-    if (!draft) return
-    const others = message.parts.filter((other) => other !== part)
-    others.splice(others.indexOf(draft), 0, part)
-    message.parts = others
+  function keepAnswerDraftLast(): void {
+    if (!draft || message.parts.at(-1) === draft) return
+    const answer = draft
+    message.parts = [...message.parts.filter((part) => part !== answer), answer]
   }
 
   function dropThinkingDraft(): void {
