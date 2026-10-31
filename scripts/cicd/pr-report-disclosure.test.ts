@@ -72,15 +72,55 @@ describe('shared PR report disclosure', () => {
       expect(result.status).toBe(0)
       const output = readFileSync(join(dir.root, 'summary'), 'utf8')
       const visible = output.split('<details>')[0]
-      expect(visible).toContain('Check summary.')
       expect(visible).toContain(action)
+      expect(visible).not.toContain('Check summary.')
+      expect(visible).not.toContain('docs/check.md')
       expect(visible).not.toContain('| Finding |')
       expect(output).toMatch(
-        /<summary>Findings and check details<\/summary>\n\n\| Finding[\s\S]*\n\n<\/details>/
+        /<summary>Findings and check details<\/summary>\n\nCheck summary\.\n\n\| Finding[\s\S]*\n\nFull docs: docs\/check\.md\n\n<\/details>/
       )
       expect(output).not.toContain('<details open')
     }
   )
+
+  it('collapses a headline when the check has no findings', () => {
+    using dir = fixture()
+    const actionFile = parseDocument(
+      readFileSync(
+        join(ROOT, '.github/actions/explain-check/action.yaml'),
+        'utf8'
+      )
+    )
+    const result = spawnSync(
+      'bash',
+      ['-c', String(actionFile.getIn(['runs', 'steps', 0, 'run']))],
+      {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          INPUT_SLUG: 'test',
+          INPUT_TITLE: 'Test check',
+          INPUT_ICON: '',
+          INPUT_STATUS: 'pass',
+          INPUT_HEADLINE: 'Check summary.',
+          INPUT_DETAILS_FILE: '',
+          INPUT_REPRODUCE: '',
+          INPUT_DOCS: '',
+          GITHUB_WORKSPACE: dir.root,
+          GITHUB_OUTPUT: join(dir.root, 'output'),
+          GITHUB_STEP_SUMMARY: join(dir.root, 'summary'),
+          GITHUB_SERVER_URL: 'https://github.com',
+          GITHUB_REPOSITORY: 'owner/repo',
+          GITHUB_RUN_ID: '123'
+        }
+      }
+    )
+
+    expect(result.status).toBe(0)
+    expect(readFileSync(join(dir.root, 'summary'), 'utf8')).toBe(
+      '##  Test check: ✅ Passed\n\n<details>\n<summary>Findings and check details</summary>\n\nCheck summary.\n\n</details>\n'
+    )
+  })
 
   it('keeps failed FPS targets visible while collapsing passing scenario timings', () => {
     using dir = fixture()
