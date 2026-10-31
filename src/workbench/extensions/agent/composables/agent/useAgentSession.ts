@@ -64,6 +64,7 @@ import {
   isAttachmentKind,
   normalizeAgentTranscript
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
 import type { LiveTurn } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
@@ -193,12 +194,6 @@ const HYDRATION_MAILBOX_MS = 5 * 60_000
 const MAX_HYDRATION_EVENTS = 256
 const MAX_HYDRATION_MAILBOXES = 32
 
-/**
- * After a reconnect the server may still be finishing the turn, and its
- * terminal event may or may not reach the new socket. Poll the persisted row
- * with backoff; once the schedule is exhausted the socket alone is trusted.
- */
-const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 /** Upper bound on one recovery job, including any history fetch still in flight. */
 const TURN_RECOVERY_DEADLINE_MS = 60_000
 
@@ -210,7 +205,7 @@ type TurnOutcome =
     }
   | { kind: 'thread-missing' }
   | { kind: 'streaming' }
-  | { kind: 'error'; message: string }
+  | { kind: 'error'; cause: unknown }
 
 function isTerminalTurnStatus(
   status: AgentMessages[number]['status']
@@ -271,10 +266,7 @@ function recoveryKey(turn: LiveTurn): string {
 function turnOutcomeFromError(error: unknown): TurnOutcome {
   if (error instanceof AgentApiError && error.status === 404)
     return { kind: 'thread-missing' }
-  return {
-    kind: 'error',
-    message: error instanceof Error ? error.message : String(error)
-  }
+  return { kind: 'error', cause: error }
 }
 
 const NON_RETRYABLE_REQUEST_STATUSES = new Set([
@@ -604,6 +596,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
+  let unsubscribeSnapshotSettled: (() => void) | null = null
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
   const recoveringTurns = new Map<string, AbortController>()
@@ -671,6 +664,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     initializeWorkflowContext(initialThreadId !== null)
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
+    unsubscribeSnapshotSettled = conversationStore.onSnapshotTurnSettled(
+      (turn) => void reconcileSettledSnapshotTurn(turn)
+    ).off
     if (!restore) return
     if (initialThreadId === null) {
       onThreadActivated?.(null)
@@ -987,8 +983,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     readyThreadId.value = null
     unsubscribe?.()
     unsubscribeStatus?.()
+    unsubscribeSnapshotSettled?.()
     unsubscribe = null
     unsubscribeStatus = null
+    unsubscribeSnapshotSettled = null
     for (const recovery of recoveringTurns.values()) recovery.abort()
     recoveringTurns.clear()
     const stoppedGeneration = ownedGeneration
@@ -2060,6 +2058,69 @@ export function useAgentSession(deps: AgentSessionDeps) {
     } finally {
       clearTimeout(deadline)
       if (recoveringTurns.get(key) === recovery) recoveringTurns.delete(key)
+    }
+  }
+
+  async function fetchSettledTurnOutcome(
+    turn: LiveTurn,
+    generation: number,
+    signal: AbortSignal
+  ): Promise<TurnOutcome> {
+    let outcome = await fetchTurnOutcome(turn, signal)
+    for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
+      // A failed read is retried like a still-streaming row: the turn has
+      // already settled, so only its stored thinking is at stake, and one
+      // transient failure would otherwise drop it for good.
+      const retryable = outcome.kind === 'streaming' || outcome.kind === 'error'
+      if (!retryable || generation !== sessionGeneration) return outcome
+      await delay(ms, { signal })
+      outcome = await fetchTurnOutcome(turn, signal)
+    }
+    return outcome
+  }
+
+  async function reconcileSettledSnapshotTurn(turn: LiveTurn): Promise<void> {
+    const generation = ownedGeneration
+    const key = recoveryKey(turn)
+    recoveringTurns.get(key)?.abort()
+    const recovery = new AbortController()
+    recoveringTurns.set(key, recovery)
+    const deadline = setTimeout(
+      () => recovery.abort(),
+      TURN_RECOVERY_DEADLINE_MS
+    )
+    try {
+      const outcome = await fetchSettledTurnOutcome(
+        turn,
+        generation,
+        recovery.signal
+      )
+      if (generation !== sessionGeneration) return
+      if (outcome.kind === 'error') {
+        reportError(outcome.cause, {
+          surface: 'agent',
+          errorType: 'failure_recovering_agent_turn'
+        })
+        return
+      }
+      if (outcome.kind !== 'terminal') return
+      conversationStore.reconcileSettledTurn(turn, outcome.parts)
+    } catch (error) {
+      if (!recovery.signal.aborted)
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_recovering_agent_turn'
+        })
+    } finally {
+      clearTimeout(deadline)
+      if (recoveringTurns.get(key) === recovery) {
+        recoveringTurns.delete(key)
+        if (generation === sessionGeneration)
+          conversationStore.reconcileSettledTurn(turn, undefined)
+        // A hydrate while this read held the key skipped recovering the row
+        // it restored (reconcileLiveTurns), so recover it now if it is live.
+        if (isTurnLive(turn, ownedGeneration)) void reconcileTurn(turn)
+      }
     }
   }
 
