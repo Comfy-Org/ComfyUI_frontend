@@ -57,10 +57,21 @@ export function createMaskEditorToolSession(
       isDisposed() ? undefined : call(() => document.readImage()),
     setOverlay: (points) => {
       if (isDisposed() || !Array.isArray(points)) return false
-      const overlay = Array.from(points, (point) => ({ ...point }))
+      const overlay = Array.from(
+        points,
+        (point: MaskEditorOverlayPoint | null | undefined) =>
+          point && {
+            id: point.id,
+            x: point.x,
+            y: point.y,
+            radius: point.radius,
+            color: point.color
+          }
+      )
       if (
         !overlay.every(
-          (point) =>
+          (point): point is MaskEditorOverlayPoint =>
+            point != null &&
             Number.isFinite(point.x) &&
             Number.isFinite(point.y) &&
             Number.isFinite(point.radius) &&

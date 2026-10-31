@@ -18,6 +18,10 @@ test.describe(
           filename,
           type: 'input'
         })
+        await expect(maskEditor.previewImage).toHaveAttribute(
+          'src',
+          new RegExp(filename)
+        )
         await maskEditor.reopenDialog()
         await extensionTool.tool.click()
         await expect(extensionTool.apply).toBeVisible()
