@@ -36,10 +36,13 @@ import type {
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { followedDoc } from './__fixtures__/followedDoc'
+import { attachDocOpMinter } from './docOpMinter'
+import type { GraphOperation } from './graphOperations'
 import { LiveGraphApplier } from './liveGraphApplier'
 import type {
   LiveGraphApplierDeps,
@@ -52,6 +55,21 @@ class TestSource extends LGraphNode {
     super('Test Source')
     this.addWidget('number', 'steps', 20, () => {})
     this.addOutput('image', 'IMAGE')
+    this.serialize_widgets = true
+  }
+}
+
+class TestRangedWidgets extends LGraphNode {
+  constructor() {
+    super('Test Ranged Widgets')
+    this.addWidget('number', 'cfg', 5, () => {}, {
+      min: 0,
+      max: 10,
+      precision: 1
+    })
+    this.addWidget('combo', 'sampler', 'euler', () => {}, {
+      values: ['euler', 'dpm']
+    })
     this.serialize_widgets = true
   }
 }
@@ -276,6 +294,7 @@ const CATALOG: WidgetCatalog = {
     // register per OCCURRENCE. The frontend cannot hold two widgets under one
     // name, so the second register has no widget to address (FE-3036).
     TestRepeatedWidgetName: { widget_order: ['dup', 'dup'] },
+    TestRangedWidgets: { widget_order: ['cfg', 'sampler'] },
     TestSink: { widget_order: [] }
   }
 }
@@ -342,6 +361,7 @@ beforeEach(() => {
     TestPrototypeNamedWidget
   )
   LiteGraph.registerNodeType('TestRepeatedWidgetName', TestRepeatedWidgetName)
+  LiteGraph.registerNodeType('TestRangedWidgets', TestRangedWidgets)
   LiteGraph.registerNodeType('TestSink', TestSink)
 
   const dynamicCombo = transformInputSpecV1ToV2(
@@ -2199,6 +2219,146 @@ function envelope(body: OpBody): Op {
   }
   return { ...stamp, ...body }
 }
+
+describe('LiveGraphApplier widget writes through BaseWidget.setValue', () => {
+  function rangedSetup(deps: Omit<LiveGraphApplierDeps, 'getGraph'> = {}) {
+    const fixture = setup(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'TestRangedWidgets',
+            pos: [0, 0],
+            size: [210, 100],
+            widgets_values: [5, 'euler']
+          }
+        ],
+        links: []
+      },
+      deps
+    )
+    fixture.applyCollected()
+    const node = fixture.graph.getNodeById(toNodeId(1))
+    assert.exists(node)
+    const enqueue = vi.fn<(ops: GraphOperation[]) => void>()
+    const minter = attachDocOpMinter({
+      isEnabled: () => true,
+      isDocBound: () => true,
+      getGraph: () => fixture.graph,
+      boundRootGraphId: () => toRootGraphId(fixture.graph.id),
+      docInputNames: () => [],
+      docWidgetValue: (nodeId, widgetName) => {
+        const widgets = nodesMap(fixture.doc)
+          .get(String(nodeId))
+          ?.get('widgets')
+        return widgets instanceof Y.Map ? widgets.get(widgetName) : undefined
+      },
+      docPromotedWidgets: () => null,
+      mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => true,
+      onWidgetWriteRefused: () => {},
+      enqueue
+    })
+    onTestFinished(() => minter.detach())
+    const writeDocWidget = (name: string, value: WidgetValue) =>
+      fixture.applyEdit(() => {
+        const widgets = nodesMap(fixture.doc).get('1')?.get('widgets')
+        assert.instanceOf(widgets, Y.Map)
+        widgets.set(name, value)
+      })
+    return { ...fixture, node, enqueue, writeDocWidget }
+  }
+
+  it.for([
+    {
+      name: 'applies a value inside the range',
+      widget: 'cfg',
+      docValue: 8,
+      live: [8, 'euler']
+    },
+    {
+      name: 'clamps a number above its max',
+      widget: 'cfg',
+      docValue: 99,
+      live: [10, 'euler']
+    },
+    {
+      name: 'clamps a number below its min',
+      widget: 'cfg',
+      docValue: -3,
+      live: [0, 'euler']
+    },
+    {
+      name: 'coerces a numeric string',
+      widget: 'cfg',
+      docValue: '7',
+      live: [7, 'euler']
+    },
+    {
+      name: 'refuses a non-numeric string',
+      widget: 'cfg',
+      docValue: 'invalid',
+      live: [5, 'euler']
+    },
+    {
+      name: 'keeps a number finer than its display precision',
+      widget: 'cfg',
+      docValue: 1.23456,
+      live: [1.23456, 'euler']
+    },
+    {
+      name: 'keeps a combo value outside its listed values',
+      widget: 'sampler',
+      docValue: 'heun',
+      live: [5, 'heun']
+    }
+  ] as const)(
+    '$name without minting a document write',
+    async ({ widget, docValue, live }) => {
+      const { node, enqueue, writeDocWidget } = rangedSetup()
+
+      writeDocWidget(widget, docValue)
+      await Promise.resolve()
+
+      expect(node.serialize().widgets_values).toEqual(live)
+      expect(enqueue).not.toHaveBeenCalled()
+    }
+  )
+
+  it('reaches the widget callback, onWidgetChanged and the mirrored property with the accepted value', () => {
+    const canvas = fromPartial<LGraphCanvas>({
+      graph_mouse: [3, 4],
+      emitBeforeChange: () => {},
+      emitAfterChange: () => {}
+    })
+    const { node, writeDocWidget } = rangedSetup({ getCanvas: () => canvas })
+    const widget = node.widgets?.find(({ name }) => name === 'cfg')
+    assert.exists(widget)
+    const callback = vi.fn()
+    const onWidgetChanged = vi.fn()
+    widget.callback = callback
+    widget.options.property = 'cfg'
+    node.properties.cfg = 5
+    node.onWidgetChanged = onWidgetChanged
+
+    writeDocWidget('cfg', 99)
+
+    expect(callback).toHaveBeenCalledExactlyOnceWith(
+      10,
+      canvas,
+      node,
+      [3, 4],
+      undefined
+    )
+    expect(onWidgetChanged).toHaveBeenCalledExactlyOnceWith(
+      'cfg',
+      10,
+      5,
+      widget
+    )
+    expect(node.properties.cfg).toBe(10)
+  })
+})
 
 /**
  * A canvas that only records the undo bracket: `emitBeforeChange` /
