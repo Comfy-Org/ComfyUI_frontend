@@ -52,6 +52,10 @@ export interface SubscriptionDialogOptions {
   planMode?: 'personal' | 'team'
   /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
   initialCheckout?: SubscriptionCheckoutSelection
+  /** The refused account holds credits, so the dialog says why they did not help. */
+  creditsLocked?: boolean
+  /** Server `error.type` of the refused run, reported with the paywall opening. */
+  refusalType?: string
 }
 
 // A type alias, not an interface: `showDialog`'s props are index-signature
