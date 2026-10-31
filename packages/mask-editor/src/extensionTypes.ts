@@ -37,7 +37,13 @@ export type MaskEditorCommitResult =
   | { ok: true; revision: number }
   | {
       ok: false
-      reason: 'inactive' | 'unavailable' | 'stale' | 'invalid-mask' | 'failed'
+      reason:
+        | 'inactive'
+        | 'unavailable'
+        | 'stale'
+        | 'invalid-mask'
+        | 'invalid-options'
+        | 'failed'
     }
 
 export interface MaskEditorToolContext {

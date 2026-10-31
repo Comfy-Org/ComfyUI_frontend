@@ -110,7 +110,7 @@ describe('MaskEditor extension failures', () => {
       createSession: () => ({ dispose })
     })
     expect(registration.ok).toBe(true)
-    if (!registration.ok) return
+    assert(registration.ok)
     const tools = mountExtensionTools()
     tools.activate('test.disposable')
     expect(tools.isActive()).toBe(true)

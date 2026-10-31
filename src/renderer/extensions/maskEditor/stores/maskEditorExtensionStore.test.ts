@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { useMaskEditorExtensionStore } from '@/renderer/extensions/maskEditor/stores/maskEditorExtensionStore'
-import type { MaskEditorTool } from '@comfyorg/mask-editor/extensionTypes'
+import type {
+  MaskEditorTool,
+  MaskEditorToolContext
+} from '@comfyorg/mask-editor/extensionTypes'
 
 const tool: MaskEditorTool = {
   id: 'impact.sam',
@@ -15,7 +18,7 @@ describe('MaskEditor tool registration', () => {
     const registration = registry.registerTool(tool)
     expect(registration.ok).toBe(true)
     expect(registry.tools.map((item) => item.id)).toEqual(['impact.sam'])
-    if (!registration.ok) return
+    assert(registration.ok)
 
     expect(registry.registerTool(tool)).toEqual({
       ok: false,
@@ -35,5 +38,35 @@ describe('MaskEditor tool registration', () => {
       reason: 'invalid-tool'
     })
     expect(registry.tools).toEqual([])
+  })
+
+  it('activates a class-based tool with its original receiver', () => {
+    class SelectionTool implements MaskEditorTool {
+      id = 'test.class'
+      label = 'Class tool'
+      private panelText = 'Ready to select'
+
+      createSession() {
+        const text = this.panelText
+        return {
+          mountPanel: (container: HTMLElement) => {
+            container.textContent = text
+          }
+        }
+      }
+    }
+    const registry = useMaskEditorExtensionStore()
+    expect(registry.registerTool(new SelectionTool()).ok).toBe(true)
+    const registered = registry.tools[0]
+    assert.exists(registered)
+    const context: MaskEditorToolContext = {
+      signal: new AbortController().signal,
+      readImage: () => undefined,
+      setOverlay: () => false,
+      commitMask: () => ({ ok: false, reason: 'unavailable' })
+    }
+    const panel = document.createElement('div')
+    registered.createSession(context).mountPanel?.(panel)
+    expect(panel.textContent).toBe('Ready to select')
   })
 })
