@@ -12,6 +12,7 @@ import {
   formatCreditsFromUsd,
   formatUsd,
   formatUsdFromCents,
+  isSubCreditCharge,
   microUsdToCredits,
   usdToCents,
   usdToCredits
@@ -53,6 +54,32 @@ describe('comfyCredits helpers', () => {
 
   test('converts micro-USD to fractional credits without rounding', () => {
     expect(microUsdToCredits(6038)).toBeCloseTo(1.274)
+  })
+
+  test.for([
+    [0, false],
+    [0.21, true],
+    [0.7, true],
+    [-0.21, true],
+    [1, false],
+    [1.4, false]
+  ] as const)(
+    'classifies a charge of %s credits as sub-credit: %s',
+    ([credits, expected]) => {
+      expect(isSubCreditCharge(credits)).toBe(expected)
+    }
+  )
+
+  test('keeps whole-credit rounding for balances', () => {
+    expect(usdToCredits(0.2 / CREDITS_PER_USD)).toBe(0)
+    expect(usdToCredits(1.4 / CREDITS_PER_USD)).toBe(1)
+    expect(
+      formatCreditsFromUsd({
+        usd: 0.2 / CREDITS_PER_USD,
+        locale: 'en-US',
+        numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+      })
+    ).toBe('0')
   })
 
   test('formats credits and USD values using en-US locale', () => {

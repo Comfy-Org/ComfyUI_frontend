@@ -101,7 +101,11 @@ import TableCell from '@comfyorg/design-system/table/TableCell'
 import TableHead from '@comfyorg/design-system/table/TableHead'
 import TableHeader from '@comfyorg/design-system/table/TableHeader'
 import TableRow from '@comfyorg/design-system/table/TableRow'
-import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
+import {
+  formatCreditsFromUsd,
+  isSubCreditCharge,
+  microUsdToCredits
+} from '@/base/credits/comfyCredits'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { billingApi } from '@/platform/billing/api/billingApi'
@@ -141,11 +145,13 @@ function eventAmount(event: AuditLog) {
 }
 
 function formatChargeCredits(microUsd: number) {
-  const amount = formatCreditsFromUsd({
-    usd: microUsd / 1_000_000,
-    locale: locale.value,
-    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
-  })
+  const amount = isSubCreditCharge(microUsdToCredits(microUsd))
+    ? t('credits.lessThanOne')
+    : formatCreditsFromUsd({
+        usd: microUsd / 1_000_000,
+        locale: locale.value,
+        numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+      })
   return `${amount} ${t('credits.credits')}`
 }
 
