@@ -6194,7 +6194,6 @@
   "workspaceSwitcher": {
     "createWorkspace": "建立新工作區",
     "failedToSwitch": "切換工作區失敗",
-    "managedByOrganization": "您的組織管理您的工作區，因此您無法建立工作區。",
     "maxWorkspacesReached": "您最多只能擁有 10 個工作區。請刪除一個以建立新工作區。",
     "personal": "個人",
     "roleMember": "成員",

@@ -6194,7 +6194,6 @@
   "workspaceSwitcher": {
     "createWorkspace": "יצירת סביבת עבודה חדשה",
     "failedToSwitch": "המעבר לסביבת העבודה נכשל",
-    "managedByOrganization": "הארגון שלך מנהל את סביבות העבודה שלך, ולכן אין באפשרותך ליצור אחת.",
     "maxWorkspacesReached": "ניתן להיות בעלים של 10 סביבות עבודה בלבד. מחק אחת כדי ליצור חדשה.",
     "personal": "אישי",
     "roleMember": "חבר",

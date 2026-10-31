@@ -6194,7 +6194,6 @@
   "workspaceSwitcher": {
     "createWorkspace": "Yeni çalışma alanı oluştur",
     "failedToSwitch": "Çalışma alanı değiştirilemedi",
-    "managedByOrganization": "Kuruluşunuz çalışma alanlarınızı yönettiği için çalışma alanı oluşturamazsınız.",
     "maxWorkspacesReached": "Yalnızca 10 çalışma alanına sahip olabilirsiniz. Yeni bir tane oluşturmak için birini silin.",
     "personal": "Kişisel",
     "roleMember": "Üye",
