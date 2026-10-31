@@ -322,7 +322,8 @@ const zSubgraphIO = zNodeInput.extend({
   /** The data type this slot uses. Unlike nodes, this does not support legacy numeric types. */
   type: z.string(),
   /** Links connected to this slot, or `undefined` if not connected. An output slot should only ever have one link. */
-  linkIds: z.array(z.number()).optional()
+  linkIds: z.array(z.number()).optional(),
+  list: z.boolean().optional()
 })
 
 const zSubgraphInstance = z

@@ -185,8 +185,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
     // Link goes up and out of this subgraph
     if (subgraphNode && link.originIsIoNode) {
-      const subgraphNodeInput = subgraphNode.inputs.at(link.origin_slot)
-      if (!subgraphNodeInput)
+      const host = subgraphNode.hostSlotOf(link.origin_slot)
+      if (!host)
         throw new SlotIndexError(
           `No input found for slot [${link.origin_slot}] ${input.name}`
         )
@@ -197,10 +197,9 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         )
       // Nothing connected
       const linkId =
-        inputLinkId(subgraphNode.graph, subgraphNode.id, link.origin_slot) ??
-        null
+        inputLinkId(subgraphNode.graph, subgraphNode.id, host.slot) ?? null
       if (linkId === null) {
-        const id = subgraphNodeInput.widgetId
+        const id = host.input.widgetId
         if (!id) return
 
         return {
@@ -252,6 +251,53 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       type ?? input.type,
       visited
     )
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  resolveListInput(
+    slot: number
+  ): { name: string; resolved: ResolvedInput }[] | undefined {
+    const origin = this._listOrigin(slot)
+    const names =
+      origin === undefined ? undefined : this.node.getListSlotNames?.(slot)
+    if (origin === undefined || !names) return
+    const items = this._subgraphNodeDto()?.resolveListItems(origin) ?? []
+    return items
+      .slice(0, names.length)
+      .map((resolved, item) => ({ name: names[item], resolved }))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  resolveListItems(index: number): ResolvedInput[] {
+    const { node } = this
+    if (!node.isSubgraphNode()) return []
+    const subgraphInput = node.subgraph.inputs.at(index)
+    return node.inputs.flatMap((input, slot) =>
+      subgraphInput && input._subgraphSlot === subgraphInput
+        ? this._resolveListItem(slot)
+        : []
+    )
+  }
+
+  private _resolveListItem(slot: number): ResolvedInput[] {
+    const origin = this._listOrigin(slot)
+    if (origin !== undefined)
+      return this._subgraphNodeDto()?.resolveListItems(origin) ?? []
+    const resolved = this.resolveInput(slot)
+    return resolved ? [resolved] : []
+  }
+
+  private _listOrigin(slot: number): number | undefined {
+    const linkId = this.inputs.at(slot)?.linkId
+    const link = linkId == null ? undefined : this.graph.getLink(linkId)
+    if (!link?.originIsIoNode) return undefined
+    return this.subgraphNode?.subgraph.inputs.at(link.origin_slot)?.list
+      ? link.origin_slot
+      : undefined
+  }
+
+  private _subgraphNodeDto(): ExecutableLGraphNode | undefined {
+    return this.nodesByExecutionId.get(this.subgraphNodePath.join(':'))
   }
 
   /**

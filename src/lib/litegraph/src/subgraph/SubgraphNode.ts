@@ -66,6 +66,7 @@ import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
 import { createPromotedWidgetStoreProjection } from './promotedWidgetStoreProjection'
 
 import { createBitmapCache } from './svgBitmapCache'
+import { hostInputsOf } from './listInputs'
 
 const getWorkflowBitmapCache = once((requestRedraw: () => void) => {
   const workflowSvg = new Image()
@@ -197,7 +198,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = e.detail.input._widget
         if (widget) this.ensureWidgetRemoved(widget)
 
-        this.removeInput(e.detail.index)
+        this._removeHostInputs(e.detail.input, e.detail.index)
         this.invalidatePromotedViews()
         this.setDirtyCanvas(true, true)
       },
@@ -225,8 +226,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphEvents.addEventListener(
       'renaming-input',
       (e) => {
-        const { index, oldName, newName } = e.detail
-        const input = this.inputs.at(index)
+        const { oldName, newName } = e.detail
+        // A list's slots keep the names of its dynamic group
+        if (e.detail.input.list) return
+        const input = hostInputsOf(this, e.detail.input).at(0)
         if (!input) {
           console.error('Subgraph input not found')
           return
@@ -415,7 +418,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       slots: SubgraphInput[] | undefined
     ): SubgraphInput | undefined => {
       if (!slots) return undefined
-      return slots.find((slot) => !assignedSlotIds.has(slot.id))
+      return slots.find((slot) => slot.list || !assignedSlotIds.has(slot.id))
     }
 
     for (const input of this.inputs) {
@@ -431,7 +434,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const signature = `${input.name}:${String(input.type)}`
       const matchedSlot =
         takeUnassignedSlot(slotsBySignature.get(signature)) ??
-        takeUnassignedSlot(slotsByName.get(input.name))
+        // A list's slots are named `<list>[].<item>`
+        takeUnassignedSlot(slotsByName.get(input.name.split('[].')[0]))
 
       if (matchedSlot) {
         input._subgraphSlot = matchedSlot
@@ -552,6 +556,33 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       this._addSubgraphInputListeners(subgraphInput, input)
       this._resolveInputWidget(subgraphInput, input)
     }
+  }
+
+  /** The list input a slot belongs to: its slots are named `<list>[].<item>`. */
+  private _removeHostInputs(subgraphInput: SubgraphInput, index: number) {
+    const bound = hostInputsOf(this, subgraphInput)
+    if (!bound.length) this.removeInput(index)
+    for (const input of bound.reverse())
+      this.removeInput(this.inputs.indexOf(input))
+  }
+
+  private _listInputFor(name: string) {
+    return this.subgraph.inputs.find(
+      (slot) => slot.list && name.startsWith(`${slot.name}[].`)
+    )
+  }
+
+  override onInputAdded(input: INodeInputSlot & Partial<ISubgraphInput>) {
+    const slot = input._subgraphSlot ?? this._listInputFor(input.name)
+    if (slot) this._addSubgraphInputListeners(slot, input)
+  }
+
+  hostSlotOf(index: number) {
+    const subgraphInput = this.subgraph.inputs.at(index)
+    const slot = this.inputs.findIndex(
+      (input) => subgraphInput && input._subgraphSlot === subgraphInput
+    )
+    return slot === -1 ? undefined : { input: this.inputs[slot], slot }
   }
 
   private _hydratePreviewExposures() {

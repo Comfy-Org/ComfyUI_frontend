@@ -30,7 +30,10 @@ export function getImageThroughSubgraphBoundary(
   const link = node.getInputLink(slot)
   if (!link || link.origin_id !== SUBGRAPH_INPUT_ID) return undefined
 
-  const outerUpstream = ownerSubgraphNode.getInputNode(link.origin_slot)
+  const hostSlot = ownerSubgraphNode.isSubgraphNode()
+    ? (ownerSubgraphNode.hostSlotOf(link.origin_slot)?.slot ?? -1)
+    : link.origin_slot
+  const outerUpstream = ownerSubgraphNode.getInputNode(hostSlot)
   if (!outerUpstream?.imgs?.length) return undefined
 
   return outerUpstream.imgs[0]

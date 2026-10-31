@@ -1,4 +1,5 @@
 import { useEventListener, whenever } from '@vueuse/core'
+import { mergeListRuns } from '@/core/graph/widgets/dynamicWidgets'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
@@ -201,8 +202,11 @@ export const useCanvasStore = defineStore('canvas', () => {
       useEventListener(
         newCanvas.canvas,
         'subgraph-converted',
-        (e: CustomEvent<{ subgraphNode: SubgraphNode }>) =>
+        (e: CustomEvent<{ subgraphNode: SubgraphNode }>) => {
+          // A frame later, once conversion's connections have settled
+          requestAnimationFrame(() => mergeListRuns(e.detail.subgraphNode))
           promoteRecommendedWidgets(e.detail.subgraphNode)
+        }
       )
 
       useEventListener(
