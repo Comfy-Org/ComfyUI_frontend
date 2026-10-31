@@ -5,6 +5,7 @@ import type { Ref } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { Surface } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { createToastId } from '@/types/toastId'
 import { formatTime } from '@/utils/formatUtil'
@@ -16,12 +17,19 @@ interface WaveformBar {
 interface UseWaveAudioPlayerOptions {
   src: Readonly<Ref<string | undefined>>
   logicalSrc?: Readonly<Ref<string | undefined>>
+  surface?: Surface
   barCount?: number
   waveform?: boolean
 }
 
 export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
-  const { src, logicalSrc = src, barCount = 40, waveform = true } = options
+  const {
+    src,
+    logicalSrc = src,
+    surface = 'assets',
+    barCount = 40,
+    waveform = true
+  } = options
 
   const audioRef = ref<HTMLAudioElement>()
   const waveformRef = ref<HTMLElement>()
@@ -147,7 +155,7 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
       }
       reportError(error, {
         errorType: 'error_playing_audio',
-        surface: 'assets',
+        surface,
         level: 'warning'
       })
       toast.error(t('g.error'), {
