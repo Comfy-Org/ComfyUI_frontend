@@ -29,7 +29,14 @@
   },
 
   // Runtime entry points fallow cannot infer.
-  "entry": ["index.html", "src/main.ts"],
+  "entry": [
+    "index.html",
+    "src/main.ts",
+    // Generated window.comfyAPI surface; keep in sync with COMFY_API_DIRS in
+    // build/comfyAPISurface.ts.
+    "src/extensions/core/**/*.ts",
+    "src/scripts/**/*.ts"
+  ],
 
   // Keep tooling and test roots reachable without treating their imports as
   // production runtime dependencies.
@@ -128,10 +135,6 @@
         "addValueControlWidgets",
         "updateControlWidgetLabel"
       ]
-    },
-    {
-      "file": "src/scripts/ui/imagePreview.ts",
-      "exports": ["createImageHost"]
     },
     {
       "file": "src/extensions/core/widgetInputs.ts",
