@@ -368,6 +368,18 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved executi
     expect(store.nodeOutputs[executionId]).toBeUndefined()
   })
 
+  it('stores top-level output while the root graph is being initialized', () => {
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+    const outputs = createMockOutputs([{ filename: 'restored.png' }])
+
+    store.setNodeOutputsByExecutionId(executionId, outputs)
+
+    expect(reportError).not.toHaveBeenCalled()
+    expect(store.nodeOutputs[executionId]).toEqual(outputs)
+  })
+
   it('does not report when the execution id resolves to a node', () => {
     const store = useNodeOutputStore()
     const executionId = createNodeExecutionId([toNodeId(63)])

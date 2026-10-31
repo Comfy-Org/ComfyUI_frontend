@@ -304,9 +304,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: ExecutedWsMessage['output'] | ResultItem,
     options: SetOutputOptions = {}
   ) {
-    const rootGraph = useApp().rootGraph
+    const rootGraph = useApp().rootGraphOrUndefined
     const nodeLocatorId = executionIdToNodeLocatorId(rootGraph, executionId)
-    if (!nodeLocatorId || !getNodeByLocatorId(rootGraph, nodeLocatorId)) {
+    if (
+      !nodeLocatorId ||
+      (rootGraph && !getNodeByLocatorId(rootGraph, nodeLocatorId))
+    ) {
       reportUnresolvedExecutionId(executionId, outputs)
       return
     }
