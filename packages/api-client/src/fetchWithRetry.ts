@@ -1,5 +1,11 @@
 import type { RetryPolicy } from './retryPolicy'
-import { canRetryMethod, nextRetry, sleep as sleepFor } from './retryPolicy'
+import {
+  canRetryMethod,
+  canRetrySignInRefusal,
+  nextRetry,
+  signInRefusalDelayMs,
+  sleep as sleepFor
+} from './retryPolicy'
 import type { StatusRetryEnd } from './statusRetryTelemetry'
 import { abortEnd, endForStop, trackStatusRetry } from './statusRetryTelemetry'
 
@@ -33,7 +39,60 @@ function isReplayable(input: RequestInfo | URL, init: RequestInit): boolean {
   )
 }
 
-/** `fetch` that retries retryable statuses on idempotent methods, honoring `Retry-After`. */
+/**
+ * Sends a write as is. When the sign-in check refused it, waits the
+ * `Retry-After` and sends it once more, from a copy taken up front when the
+ * body is on a `Request`. Records telemetry only for a write sent twice.
+ */
+async function fetchWriteAfterRefusal(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  method: string,
+  options: RetryingFetchOptions
+): Promise<Response> {
+  const { policy, fetchImpl = fetch, sleep = sleepFor, random } = options
+  const replay =
+    input instanceof Request && input.body !== null ? input.clone() : input
+  const first = await fetchImpl(input, init)
+  const delayMs = await signInRefusalDelayMs({
+    method,
+    status: first.status,
+    readRetryAfter: () => first.headers.get('Retry-After'),
+    readBody: () => first.clone().json(),
+    policy,
+    random
+  })
+  if (delayMs === undefined) return first
+
+  const signal = requestSignal(input, init)
+  await first.body?.cancel().catch(() => undefined)
+  await sleep(delayMs, signal)
+  const settle = (end: StatusRetryEnd, finalStatus = first.status) =>
+    trackStatusRetry({
+      transport: 'fetch',
+      method,
+      url: () => (input instanceof Request ? input.url : String(input)),
+      end,
+      attempts: 2,
+      finalStatus,
+      retryScheduled: true
+    })
+  let second: Response
+  try {
+    second = await fetchImpl(replay, init)
+  } catch (error) {
+    settle(abortEnd(signal))
+    throw error
+  }
+  settle('answered', second.status)
+  return second
+}
+
+/**
+ * `fetch` that retries retryable statuses on idempotent methods, honoring
+ * `Retry-After`. A write is sent once more after a sign-in check refusal when
+ * the policy opts in.
+ */
 export async function fetchWithRetry(
   input: RequestInfo | URL,
   init: RequestInit = {},
@@ -41,6 +100,9 @@ export async function fetchWithRetry(
 ): Promise<Response> {
   const { policy, fetchImpl = fetch, sleep = sleepFor, random } = options
   const method = requestMethod(input, init)
+  if (canRetrySignInRefusal(method, policy) && isReplayable(input, init)) {
+    return fetchWriteAfterRefusal(input, init, method, options)
+  }
   if (!canRetryMethod(method, policy) || !isReplayable(input, init)) {
     return fetchImpl(input, init)
   }

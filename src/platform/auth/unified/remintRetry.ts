@@ -20,6 +20,7 @@ import type {
 } from '@comfyorg/telemetry/types'
 import { fetchWithRetry } from '@comfyorg/api-client/fetchWithRetry'
 import type { RetryPolicy } from '@comfyorg/api-client/retryPolicy'
+import { withSignInRefusalRetry } from '@comfyorg/api-client/retryPolicy'
 
 let cachedUnifiedFlags:
   | { readonly unifiedCloudAuthEnabled: boolean }
@@ -45,6 +46,17 @@ export async function shouldRemintCloudRequest(): Promise<boolean> {
   if (!isCloud) return false
   if (!cachedUnifiedFlags) cachedUnifiedFlags = useFeatureFlags().flags
   return cachedUnifiedFlags.unifiedCloudAuthEnabled
+}
+
+/**
+ * `policy` for a request to cloud: on cloud, a write the sign-in check
+ * refused with a 503 is sent once more (see `isSignInCheckRefusal`). Off
+ * cloud, `policy` unchanged.
+ */
+export function cloudRetryPolicy(
+  policy?: RetryPolicy
+): RetryPolicy | undefined {
+  return isCloud ? withSignInRefusalRetry(policy) : policy
 }
 
 /**
@@ -143,6 +155,9 @@ async function presentSsoRequired(present: () => unknown): Promise<void> {
  *
  * `retrySignalLifecycle`, when supplied, ends the initial fetch's timeout
  * before re-minting and creates a fresh signal immediately before the retry.
+ *
+ * `retryPolicy` passes through {@link cloudRetryPolicy}; the 401 path is
+ * separate from it.
  */
 export async function fetchWithUnifiedRemint(
   input: RequestInfo | URL,
@@ -151,11 +166,12 @@ export async function fetchWithUnifiedRemint(
   retrySignalLifecycle?: RetrySignalLifecycle,
   retryPolicy?: RetryPolicy
 ): Promise<Response> {
+  const policy = cloudRetryPolicy(retryPolicy)
   const retryInput =
     shouldRetryOn401 && input instanceof Request && input.body !== null
       ? input.clone()
       : input
-  const response = await fetchWithRetry(input, init, { policy: retryPolicy })
+  const response = await fetchWithRetry(input, init, { policy })
   if (response.status === 403 && isCloud) {
     await presentSsoRequired(() => presentForResponse(response))
   }
@@ -192,7 +208,7 @@ export async function fetchWithUnifiedRemint(
     : { ...init, headers }
   try {
     const retryResponse = await fetchWithRetry(retryInput, retryInit, {
-      policy: retryPolicy
+      policy
     })
     trackRetryResponse('fetch', retryResponse.status)
     return retryResponse
