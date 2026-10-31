@@ -12,9 +12,9 @@ import {
 } from 'vue'
 
 import { useBoundingBoxes } from './useBoundingBoxes'
-import type { BoundingBox } from '@/types/boundingBoxes'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const appState = vi.hoisted(() => ({

@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { api } from '@/scripts/api'

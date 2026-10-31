@@ -48,7 +48,7 @@ const actionButtonStyle = cn(
 
 const actionPopoverClass = cn(
   DROPDOWN_PANEL_CLASS,
-  'pointer-events-auto max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none'
+  'pointer-events-auto w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none'
 )
 
 const layoutSwitchItemStyle =

@@ -8,27 +8,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/rightSidePanel/layout/CollapseToggleButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/rightSidePanel/rightSidePanelTabTelemetry.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/components/rightSidePanel/rightSidePanelTabTelemetry.ts",
       "role": "application"
     },
     {
-      "path": "src/components/rightSidePanel/shared.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/components/rightSidePanel/shared.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/graph/useGraphHierarchy.test.ts",
       "role": "application"
     },
     {
@@ -46,7 +30,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["selection-toolbox"],
   "characterizationScenarios": [
     {
       "name": "Panel routes between tabs for the current selection and reports tab telemetry",
@@ -70,7 +54,7 @@
       "name": "Settings tab changes node color and toggles node and canvas settings",
       "checks": [
         "src/components/rightSidePanel/settings/SetNodeColor.test.ts",
-        "src/components/rightSidePanel/settings/FieldSwitch.test.ts"
+        "packages/design-system/src/components/field/FieldSwitch.test.ts"
       ]
     },
     {

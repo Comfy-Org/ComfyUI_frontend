@@ -1,7 +1,7 @@
 import type { GetFeaturesResponses } from '@comfyorg/ingest-types'
 import type { PostHogConfig } from 'posthog-js'
 
-import type { TelemetryEventName } from '@/platform/telemetry/types'
+import type { TelemetryEventName } from '@comfyorg/telemetry/types'
 
 export type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 
@@ -108,13 +108,14 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
   manager_survey_url?: string
   cancellation_survey_id?: string
-  linear_toggle_enabled?: boolean
   'agent-in-app-experience'?: boolean
   partner_node_governance_enabled?: boolean
   /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
   partner_run_gate_enabled?: boolean
   /** Local prompts carry a renewable partner-node token instead of the workspace token. */
   partner_node_token?: boolean
+  /** Offers Start on a stopped deployment in the Run bar's deployment menu. */
+  deployment_start_enabled?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
   supports_model_type_tags?: boolean
@@ -126,6 +127,8 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   deployment_compatibility_marks_enabled?: boolean
   /** The editor opens after 2 s of custom node scripts and turns the late ones on when they arrive. */
   late_custom_nodes_enabled?: boolean
+  /** Model dropdowns on a picked deployment also list the workspace's own library models. */
+  runtime_library_models_enabled?: boolean
   // Raw, unvalidated wire value ('stripe' | 'billing_web' by contract). Always
   // funnel it through normalizeHostedBillingDestination before trusting it.
   hosted_billing_destination?: string
@@ -139,7 +142,6 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   member_credit_limits_enabled?: boolean
   v1_payment_recovery?: boolean
   unified_billing_settings?: boolean
-  auto_top_up_enabled?: boolean
   oauth_consent_switch_account_enabled?: boolean
   sentry_dsn?: string
   turnstile_sitekey?: string

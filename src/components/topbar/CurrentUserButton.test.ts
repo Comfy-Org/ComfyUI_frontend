@@ -33,7 +33,7 @@ vi.mock(
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 vi.mock(import('@/platform/account/composables/useWorkspaceDialogs'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 // Mock the WorkspaceProfilePic component
 vi.mock<unknown>(

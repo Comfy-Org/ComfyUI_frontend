@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 export interface GradientStop {
   offset: number
   color: string
@@ -85,7 +86,7 @@ export function linearEndpoints(
   angle: number,
   w: number,
   h: number
-): { from: { x: number; y: number }; to: { x: number; y: number } } {
+): { from: Point2D; to: Point2D } {
   const a = (angle * Math.PI) / 180
   const dx = Math.cos(a)
   const dy = Math.sin(a)

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 import { DragAndScale } from '@/lib/litegraph/src/litegraph'
 import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 

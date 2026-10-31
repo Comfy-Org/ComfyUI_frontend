@@ -11,7 +11,7 @@ import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { TaskId } from '@/platform/tasks/services/taskService'
 import {
   isDownloadCancelled,
@@ -75,6 +75,15 @@ const outcomeLabel = computed(() => {
       count: failedJobs.value.length
     })
   if (cancelledJobs.value.length > 0) return t('electronFileDownload.cancelled')
+  if (downloadJobs.value.every((job) => job.source === 'upload'))
+    return t(
+      'progressToast.uploadsInLibrary',
+      {
+        name: downloadJobs.value[0]?.assetName,
+        count: downloadJobs.value.length
+      },
+      downloadJobs.value.length
+    )
   return t('progressToast.allDownloadsCompleted')
 })
 

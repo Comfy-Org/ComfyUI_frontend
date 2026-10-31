@@ -68,7 +68,7 @@
                   @click="handleInviteMember"
                 >
                   {{ $t('workspacePanel.invite') }}
-                  <i class="pi pi-plus text-sm" />
+                  <i class="icon-[lucide--plus] size-3.5" />
                 </Button>
               </span>
             </TooltipTrigger>

@@ -29,7 +29,7 @@
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            class="max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
+            class="w-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
             dismiss-on-viewport-change
           >
             <div class="flex flex-col gap-1 p-2">
@@ -66,7 +66,7 @@
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            class="max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
+            class="w-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
             dismiss-on-viewport-change
           >
             <div class="flex flex-col gap-1 p-2">
@@ -117,7 +117,9 @@
             ref="searchBoxRef"
             v-model="searchQuery"
             :clear-label="$t('g.clear')"
-            :accessible-label="$t('g.search')"
+            :accessible-label="
+              $t('g.searchPlaceholder', { subject: $t('g.nodes') })
+            "
             data-testid="node-library-search"
             class="node-lib-search-box"
             :placeholder="$t('g.searchPlaceholder', { subject: $t('g.nodes') })"
@@ -136,7 +138,7 @@
                 </Button>
               </PopoverTrigger>
               <PopoverContent
-                class="ml-[-13px] max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
+                class="ml-[-13px] w-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
                 dismiss-on-viewport-change
               >
                 <NodeSearchFilter @add-filter="onAddFilter" />
@@ -288,7 +290,7 @@ import NodeHelpPage from '@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -297,7 +299,7 @@ import {
   DEFAULT_SORTING_ID,
   nodeOrganizationService
 } from '@/services/nodeOrganizationService'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { shallowRef } from 'vue'
 
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Bounds } from '@/renderer/core/layout/types'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 
 interface LinkSelection {
   readonly links: readonly LLink[]

@@ -30,6 +30,7 @@
             />
             <UserAvatar
               v-else
+              :label="$t('auth.login.userAvatar')"
               :photo-url="photoURL"
               :class="compact && 'h-full w-auto'"
             />
@@ -43,7 +44,7 @@
         align="end"
         :class="
           cn(
-            'max-h-(--reka-popover-content-available-height) max-w-(--reka-popover-content-available-width) overflow-visible rounded-lg border-border p-0 shadow-md data-[state=closed]:animate-none data-[state=open]:animate-none',
+            'overflow-visible rounded-lg border-border p-0 shadow-md data-[state=closed]:animate-none data-[state=open]:animate-none',
             showWorkspacePopover ? 'w-fit max-w-96 min-w-80' : 'w-80'
           )
         "
@@ -66,7 +67,7 @@ import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { unrefElement } from '@vueuse/core'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
-import UserAvatar from '@/components/common/UserAvatar.vue'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import Button from '@comfyorg/design-system/button/Button'

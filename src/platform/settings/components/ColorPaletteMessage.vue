@@ -1,7 +1,7 @@
 <template>
   <Message severity="info">
     <template #icon>
-      <i class="pi pi-palette" />
+      <i class="icon-[lucide--palette]" />
     </template>
     <div class="flex items-center justify-between">
       <div>
@@ -19,7 +19,7 @@
           :title="$t('g.export')"
           @click="colorPaletteService.exportColorPalette(activePaletteId)"
         >
-          <i class="pi pi-file-export" />
+          <i class="icon-[lucide--file-output]" />
         </Button>
         <Button
           size="icon"
@@ -27,7 +27,7 @@
           :title="$t('g.import')"
           @click="importCustomPalette"
         >
-          <i class="pi pi-file-import" />
+          <i class="icon-[lucide--file-input]" />
         </Button>
         <Button
           size="icon"
@@ -36,7 +36,7 @@
           :disabled="!colorPaletteStore.isCustomPalette(activePaletteId)"
           @click="colorPaletteService.deleteCustomColorPalette(activePaletteId)"
         >
-          <i class="pi pi-trash" />
+          <i class="icon-[lucide--trash-2]" />
         </Button>
       </div>
     </div>

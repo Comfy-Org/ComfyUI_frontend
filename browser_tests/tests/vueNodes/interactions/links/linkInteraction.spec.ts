@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { NodeId } from '@/types/nodeId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,

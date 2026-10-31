@@ -4,7 +4,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { computed, nextTick } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -25,7 +25,7 @@ import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import { trackSsoSignInCompleted } from '@/platform/auth/sso/ssoTelemetry'
 import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import {
   NoWorkspaceAccessError,
   WorkspaceApiError as mockWorkspaceApiError
@@ -74,8 +74,8 @@ const mockWorkspaceApi = vi.hoisted(() => ({
   accessBillingPortal: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: mockWorkspaceApi

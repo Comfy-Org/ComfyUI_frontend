@@ -83,6 +83,7 @@
     "copyMarkdown": "Als Markdown kopieren",
     "copyUnavailable": "In dieser Version kann nur die aktuelle Unterhaltung kopiert werden",
     "creditTransitionNotice": "Sie haben Ihre kostenlosen Agent-Credits verbraucht. Weitere Agent-Aktivitäten verwenden die Credits Ihres Workspaces, die kostenpflichtige Credits enthalten können.",
+    "creditsUsed": "Der Agent hat {credits} Credit verwendet | Der Agent hat {credits} Credits verwendet",
     "currentTab": "Aktueller Tab",
     "delete": "Löschen",
     "deleteApproval": {
@@ -5858,13 +5859,11 @@
         "onHold": "Keine Standardzahlungsmethode. Legen Sie eine fest, um die automatische Aufladung fortzusetzen.",
         "paused": "Monatliches Limit erreicht. Wird am {date} fortgesetzt.",
         "pausedNoDate": "Monatliches Limit erreicht.",
-        "rule": "Fügt {amount} ({credits} Credits) hinzu, wenn das Guthaben unter {threshold} Credits fällt.",
         "status": {
           "failed": "Fehlgeschlagen",
           "off": "Aus",
           "on": "Ein",
           "onHold": "Ausgesetzt",
-          "paused": "Pausiert",
           "turnedOff": "Deaktiviert"
         },
         "title": "Automatische Aufladung",
@@ -5927,7 +5926,6 @@
         },
         "scheduledChange": "Wechselt am {date} zu {plan}.",
         "stayConfirm": {
-          "body": "Ihr Plan wird am {date} nicht zu {plan} geändert. Sie können jederzeit erneut eine Änderung planen.",
           "title": "Änderung zu {plan} abbrechen?"
         },
         "unknown": {

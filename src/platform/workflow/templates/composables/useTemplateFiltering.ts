@@ -7,10 +7,10 @@ import {
   searchTemplates
 } from '@comfyorg/shared-frontend-utils/templateSearch'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
-import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
+import type { TemplateInfo } from '@comfyorg/api-client/templateTypes'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useTemplateRankingStore } from '@/platform/workflow/templates/stores/templateRankingStore'
 import { debounce } from 'es-toolkit/compat'

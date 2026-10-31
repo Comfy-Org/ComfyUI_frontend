@@ -1,15 +1,12 @@
+import type {
+  Extents as DirtyRect,
+  Point2D as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
 import QuickLRU from '@alloc/quick-lru'
 
 import { hexToRgb, parseToRgb } from './color'
 import { BrushShape } from './types'
-import type { Point } from './types'
-
-export type DirtyRect = {
-  minX: number
-  minY: number
-  maxX: number
-  maxY: number
-}
+export type { Extents as DirtyRect } from '@comfyorg/shared-frontend-utils/geometry'
 
 type MaskColor = { r: number; g: number; b: number }
 

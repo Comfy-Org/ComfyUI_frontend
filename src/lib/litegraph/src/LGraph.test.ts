@@ -1,8 +1,8 @@
-import { toGroupId } from '@/types/groupId'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { NodeLifecycleEvent } from '@comfyorg/graph-model/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -22,7 +22,7 @@ import type {
   SerialisableGraph,
   SerialisableLLink,
   SerialisableReroute
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import {
   isRootGraphDocBound,
   registerDocBoundRootGraphProbe
@@ -37,11 +37,15 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-import { toLinkId } from '@/types/linkId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { toRerouteId } from '@/types/rerouteId'
-import { UNASSIGNED_NODE_ID, compareNodeIds, toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import {
+  UNASSIGNED_NODE_ID,
+  compareNodeIds,
+  toNodeId
+} from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import {
   createNestedSubgraphs,
   createTestSubgraph,
@@ -62,7 +66,7 @@ import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 

@@ -26,7 +26,12 @@
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <i v-if="loading" class="pi pi-spinner pi-spin text-muted-foreground" />
+      <i
+        v-if="loading"
+        role="status"
+        :aria-label="$t('g.loading')"
+        class="icon-[lucide--loader-circle] animate-spin text-muted-foreground motion-reduce:animate-none"
+      />
       <template v-else>
         <Button
           :tooltip="editLabel"
@@ -36,7 +41,7 @@
           :disabled="disabled"
           @click="emit('edit')"
         >
-          <i class="pi pi-pen-to-square" />
+          <i class="icon-[lucide--square-pen]" />
         </Button>
         <Button
           :tooltip="deleteLabel"
@@ -46,7 +51,7 @@
           :disabled="disabled"
           @click="emit('delete')"
         >
-          <i class="pi pi-trash" />
+          <i class="icon-[lucide--trash-2]" />
         </Button>
       </template>
     </div>

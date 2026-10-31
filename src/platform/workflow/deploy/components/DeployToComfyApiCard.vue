@@ -37,7 +37,7 @@
           muted
           loop
           plays-inline
-          playback-control
+          :playback-labels="{ play: $t('g.play'), pause: $t('g.pause') }"
           data-testid="deploy-to-comfy-api-video"
           class="aspect-video w-full rounded-lg object-cover"
         >
@@ -125,7 +125,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import Video from '@/components/common/Video.vue'
+import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useExternalLink } from '@/composables/useExternalLink'

@@ -5,14 +5,14 @@ import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { CommandMenuItem } from '@/stores/menuItemStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 
 import ComfyMenuButton from './ComfyMenuButton.vue'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const NODES_2_LABEL = 'Nodes 2.0'
 

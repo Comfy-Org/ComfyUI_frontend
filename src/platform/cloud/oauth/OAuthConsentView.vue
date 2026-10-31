@@ -65,7 +65,11 @@
         class="flex items-center gap-3 rounded-lg bg-ink-400 p-3"
         :aria-label="t('oauth.consent.signedInAs')"
       >
-        <UserAvatar :photo-url="signedInAccount.photoUrl" class="shrink-0" />
+        <UserAvatar
+          :label="t('auth.login.userAvatar')"
+          :photo-url="signedInAccount.photoUrl"
+          class="shrink-0"
+        />
         <div class="flex min-w-0 flex-1 flex-col">
           <span
             v-if="signedInAccount.displayName"
@@ -241,7 +245,7 @@ import { useRoute } from 'vue-router'
 
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
-import UserAvatar from '@/components/common/UserAvatar.vue'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'

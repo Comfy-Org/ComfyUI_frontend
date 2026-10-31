@@ -168,7 +168,7 @@ const STATUS = {
   },
   paused_by_budget: {
     ...NEUTRAL,
-    label: 'workspacePanel.billingTab.autoTopUp.status.paused',
+    label: 'workspacePanel.billingTab.autoTopUp.status.limitReached',
     dot: 'bg-warning-background',
     action: MANAGE
   },
@@ -241,18 +241,15 @@ function limitTooltip(resetsAt: string | null) {
 }
 
 function ruleLines({
-  reload_amount_cents: amountCents,
-  reload_credits: reloadCredits,
+  target_credits: targetCredits,
   threshold_credits: thresholdCredits
 }: AutoReloadSettings): Line[] {
-  if (amountCents === null) return []
-  if (reloadCredits === null) return []
+  if (targetCredits === null) return []
   if (thresholdCredits === null) return []
   return [
     {
       text: t('workspacePanel.billingTab.autoTopUp.rule', {
-        amount: usd(amountCents),
-        credits: credits(reloadCredits),
+        target: credits(targetCredits),
         threshold: credits(thresholdCredits)
       })
     }

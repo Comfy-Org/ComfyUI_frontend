@@ -28,7 +28,7 @@
       :class="
         cn(
           menuContentClass,
-          'max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) min-w-39 select-none data-[state=closed]:animate-none data-[state=open]:animate-none'
+          'w-auto min-w-39 select-none data-[state=closed]:animate-none data-[state=open]:animate-none'
         )
       "
       @open-auto-focus.prevent="onPopoverShow"
@@ -103,7 +103,7 @@ import {
   menuContentClass
 } from '@comfyorg/design-system/lib/menu/menuStyles'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 interface Props {

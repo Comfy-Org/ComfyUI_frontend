@@ -5,7 +5,7 @@
     <div
       class="flex size-8 shrink-0 items-center justify-center rounded-full text-warning"
     >
-      <i class="pi pi-info-circle" />
+      <i class="icon-[lucide--info]" />
     </div>
     <div class="flex flex-col gap-2 text-muted-foreground">
       <p class="m-0 font-bold text-foreground">

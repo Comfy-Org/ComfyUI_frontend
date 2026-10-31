@@ -37,14 +37,16 @@ export function collectSearchableOutputTypes(
   inputs: Record<string, InputSpecV2>,
   outputMatchTypes: (string | undefined)[] | undefined
 ): string[] {
+  if (!outputs.some((output) => output.type === 'COMFY_MATCHTYPE_V3')) {
+    return outputs.flatMap((output) => splitSlotTypes(output.type))
+  }
+
   const allowedTypesByTemplate = new Map<string, string[]>()
   for (const input of Object.values(inputs)) {
     for (const spec of inputSpecTree(input)) {
       const template = matchTypeTemplate(spec)
       if (!template) continue
 
-      // A template group is several inputs sharing one template_id; the output
-      // resolves across the whole group, so union rather than overwrite.
       const seen = allowedTypesByTemplate.get(template.templateId) ?? []
       allowedTypesByTemplate.set(
         template.templateId,

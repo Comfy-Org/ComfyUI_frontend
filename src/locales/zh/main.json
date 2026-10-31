@@ -83,6 +83,7 @@
     "copyMarkdown": "复制为 Markdown",
     "copyUnavailable": "此版本只能复制当前对话",
     "creditTransitionNotice": "您已用完免费的智能体积分。后续智能体活动将使用您工作区的积分，其中可能包含付费积分。",
+    "creditsUsed": "智能体使用了 {credits} 个积分 | 智能体使用了 {credits} 个积分",
     "currentTab": "当前标签页",
     "delete": "删除",
     "deleteApproval": {
@@ -5858,13 +5859,11 @@
         "onHold": "没有默认付款方式。请设置一个以恢复自动充值。",
         "paused": "已达到每月限额。将于 {date} 恢复。",
         "pausedNoDate": "已达到每月限额。",
-        "rule": "当积分低于 {threshold} 时，添加 {amount}（{credits} 积分）。",
         "status": {
           "failed": "失败",
           "off": "关闭",
           "on": "开启",
           "onHold": "已暂停",
-          "paused": "暂停",
           "turnedOff": "已关闭"
         },
         "title": "自动充值",
@@ -5927,7 +5926,6 @@
         },
         "scheduledChange": "将于 {date} 更改为 {plan}。",
         "stayConfirm": {
-          "body": "你的套餐不会于 {date} 更改为 {plan}。你可以随时再次安排更改。",
           "title": "取消更改为 {plan}？"
         },
         "unknown": {

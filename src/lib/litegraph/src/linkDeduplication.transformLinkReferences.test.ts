@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { toLinkId } from '@/types/linkId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
 
 import { normalizeConfiguredTopology } from './linkDeduplication'
-import type { ExportedSubgraph, SerialisableGraph } from './types/serialisation'
+import type {
+  ExportedSubgraph,
+  SerialisableGraph
+} from '@comfyorg/graph-model/serialisation'
 
 /**
  * Parametrized coverage for the id-rewrite that `normalizeConfiguredTopology`

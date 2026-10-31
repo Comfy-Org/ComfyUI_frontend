@@ -1,19 +1,20 @@
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type { Point2D as Position2D } from '@comfyorg/shared-frontend-utils/geometry'
+import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import type {
   ExecutedWsMessage,
   ExecutionErrorWsMessage,
   StatusWsMessageStatus
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
-} from '@/platform/telemetry/types'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useCommandStore } from '@/stores/commandStore'
+} from '@comfyorg/telemetry/types'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import { api } from './api'
 import { ComfyDialog as _ComfyDialog } from './ui/dialog'
@@ -23,11 +24,6 @@ import { toggleSwitch } from './ui/toggleSwitch'
 
 export const ComfyDialog = _ComfyDialog
 export const $el = _$el
-
-type Position2D = {
-  x: number
-  y: number
-}
 
 /** The slice of the app the legacy menu drives. `ComfyApp` implements it. */
 export interface LegacyUIApp {

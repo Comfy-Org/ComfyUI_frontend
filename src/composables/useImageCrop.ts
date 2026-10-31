@@ -3,9 +3,9 @@ import type { Ref } from 'vue'
 import { computed, ref, watch } from 'vue'
 
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
-import type { Bounds } from '@/renderer/core/layout/types'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { resolveInputSourceNode } from '@/utils/graphTraversalUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 

@@ -112,6 +112,7 @@ function confirmDelete(pack: SkillPack) {
       promptText: t('skillPacks.deleteConfirmMessage', { name: pack.name })
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.delete'),
       confirmVariant: 'destructive',
       onCancel: () => dialogStore.closeDialog(dialog),
