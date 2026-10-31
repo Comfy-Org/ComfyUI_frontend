@@ -2,6 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, toValue, watch } from 'vue'
 
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -488,6 +489,110 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       // a duplicate walk.
       void store.updateModelsForNodeType(nodeType)
       expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(2)
+    })
+
+    const completeLoraDownload = () => {
+      useAssetDownloadStore().lastCompletedDownload = {
+        taskId: 'task-lora',
+        modelType: 'loras',
+        timestamp: Date.now()
+      }
+    }
+
+    const modelsTagCalls = () =>
+      vi
+        .mocked(assetService.getAssetsPageByTag)
+        .mock.calls.filter(([tag]) => tag === 'models')
+
+    it('refetches the models library when a download completes during an in-flight fetch', async () => {
+      const store = useAssetsStore()
+      const newLora = createMockAsset('new-lora', ['models', 'loras'])
+
+      let resolveStalePage!: (page: AssetResponse) => void
+      const stalePage = new Promise<AssetResponse>((resolve) => {
+        resolveStalePage = resolve
+      })
+      vi.mocked(assetService.getAssetsPageByTag)
+        .mockReturnValueOnce(stalePage)
+        .mockResolvedValue(makePage([newLora]))
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage([newLora])
+      )
+
+      const staleRequest = store.updateModelsForTag('models')
+      completeLoraDownload()
+      await nextTick()
+
+      resolveStalePage(makePage([]))
+      await staleRequest
+
+      await vi.waitFor(() =>
+        expect(store.getAssets('tag:models').map((a) => a.id)).toEqual([
+          'new-lora'
+        ])
+      )
+      expect(store.isModelLoading('tag:models')).toBe(false)
+      expect(modelsTagCalls()).toHaveLength(2)
+    })
+
+    it('stays loading while a restart supersedes an initial load', async () => {
+      const store = useAssetsStore()
+      const newLora = createMockAsset('new-lora', ['models', 'loras'])
+
+      let resolveFreshPage!: (page: AssetResponse) => void
+      const freshPage = new Promise<AssetResponse>((resolve) => {
+        resolveFreshPage = resolve
+      })
+      vi.mocked(assetService.getAssetsPageByTag)
+        .mockImplementationOnce(
+          (_tag, _includePublic, options) =>
+            new Promise<AssetResponse>((_resolve, reject) => {
+              options?.signal?.addEventListener('abort', () =>
+                reject(new DOMException('Aborted', 'AbortError'))
+              )
+            })
+        )
+        .mockResolvedValueOnce(makePage([newLora]))
+        .mockReturnValueOnce(freshPage)
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage([newLora])
+      )
+
+      const initialLoad = store.updateModelsForTag('models')
+      completeLoraDownload()
+      await nextTick()
+      expect(modelsTagCalls()).toHaveLength(2)
+      await initialLoad
+
+      expect(store.isModelLoading('tag:models')).toBe(true)
+
+      resolveFreshPage(makePage([newLora]))
+      await vi.waitFor(() =>
+        expect(store.getAssets('tag:models').map((a) => a.id)).toEqual([
+          'new-lora'
+        ])
+      )
+      expect(store.isModelLoading('tag:models')).toBe(false)
+    })
+
+    it('joins the in-flight models fetch when no restart is requested', async () => {
+      const store = useAssetsStore()
+
+      let resolvePage!: (page: AssetResponse) => void
+      const page = new Promise<AssetResponse>((resolve) => {
+        resolvePage = resolve
+      })
+      vi.mocked(assetService.getAssetsPageByTag).mockReturnValueOnce(page)
+
+      const first = store.updateModelsForTag('models')
+      const second = store.updateModelsForTag('models')
+      resolvePage(makePage([createMockAsset('existing')]))
+      await Promise.all([first, second])
+
+      expect(assetService.getAssetsPageByTag).toHaveBeenCalledOnce()
+      expect(store.getAssets('tag:models').map((a) => a.id)).toEqual([
+        'existing'
+      ])
     })
   })
 
